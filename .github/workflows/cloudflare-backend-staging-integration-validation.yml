@@ -11,6 +11,9 @@ on:
       - 'smvastroproduction/**'
       - 'server.js'
       - '.github/workflows/cloudflare-backend-staging-integration-validation.yml'
+      - '.github/scripts/cloudflare-production-backend-audit.mjs'
+      - '.github/reports/SMV-ASTRO-CLOUDFLARE-BACKEND-AUDIT-2026-11-01.md'
+      - '.github/workflows/cloudflare-production-backend-audit.yml'
   pull_request:
     branches:
       - integration/cloudflare-backend-staging-stack-20261031
@@ -21,6 +24,9 @@ on:
       - 'smvastroproduction/**'
       - 'server.js'
       - '.github/workflows/cloudflare-backend-staging-integration-validation.yml'
+      - '.github/scripts/cloudflare-production-backend-audit.mjs'
+      - '.github/reports/SMV-ASTRO-CLOUDFLARE-BACKEND-AUDIT-2026-11-01.md'
+      - '.github/workflows/cloudflare-production-backend-audit.yml'
   workflow_dispatch:
 
 permissions:
@@ -56,6 +62,9 @@ jobs:
           while IFS= read -r -d '' file; do
             node --check "$file"
           done < <(find cloudflare/backend-api/src cloudflare/backend-api/scripts shared/backend-platform cloudflare/backend-api/test -type f -name '*.mjs' -print0)
+
+      - name: Verify Production backend route inventory and disabled cutover gates
+        run: node .github/scripts/cloudflare-production-backend-audit.mjs
 
       - name: Run the complete Cloudflare backend contract test suite
         working-directory: cloudflare/backend-api

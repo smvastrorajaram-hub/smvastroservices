@@ -1,0 +1,81 @@
+name: Cloudflare Production Backend Parity and Security Audit
+
+on:
+  pull_request:
+    branches:
+      - integration/cloudflare-backend-staging-stack-20261031
+    paths:
+      - ".github/scripts/cloudflare-production-backend-audit.mjs"
+      - ".github/reports/SMV-ASTRO-CLOUDFLARE-BACKEND-AUDIT-2026-11-01.md"
+      - ".github/workflows/cloudflare-production-backend-audit.yml"
+      - "shared/backend-platform/legacy-backend-route-inventory.mjs"
+      - "cloudflare/backend-api/src/**"
+      - "cloudflare/backend-api/migrations/**"
+  push:
+    branches:
+      - integration/cloudflare-backend-staging-stack-20261031
+    paths:
+      - ".github/scripts/cloudflare-production-backend-audit.mjs"
+      - ".github/reports/SMV-ASTRO-CLOUDFLARE-BACKEND-AUDIT-2026-11-01.md"
+      - ".github/workflows/cloudflare-production-backend-audit.yml"
+      - "shared/backend-platform/legacy-backend-route-inventory.mjs"
+      - "cloudflare/backend-api/src/**"
+      - "cloudflare/backend-api/migrations/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-production-backend-parity-audit
+  cancel-in-progress: false
+
+jobs:
+  source-audit-and-contract-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout the exact revision under audit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install isolated Worker dependencies
+        working-directory: cloudflare/backend-api
+        run: npm install --no-package-lock --ignore-scripts
+
+      - name: Check audit and Worker source syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check .github/scripts/cloudflare-production-backend-audit.mjs
+          while IFS= read -r -d '' file; do
+            node --check "$file"
+          done < <(find cloudflare/backend-api/src cloudflare/backend-api/test shared/backend-platform -type f -name '*.mjs' -print0)
+
+      - name: Verify 149-route inventory, source matches and Production safety config
+        run: node .github/scripts/cloudflare-production-backend-audit.mjs
+
+      - name: Run the complete Cloudflare backend contract test suite
+        working-directory: cloudflare/backend-api
+        run: node --test test/*.test.mjs
+
+      - name: Validate the isolated Production Worker bundle without deploying
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 deploy --dry-run --config ../../.github/config/wrangler.production.jsonc
+
+      - name: Publish audit safety summary
+        if: always()
+        run: |
+          {
+            echo "## Cloudflare Production Backend Audit"
+            echo ""
+            echo "- Source/config/tests only; no production Worker deployment"
+            echo "- No Production D1 queries, writes, migrations or data import"
+            echo "- Production Wallet, Razorpay, Live/Booking and backfill features remain disabled"
+            echo "- No frontend URL/DNS, Render, Firebase Production, main, staging, Horoscope, Calendar or APK changes"
+          } >> "$GITHUB_STEP_SUMMARY"
