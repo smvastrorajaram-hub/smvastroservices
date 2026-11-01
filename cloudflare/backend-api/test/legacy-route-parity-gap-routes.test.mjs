@@ -443,7 +443,7 @@ test('Scheduled in-progress retry passes the D1 Live service listSessions object
   };
   const {app}=register({
     firestore,liveService,isLiveReady:async()=>true,
-    env:{LIVE_SESSION_COORDINATOR:{},LIVE_USER_EVENT_HUB:{}}
+    env:{SMV_ENVIRONMENT:'staging',SMV_LIVE_SESSION_ROUTES_ENABLED:'true',LIVE_SESSION_COORDINATOR:{},LIVE_USER_EVENT_HUB:{}}
   });
   const res=response();
   await app.handlers.get('POST /live/scheduled-appointments/:id/start')(
