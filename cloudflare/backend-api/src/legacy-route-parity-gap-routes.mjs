@@ -193,7 +193,7 @@ function roleError(user, allowed) {
   return allowed.includes(role) ? null : routeError('ROLE_FORBIDDEN', 'This action is not allowed for your SMV ASTRO role.', 403);
 }
 
-function createFirebaseAuthAdminClient({ projectId, tokenProvider, fetchImpl = globalThis.fetch } = {}) {
+export function createFirebaseAuthAdminClient({ projectId, tokenProvider, fetchImpl = globalThis.fetch } = {}) {
   const project = String(projectId || '').trim();
   if (!project || !/^[a-z0-9][a-z0-9-]{4,29}$/.test(project) ||
       !tokenProvider || typeof tokenProvider.getAccessToken !== 'function' ||
@@ -228,7 +228,7 @@ function createFirebaseAuthAdminClient({ projectId, tokenProvider, fetchImpl = g
   return Object.freeze({ lookupByUid });
 }
 
-function createFcmSender({ projectId, tokenProvider, fetchImpl = globalThis.fetch } = {}) {
+export function createFcmSender({ projectId, tokenProvider, fetchImpl = globalThis.fetch } = {}) {
   const project = String(projectId || '').trim();
   if (!project || !tokenProvider || typeof tokenProvider.getAccessToken !== 'function' ||
       typeof fetchImpl !== 'function') {
