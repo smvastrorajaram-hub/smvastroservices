@@ -554,3 +554,47 @@ test('Unified webhook does not downgrade a previously paid Question on a late pa
   assert.equal(res.statusCode, 200);
   assert.equal(state.firestore.documents.get('smv_questions/q-1').paymentStatus, 'paid');
 });
+
+
+test('unified webhook resolves an order from the canonical Question when async audit metadata is missing', async () => {
+  const state = setup({
+    documents: {
+      'smv_questions/q-fallback': {
+        customerId: 'customer-1', questionId: 'q-fallback', amount: 10,
+        question: 'Audit document may lag', status: 'awaiting_payment',
+        paymentStatus: 'order_created', razorpayOrderId: 'order_test_1'
+      }
+    }
+  });
+  const event = {
+    event: 'payment.captured',
+    payload: { payment: { entity: { id: 'pay_fallback', order_id: 'order_test_1', amount: 1000, currency: 'INR', status: 'captured' } } }
+  };
+  const res = responseHarness();
+  await state.app.handlers.get('POST /razorpay/webhook')(
+    request({ body: new TextEncoder().encode(JSON.stringify(event)), headers: { 'X-Razorpay-Signature': 'valid', 'X-Razorpay-Event-Id': 'evt-order-fallback' } }), res
+  );
+  assert.equal(res.statusCode, 200);
+  assert.equal(state.firestore.documents.get('smv_questions/q-fallback').paymentStatus, 'paid');
+  assert.equal(state.wallet.events.get('razorpay_evt-order-fallback').processed, true);
+});
+
+test('unified webhook does not guess when the same Razorpay order maps to multiple legacy records', async () => {
+  const state = setup({
+    documents: {
+      'smv_questions/q-ambiguous': { customerId: 'customer-1', amount: 10, paymentStatus: 'order_created', razorpayOrderId: 'order_test_1' },
+      'smv_private_consultations/pc-ambiguous': { customerId: 'customer-1', chatPrice: 10, paymentStatus: 'order_created', razorpayOrderId: 'order_test_1' }
+    }
+  });
+  const event = {
+    event: 'payment.captured',
+    payload: { payment: { entity: { id: 'pay_ambiguous', order_id: 'order_test_1', amount: 1000, currency: 'INR', status: 'captured' } } }
+  };
+  const res = responseHarness();
+  await state.app.handlers.get('POST /razorpay/webhook')(
+    request({ body: new TextEncoder().encode(JSON.stringify(event)), headers: { 'X-Razorpay-Signature': 'valid', 'X-Razorpay-Event-Id': 'evt-order-ambiguous' } }), res
+  );
+  assert.equal(res.statusCode, 500);
+  assert.equal(state.firestore.documents.get('smv_questions/q-ambiguous').paymentStatus, 'order_created');
+  assert.equal(state.wallet.calls.some(call => call[0] === 'release'), true);
+});
