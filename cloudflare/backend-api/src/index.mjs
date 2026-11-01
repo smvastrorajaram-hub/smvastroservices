@@ -25,6 +25,7 @@ import { createD1LiveSessionService } from '../../../shared/backend-platform/d1-
 import { createD1WithdrawalService } from '../../../shared/backend-platform/d1-live-withdrawal-service.mjs';
 import { registerD1LiveSessionRoutes } from './live-session-routes.mjs';
 import { createRazorpayRestClient } from '../../../shared/backend-platform/razorpay-rest-adapter.mjs';
+import { registerRazorpayConnectivityRoute } from './razorpay-connectivity-routes.mjs';
 import { isLegacyBackendPath, LEGACY_BACKEND_ROUTE_INVENTORY } from '../../../shared/backend-platform/legacy-backend-route-inventory.mjs';
 import { readBackendProviderReadiness, readD1SchemaReadiness } from '../../../shared/backend-platform/backend-readiness-state.mjs';
 
@@ -388,6 +389,17 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       razorpayConnectivityProbe = () => sharedRazorpayClient.findOrderByReceipt(
         'smv_cf_staging_probe', { amountPaise: 100, currency: 'INR' }
       );
+
+      // Admin connection button: expose only the authenticated, read-only Test-mode
+      // provider check. This route never creates orders, captures payments or refunds.
+      registerRazorpayConnectivityRoute({
+        app,
+        identityService: walletIdentityService,
+        razorpay: sharedRazorpayClient,
+        mode: razorpayPolicy.mode,
+        keyId: razorpayKeyId,
+        credentialsConfigured: true
+      });
     }
     registerAdminAccessRoute({ app, identityService: walletIdentityService });
     registerAccountRoleRoute({ app, identityService: walletIdentityService, firestore: firestoreAdmin });
