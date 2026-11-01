@@ -44,6 +44,7 @@ import { registerLegacyAstrologerApprovalRoutes } from './legacy-astrologer-appr
 import { registerLegacyQuestionActionRoutes } from './legacy-question-action-routes.mjs';
 import { createResendEmailClient } from '../../../shared/backend-platform/resend-email-adapter.mjs';
 import { registerLegacyEmailRoutes } from './legacy-email-routes.mjs';
+import { registerAstrologerSubmitAnswerRoute } from './astrologer-submit-answer-route.mjs';
 import { registerLegacyAppointmentReadAndResponseRoutes } from './legacy-appointment-read-response-routes.mjs';
 import { registerCustomerAnswerCreditRoute } from './customer-answer-credit-route.mjs';
 
@@ -338,7 +339,12 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       emailClient: resendEmailClient,
       adminEmail: String(env.ADMIN_EMAIL || '')
     });
-    registerCustomerAnswerCreditRoute({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+
+    registerAstrologerSubmitAnswerRoute({
+      app, firestore: firestoreAdmin, identityService: walletIdentityService,
+      emailClient: resendEmailClient, adminEmail: String(env.ADMIN_EMAIL || ''),
+      siteUrl: String(env.PUBLIC_SITE_URL || 'https://smvastroservices.in')
+    });    registerCustomerAnswerCreditRoute({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
   }
   const walletSchemaReady = async () => {
     try {
