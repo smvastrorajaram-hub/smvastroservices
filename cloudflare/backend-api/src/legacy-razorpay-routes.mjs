@@ -724,9 +724,42 @@ export function registerLegacyRazorpayRoutes({
     if (!orderId) return;
     const eventType = claim.eventType;
     let orderSnapshot = await firestore.getDocument(ORDER_COLLECTION + '/' + orderId);
-    const orderRecord = orderSnapshot.data || {};
+    let orderRecord = orderSnapshot.data || {};
     const walletRecharge = await walletAdapter.getRechargeByOrderId(orderId);
-    if (!orderSnapshot.exists && !walletRecharge) return;
+
+    // The legacy create-order path writes its audit/lookup document
+    // asynchronously. A provider webhook can legitimately arrive before that
+    // write completes, or after a transient audit-write failure. Resolve the
+    // owning Question/Consultation from its canonical saved order ID before
+    // acknowledging the payment event.
+    if (!orderSnapshot.exists && !walletRecharge) {
+      const questionRows = await firestore.runQuery({
+        collectionPath: QUESTION_COLLECTION,
+        filters: [{ field: 'razorpayOrderId', op: 'EQUAL', value: orderId }],
+        limit: 3
+      });
+      const consultationRows = enablePrivateConsultation ? await firestore.runQuery({
+        collectionPath: CONSULTATION_COLLECTION,
+        filters: [{ field: 'razorpayOrderId', op: 'EQUAL', value: orderId }],
+        limit: 3
+      }) : [];
+      if (questionRows.length + consultationRows.length > 1) {
+        throw httpError('RAZORPAY_ORDER_MAPPING_AMBIGUOUS', 'This Razorpay order maps to multiple legacy payment records and requires manual review.', 409);
+      }
+      if (questionRows.length === 1) {
+        const row = questionRows[0];
+        const id = safeId(row.id || row.data?.questionId);
+        if (!id) throw httpError('RAZORPAY_ORDER_MAPPING_INVALID', 'Question order mapping is invalid.', 409);
+        orderRecord = { questionId: id, amount: row.data?.amount, customerEmail: row.data?.customerEmail };
+      } else if (consultationRows.length === 1) {
+        const row = consultationRows[0];
+        const id = safeId(row.id || row.data?.consultationId);
+        if (!id) throw httpError('RAZORPAY_ORDER_MAPPING_INVALID', 'Private Consultation order mapping is invalid.', 409);
+        orderRecord = { consultationId: id, amount: row.data?.chatPrice || row.data?.amount, customerEmail: row.data?.customerEmail };
+      } else {
+        return;
+      }
+    }
 
     const nextStatus = ['payment.captured', 'order.paid'].includes(eventType) ? 'paid' :
       eventType === 'payment.failed' ? 'failed' : null;
