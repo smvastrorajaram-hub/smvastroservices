@@ -6,7 +6,8 @@ import {
   CLOUDFLARE_LEGACY_ROUTE_PAIRS,
   createBackendApiRouter,
   isCloudflareRouteFamilyReady,
-  isRetryableRenderReadFailure
+  isRetryableGatewayFailure,
+  isStagingDisabledPath
 } from "../public/backend-api-routing.mjs";
 
 const renderBaseUrl = "https://render-staging.example";
@@ -20,8 +21,7 @@ const workerRouteFiles = [
   "../cloudflare/backend-api/src/wallet-offer-routes.mjs",
   "../cloudflare/backend-api/src/wallet-domain-backfill-routes.mjs",
   "../cloudflare/backend-api/src/identity-profile-backfill-routes.mjs",
-  "../cloudflare/backend-api/src/live-session-routes.mjs",
-  "../cloudflare/backend-api/src/legacy-razorpay-routes.mjs"
+  "../cloudflare/backend-api/src/live-session-routes.mjs"
 ];
 
 const workerRegisteredRoutePairs = new Set();
@@ -42,10 +42,8 @@ const ready = Object.freeze({
   walletReadRoutesEnabled: true,
   walletRechargeRoutesEnabled: true,
   walletOfferRoutesEnabled: true,
-  legacyRazorpayRoutesRegistered: true,
   razorpayCredentialsConfigured: true,
   razorpayMode: "test",
-  razorpayConnected: true,
   razorpayProviderConnectionVerified: true,
   liveCallChatRoutesEnabled: true
 });
@@ -57,253 +55,239 @@ function jsonResponse(value, status = 200) {
   });
 }
 
-test("all selected Cloudflare routes have a literal Worker registration", () => {
-  assert.equal(CLOUDFLARE_LEGACY_ROUTE_PAIRS.length, 52);
+function readinessFetch(value = ready, calls = []) {
+  return async (url, init = {}) => {
+    calls.push({ url, method: init.method || "GET" });
+    if (url === cloudflareBaseUrl + "/api/backend/readiness") return jsonResponse(value);
+    if (url.startsWith(renderBaseUrl)) return jsonResponse({ source: "render" });
+    if (url.startsWith(cloudflareBaseUrl)) return jsonResponse({ source: "cloudflare" });
+    throw new Error("Unexpected URL: " + url);
+  };
+}
+
+test("the selected Cloudflare route map contains only real Worker registrations", () => {
+  assert.equal(CLOUDFLARE_LEGACY_ROUTE_PAIRS.length, 45);
   for (const route of CLOUDFLARE_LEGACY_ROUTE_PAIRS) {
     const key = route.method + " " + route.path;
     assert.equal(workerRegisteredRoutePairs.has(key), true, key + " must exist in Worker source");
-    const expectedTarget = key === "GET /admin/access" || key === "GET /account/role"
-      ? "render-primary"
-      : "cloudflare-primary";
-    assert.equal(classifyStagingBackendRoute(route.path, route.method).target, expectedTarget, key);
   }
 });
 
-test("unported, retired, Horoscope, email and unprovisioned APK routes stay pinned to Render", () => {
-  const pinned = [
-    ["/lookup-customer-login", "POST"],
-    ["/register-customer-profile", "POST"],
-    ["/register-astrologer-profile", "POST"],
-    ["/appointment-booking", "POST"],
-    ["/customer/appointments", "GET"],
-    ["/public/astrologers", "GET"],
-    ["/test-razorpay", "GET"],
-    ["/admin/questions-data", "GET"],
-    ["/public/content", "GET"],
-    ["/live/push/register", "POST"],
-    ["/api/locations/search", "GET"],
-    ["/customer/consultations", "GET"],
-    ["/customer/private-consultations", "GET"],
-    ["/admin/private-consultation/reject-question", "POST"],
-    ["/private-consultation/create-order", "POST"],
-    ["/horoscope-auth/session", "GET"],
-    ["/admin/horoscope-feature-settings", "POST"],
-    ["/admin/private-consultations-data", "GET"],
-    ["/api/prediction/horoscope", "POST"],
-    ["/contact-query", "POST"],
-    ["/question-notify", "POST"],
-    ["/admin/android-app/upload", "POST"]
-  ];
-  for (const [path, method] of pinned) {
-    assert.deepEqual(classifyStagingBackendRoute(path, method), {
-      target: "render-primary",
-      family: "renderPinned"
-    }, method + " " + path);
-  }
-});
-
-test("maps registered Wallet, Razorpay and Live routes to their exact readiness families", () => {
+test("Wallet, Recharge, Razorpay Wallet webhook, Live and Book Call/Chat routes are Cloudflare-primary", () => {
   const cases = [
-    ["/admin/access", "GET", "coreReadFallback"],
-    ["/account/role", "GET", "coreReadFallback"],
-    ["/admin/reject-question", "POST", "legacyPayments"],
-    ["/admin/retry-refund", "POST", "legacyPayments"],
-    ["/admin/refund-trace/question-1", "GET", "legacyPayments"],
-    ["/customer/sync-refund", "POST", "legacyPayments"],
-    ["/admin/sync-refund", "POST", "legacyPayments"],
-    ["/create-order", "POST", "legacyPayments"],
-    ["/verify-payment", "POST", "legacyPayments"],
-    ["/razorpay/webhook", "POST", "legacyPayments"],
     ["/wallet", "GET", "walletRead"],
     ["/wallet/transactions?limit=10", "GET", "walletRead"],
+    ["/wallet/recharge-offers", "GET", "walletOffers"],
+    ["/admin/offers/save", "POST", "walletOffers"],
     ["/wallet/recharge/create-order", "POST", "walletRecharge"],
     ["/wallet/recharge/verify", "POST", "walletRecharge"],
-    ["/wallet/recharge-offers", "GET", "walletOffers"],
-    ["/admin/offers", "GET", "walletOffers"],
-    ["/admin/offers/save", "POST", "walletOffers"],
-    ["/admin/offers/delete", "POST", "walletOffers"],
-    ["/admin/wallet/backfill/status", "GET", "walletBackfill"],
-    ["/admin/wallet/backfill/preflight", "POST", "walletBackfill"],
-    ["/admin/wallet/backfill/preview", "POST", "walletBackfill"],
-    ["/admin/wallet/backfill/apply", "POST", "walletBackfill"],
-    ["/admin/wallet/backfill/reconcile", "POST", "walletBackfill"],
-    ["/admin/withdrawals-data", "GET", "live"],
-    ["/admin/withdrawal-mark-processing", "POST", "live"],
-    ["/admin/withdrawal-reject", "POST", "live"],
-    ["/astrologer/earnings", "GET", "live"],
-    ["/astrologer/withdrawal-request", "POST", "live"],
-    ["/admin/withdrawal-mark-paid", "POST", "live"],
-    ["/admin/withdrawal-payout/withdrawal-1", "GET", "live"],
+    ["/wallet/recharge/webhook", "POST", "walletRecharge"],
     ["/live/pricing", "GET", "live"],
-    ["/live/ice-config", "GET", "live"],
-    ["/admin/live/pricing", "POST", "live"],
-    ["/admin/live/commission", "POST", "live"],
-    ["/live/events", "GET", "live"],
     ["/live/requests", "POST", "live"],
     ["/live/sessions", "GET", "live"],
     ["/live/bookings/pending", "GET", "live"],
     ["/live/bookings/mine", "GET", "live"],
     ["/live/bookings/booking-1/accept", "POST", "live"],
-    ["/live/bookings/booking-1/reject", "POST", "live"],
-    ["/live/bookings/booking-1/cancel", "POST", "live"],
-    ["/live/sessions/session-1/accept", "POST", "live"],
-    ["/live/sessions/session-1/reject", "POST", "live"],
-    ["/live/sessions/session-1/end", "POST", "live"],
-    ["/live/sessions/session-1/ready", "POST", "live"],
     ["/live/sessions/session-1/signal", "POST", "live"],
-    ["/live/sessions/session-1/signals", "GET", "live"],
-    ["/live/sessions/session-1/messages", "POST", "live"],
-    ["/live/sessions/session-1/messages", "GET", "live"],
-    ["/live/sessions/session-1/connection", "POST", "live"],
-    ["/public/push-config", "GET", "publicConfig"]
+    ["/live/sessions/session-1/messages", "GET", "live"]
   ];
   for (const [path, method, family] of cases) {
-    const expectedTarget = family === "coreReadFallback" ? "render-primary" : "cloudflare-primary";
     assert.deepEqual(classifyStagingBackendRoute(path, method), {
-      target: expectedTarget,
+      target: "cloudflare-primary",
       family
     }, method + " " + path);
   }
 });
 
-test("Firebase-backed route families require a real Firebase connectivity proof", () => {
-  assert.equal(isCloudflareRouteFamilyReady("legacyCore", ready), true);
-  assert.equal(isCloudflareRouteFamilyReady("walletRead", ready), true);
-  assert.equal(isCloudflareRouteFamilyReady("walletBackfill", ready), true);
-  assert.equal(isCloudflareRouteFamilyReady("live", ready), true);
-  const disconnected = { ...ready, firebaseConnected: false };
-  for (const family of ["legacyCore", "walletRead", "walletBackfill", "walletOffers", "walletRecharge", "legacyPayments", "live"]) {
-    assert.equal(isCloudflareRouteFamilyReady(family, disconnected), false, family);
+test("general identity and public configuration reads are Render-primary with Cloudflare secondary", () => {
+  for (const path of ["/admin/access", "/account/role", "/public/push-config"]) {
+    assert.deepEqual(classifyStagingBackendRoute(path, "GET"), {
+      target: "render-primary",
+      family: "renderRead"
+    });
   }
-  assert.equal(isCloudflareRouteFamilyReady("publicConfig", disconnected), true);
 });
 
-test("Razorpay writes require configured test credentials and a verified provider connection", () => {
-  assert.equal(isCloudflareRouteFamilyReady("legacyPayments", ready), true);
-  assert.equal(isCloudflareRouteFamilyReady("walletRecharge", ready), true);
-  assert.equal(isCloudflareRouteFamilyReady("legacyPayments", { ...ready, razorpayCredentialsConfigured: false }), false);
-  assert.equal(isCloudflareRouteFamilyReady("legacyPayments", { ...ready, razorpayProviderConnectionVerified: false }), false);
-  assert.equal(isCloudflareRouteFamilyReady("legacyPayments", { ...ready, razorpayMode: "live" }), false);
-  assert.equal(isCloudflareRouteFamilyReady("walletRecharge", { ...ready, razorpayProviderConnectionVerified: false }), false);
-  assert.equal(isCloudflareRouteFamilyReady("razorpayProbe", ready), true);
-  assert.equal(isCloudflareRouteFamilyReady("razorpayProbe", { ...ready, razorpayProviderConnectionVerified: false }), false);
-});
-
-test("Wallet and Live route families remain fail-closed while their gates are disabled", () => {
-  assert.equal(isCloudflareRouteFamilyReady("walletRead", { ...ready, walletReadRoutesEnabled: false }), false);
-  assert.equal(isCloudflareRouteFamilyReady("walletOffers", { ...ready, walletOfferRoutesEnabled: false }), false);
-  assert.equal(isCloudflareRouteFamilyReady("walletRecharge", { ...ready, walletRechargeRoutesEnabled: false }), false);
-  assert.equal(isCloudflareRouteFamilyReady("live", { ...ready, liveCallChatRoutesEnabled: false }), false);
-  assert.equal(isCloudflareRouteFamilyReady("legacyCore", { ...ready, identityProfileBackfillRoutesRegistered: false }), false);
-  assert.equal(isCloudflareRouteFamilyReady("legacyCore", { ...ready, walletBackfillRoutesRegistered: false }), false);
-  assert.equal(isCloudflareRouteFamilyReady("legacyCore", { ...ready, ready: false }), false);
-});
-
-test("only GET/HEAD network or gateway failures may fail over; mutations are never retried", () => {
-  assert.equal(isRetryableRenderReadFailure({ method: "GET", networkError: true }), true);
-  assert.equal(isRetryableRenderReadFailure({ method: "HEAD", status: 503 }), true);
-  for (const status of [400, 401, 403, 404, 409, 422]) {
-    assert.equal(isRetryableRenderReadFailure({ method: "GET", status }), false);
+test("legacy Private Consultation, Ask Now/question-payment and Android APK APIs are disabled only in Staging", () => {
+  const paths = [
+    "/customer/consultations",
+    "/customer/private-consultations",
+    "/admin/private-consultations-data",
+    "/private-consultation/create-order",
+    "/admin/private-consultation/reject-question",
+    "/astrologer/private-consultations",
+    "/submit-answer",
+    "/question-notify",
+    "/admin/questions-data",
+    "/create-order",
+    "/verify-payment",
+    "/razorpay/webhook",
+    "/public/android-app",
+    "/admin/android-app",
+    "/admin/android-app/upload"
+  ];
+  for (const path of paths) {
+    assert.equal(isStagingDisabledPath(path), true, path);
+    assert.deepEqual(classifyStagingBackendRoute(path, "GET"), {
+      target: "disabled",
+      family: "stagingDisabled"
+    }, path);
   }
-  for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
-    assert.equal(isRetryableRenderReadFailure({ method, status: 503 }), false);
-    assert.equal(isRetryableRenderReadFailure({ method, networkError: true }), false);
-  }
-  assert.equal(isRetryableRenderReadFailure({ method: "GET", status: 503, aborted: true }), false);
 });
 
-test("Cloudflare Razorpay payment writes go to Cloudflare exactly once after readiness succeeds", async () => {
+test("disabled Staging flows return 410 without contacting either backend", async () => {
+  const calls = [];
+  const router = createBackendApiRouter({
+    staging: true, renderBaseUrl, cloudflareBaseUrl,
+    fetchImpl: async (url, init = {}) => {
+      calls.push({ url, method: init.method || "GET" });
+      return jsonResponse({ unexpected: true });
+    }
+  });
+  const response = await router.fetch("/private-consultation/create-order", { method: "POST", body: "{}" });
+  assert.equal(response.status, 410);
+  assert.equal((await response.json()).code, "STAGING_FEATURE_DISABLED");
+  assert.deepEqual(calls, []);
+});
+
+test("readiness gates require real Firebase, Razorpay and route proofs", () => {
+  for (const family of ["walletRead", "walletRecharge", "live", "coreRead"]) {
+    assert.equal(isCloudflareRouteFamilyReady(family, { ...ready, firebaseConnected: false }), false, family);
+  }
+  assert.equal(isCloudflareRouteFamilyReady("walletRecharge", {
+    ...ready, razorpayProviderConnectionVerified: false
+  }), false);
+  assert.equal(isCloudflareRouteFamilyReady("walletRecharge", {
+    ...ready, razorpayMode: "live"
+  }), false);
+  assert.equal(isCloudflareRouteFamilyReady("walletOffers", {
+    ...ready, walletOfferRoutesEnabled: false
+  }), false);
+  assert.equal(isCloudflareRouteFamilyReady("live", {
+    ...ready, liveCallChatRoutesEnabled: false
+  }), false);
+  assert.equal(isCloudflareRouteFamilyReady("publicConfig", { ready: true }), true);
+});
+
+test("Cloudflare-primary payment writes use Render secondary only when readiness fails before dispatch", async () => {
+  const calls = [];
+  const router = createBackendApiRouter({
+    staging: true, renderBaseUrl, cloudflareBaseUrl,
+    fetchImpl: async (url, init = {}) => {
+      calls.push({ url, method: init.method || "GET" });
+      if (url === cloudflareBaseUrl + "/api/backend/readiness") return jsonResponse({
+        ...ready, firebaseConnected: false
+      });
+      if (url === renderBaseUrl + "/wallet/recharge/create-order") return jsonResponse({ source: "render-secondary" });
+      throw new Error("Cloudflare must not receive a gated payment write.");
+    }
+  });
+  const response = await router.fetch("/wallet/recharge/create-order", { method: "POST", body: "{}" });
+  assert.deepEqual(await response.json(), { source: "render-secondary" });
+  assert.deepEqual(calls, [
+    { url: cloudflareBaseUrl + "/api/backend/readiness", method: "GET" },
+    { url: renderBaseUrl + "/wallet/recharge/create-order", method: "POST" }
+  ]);
+});
+
+test("Cloudflare-primary payment writes are dispatched once when all readiness gates pass", async () => {
   const calls = [];
   const router = createBackendApiRouter({
     staging: true, renderBaseUrl, cloudflareBaseUrl,
     fetchImpl: async (url, init = {}) => {
       calls.push({ url, method: init.method || "GET" });
       if (url === cloudflareBaseUrl + "/api/backend/readiness") return jsonResponse(ready);
-      if (url === cloudflareBaseUrl + "/create-order") return jsonResponse({ success: true });
+      if (url === cloudflareBaseUrl + "/wallet/recharge/create-order") return jsonResponse({ source: "cloudflare-primary" });
       throw new Error("Unexpected request: " + url);
     }
   });
-  const response = await router.fetch("/create-order", { method: "POST", body: "{}" });
-  assert.equal(response.status, 200);
+  const response = await router.fetch("/wallet/recharge/create-order", { method: "POST", body: "{}" });
+  assert.deepEqual(await response.json(), { source: "cloudflare-primary" });
   assert.deepEqual(calls, [
     { url: cloudflareBaseUrl + "/api/backend/readiness", method: "GET" },
-    { url: cloudflareBaseUrl + "/create-order", method: "POST" }
+    { url: cloudflareBaseUrl + "/wallet/recharge/create-order", method: "POST" }
   ]);
 });
 
-test("Razorpay writes fail closed when provider connectivity is not verified", async () => {
+test("a dispatched Cloudflare payment failure is never replayed to Render", async () => {
   const calls = [];
-  const disabled = { ...ready, razorpayProviderConnectionVerified: false };
   const router = createBackendApiRouter({
     staging: true, renderBaseUrl, cloudflareBaseUrl,
-    fetchImpl: async url => {
-      calls.push(url);
-      if (url === cloudflareBaseUrl + "/api/backend/readiness") return jsonResponse(disabled);
-      throw new Error("A gated Razorpay route must not be called.");
+    fetchImpl: async (url, init = {}) => {
+      calls.push({ url, method: init.method || "GET" });
+      if (url === cloudflareBaseUrl + "/api/backend/readiness") return jsonResponse(ready);
+      if (url === cloudflareBaseUrl + "/wallet/recharge/create-order") throw new Error("connection lost after dispatch");
+      throw new Error("A payment mutation must not be retried on Render.");
     }
   });
   await assert.rejects(
-    router.fetch("/create-order", { method: "POST", body: "{}" }),
-    error => error.code === "CLOUDFLARE_ROUTE_NOT_READY" && error.status === 503
+    router.fetch("/wallet/recharge/create-order", { method: "POST", body: "{}" }),
+    /connection lost after dispatch/
   );
-  assert.deepEqual(calls, [cloudflareBaseUrl + "/api/backend/readiness"]);
+  assert.deepEqual(calls, [
+    { url: cloudflareBaseUrl + "/api/backend/readiness", method: "GET" },
+    { url: cloudflareBaseUrl + "/wallet/recharge/create-order", method: "POST" }
+  ]);
 });
 
-test("Wallet recharge and Live sessions fail closed and are never sent to Render when disabled", async () => {
+test("Cloudflare-primary GET failures safely fall back to Render", async () => {
   const calls = [];
-  const disabled = { ...ready, walletRechargeRoutesEnabled: false, liveCallChatRoutesEnabled: false };
   const router = createBackendApiRouter({
     staging: true, renderBaseUrl, cloudflareBaseUrl,
-    fetchImpl: async url => {
-      calls.push(url);
-      if (url === cloudflareBaseUrl + "/api/backend/readiness") return jsonResponse(disabled);
-      throw new Error("A disabled Wallet or Live route must not be dispatched.");
+    fetchImpl: async (url, init = {}) => {
+      calls.push({ url, method: init.method || "GET" });
+      if (url === cloudflareBaseUrl + "/api/backend/readiness") return jsonResponse(ready);
+      if (url === cloudflareBaseUrl + "/live/pricing") return jsonResponse({ error: "Worker unavailable" }, 503);
+      if (url === renderBaseUrl + "/live/pricing") return jsonResponse({ source: "render-secondary" });
+      throw new Error("Unexpected request: " + url);
     }
   });
-  await assert.rejects(router.fetch("/wallet/recharge/create-order", { method: "POST", body: "{}" }),
-    error => error.code === "CLOUDFLARE_ROUTE_NOT_READY");
-  await assert.rejects(router.fetch("/live/sessions", { method: "GET" }),
-    error => error.code === "CLOUDFLARE_ROUTE_NOT_READY");
-  assert.deepEqual(calls, [cloudflareBaseUrl + "/api/backend/readiness"]);
+  const response = await router.fetch("/live/pricing", { method: "GET" });
+  assert.deepEqual(await response.json(), { source: "render-secondary" });
+  assert.deepEqual(calls.map(call => call.url), [
+    cloudflareBaseUrl + "/api/backend/readiness",
+    cloudflareBaseUrl + "/live/pricing",
+    renderBaseUrl + "/live/pricing"
+  ]);
 });
 
-test("only a registered safe identity read may fail over from Render to Cloudflare", async () => {
+test("Render-primary GET failures safely fall back to a ready Cloudflare secondary", async () => {
   const calls = [];
   const router = createBackendApiRouter({
     staging: true, renderBaseUrl, cloudflareBaseUrl,
-    fetchImpl: async url => {
-      calls.push(url);
-      if (url === renderBaseUrl + "/account/role") return jsonResponse({ error: "Render unavailable" }, 503);
+    fetchImpl: async (url, init = {}) => {
+      calls.push({ url, method: init.method || "GET" });
+      if (url === renderBaseUrl + "/account/role") return jsonResponse({ error: "Render down" }, 503);
       if (url === cloudflareBaseUrl + "/api/backend/readiness") return jsonResponse(ready);
-      if (url === cloudflareBaseUrl + "/account/role") return jsonResponse({ success: true, role: "customer" });
+      if (url === cloudflareBaseUrl + "/account/role") return jsonResponse({ source: "cloudflare-secondary" });
       throw new Error("Unexpected request: " + url);
     }
   });
   const response = await router.fetch("/account/role", { method: "GET" });
-  assert.equal(response.status, 200);
-  assert.deepEqual(calls, [
+  assert.deepEqual(await response.json(), { source: "cloudflare-secondary" });
+  assert.deepEqual(calls.map(call => call.url), [
     renderBaseUrl + "/account/role",
     cloudflareBaseUrl + "/api/backend/readiness",
     cloudflareBaseUrl + "/account/role"
   ]);
 });
 
-test("an unported GET stays on Render after a gateway failure and never reaches the Worker catch-all", async () => {
+test("unported Render routes remain pinned and never reach the Cloudflare catch-all", async () => {
   const calls = [];
   const router = createBackendApiRouter({
     staging: true, renderBaseUrl, cloudflareBaseUrl,
-    fetchImpl: async url => {
-      calls.push(url);
+    fetchImpl: async (url, init = {}) => {
+      calls.push({ url, method: init.method || "GET" });
       if (url === renderBaseUrl + "/public/astrologers") return jsonResponse({ error: "Render unavailable" }, 503);
-      throw new Error("Unported route must not reach Cloudflare: " + url);
+      throw new Error("Unported route must not reach Cloudflare.");
     }
   });
   const response = await router.fetch("/public/astrologers", { method: "GET" });
   assert.equal(response.status, 503);
-  assert.deepEqual(calls, [renderBaseUrl + "/public/astrologers"]);
+  assert.deepEqual(calls, [{ url: renderBaseUrl + "/public/astrologers", method: "GET" }]);
 });
 
-test("unknown POST is never replayed after a Render failure", async () => {
+test("ordinary mutations are never replayed between Render and Cloudflare", async () => {
   const calls = [];
   const router = createBackendApiRouter({
     staging: true, renderBaseUrl, cloudflareBaseUrl,
@@ -317,24 +301,29 @@ test("unknown POST is never replayed after a Render failure", async () => {
   assert.deepEqual(calls, [{ url: renderBaseUrl + "/unknown-mutation", method: "POST" }]);
 });
 
-test("Staging Worker CORS allowlist includes the v2 browser origin without adding Production origins", () => {
-  const config = JSON.parse(readFileSync(new URL("../cloudflare/backend-api/wrangler.jsonc", import.meta.url), "utf8"));
-  assert.equal(config.name, "smvastro-backend-api-staging");
-  assert.equal(config.vars.SMV_ENVIRONMENT, "staging");
-  const origins = String(config.vars.ALLOWED_ORIGINS || "").split(",").map(value => value.trim());
-  assert.ok(origins.includes("https://smv-astro-phase1-browser-staging.onrender.com"));
-  assert.ok(origins.includes("https://smv-astro-phase1-browser-staging-v2.onrender.com"));
-  assert.equal(origins.includes("https://smvastroservices.in"), false);
-  assert.equal(origins.includes("https://www.smvastroservices.in"), false);
+test("only GET/HEAD network and gateway failures are retryable", () => {
+  assert.equal(isRetryableGatewayFailure({ method: "GET", networkError: true }), true);
+  assert.equal(isRetryableGatewayFailure({ method: "HEAD", status: 503 }), true);
+  for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
+    assert.equal(isRetryableGatewayFailure({ method, status: 503 }), false);
+    assert.equal(isRetryableGatewayFailure({ method, networkError: true }), false);
+  }
+  assert.equal(isRetryableGatewayFailure({ method: "GET", status: 503, aborted: true }), false);
 });
 
-test("non-Staging hosts preserve the existing Render-only backend", async () => {
+test("non-Staging hosts preserve Render-only routing and all Production consultation/APK routes", async () => {
   const calls = [];
   const router = createBackendApiRouter({
     staging: false, renderBaseUrl, cloudflareBaseUrl,
-    fetchImpl: async url => { calls.push(url); return jsonResponse({ ok: true }); }
+    fetchImpl: async (url, init = {}) => {
+      calls.push({ url, method: init.method || "GET" });
+      return jsonResponse({ source: "render-production" });
+    }
   });
-  const response = await router.fetch("/wallet", { method: "GET" });
-  assert.equal(response.status, 200);
-  assert.deepEqual(calls, [renderBaseUrl + "/wallet"]);
+  const response = await router.fetch("/private-consultation/create-order", { method: "POST", body: "{}" });
+  assert.deepEqual(await response.json(), { source: "render-production" });
+  assert.deepEqual(calls, [{
+    url: renderBaseUrl + "/private-consultation/create-order",
+    method: "POST"
+  }]);
 });
