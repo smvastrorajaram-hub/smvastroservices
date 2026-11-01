@@ -34,6 +34,7 @@ import { registerLegacyDashboardReadRoutes } from './legacy-dashboard-read-route
 import { registerLegacyQuizReadRoutes } from './legacy-quiz-read-routes.mjs';
 import { registerLegacyBusinessRoutes } from './legacy-business-routes.mjs';
 import { registerAdminAstrologerProfileRoutes } from './admin-astrologer-profile-routes.mjs';
+import { registerLegacyQuizWriteRoutes } from './legacy-quiz-write-routes.mjs';
 
 const app = express();
 const verifyFirebaseIdToken = createFirebaseIdTokenVerifier();
@@ -304,6 +305,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     registerLegacyQuizReadRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerLegacyBusinessRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerAdminAstrologerProfileRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    registerLegacyQuizWriteRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
   }
   const walletSchemaReady = async () => {
     try {
