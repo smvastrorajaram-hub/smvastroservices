@@ -26,6 +26,7 @@ import { createD1WithdrawalService } from '../../../shared/backend-platform/d1-l
 import { registerD1LiveSessionRoutes } from './live-session-routes.mjs';
 import { createRazorpayRestClient } from '../../../shared/backend-platform/razorpay-rest-adapter.mjs';
 import { isLegacyBackendPath, LEGACY_BACKEND_ROUTE_INVENTORY } from '../../../shared/backend-platform/legacy-backend-route-inventory.mjs';
+import { readBackendProviderReadiness, readD1SchemaReadiness } from '../../../shared/backend-platform/backend-readiness-state.mjs';
 
 const app = express();
 const verifyFirebaseIdToken = createFirebaseIdTokenVerifier();
@@ -280,6 +281,37 @@ async function checkBackendProviderConnectivity() {
   })();
   try { return await connectivityProbeInFlight; }
   finally { connectivityProbeInFlight = null; }
+}
+
+
+async function readIdentityAuthorizationReadiness() {
+  const state = d1IdentityAuthorizationService
+    ? await d1IdentityAuthorizationService.readiness()
+    : {
+        enabled: identityProfileD1AuthorizationOpen,
+        ready: false,
+        reason: identityProfileD1AuthorizationOpen ? 'identity_runtime_unavailable' : 'disabled',
+        schemaReady: false,
+        inventoryComplete: false,
+        reconciliationComplete: false,
+        sourceQuiesced: false
+      };
+  d1IdentityAuthorizationReady = state.ready === true;
+  return state;
+}
+
+async function readSharedBackendReadiness() {
+  const [providerState, d1State] = await Promise.all([
+    readBackendProviderReadiness({
+      providerProbe: checkBackendProviderConnectivity,
+      identityProbe: readIdentityAuthorizationReadiness
+    }),
+    readD1SchemaReadiness(env.DB, String(env.FIREBASE_PROJECT_ID || 'smv-astro-staging'))
+  ]);
+  walletDomainSchemaReady = d1State.sharedDomainSchemaReady;
+  walletRechargeSchemaReady = d1State.walletRechargeSchemaReady;
+  liveSessionSchemaReady = d1State.liveSessionSchemaReady;
+  return { ...providerState, d1: d1State };
 }
 
 function walletFirebaseServiceAccount() {
@@ -590,7 +622,7 @@ app.get('/healthz', async (_req, res) => {
 });
 
 app.get('/api/backend/readiness', async (_req, res) => {
-  const providerConnectivity = await checkBackendProviderConnectivity();
+  const sharedReadiness = await readSharedBackendReadiness();
   if (!env.DB || typeof env.DB.prepare !== 'function') {
     return res.status(503).set(JSON_HEADERS).json({
       ok: false,
@@ -617,24 +649,30 @@ app.get('/api/backend/readiness', async (_req, res) => {
     }
     const walletReadEnabled = walletReadRoutesRegistered &&
       walletReadRouteGateOpen && walletDomainSchemaReady;
-    const identityGate = d1IdentityAuthorizationService
-      ? await d1IdentityAuthorizationService.readiness()
-      : { enabled: identityProfileD1AuthorizationOpen, ready: false,
-          reason: identityProfileD1AuthorizationOpen ? 'identity_runtime_unavailable' : 'disabled' };
-    d1IdentityAuthorizationReady = identityGate.ready === true;
+    const identityGate = {
+      enabled: identityProfileD1AuthorizationOpen,
+      ready: sharedReadiness.identityProfileD1AuthorizationReady,
+      reason: sharedReadiness.identityProfileD1AuthorizationReason
+    };
     return res.status(ready ? 200 : 503).set(JSON_HEADERS).json({
       ok: ready,
       ready,
       schemaVersion: row?.schema_version || null,
       sharedDomainSchemaVersion: domainSchemaVersion,
+      d1SchemaVersions: sharedReadiness.d1.schemaVersions,
+      walletRechargeSchemaReady: sharedReadiness.d1.walletRechargeSchemaReady,
+      liveSessionSchemaReady: sharedReadiness.d1.liveSessionSchemaReady,
+      identityProfileSchemaReady: sharedReadiness.d1.identityProfileSchemaReady,
+      identityProfileMigrationAttestation: sharedReadiness.d1.identityProfileMigrationAttestation,
       checks: {
         expressRuntime: true, d1Binding: true, walletSchema: ready,
         sharedDomainSchema: walletDomainSchemaReady
       },
       backendActive: String(env.SMV_BACKEND_CLOUDFLARE_ACTIVE || 'false').toLowerCase() === 'true',
-      firebaseConnected: providerConnectivity.firebaseConnected,
-      razorpayConnected: providerConnectivity.razorpayConnected,
-      razorpayProviderConnectionVerified: providerConnectivity.razorpayConnected,
+      firebaseConnected: sharedReadiness.firebaseConnected,
+      firestoreConnected: sharedReadiness.firestoreConnected,
+      razorpayConnected: sharedReadiness.razorpayConnected,
+      razorpayProviderConnectionVerified: sharedReadiness.razorpayProviderConnectionVerified,
       razorpayCredentialsConfigured: !!(razorpayPolicy.enabled && sharedRazorpayClient && razorpayKeyId && razorpayKeySecret),
       razorpayMode: razorpayPolicy.mode,
       legacyRazorpayRoutesRegistered,
@@ -651,6 +689,10 @@ app.get('/api/backend/readiness', async (_req, res) => {
       identityProfileD1AuthorizationEnabled: identityProfileD1AuthorizationOpen,
       identityProfileD1AuthorizationReady: d1IdentityAuthorizationReady,
       identityProfileD1AuthorizationReason: identityGate.reason,
+      identityProfileD1AuthorizationSchemaReady: sharedReadiness.identityProfileD1AuthorizationSchemaReady,
+      identityProfileD1AuthorizationInventoryComplete: sharedReadiness.identityProfileD1AuthorizationInventoryComplete,
+      identityProfileD1AuthorizationReconciliationComplete: sharedReadiness.identityProfileD1AuthorizationReconciliationComplete,
+      identityProfileD1AuthorizationSourceQuiesced: sharedReadiness.identityProfileD1AuthorizationSourceQuiesced,
       walletBusinessRoutesEnabled: false,
       liveCallChatRoutesEnabled: liveSessionRoutesRegistered && liveSessionRoutesOpen && liveSessionSchemaReady
     });
@@ -663,7 +705,8 @@ app.get('/api/backend/readiness', async (_req, res) => {
   }
 });
 
-app.get('/api/backend/migration-status', (_req, res) => {
+app.get('/api/backend/migration-status', async (_req, res) => {
+  const sharedReadiness = await readSharedBackendReadiness();
   return res.set(JSON_HEADERS).json({
     ok: true,
     phase: 'cloudflare-runtime-foundation',
@@ -672,9 +715,10 @@ app.get('/api/backend/migration-status', (_req, res) => {
     firebaseIdTokenVerification: true,
     firebaseUserScopedFirestoreRestAdapter: true,
     firebaseAdminUserManagementConnected: false,
-    firestoreConnected: firebaseConnected,
-    firebaseConnected,
-    razorpayConnected: razorpayProviderConnectionVerified,
+    firestoreConnected: sharedReadiness.firestoreConnected,
+    firebaseConnected: sharedReadiness.firebaseConnected,
+    razorpayConnected: sharedReadiness.razorpayConnected,
+    razorpayProviderConnectionVerified: sharedReadiness.razorpayProviderConnectionVerified,
     legacyRazorpayRoutesRegistered,
     legacyPrivateConsultationRoutesEnabled: String(env.SMV_ENVIRONMENT || '') === 'staging' && String(env.SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED || '').toLowerCase() === 'true',
     walletReadRoutesEnabled: walletReadRoutesRegistered && walletReadRouteGateOpen && walletDomainSchemaReady,
@@ -687,7 +731,17 @@ app.get('/api/backend/migration-status', (_req, res) => {
     identityProfileBackfillToolsEnabled: identityProfileBackfillToolsOpen,
     identityProfileBackfillPreviewOnly,
     identityProfileD1AuthorizationEnabled: identityProfileD1AuthorizationOpen,
-    identityProfileD1AuthorizationReady: d1IdentityAuthorizationReady,
+    identityProfileD1AuthorizationReady: sharedReadiness.identityProfileD1AuthorizationReady,
+    identityProfileD1AuthorizationReason: sharedReadiness.identityProfileD1AuthorizationReason,
+    identityProfileD1AuthorizationSchemaReady: sharedReadiness.identityProfileD1AuthorizationSchemaReady,
+    identityProfileD1AuthorizationInventoryComplete: sharedReadiness.identityProfileD1AuthorizationInventoryComplete,
+    identityProfileD1AuthorizationReconciliationComplete: sharedReadiness.identityProfileD1AuthorizationReconciliationComplete,
+    identityProfileD1AuthorizationSourceQuiesced: sharedReadiness.identityProfileD1AuthorizationSourceQuiesced,
+    d1SchemaVersions: sharedReadiness.d1.schemaVersions,
+    walletRechargeSchemaReady: sharedReadiness.d1.walletRechargeSchemaReady,
+    liveSessionSchemaReady: sharedReadiness.d1.liveSessionSchemaReady,
+    identityProfileSchemaReady: sharedReadiness.d1.identityProfileSchemaReady,
+    identityProfileMigrationAttestation: sharedReadiness.d1.identityProfileMigrationAttestation,
     walletBusinessRoutesEnabled: false,
     callChatRoutesEnabled: liveSessionRoutesRegistered && liveSessionRoutesOpen && liveSessionSchemaReady,
     liveSessionRoutesEnabled: liveSessionRoutesRegistered && liveSessionRoutesOpen && liveSessionSchemaReady,
