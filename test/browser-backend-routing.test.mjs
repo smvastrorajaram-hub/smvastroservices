@@ -35,6 +35,7 @@ for (const path of workerRouteFiles) {
 
 const ready = Object.freeze({
   ready: true,
+  backendActive: true,
   firebaseConnected: true,
   identityProfileBackfillRoutesRegistered: true,
   walletBackfillRoutesRegistered: true,
