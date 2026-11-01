@@ -2266,6 +2266,7 @@ function openPayoutChange(){
 const SMV_CONTENT_COLLECTION="smv_content";
 const SMV_CLOUDINARY_CLOUD_NAME="l6r6c8zi";
 const SMV_CLOUDINARY_UPLOAD_PRESET="smv_astro_media";
+const SMV_CLOUDINARY_ROOT_FOLDER=IS_SMV_PHASE1_STAGING?"smv-astro-staging":"smv-astro";
 const SMV_CLOUDINARY_UPLOAD_URL=`https://api.cloudinary.com/v1_1/${SMV_CLOUDINARY_CLOUD_NAME}/auto/upload`;
 const SMV_MAX_BLOG_IMAGE=10*1024*1024;
 const SMV_MAX_PDF=25*1024*1024;
@@ -2290,7 +2291,7 @@ async function smvUploadFile(file,type,id){
   const form=new FormData();
   form.append("file",file);
   form.append("upload_preset",SMV_CLOUDINARY_UPLOAD_PRESET);
-  form.append("folder",type==="pdf"?"smv-astro/pdfs":type==="video"?"smv-astro/videos":type==="music"?"smv-astro/music":"smv-astro/images");
+  form.append("folder",type==="pdf"?SMV_CLOUDINARY_ROOT_FOLDER+"/pdfs":type==="video"?SMV_CLOUDINARY_ROOT_FOLDER+"/videos":type==="music"?SMV_CLOUDINARY_ROOT_FOLDER+"/music":SMV_CLOUDINARY_ROOT_FOLDER+"/images");
   form.append("context",`smv_id=${id}|original_name=${file.name}`);
   // Use Cloudinary AUTO so one unsigned preset can correctly detect
   // image, PDF/raw, video and audio/music without resource-type mismatch.
@@ -2430,7 +2431,7 @@ async function loadAdminContent(){
 async function smvUploadBlogText(body,id){
   const payload=JSON.stringify({version:1,id,body,updatedAt:new Date().toISOString()});
   const file=new Blob([payload],{type:"application/json"});
-  const form=new FormData();form.append("file",file,`blog-${id}.json`);form.append("upload_preset",SMV_CLOUDINARY_UPLOAD_PRESET);form.append("folder","smv-astro/blogs");form.append("public_id",`blog-${id}-${Date.now()}`);form.append("context",`smv_id=${id}|type=blog_text`);
+  const form=new FormData();form.append("file",file,`blog-${id}.json`);form.append("upload_preset",SMV_CLOUDINARY_UPLOAD_PRESET);form.append("folder",SMV_CLOUDINARY_ROOT_FOLDER+"/blogs");form.append("public_id",`blog-${id}-${Date.now()}`);form.append("context",`smv_id=${id}|type=blog_text`);
   const response=await fetch(SMV_CLOUDINARY_UPLOAD_URL,{method:"POST",body:form});const result=await response.json().catch(()=>({}));
   if(!response.ok||!result.secure_url)throw new Error(result.error?.message||"Cloudinary blog text upload failed. Check the unsigned upload preset and raw-file delivery settings.");
   return {url:result.secure_url,publicId:result.public_id,size:file.size};
