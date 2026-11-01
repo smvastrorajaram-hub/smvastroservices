@@ -58,10 +58,6 @@
       ]
     }
   ],
-  "services": [
-    {
-      "binding": "APK_RELEASE_WORKER",
-      "service": "smv-astro-apk-release-api-staging"
-    }
-  ]
+  // The isolated staging APK Worker is not yet provisioned. Keep the binding absent;
+  // /admin/android-app/upload returns APK_RELEASE_SERVICE_NOT_READY until it exists.
 }
