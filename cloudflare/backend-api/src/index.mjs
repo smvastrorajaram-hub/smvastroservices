@@ -29,6 +29,7 @@ import { isLegacyBackendPath, LEGACY_BACKEND_ROUTE_INVENTORY } from '../../../sh
 import { registerGeoNamesRoutes } from './geonames-location-routes.mjs';
 import { registerPublicLegacyRoutes } from './public-legacy-routes.mjs';
 import { registerRazorpayConnectivityRoute } from './razorpay-connectivity-routes.mjs';
+import { registerLegacyReadRoutes } from './legacy-read-routes.mjs';
 
 const app = express();
 const verifyFirebaseIdToken = createFirebaseIdTokenVerifier();
@@ -294,6 +295,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     }
     registerAdminAccessRoute({ app, identityService: walletIdentityService });
     registerAccountRoleRoute({ app, identityService: walletIdentityService, firestore: firestoreAdmin });
+    registerLegacyReadRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService, androidPackageName: String(env.SMV_ANDROID_PACKAGE || 'in.smvastroservices.smvastro') });
   }
   const walletSchemaReady = async () => {
     try {
