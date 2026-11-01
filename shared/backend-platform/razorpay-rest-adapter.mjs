@@ -182,6 +182,31 @@ export function createRazorpayRestClient({
     return payload;
   }
 
+  async function fetchPaymentRefunds(paymentId, { count = 100, skip = 0 } = {}) {
+    const idValue = cleanId(paymentId, 64);
+    const pageSize = Number(count);
+    const offset = Number(skip);
+    if (!idValue || !Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100 ||
+        !Number.isInteger(offset) || offset < 0 || offset > 9900) {
+      throw Object.assign(new Error('Razorpay payment refund-list details are invalid.'), {
+        code: 'RAZORPAY_REFUND_LIST_INVALID', httpStatus: 400
+      });
+    }
+    const payload = await request(
+      '/payments/' + encodeURIComponent(idValue) + '/refunds?count=' + pageSize + '&skip=' + offset
+    );
+    if (!payload || !Array.isArray(payload.items)) {
+      throw Object.assign(new Error('Razorpay returned an invalid payment refund-list response.'), {
+        code: 'RAZORPAY_RESPONSE_INVALID', httpStatus: 502
+      });
+    }
+    return payload;
+  }
+
+  // Keep the historical Node SDK method name available to shared refund
+  // orchestration while exposing the clearer REST-adapter name as well.
+  const fetchMultipleRefund = fetchPaymentRefunds;
+
   async function fetchRefund(refundId) {
     const idValue = cleanId(refundId, 64);
     if (!idValue) throw Object.assign(new Error('Razorpay refund ID is invalid.'), { code: 'RAZORPAY_REFUND_ID_INVALID', httpStatus: 400 });
@@ -194,7 +219,7 @@ export function createRazorpayRestClient({
     const receiptId = String(receipt || '').trim();
     const key = String(idempotencyKey || '').trim();
     if (!pid || amount === null || !receiptId || receiptId.length > 40 ||
-        !/^[A-Za-z0-9_-]+$/.test(receiptId) || !key || key.length > 180) {
+        !/^[A-Za-z0-9_-]+$/.test(receiptId) || !/^[A-Za-z0-9_-]{10,180}$/.test(key)) {
       throw Object.assign(new Error('Razorpay refund details are invalid.'), { code: 'RAZORPAY_REFUND_INVALID', httpStatus: 400 });
     }
     const payload = await request('/payments/' + encodeURIComponent(pid) + '/refund', {
@@ -208,5 +233,5 @@ export function createRazorpayRestClient({
     return Object.freeze({ id: String(payload.id), paymentId: pid, amount: Number(payload.amount), status: String(payload.status || '') });
   }
 
-  return Object.freeze({ createOrder, findOrderByReceipt, fetchPayment, capturePayment, fetchRefund, refundPayment, verifyPaymentSignature, verifyWebhookSignature });
+  return Object.freeze({ createOrder, findOrderByReceipt, fetchPayment, fetchPaymentRefunds, fetchMultipleRefund, capturePayment, fetchRefund, refundPayment, verifyPaymentSignature, verifyWebhookSignature });
 }
