@@ -83,18 +83,21 @@ test('Admin pricing updates per-minute call/chat and legacy per-question values 
 });
 
 test('Admin pricing rejects unapproved Astrologer and invalid fractional paise',async()=>{
- for(const selected of [
-  {uid:'astro-1',status:'pending'},
-  {uid:'astro-1',status:'approved'}
- ]){
-  const app=harness(),firestore=fixture({
-    docs:{'smv_astrologers/astro-1':{exists:true,id:'astro-1',data:selected}}
-  });
-  registerAdminAstrologerCatalogRoutes({app,firestore,identityService});
-  const res=response();
-  const value=selected.status==='pending'?{callPricePerMinute:15}:{callPricePerMinute:15.123};
-  await app.handlers.get('POST /admin/astrologer-pricing')(request({astrologerId:'astro-1',...value}),res);
-  assert.equal(res.statusCode,400);
-  assert.equal(firestore.writes.length,0);
- }
+ const pendingApp=harness(), pendingStore=fixture({
+   docs:{'smv_astrologers/astro-1':{exists:true,id:'astro-1',data:{uid:'astro-1',status:'pending'}}}
+ });
+ registerAdminAstrologerCatalogRoutes({app:pendingApp,firestore:pendingStore,identityService});
+ const pending=response();
+ await pendingApp.handlers.get('POST /admin/astrologer-pricing')(request({astrologerId:'astro-1',callPricePerMinute:15}),pending);
+ assert.equal(pending.statusCode,409);
+ assert.equal(pendingStore.writes.length,0);
+
+ const invalidApp=harness(), invalidStore=fixture({
+   docs:{'smv_astrologers/astro-1':{exists:true,id:'astro-1',data:{uid:'astro-1',status:'approved'}}}
+ });
+ registerAdminAstrologerCatalogRoutes({app:invalidApp,firestore:invalidStore,identityService});
+ const invalid=response();
+ await invalidApp.handlers.get('POST /admin/astrologer-pricing')(request({astrologerId:'astro-1',callPricePerMinute:15.123}),invalid);
+ assert.equal(invalid.statusCode,400);
+ assert.equal(invalidStore.writes.length,0);
 });
