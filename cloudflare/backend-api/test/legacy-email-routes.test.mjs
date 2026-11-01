@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createResendEmailClient } from '../../shared/backend-platform/resend-email-adapter.mjs';
+import { createResendEmailClient } from '../../../shared/backend-platform/resend-email-adapter.mjs';
 import { registerLegacyEmailRoutes } from '../src/legacy-email-routes.mjs';
 
 function harness(){const handlers=new Map();return{handlers,post(path,handler){handlers.set('POST '+path,handler);}};}
