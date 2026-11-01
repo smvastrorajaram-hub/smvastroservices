@@ -53,7 +53,7 @@ The shared verifier checks RS256 signature, issuer/audience project allowlist, e
 
 Before privileged routes are enabled, run tests with dedicated staging Firebase accounts against actual Security Rules and profile/admin allowlist records; define and test the policy for disabled/revoked users. Do not test using Production accounts or mutate Production rules/data.
 
-Positive authorization checks in the current source: a mutable `smv_users.role='admin'` alone does not grant Admin; Admin uses a verified admin claim or server-controlled `smv_admins` document, and astrologer approval requires both an active user profile and an approved astrologer profile. See [`firebase-authorization.mjs`](https://github.com/smvastrorajaram-hub/smvastroservices/blob/integration/cloudflare-backend-staging-stack-20261031/shared/backend-platform/firebase-authorization.mjs) and [`firebase.rules`](https://github.com/smvastrorajaram-hub/smvastroservices/blob/integration/cloudflare-backend-staging-stack-20261031/firestore.rules).
+Positive authorization checks in the current source: a mutable `smv_users.role='admin'` alone does not grant Admin; Admin uses a verified admin claim or server-controlled `smv_admins` document, and astrologer approval requires both an active user profile and an approved astrologer profile. See [`firebase-authorization.mjs`](https://github.com/smvastrorajaram-hub/smvastroservices/blob/integration/cloudflare-backend-staging-stack-20261031/shared/backend-platform/firebase-authorization.mjs) and [`firestore.rules`](https://github.com/smvastrorajaram-hub/smvastroservices/blob/integration/cloudflare-backend-staging-stack-20261031/firestore.rules).
 
 ### P1 — Wallet ledger invariants are present, but current test evidence is mostly mocked
 
