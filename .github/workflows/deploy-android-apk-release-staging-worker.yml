@@ -62,7 +62,7 @@ jobs:
       STAGING_ADMIN_UIDS: ${{ vars.SMV_APK_STAGING_ADMIN_UIDS }}
       STAGING_ADMIN_EMAILS: ${{ secrets.SMV_APK_STAGING_ADMIN_EMAILS }}
     steps:
-      - name: Checkout selected Staging integration branch
+      - name: Checkout main branch
         uses: actions/checkout@v4
         with:
           ref: main
