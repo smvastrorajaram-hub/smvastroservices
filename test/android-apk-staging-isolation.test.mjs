@@ -29,8 +29,10 @@ test('Staging APK Worker uses isolated Firebase, D1, R2 and origin with uploads 
 
   assert.match(html, /SMV_APK_RELEASE_STAGING_API_URL[^;]*smv-astro-apk-release-api-staging\.astroservices\.workers\.dev/);
   assert.match(html, /SMV_APK_RELEASE_API_URL[^;]*smv-astro-apk-release-api\.astroservices\.workers\.dev/);
-  assert.match(adminClient, /location\.hostname==='smv-astro-phase1-browser-staging-v2\.onrender\.com'/);
-  assert.match(adminClient, /window\.SMV_APK_RELEASE_STAGING_API_URL/);
+  assert.match(adminClient, /function smvAndroidApkIsStaging\(\)/);
+  assert.match(adminClient, /if\(smvAndroidApkIsStaging\(\)\)throw new Error\('Android APK download, release and test flows are disabled on Staging\.'/);
+  assert.doesNotMatch(adminClient, /window\.SMV_APK_RELEASE_STAGING_API_URL/);
+  assert.doesNotMatch(adminClient, /adminAndroidAppManagementCard/);
   assert.match(publicClient, /location\.hostname === 'smv-astro-phase1-browser-staging-v2\.onrender\.com'/);
   assert.match(publicClient, /window\.SMV_APK_RELEASE_STAGING_API_URL/);
   assert.match(publicClient, /location\.hostname\.includes\('phase1-browser'\)/);
