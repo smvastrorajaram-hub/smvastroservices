@@ -507,99 +507,84 @@ test('Worker registers parity-gap routes at initialization, outside the authoriz
 
 
 function liveBindings() {
-  const coordinator = {
-    idFromName(name) { return name; },
+  const calls = { coordinator: [], hub: [] };
+  const makeBinding = (name, bucket) => ({
+    idFromName(id) { return id; },
     get(id) {
       return {
         async fetch(url, init = {}) {
-          const payload = init.body ? JSON.parse(init.body) : {};
-          return Response.json({ ok: true, id, path: new URL(url).pathname, payload });
+          bucket.push({ id, url, body: init.body ? JSON.parse(init.body) : null });
+          return Response.json({ ok: true, id, path: new URL(url).pathname });
         }
       };
     }
+  });
+  return {
+    calls,
+    LIVE_SESSION_COORDINATOR: makeBinding('coordinator', calls.coordinator),
+    LIVE_USER_EVENT_HUB: makeBinding('hub', calls.hub)
   };
-  const hub = {
-    idFromName(name) { return name; },
-    get(id) {
-      return {
-        async fetch(url, init = {}) {
-          const payload = init.body ? JSON.parse(init.body) : {};
-          return Response.json({ ok: true, id, path: new URL(url).pathname, payload });
-        }
-      };
-    }
+}
+
+function futureLocalAppointment(offsetMs = -60_000) {
+  const local = new Date(Date.now() + offsetMs + 330 * 60_000);
+  const pad = value => String(value).padStart(2, '0');
+  return {
+    preferredDate: [local.getUTCFullYear(), pad(local.getUTCMonth() + 1), pad(local.getUTCDate())].join('-'),
+    preferredTime: pad(local.getUTCHours()) + ':' + pad(local.getUTCMinutes())
   };
-  return { LIVE_SESSION_COORDINATOR: coordinator, LIVE_USER_EVENT_HUB: hub };
 }
 
 test('Scheduled Call/Chat start creates, accepts, schedules and links a session without changing the wallet directly', async () => {
-  const booked = new Date(Date.now() - 60_000 + 330 * 60_000);
-  const two = value => String(value).padStart(2, '0');
-  const preferredDate = [
-    booked.getUTCFullYear(), two(booked.getUTCMonth() + 1), two(booked.getUTCDate())
-  ].join('-');
-  const preferredTime = two(booked.getUTCHours()) + ':' + two(booked.getUTCMinutes());
+  const appointmentTime = futureLocalAppointment();
   const session = {
     id: 'scheduled-session-1',
     customerUid: 'customer-1',
     astrologerUid: 'astro-1',
-    preparationUntil: Date.now() + 180_000
+    preparationUntil: new Date(Date.now() + 180_000).toISOString()
   };
-  const calls = { create: [], accept: [], end: [], list: [], coordinator: [], hub: [] };
-  const bindings = liveBindings();
-  const coordinator = bindings.LIVE_SESSION_COORDINATOR;
-  bindings.LIVE_SESSION_COORDINATOR = {
-    ...coordinator,
-    get(id) {
-      const stub = coordinator.get(id);
-      return {
-        async fetch(url, init) {
-          calls.coordinator.push({ id, url, body: JSON.parse(init.body) });
-          return stub.fetch(url, init);
-        }
-      };
-    }
-  };
-  const hub = bindings.LIVE_USER_EVENT_HUB;
-  bindings.LIVE_USER_EVENT_HUB = {
-    ...hub,
-    get(id) {
-      const stub = hub.get(id);
-      return {
-        async fetch(url, init) {
-          calls.hub.push({ id, url, body: JSON.parse(init.body) });
-          return stub.fetch(url, init);
-        }
-      };
-    }
-  };
-
-  const f = fixture({
-    identity: { uid: 'astro-1', role: 'astrologer', isAdmin: false },
+  const calls = { create: [], accept: [], end: [], list: [] };
+  const firestore = fixture({
     docs: {
       'smv_appointments/booking-1': { exists: true, data: {
         astrologerUid: 'astro-1', customerUid: 'customer-1',
         bookingKind: 'scheduled_call_request', bookingStatus: 'accepted',
-        preferredDate, preferredTime, scheduledMinutes: 7,
-        name: 'Test Customer'
+        ...appointmentTime, scheduledMinutes: 7, name: 'Test Customer'
       } },
       'smv_astrologers/astro-1': { exists: true, data: { availabilityStatus: 'online' } }
-    },
-    env: { SMV_ENVIRONMENT: 'staging', SMV_LIVE_SESSION_ROUTES_ENABLED: 'true', ...bindings },
-    liveService: {
-      async getPricing() { return { maxConcurrentSessions: 1 }; },
-      async listSessions(uid, role) { calls.list.push([uid, role]); return []; },
-      async createRequest(input) {
-        calls.create.push(input);
-        return { kind: 'session', session };
-      },
-      async acceptSession(input) { calls.accept.push(input); return { session: { ...session, state: 'preparing' } }; },
-      async endSession(input) { calls.end.push(input); return { success: true }; }
-    },
-    isLiveReady: async () => true
+    }
   });
-
-  const res = await invoke(f, 'POST', '/live/scheduled-appointments/:id/start', { params: { id: 'booking-1' } });
+  const bindings = liveBindings();
+  const liveService = {
+    async getPricing() { return { maxConcurrentSessions: 1 }; },
+    async listSessions(input) {
+      calls.list.push(input);
+      return [];
+    },
+    async createRequest(input) {
+      calls.create.push(input);
+      return { kind: 'session', session };
+    },
+    async acceptSession(input) {
+      calls.accept.push(input);
+      return { session: { ...session, state: 'preparing' } };
+    },
+    async endSession(input) { calls.end.push(input); return { success: true }; }
+  };
+  const { app } = register({
+    firestore,
+    liveService,
+    isLiveReady: async () => true,
+    env: {
+      SMV_ENVIRONMENT: 'staging',
+      SMV_LIVE_SESSION_ROUTES_ENABLED: 'true',
+      ...bindings
+    }
+  });
+  const res = response();
+  await app.handlers.get('POST /live/scheduled-appointments/:id/start')(
+    request({ token: 'astro', params: { id: 'booking-1' } }), res
+  );
   assert.equal(res.statusCode, 200, JSON.stringify(res.body));
   assert.equal(res.body.kind, 'session');
   assert.equal(res.body.session.state, 'preparing');
@@ -607,46 +592,55 @@ test('Scheduled Call/Chat start creates, accepts, schedules and links a session 
   assert.equal(calls.create[0].requestId, 'smv-scheduled-booking-1');
   assert.equal(calls.create[0].mode, 'call');
   assert.equal(calls.create[0].minutes, 7);
-  assert.deepEqual(calls.list, [['astro-1', 'astrologer']]);
+  assert.deepEqual(calls.list, [{ uid: 'astro-1', role: 'astrologer' }]);
   assert.deepEqual(calls.accept, [{ sessionId: 'scheduled-session-1', astrologerUid: 'astro-1' }]);
-  assert.equal(calls.coordinator.length, 1);
-  assert.equal(calls.coordinator[0].body.state, 'preparing');
-  assert.equal(calls.hub.length, 2);
-  const appointmentWrite = f.writes.find(row => row.path === 'smv_appointments/booking-1');
+  assert.equal(bindings.calls.coordinator.length, 1);
+  assert.equal(bindings.calls.coordinator[0].body.state, 'preparing');
+  assert.equal(bindings.calls.hub.length, 2);
+  const appointmentWrite = firestore.calls.writes.find(row => row.path === 'smv_appointments/booking-1');
   assert.equal(appointmentWrite.data.bookingStatus, 'in_progress');
   assert.equal(appointmentWrite.data.liveSessionId, 'scheduled-session-1');
   assert.equal(calls.end.length, 0);
 });
 
-test('Scheduled Call/Chat retry returns the existing session using the live service legacy listSessions signature', async () => {
+test('Scheduled Call/Chat retry returns the existing session with the D1 Live object contract and no duplicate reservation', async () => {
   const existingSession = { id: 'existing-session-1', state: 'preparing', customerUid: 'customer-1', astrologerUid: 'astro-1' };
   const calls = [];
-  const bindings = liveBindings();
-  const f = fixture({
-    identity: { uid: 'astro-1', role: 'astrologer', isAdmin: false },
+  const firestore = fixture({
     docs: {
       'smv_appointments/booking-1': { exists: true, data: {
         astrologerUid: 'astro-1', customerUid: 'customer-1',
         bookingKind: 'scheduled_chat_request', bookingStatus: 'in_progress',
         liveSessionId: 'existing-session-1'
       } }
-    },
-    env: { SMV_ENVIRONMENT: 'staging', SMV_LIVE_SESSION_ROUTES_ENABLED: 'true', ...bindings },
-    liveService: {
-      async createRequest() { throw new Error('retry must not create another reservation'); },
-      async acceptSession() { throw new Error('retry must not accept twice'); },
-      async endSession() {},
-      async listSessions(uid, role) {
-        calls.push([uid, role]);
-        return [existingSession];
-      }
-    },
-    isLiveReady: async () => true
+    }
   });
-  const res = await invoke(f, 'POST', '/live/scheduled-appointments/:id/start', { params: { id: 'booking-1' } });
+  const liveService = {
+    async createRequest() { throw new Error('retry must not create another reservation'); },
+    async acceptSession() { throw new Error('retry must not accept twice'); },
+    async endSession() {},
+    async listSessions(input) {
+      calls.push(input);
+      return [existingSession];
+    }
+  };
+  const { app } = register({
+    firestore,
+    liveService,
+    isLiveReady: async () => true,
+    env: {
+      SMV_ENVIRONMENT: 'staging',
+      SMV_LIVE_SESSION_ROUTES_ENABLED: 'true',
+      ...liveBindings()
+    }
+  });
+  const res = response();
+  await app.handlers.get('POST /live/scheduled-appointments/:id/start')(
+    request({ token: 'astro', params: { id: 'booking-1' } }), res
+  );
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.alreadyProcessed, true);
   assert.deepEqual(res.body.session, existingSession);
-  assert.deepEqual(calls, [['astro-1', 'astrologer']]);
-  assert.equal(f.writes.length, 0);
+  assert.deepEqual(calls, [{ uid: 'astro-1', role: 'astrologer' }]);
+  assert.equal(firestore.calls.writes.length, 0);
 });
