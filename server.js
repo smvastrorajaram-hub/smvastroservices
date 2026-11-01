@@ -21,6 +21,13 @@ app.use((req,res,next)=>{
 });
 const PORT = process.env.PORT || 10000;
 const IS_STAGING_DEPLOYMENT = String(process.env.NODE_ENV || "").trim().toLowerCase() === "staging" || String(process.env.FIREBASE_PROJECT_ID || "").trim() === "smv-astro-staging";
+const {isStagingLegacyRouteDisabled}=require('./shared/backend-platform/staging-legacy-route-guard.cjs');
+app.use((req,res,next)=>{
+ if(IS_STAGING_DEPLOYMENT&&isStagingLegacyRouteDisabled(req.path)){
+  return res.status(410).set('Cache-Control','no-store').json({success:false,code:'STAGING_FEATURE_DISABLED',error:'Legacy question, private consultation and Android APK flows are disabled on Staging.'});
+ }
+ next();
+});
 const ADMIN_UID = String(process.env.ADMIN_UID || (IS_STAGING_DEPLOYMENT ? "" : "TwjeEIFS3Zcf1SxboLZoujm91Ky2")).trim();
 const ADMIN_UIDS = new Set([ADMIN_UID, ...String(process.env.ADMIN_UIDS || '').split(',')].map(value => String(value || '').trim()).filter(Boolean));
 const ADMIN_AUTH_EMAILS = new Set(String(process.env.ADMIN_AUTH_EMAILS || '').split(',').map(value => String(value || '').trim().toLowerCase()).filter(Boolean));
