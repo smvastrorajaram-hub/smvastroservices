@@ -33,6 +33,7 @@ const ROUTE_FILES = [
   'cloudflare/backend-api/src/legacy-question-action-routes.mjs',
   'cloudflare/backend-api/src/legacy-appointment-read-response-routes.mjs',
   'cloudflare/backend-api/src/legacy-email-routes.mjs',
+  'cloudflare/backend-api/src/astrologer-submit-answer-route.mjs',
   'cloudflare/backend-api/src/customer-answer-credit-route.mjs'
 ];
 const BASELINE = Object.freeze({
@@ -40,9 +41,9 @@ const BASELINE = Object.freeze({
   getRoutes: 55,
   postRoutes: 94,
   uniquePairs: 149,
-  sourceHandlerPairs: 123,
-  exactLegacyMatches: 110,
-  missingLegacyHandlers: 39
+  sourceHandlerPairs: 124,
+  exactLegacyMatches: 111,
+  missingLegacyHandlers: 38
 });
 const PRODUCTION_DATABASE_ID = 'b1d5684c-3fcd-48fe-9571-ea41fc605c7d';
 
