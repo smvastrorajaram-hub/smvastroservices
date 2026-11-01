@@ -235,6 +235,52 @@ let walletIdentityService = null;
 let firebaseIdentityService = null;
 let d1IdentityAuthorizationService = null;
 let d1IdentityAuthorizationReady = false;
+let firebaseFirestoreConnectivityProbe = null;
+let razorpayConnectivityProbe = null;
+let firebaseConnected = false;
+let razorpayProviderConnectionVerified = false;
+let connectivityProbeExpiresAt = 0;
+let connectivityProbeInFlight = null;
+
+async function checkBackendProviderConnectivity() {
+  if (Date.now() < connectivityProbeExpiresAt) {
+    return { firebaseConnected, razorpayConnected: razorpayProviderConnectionVerified };
+  }
+  if (connectivityProbeInFlight) return connectivityProbeInFlight;
+  connectivityProbeInFlight = (async () => {
+    const [firebaseResult, razorpayResult] = await Promise.all([
+      (async () => {
+        if (typeof firebaseFirestoreConnectivityProbe !== 'function') return false;
+        try {
+          const [documentResult, keysResponse] = await Promise.all([
+            firebaseFirestoreConnectivityProbe(),
+            fetch('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com', {
+              method: 'GET', headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(8000)
+            })
+          ]);
+          if (!keysResponse.ok) return false;
+          const keys = await keysResponse.json();
+          return !!documentResult && typeof documentResult.exists === 'boolean' &&
+            Array.isArray(keys?.keys) && keys.keys.length > 0;
+        } catch (_error) { return false; }
+      })(),
+      (async () => {
+        if (typeof razorpayConnectivityProbe !== 'function' || razorpayPolicy.mode !== 'test') return false;
+        try {
+          // Read-only Razorpay Test Mode order lookup; it never creates or captures a payment.
+          await razorpayConnectivityProbe();
+          return true;
+        } catch (_error) { return false; }
+      })()
+    ]);
+    firebaseConnected = firebaseResult === true;
+    razorpayProviderConnectionVerified = razorpayResult === true;
+    connectivityProbeExpiresAt = Date.now() + 30000;
+    return { firebaseConnected, razorpayConnected: razorpayProviderConnectionVerified };
+  })();
+  try { return await connectivityProbeInFlight; }
+  finally { connectivityProbeInFlight = null; }
+}
 
 function walletFirebaseServiceAccount() {
   const raw = String(env.FIREBASE_SERVICE_ACCOUNT_JSON || '').trim();
@@ -275,6 +321,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       allowedProjectIds: [projectId],
       credentials
     });
+    firebaseFirestoreConnectivityProbe = () => firestoreAdmin.getDocument('smv_settings/question');
     firebaseIdentityService = createFirebaseIdentityService({
       verifyIdToken: verifyFirebaseIdToken,
       firestore: firestoreAdmin,
@@ -286,6 +333,9 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     sharedWalletAdapter = createD1WalletAdapter({ db: env.DB });
     if (razorpayPolicy.enabled) {
       sharedRazorpayClient = createRazorpayRestClient({ keyId: razorpayKeyId, keySecret: razorpayKeySecret });
+      razorpayConnectivityProbe = () => sharedRazorpayClient.findOrderByReceipt(
+        'smv_cf_staging_probe', { amountPaise: 100, currency: 'INR' }
+      );
     }
     registerAdminAccessRoute({ app, identityService: walletIdentityService });
     registerAccountRoleRoute({ app, identityService: walletIdentityService, firestore: firestoreAdmin });
@@ -427,7 +477,10 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     liveSessionRoutesRegistered = true;
   }
 
-  if (razorpayPolicy.enabled && sharedRazorpayClient && firestoreAdmin && walletIdentityService) {
+  const legacyQuestionRoutesOpen = String(env.SMV_ENVIRONMENT || '') !== 'staging' ||
+    String(env.SMV_NEW_QUESTION_PAYMENTS_ENABLED || '').toLowerCase() === 'true' ||
+    String(env.SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED || '').toLowerCase() === 'true';
+  if (razorpayPolicy.enabled && sharedRazorpayClient && firestoreAdmin && walletIdentityService && legacyQuestionRoutesOpen) {
     registerLegacyRazorpayRoutes({
       app,
       identityService: walletIdentityService,
@@ -537,6 +590,7 @@ app.get('/healthz', async (_req, res) => {
 });
 
 app.get('/api/backend/readiness', async (_req, res) => {
+  const providerConnectivity = await checkBackendProviderConnectivity();
   if (!env.DB || typeof env.DB.prepare !== 'function') {
     return res.status(503).set(JSON_HEADERS).json({
       ok: false,
@@ -577,8 +631,12 @@ app.get('/api/backend/readiness', async (_req, res) => {
         expressRuntime: true, d1Binding: true, walletSchema: ready,
         sharedDomainSchema: walletDomainSchemaReady
       },
-      firebaseConnected: false,
-      razorpayConnected: false,
+      backendActive: String(env.SMV_BACKEND_CLOUDFLARE_ACTIVE || 'false').toLowerCase() === 'true',
+      firebaseConnected: providerConnectivity.firebaseConnected,
+      razorpayConnected: providerConnectivity.razorpayConnected,
+      razorpayProviderConnectionVerified: providerConnectivity.razorpayConnected,
+      razorpayCredentialsConfigured: !!(razorpayPolicy.enabled && sharedRazorpayClient && razorpayKeyId && razorpayKeySecret),
+      razorpayMode: razorpayPolicy.mode,
       legacyRazorpayRoutesRegistered,
       legacyPrivateConsultationRoutesEnabled: String(env.SMV_ENVIRONMENT || '') === 'staging' && String(env.SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED || '').toLowerCase() === 'true',
       walletReadRoutesEnabled: walletReadEnabled,
@@ -614,8 +672,9 @@ app.get('/api/backend/migration-status', (_req, res) => {
     firebaseIdTokenVerification: true,
     firebaseUserScopedFirestoreRestAdapter: true,
     firebaseAdminUserManagementConnected: false,
-    firestoreConnected: false,
-    razorpayConnected: false,
+    firestoreConnected: firebaseConnected,
+    firebaseConnected,
+    razorpayConnected: razorpayProviderConnectionVerified,
     legacyRazorpayRoutesRegistered,
     legacyPrivateConsultationRoutesEnabled: String(env.SMV_ENVIRONMENT || '') === 'staging' && String(env.SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED || '').toLowerCase() === 'true',
     walletReadRoutesEnabled: walletReadRoutesRegistered && walletReadRouteGateOpen && walletDomainSchemaReady,
