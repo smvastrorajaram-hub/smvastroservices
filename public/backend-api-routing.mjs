@@ -93,6 +93,7 @@ function isRetainedOutsideCloudflare(pathname) {
 }
 
 function routeFamily(pathname) {
+  if (pathname === "/public/push-config") return "publicConfig";
   if (/^\/admin\/wallet\/backfill(?:\/|$)/.test(pathname) || pathname === "/admin/wallet/transactions") {
     return "walletBackfill";
   }
@@ -151,40 +152,39 @@ export function isRetryableRenderReadFailure({ method = "GET", status = null, ne
 }
 
 export function isCloudflareRouteFamilyReady(family, readiness) {
-  if (!readiness || readiness.ready !== true || readiness.firebaseConnected !== true) return false;
-  const coreRoutesReady =
+  if (!readiness || readiness.ready !== true) return false;
+  const firebaseReady = readiness.firebaseConnected === true;
+  const coreRoutesReady = firebaseReady &&
     readiness.identityProfileBackfillRoutesRegistered === true &&
     readiness.walletBackfillRoutesRegistered === true;
+  const razorpayReady = readiness.razorpayCredentialsConfigured === true &&
+    readiness.razorpayProviderConnectionVerified === true &&
+    readiness.razorpayMode === "test";
 
   switch (family) {
+    case "publicConfig":
+      return true;
     case "legacyCore":
     case "ordinary":
     case "booking":
     case "liveNotifications":
       return coreRoutesReady;
     case "walletBackfill":
-      return readiness.walletBackfillRoutesRegistered === true &&
+      return firebaseReady &&
+        readiness.walletBackfillRoutesRegistered === true &&
         readiness.walletBackfillToolsEnabled === true;
     case "walletRead":
-      return readiness.walletReadRoutesEnabled === true;
+      return firebaseReady && readiness.walletReadRoutesEnabled === true;
     case "walletOffers":
-      return readiness.walletOfferRoutesEnabled === true;
+      return firebaseReady && readiness.walletOfferRoutesEnabled === true;
     case "walletRecharge":
-      return readiness.walletRechargeRoutesEnabled === true &&
-        readiness.razorpayCredentialsConfigured === true &&
-        readiness.razorpayProviderConnectionVerified === true &&
-        readiness.razorpayMode === "test";
+      return firebaseReady && readiness.walletRechargeRoutesEnabled === true && razorpayReady;
     case "legacyPayments":
-      return readiness.legacyRazorpayRoutesRegistered === true &&
-        readiness.razorpayCredentialsConfigured === true &&
-        readiness.razorpayProviderConnectionVerified === true &&
-        readiness.razorpayMode === "test";
+      return firebaseReady && readiness.legacyRazorpayRoutesRegistered === true && razorpayReady;
     case "razorpayProbe":
-      return readiness.razorpayCredentialsConfigured === true &&
-        readiness.razorpayProviderConnectionVerified === true &&
-        readiness.razorpayMode === "test";
+      return razorpayReady;
     case "live":
-      return readiness.liveCallChatRoutesEnabled === true;
+      return firebaseReady && readiness.liveCallChatRoutesEnabled === true;
     default:
       return false;
   }
