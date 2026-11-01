@@ -1,0 +1,43 @@
+name: Staging v2 browser backend routing tests
+
+on:
+  pull_request:
+    branches:
+      - feat/staging-browser-v2-host-routing-20261101
+    paths:
+      - 'public/backend-api-routing.mjs'
+      - 'public/smvastro.mjs'
+      - 'test/browser-backend-routing.test.mjs'
+      - 'package.json'
+      - '.github/workflows/staging-v2-browser-routing-tests.yml'
+  push:
+    branches:
+      - feat/staging-v2-cloudflare-api-gateway-20261101
+    paths:
+      - 'public/backend-api-routing.mjs'
+      - 'public/smvastro.mjs'
+      - 'test/browser-backend-routing.test.mjs'
+      - 'package.json'
+      - '.github/workflows/staging-v2-browser-routing-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  route-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout Staging v2 gateway source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check routing module and test syntax
+        run: |
+          node --check public/backend-api-routing.mjs
+          node --check test/browser-backend-routing.test.mjs
+      - name: Run isolated Staging browser backend routing contract tests
+        run: npm run test:browser-backend-routing
