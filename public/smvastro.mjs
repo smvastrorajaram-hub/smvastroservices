@@ -1,5 +1,6 @@
 import { ensureRazorpayCheckout } from './razorpay-checkout-loader.mjs?v=20261026-payment-reliability-v1';
 import './chat-moderation.js?v=20261030-chat-moderation-v1';
+import { createBackendApiRouter } from './backend-api-routing.mjs?v=20261101-staging-v2-cloudflare-gateway-v1';
 
 // SMV ASTRO merged frontend application module
 // Consolidated: dashboard-live.mjs + admin-workflows.mjs + app.mjs
@@ -85,11 +86,17 @@ try{
   console.error("SMV ASTRO Firebase initialization failed",initError);
 }
 const RAZORPAY_BACKEND_URL = IS_SMV_PHASE1_STAGING ? "https://smv-astro-phase1-staging.onrender.com" : "https://smvastroservices.onrender.com";
+const IS_SMV_CLOUDFLARE_STAGING_BROWSER = location.hostname === "smv-astro-phase1-browser-staging-v2.onrender.com";
  // Admin-only read-only check: staging probes Cloudflare without changing normal Render routing.
 const CLOUDFLARE_STAGING_BACKEND_URL = "https://smvastro-backend-api-staging.astroservices.workers.dev";
 // Single backend URL used by all protected API calls, including astrologer answer submission.
 // Keep this in the main Firebase module so it is available to the answer-submit handler.
 const BACKEND=RAZORPAY_BACKEND_URL; window.SMV_BACKEND_URL=RAZORPAY_BACKEND_URL;
+const smvBackendApiRouter = createBackendApiRouter({
+  staging: IS_SMV_CLOUDFLARE_STAGING_BROWSER,
+  renderBaseUrl: RAZORPAY_BACKEND_URL,
+  cloudflareBaseUrl: CLOUDFLARE_STAGING_BACKEND_URL
+});
 
 let smvHomeWalletOffersFetchedAt=0, smvHomeWalletOffersRequest=null;
 function smvHomeOfferMoney(minimumPaise){
@@ -111,7 +118,7 @@ async function smvLoadHomeWalletRechargeOffers(force=false){
  if(smvHomeWalletOffersRequest)return smvHomeWalletOffersRequest;
  smvHomeWalletOffersRequest=(async()=>{
   try{
-   const response=await fetch(BACKEND+'/wallet/recharge-offers',{headers:{Accept:'application/json'},cache:'no-store'});
+   const response=await smvBackendApiRouter.fetch('/wallet/recharge-offers',{headers:{Accept:'application/json'},cache:'no-store'});
    if(!response.ok)throw new Error('Offer request failed ('+response.status+').');
    const result=await response.json();
    if(result?.success!==true||!Array.isArray(result.offers))throw new Error(result?.error||'Active Wallet offers are unavailable.');
@@ -155,7 +162,7 @@ else smvLoadHomeWalletRechargeOffers().catch(()=>{});
 
 function smvAssertLiveCheckout(key){
  const value=String(key||'').trim();
- if(!/^rzp_(?:test|live)_[A-Za-z0-9]+$/.test(value))throw new Error('Payment blocked: this backend returned an invalid Razorpay key. Configure a matching Test or Live Razorpay key in the backend. Backend: '+RAZORPAY_BACKEND_URL);
+ if(!/^rzp_(?:test|live)_[A-Za-z0-9]+$/.test(value))throw new Error('Payment blocked: this backend returned an invalid Razorpay key. Configure a matching Test or Live Razorpay key in the backend.);
 }
 // Shared authenticated transport for Admin, Customer and Astrologer actions.
 // Firebase reuses a valid ID token; payment/refund mutations are never replayed here.
@@ -176,7 +183,9 @@ async function renderApi(path, options={}, authUserOverride=null, backendOverrid
     headers.set('Authorization','Bearer '+token);
     headers.set('Accept','application/json');
     if(request.body!=null&&!(request.body instanceof FormData)&&!headers.has('Content-Type'))headers.set('Content-Type','application/json');
-    const response=await fetch(String(backendOverride||RAZORPAY_BACKEND_URL).replace(/\/$/,'')+path,{...request,headers,cache:'no-store',signal:controller.signal});
+    const response=await (String(backendOverride||RAZORPAY_BACKEND_URL).replace(/\/$/,'')===RAZORPAY_BACKEND_URL
+      ? smvBackendApiRouter.fetch(path,{...request,headers,cache:'no-store',signal:controller.signal})
+      : fetch(String(backendOverride).replace(/\/$/,'')+path,{...request,headers,cache:'no-store',signal:controller.signal}));
     if(auth?.currentUser?.uid!==user.uid)throw new Error('Your login changed. Please try again.');
     if(response.status===204)return {};
     let data;
@@ -196,7 +205,7 @@ async function renderApi(path, options={}, authUserOverride=null, backendOverrid
 
 async function renderPublicApi(path, options={}){
   const headers={"Content-Type":"application/json",...(options.headers||{})};
-  const response=await fetch(RAZORPAY_BACKEND_URL+path,{...options,headers});
+  const response=await smvBackendApiRouter.fetch(path,{...options,headers});
   let data=null; try{data=await response.json();}catch(e){data={};}
   if(!response.ok) throw new Error(data?.error||`Render backend error (${response.status})`);
   return data;
@@ -1266,7 +1275,7 @@ let smvPublicListPromise=null;
 const smvPublicReviews=new Map();
 async function publicJSON(path){
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
- try{const r=await fetch(RAZORPAY_BACKEND_URL+path,{cache:'no-store',signal:controller.signal});const d=await r.json();if(!r.ok)throw Error(d.error||'Public service unavailable');return d;}finally{clearTimeout(timer);}
+ try{const r=await smvBackendApiRouter.fetch(path,{cache:'no-store',signal:controller.signal});const d=await r.json();if(!r.ok)throw Error(d.error||'Public service unavailable');return d;}finally{clearTimeout(timer);}
 }
 window.__smvGetPublicAstrologersOnce=()=>{
  if(!smvPublicListPromise)smvPublicListPromise=(async()=>{
@@ -4642,7 +4651,7 @@ function smvLiveStartEventStream(){
  (async()=>{
   let watchdog=null,lastByteAt=Date.now();
   try{
-   const token=await user.getIdToken(),resp=await fetch(BACKEND+'/live/events',{headers:{Authorization:'Bearer '+token,Accept:'text/event-stream'},cache:'no-store',signal:controller.signal});
+   const token=await user.getIdToken(),resp=await smvBackendApiRouter.fetch('/live/events',{headers:{Authorization:'Bearer '+token,Accept:'text/event-stream'},cache:'no-store',signal:controller.signal});
    if(!resp.ok||!resp.body)throw new Error('Live event stream HTTP '+resp.status);
    const reader=resp.body.getReader(),decoder=new TextDecoder();let buffer='';
    // Some proxies keep HTTP 200 open after the application stream has stalled.

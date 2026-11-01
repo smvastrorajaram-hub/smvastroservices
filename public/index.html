@@ -439,11 +439,11 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 <script src="./dashboard-window.js"></script>
 <script id="smv-apk-release-api-config">window.SMV_APK_RELEASE_API_URL = window.SMV_APK_RELEASE_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev"; window.SMV_APK_RELEASE_ADMIN_API_URL = window.SMV_APK_RELEASE_ADMIN_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev"; window.SMV_APK_RELEASE_STAGING_API_URL = window.SMV_APK_RELEASE_STAGING_API_URL || "https://smv-astro-apk-release-api-staging.astroservices.workers.dev";</script>
-<script src="./smvastro.mjs?v=20261101-staging-apk-worker-isolation-v1" type="module"></script>
+<script src="./smvastro.mjs?v=20261101-staging-cloudflare-api-gateway-v1" type="module"></script>
 <!-- Legacy fallback authentication block removed in V109. Main Firebase auth is the single login system. -->
 <script>
 (function(){
-  const IS_SMV_PHASE1_STAGING = ["smv-astro-phase1-browser-staging.onrender.com", "smv-astro-phase1-browser-isolated.onrender.com"].includes(location.hostname);
+  const IS_SMV_PHASE1_STAGING = ["smv-astro-phase1-browser-staging.onrender.com", "smv-astro-phase1-browser-isolated.onrender.com", "smv-astro-phase1-browser-staging-v2.onrender.com"].includes(location.hostname);
   const BACKEND_URL = IS_SMV_PHASE1_STAGING ? "https://smv-astro-phase1-staging.onrender.com" : "https://smvastroservices.onrender.com";
   const form = document.getElementById("contactForm");
   if(!form) return;
@@ -470,7 +470,7 @@ document.addEventListener('DOMContentLoaded', function(){
         body:JSON.stringify(payload)
       });
       const data = await r.json().catch(()=>({}));
-      if(!r.ok) throw new Error(data.error || "Unable to send your query. Please check the admin email settings in Render.");
+      if(!r.ok) throw new Error(data.error || "Unable to send your query. Please check the admin email settings in the backend.");
       msg.innerHTML = '<span class="success">✓ Your query has been submitted successfully. Our team will contact you soon.</span>';
       form.reset();
       setTimeout(()=>{ if(msg) msg.textContent=""; },5000);
