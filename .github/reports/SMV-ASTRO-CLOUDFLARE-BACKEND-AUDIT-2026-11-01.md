@@ -7,7 +7,7 @@
 **Production D1:** `smvastro-wallet-production`  
 **Production D1 ID:** `b1d5684c-3fcd-48fe-9571-ea41fc605c7d`
 
-**PR #298 verified source/test revision:** `15334a9168c1fd6959db6068addea299ef768d06`
+**PR #298 verified source/test revision:** `e4f83ed5cedf035e930d4fedbd678c36158bd1e6`
 
 ### Latest PR #298 CI evidence
 
@@ -22,11 +22,11 @@
 - Production Worker validation: PASS; **deploy-production-worker SKIPPED**.
 
 CI workflow runs for this verified revision:
-- [Staging integration validation — 378/378](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41312860074)
-- [Production parity/security audit — 378/378](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41312860101)
-- [Wallet local-D1 reconciliation — 65/65](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41312860046)
-- [APK release Worker CI — 108/108](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41312860044)
-- [Production Worker validation — deployment skipped](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41312860312)
+- [Staging integration validation — 378/378](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41313083092)
+- [Production parity/security audit — 378/378](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41313083103)
+- [Wallet local-D1 reconciliation — 65/65](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41313083094)
+- [APK release Worker CI — 108/108](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41313083117)
+- [Production Worker validation — deployment skipped](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41313083178)
 
 The 29 legacy route-parity tests use injected Firestore/D1/FCM/Auth adapters and cover route registration, role/authorization checks, field validation, transaction intent, idempotent retry, read-only Wallet queries and fail-closed provider gates. They do **not** prove live Firebase Auth Admin permissions, actual FCM device delivery, remotely provisioned Live Durable Objects, deployed backend-to-APK Worker service connectivity, or a browser-to-Worker end-to-end cutover.
 
@@ -34,7 +34,7 @@ The 29 legacy route-parity tests use injected Firestore/D1/FCM/Auth adapters and
 
 At the verification time, the Staging Worker reports D1 schema/runtime checks ready, but `firebaseConnected=false`, `firestoreConnected=false`, and `razorpayConnected=false`. Wallet business and Live Call/Chat route flags remain false; `liveSessionRoutesRegistered=false`. The Razorpay Test-mode configuration flag is true, while Live mode remains false; no authenticated `GET /test-razorpay` probe was performed, so neither mode is marked provider-verified.
 
-The Staging Wrangler file declares D1 and two Durable Object class bindings, but the Live routes are not registered and their schema readiness is false. No R2 bucket or Queue binding appears in the Staging or Production Wrangler configurations; Production has only its D1 binding and no Durable Object, R2 or Queue binding. FCM delivery and the push-token routes are not verified. Do not infer provisioning or working connectivity from class declarations alone.
+The backend Staging Wrangler file declares D1, two Durable Object class bindings and the `APK_RELEASE_WORKER` service binding to the isolated `smv-astro-apk-release-api-staging` service. The separate APK-release Staging Worker is not yet deployed/provisioned: its Staging D1 ID remains the all-zero placeholder and uploads remain disabled by default. Its APK Worker CI/dry-runs prove source/build validation only, not remote D1/R2 readiness or service-to-service connectivity. The backend Live feature flag remains false and Live schema/DO runtime readiness is unverified. No Queue binding appears in the reviewed Staging/Production main backend configs; Production has only its D1 binding and no DO, R2, Queue or APK service binding. FCM delivery is not verified. Do not infer provisioning or working connectivity from class declarations alone.
 
 The live Staging readiness response also reports `legacyPrivateConsultationRoutesEnabled=true`, while the reviewed Staging config declares that legacy flag false. Treat this as config/deployment drift; it must be reconciled before any Staging rollout that could expose legacy consultation behavior.
 
