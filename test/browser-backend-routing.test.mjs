@@ -317,6 +317,17 @@ test("unknown POST is never replayed after a Render failure", async () => {
   assert.deepEqual(calls, [{ url: renderBaseUrl + "/unknown-mutation", method: "POST" }]);
 });
 
+test("Staging Worker CORS allowlist includes the v2 browser origin without adding Production origins", () => {
+  const config = JSON.parse(readFileSync(new URL("../cloudflare/backend-api/wrangler.jsonc", import.meta.url), "utf8"));
+  assert.equal(config.name, "smvastro-backend-api-staging");
+  assert.equal(config.vars.SMV_ENVIRONMENT, "staging");
+  const origins = String(config.vars.ALLOWED_ORIGINS || "").split(",").map(value => value.trim());
+  assert.ok(origins.includes("https://smv-astro-phase1-browser-staging.onrender.com"));
+  assert.ok(origins.includes("https://smv-astro-phase1-browser-staging-v2.onrender.com"));
+  assert.equal(origins.includes("https://smvastroservices.in"), false);
+  assert.equal(origins.includes("https://www.smvastroservices.in"), false);
+});
+
 test("non-Staging hosts preserve the existing Render-only backend", async () => {
   const calls = [];
   const router = createBackendApiRouter({
