@@ -329,7 +329,8 @@ test('Astrologer profile-read failures preserve an open Dashboard and recover be
   assert.ok(preserveGuard.includes('smvLiveStatus('));
   const recoveryGuard = dashboard.slice(sync, fallback);
   assert.ok(recoveryGuard.includes('astroProfileSyncFailed=true'));
-  assert.ok(recoveryGuard.includes('RETRY PROFILE CHECK'));
+  assert.ok(dashboard.indexOf('RETRY PROFILE CHECK', fallback) > fallback,
+    'Retry UI is rendered only after the backend reconciliation failure guard');
 });
 test('Astrologer Dashboard keeps one heading and parallelizes its first profile read', () => {
   const frontend = read('public/smvastro.mjs');
