@@ -20,9 +20,9 @@ const BASELINE = Object.freeze({
   getRoutes: 55,
   postRoutes: 94,
   uniquePairs: 149,
-  sourceHandlerPairs: 53,
-  exactLegacyMatches: 40,
-  missingLegacyHandlers: 109
+  sourceHandlerPairs: 54,
+  exactLegacyMatches: 41,
+  missingLegacyHandlers: 108
 });
 const PRODUCTION_DATABASE_ID = 'b1d5684c-3fcd-48fe-9571-ea41fc605c7d';
 
