@@ -214,7 +214,7 @@ export function isRetryableRenderReadFailure({ method = "GET", status = null, ne
 }
 
 export function isCloudflareRouteFamilyReady(family, readiness) {
-  if (!readiness || readiness.ready !== true) return false;
+  if (!readiness || readiness.ready !== true || readiness.firebaseConnected !== true) return false;
   const coreRoutesReady =
     readiness.identityProfileBackfillRoutesRegistered === true &&
     readiness.walletBackfillRoutesRegistered === true;

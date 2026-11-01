@@ -13,6 +13,7 @@ const cloudflareBaseUrl = "https://smvastro-backend-api-staging.astroservices.wo
 
 const ready = Object.freeze({
   ready: true,
+  firebaseConnected: true,
   identityProfileBackfillRoutesRegistered: true,
   walletBackfillRoutesRegistered: true,
   walletBackfillToolsEnabled: true,
@@ -107,6 +108,9 @@ test("Cloudflare legacy-core readiness requires both route-registration proofs",
   assert.equal(isCloudflareRouteFamilyReady("legacyCore", { ...ready, identityProfileBackfillRoutesRegistered: false }), false);
   assert.equal(isCloudflareRouteFamilyReady("legacyCore", { ...ready, walletBackfillRoutesRegistered: false }), false);
   assert.equal(isCloudflareRouteFamilyReady("legacyCore", { ...ready, ready: false }), false);
+  assert.equal(isCloudflareRouteFamilyReady("legacyCore", { ...ready, firebaseConnected: false }), false);
+  assert.equal(isCloudflareRouteFamilyReady("walletRead", { ...ready, firebaseConnected: false }), false);
+  assert.equal(isCloudflareRouteFamilyReady("razorpayProbe", { ...ready, firebaseConnected: false }), false);
 });
 
 test("Wallet, Razorpay and Live gates remain fail-closed until their own readiness flags open", () => {
