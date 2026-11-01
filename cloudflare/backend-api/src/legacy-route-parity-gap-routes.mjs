@@ -1079,7 +1079,9 @@ export function registerLegacyRouteParityGapRoutes({
       const user = await authenticate(req);
       if (roleError(user, ['astrologer'])) throw routeError('ASTROLOGER_REQUIRED', 'Astrologer account required.', 403);
       const uid = safeUid(user.uid);
-      if (!liveService || typeof liveService.createRequest !== 'function' ||
+      if (String(env?.SMV_ENVIRONMENT || '') !== 'staging' ||
+          String(env?.SMV_LIVE_SESSION_ROUTES_ENABLED || '').toLowerCase() !== 'true' ||
+          !liveService || typeof liveService.createRequest !== 'function' ||
           typeof liveService.acceptSession !== 'function' || typeof liveService.endSession !== 'function' ||
           !env?.LIVE_SESSION_COORDINATOR || !env?.LIVE_USER_EVENT_HUB || !(await isLiveReady())) {
         return res.status(503).json({ success: false, error: 'Scheduled Live Call/Chat infrastructure is not ready.', code: 'LIVE_SCHEMA_NOT_READY' });
