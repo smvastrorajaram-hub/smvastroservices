@@ -97,7 +97,7 @@ export function registerLegacyQuizWriteRoutes({ app, firestore, identityService 
 
   app.post('/admin/astrologer-quiz/load-defaults', async (req, res) => {
     try {
-      await requireAdmin(req);
+      const user = await requireAdmin(req);
       const firstExisting = await firestore.runQuery({
         collectionPath: 'smv_astrologer_quiz_questions',
         limit: 1
