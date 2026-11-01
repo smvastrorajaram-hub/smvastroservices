@@ -81,6 +81,28 @@ function claimInIndependentWorker({ dbPath, nowMs, input }) {
   });
 }
 
+
+function finalizeRechargeInIndependentWorker({ dbPath, nowMs, input }) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('./local-d1-recharge-worker.mjs', import.meta.url), {
+      workerData: { dbPath, nowMs, input },
+      execArgv: []
+    });
+    let settled = false;
+    worker.once('message', message => {
+      settled = true;
+      if (message?.ok) resolve(message.result);
+      else reject(new Error(message?.error || 'Local D1 recharge worker failed.'));
+    });
+    worker.once('error', error => {
+      if (!settled) reject(error);
+    });
+    worker.once('exit', code => {
+      if (code !== 0 && !settled) reject(new Error('Local D1 recharge worker exited with code ' + code));
+    });
+  });
+}
+
 function makeD1Binding(sqlite) {
   return {
     prepare(sql) {
@@ -206,5 +228,89 @@ test('local D1 recovers expired claims and rejects stale owners after lease take
   } finally {
     sqlite.prepare('DELETE FROM smv_domain_razorpay_webhook_events WHERE event_key=?').run(eventKey);
     sqlite.close();
+  }
+});
+
+
+test('local D1 serializes concurrent payment replay without double-crediting the Wallet', async () => {
+  const { sqlite, file: dbPath } = await openMigratedLocalD1();
+  const db = makeD1Binding(sqlite);
+  const nowMs = Date.now();
+  const adapter = createD1WalletAdapter({ db, now: () => nowMs });
+  const ownerUid = 'local_replay_customer_' + crypto.randomUUID();
+  const rechargeId = 'local_recharge_' + crypto.randomUUID();
+  const orderId = 'local_order_' + crypto.randomUUID();
+  const paymentId = 'local_payment_' + crypto.randomUUID();
+  const input = {
+    ownerUid, rechargeId, orderId, paymentId,
+    amountPaise: 5000, currency: 'INR', source: 'local_d1_replay_test'
+  };
+
+  try {
+    await adapter.ensureWallet(ownerUid, 'customer');
+    sqlite.prepare(
+      `INSERT INTO smv_domain_wallet_recharges
+       (recharge_id,customer_uid,amount_paise,currency,status,razorpay_order_id,
+        payload_json,created_at_ms,updated_at_ms)
+       VALUES (?,?,?,'INR','order_created',?,'{}',?,?)`
+    ).run(rechargeId, ownerUid, 5000, orderId, nowMs, nowMs);
+    sqlite.prepare(
+      `INSERT INTO smv_domain_razorpay_orders
+       (order_id,owner_uid,service_name,amount_paise,currency,status,payment_id,
+        payload_json,created_at_ms,updated_at_ms)
+       VALUES (?,?,'SMV ASTRO Wallet Recharge',?,'INR','created',NULL,?,?,?)`
+    ).run(orderId, ownerUid, 5000, JSON.stringify({ rechargeId, receipt: 'local-d1-fixture' }), nowMs, nowMs);
+
+    const results = await Promise.all([
+      finalizeRechargeInIndependentWorker({ dbPath, nowMs, input }),
+      finalizeRechargeInIndependentWorker({ dbPath, nowMs, input })
+    ]);
+    assert.ok(results.every(result => result.success === true));
+    assert.equal(results.filter(result => result.alreadyProcessed === false).length, 1,
+      'exactly one finalizer should perform the first credit');
+    assert.equal(results.filter(result => result.alreadyProcessed === true).length, 1,
+      'the competing finalizer should observe the committed payment or safely reconcile the race');
+
+    const wallet = sqlite.prepare(
+      'SELECT available_balance_paise,reserved_balance_paise,bonus_minutes_balance,reserved_bonus_minutes FROM smv_domain_wallets WHERE owner_uid=?'
+    ).get(ownerUid);
+    const recharge = sqlite.prepare(
+      'SELECT status,razorpay_payment_id FROM smv_domain_wallet_recharges WHERE recharge_id=?'
+    ).get(rechargeId);
+    const ledger = sqlite.prepare(
+      `SELECT COUNT(*) AS count,COALESCE(SUM(available_delta_paise),0) AS cash_delta
+       FROM smv_domain_wallet_ledger WHERE owner_uid=? AND type='recharge'`
+    ).get(ownerUid);
+    assert.equal(Number(wallet.available_balance_paise), 5000);
+    assert.equal(Number(wallet.reserved_balance_paise), 0);
+    assert.equal(Number(wallet.bonus_minutes_balance), 0);
+    assert.equal(Number(wallet.reserved_bonus_minutes), 0);
+    assert.equal(recharge.status, 'paid');
+    assert.equal(recharge.razorpay_payment_id, paymentId);
+    assert.equal(Number(ledger.count), 1);
+    assert.equal(Number(ledger.cash_delta), 5000);
+
+    const replay = await adapter.finalizeRecharge(input);
+    assert.equal(replay.alreadyProcessed, true);
+    assert.equal(Number(sqlite.prepare(
+      'SELECT available_balance_paise FROM smv_domain_wallets WHERE owner_uid=?'
+    ).get(ownerUid).available_balance_paise), 5000);
+    assert.equal(Number(sqlite.prepare(
+      "SELECT COUNT(*) AS count FROM smv_domain_wallet_ledger WHERE owner_uid=? AND type='recharge'"
+    ).get(ownerUid).count), 1);
+  } finally {
+    sqlite.exec('BEGIN IMMEDIATE');
+    try {
+      sqlite.prepare('DELETE FROM smv_domain_wallet_ledger WHERE owner_uid=?').run(ownerUid);
+      sqlite.prepare('DELETE FROM smv_domain_razorpay_orders WHERE order_id=?').run(orderId);
+      sqlite.prepare('DELETE FROM smv_domain_wallet_recharges WHERE recharge_id=?').run(rechargeId);
+      sqlite.prepare('DELETE FROM smv_domain_wallets WHERE owner_uid=?').run(ownerUid);
+      sqlite.exec('COMMIT');
+    } catch (error) {
+      sqlite.exec('ROLLBACK');
+      throw error;
+    } finally {
+      sqlite.close();
+    }
   }
 });
