@@ -1138,7 +1138,7 @@ export function registerLegacyRouteParityGapRoutes({
       const [astro, pricing, currentSessions] = await Promise.all([
         firestore.getDocument('smv_astrologers/' + uid),
         liveService.getPricing(),
-        liveService.listSessions(uid, 'astrologer')
+        liveService.listSessions({ uid, role: 'astrologer' })
       ]);
       if (!astro.exists) return res.status(404).json({ success: false, error: 'Astrologer profile was not found.' });
       const astroData = astro.data || {};
