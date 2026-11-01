@@ -7,6 +7,30 @@
 **Production D1:** `smvastro-wallet-production`  
 **Production D1 ID:** `b1d5684c-3fcd-48fe-9571-ea41fc605c7d`
 
+**PR #298 verification head:** `175c0d4d31bc1f1af7bcf31305482ad07d70d30d`
+
+### Latest CI evidence on PR #298
+
+- Full Cloudflare backend contract suite: **350/350 PASS** (Staging integration and Production parity/security audit).
+- Ephemeral local D1 migrations: **10 migrations applied locally only**; no `--remote` execution or customer data import.
+- Local-D1 Razorpay webhook claim tests: **3/3 PASS**.
+- Local-D1 Live capacity / booking / settlement invariant tests: **4/4 PASS**.
+- Staging Worker bundle dry-run: PASS.
+- Isolated Production Worker bundle dry-run: PASS.
+- Production Worker validation: PASS; `deploy-production-worker`: **SKIPPED**.
+
+The six added contract tests cover Admin-only Google Form sync, Apps Script URL allow-pattern, provider errors, webhook shared-secret and quiz-version validation, transaction/idempotent processing, and duplicate delivery. This proves the route contract against injected test adapters; it does not prove a live Google Apps Script or Firebase connection.
+
+### Live Staging provider and resource status (read-only)
+
+At the verification time, the Staging Worker reports D1 schema/runtime checks ready, but `firebaseConnected=false`, `firestoreConnected=false`, and `razorpayConnected=false`. Wallet business and Live Call/Chat route flags remain false; `liveSessionRoutesRegistered=false`. The Razorpay Test-mode configuration flag is true, while Live mode remains false; no authenticated `GET /test-razorpay` probe was performed, so neither mode is marked provider-verified.
+
+The Staging Wrangler file declares D1 and two Durable Object class bindings, but the Live routes are not registered and their schema readiness is false. No R2 bucket or Queue binding appears in the Staging or Production Wrangler configurations; Production has only its D1 binding and no Durable Object, R2 or Queue binding. FCM delivery and the push-token routes are not verified. Do not infer provisioning or working connectivity from class declarations alone.
+
+The live Staging readiness response also reports `legacyPrivateConsultationRoutesEnabled=true`, while the reviewed Staging config declares that legacy flag false. Treat this as config/deployment drift; it must be reconciled before any Staging rollout that could expose legacy consultation behavior.
+
+The migration-status endpoint reports `renderDependency=false`; no Render service, DNS, Firebase Production, Production D1, Wallet, Horoscope or Calendar configuration was changed by this PR work.
+
 ## Executive result
 
 **Do not switch production traffic or enable Wallet, Razorpay, Live Call/Chat, or backfill flags yet.**
@@ -33,7 +57,7 @@ The route inventory is maintained in [`legacy-backend-route-inventory.mjs`](http
 
 ### P0 — Route parity is incomplete (cutover blocker)
 
-There are 149 unique legacy method/path pairs. Of those, 113 have an exact method/path handler literal in the reviewed Worker source files; 36 have no exact handler and remain routed to the generic `BACKEND_MIGRATION_NOT_CUT_OVER` fail-closed guard. This fail-closed behavior is desirable while migration is incomplete, but it is not production parity.
+There are 149 unique legacy method/path pairs. Of those, 113 have an exact method/path handler literal in the reviewed Worker source files; 36 have no exact handler and remain routed to the generic `BACKEND_MIGRATION_NOT_CUT_OVER` fail-closed guard. The 36 split into 18 active in-scope routes, 11 retired Private Consultation/Ask Now routes and 7 Horoscope routes outside this migration scope. The retired and Horoscope routes must not be reintroduced by this migration. This fail-closed behavior is desirable while migration is incomplete, but it is not production parity.
 
 The existing README says approximately 117 route registrations; the current version-controlled route inventory says 149. Use the inventory as the audit baseline until a fresh automated extraction of all active route registrations—including indirect router/module registrations—is compared against it.
 
@@ -93,7 +117,7 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | Razorpay | `test/wallet-recharge-routes.test.mjs`, `test/razorpay-mode-policy.test.mjs`, `test/razorpay-rest-adapter.test.mjs`, `test/legacy-razorpay-routes.test.mjs`, and `test/local-d1-live-payment-invariants.local.mjs`: key-mode gate, raw-body signature check, Question/Private Consultation verify/recovery/refunds, duplicate event handling, order/amount/ownership negatives, refund history lookup and stable idempotency request shape | Real Razorpay Sandbox duplicate webhook replay/refund provider proof; actual Staging Firestore/D1 E2E and complete out-of-order event matrix |
 | Live/Booking | `test/live-session-domain.test.mjs`, `test/live-session-routes.test.mjs` and `test/local-d1-live-payment-invariants.local.mjs`: capacity concurrency, stale booking release, settlement rollback, double-settlement prevention | Full D1 + Durable Object end-to-end ordering and duplicate request-ID replay coverage |
 | Durable timers/events | `test/live-session-coordinator.test.mjs`: durable deadline behavior and event-id dedupe | End-to-end D1+DO interaction under concurrent delivery |
-| Route inventory | `test/legacy-route-inventory.test.mjs`: 149 unique pairs; audit parser now finds 113 exact source pairs and 36 missing pairs | Contract equivalence for all remaining 38 routes and full legacy parity for every source match |
+| Route inventory | `test/legacy-route-inventory.test.mjs`: 149 unique pairs; audit parser now finds 113 exact source pairs and 36 missing pairs | Contract equivalence for the 18 in-scope active routes still lacking handlers (the other 18 missing routes are 11 retired Private Consultation/Ask Now routes and 7 Horoscope routes explicitly outside this migration scope), plus full legacy parity for every source match |
 
 ## Route-by-route coverage matrix (149 inventory pairs)
 
