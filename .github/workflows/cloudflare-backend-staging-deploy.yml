@@ -236,9 +236,10 @@ jobs:
           }
 
           const health = await get('/healthz');
-          if (health.ok !== true || health.runtime !== 'cloudflare-workers-express-http-bridge' || health.productionTrafficEnabled !== false) {
-            throw new Error('Cloudflare Express runtime health verification failed.');
-          }
+           if (health.ok !== true || health.runtime !== 'cloudflare-workers-express-http-bridge' || health.productionTrafficEnabled !== false ||
+               health.firebaseConnected !== true || health.firestoreConnected !== true) {
+             throw new Error('Cloudflare Express runtime or Staging Firestore connectivity verification failed.');
+           }
           if (health.identityProfileBackfillRoutesRegistered !== true ||
               health.identityProfileBackfillToolsEnabled !== true ||
               health.identityProfileBackfillPreviewOnly !== true ||
@@ -261,7 +262,7 @@ jobs:
           const readiness = await get('/api/backend/readiness');
           if (readiness.ready !== true || readiness.schemaVersion !== '0001_wallet_live_domain' ||
               readiness.sharedDomainSchemaVersion !== '0002_shared_domain_repository' ||
-              readiness.firebaseConnected !== false || readiness.razorpayConnected !== false ||
+              readiness.firebaseConnected !== true || readiness.firestoreConnected !== true || readiness.razorpayConnected !== false ||
               readiness.walletBusinessRoutesEnabled !== false ||
               readiness.walletBackfillRoutesRegistered !== true ||
               readiness.walletBackfillToolsEnabled !== true ||
@@ -298,18 +299,3 @@ jobs:
           SMV_WALLET_PAYOUT_KEY_VERSION: 'v1'
         shell: bash
         run: node scripts/wallet-live-readonly-preview.mjs
-
-      - name: Import and reconcile Identity/Profile into staging D1 only
-        working-directory: cloudflare/backend-api
-        env:
-          SMV_ENVIRONMENT: staging
-          SMV_IDENTITY_PROFILE_STAGING_IMPORT_ENABLED: 'true'
-          SMV_IDENTITY_PROFILE_PRODUCTION_IMPORT_ENABLED: 'false'
-          SMV_IDENTITY_PROFILE_D1_DATABASE_ID: 0ddb87a9-8a16-4e39-a806-c9137c64959a
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_STAGING_SERVICE_ACCOUNT_JSON || secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-          SMV_IDENTITY_PAYOUT_ENCRYPTION_KEY: ${{ secrets.SMV_IDENTITY_PAYOUT_ENCRYPTION_KEY }}
-          SMV_IDENTITY_PAYOUT_KEY_VERSION: ${{ secrets.SMV_IDENTITY_PAYOUT_KEY_VERSION || 'v1' }}
-        shell: bash
-        run: node scripts/identity-profile-import-staging.mjs
