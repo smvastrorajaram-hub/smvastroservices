@@ -32,6 +32,7 @@ import { registerRazorpayConnectivityRoute } from './razorpay-connectivity-route
 import { registerLegacyReadRoutes } from './legacy-read-routes.mjs';
 import { registerLegacyDashboardReadRoutes } from './legacy-dashboard-read-routes.mjs';
 import { registerLegacyQuizReadRoutes } from './legacy-quiz-read-routes.mjs';
+import { registerLegacyBusinessRoutes } from './legacy-business-routes.mjs';
 
 const app = express();
 const verifyFirebaseIdToken = createFirebaseIdTokenVerifier();
@@ -300,6 +301,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     registerLegacyReadRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService, androidPackageName: String(env.SMV_ANDROID_PACKAGE || 'in.smvastroservices.smvastro') });
     registerLegacyDashboardReadRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerLegacyQuizReadRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    registerLegacyBusinessRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
   }
   const walletSchemaReady = async () => {
     try {
