@@ -1,78 +1,16 @@
 const RETRYABLE_GATEWAY_STATUSES = new Set([502, 503, 504, 520, 521, 522, 523, 524, 525, 526, 527, 530]);
 
-// Exact method/path pairs with a literal Cloudflare Worker handler in the audited
-// 1 Nov 2026 route inventory. Retired Private Consultation/Ask Now, Horoscope,
-// email-provider-unverified and APK-service-unprovisioned routes are deliberately
-// not included. Live and Wallet routes are included but remain feature-gated.
+// Only exact method/path pairs with route registrations in the current Worker modules.
+// The Render inventory is guard-only; unported legacy handlers stay Render-pinned.
+// Wallet, Razorpay, withdrawal and Live handlers remain behind independent readiness gates.
 const CLOUDFLARE_LEGACY_ROUTE_LINES = `GET /admin/access
 GET /account/role
-POST /lookup-customer-login
-POST /lookup-id-login
-POST /register-customer-profile
-POST /register-astrologer-profile
-GET /public/registration-config
-GET /api/smv-mode
-GET /
-GET /test-razorpay
-POST /astrologer/edit-answer
-POST /submit-answer
-GET /astrologer/appointments
-GET /customer/appointments
-POST /astrologer/appointments/:id/respond
-POST /appointment-booking
-GET /public/astrologers
-POST /astrologer/availability
-GET /public/astrologers/:astrologerId/reviews
-GET /customer/reviews
-POST /customer/submit-review
-GET /admin/appointments
-POST /admin/appointment-status
-POST /admin/approve-question
-POST /astrologer/claim-question
-GET /api-version
 POST /admin/reject-question
 POST /admin/retry-refund
 GET /admin/refund-trace/:questionId
 POST /customer/sync-refund
 POST /admin/sync-refund
-POST /admin/reallocate-question
-POST /admin/edit-question
-POST /admin/takeover-answer
-POST /astrologer/change-payout
-POST /admin/payout-change-status
-POST /admin/set-open-workflow
-GET /astrologer/open-questions
-POST /customer/mark-answer-viewed
-POST /admin/astrologer-quiz/load-defaults
-GET /admin/astrologer-quiz/questions
-POST /admin/astrologer-quiz/questions
-POST /admin/astrologer-quiz/questions/delete
-GET /google-form/astrologer-quiz-config
-POST /admin/astrologer-auto-approval/settings
-POST /admin/astrologer-quiz/sync-google-form
-GET /astrologer/qualification-config
-POST /webhooks/google-form/astrologer-qualification
-GET /admin/settings-data
 GET /admin/withdrawals-data
-GET /admin/reviews-data
-POST /admin/approve-astrologer
-POST /admin/reject-astrologer
-POST /astrologer/sync-approval
-POST /admin/astrologer-profile-permission
-POST /admin/astrologer-profile-description
-GET /public/android-app
-GET /admin/android-app
-GET /public/content
-GET /admin/content
-POST /admin/content/save
-POST /admin/content/toggle
-POST /admin/content/delete
-POST /admin/astrologer-languages
-POST /admin/astrologer-pricing
-GET /admin/astrologers-data
-GET /admin/questions-data
-POST /admin/dashboard-touch
-GET /admin-data
 POST /create-order
 POST /verify-payment
 GET /astrologer/earnings
@@ -80,7 +18,6 @@ POST /astrologer/withdrawal-request
 POST /admin/withdrawal-mark-paid
 GET /admin/withdrawal-payout/:withdrawalDocId
 POST /razorpay/webhook
-GET /admin/wallet/transactions
 GET /wallet/recharge-offers
 GET /admin/offers
 POST /admin/offers/save
@@ -95,19 +32,11 @@ POST /admin/wallet/backfill/preflight
 POST /admin/wallet/backfill/preview
 POST /admin/wallet/backfill/apply
 POST /admin/wallet/backfill/reconcile
-GET /api/locations/status
-GET /api/locations/search
-GET /api/locations/timezone
-GET /live/push/status
-POST /live/push/register
-POST /live/push/unregister
-POST /live/push/test
 GET /live/pricing
 GET /live/ice-config
 POST /admin/live/pricing
 POST /admin/live/commission
 GET /live/events
-POST /live/scheduled-appointments/:id/start
 POST /live/requests
 GET /live/sessions
 GET /live/bookings/pending
@@ -196,10 +125,18 @@ export function classifyStagingBackendRoute(path, method = "GET") {
   if (isRetainedOutsideCloudflare(pathname)) {
     return Object.freeze({ target: "render-primary", family: "renderPinned" });
   }
-  const registered = CLOUDFLARE_LEGACY_ROUTE_PAIRS.some(route =>
-    route.method === verb && routePatternMatches(route.path, pathname)
+  const matchedRoute = CLOUDFLARE_LEGACY_ROUTE_PAIRS.find(route =>
+    (route.method === verb || (verb === "HEAD" && route.method === "GET")) &&
+    routePatternMatches(route.path, pathname)
   );
-  if (!registered) return Object.freeze({ target: "render-primary", family: "ordinary" });
+  // Never send an unported Render route to the Worker catch-all, even after a
+  // Render 5xx. Only the two verified read-only identity routes may use fallback.
+  if (!matchedRoute) return Object.freeze({ target: "render-primary", family: "renderPinned" });
+  if ((verb === "GET" || verb === "HEAD") &&
+      (matchedRoute.method + " " + matchedRoute.path === "GET /admin/access" ||
+       matchedRoute.method + " " + matchedRoute.path === "GET /account/role")) {
+    return Object.freeze({ target: "render-primary", family: "coreReadFallback" });
+  }
   return Object.freeze({ target: "cloudflare-primary", family: routeFamily(pathname) });
 }
 
@@ -235,13 +172,16 @@ export function isCloudflareRouteFamilyReady(family, readiness) {
     case "walletRecharge":
       return readiness.walletRechargeRoutesEnabled === true &&
         readiness.razorpayCredentialsConfigured === true &&
+        readiness.razorpayProviderConnectionVerified === true &&
         readiness.razorpayMode === "test";
     case "legacyPayments":
       return readiness.legacyRazorpayRoutesRegistered === true &&
         readiness.razorpayCredentialsConfigured === true &&
+        readiness.razorpayProviderConnectionVerified === true &&
         readiness.razorpayMode === "test";
     case "razorpayProbe":
       return readiness.razorpayCredentialsConfigured === true &&
+        readiness.razorpayProviderConnectionVerified === true &&
         readiness.razorpayMode === "test";
     case "live":
       return readiness.liveCallChatRoutesEnabled === true;
