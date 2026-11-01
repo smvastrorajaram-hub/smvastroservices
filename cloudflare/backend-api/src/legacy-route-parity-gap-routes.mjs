@@ -453,10 +453,11 @@ export function registerLegacyRouteParityGapRoutes({
         const publicId = randomCompactId('smvcr');
         try {
           await firestore.runTransaction(async tx => {
-            const [latestUser, idDocument, phoneDocument] = await Promise.all([
+            const [latestUser, idDocument, phoneDocument, walletDocument] = await Promise.all([
               tx.getDocument(userPath),
               tx.getDocument('smv_public_ids/' + publicId),
-              tx.getDocument('smv_phone_registry/' + phone.hash)
+              tx.getDocument('smv_phone_registry/' + phone.hash),
+              cutover ? Promise.resolve({ exists: false }) : tx.getDocument('smv_wallets/' + uid)
             ]);
             const latestRole = String(latestUser.data?.role || '').toLowerCase();
             if (latestUser.exists && latestRole && latestRole !== 'customer') {
@@ -481,9 +482,8 @@ export function registerLegacyRouteParityGapRoutes({
               createdAt: latestUser.exists ? (latestUser.data?.createdAt || FirestoreFieldValue.serverTimestamp()) : FirestoreFieldValue.serverTimestamp(),
               updatedAt: FirestoreFieldValue.serverTimestamp()
             }, { merge: true });
-            if (!cutover) {
-              const wallet = await tx.getDocument('smv_wallets/' + uid);
-              if (!wallet.exists) tx.create('smv_wallets/' + uid, {
+            if (!cutover && !walletDocument.exists) {
+              tx.create('smv_wallets/' + uid, {
                 ownerUid: uid, ownerRole: 'customer', currency: 'INR',
                 availableBalancePaise: 0, reservedBalancePaise: 0,
                 bonusMinutesBalance: 0, reservedBonusMinutes: 0, version: 1,
