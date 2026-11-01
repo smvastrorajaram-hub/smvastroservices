@@ -41,7 +41,7 @@ test('Staging APK deployment workflow is manual, branch-restricted, and uses a s
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /confirm_staging_apk_worker_deploy/);
   assert.match(workflow, /enable_staging_admin_uploads:[\s\S]*default: "no"/);
-  assert.match(workflow, /refs\/heads\/integration\/cloudflare-backend-staging-stack-20261031/);
+  assert.match(workflow, /refs\/heads\/integration\/main/);
   assert.match(workflow, /CLOUDFLARE_APK_RELEASE_STAGING_API_TOKEN/);
   assert.match(workflow, /CLOUDFLARE_APK_STAGING_D1_ID/);
   assert.match(workflow, /smv-astro-apk-releases-staging/);
