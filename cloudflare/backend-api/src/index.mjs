@@ -311,7 +311,27 @@ async function readSharedBackendReadiness() {
   walletDomainSchemaReady = d1State.sharedDomainSchemaReady;
   walletRechargeSchemaReady = d1State.walletRechargeSchemaReady;
   liveSessionSchemaReady = d1State.liveSessionSchemaReady;
-  return { ...providerState, d1: d1State };
+  const attestation = d1State.identityProfileMigrationAttestation;
+  return {
+    ...providerState,
+    // These describe the D1 migration itself, even when the optional D1
+    // authorization cutover flag is still disabled.
+    identityProfileD1AuthorizationSchemaReady: d1State.identityProfileSchemaReady,
+    identityProfileD1AuthorizationInventoryComplete: attestation.inventoryComplete,
+    identityProfileD1AuthorizationReconciliationComplete: attestation.reconciliationComplete,
+    identityProfileD1AuthorizationSourceQuiesced: attestation.sourceQuiesced,
+    walletReadRouteGate: Object.freeze({
+      enabled: String(env.WALLET_READ_ROUTES_ENABLED || '').toLowerCase() === 'true',
+      backfillComplete: String(env.SMV_WALLET_DOMAIN_BACKFILL_COMPLETE || '').toLowerCase() === 'true',
+      cutoverComplete: String(env.SMV_WALLET_DOMAIN_CUTOVER_COMPLETE || '').toLowerCase() === 'true',
+      open: walletReadRouteGateOpen
+    }),
+    liveSessionRouteGate: Object.freeze({
+      enabled: liveSessionRoutesOpen,
+      schemaReady: d1State.liveSessionSchemaReady
+    }),
+    d1: d1State
+  };
 }
 
 function walletFirebaseServiceAccount() {
@@ -595,11 +615,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
 }
 
 app.get('/healthz', async (_req, res) => {
-  const identityGate = d1IdentityAuthorizationService
-    ? await d1IdentityAuthorizationService.readiness()
-    : { enabled: identityProfileD1AuthorizationOpen, ready: false,
-        reason: identityProfileD1AuthorizationOpen ? 'identity_runtime_unavailable' : 'disabled' };
-  d1IdentityAuthorizationReady = identityGate.ready === true;
+  const sharedReadiness = await readSharedBackendReadiness();
   return res.set(JSON_HEADERS).json({
     ok: true,
     service: 'smvastro-backend-api',
@@ -611,12 +627,16 @@ app.get('/healthz', async (_req, res) => {
     walletRechargeMode,
     walletOfferRoutesRegistered,
     liveSessionRoutesRegistered,
-    liveSessionSchemaReady,
+    liveSessionSchemaReady: sharedReadiness.d1.liveSessionSchemaReady,
+    walletRechargeSchemaReady: sharedReadiness.d1.walletRechargeSchemaReady,
+    identityProfileSchemaReady: sharedReadiness.d1.identityProfileSchemaReady,
+    identityProfileMigrationAttestation: sharedReadiness.d1.identityProfileMigrationAttestation,
+    walletReadRouteGate: sharedReadiness.walletReadRouteGate,
     identityProfileBackfillRoutesRegistered,
     identityProfileBackfillToolsEnabled: identityProfileBackfillToolsOpen,
     identityProfileBackfillPreviewOnly,
     identityProfileD1AuthorizationEnabled: identityProfileD1AuthorizationOpen,
-    identityProfileD1AuthorizationReady: d1IdentityAuthorizationReady,
+    identityProfileD1AuthorizationReady: sharedReadiness.identityProfileD1AuthorizationReady,
     productionTrafficEnabled: false
   });
 });
@@ -693,6 +713,8 @@ app.get('/api/backend/readiness', async (_req, res) => {
       identityProfileD1AuthorizationInventoryComplete: sharedReadiness.identityProfileD1AuthorizationInventoryComplete,
       identityProfileD1AuthorizationReconciliationComplete: sharedReadiness.identityProfileD1AuthorizationReconciliationComplete,
       identityProfileD1AuthorizationSourceQuiesced: sharedReadiness.identityProfileD1AuthorizationSourceQuiesced,
+      walletReadRouteGate: sharedReadiness.walletReadRouteGate,
+      liveSessionRouteGate: sharedReadiness.liveSessionRouteGate,
       walletBusinessRoutesEnabled: false,
       liveCallChatRoutesEnabled: liveSessionRoutesRegistered && liveSessionRoutesOpen && liveSessionSchemaReady
     });
@@ -742,12 +764,30 @@ app.get('/api/backend/migration-status', async (_req, res) => {
     liveSessionSchemaReady: sharedReadiness.d1.liveSessionSchemaReady,
     identityProfileSchemaReady: sharedReadiness.d1.identityProfileSchemaReady,
     identityProfileMigrationAttestation: sharedReadiness.d1.identityProfileMigrationAttestation,
+    walletReadRouteGate: sharedReadiness.walletReadRouteGate,
+    liveSessionRouteGate: sharedReadiness.liveSessionRouteGate,
     walletBusinessRoutesEnabled: false,
     callChatRoutesEnabled: liveSessionRoutesRegistered && liveSessionRoutesOpen && liveSessionSchemaReady,
     liveSessionRoutesEnabled: liveSessionRoutesRegistered && liveSessionRoutesOpen && liveSessionSchemaReady,
     renderDependency: false,
     productionTrafficEnabled: false,
-    nextGate: identityProfileBackfillRoutesRegistered ? 'identity-profile-staging-preview-and-reconciliation' : liveSessionRoutesRegistered ? 'live-call-chat-conformance-and-session-timer-tests' : walletBackfillRoutesRegistered ? 'enable-staging-live-session-routes' : 'enable-staging-wallet-backfill-tools'
+    nextGate: !sharedReadiness.d1.identityProfileSchemaReady
+      ? 'apply-staging-identity-profile-schema'
+      : !sharedReadiness.identityProfileD1AuthorizationInventoryComplete
+        ? 'complete-identity-profile-import-inventory'
+        : !sharedReadiness.identityProfileD1AuthorizationReconciliationComplete
+          ? 'complete-identity-profile-reconciliation'
+          : !sharedReadiness.identityProfileD1AuthorizationSourceQuiesced
+            ? 'attest-staging-identity-profile-source-quiescence'
+            : !sharedReadiness.walletReadRouteGate.backfillComplete
+              ? 'complete-wallet-domain-backfill-and-reconciliation'
+              : !sharedReadiness.walletReadRouteGate.cutoverComplete
+                ? 'attest-wallet-domain-staging-cutover'
+                : !sharedReadiness.walletReadRouteGate.enabled
+                  ? 'enable-staging-wallet-read-routes'
+                  : !sharedReadiness.liveSessionRouteGate.enabled
+                    ? 'enable-staging-live-session-routes-after-wallet-smoke'
+                    : 'authenticated-wallet-recharge-live-booking-conformance'
   });
 });
 
