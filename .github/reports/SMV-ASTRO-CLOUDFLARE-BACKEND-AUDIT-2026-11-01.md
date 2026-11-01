@@ -129,7 +129,7 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | 26 | Admin / configuration | POST | `/admin/approve-question` | No exact source handler; fails closed | — |
 | 27 | Appointments / Q&A / consultations | POST | `/astrologer/claim-question` | No exact source handler; fails closed | — |
 | 28 | Public config / content | GET | `/api-version` | No exact source handler; fails closed | — |
-| 29 | Admin / configuration | POST | `/admin/reject-question` | No exact source handler; fails closed | — |
+| 29 | Admin / configuration | POST | `/admin/reject-question` | Exact source route; admin-only Question rejection/refund | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
 | 30 | Admin / configuration | POST | `/admin/retry-refund` | Exact legacy Question refund retry route | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
 | 31 | Admin / configuration | GET | `/admin/refund-trace/:questionId` | Exact source route; admin-only refund trace | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
 | 32 | Other | POST | `/customer/sync-refund` | Exact source route; customer ownership checked | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
@@ -181,7 +181,7 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | 78 | Admin / configuration | POST | `/admin/private-consultation/set-word-count` | No exact source handler; fails closed | — |
 | 79 | Admin / configuration | POST | `/admin/private-consultation/set-workflow` | No exact source handler; fails closed | — |
 | 80 | Admin / configuration | POST | `/admin/private-consultation/approve-question` | No exact source handler; fails closed | — |
-| 81 | Admin / configuration | POST | `/admin/private-consultation/reject-question` | No exact source handler; fails closed | — |
+| 81 | Admin / configuration | POST | `/admin/private-consultation/reject-question` | Exact source route; Staging-only feature gate | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
 | 82 | Admin / configuration | POST | `/admin/private-consultation/retry-refund` | Exact source route; Staging-only feature gate | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
 | 83 | Admin / configuration | POST | `/admin/private-consultation/sync-refund` | Exact source route; Staging-only feature gate | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
 | 84 | Appointments / Q&A / consultations | GET | `/astrologer/private-consultations` | No exact source handler; fails closed | — |
