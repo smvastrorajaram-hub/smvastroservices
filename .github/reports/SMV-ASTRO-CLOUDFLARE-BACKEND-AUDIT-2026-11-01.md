@@ -7,40 +7,28 @@
 **Production D1:** `smvastro-wallet-production`  
 **Production D1 ID:** `b1d5684c-3fcd-48fe-9571-ea41fc605c7d`
 
-**PR #298 verification head:** `fefa8f1596f47bfcd49fccfdf7c6d3c3a71c00ab`
-
-**Verified PR #298 code/test head:** `9f0a495cbcdb86504db96fba99cf08c67da03a30`
+**PR #298 verified source/test revision:** `15334a9168c1fd6959db6068addea299ef768d06`
 
 ### Latest PR #298 CI evidence
 
-- Complete Cloudflare backend contract suite: **375/375 PASS** in both Staging integration and Production parity/security audit.
-- Route source audit: **149 legacy routes / 144 Worker handler pairs / 131 exact method-path matches / 18 unmatched**.
-- Staging ephemeral local D1: **10 migrations applied locally only**; no remote D1 migration or customer data import.
+- Complete Cloudflare backend contract suite: **378/378 PASS** in both Staging integration and Production parity/security audit.
+- Route source audit: **149 legacy routes / 144 literal Worker handler pairs / 131 exact legacy method-path matches / 18 unmatched legacy pairs**. All remaining unmatched pairs are intentionally out of scope: 11 retired Private Consultation/Ask Now routes and 7 Horoscope routes. The 18 active routes that were previously missing now have literal handlers and contract coverage.
+- Wallet backfill/reconciliation suite: **65/65 PASS**; all 10 migrations applied to an ephemeral local D1 database only.
 - Local-D1 Razorpay atomic webhook claims: **3/3 PASS**.
 - Local-D1 Live capacity, booking-race and settlement invariants: **4/4 PASS**.
-- Staging Worker dry-run: PASS.
-- Isolated Production Worker dry-run: PASS.
+- Dedicated APK-release Worker suite: **108/108 PASS**; Production and Staging APK Worker Wrangler bundles both pass dry-run validation.
+- Backend Staging Worker bundle dry-run: PASS.
+- Isolated Production Worker bundle dry-run: PASS.
 - Production Worker validation: PASS; **deploy-production-worker SKIPPED**.
 
-CI workflow runs:
-- [Staging integration validation](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41312262332)
-- [Production parity/security audit](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41312262228)
-- [Wallet local-D1 reconciliation](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41312262231)
-- [Production Worker validation — deployment skipped](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41312262230)
+CI workflow runs for this verified revision:
+- [Staging integration validation — 378/378](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41312860074)
+- [Production parity/security audit — 378/378](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41312860101)
+- [Wallet local-D1 reconciliation — 65/65](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41312860046)
+- [APK release Worker CI — 108/108](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41312860044)
+- [Production Worker validation — deployment skipped](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41312860312)
 
-The 25 added route-parity contract and initialization-wiring tests use injected Firestore/D1/FCM/Auth adapters. They validate code paths and fail-closed gates; they do **not** establish real Firebase Auth Admin permissions, real FCM delivery, provisioned R2/Queue/DO resources, or APK Worker service-binding connectivity.
-
-### Prior CI evidence on PR #298
-
-- Full Cloudflare backend contract suite: **374/374 PASS** (Staging integration and Production parity/security audit).
-- Ephemeral local D1 migrations: **10 migrations applied locally only**; no `--remote` execution or customer data import.
-- Local-D1 Razorpay webhook claim tests: **3/3 PASS**.
-- Local-D1 Live capacity / booking / settlement invariant tests: **4/4 PASS**.
-- Staging Worker bundle dry-run: PASS.
-- Isolated Production Worker bundle dry-run: PASS.
-- Production Worker validation: PASS; `deploy-production-worker`: **SKIPPED**.
-
-The 24 additional legacy-route tests cover lookup/profile registration, phone uniqueness, public Astrologer verification, payout review, APK binding fail-closed, Admin content/dashboard, read-only Wallet ledger gates, push token lifecycle, FCM HTTP v1 request shape, and scheduled Live start gating. Together with the six Google Form sync/webhook tests these are contract tests against injected provider/data adapters; they do not prove live Firebase Admin, FCM or APK service connectivity.
+The 29 legacy route-parity tests use injected Firestore/D1/FCM/Auth adapters and cover route registration, role/authorization checks, field validation, transaction intent, idempotent retry, read-only Wallet queries and fail-closed provider gates. They do **not** prove live Firebase Auth Admin permissions, actual FCM device delivery, remotely provisioned Live Durable Objects, deployed backend-to-APK Worker service connectivity, or a browser-to-Worker end-to-end cutover.
 
 ### Live Staging provider and resource status (read-only)
 
@@ -72,13 +60,13 @@ The production Worker runtime and D1 binding are deployed and verified, but this
 
 A matching source handler is **not** counted as parity: parity also requires request/response contract equivalence, authorization equivalence, persistence/reconciliation behavior, and conformance tests.
 
-The route inventory is maintained in [`legacy-backend-route-inventory.mjs`](https://github.com/smvastrorajaram-hub/smvastroservices/blob/integration/cloudflare-backend-staging-stack-20261031/shared/backend-platform/legacy-backend-route-inventory.mjs). The source-level audit parser reviewed `index.mjs`, Wallet, offer, recharge, Live, Wallet backfill, Identity/Profile backfill, core read, and the new `legacy-razorpay-routes.mjs` module. The latter adds 16 exact legacy method/path pairs.
+The route inventory is maintained in [`legacy-backend-route-inventory.mjs`](https://github.com/smvastrorajaram-hub/smvastroservices/blob/integration/cloudflare-backend-staging-stack-20261031/shared/backend-platform/legacy-backend-route-inventory.mjs). The source-level audit parser reviews `index.mjs` and the registered Worker route modules, including Wallet, offer, recharge, Live, backfill, core/public read and legacy route families. The 144 literal Worker handler pairs include the restored `legacy-route-parity-gap-routes.mjs` family.
 
 ## Priority findings
 
 ### P0 — Route parity is incomplete (cutover blocker)
 
-There are 149 unique legacy method/path pairs. Of those, 131 have an exact method/path handler literal in the reviewed Worker source files; 18 have no exact handler and remain routed to the generic `BACKEND_MIGRATION_NOT_CUT_OVER` fail-closed guard. All 18 unmatched paths are explicitly out of this migration scope: 11 retired Private Consultation/Ask Now routes and 7 Horoscope routes. The newly restored 18 active route handlers have contract tests, but literal source matches and injected adapters are not proof of live provider integration or full production parity. Retired consultation paths must not be reintroduced; Horoscope and Calendar remain untouched.
+There are 149 unique legacy method/path pairs. The Worker now has 144 literal handler pairs and 131 exact method/path matches. The remaining 18 unmatched pairs are all explicitly out of this migration scope: 11 retired Private Consultation/Ask Now routes and 7 Horoscope routes. The 18 active route gaps identified in the previous audit now have source handlers and contract tests. Literal source matches and injected adapters are not proof of live provider integration or full Production parity. Retired consultation paths must not be reintroduced; Horoscope and Calendar remain untouched.
 
 The existing README says approximately 117 route registrations; the current version-controlled route inventory says 149. Use the inventory as the audit baseline until a fresh automated extraction of all active route registrations—including indirect router/module registrations—is compared against it.
 
@@ -298,12 +286,12 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 
 ## Recommended completion gates
 
-1. Build missing route modules in small family-by-family changes; compare response contracts and authorization rules against Render with fixtures. Keep all production flags off.
-2. Add real local-D1 migration/trigger transaction tests, deterministic race tests, rollback tests and financial ledger reconciliation assertions.
-3. Harden Razorpay webhook inbox claiming/recovery; add replay, duplicate parallel delivery, out-of-order, capture recovery and refund idempotency tests.
-4. Establish staging-only end-to-end Firebase auth/role/approval tests and a policy/test for disabled/revoked users.
-5. Make production payment/live support a separate reviewed design with production-only environment guards and secrets; no live keys in plain-text config or test scripts.
-6. Only after all required route families reach tested parity, reconciliation is clean, and independent approval is recorded should a reversible Production cutover be planned.
+1. Perform Staging-only remote Firebase Auth Admin/Firestore verification using dedicated staging accounts, including disabled/revoked users and role/approval policies; no Production accounts or rules.
+2. Provision and verify the isolated APK-release Staging D1, R2 bucket, and Worker service. Then verify backend-to-APK service binding plus APK metadata/download in Staging; keep upload gate off until verified.
+3. Provision Staging Live D1 migrations and Durable Object namespaces; verify actual scheduled Call/Chat start, timer delivery, realtime events, idempotent retry, reservation/rollback and customer/astrologer closure end-to-end.
+4. Verify FCM with a dedicated staging Android device and confirm actual device receipt; verify Firebase IAM for Auth Admin, Firestore and Messaging with least privilege.
+5. Perform the authenticated read-only Razorpay Test-mode provider probe and then staging-only webhook replay/duplicate/out-of-order/refund-idempotency tests. Do not send real payments or refunds.
+6. Finish independent route-by-route request/response and data-reconciliation review. Only after all provider and financial gates are clean and independent approval is recorded should a reversible Production cutover be planned.
 
 ## Safety statement
 
