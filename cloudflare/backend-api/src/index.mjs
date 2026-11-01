@@ -28,6 +28,7 @@ import { createRazorpayRestClient } from '../../../shared/backend-platform/razor
 import { isLegacyBackendPath, LEGACY_BACKEND_ROUTE_INVENTORY } from '../../../shared/backend-platform/legacy-backend-route-inventory.mjs';
 import { registerGeoNamesRoutes } from './geonames-location-routes.mjs';
 import { registerPublicLegacyRoutes } from './public-legacy-routes.mjs';
+import { registerRazorpayConnectivityRoute } from './razorpay-connectivity-routes.mjs';
 
 const app = express();
 const verifyFirebaseIdToken = createFirebaseIdTokenVerifier();
@@ -432,6 +433,14 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
   }
 
   if (razorpayPolicy.enabled && sharedRazorpayClient && firestoreAdmin && walletIdentityService) {
+    registerRazorpayConnectivityRoute({
+      app,
+      identityService: walletIdentityService,
+      razorpay: sharedRazorpayClient,
+      mode: razorpayPolicy.mode,
+      keyId: razorpayKeyId,
+      credentialsConfigured: true
+    });
     registerLegacyRazorpayRoutes({
       app,
       identityService: walletIdentityService,
@@ -583,6 +592,10 @@ app.get('/api/backend/readiness', async (_req, res) => {
       },
       firebaseConnected: false,
       razorpayConnected: false,
+      razorpayCredentialsConfigured: razorpayPolicy.enabled && !!razorpayKeyId && !!razorpayKeySecret && !!razorpayWebhookSecret,
+      razorpayProviderConnectionVerified: false,
+      razorpayMode: razorpayPolicy.mode,
+      razorpayPolicyReason: razorpayPolicy.reason,
       legacyRazorpayRoutesRegistered,
       legacyPrivateConsultationRoutesEnabled: String(env.SMV_ENVIRONMENT || '') === 'staging' && String(env.SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED || '').toLowerCase() === 'true',
       walletReadRoutesEnabled: walletReadEnabled,
@@ -620,6 +633,10 @@ app.get('/api/backend/migration-status', (_req, res) => {
     firebaseAdminUserManagementConnected: false,
     firestoreConnected: false,
     razorpayConnected: false,
+    razorpayCredentialsConfigured: razorpayPolicy.enabled && !!razorpayKeyId && !!razorpayKeySecret && !!razorpayWebhookSecret,
+    razorpayProviderConnectionVerified: false,
+    razorpayMode: razorpayPolicy.mode,
+    razorpayPolicyReason: razorpayPolicy.reason,
     legacyRazorpayRoutesRegistered,
     legacyPrivateConsultationRoutesEnabled: String(env.SMV_ENVIRONMENT || '') === 'staging' && String(env.SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED || '').toLowerCase() === 'true',
     walletReadRoutesEnabled: walletReadRoutesRegistered && walletReadRouteGateOpen && walletDomainSchemaReady,
