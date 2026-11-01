@@ -310,24 +310,27 @@ test('Last-known Dashboard role cache only stores Customer or Astrologer UI role
   assert.ok(frontend.includes("smvProfiles.delete(loadUid);"));
 });
 
-test('Astrologer background profile-read failure preserves the already rendered Dashboard', () => {
+test('Astrologer profile-read failures preserve an open Dashboard and recover before retry on a fresh session', () => {
   const frontend = read('public/smvastro.mjs');
   const start = frontend.indexOf('async function loadDashboard(expectedRole=null,force=false,background=false)');
   const end = frontend.indexOf('function openPayoutChange()', start);
   assert.ok(start >= 0 && end > start, 'Dashboard render function exists');
   const dashboard = frontend.slice(start, end);
   const failure = dashboard.indexOf('if(data._smvProfileReadFailed&&astroProfileReadFailed&&!Object.keys(ad).length){');
-  const fallback = dashboard.indexOf('box.innerHTML=\'<div class="card smv-dashboard-fast-shell"><span class="badge">ASTROLOGER</span><button class="btn gray" id="smvAstroDataRetry"', failure);
   const preserve = dashboard.indexOf("box?.querySelector('.smv-astrologer-dashboard')", failure);
-  assert.ok(failure >= 0 && preserve > failure && fallback > preserve,
-    'An existing Astrologer Dashboard is checked before the retry-only fallback can replace it');
-  const guard = dashboard.slice(preserve, fallback);
-  assert.ok(guard.includes('smvAstroProfileRefreshWarning'));
-  assert.ok(guard.includes('box.prepend(notice)'));
-  assert.ok(guard.includes('RETRY DASHBOARD UPDATE'));
-  assert.ok(guard.includes('smvLiveStatus('));
+  const sync = dashboard.indexOf("const sync=await renderApi('/astrologer/sync-approval'", failure);
+  const fallback = dashboard.indexOf('if(data._smvProfileReadFailed&&astroProfileReadFailed&&!Object.keys(ad).length&&astroProfileSyncFailed)', sync);
+  assert.ok(failure >= 0 && preserve > failure && sync > preserve && fallback > sync,
+    'An open Dashboard is preserved first; a fresh session checks the authenticated backend before showing retry UI');
+  const preserveGuard = dashboard.slice(preserve, sync);
+  assert.ok(preserveGuard.includes('smvAstroProfileRefreshWarning'));
+  assert.ok(preserveGuard.includes('box.prepend(notice)'));
+  assert.ok(preserveGuard.includes('RETRY DASHBOARD UPDATE'));
+  assert.ok(preserveGuard.includes('smvLiveStatus('));
+  const recoveryGuard = dashboard.slice(sync, fallback);
+  assert.ok(recoveryGuard.includes('astroProfileSyncFailed=true'));
+  assert.ok(recoveryGuard.includes('RETRY PROFILE CHECK'));
 });
-
 test('Astrologer Dashboard keeps one heading and parallelizes its first profile read', () => {
   const frontend = read('public/smvastro.mjs');
   const html = read('public/index.html');
