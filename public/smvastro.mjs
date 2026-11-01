@@ -1809,20 +1809,13 @@ if(data._smvProfileReadFailed&&astroProfileReadFailed&&!Object.keys(ad).length){
     smvLiveStatus('Showing the last successfully loaded Astrologer Dashboard.');
     return;
   }
-  box.innerHTML='<div class="card smv-dashboard-fast-shell"><span class="badge">ASTROLOGER</span><button class="btn gray" id="smvAstroDataRetry" type="button">REFRESH DASHBOARD</button></div>';
-  $('smvAstroDataRetry')?.addEventListener('click',()=>{
-    smvProfiles.delete(loadUid);
-    loadDashboard('astrologer',true).catch(error=>console.warn('Astrologer Dashboard refresh deferred:',error?.message||error));
-  });
-  dashboardReadyUid=loadUid;dashboardReadyRole=role;dashboardReadyAt=Date.now();
-  smvWatchDashboardEvents(role);
-  return;
 }
 let userStatus=String(
   data.status||ad.status||'pending'
 ).toLowerCase();
 let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
 
+   let astroProfileSyncFailed=false;
    // A directory-visible approved record may be a legacy/duplicate document
    // while this dashboard reads the UID-keyed document. Reconcile only when the
    // local state is pending; the server confirms an existing approved record
@@ -1839,7 +1832,23 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
          data.status='active';data.role='astrologer';
          userStatus='active';astroStatus='approved';
        }
-     }catch(syncError){console.warn('Astrologer approval status refresh deferred:',syncError?.message||syncError);}
+     }catch(syncError){
+       astroProfileSyncFailed=true;
+       console.warn('Astrologer approval status refresh deferred:',syncError?.message||syncError);
+     }
+   }
+   // On a fresh browser session there is no previously rendered Dashboard to
+   // preserve. First let the authenticated backend reconcile an already-approved
+   // legacy/UID profile. Show retry UI only when that trusted check cannot complete.
+   if(data._smvProfileReadFailed&&astroProfileReadFailed&&!Object.keys(ad).length&&astroProfileSyncFailed){
+     box.innerHTML='<div class="card smv-dashboard-fast-shell"><span class="badge">ASTROLOGER</span><p class="small">We could not verify your Astrologer profile just now. Your account has not been changed. Please retry the secure profile check.</p><button class="btn gray" id="smvAstroDataRetry" type="button">RETRY PROFILE CHECK</button></div>';
+     $('smvAstroDataRetry')?.addEventListener('click',()=>{
+       smvProfiles.delete(loadUid);
+       loadDashboard('astrologer',true).catch(error=>console.warn('Astrologer Dashboard profile check deferred:',error?.message||error));
+     });
+     dashboardReadyUid=loadUid;dashboardReadyRole=role;dashboardReadyAt=Date.now();
+     smvWatchDashboardEvents(role);
+     return;
    }
  
    if(!['active','approved'].includes(astroStatus)){
