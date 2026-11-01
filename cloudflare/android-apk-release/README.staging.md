@@ -33,7 +33,7 @@ Admin uploads remain disabled until the required Staging identity is configured 
 
 ## Deployment
 
-After the two Staging Cloudflare resources and the dedicated token/ID variable are configured:
+After the two Staging Cloudflare resources and the dedicated token/ID variable are configured, note that GitHub requires a `workflow_dispatch` workflow to exist on the repository's default branch before it can be manually selected in Actions. PR #296 currently targets the `integration` branch, so this Staging deployment workflow becomes available in GitHub Actions only after the same workflow file has separately reached the default `main` branch through the normal reviewed promotion process. This PR does not promote or merge anything into `main`.
 
 1. Open GitHub Actions → **Deploy SMV ASTRO APK Release Worker — Staging**.
 2. Select branch `main`.
