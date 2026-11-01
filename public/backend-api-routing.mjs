@@ -74,6 +74,7 @@ function routePatternMatches(pattern, pathname) {
 const STAGING_DISABLED_EXACT_PATHS = new Set([
   "/submit-answer",
   "/astrologer/edit-answer",
+  "/astrologer/edit-answer",
   "/question-notify",
   "/admin/approve-question",
   "/astrologer/claim-question",
@@ -295,7 +296,8 @@ export function createBackendApiRouter({
       if (!isRetryableGatewayFailure({ method, status: response.status, aborted: init.signal?.aborted === true })) {
         return response;
       }
-      return renderSecondary(path, init, renderResponse || response, renderError);
+      if (renderResponse) return renderResponse;
+      throw renderError || new Error("Cloudflare secondary read failed.");
     } catch (error) {
       if (renderResponse) return renderResponse;
       throw renderError || error;
@@ -308,6 +310,7 @@ export function createBackendApiRouter({
     try {
       readiness = await getReadiness();
     } catch (_error) {
+      if (family === "walletBackfill") return routeUnavailable(family);
       // Nothing has been sent to Cloudflare yet. Render is the safe secondary,
       // including for mutations, because there is no ambiguous payment/session outcome.
       return renderSecondary(path, init);
