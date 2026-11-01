@@ -19,6 +19,7 @@
     "test:answer-edit": "node --test test/astrologer-answer-edit-route.test.mjs",
     "test:admin-astro-catalog": "node --test test/admin-astrologer-catalog-routes.test.mjs",
     "test:question-workflow": "node --test test/legacy-question-workflow-routes.test.mjs",
+    "test:appointment-booking": "node --test test/appointment-booking-route.test.mjs",
     "test:wallet-domain": "node --test test/wallet-domain.test.mjs test/wallet-adapters.test.mjs",
     "test:live-session-do": "node --test test/live-session-coordinator.test.mjs",
     "test:wallet-live-audit": "node --test test/wallet-domain-backfill.test.mjs test/d1-wallet-domain-backfill.test.mjs test/wallet-live-readonly-audit.test.mjs"
