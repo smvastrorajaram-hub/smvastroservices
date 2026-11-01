@@ -32,7 +32,7 @@ jobs:
     name: Confirm isolated Staging deployment
     runs-on: ubuntu-latest
     steps:
-      - name: Require the Staging integration branch and explicit confirmation
+      - name: Require the default main branch and explicit confirmation
         shell: bash
         env:
           CONFIRM_DEPLOYMENT: ${{ inputs.confirm_staging_apk_worker_deploy }}
