@@ -63,7 +63,7 @@ test('location search rejects short/control-character input and clamps result co
   assert.equal(short.statusCode, 400);
 
   const control = response();
-  await app.handlers.get('GET /api/locations/search')(request({ q: 'Chennai\n' }), control);
+  await app.handlers.get('GET /api/locations/search')(request({ q: 'Che\nnai' }), control);
   assert.equal(control.statusCode, 400);
 
   const res = response();
