@@ -409,6 +409,9 @@ test('Private Consultation verify-payment records captured payments once and res
         astrologerId: 'astro-1', question: 'Private question', chatPrice: 25,
         paymentStatus: 'order_created', status: 'awaiting_payment', razorpayOrderId: 'order_test_1'
       }
+    },
+    razorpay: {
+      async fetchPayment(id) { return { id, order_id: 'order_test_1', amount: 2500, currency: 'INR', status: 'captured' }; }
     }
   });
   const res = responseHarness();
