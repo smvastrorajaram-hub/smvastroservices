@@ -13,6 +13,8 @@ import { createD1IdentityService } from '../../../shared/backend-platform/d1-ide
 import { createD1IdentityAuthorizationGate } from '../../../shared/backend-platform/d1-identity-authorization-gate.mjs';
 import { registerWalletReadRoutes, isWalletReadRouteGateOpen } from './wallet-read-routes.mjs';
 import { registerWalletRechargeRoutes } from './wallet-recharge-routes.mjs';
+import { resolveRazorpayMode } from '../../../shared/backend-platform/razorpay-mode-policy.mjs';
+import { registerAdminAccessRoute, registerPublicRuntimeReadRoutes } from './core-read-routes.mjs';
 import { registerWalletOfferRoutes } from './wallet-offer-routes.mjs';
 import { createWalletDomainBackfillService } from '../../../shared/backend-platform/d1-wallet-domain-backfill.mjs';
 import { registerWalletDomainBackfillRoutes } from './wallet-domain-backfill-routes.mjs';
@@ -66,6 +68,8 @@ app.use((req, res, next) => {
   if (req.path === '/wallet/recharge/webhook') return walletWebhookRawParser(req, res, next);
   return jsonBodyParser(req, res, next);
 });
+
+registerPublicRuntimeReadRoutes({ app, env });
 
 app.get('/api/auth/session', async (req, res) => {
   const authorization = String(req.get('Authorization') || '');
@@ -198,6 +202,7 @@ let walletReadRoutesRegistered = false;
 let walletDomainSchemaReady = false;
 let walletRechargeSchemaReady = false;
 let walletRechargeRoutesRegistered = false;
+let walletRechargeMode = 'disabled';
 let walletOfferRoutesRegistered = false;
 let walletBackfillRoutesRegistered = false;
 let identityProfileBackfillRoutesRegistered = false;
@@ -262,6 +267,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     });
     walletIdentityService = firebaseIdentityService;
     sharedWalletAdapter = createD1WalletAdapter({ db: env.DB });
+    registerAdminAccessRoute({ app, identityService: walletIdentityService });
   }
   const walletSchemaReady = async () => {
     try {
@@ -419,7 +425,19 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     const razorpayKeyId = String(env.RAZORPAY_KEY_ID || '').trim();
     const razorpayKeySecret = String(env.RAZORPAY_KEY_SECRET || '').trim();
     const razorpayWebhookSecret = String(env.RAZORPAY_WEBHOOK_SECRET || '');
-    if (razorpayKeyId.startsWith('rzp_test_') && razorpayKeySecret && razorpayWebhookSecret) {
+    const razorpayPolicy = resolveRazorpayMode({
+      environment: String(env.SMV_ENVIRONMENT || ''),
+      keyId: razorpayKeyId,
+      keySecret: razorpayKeySecret,
+      webhookSecret: razorpayWebhookSecret,
+      allowProductionLive:
+        String(env.SMV_RAZORPAY_LIVE_MODE_ENABLED || '').toLowerCase() === 'true' &&
+        String(env.SMV_BACKEND_CLOUDFLARE_ACTIVE || '').toLowerCase() === 'true',
+      allowProductionTest:
+        String(env.SMV_RAZORPAY_TEST_MODE_ENABLED || '').toLowerCase() === 'true'
+    });
+    walletRechargeMode = razorpayPolicy.mode;
+    if (razorpayPolicy.enabled) {
       const razorpay = createRazorpayRestClient({ keyId: razorpayKeyId, keySecret: razorpayKeySecret });
       registerWalletRechargeRoutes({
         app,
@@ -428,6 +446,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
         razorpay,
         razorpayKeyId,
         razorpayWebhookSecret,
+        razorpayMode: razorpayPolicy.mode,
         isReady: checkWalletRechargeSchemaReady
       });
       walletRechargeRoutesRegistered = true;
@@ -477,6 +496,7 @@ app.get('/healthz', async (_req, res) => {
     backendActive: String(env.SMV_BACKEND_CLOUDFLARE_ACTIVE || 'false') === 'true',
     walletReadRoutesRegistered,
     walletRechargeRoutesRegistered,
+    walletRechargeMode,
     walletOfferRoutesRegistered,
     liveSessionRoutesRegistered,
     liveSessionSchemaReady,
@@ -534,6 +554,8 @@ app.get('/api/backend/readiness', async (_req, res) => {
       razorpayConnected: false,
       walletReadRoutesEnabled: walletReadEnabled,
       walletRechargeRoutesEnabled: walletRechargeRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
+    walletRechargeMode,
+      walletRechargeMode,
       walletOfferRoutesEnabled: walletOfferRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
       walletBackfillRoutesRegistered,
       walletBackfillToolsEnabled: walletBackfillToolsOpen,
