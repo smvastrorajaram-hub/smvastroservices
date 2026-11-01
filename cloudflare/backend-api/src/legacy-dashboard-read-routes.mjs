@@ -203,7 +203,7 @@ export function registerLegacyDashboardReadRoutes({ app, firestore, identityServ
 
   app.get('/astrologer/open-questions', async (req, res) => {
     try {
-      const user = await requireRole(req, 'astrologer');
+      const user = await authenticate(req);
       const uid = safeUid(user);
       const [astroSnapshot, workflowSnapshot] = await Promise.all([
         firestore.getDocument('smv_astrologers/' + uid),
