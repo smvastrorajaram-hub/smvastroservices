@@ -38,8 +38,8 @@ jobs:
           CONFIRM_DEPLOYMENT: ${{ inputs.confirm_staging_apk_worker_deploy }}
         run: |
           set -euo pipefail
-          if [[ "$GITHUB_REF" != "refs/heads/integration/cloudflare-backend-staging-stack-20261031" ]]; then
-            echo "::error::Run this workflow from integration/cloudflare-backend-staging-stack-20261031 only."
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "::error::Run this workflow from main only."
             exit 1
           fi
           if [[ "$CONFIRM_DEPLOYMENT" != "yes" ]]; then
@@ -51,7 +51,7 @@ jobs:
   deploy:
     name: Staging-only D1 migration and Worker deployment
     needs: preflight
-    if: ${{ needs.preflight.result == 'success' && github.ref == 'refs/heads/integration/cloudflare-backend-staging-stack-20261031' && inputs.confirm_staging_apk_worker_deploy == 'yes' }}
+    if: ${{ needs.preflight.result == 'success' && github.ref == 'refs/heads/main' && inputs.confirm_staging_apk_worker_deploy == 'yes' }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -65,7 +65,7 @@ jobs:
       - name: Checkout selected Staging integration branch
         uses: actions/checkout@v4
         with:
-          ref: integration/cloudflare-backend-staging-stack-20261031
+          ref: main
 
       - name: Verify dedicated Staging Cloudflare credentials and D1 ID
         shell: bash
