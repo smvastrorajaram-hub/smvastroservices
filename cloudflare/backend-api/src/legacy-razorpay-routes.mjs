@@ -120,6 +120,7 @@ export function registerLegacyRazorpayRoutes({
   razorpayMode = 'test',
   enablePrivateConsultation = false,
   allowNewQuestions = true,
+  isD1Ready = async () => true,
   cryptoImpl = globalThis.crypto,
   now = Date.now
 } = {}) {
@@ -135,6 +136,7 @@ export function registerLegacyRazorpayRoutes({
       typeof razorpay.verifyPaymentSignature !== 'function' ||
       typeof razorpay.verifyWebhookSignature !== 'function' ||
       typeof razorpay.fetchOrderPayments !== 'function' ||
+      typeof razorpay.capturePayment !== 'function' ||
       typeof razorpay.refundPayment !== 'function' ||
       typeof razorpay.fetchPaymentRefunds !== 'function' ||
       typeof razorpay.fetchRefund !== 'function' ||
@@ -723,7 +725,7 @@ export function registerLegacyRazorpayRoutes({
     const eventType = claim.eventType;
     let orderSnapshot = await firestore.getDocument(ORDER_COLLECTION + '/' + orderId);
     const orderRecord = orderSnapshot.data || {};
-    const walletRecharge = await walletAdapter.getRechargeByOrderId(orderId).catch(() => null);
+    const walletRecharge = await walletAdapter.getRechargeByOrderId(orderId);
     if (!orderSnapshot.exists && !walletRecharge) return;
 
     const nextStatus = ['payment.captured', 'order.paid'].includes(eventType) ? 'paid' :
@@ -823,6 +825,7 @@ export function registerLegacyRazorpayRoutes({
     let claim = null;
     try {
       if (!webhookSecret) return res.status(503).send('Invalid webhook configuration');
+      if (!(await isD1Ready())) return res.status(503).set('Retry-After', '10').send('Webhook inbox storage is not ready');
       const body = rawBytes(req.body);
       const signature = String(req.get('X-Razorpay-Signature') || '').trim();
       if (!body || !signature) return res.status(400).send('Invalid webhook payload');
