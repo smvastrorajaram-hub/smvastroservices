@@ -197,13 +197,13 @@ export function isCloudflareRouteFamilyReady(family, readiness) {
         readiness.walletBackfillRoutesRegistered === true &&
         readiness.walletBackfillToolsEnabled === true;
     case "walletRead":
-      return firebaseReady && readiness.walletReadRoutesEnabled === true;
+      return readiness.backendActive === true && firebaseReady && readiness.walletReadRoutesEnabled === true;
     case "walletOffers":
-      return readiness.walletOfferRoutesEnabled === true;
+      return readiness.backendActive === true && readiness.walletOfferRoutesEnabled === true;
     case "walletRecharge":
-      return firebaseReady && readiness.walletRechargeRoutesEnabled === true && razorpayReady;
+      return readiness.backendActive === true && firebaseReady && readiness.walletRechargeRoutesEnabled === true && razorpayReady;
     case "live":
-      return firebaseReady && readiness.liveCallChatRoutesEnabled === true;
+      return readiness.backendActive === true && firebaseReady && readiness.liveCallChatRoutesEnabled === true;
     default:
       return false;
   }
