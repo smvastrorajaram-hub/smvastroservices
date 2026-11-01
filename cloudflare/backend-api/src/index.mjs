@@ -29,6 +29,7 @@ import { isLegacyBackendPath, LEGACY_BACKEND_ROUTE_INVENTORY } from '../../../sh
 import { registerGeoNamesRoutes } from './geonames-location-routes.mjs';
 import { registerPublicLegacyRoutes } from './public-legacy-routes.mjs';
 import { registerRazorpayConnectivityRoute } from './razorpay-connectivity-routes.mjs';
+import { registerRootRuntimeRoute } from './root-runtime-route.mjs';
 import { registerLegacyReadRoutes } from './legacy-read-routes.mjs';
 import { registerLegacyDashboardReadRoutes } from './legacy-dashboard-read-routes.mjs';
 import { registerLegacyQuizReadRoutes } from './legacy-quiz-read-routes.mjs';
@@ -94,6 +95,7 @@ app.use((req, res, next) => {
 });
 
 registerPublicRuntimeReadRoutes({ app, env });
+registerRootRuntimeRoute({ app, env });
 registerGeoNamesRoutes({ app, env });
 registerPublicLegacyRoutes({ app, env });
 
@@ -551,12 +553,9 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       razorpayKeySecretPresent: !!razorpayKeySecret,
       razorpayWebhookSecret,
       razorpayMode: razorpayPolicy.mode,
-      enablePrivateConsultation:
-        String(env.SMV_ENVIRONMENT || '') === 'staging' &&
-        String(env.SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED || '').toLowerCase() === 'true',
-      allowNewQuestions:
-        String(env.SMV_ENVIRONMENT || '') === 'staging' &&
-        String(env.SMV_NEW_QUESTION_PAYMENTS_ENABLED || '').toLowerCase() === 'true',
+      // Retired product surfaces stay disabled regardless of dashboard variable drift.
+      enablePrivateConsultation: false,
+      allowNewQuestions: false,
       isD1Ready: checkWalletRechargeSchemaReady
     });
     legacyRazorpayRoutesRegistered = true;
@@ -697,7 +696,7 @@ app.get('/api/backend/readiness', async (_req, res) => {
       razorpayMode: razorpayPolicy.mode,
       razorpayPolicyReason: razorpayPolicy.reason,
       legacyRazorpayRoutesRegistered,
-      legacyPrivateConsultationRoutesEnabled: String(env.SMV_ENVIRONMENT || '') === 'staging' && String(env.SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED || '').toLowerCase() === 'true',
+      legacyPrivateConsultationRoutesEnabled: false,
       walletReadRoutesEnabled: walletReadEnabled,
       walletRechargeRoutesEnabled: walletRechargeRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
       walletRechargeMode,
@@ -738,7 +737,7 @@ app.get('/api/backend/migration-status', (_req, res) => {
     razorpayMode: razorpayPolicy.mode,
     razorpayPolicyReason: razorpayPolicy.reason,
     legacyRazorpayRoutesRegistered,
-    legacyPrivateConsultationRoutesEnabled: String(env.SMV_ENVIRONMENT || '') === 'staging' && String(env.SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED || '').toLowerCase() === 'true',
+    legacyPrivateConsultationRoutesEnabled: false,
     walletReadRoutesEnabled: walletReadRoutesRegistered && walletReadRouteGateOpen && walletDomainSchemaReady,
     walletRechargeRoutesEnabled: walletRechargeRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
     walletRechargeMode,

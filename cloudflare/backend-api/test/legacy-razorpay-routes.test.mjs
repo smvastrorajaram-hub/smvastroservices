@@ -191,7 +191,7 @@ function razorpayFixture(overrides = {}) {
   };
 }
 
-function setup({ documents = {}, privateConsultation = true, razorpay = {}, wallet = {}, ready = true } = {}) {
+function setup({ documents = {}, privateConsultation = true, allowNewQuestions = true, razorpay = {}, wallet = {}, ready = true } = {}) {
   const app = appHarness();
   const firestore = firestoreFixture(documents);
   const inbox = walletInbox();
@@ -208,7 +208,7 @@ function setup({ documents = {}, privateConsultation = true, razorpay = {}, wall
     app, identityService, firestore, walletAdapter: d1, razorpay: gateway,
     razorpayKeyId: 'rzp_test_fixture', razorpayKeySecretPresent: true,
     razorpayWebhookSecret: 'test-webhook-secret', razorpayMode: 'test',
-    enablePrivateConsultation: privateConsultation, allowNewQuestions: true,
+    enablePrivateConsultation: privateConsultation, allowNewQuestions,
     isD1Ready: async () => ready,
     cryptoImpl: globalThis.crypto,
     now: () => 1760000000000
@@ -446,6 +446,23 @@ test('Private Consultation recover-payment fetches payments for the saved order 
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.recovered, true);
   assert.equal(state.firestore.documents.get('smv_private_consultations/pc-1').razorpayPaymentId, 'pay_success');
+});
+
+test('Ask Now create-order and verify-payment are retired even for previously saved questions when disabled', async () => {
+  const state = setup({ allowNewQuestions: false });
+  const create = responseHarness();
+  await state.app.handlers.get('POST /create-order')(
+    request({ body: { questionId: 'legacy-question-1' } }), create
+  );
+  assert.equal(create.statusCode, 410);
+  assert.equal(create.body.code, 'ASK_NOW_RETIRED');
+
+  const verify = responseHarness();
+  await state.app.handlers.get('POST /verify-payment')(
+    request({ body: { questionId: 'legacy-question-1', razorpay_payment_id: 'pay_old' } }), verify
+  );
+  assert.equal(verify.statusCode, 410);
+  assert.equal(verify.body.code, 'ASK_NOW_RETIRED');
 });
 
 test('Private Consultation routes stay retired when the explicit Staging-only flag is OFF', async () => {
