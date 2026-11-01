@@ -2490,8 +2490,11 @@ function smvAndroidApkIsStaging(){
   return location.hostname.includes('phase1-staging')||location.hostname.includes('phase1-browser');
 }
 function smvAndroidApkWorkerBase(){
-  if(smvAndroidApkIsStaging())return null;
-  const configured=String(window.SMV_APK_RELEASE_ADMIN_API_URL||window.SMV_APK_RELEASE_API_URL||'').trim();
+  const isV2StagingHost=location.hostname==='smv-astro-phase1-browser-staging-v2.onrender.com';
+  if(smvAndroidApkIsStaging()&&!isV2StagingHost)return null;
+  const configured=String(isV2StagingHost
+    ?window.SMV_APK_RELEASE_STAGING_API_URL||''
+    :window.SMV_APK_RELEASE_ADMIN_API_URL||window.SMV_APK_RELEASE_API_URL||'').trim();
   if(!configured)return null;
   try{
     const url=new URL(configured);
