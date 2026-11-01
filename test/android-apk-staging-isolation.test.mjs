@@ -38,6 +38,7 @@ test('Staging APK Worker uses isolated Firebase, D1, R2 and origin with uploads 
 
 test('Staging APK deployment workflow is manual, branch-restricted, and uses a separate token and D1 ID', async () => {
   const workflow = await read('.github/workflows/deploy-android-apk-release-staging-worker.yml');
+  const readme = await read('cloudflare/android-apk-release/README.staging.md');
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(readme, /workflow_dispatch[\s\S]*default branch/);
   assert.match(workflow, /confirm_staging_apk_worker_deploy/);
