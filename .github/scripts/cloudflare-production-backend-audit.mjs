@@ -12,16 +12,17 @@ const ROUTE_FILES = [
   'cloudflare/backend-api/src/wallet-recharge-routes.mjs',
   'cloudflare/backend-api/src/live-session-routes.mjs',
   'cloudflare/backend-api/src/wallet-domain-backfill-routes.mjs',
-  'cloudflare/backend-api/src/identity-profile-backfill-routes.mjs'
+  'cloudflare/backend-api/src/identity-profile-backfill-routes.mjs',
+  'cloudflare/backend-api/src/core-read-routes.mjs'
 ];
 const BASELINE = Object.freeze({
   inventoryRoutes: 149,
   getRoutes: 55,
   postRoutes: 94,
   uniquePairs: 149,
-  sourceHandlerPairs: 51,
-  exactLegacyMatches: 38,
-  missingLegacyHandlers: 111
+  sourceHandlerPairs: 53,
+  exactLegacyMatches: 40,
+  missingLegacyHandlers: 109
 });
 const PRODUCTION_DATABASE_ID = 'b1d5684c-3fcd-48fe-9571-ea41fc605c7d';
 
@@ -83,7 +84,9 @@ async function main() {
     'SMV_IDENTITY_PROFILE_BACKFILL_ENABLED',
     'SMV_IDENTITY_PROFILE_CUTOVER_COMPLETE',
     'SMV_IDENTITY_PROFILE_D1_AUTHORIZATION_ENABLED',
-    'SMV_LIVE_SESSION_ROUTES_ENABLED'
+    'SMV_LIVE_SESSION_ROUTES_ENABLED',
+    'SMV_RAZORPAY_LIVE_MODE_ENABLED',
+    'SMV_RAZORPAY_TEST_MODE_ENABLED'
   ];
   for (const key of expectedFalseFlags) {
     assert.equal(String(config.vars?.[key] ?? 'false').toLowerCase(), 'false',
@@ -99,8 +102,17 @@ async function main() {
   const index = sources.find(item => item.file === 'cloudflare/backend-api/src/index.mjs')?.source || '';
   const recharge = sources.find(item => item.file === 'cloudflare/backend-api/src/wallet-recharge-routes.mjs')?.source || '';
   const live = sources.find(item => item.file === 'cloudflare/backend-api/src/live-session-routes.mjs')?.source || '';
-  assert.ok(index.includes("startsWith('rzp_test_')"),
-    'Razorpay credential-mode registration policy changed; review payment mode handling.');
+  const razorpayPolicy = await readFile(path.join(ROOT, 'shared/backend-platform/razorpay-mode-policy.mjs'), 'utf8');
+  assert.ok(index.includes('resolveRazorpayMode') &&
+            index.includes('SMV_RAZORPAY_LIVE_MODE_ENABLED') &&
+            index.includes('SMV_BACKEND_CLOUDFLARE_ACTIVE') &&
+            razorpayPolicy.includes('id.startsWith(LIVE_PREFIX)') &&
+            razorpayPolicy.includes("env === 'production' && allowProductionLive === true"),
+    'Razorpay Live Mode must require the explicit Production-only policy and active backend gate.');
+  assert.equal(String(config.vars?.SMV_RAZORPAY_LIVE_MODE_ENABLED).toLowerCase(), 'false',
+    'Production Razorpay Live Mode must remain disabled by configuration.');
+  assert.equal(String(config.vars?.SMV_RAZORPAY_TEST_MODE_ENABLED).toLowerCase(), 'false',
+    'Production Razorpay Test Mode must remain disabled by configuration.');
   assert.ok(live.includes("environment!=='staging'") && live.includes("sourceProjectId!=='smv-astro-staging'"),
     'Live/Booking environment fence changed; re-review before any production enablement.');
   assert.ok(index.includes('isLegacyBackendPath(req.path)') &&
@@ -124,7 +136,7 @@ async function main() {
     legacyPairsWithoutMatchingWorkerHandler: missing.length,
     productionBusinessRouteFamiliesEnabled: 0,
     productionTrafficEnabled: false,
-    razorpayCurrentRegistrationMode: 'test-key prefix only (rzp_test_); live-key production support not implemented',
+    razorpayCurrentRegistrationMode: 'environment-aware; Production Live Mode requires explicit flag and active backend gate; Production flags remain false',
     liveBookingCurrentEnvironmentFence: 'staging-only / smv-astro-staging',
     productionD1MigrationApplied: false
   };
