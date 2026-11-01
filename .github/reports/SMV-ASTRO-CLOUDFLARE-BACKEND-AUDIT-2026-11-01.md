@@ -7,11 +7,32 @@
 **Production D1:** `smvastro-wallet-production`  
 **Production D1 ID:** `b1d5684c-3fcd-48fe-9571-ea41fc605c7d`
 
-**PR #298 verification head:** `175c0d4d31bc1f1af7bcf31305482ad07d70d30d`
+**PR #298 verification head:** `fefa8f1596f47bfcd49fccfdf7c6d3c3a71c00ab`
 
-### Latest CI evidence on PR #298
+**Verified PR #298 CI head:** `fefa8f1596f47bfcd49fccfdf7c6d3c3a71c00ab`
 
-- Full Cloudflare backend contract suite: **350/350 PASS** (Staging integration and Production parity/security audit).
+### Latest PR #298 CI evidence
+
+- Complete Cloudflare backend contract suite: **374/374 PASS** in both Staging integration and Production parity/security audit.
+- Route source audit: **149 legacy routes / 144 Worker handler pairs / 131 exact method-path matches / 18 unmatched**.
+- Staging ephemeral local D1: **10 migrations applied locally only**; no remote D1 migration or customer data import.
+- Local-D1 Razorpay atomic webhook claims: **3/3 PASS**.
+- Local-D1 Live capacity, booking-race and settlement invariants: **4/4 PASS**.
+- Staging Worker dry-run: PASS.
+- Isolated Production Worker dry-run: PASS.
+- Production Worker validation: PASS; **deploy-production-worker SKIPPED**.
+
+CI workflow runs:
+- [Staging integration validation](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41311947482)
+- [Production parity/security audit](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41311947439)
+- [Wallet local-D1 reconciliation](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41311947544)
+- [Production Worker validation — deployment skipped](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41311947507)
+
+The 24 new route-parity contract tests use injected Firestore/D1/FCM/Auth adapters. They validate code paths and fail-closed gates; they do **not** establish real Firebase Auth Admin permissions, real FCM delivery, provisioned R2/Queue/DO resources, or APK Worker service-binding connectivity.
+
+### Prior CI evidence on PR #298
+
+- Full Cloudflare backend contract suite: **374/374 PASS** (Staging integration and Production parity/security audit).
 - Ephemeral local D1 migrations: **10 migrations applied locally only**; no `--remote` execution or customer data import.
 - Local-D1 Razorpay webhook claim tests: **3/3 PASS**.
 - Local-D1 Live capacity / booking / settlement invariant tests: **4/4 PASS**.
@@ -19,7 +40,7 @@
 - Isolated Production Worker bundle dry-run: PASS.
 - Production Worker validation: PASS; `deploy-production-worker`: **SKIPPED**.
 
-The six added contract tests cover Admin-only Google Form sync, Apps Script URL allow-pattern, provider errors, webhook shared-secret and quiz-version validation, transaction/idempotent processing, and duplicate delivery. This proves the route contract against injected test adapters; it does not prove a live Google Apps Script or Firebase connection.
+The 24 additional legacy-route tests cover lookup/profile registration, phone uniqueness, public Astrologer verification, payout review, APK binding fail-closed, Admin content/dashboard, read-only Wallet ledger gates, push token lifecycle, FCM HTTP v1 request shape, and scheduled Live start gating. Together with the six Google Form sync/webhook tests these are contract tests against injected provider/data adapters; they do not prove live Firebase Admin, FCM or APK service connectivity.
 
 ### Live Staging provider and resource status (read-only)
 
@@ -42,9 +63,9 @@ The production Worker runtime and D1 binding are deployed and verified, but this
 | Legacy method/path inventory | 149 |
 | Legacy GET pairs | 55 |
 | Legacy POST pairs | 94 |
-| Literal Worker handler pairs in reviewed route source files | 126 |
-| Exact legacy method+path pairs with a Worker handler | 113 (75.8%) |
-| Legacy pairs with no exact Worker handler | 36 (24.2%) |
+| Literal Worker handler pairs in reviewed route source files | 144 |
+| Exact legacy method+path pairs with a Worker handler | 131 (87.9%) |
+| Legacy pairs with no exact Worker handler | 18 (12.1%) |
 | Production business route families enabled | 0 |
 | Production traffic switched | No |
 | Production D1 writes/migrations performed by this audit | 0 |
@@ -57,7 +78,7 @@ The route inventory is maintained in [`legacy-backend-route-inventory.mjs`](http
 
 ### P0 — Route parity is incomplete (cutover blocker)
 
-There are 149 unique legacy method/path pairs. Of those, 113 have an exact method/path handler literal in the reviewed Worker source files; 36 have no exact handler and remain routed to the generic `BACKEND_MIGRATION_NOT_CUT_OVER` fail-closed guard. The 36 split into 18 active in-scope routes, 11 retired Private Consultation/Ask Now routes and 7 Horoscope routes outside this migration scope. The retired and Horoscope routes must not be reintroduced by this migration. This fail-closed behavior is desirable while migration is incomplete, but it is not production parity.
+There are 149 unique legacy method/path pairs. Of those, 131 have an exact method/path handler literal in the reviewed Worker source files; 18 have no exact handler and remain routed to the generic `BACKEND_MIGRATION_NOT_CUT_OVER` fail-closed guard. All 18 unmatched paths are explicitly out of this migration scope: 11 retired Private Consultation/Ask Now routes and 7 Horoscope routes. The newly restored 18 active route handlers have contract tests, but literal source matches and injected adapters are not proof of live provider integration or full production parity. Retired consultation paths must not be reintroduced; Horoscope and Calendar remain untouched.
 
 The existing README says approximately 117 route registrations; the current version-controlled route inventory says 149. Use the inventory as the audit baseline until a fresh automated extraction of all active route registrations—including indirect router/module registrations—is compared against it.
 
@@ -117,7 +138,7 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | Razorpay | `test/wallet-recharge-routes.test.mjs`, `test/razorpay-mode-policy.test.mjs`, `test/razorpay-rest-adapter.test.mjs`, `test/legacy-razorpay-routes.test.mjs`, and `test/local-d1-live-payment-invariants.local.mjs`: key-mode gate, raw-body signature check, Question/Private Consultation verify/recovery/refunds, duplicate event handling, order/amount/ownership negatives, refund history lookup and stable idempotency request shape | Real Razorpay Sandbox duplicate webhook replay/refund provider proof; actual Staging Firestore/D1 E2E and complete out-of-order event matrix |
 | Live/Booking | `test/live-session-domain.test.mjs`, `test/live-session-routes.test.mjs` and `test/local-d1-live-payment-invariants.local.mjs`: capacity concurrency, stale booking release, settlement rollback, double-settlement prevention | Full D1 + Durable Object end-to-end ordering and duplicate request-ID replay coverage |
 | Durable timers/events | `test/live-session-coordinator.test.mjs`: durable deadline behavior and event-id dedupe | End-to-end D1+DO interaction under concurrent delivery |
-| Route inventory | `test/legacy-route-inventory.test.mjs`: 149 unique pairs; audit parser now finds 113 exact source pairs and 36 missing pairs | Contract equivalence for the 18 in-scope active routes still lacking handlers (the other 18 missing routes are 11 retired Private Consultation/Ask Now routes and 7 Horoscope routes explicitly outside this migration scope), plus full legacy parity for every source match |
+| Route inventory | `test/legacy-route-inventory.test.mjs` and `.github/scripts/cloudflare-production-backend-audit.mjs`: 149 unique pairs; 144 literal Worker handlers, 131 exact source pairs and 18 unmatched paths | Full request/response and live-provider parity for the source-matched paths; the 18 unmatched routes are retired Private Consultation/Ask Now (11) and Horoscope (7), intentionally out of scope |
 
 ## Route-by-route coverage matrix (149 inventory pairs)
 
@@ -127,10 +148,10 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 |---:|---|---|---|---|---|
 | 1 | Admin / configuration | GET | `/admin/access` | Exact source handler; verified Firebase Admin claim/allowlist only | `cloudflare/backend-api/src/core-read-routes.mjs` |
 | 2 | Authentication / profile | GET | `/account/role` | Exact source handler; verified profile role plus UID/publicId-bound Astrologer lookup | `cloudflare/backend-api/src/core-read-routes.mjs` |
-| 3 | Authentication / profile | POST | `/lookup-customer-login` | No exact source handler; fails closed | — |
-| 4 | Authentication / profile | POST | `/lookup-id-login` | No exact source handler; fails closed | — |
-| 5 | Authentication / profile | POST | `/register-customer-profile` | No exact source handler; fails closed | — |
-| 6 | Authentication / profile | POST | `/register-astrologer-profile` | No exact source handler; fails closed | — |
+| 3 | Authentication / profile | POST | `/lookup-customer-login` | Exact source handler; normalizes Customer ID, checks public ID role and uses Firebase Auth Admin account lookup; never returns UID | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 4 | Authentication / profile | POST | `/lookup-id-login` | Exact source handler; validates Customer/Astrologer ID role and uses Firebase Auth Admin account lookup | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 5 | Authentication / profile | POST | `/register-customer-profile` | Exact source handler; authenticated UID, canonical phone registry, public ID and initial Wallet transaction; D1 Wallet cutover-aware | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 6 | Authentication / profile | POST | `/register-astrologer-profile` | Exact source handler; authenticated UID, phone/public ID transaction, pending approval and payout-review record | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
 | 7 | Public config / content | GET | `/public/registration-config` | Exact source handler; email/phone policy and WhatsApp provider fail-safe | `cloudflare/backend-api/src/public-legacy-routes.mjs` |
 | 8 | Public config / content | GET | `/api/smv-mode` | Exact source handler; HTTPS Worker URL required | `cloudflare/backend-api/src/public-legacy-routes.mjs` |
 | 9 | Public config / content | GET | `/` | Exact source handler; reports gated provider status | `cloudflare/backend-api/src/public-legacy-routes.mjs` |
@@ -143,7 +164,7 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | 16 | Appointments / Q&A / consultations | GET | `/customer/appointments` | Exact source handler; Customer UID scoped and Call/Chat only | `cloudflare/backend-api/src/legacy-dashboard-read-routes.mjs` |
 | 17 | Appointments / Q&A / consultations | POST | `/astrologer/appointments/:id/respond` | Exact source handler; owner check, Call/Chat-only status and IST 2-minute grace | `cloudflare/backend-api/src/legacy-appointment-read-response-routes.mjs` |
 | 18 | Appointments / Q&A / consultations | POST | `/appointment-booking` | Exact source handler; transactional Call/Chat booking, no Wallet charge | `cloudflare/backend-api/src/appointment-booking-route.mjs` |
-| 19 | Other | GET | `/public/astrologers` | No exact source handler; fails closed | — |
+| 19 | Other | GET | `/public/astrologers` | Exact source handler; approved profiles only, Firebase email verification, bounded results and short cache | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
 | 20 | Other | POST | `/astrologer/availability` | Exact source handler; approved profile, busy-session and pricing checks | `cloudflare/backend-api/src/legacy-business-routes.mjs` |
 | 21 | Appointments / Q&A / consultations | GET | `/public/astrologers/:astrologerId/reviews` | Exact source handler; approved reviews only | `cloudflare/backend-api/src/legacy-dashboard-read-routes.mjs` |
 | 22 | Appointments / Q&A / consultations | GET | `/customer/reviews` | Exact source handler; Customer UID scoped | `cloudflare/backend-api/src/legacy-dashboard-read-routes.mjs` |
@@ -161,8 +182,8 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | 34 | Admin / configuration | POST | `/admin/reallocate-question` | Exact source handler; blocks settled commission and reallocates atomically | `cloudflare/backend-api/src/legacy-question-workflow-routes.mjs` |
 | 35 | Admin / configuration | POST | `/admin/edit-question` | Exact source handler; Admin-only and closed-question guarded | `cloudflare/backend-api/src/legacy-question-workflow-routes.mjs` |
 | 36 | Admin / configuration | POST | `/admin/takeover-answer` | Exact source handler; minimum word count, Admin-retained commission | `cloudflare/backend-api/src/legacy-question-workflow-routes.mjs` |
-| 37 | Payments / earnings / withdrawals | POST | `/astrologer/change-payout` | No exact source handler; fails closed | — |
-| 38 | Admin / configuration | POST | `/admin/payout-change-status` | No exact source handler; fails closed | — |
+| 37 | Payments / earnings / withdrawals | POST | `/astrologer/change-payout` | Exact source handler; approved Astrologer only; bank changes reset to pending Admin review and notify | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 38 | Admin / configuration | POST | `/admin/payout-change-status` | Exact source handler; Admin-only pending-state transition, notification and audit in one transaction | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
 | 39 | Admin / configuration | POST | `/admin/set-open-workflow` | Exact source handler; atomic paid/unassigned release/close with bounded writes | `cloudflare/backend-api/src/legacy-question-action-routes.mjs` |
 | 40 | Appointments / Q&A / consultations | GET | `/astrologer/open-questions` | Exact source handler; paid/unallocated and workflow-gated | `cloudflare/backend-api/src/legacy-dashboard-read-routes.mjs` |
 | 41 | Appointments / Q&A / consultations | POST | `/customer/mark-answer-viewed` | Exact source handler; Customer ownership and atomic idempotent commission settlement | `cloudflare/backend-api/src/customer-answer-credit-route.mjs` |
@@ -189,17 +210,17 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | 62 | Admin / configuration | POST | `/admin/astrologer-profile-description` | Exact source handler; Admin-only transactional save/approve/reject | `cloudflare/backend-api/src/admin-astrologer-profile-routes.mjs` |
 | 63 | Public config / content | GET | `/public/android-app` | Exact source handler; public release fields only | `cloudflare/backend-api/src/legacy-read-routes.mjs` |
 | 64 | Admin / configuration | GET | `/admin/android-app` | Exact source handler; requires verified Admin | `cloudflare/backend-api/src/legacy-read-routes.mjs` |
-| 65 | Admin / configuration | POST | `/admin/android-app/upload` | No exact source handler; fails closed | — |
+| 65 | Admin / configuration | POST | `/admin/android-app/upload` | Exact source handler; binary upload proxied to dedicated APK-release Worker; **503 until `APK_RELEASE_WORKER` service binding is provisioned** | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
 | 66 | Public config / content | GET | `/public/content` | Exact source handler; published English content only | `cloudflare/backend-api/src/legacy-read-routes.mjs` |
 | 67 | Admin / configuration | GET | `/admin/content` | Exact source handler; verified Admin may read drafts | `cloudflare/backend-api/src/legacy-read-routes.mjs` |
-| 68 | Admin / configuration | POST | `/admin/content/save` | No exact source handler; fails closed | — |
-| 69 | Admin / configuration | POST | `/admin/content/toggle` | No exact source handler; fails closed | — |
-| 70 | Admin / configuration | POST | `/admin/content/delete` | No exact source handler; fails closed | — |
+| 68 | Admin / configuration | POST | `/admin/content/save` | Exact source handler; Admin-only allowlisted English fields, transactional save; archive cutover is fail-closed without archive adapter | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 69 | Admin / configuration | POST | `/admin/content/toggle` | Exact source handler; Admin-only existing-document publish toggle, transaction and archive gate | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 70 | Admin / configuration | POST | `/admin/content/delete` | Exact source handler; Admin-only validated single-document delete and archive gate | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
 | 71 | Admin / configuration | POST | `/admin/astrologer-languages` | Exact source handler; Admin-only UID-linked profiles updated transactionally | `cloudflare/backend-api/src/admin-astrologer-catalog-routes.mjs` |
 | 72 | Admin / configuration | POST | `/admin/astrologer-pricing` | Exact source handler; Admin-only approved profile and per-minute price validation | `cloudflare/backend-api/src/admin-astrologer-catalog-routes.mjs` |
 | 73 | Admin / configuration | GET | `/admin/astrologers-data` | Exact source handler; Admin-only and bounded | `cloudflare/backend-api/src/admin-dashboard-routes.mjs` |
 | 74 | Admin / configuration | GET | `/admin/questions-data` | Exact source handler; Admin-only questions, approved astrologers and settings | `cloudflare/backend-api/src/legacy-quiz-read-routes.mjs` |
-| 75 | Admin / configuration | POST | `/admin/dashboard-touch` | No exact source handler; fails closed | — |
+| 75 | Admin / configuration | POST | `/admin/dashboard-touch` | Exact source handler; Admin-only dashboard version increment and audit transaction | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
 | 76 | Admin / configuration | GET | `/admin-data` | Exact source handler; Admin landing dashboard and bounded live payments | `cloudflare/backend-api/src/admin-dashboard-routes.mjs` |
 | 77 | Admin / configuration | POST | `/admin/private-consultation/set-commission` | No exact source handler; fails closed | — |
 | 78 | Admin / configuration | POST | `/admin/private-consultation/set-word-count` | No exact source handler; fails closed | — |
@@ -231,7 +252,7 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | 104 | Payments / earnings / withdrawals | POST | `/horoscope-payment/verify` | No exact source handler; fails closed | — |
 | 105 | Horoscope / predictions | POST | `/api/prediction/horoscope` | No exact source handler; fails closed | — |
 | 106 | Horoscope / predictions | POST | `/api/prediction/matching` | No exact source handler; fails closed | — |
-| 107 | Admin / configuration | GET | `/admin/wallet/transactions` | No exact source handler; fails closed | — |
+| 107 | Admin / configuration | GET | `/admin/wallet/transactions` | Exact source handler; bounded, read-only D1 current/legacy ledger query; requires Wallet schema + backfill gates | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
 | 108 | Wallet / offers / migration | GET | `/wallet/recharge-offers` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/wallet-offer-routes.mjs:67` |
 | 109 | Admin / configuration | GET | `/admin/offers` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/wallet-offer-routes.mjs:83` |
 | 110 | Admin / configuration | POST | `/admin/offers/save` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/wallet-offer-routes.mjs:98` |
@@ -249,16 +270,16 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | 122 | Locations | GET | `/api/locations/status` | Exact source handler; exposes provider readiness only | `cloudflare/backend-api/src/geonames-location-routes.mjs` |
 | 123 | Locations | GET | `/api/locations/search` | Exact source handler; validates and bounds GeoNames results | `cloudflare/backend-api/src/geonames-location-routes.mjs` |
 | 124 | Locations | GET | `/api/locations/timezone` | Exact source handler; returns IANA zone without offset guesses | `cloudflare/backend-api/src/geonames-location-routes.mjs` |
-| 125 | Live Call / Chat / push | GET | `/live/push/status` | No exact source handler; fails closed | — |
-| 126 | Live Call / Chat / push | POST | `/live/push/register` | No exact source handler; fails closed | — |
-| 127 | Live Call / Chat / push | POST | `/live/push/unregister` | No exact source handler; fails closed | — |
-| 128 | Live Call / Chat / push | POST | `/live/push/test` | No exact source handler; fails closed | — |
+| 125 | Live Call / Chat / push | GET | `/live/push/status` | Exact source handler; Astrologer-only UID-scoped device count | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 126 | Live Call / Chat / push | POST | `/live/push/register` | Exact source handler; validates platform/token, hashes token ID and transactionally protects token ownership | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 127 | Live Call / Chat / push | POST | `/live/push/unregister` | Exact source handler; Astrologer-only hashed-token delete with transaction ownership check | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
+| 128 | Live Call / Chat / push | POST | `/live/push/test` | Exact source handler; sends Firebase FCM HTTP v1 test only when OAuth provider is configured; live delivery not yet verified | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
 | 129 | Live Call / Chat / push | GET | `/live/pricing` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/live-session-routes.mjs:250` |
 | 130 | Live Call / Chat / push | GET | `/live/ice-config` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/live-session-routes.mjs:262` |
 | 131 | Admin / configuration | POST | `/admin/live/pricing` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/live-session-routes.mjs:552` |
 | 132 | Admin / configuration | POST | `/admin/live/commission` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/live-session-routes.mjs:579` |
 | 133 | Live Call / Chat / push | GET | `/live/events` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/live-session-routes.mjs:286` |
-| 134 | Appointments / Q&A / consultations | POST | `/live/scheduled-appointments/:id/start` | No exact source handler; fails closed | — |
+| 134 | Appointments / Q&A / consultations | POST | `/live/scheduled-appointments/:id/start` | Exact source handler; owner/status/IST 2-minute grace/capacity checks and D1 session + DO timers/events; **503 until Live schema and both DO bindings are ready** | `cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs` |
 | 135 | Live Call / Chat / push | POST | `/live/requests` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/live-session-routes.mjs:294` |
 | 136 | Live Call / Chat / push | GET | `/live/sessions` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/live-session-routes.mjs:334` |
 | 137 | Live Call / Chat / push | GET | `/live/bookings/pending` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/live-session-routes.mjs:343` |
