@@ -1,5 +1,135 @@
 const RETRYABLE_GATEWAY_STATUSES = new Set([502, 503, 504, 520, 521, 522, 523, 524, 525, 526, 527, 530]);
 
+// Exact method/path pairs with a literal Cloudflare Worker handler in the audited
+// 1 Nov 2026 route inventory. Retired Private Consultation/Ask Now, Horoscope,
+// email-provider-unverified and APK-service-unprovisioned routes are deliberately
+// not included. Live and Wallet routes are included but remain feature-gated.
+const CLOUDFLARE_LEGACY_ROUTE_LINES = `GET /admin/access
+GET /account/role
+POST /lookup-customer-login
+POST /lookup-id-login
+POST /register-customer-profile
+POST /register-astrologer-profile
+GET /public/registration-config
+GET /api/smv-mode
+GET /
+GET /test-razorpay
+POST /astrologer/edit-answer
+POST /submit-answer
+GET /astrologer/appointments
+GET /customer/appointments
+POST /astrologer/appointments/:id/respond
+POST /appointment-booking
+GET /public/astrologers
+POST /astrologer/availability
+GET /public/astrologers/:astrologerId/reviews
+GET /customer/reviews
+POST /customer/submit-review
+GET /admin/appointments
+POST /admin/appointment-status
+POST /admin/approve-question
+POST /astrologer/claim-question
+GET /api-version
+POST /admin/reject-question
+POST /admin/retry-refund
+GET /admin/refund-trace/:questionId
+POST /customer/sync-refund
+POST /admin/sync-refund
+POST /admin/reallocate-question
+POST /admin/edit-question
+POST /admin/takeover-answer
+POST /astrologer/change-payout
+POST /admin/payout-change-status
+POST /admin/set-open-workflow
+GET /astrologer/open-questions
+POST /customer/mark-answer-viewed
+POST /admin/astrologer-quiz/load-defaults
+GET /admin/astrologer-quiz/questions
+POST /admin/astrologer-quiz/questions
+POST /admin/astrologer-quiz/questions/delete
+GET /google-form/astrologer-quiz-config
+POST /admin/astrologer-auto-approval/settings
+POST /admin/astrologer-quiz/sync-google-form
+GET /astrologer/qualification-config
+POST /webhooks/google-form/astrologer-qualification
+GET /admin/settings-data
+GET /admin/withdrawals-data
+GET /admin/reviews-data
+POST /admin/approve-astrologer
+POST /admin/reject-astrologer
+POST /astrologer/sync-approval
+POST /admin/astrologer-profile-permission
+POST /admin/astrologer-profile-description
+GET /public/android-app
+GET /admin/android-app
+GET /public/content
+GET /admin/content
+POST /admin/content/save
+POST /admin/content/toggle
+POST /admin/content/delete
+POST /admin/astrologer-languages
+POST /admin/astrologer-pricing
+GET /admin/astrologers-data
+GET /admin/questions-data
+POST /admin/dashboard-touch
+GET /admin-data
+POST /create-order
+POST /verify-payment
+GET /astrologer/earnings
+POST /astrologer/withdrawal-request
+POST /admin/withdrawal-mark-paid
+GET /admin/withdrawal-payout/:withdrawalDocId
+POST /razorpay/webhook
+GET /admin/wallet/transactions
+GET /wallet/recharge-offers
+GET /admin/offers
+POST /admin/offers/save
+POST /admin/offers/delete
+GET /public/push-config
+GET /wallet
+GET /wallet/transactions
+POST /wallet/recharge/create-order
+POST /wallet/recharge/verify
+GET /admin/wallet/backfill/status
+POST /admin/wallet/backfill/preflight
+POST /admin/wallet/backfill/preview
+POST /admin/wallet/backfill/apply
+POST /admin/wallet/backfill/reconcile
+GET /api/locations/status
+GET /api/locations/search
+GET /api/locations/timezone
+GET /live/push/status
+POST /live/push/register
+POST /live/push/unregister
+POST /live/push/test
+GET /live/pricing
+GET /live/ice-config
+POST /admin/live/pricing
+POST /admin/live/commission
+GET /live/events
+POST /live/scheduled-appointments/:id/start
+POST /live/requests
+GET /live/sessions
+GET /live/bookings/pending
+GET /live/bookings/mine
+POST /live/bookings/:id/accept
+POST /live/bookings/:id/reject
+POST /live/bookings/:id/cancel
+POST /live/sessions/:id/accept
+POST /live/sessions/:id/reject
+POST /live/sessions/:id/end
+POST /live/sessions/:id/ready
+POST /live/sessions/:id/signal
+GET /live/sessions/:id/signals
+POST /live/sessions/:id/messages
+GET /live/sessions/:id/messages`;
+export const CLOUDFLARE_LEGACY_ROUTE_PAIRS = Object.freeze(
+  CLOUDFLARE_LEGACY_ROUTE_LINES.split("\n").filter(Boolean).map(line => {
+    const separator = line.indexOf(" ");
+    return Object.freeze({ method: line.slice(0, separator), path: line.slice(separator + 1) });
+  })
+);
+
 function pathnameOf(path) {
   const raw = String(path || "");
   if (!raw.startsWith("/") || raw.startsWith("//")) {
@@ -8,52 +138,64 @@ function pathnameOf(path) {
   return new URL(raw, "https://smvastro.invalid").pathname;
 }
 
-export function classifyStagingBackendRoute(path) {
-  const pathname = pathnameOf(path);
+function routePatternMatches(pattern, pathname) {
+  const expected = pattern.split("/").filter(Boolean);
+  const actual = pathname.split("/").filter(Boolean);
+  if (expected.length !== actual.length) return false;
+  return expected.every((segment, index) =>
+    segment.startsWith(":") ? actual[index].length > 0 : segment === actual[index]
+  );
+}
 
-  if (/^\/admin\/wallet\/backfill(?:\/|$)/.test(pathname)) {
-    return Object.freeze({ target: "cloudflare-primary", family: "walletBackfill" });
-  }
-  if (/^\/admin\/wallet(?:\/|$)/.test(pathname)) {
-    return Object.freeze({ target: "cloudflare-primary", family: "walletBackfill" });
+function isRetainedOutsideCloudflare(pathname) {
+  return pathname === "/customer/consultations" ||
+    /^\/(?:customer|admin|astrologer)\/private-consultations?(?:\/|$)/.test(pathname) ||
+    /^\/private-consultation(?:\/|$)/.test(pathname) ||
+    /^\/horoscope(?:-|\/)/.test(pathname) ||
+    /^\/admin\/horoscope(?:\/|$)/.test(pathname) ||
+    /^\/api\/prediction\//.test(pathname) ||
+    pathname === "/contact-query" ||
+    pathname === "/question-notify" ||
+    pathname === "/admin/android-app/upload";
+}
+
+function routeFamily(pathname) {
+  if (/^\/admin\/wallet\/backfill(?:\/|$)/.test(pathname) || pathname === "/admin/wallet/transactions") {
+    return "walletBackfill";
   }
   if (pathname === "/wallet/recharge-offers" || /^\/admin\/offers(?:\/|$)/.test(pathname)) {
-    return Object.freeze({ target: "cloudflare-primary", family: "walletOffers" });
+    return "walletOffers";
   }
-  if (/^\/wallet\/recharge(?:\/|$)/.test(pathname)) {
-    return Object.freeze({ target: "cloudflare-primary", family: "walletRecharge" });
-  }
-  if (pathname === "/wallet" || /^\/wallet\//.test(pathname)) {
-    return Object.freeze({ target: "cloudflare-primary", family: "walletRead" });
-  }
-  if (pathname === "/test-razorpay") {
-    return Object.freeze({ target: "cloudflare-primary", family: "razorpayProbe" });
-  }
-  if (pathname === "/appointment-booking" ||
-      pathname === "/customer/appointments" ||
-      /^\/customer\/appointments\//.test(pathname) ||
-      pathname === "/astrologer/appointments" ||
-      /^\/astrologer\/appointments\//.test(pathname) ||
-      pathname === "/astrologer/availability") {
-    return Object.freeze({ target: "cloudflare-primary", family: "booking" });
-  }
-  if (pathname === "/astrologer/change-payout" || pathname === "/admin/payout-change-status") {
-    return Object.freeze({ target: "cloudflare-primary", family: "payout" });
-  }
-  if (pathname === "/admin/android-app/upload") {
-    return Object.freeze({ target: "cloudflare-primary", family: "apkRelease" });
-  }
-  if (/^\/live\/push(?:\/|$)/.test(pathname)) {
-    return Object.freeze({ target: "cloudflare-primary", family: "liveNotifications" });
-  }
+  if (/^\/wallet\/recharge(?:\/|$)/.test(pathname)) return "walletRecharge";
+  if (pathname === "/wallet" || pathname === "/wallet/transactions") return "walletRead";
+  if (pathname === "/test-razorpay") return "razorpayProbe";
+  if (/^\/live\/push(?:\/|$)/.test(pathname)) return "liveNotifications";
   if (/^\/live(?:\/|$)/.test(pathname) || /^\/admin\/live(?:\/|$)/.test(pathname) ||
       pathname === "/astrologer/earnings" || pathname === "/astrologer/withdrawal-request" ||
       pathname === "/admin/withdrawals-data" || pathname === "/admin/withdrawal-mark-paid" ||
-      /^\/admin\/withdrawal-payout\//.test(pathname)) {
-    return Object.freeze({ target: "cloudflare-primary", family: "live" });
-  }
+      /^\/admin\/withdrawal-payout\//.test(pathname)) return "live";
+  if (pathname === "/razorpay/webhook" || pathname === "/create-order" || pathname === "/verify-payment" ||
+      pathname === "/admin/reject-question" || pathname === "/admin/retry-refund" ||
+      pathname === "/customer/sync-refund" || pathname === "/admin/sync-refund" ||
+      /^\/admin\/refund-trace\//.test(pathname)) return "legacyPayments";
+  if (pathname === "/appointment-booking" || pathname === "/customer/appointments" ||
+      /^\/customer\/appointments\//.test(pathname) || pathname === "/astrologer/appointments" ||
+      /^\/astrologer\/appointments\//.test(pathname) || pathname === "/astrologer/availability" ||
+      pathname === "/admin/appointments" || pathname === "/admin/appointment-status") return "booking";
+  return "legacyCore";
+}
 
-  return Object.freeze({ target: "render-primary", family: "ordinary" });
+export function classifyStagingBackendRoute(path, method = "GET") {
+  const pathname = pathnameOf(path);
+  const verb = String(method || "GET").toUpperCase();
+  if (isRetainedOutsideCloudflare(pathname)) {
+    return Object.freeze({ target: "render-primary", family: "renderPinned" });
+  }
+  const registered = CLOUDFLARE_LEGACY_ROUTE_PAIRS.some(route =>
+    route.method === verb && routePatternMatches(route.path, pathname)
+  );
+  if (!registered) return Object.freeze({ target: "render-primary", family: "ordinary" });
+  return Object.freeze({ target: "cloudflare-primary", family: routeFamily(pathname) });
 }
 
 export function isSafeReadMethod(method) {
@@ -73,10 +215,9 @@ export function isCloudflareRouteFamilyReady(family, readiness) {
     readiness.walletBackfillRoutesRegistered === true;
 
   switch (family) {
+    case "legacyCore":
     case "ordinary":
     case "booking":
-    case "payout":
-    case "apkRelease":
     case "liveNotifications":
       return coreRoutesReady;
     case "walletBackfill":
@@ -88,6 +229,10 @@ export function isCloudflareRouteFamilyReady(family, readiness) {
       return readiness.walletOfferRoutesEnabled === true;
     case "walletRecharge":
       return readiness.walletRechargeRoutesEnabled === true &&
+        readiness.razorpayCredentialsConfigured === true &&
+        readiness.razorpayMode === "test";
+    case "legacyPayments":
+      return readiness.legacyRazorpayRoutesRegistered === true &&
         readiness.razorpayCredentialsConfigured === true &&
         readiness.razorpayMode === "test";
     case "razorpayProbe":
@@ -158,15 +303,20 @@ export function createBackendApiRouter({
 
     if (!staging) return fetchImpl(renderBase + path, init);
 
-    const classification = classifyStagingBackendRoute(path);
+    const classification = classifyStagingBackendRoute(path, method);
     if (classification.target === "cloudflare-primary") {
       const readiness = await getReadiness();
       if (!isCloudflareRouteFamilyReady(classification.family, readiness)) {
         throw routeUnavailable(classification.family);
       }
-      // No Render fallback for Wallet, payments, payouts, bookings or Live requests.
+      // No Render fallback for Cloudflare-primary routes. In particular, never replay
+      // payments, Wallet mutations, booking or Live session writes to Render.
       return fetchImpl(cloudflareBase + path, init);
     }
+
+    // Retired/externally-owned/unprovisioned routes are pinned to their existing Render
+    // or dedicated service. They are never opportunistically redirected to Cloudflare.
+    if (classification.family === "renderPinned") return fetchImpl(renderBase + path, init);
 
     let renderResponse = null;
     let renderError = null;
@@ -190,10 +340,10 @@ export function createBackendApiRouter({
       renderError = error;
     }
 
-    // Only idempotent GET/HEAD reads may fail over. Never replay a write.
+    // Unknown GET/HEAD reads may fall back only after the legacy core readiness gate.
     try {
       const readiness = await getReadiness();
-      if (!isCloudflareRouteFamilyReady("ordinary", readiness)) {
+      if (!isCloudflareRouteFamilyReady("legacyCore", readiness)) {
         if (renderResponse) return renderResponse;
         throw new Error("Cloudflare Staging read routes are not ready.");
       }
