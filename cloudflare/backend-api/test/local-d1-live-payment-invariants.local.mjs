@@ -440,6 +440,12 @@ test('local D1 rejects payment signature/order/amount/currency mismatches and cr
     assert.equal(response.statusCode,409);
     assert.equal(response.body.code,'WALLET_PAYMENT_MISMATCH');
 
+    payment = { ...payment, id: id('wrong_provider_payment'), amount: amountPaise, currency: 'INR' };
+    response = routeResponse();
+    await app.handlers.get(verifyPath)(routeRequest(verifyBody),response);
+    assert.equal(response.statusCode,409);
+    assert.equal(response.body.code,'WALLET_PAYMENT_MISMATCH');
+
     payment = { ...payment, amount: amountPaise, currency: 'USD' };
     response = routeResponse();
     await app.handlers.get(verifyPath)(routeRequest(verifyBody),response);
@@ -465,6 +471,16 @@ test('local D1 rejects payment signature/order/amount/currency mismatches and cr
     assert.equal(Number(unprocessed.lease_until_ms),0);
     assert.equal((await walletAdapter.getWallet(ownerUid)).availableBalancePaise,0);
     assert.equal(Number(sqlite.prepare("SELECT COUNT(*) AS total FROM smv_domain_wallet_ledger WHERE owner_uid=? AND type='recharge'").get(ownerUid).total),0);
+
+    payment = { id:id('wrong_provider_payment'),order_id:orderId,amount:amountPaise,currency:'INR',status:'captured' };
+    response = routeResponse();
+    await app.handlers.get(webhookPath)(routeRequest(eventBody,webhookHeaders),response);
+    assert.equal(response.statusCode,500);
+    const wrongProviderPayment = sqlite.prepare('SELECT processed,claim_token,lease_until_ms FROM smv_domain_razorpay_webhook_events WHERE event_key=?').get(eventKey);
+    assert.equal(Number(wrongProviderPayment.processed),0);
+    assert.equal(wrongProviderPayment.claim_token,null);
+    assert.equal(Number(wrongProviderPayment.lease_until_ms),0);
+    assert.equal((await walletAdapter.getWallet(ownerUid)).availableBalancePaise,0);
 
     payment = { id:paymentId,order_id:orderId,amount:amountPaise,currency:'INR',status:'captured' };
     response = routeResponse();
