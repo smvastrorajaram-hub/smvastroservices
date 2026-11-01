@@ -65,3 +65,20 @@ test('Staging APK resource instructions prohibit Production resource reuse and c
   assert.match(readme, /No APK is copied automatically from Production/);
   assert.match(readme, /does not import, copy, delete, or inspect Production APK records or binaries/);
 });
+
+test('Backend Staging uses only the isolated APK release service binding and Production does not inherit it', async () => {
+  const [stagingBackend, productionBackend, stagingApkWorker] = await Promise.all([
+    read('cloudflare/backend-api/wrangler.jsonc'),
+    read('.github/config/wrangler.production.jsonc'),
+    read('cloudflare/android-apk-release/wrangler.staging.toml')
+  ]);
+  const staging = JSON.parse(stagingBackend);
+  const production = JSON.parse(productionBackend);
+  assert.ok(staging.services?.some(binding =>
+    binding.binding === 'APK_RELEASE_WORKER' &&
+    binding.service === 'smv-astro-apk-release-api-staging'
+  ));
+  assert.ok(stagingApkWorker.includes('name = "smv-astro-apk-release-api-staging"'));
+  assert.ok(!production.services?.some(binding => binding.binding === 'APK_RELEASE_WORKER'));
+  assert.ok(!production.services?.some(binding => binding.service === 'smv-astro-apk-release-api-staging'));
+});
