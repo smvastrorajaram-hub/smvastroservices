@@ -18,7 +18,7 @@ on:
       - 'test/cream-theme-audit.test.mjs'
       - 'test/android-permanent-release.test.mjs'
       - '.github/workflows/android-cloudflare-apk-release-ci.yml'
-      - '.github/workflows/deploy-android-apk-release-worker.yml'
+      - '.github/workflows/deploy-android-apk-release-worker.yml'\n      - '.github/workflows/deploy-android-apk-release-staging-worker.yml'\n      - 'test/android-apk-staging-isolation.test.mjs'
   push:
     branches: [main]
     paths:
@@ -37,7 +37,7 @@ on:
       - 'test/cream-theme-audit.test.mjs'
       - 'test/android-permanent-release.test.mjs'
       - '.github/workflows/android-cloudflare-apk-release-ci.yml'
-      - '.github/workflows/deploy-android-apk-release-worker.yml'
+      - '.github/workflows/deploy-android-apk-release-worker.yml'\n      - '.github/workflows/deploy-android-apk-release-staging-worker.yml'\n      - 'test/android-apk-staging-isolation.test.mjs'
 
 permissions:
   contents: read
@@ -51,7 +51,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Validate manual deployment workflow YAML
-        run: ruby -e 'require "yaml"; YAML.parse_file(".github/workflows/deploy-android-apk-release-worker.yml")'
+        run: |
+          ruby -e 'require "yaml"; YAML.parse_file(".github/workflows/deploy-android-apk-release-worker.yml")'
+          ruby -e 'require "yaml"; YAML.parse_file(".github/workflows/deploy-android-apk-release-staging-worker.yml")'
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -70,7 +72,7 @@ jobs:
           node --check public/smvastro.mjs
 
       - name: Run APK release and existing permanent-signing regression tests
-        run: node --test test/android-cloudflare-apk-release-worker.test.mjs test/android-permanent-release.test.mjs test/live-push-notifications.test.js test/cream-theme-audit.test.mjs test/android-apk-browser-fallback.test.mjs
+        run: node --test test/android-cloudflare-apk-release-worker.test.mjs test/android-apk-staging-isolation.test.mjs test/android-permanent-release.test.mjs test/live-push-notifications.test.js test/cream-theme-audit.test.mjs test/android-apk-browser-fallback.test.mjs
 
       - name: Validate D1 migration and database-level safety triggers
         run: |
@@ -112,4 +114,4 @@ jobs:
 
       - name: Validate Wrangler Worker bundle without deploying
         run: |
-          npx --yes wrangler@4 deploy --dry-run --config cloudflare/android-apk-release/wrangler.toml
+          npx --yes wrangler@4 deploy --dry-run --config cloudflare/android-apk-release/wrangler.toml\n          npx --yes wrangler@4 deploy --dry-run --config cloudflare/android-apk-release/wrangler.staging.toml
