@@ -177,7 +177,7 @@ export function registerWalletRechargeRoutes({
 
       let payment = await razorpay.fetchPayment(paymentId);
       let view = safePaymentView(payment);
-      if (view.orderId !== orderId || view.amountPaise !== recharge.amountPaise || view.currency !== 'INR') {
+      if (view.id !== paymentId || view.orderId !== orderId || view.amountPaise !== recharge.amountPaise || view.currency !== 'INR') {
         throw walletRechargeError('WALLET_PAYMENT_MISMATCH', 'Razorpay payment details do not match this Wallet recharge.', 409);
       }
       if (view.status === 'authorized') {
@@ -283,7 +283,7 @@ export function registerWalletRechargeRoutes({
 
       let payment = await razorpay.fetchPayment(paymentId);
       let view = safePaymentView(payment);
-      if (view.orderId !== orderId || view.amountPaise !== recharge.amountPaise || view.currency !== 'INR') {
+      if (view.id !== paymentId || view.orderId !== orderId || view.amountPaise !== recharge.amountPaise || view.currency !== 'INR') {
         throw walletRechargeError('WALLET_PAYMENT_MISMATCH', 'Razorpay payment details do not match this Wallet recharge.', 409);
       }
 
