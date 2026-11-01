@@ -37,6 +37,7 @@ import { registerAdminAstrologerProfileRoutes } from './admin-astrologer-profile
 import { registerLegacyQuizWriteRoutes } from './legacy-quiz-write-routes.mjs';
 import { registerAstrologerAnswerEditRoute } from './astrologer-answer-edit-route.mjs';
 import { registerAdminAstrologerCatalogRoutes } from './admin-astrologer-catalog-routes.mjs';
+import { registerLegacyQuestionWorkflowRoutes } from './legacy-question-workflow-routes.mjs';
 
 const app = express();
 const verifyFirebaseIdToken = createFirebaseIdTokenVerifier();
@@ -310,6 +311,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     registerLegacyQuizWriteRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerAstrologerAnswerEditRoute({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerAdminAstrologerCatalogRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    registerLegacyQuestionWorkflowRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
   }
   const walletSchemaReady = async () => {
     try {
