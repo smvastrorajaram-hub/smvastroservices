@@ -96,8 +96,10 @@ async function main() {
     'Identity/Profile backfill must stay preview-only in Production.');
   assert.equal(config.vars?.FIREBASE_AUTH_PROJECT_IDS, 'smv-astro',
     'Production Firebase project allowlist must remain scoped to smv-astro.');
-  assert.ok(!Object.hasOwn(config.vars || {}, 'RAZORPAY_KEY_ID'),
-    'Do not put Razorpay credentials in the plain-text Production Worker config.');
+  for (const key of ['RAZORPAY_KEY_ID','RAZORPAY_KEY_SECRET','RAZORPAY_WEBHOOK_SECRET']) {
+    assert.ok(!Object.hasOwn(config.vars || {}, key),
+      'Do not put Razorpay credentials in the plain-text Production Worker config: ' + key);
+  }
 
   const index = sources.find(item => item.file === 'cloudflare/backend-api/src/index.mjs')?.source || '';
   const recharge = sources.find(item => item.file === 'cloudflare/backend-api/src/wallet-recharge-routes.mjs')?.source || '';
