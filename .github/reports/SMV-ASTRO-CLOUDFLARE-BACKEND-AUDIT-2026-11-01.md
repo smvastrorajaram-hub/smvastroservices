@@ -18,9 +18,9 @@ The production Worker runtime and D1 binding are deployed and verified, but this
 | Legacy method/path inventory | 149 |
 | Legacy GET pairs | 55 |
 | Legacy POST pairs | 94 |
-| Literal Worker handler pairs in reviewed route source files | 53 |
-| Exact legacy method+path pairs with a Worker handler | 40 (26.8%) |
-| Legacy pairs with no exact Worker handler | 109 (73.2%) |
+| Literal Worker handler pairs in reviewed route source files | 54 |
+| Exact legacy method+path pairs with a Worker handler | 41 (27.5%) |
+| Legacy pairs with no exact Worker handler | 108 (72.5%) |
 | Production business route families enabled | 0 |
 | Production traffic switched | No |
 | Production D1 writes/migrations performed by this audit | 0 |
@@ -33,7 +33,7 @@ The route inventory is maintained in [`legacy-backend-route-inventory.mjs`](http
 
 ### P0 — Route parity is incomplete (cutover blocker)
 
-There are 149 unique legacy method/path pairs. Of those, 40 have an exact method/path handler literal in the reviewed Worker source files; 109 have no exact handler and are routed to the generic `BACKEND_MIGRATION_NOT_CUT_OVER` fail-closed guard. This fail-closed behavior is desirable while migration is incomplete, but it is not production parity.
+There are 149 unique legacy method/path pairs. Of those, 41 have an exact method/path handler literal in the reviewed Worker source files; 108 have no exact handler and are routed to the generic `BACKEND_MIGRATION_NOT_CUT_OVER` fail-closed guard. This fail-closed behavior is desirable while migration is incomplete, but it is not production parity.
 
 The existing README says approximately 117 route registrations; the current version-controlled route inventory says 149. Use the inventory as the audit baseline until a fresh automated extraction of all active route registrations—including indirect router/module registrations—is compared against it.
 
@@ -89,7 +89,7 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | Razorpay | `test/wallet-recharge-routes.test.mjs`, `test/razorpay-mode-policy.test.mjs` and `test/local-d1-live-payment-invariants.local.mjs`: explicit key-mode gate, signature/order/amount/currency/provider-ID negatives, authorized webhook recovery, atomic event claims and exactly-once replay credit | Provider sandbox/live credential verification, refund idempotency and complete out-of-order payment state matrix |
 | Live/Booking | `test/live-session-domain.test.mjs`, `test/live-session-routes.test.mjs` and `test/local-d1-live-payment-invariants.local.mjs`: capacity concurrency, stale booking release, settlement rollback, double-settlement prevention | Full D1 + Durable Object end-to-end ordering and duplicate request-ID replay coverage |
 | Durable timers/events | `test/live-session-coordinator.test.mjs`: durable deadline behavior and event-id dedupe | End-to-end D1+DO interaction under concurrent delivery |
-| Route inventory | `test/legacy-route-inventory.test.mjs`: 149 unique pairs; audit parser now finds 40 exact source pairs and 109 missing pairs | Contract-equivalence cases and source parity for all remaining 109 legacy routes |
+| Route inventory | `test/legacy-route-inventory.test.mjs`: 149 unique pairs; audit parser now finds 41 exact source pairs and 108 missing pairs | Contract-equivalence cases and source parity for all remaining 108 legacy routes |
 
 ## Route-by-route coverage matrix (149 inventory pairs)
 
@@ -98,7 +98,7 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | # | Route family | Method | Legacy path | Source coverage | Worker source |
 |---:|---|---|---|---|---|
 | 1 | Admin / configuration | GET | `/admin/access` | Exact source handler; verified Firebase Admin claim/allowlist only | `cloudflare/backend-api/src/core-read-routes.mjs` |
-| 2 | Authentication / profile | GET | `/account/role` | No exact source handler; fails closed | — |
+| 2 | Authentication / profile | GET | `/account/role` | Exact source handler; verified profile role plus UID/publicId-bound Astrologer lookup | `cloudflare/backend-api/src/core-read-routes.mjs` |
 | 3 | Authentication / profile | POST | `/lookup-customer-login` | No exact source handler; fails closed | — |
 | 4 | Authentication / profile | POST | `/lookup-id-login` | No exact source handler; fails closed | — |
 | 5 | Authentication / profile | POST | `/register-customer-profile` | No exact source handler; fails closed | — |
