@@ -50,10 +50,12 @@ import { registerLegacyAppointmentReadAndResponseRoutes } from './legacy-appoint
 import { registerCustomerAnswerCreditRoute } from './customer-answer-credit-route.mjs';
 import { createGoogleServiceAccountTokenProvider } from '../../../shared/backend-platform/google-service-account-token.mjs';
 import { createFirebaseAuthAdminClient, createFcmSender, registerLegacyRouteParityGapRoutes } from './legacy-route-parity-gap-routes.mjs';
+import { createFirebaseConnectivityProbe } from './firebase-connectivity-probe.mjs';
 
 const app = express();
 const verifyFirebaseIdToken = createFirebaseIdTokenVerifier();
 const firebaseFirestore = createFirebaseFirestoreRestClient();
+let firebaseConnectivityProbe = async () => false;
 const JSON_HEADERS = Object.freeze({ 'Cache-Control': 'no-store' });
 const ALLOWED_METHODS = 'GET, POST, PUT, PATCH, DELETE, OPTIONS';
 const ALLOWED_HEADERS = 'Authorization, Content-Type, Idempotency-Key';
@@ -302,6 +304,11 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       projectId,
       allowedProjectIds: [projectId],
       credentials
+    });
+    firebaseConnectivityProbe = createFirebaseConnectivityProbe({
+      firestore: firestoreAdmin,
+      documentPath: 'smv_runtime/readiness',
+      ttlMs: 30000
     });
     firebaseIdentityService = createFirebaseIdentityService({
       verifyIdToken: verifyFirebaseIdToken,
@@ -622,6 +629,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
 }
 
 app.get('/healthz', async (_req, res) => {
+  const firebaseConnected = await firebaseConnectivityProbe();
   const identityGate = d1IdentityAuthorizationService
     ? await d1IdentityAuthorizationService.readiness()
     : { enabled: identityProfileD1AuthorizationOpen, ready: false,
@@ -633,6 +641,8 @@ app.get('/healthz', async (_req, res) => {
     runtime: 'cloudflare-workers-express-http-bridge',
     environment: String(env.SMV_ENVIRONMENT || 'unknown'),
     backendActive: String(env.SMV_BACKEND_CLOUDFLARE_ACTIVE || 'false') === 'true',
+    firebaseConnected,
+    firestoreConnected: firebaseConnected,
     walletReadRoutesRegistered,
     walletRechargeRoutesRegistered,
     walletRechargeMode,
@@ -649,6 +659,7 @@ app.get('/healthz', async (_req, res) => {
 });
 
 app.get('/api/backend/readiness', async (_req, res) => {
+  const firebaseConnected = await firebaseConnectivityProbe();
   if (!env.DB || typeof env.DB.prepare !== 'function') {
     return res.status(503).set(JSON_HEADERS).json({
       ok: false,
@@ -689,7 +700,8 @@ app.get('/api/backend/readiness', async (_req, res) => {
         expressRuntime: true, d1Binding: true, walletSchema: ready,
         sharedDomainSchema: walletDomainSchemaReady
       },
-      firebaseConnected: false,
+      firebaseConnected,
+      firestoreConnected: firebaseConnected,
       razorpayConnected: false,
       razorpayCredentialsConfigured: razorpayPolicy.enabled && !!razorpayKeyId && !!razorpayKeySecret && !!razorpayWebhookSecret,
       razorpayProviderConnectionVerified: false,
@@ -721,7 +733,8 @@ app.get('/api/backend/readiness', async (_req, res) => {
   }
 });
 
-app.get('/api/backend/migration-status', (_req, res) => {
+app.get('/api/backend/migration-status', async (_req, res) => {
+  const firebaseConnected = await firebaseConnectivityProbe();
   return res.set(JSON_HEADERS).json({
     ok: true,
     phase: 'cloudflare-runtime-foundation',
@@ -730,7 +743,8 @@ app.get('/api/backend/migration-status', (_req, res) => {
     firebaseIdTokenVerification: true,
     firebaseUserScopedFirestoreRestAdapter: true,
     firebaseAdminUserManagementConnected: false,
-    firestoreConnected: false,
+    firebaseConnected,
+    firestoreConnected: firebaseConnected,
     razorpayConnected: false,
     razorpayCredentialsConfigured: razorpayPolicy.enabled && !!razorpayKeyId && !!razorpayKeySecret && !!razorpayWebhookSecret,
     razorpayProviderConnectionVerified: false,
