@@ -424,6 +424,38 @@ test('Scheduled Call/Chat start returns 503 before touching booking or Wallet wh
   assert.equal(firestore.calls.writes.length,0);
 });
 
+test('Scheduled in-progress retry passes the D1 Live service listSessions object contract and does not create a duplicate session',async()=>{
+  const firestore=fixture({docs:{
+    'smv_appointments/apt-1':{exists:true,data:{
+      astrologerUid:'astro-1',bookingKind:'scheduled_call_request',
+      bookingStatus:'in_progress',liveSessionId:'session-1'
+    }}
+  }});
+  const inputs=[];
+  const liveService={
+    async createRequest(){throw new Error('must not create a duplicate request');},
+    async acceptSession(){throw new Error('must not re-accept an existing session');},
+    async endSession(){throw new Error('must not end an existing session');},
+    async listSessions(input){
+      inputs.push(input);
+      return [{id:'session-1',state:'active',astrologerUid:'astro-1',customerUid:'customer-1'}];
+    }
+  };
+  const {app}=register({
+    firestore,liveService,isLiveReady:async()=>true,
+    env:{LIVE_SESSION_COORDINATOR:{},LIVE_USER_EVENT_HUB:{}}
+  });
+  const res=response();
+  await app.handlers.get('POST /live/scheduled-appointments/:id/start')(
+    request({token:'astro',params:{id:'apt-1'}}),res
+  );
+  assert.equal(res.statusCode,200,JSON.stringify(res.body));
+  assert.equal(res.body.alreadyProcessed,true);
+  assert.equal(res.body.session.id,'session-1');
+  assert.deepEqual(inputs,[{uid:'astro-1',role:'astrologer'}]);
+  assert.equal(firestore.calls.writes.length,0);
+});
+
 test('Firebase Auth Admin lookup uses scoped OAuth and never returns disabled accounts as active',async()=>{
   let tokenCalls=0,requestPayload;
   const client=createFirebaseAuthAdminClient({
