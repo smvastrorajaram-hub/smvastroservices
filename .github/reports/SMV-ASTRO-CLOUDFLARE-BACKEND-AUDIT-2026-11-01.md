@@ -18,9 +18,9 @@ The production Worker runtime and D1 binding are deployed and verified, but this
 | Legacy method/path inventory | 149 |
 | Legacy GET pairs | 55 |
 | Legacy POST pairs | 94 |
-| Literal Worker handler pairs in reviewed route source files | 70 |
-| Exact legacy method+path pairs with a Worker handler | 57 (38.3%) |
-| Legacy pairs with no exact Worker handler | 92 (61.7%) |
+| Literal Worker handler pairs in reviewed route source files | 77 |
+| Exact legacy method+path pairs with a Worker handler | 64 (43.0%) |
+| Legacy pairs with no exact Worker handler | 85 (57.0%) |
 | Production business route families enabled | 0 |
 | Production traffic switched | No |
 | Production D1 writes/migrations performed by this audit | 0 |
@@ -33,7 +33,7 @@ The route inventory is maintained in [`legacy-backend-route-inventory.mjs`](http
 
 ### P0 — Route parity is incomplete (cutover blocker)
 
-There are 149 unique legacy method/path pairs. Of those, 57 have an exact method/path handler literal in the reviewed Worker source files; 92 have no exact handler and remain routed to the generic `BACKEND_MIGRATION_NOT_CUT_OVER` fail-closed guard. This fail-closed behavior is desirable while migration is incomplete, but it is not production parity.
+There are 149 unique legacy method/path pairs. Of those, 64 have an exact method/path handler literal in the reviewed Worker source files; 85 have no exact handler and remain routed to the generic `BACKEND_MIGRATION_NOT_CUT_OVER` fail-closed guard. This fail-closed behavior is desirable while migration is incomplete, but it is not production parity.
 
 The existing README says approximately 117 route registrations; the current version-controlled route inventory says 149. Use the inventory as the audit baseline until a fresh automated extraction of all active route registrations—including indirect router/module registrations—is compared against it.
 
@@ -93,7 +93,7 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | Razorpay | `test/wallet-recharge-routes.test.mjs`, `test/razorpay-mode-policy.test.mjs`, `test/razorpay-rest-adapter.test.mjs`, `test/legacy-razorpay-routes.test.mjs`, and `test/local-d1-live-payment-invariants.local.mjs`: key-mode gate, raw-body signature check, Question/Private Consultation verify/recovery/refunds, duplicate event handling, order/amount/ownership negatives, refund history lookup and stable idempotency request shape | Real Razorpay Sandbox duplicate webhook replay/refund provider proof; actual Staging Firestore/D1 E2E and complete out-of-order event matrix |
 | Live/Booking | `test/live-session-domain.test.mjs`, `test/live-session-routes.test.mjs` and `test/local-d1-live-payment-invariants.local.mjs`: capacity concurrency, stale booking release, settlement rollback, double-settlement prevention | Full D1 + Durable Object end-to-end ordering and duplicate request-ID replay coverage |
 | Durable timers/events | `test/live-session-coordinator.test.mjs`: durable deadline behavior and event-id dedupe | End-to-end D1+DO interaction under concurrent delivery |
-| Route inventory | `test/legacy-route-inventory.test.mjs`: 149 unique pairs; audit parser now finds 57 exact source pairs and 92 missing pairs | Contract equivalence for all remaining 92 routes and full legacy parity for every source match |
+| Route inventory | `test/legacy-route-inventory.test.mjs`: 149 unique pairs; audit parser now finds 64 exact source pairs and 85 missing pairs | Contract equivalence for all remaining 85 routes and full legacy parity for every source match |
 
 ## Route-by-route coverage matrix (149 inventory pairs)
 
@@ -107,9 +107,9 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | 4 | Authentication / profile | POST | `/lookup-id-login` | No exact source handler; fails closed | — |
 | 5 | Authentication / profile | POST | `/register-customer-profile` | No exact source handler; fails closed | — |
 | 6 | Authentication / profile | POST | `/register-astrologer-profile` | No exact source handler; fails closed | — |
-| 7 | Public config / content | GET | `/public/registration-config` | No exact source handler; fails closed | — |
-| 8 | Public config / content | GET | `/api/smv-mode` | No exact source handler; fails closed | — |
-| 9 | Public config / content | GET | `/` | No exact source handler; fails closed | — |
+| 7 | Public config / content | GET | `/public/registration-config` | Exact source handler; email/phone policy and WhatsApp provider fail-safe | `cloudflare/backend-api/src/public-legacy-routes.mjs` |
+| 8 | Public config / content | GET | `/api/smv-mode` | Exact source handler; HTTPS Worker URL required | `cloudflare/backend-api/src/public-legacy-routes.mjs` |
+| 9 | Public config / content | GET | `/` | Exact source handler; reports gated provider status | `cloudflare/backend-api/src/public-legacy-routes.mjs` |
 | 10 | Payments / earnings / withdrawals | GET | `/test-razorpay` | No exact source handler; fails closed | — |
 | 11 | Contact | POST | `/contact-query` | No exact source handler; fails closed | — |
 | 12 | Appointments / Q&A / consultations | POST | `/astrologer/edit-answer` | No exact source handler; fails closed | — |
@@ -128,7 +128,7 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | 25 | Admin / configuration | POST | `/admin/appointment-status` | No exact source handler; fails closed | — |
 | 26 | Admin / configuration | POST | `/admin/approve-question` | No exact source handler; fails closed | — |
 | 27 | Appointments / Q&A / consultations | POST | `/astrologer/claim-question` | No exact source handler; fails closed | — |
-| 28 | Public config / content | GET | `/api-version` | No exact source handler; fails closed | — |
+| 28 | Public config / content | GET | `/api-version` | Exact source handler; retains legacy feature/version contract | `cloudflare/backend-api/src/public-legacy-routes.mjs` |
 | 29 | Admin / configuration | POST | `/admin/reject-question` | Exact source route; admin-only Question rejection/refund | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
 | 30 | Admin / configuration | POST | `/admin/retry-refund` | Exact legacy Question refund retry route | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
 | 31 | Admin / configuration | GET | `/admin/refund-trace/:questionId` | Exact source route; admin-only refund trace | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
@@ -222,9 +222,9 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | 119 | Admin / configuration | POST | `/admin/wallet/backfill/preview` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/wallet-domain-backfill-routes.mjs:112` |
 | 120 | Admin / configuration | POST | `/admin/wallet/backfill/apply` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/wallet-domain-backfill-routes.mjs:122` |
 | 121 | Admin / configuration | POST | `/admin/wallet/backfill/reconcile` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/wallet-domain-backfill-routes.mjs:143` |
-| 122 | Locations | GET | `/api/locations/status` | No exact source handler; fails closed | — |
-| 123 | Locations | GET | `/api/locations/search` | No exact source handler; fails closed | — |
-| 124 | Locations | GET | `/api/locations/timezone` | No exact source handler; fails closed | — |
+| 122 | Locations | GET | `/api/locations/status` | Exact source handler; exposes provider readiness only | `cloudflare/backend-api/src/geonames-location-routes.mjs` |
+| 123 | Locations | GET | `/api/locations/search` | Exact source handler; validates and bounds GeoNames results | `cloudflare/backend-api/src/geonames-location-routes.mjs` |
+| 124 | Locations | GET | `/api/locations/timezone` | Exact source handler; returns IANA zone without offset guesses | `cloudflare/backend-api/src/geonames-location-routes.mjs` |
 | 125 | Live Call / Chat / push | GET | `/live/push/status` | No exact source handler; fails closed | — |
 | 126 | Live Call / Chat / push | POST | `/live/push/register` | No exact source handler; fails closed | — |
 | 127 | Live Call / Chat / push | POST | `/live/push/unregister` | No exact source handler; fails closed | — |
