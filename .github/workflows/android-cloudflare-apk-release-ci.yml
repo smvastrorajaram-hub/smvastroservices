@@ -18,7 +18,9 @@ on:
       - 'test/cream-theme-audit.test.mjs'
       - 'test/android-permanent-release.test.mjs'
       - '.github/workflows/android-cloudflare-apk-release-ci.yml'
-      - '.github/workflows/deploy-android-apk-release-worker.yml'\n      - '.github/workflows/deploy-android-apk-release-staging-worker.yml'\n      - 'test/android-apk-staging-isolation.test.mjs'
+      - '.github/workflows/deploy-android-apk-release-worker.yml'
+      - '.github/workflows/deploy-android-apk-release-staging-worker.yml'
+      - 'test/android-apk-staging-isolation.test.mjs'
   push:
     branches: [main]
     paths:
@@ -37,7 +39,9 @@ on:
       - 'test/cream-theme-audit.test.mjs'
       - 'test/android-permanent-release.test.mjs'
       - '.github/workflows/android-cloudflare-apk-release-ci.yml'
-      - '.github/workflows/deploy-android-apk-release-worker.yml'\n      - '.github/workflows/deploy-android-apk-release-staging-worker.yml'\n      - 'test/android-apk-staging-isolation.test.mjs'
+      - '.github/workflows/deploy-android-apk-release-worker.yml'
+      - '.github/workflows/deploy-android-apk-release-staging-worker.yml'
+      - 'test/android-apk-staging-isolation.test.mjs'
 
 permissions:
   contents: read
