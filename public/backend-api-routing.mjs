@@ -149,6 +149,7 @@ function routePatternMatches(pattern, pathname) {
 
 function isRetainedOutsideCloudflare(pathname) {
   return pathname === "/customer/consultations" ||
+    pathname === "/admin/private-consultations-data" ||
     /^\/(?:customer|admin|astrologer)\/private-consultations?(?:\/|$)/.test(pathname) ||
     /^\/private-consultation(?:\/|$)/.test(pathname) ||
     /^\/horoscope(?:-|\/)/.test(pathname) ||
