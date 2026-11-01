@@ -32,7 +32,7 @@ test('Staging APK Worker uses isolated Firebase, D1, R2 and origin with uploads 
   assert.match(adminClient, /function smvAndroidApkIsStaging\(\)/);
   assert.match(adminClient, /if\(smvAndroidApkIsStaging\(\)\)throw new Error\('Android APK download, release and test flows are disabled on Staging\.'/);
   assert.doesNotMatch(adminClient, /window\.SMV_APK_RELEASE_STAGING_API_URL/);
-  assert.doesNotMatch(adminClient, /adminAndroidAppManagementCard/);
+  assert.match(adminClient, /\.\.\.\(IS_SMV_PHASE1_STAGING \? \[\] : \[\['adminAndroidAppManagementCard'/);
   assert.match(publicClient, /smv-astro-phase1-browser-staging-v2\.onrender\.com/);
   assert.match(publicClient, /Android APK download, release and test flows are disabled on Staging/);
   assert.doesNotMatch(publicClient, /SMV_APK_RELEASE_STAGING_API_URL/);
