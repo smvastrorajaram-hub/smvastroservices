@@ -50,7 +50,7 @@ function adminOnlyError() {
 }
 
 /** Admin-only quiz bank and Astrologer Auto Approval settings. */
-export function registerLegacyQuizWriteRoutes({ app, firestore, identityService } = {}) {
+export function registerLegacyQuizWriteRoutes({ app, firestore, identityService, fetchImpl = globalThis.fetch } = {}) {
   if (!app || typeof app.post !== 'function' ||
       !firestore || typeof firestore.getDocument !== 'function' ||
       typeof firestore.runQuery !== 'function' || typeof firestore.runTransaction !== 'function' ||
@@ -183,12 +183,239 @@ export function registerLegacyQuizWriteRoutes({ app, firestore, identityService 
     }
   });
 
+
+  app.post('/admin/astrologer-quiz/sync-google-form', async (req, res) => {
+    try {
+      const user = await requireAdmin(req);
+      const snapshot = await firestore.getDocument('smv_settings/astrologerAutoApproval');
+      const config = snapshot.exists ? (snapshot.data || {}) : {};
+      const syncWebAppUrl = String(config.syncWebAppUrl || '').trim();
+      const webhookSecret = String(config.webhookSecret || '');
+      const formUrl = String(config.formUrl || '');
+      const passMark = Math.max(1, Math.min(25, Math.round(Number(config.passMark || 20))));
+
+      if (!syncWebAppUrl) {
+        return res.status(400).set('Cache-Control', 'no-store').json({
+          error: 'Google Apps Script Web App URL is not configured. Deploy the Apps Script as a Web App and save its /exec URL first.'
+        });
+      }
+      if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec(?:[?#].*)?$/i.test(syncWebAppUrl)) {
+        return res.status(400).set('Cache-Control', 'no-store').json({
+          error: 'The configured Google Apps Script URL is invalid.'
+        });
+      }
+      if (!webhookSecret) {
+        return res.status(400).set('Cache-Control', 'no-store').json({
+          error: 'Quiz webhook secret is not configured.'
+        });
+      }
+      if (typeof fetchImpl !== 'function') {
+        return res.status(503).set('Cache-Control', 'no-store').json({
+          error: 'Google Form sync provider is not configured.'
+        });
+      }
+
+      const upstream = await fetchImpl(syncWebAppUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'sync_google_form', secret: webhookSecret }),
+        redirect: 'follow',
+        signal: AbortSignal.timeout(90_000)
+      });
+      const raw = await upstream.text();
+      let payload = {};
+      try { payload = raw ? JSON.parse(raw) : {}; } catch {}
+      if (!upstream.ok || payload.success !== true) {
+        const message = String(payload.error || raw ||
+          ('Google Apps Script sync failed (HTTP ' + upstream.status + ').')).slice(0, 800);
+        return res.status(502).set('Cache-Control', 'no-store').json({ error: message });
+      }
+      return res.set('Cache-Control', 'no-store').json({
+        success: true,
+        formUrl: String(payload.formUrl || formUrl || ''),
+        enabledQuestions: Number(payload.enabledQuestions || 0),
+        passMark: Number(payload.passMark || passMark),
+        message: 'Google Form synced successfully.'
+      });
+    } catch (error) {
+      const timeout = error?.name === 'TimeoutError' || error?.name === 'AbortError';
+      return res.status(502).set('Cache-Control', 'no-store').json({
+        error: timeout ? 'Google Form sync timed out. Please try again.' :
+          String(error?.message || 'Unable to sync Google Form.').slice(0, 800)
+      });
+    }
+  });
+
+  app.post('/webhooks/google-form/astrologer-qualification', async (req, res) => {
+    try {
+      const configSnapshot = await firestore.getDocument('smv_settings/astrologerAutoApproval');
+      const config = configSnapshot.exists ? (configSnapshot.data || {}) : {};
+      const expectedSecret = String(config.webhookSecret || '');
+      const suppliedSecret = String(req.get('x-smv-quiz-secret') || req.body?.secret || '');
+      const expectedBytes = new TextEncoder().encode(expectedSecret);
+      const suppliedBytes = new TextEncoder().encode(suppliedSecret);
+      let difference = expectedBytes.length ^ suppliedBytes.length;
+      const compareLength = Math.max(expectedBytes.length, suppliedBytes.length);
+      for (let index = 0; index < compareLength; index += 1) {
+        difference |= (expectedBytes[index] || 0) ^ (suppliedBytes[index] || 0);
+      }
+      if (!expectedSecret || !suppliedSecret || difference !== 0) {
+        return res.status(401).set('Cache-Control', 'no-store').json({
+          error: 'Invalid quiz webhook secret.'
+        });
+      }
+
+      const email = String(req.body?.email || '').trim().toLowerCase();
+      const score = Number(req.body?.score);
+      const maxScore = Math.round(Number(req.body?.maxScore || 0));
+      const responseId = String(req.body?.responseId || '').trim();
+      const resultId = responseId.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 180);
+      const activeQuestions = await firestore.runQuery({
+        collectionPath: 'smv_astrologer_quiz_questions',
+        filters: [{ field: 'enabled', op: '==', value: true }],
+        limit: 200
+      });
+      const expectedMax = activeQuestions.length;
+      const validationIssues = [];
+      if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) validationIssues.push('email_invalid');
+      if (!Number.isFinite(score)) validationIssues.push('score_invalid');
+      if (maxScore < 1) validationIssues.push('max_score_invalid');
+      if (maxScore !== expectedMax) validationIssues.push('max_score_mismatch');
+      if (Number.isFinite(score) && score < 0) validationIssues.push('score_below_zero');
+      if (Number.isFinite(score) && maxScore >= 1 && score > maxScore) validationIssues.push('score_above_max');
+      if (!responseId || responseId.length > 300 || !resultId) validationIssues.push('response_id_invalid');
+
+      if (validationIssues.length) {
+        return res.status(400).set('Cache-Control', 'no-store').json({
+          error: 'Invalid Google Form result payload or stale form version.',
+          diagnostic: {
+            issues: validationIssues,
+            emailPresent: !!email,
+            receivedScore: Number.isFinite(score) ? score : null,
+            receivedMaxScore: maxScore,
+            expectedMaxScore: expectedMax,
+            responseIdPresent: !!responseId
+          }
+        });
+      }
+
+      const matchingUsers = await firestore.runQuery({
+        collectionPath: 'smv_users',
+        filters: [{ field: 'email', op: '==', value: email }],
+        limit: 1
+      });
+      if (!matchingUsers.length) {
+        return res.status(404).set('Cache-Control', 'no-store').json({
+          error: 'No registered SMV astrologer matches this email.'
+        });
+      }
+      const userUid = String(matchingUsers[0].data?.uid || matchingUsers[0].id || '').trim();
+      if (!userUid || userUid.length > 160) {
+        return res.status(409).set('Cache-Control', 'no-store').json({
+          error: 'The matched Astrologer profile has an invalid account ID.'
+        });
+      }
+
+      const resultPath = 'smv_astrologer_quiz_results/' + resultId;
+      const userPath = 'smv_users/' + userUid;
+      const astrologerPath = 'smv_astrologers/' + userUid;
+      const result = await firestore.runTransaction(async tx => {
+        const existingResult = await tx.getDocument(resultPath);
+        if (existingResult.exists) return { duplicate: true };
+
+        const [userDocument, astrologerDocument] = await Promise.all([
+          tx.getDocument(userPath),
+          tx.getDocument(astrologerPath)
+        ]);
+        const userData = userDocument.exists ? (userDocument.data || {}) : {};
+        const astrologerData = astrologerDocument.exists ? (astrologerDocument.data || {}) : {};
+        if (!userDocument.exists || String(userData.role || '').toLowerCase() !== 'astrologer') {
+          throw Object.assign(new Error('The submitted email is not an Astrologer account.'), {
+            code: 'QUIZ_ASTROLOGER_REQUIRED', httpStatus: 403
+          });
+        }
+        if (!astrologerDocument.exists) {
+          throw Object.assign(new Error('Astrologer profile not found.'), {
+            code: 'QUIZ_ASTROLOGER_PROFILE_NOT_FOUND', httpStatus: 404
+          });
+        }
+
+        const passMark = Math.max(1, Math.min(25, Math.round(Number(config.passMark || 20))));
+        const passed = score >= passMark;
+        const status = String(astrologerData.status || 'pending').toLowerCase();
+        const autoApproved = config.enabled === true && passed &&
+          ['pending', 'test_failed', ''].includes(status);
+        const timestamp = FirestoreFieldValue.serverTimestamp();
+        tx.create(resultPath, {
+          responseId, email, uid: userUid, score, maxScore, passMark,
+          passed, autoApproved, createdAt: timestamp
+        });
+        const quizPatch = {
+          quizStatus: passed ? 'passed' : 'failed',
+          quizScore: score,
+          quizMaxScore: maxScore,
+          quizPassMark: passMark,
+          quizResponseId: responseId,
+          quizSubmittedAt: timestamp
+        };
+        if (autoApproved) {
+          Object.assign(quizPatch, {
+            status: 'approved',
+            approvedAt: timestamp,
+            approvedBy: 'google_quiz_auto_approval',
+            autoApproved: true
+          });
+        }
+        tx.set(astrologerPath, quizPatch, { merge: true });
+        if (autoApproved) {
+          tx.set(userPath, { status: 'active', updatedAt: timestamp }, { merge: true });
+        }
+        const notificationId = userUid + '_quiz_' + Date.now();
+        const notificationPath = 'smv_notifications/' + notificationId;
+        const notificationMessage = autoApproved
+          ? 'You passed the qualification test (' + score + '/' + maxScore + ') and your astrologer account has been approved automatically.'
+          : 'Qualification test score: ' + score + '/' + maxScore + '. ' +
+            (passed ? 'Auto Approval is currently disabled; Admin review remains pending.' :
+              'Required pass mark: ' + passMark + '/25.');
+        tx.create(notificationPath, {
+          userId: userUid,
+          type: autoApproved ? 'approval' : 'astrologer_quiz_result',
+          title: autoApproved ? 'Astrologer application auto approved' :
+            (passed ? 'Qualification test passed' : 'Qualification test not passed'),
+          message: notificationMessage,
+          createdAt: timestamp,
+          read: false
+        });
+        return { duplicate: false, passed, autoApproved, passMark };
+      });
+      if (result.duplicate) {
+        return res.set('Cache-Control', 'no-store').json({ success: true, duplicate: true });
+      }
+      return res.set('Cache-Control', 'no-store').json({
+        success: true,
+        passed: result.passed,
+        autoApproved: result.autoApproved,
+        score,
+        maxScore,
+        passMark: result.passMark
+      });
+    } catch (error) {
+      const status = Number(error?.httpStatus) || 500;
+      return res.status(status).set('Cache-Control', 'no-store').json({
+        error: status >= 500 ? 'Unable to process qualification result.' :
+          String(error?.message || 'Invalid Google Form result payload.')
+      });
+    }
+  });
+
   return Object.freeze({
     paths: Object.freeze([
       '/admin/astrologer-quiz/questions',
       '/admin/astrologer-quiz/questions/delete',
       '/admin/astrologer-quiz/load-defaults',
-      '/admin/astrologer-auto-approval/settings'
+      '/admin/astrologer-auto-approval/settings',
+      '/admin/astrologer-quiz/sync-google-form',
+      '/webhooks/google-form/astrologer-qualification'
     ])
   });
 }
