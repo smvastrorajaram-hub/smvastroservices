@@ -184,10 +184,10 @@ test('Razorpay refund adapter sends a stable idempotency header', async () => {
     }
   });
   const refund = await client.refundPayment('pay_123', {
-    amountPaise: 500, receipt: 'smv_rfnd_1', idempotencyKey: 'refund:question-1'
+    amountPaise: 500, receipt: 'smv_rfnd_1', idempotencyKey: 'refund-question-1'
   });
   assert.equal(refund.id, 'rfnd_123');
-  assert.equal(captured.options.headers['X-Refund-Idempotency'], 'refund:question-1');
+  assert.equal(captured.options.headers['X-Refund-Idempotency'], 'refund-question-1');
   assert.equal(captured.body.amount, 500);
 });
 
