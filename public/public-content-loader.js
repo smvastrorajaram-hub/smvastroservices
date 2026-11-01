@@ -5,7 +5,7 @@
  */
 (function(){
   'use strict';
-  const MODULE_URL='./public-content.mjs?v=20261029-consult-module-lazy-v1';
+  const MODULE_URL='./public-content.mjs?v=20261102-staging-auth-origin-v1';
   let pending=null;
   function isConsultVisible(){
     const target=document.getElementById('private-consultation');
