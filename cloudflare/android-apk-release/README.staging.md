@@ -36,7 +36,7 @@ Admin uploads remain disabled until the required Staging identity is configured 
 After the two Staging Cloudflare resources and the dedicated token/ID variable are configured:
 
 1. Open GitHub Actions → **Deploy SMV ASTRO APK Release Worker — Staging**.
-2. Select branch `integration/cloudflare-backend-staging-stack-20261031`.
+2. Select branch `main`.
 3. Run with `confirm_staging_apk_worker_deploy = yes`.
 4. Keep `enable_staging_admin_uploads = no` for the first deployment.
 
