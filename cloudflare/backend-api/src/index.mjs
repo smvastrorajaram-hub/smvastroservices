@@ -444,7 +444,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       allowNewQuestions:
         String(env.SMV_ENVIRONMENT || '') === 'staging' &&
         String(env.SMV_NEW_QUESTION_PAYMENTS_ENABLED || '').toLowerCase() === 'true',
-      isD1Ready: walletSchemaReady
+      isD1Ready: checkWalletRechargeSchemaReady
     });
     legacyRazorpayRoutesRegistered = true;
   }
