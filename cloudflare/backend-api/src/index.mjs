@@ -41,6 +41,7 @@ import { registerLegacyQuestionWorkflowRoutes } from './legacy-question-workflow
 import { registerAppointmentBookingRoute } from './appointment-booking-route.mjs';
 import { registerAdminDashboardRoutes } from './admin-dashboard-routes.mjs';
 import { registerLegacyAstrologerApprovalRoutes } from './legacy-astrologer-approval-routes.mjs';
+import { registerLegacyQuestionActionRoutes } from './legacy-question-action-routes.mjs';
 
 const app = express();
 const verifyFirebaseIdToken = createFirebaseIdTokenVerifier();
@@ -318,6 +319,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     registerAppointmentBookingRoute({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerAdminDashboardRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerLegacyAstrologerApprovalRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    registerLegacyQuestionActionRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
   }
   const walletSchemaReady = async () => {
     try {
