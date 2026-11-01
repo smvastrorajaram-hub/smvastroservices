@@ -162,7 +162,7 @@ else smvLoadHomeWalletRechargeOffers().catch(()=>{});
 
 function smvAssertLiveCheckout(key){
  const value=String(key||'').trim();
- if(!/^rzp_(?:test|live)_[A-Za-z0-9]+$/.test(value))throw new Error('Payment blocked: this backend returned an invalid Razorpay key. Configure a matching Test or Live Razorpay key in the backend.);
+ if(!/^rzp_(?:test|live)_[A-Za-z0-9]+$/.test(value))throw new Error('Payment blocked: this backend returned an invalid Razorpay key. Configure a matching Test or Live Razorpay key in the active backend.');
 }
 // Shared authenticated transport for Admin, Customer and Astrologer actions.
 // Firebase reuses a valid ID token; payment/refund mutations are never replayed here.
