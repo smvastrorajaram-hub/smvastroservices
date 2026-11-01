@@ -1631,9 +1631,17 @@ function smvBindCustomerWallet({load=true}={}){
     if(typeof RazorpayCtor!=='function')throw new Error('Razorpay Checkout did not finish initializing. Please retry.');
     if(!order?.rechargeId||!order?.orderId||!order?.keyId)throw new Error('The backend did not return a complete Wallet recharge order.');
     smvWalletSetMessage('Recharge order ready. Opening secure Razorpay Checkout…');
+    const prefillName=String(window.__smvCustomerProfileName||currentUser.displayName||'').trim();
+    const prefillEmail=String(currentUser.email||'').trim();
+    const prefillContact=String(window.__smvCustomerProfilePhone||currentUser.phoneNumber||'').replace(/[\\s().-]/g,'');
+    const checkoutPrefill={
+     ...(prefillName?{name:prefillName}:{}),
+     ...(prefillEmail?{email:prefillEmail}:{}),
+     ...( /^\\+?\\d{7,15}$/.test(prefillContact)?{contact:prefillContact}: {})
+    };
     const checkout=new RazorpayCtor({
      key:order.keyId,amount:Number(order.amount),currency:String(order.currency||'INR'),
-     name:'SMV ASTRO',description:'Customer Wallet Recharge',order_id:order.orderId,
+     name:'SMV ASTRO',description:'Customer Wallet Recharge',order_id:order.orderId,prefill:checkoutPrefill,
      handler:async paymentResponse=>{
       verificationInProgress=true;
       try{
@@ -2210,6 +2218,9 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
    const customerDisplayName=[data.name,data.fullName,data.displayName,data.firstName,data.customerName,data.customer_name,data.profileName,currentUser.displayName]
     .map(v=>String(v||'').trim()).find(v=>v&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))||'Customer';
    window.__smvCustomerProfileName=customerDisplayName;
+   // Keep the stored mobile private in the dashboard UI, but prefill Razorpay Checkout.
+   // Customer profiles store the canonical E.164 phone in phone/mobile.
+   window.__smvCustomerProfilePhone=String(data.phone||data.mobile||data.phoneNumber||data.mobileNumber||'').trim();
    if(!active())return;
    if(background&&smvEditing("dashboard")){smvLiveQueue?.request();return;}
    box.innerHTML=`<div class="grid"><div class="card"><span class="badge">CUSTOMER</span><h3>Welcome, <span class="smv-dashboard-name">${escapeHtml(customerDisplayName)}</span></h3><p><b>Email verification:</b> ${currentUser.emailVerified?'<span class="smv-verified-badge customer-profile-result"><span class="smv-check">✓</span>Verified</span>':'<span class="customer-profile-result">Pending from registration</span>'}</p><p><b>Mobile:</b> <span class="customer-profile-result">Private</span></p></div></div>
