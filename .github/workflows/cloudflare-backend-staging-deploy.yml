@@ -236,9 +236,10 @@ jobs:
           }
 
           const health = await get('/healthz');
-          if (health.ok !== true || health.runtime !== 'cloudflare-workers-express-http-bridge' || health.productionTrafficEnabled !== false) {
-            throw new Error('Cloudflare Express runtime health verification failed.');
-          }
+           if (health.ok !== true || health.runtime !== 'cloudflare-workers-express-http-bridge' || health.productionTrafficEnabled !== false ||
+               health.firebaseConnected !== true || health.firestoreConnected !== true) {
+             throw new Error('Cloudflare Express runtime or Staging Firestore connectivity verification failed.');
+           }
           if (health.identityProfileBackfillRoutesRegistered !== true ||
               health.identityProfileBackfillToolsEnabled !== true ||
               health.identityProfileBackfillPreviewOnly !== true ||
@@ -261,7 +262,7 @@ jobs:
           const readiness = await get('/api/backend/readiness');
           if (readiness.ready !== true || readiness.schemaVersion !== '0001_wallet_live_domain' ||
               readiness.sharedDomainSchemaVersion !== '0002_shared_domain_repository' ||
-              readiness.firebaseConnected !== false || readiness.razorpayConnected !== false ||
+              readiness.firebaseConnected !== true || readiness.firestoreConnected !== true || readiness.razorpayConnected !== false ||
               readiness.walletBusinessRoutesEnabled !== false ||
               readiness.walletBackfillRoutesRegistered !== true ||
               readiness.walletBackfillToolsEnabled !== true ||
