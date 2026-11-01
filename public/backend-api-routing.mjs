@@ -122,7 +122,10 @@ POST /live/sessions/:id/ready
 POST /live/sessions/:id/signal
 GET /live/sessions/:id/signals
 POST /live/sessions/:id/messages
-GET /live/sessions/:id/messages`;
+GET /live/sessions/:id/messages
+POST /admin/withdrawal-mark-processing
+POST /admin/withdrawal-reject
+POST /live/sessions/:id/connection`;
 export const CLOUDFLARE_LEGACY_ROUTE_PAIRS = Object.freeze(
   CLOUDFLARE_LEGACY_ROUTE_LINES.split("\n").filter(Boolean).map(line => {
     const separator = line.indexOf(" ");
@@ -174,6 +177,7 @@ function routeFamily(pathname) {
   if (/^\/live(?:\/|$)/.test(pathname) || /^\/admin\/live(?:\/|$)/.test(pathname) ||
       pathname === "/astrologer/earnings" || pathname === "/astrologer/withdrawal-request" ||
       pathname === "/admin/withdrawals-data" || pathname === "/admin/withdrawal-mark-paid" ||
+      pathname === "/admin/withdrawal-mark-processing" || pathname === "/admin/withdrawal-reject" ||
       /^\/admin\/withdrawal-payout\//.test(pathname)) return "live";
   if (pathname === "/razorpay/webhook" || pathname === "/create-order" || pathname === "/verify-payment" ||
       pathname === "/admin/reject-question" || pathname === "/admin/retry-refund" ||

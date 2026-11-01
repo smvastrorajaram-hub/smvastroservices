@@ -33,7 +33,7 @@ function jsonResponse(value, status = 200) {
 }
 
 test("all 119 eligible literal Worker route pairs are Cloudflare-primary with exact method/path matching", () => {
-  assert.equal(CLOUDFLARE_LEGACY_ROUTE_PAIRS.length, 119);
+  assert.equal(CLOUDFLARE_LEGACY_ROUTE_PAIRS.length, 122);
   for (const route of CLOUDFLARE_LEGACY_ROUTE_PAIRS) {
     assert.equal(
       classifyStagingBackendRoute(route.path, route.method).target,
@@ -88,6 +88,9 @@ test("maps Wallet, Razorpay, Booking and Live to separate readiness gates", () =
     ["/live/sessions/session-1/accept", "POST", "live"],
     ["/astrologer/withdrawal-request", "POST", "live"],
     ["/admin/withdrawals-data", "GET", "live"],
+    ["/admin/withdrawal-mark-processing", "POST", "live"],
+    ["/admin/withdrawal-reject", "POST", "live"],
+    ["/live/sessions/session-1/connection", "POST", "live"],
     ["/create-order", "POST", "legacyPayments"],
     ["/verify-payment", "POST", "legacyPayments"]
   ];
@@ -181,6 +184,10 @@ test("Wallet recharge and Live sessions fail closed and are never sent to Render
   await assert.rejects(router.fetch("/wallet/recharge/create-order", { method: "POST", body: "{}" }),
     error => error.code === "CLOUDFLARE_ROUTE_NOT_READY");
   await assert.rejects(router.fetch("/live/sessions", { method: "GET" }),
+    error => error.code === "CLOUDFLARE_ROUTE_NOT_READY");
+  await assert.rejects(router.fetch("/admin/withdrawal-mark-processing", { method: "POST", body: "{}" }),
+    error => error.code === "CLOUDFLARE_ROUTE_NOT_READY");
+  await assert.rejects(router.fetch("/live/sessions/session-1/connection", { method: "POST", body: "{}" }),
     error => error.code === "CLOUDFLARE_ROUTE_NOT_READY");
   assert.deepEqual(calls, [
     cloudflareBaseUrl + "/api/backend/readiness"
