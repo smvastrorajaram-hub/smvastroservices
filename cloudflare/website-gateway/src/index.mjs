@@ -11,6 +11,39 @@ function validatedOrigin(env) {
   return parsed.origin;
 }
 
+async function rewriteStagingHtml(response, publicOrigin, HTMLRewriterImpl = globalThis.HTMLRewriter) {
+  const contentType = response.headers.get("content-type") || "";
+  if (!response.body || !/text\/html(?:;|$)/i.test(contentType) || typeof HTMLRewriterImpl !== "function") {
+    return response;
+  }
+  return await new HTMLRewriterImpl()
+    .on('link[rel="canonical"]', {
+      element(element) { element.setAttribute("href", publicOrigin + "/"); }
+    })
+    .on('meta[property="og:url"]', {
+      element(element) { element.setAttribute("content", publicOrigin + "/"); }
+    })
+    .on("#smvPermanentAndroidAppSection", {
+      element(element) { element.remove(); }
+    })
+    .on("#adminGroupAppManagement", {
+      element(element) { element.remove(); }
+    })
+    .on("#askNowHeading", {
+      element(element) { element.setInnerContent("Live Call & Chat Booking"); }
+    })
+    .on("#askNowButton .asknow-label", {
+      element(element) { element.setInnerContent("VIEW CALL & CHAT OPTIONS"); }
+    })
+    .on('a[data-smv-route="private-consultation"]', {
+      element(element) {
+        element.setAttribute("aria-label", "Live Call and Chat");
+        element.setInnerContent("Live Call & Chat");
+      }
+    })
+    .transform(response);
+}
+
 function withSource(response, source, extraHeaders = {}) {
   const headers = new Headers(response.headers);
   headers.set("X-SMV-Website-Source", source);
@@ -28,7 +61,7 @@ function unavailable(status = 503, code = "WEBSITE_FALLBACK_UNAVAILABLE") {
   });
 }
 
-async function serveStaticSnapshot(request, env, originStatus) {
+async function serveStaticSnapshot(request, env, originStatus, HTMLRewriterImpl) {
   if (!env?.ASSETS || typeof env.ASSETS.fetch !== "function") {
     return unavailable(503, "WEBSITE_STATIC_ASSETS_NOT_BOUND");
   }
@@ -36,7 +69,8 @@ async function serveStaticSnapshot(request, env, originStatus) {
     const method = request.method.toUpperCase();
     const assetRequest = new Request(request.url, { method, headers: request.headers, redirect: "manual" });
     const response = await env.ASSETS.fetch(assetRequest);
-    return withSource(response, "cloudflare-static-fallback", {
+    const rewritten = await rewriteStagingHtml(response, new URL(request.url).origin, HTMLRewriterImpl);
+    return withSource(rewritten, "cloudflare-static-fallback", {
       "X-SMV-Website-Origin-Status": originStatus || "network-error"
     });
   } catch (_error) {
@@ -44,7 +78,7 @@ async function serveStaticSnapshot(request, env, originStatus) {
   }
 }
 
-export async function handleWebsiteRequest(request, env, fetchImpl = globalThis.fetch) {
+export async function handleWebsiteRequest(request, env, fetchImpl = globalThis.fetch, HTMLRewriterImpl = globalThis.HTMLRewriter) {
   if (!request || typeof request.url !== "string" || typeof fetchImpl !== "function") {
     throw new TypeError("A Fetch Request and upstream fetch implementation are required.");
   }
@@ -83,12 +117,15 @@ export async function handleWebsiteRequest(request, env, fetchImpl = globalThis.
     const originRequest = new Request(target, { method, headers: request.headers, redirect: "manual" });
     const upstream = await fetchImpl(originRequest);
     originStatus = upstream.status;
-    if (!RETRYABLE_ORIGIN_STATUSES.has(upstream.status)) return withSource(upstream, "render");
+    if (!RETRYABLE_ORIGIN_STATUSES.has(upstream.status)) {
+      const rewritten = await rewriteStagingHtml(upstream, requestUrl.origin, HTMLRewriterImpl);
+      return withSource(rewritten, "render");
+    }
   } catch (_error) {
     // An origin outage or Render build/deploy failure falls through to the last
     // successfully deployed Cloudflare static snapshot. Only GET and HEAD qualify.
   }
-  return serveStaticSnapshot(request, env, originStatus);
+  return serveStaticSnapshot(request, env, originStatus, HTMLRewriterImpl);
 }
 
 export default { fetch(request, env) { return handleWebsiteRequest(request, env); } };
