@@ -120,6 +120,7 @@ test('service worker displays background pushes, ignores ring-stop control messa
   assert.match(worker, /self\.addEventListener\('notificationclick'/);
   assert.match(worker, /String\(data\.type \|\| ''\) === 'stop_ringing'\) return/);
   assert.match(worker, /smv-astro-staging/);
+  assert.match(worker, /'smv-astro-phase1-browser-staging-v2\\.onrender\\.com'/);
   assert.match(worker, /projectId: 'smv-astro'/);
 });
 
