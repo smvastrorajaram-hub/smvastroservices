@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createResendEmailClient } from '../../shared/backend-platform/resend-email-adapter.mjs';
+import { createResendEmailClient } from '../resend-email-adapter.mjs';
 
 test('Resend adapter sends authenticated email with idempotency key and reply-to',async()=>{
  let captured=null;
