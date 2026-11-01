@@ -1,0 +1,288 @@
+name: Deploy SMV ASTRO APK Release Worker — Staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_staging_apk_worker_deploy:
+        description: "Deploy only the isolated Staging APK Worker and apply its Staging D1 migration?"
+        required: true
+        type: choice
+        options:
+          - "no"
+          - "yes"
+        default: "no"
+      enable_staging_admin_uploads:
+        description: "Enable Admin APK uploads in the isolated Staging Worker?"
+        required: true
+        type: choice
+        options:
+          - "no"
+          - "yes"
+        default: "no"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smv-astro-apk-release-staging-worker-deploy
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Confirm isolated Staging deployment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require the default main branch and explicit confirmation
+        shell: bash
+        env:
+          CONFIRM_DEPLOYMENT: ${{ inputs.confirm_staging_apk_worker_deploy }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "::error::Run this workflow from main only."
+            exit 1
+          fi
+          if [[ "$CONFIRM_DEPLOYMENT" != "yes" ]]; then
+            echo "::error::Staging deployment was not confirmed."
+            exit 1
+          fi
+          echo "Staging APK Worker deployment explicitly confirmed."
+
+  deploy:
+    name: Staging-only D1 migration and Worker deployment
+    needs: preflight
+    if: ${{ needs.preflight.result == 'success' && github.ref == 'refs/heads/main' && inputs.confirm_staging_apk_worker_deploy == 'yes' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_APK_RELEASE_STAGING_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      STAGING_D1_ID: ${{ vars.CLOUDFLARE_APK_STAGING_D1_ID }}
+      STAGING_UPLOADS: ${{ inputs.enable_staging_admin_uploads }}
+      STAGING_ADMIN_UIDS: ${{ vars.SMV_APK_STAGING_ADMIN_UIDS }}
+      STAGING_ADMIN_EMAILS: ${{ secrets.SMV_APK_STAGING_ADMIN_EMAILS }}
+    steps:
+      - name: Checkout the reviewed Staging source snapshot (PR #296)
+        uses: actions/checkout@v4
+        with:
+          # Pin the exact audited Staging source; do not inherit unrelated main changes.
+          ref: f626895e2d2abbd1b4087fb39802fbb0d2deef3f
+
+      - name: Verify dedicated Staging Cloudflare credentials and D1 ID
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CLOUDFLARE_API_TOKEN:-}" || -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+            echo "::error::Configure CLOUDFLARE_APK_RELEASE_STAGING_API_TOKEN and CLOUDFLARE_ACCOUNT_ID first."
+            exit 1
+          fi
+          if [[ ! "${STAGING_D1_ID:-}" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]]; then
+            echo "::error::CLOUDFLARE_APK_STAGING_D1_ID must contain the newly created Staging D1 UUID."
+            exit 1
+          fi
+          if [[ "${STAGING_D1_ID,,}" == "5105ebb3-435c-47b7-9983-2e171fa911cd" ]]; then
+            echo "::error::The Production D1 ID is forbidden in the Staging workflow."
+            exit 1
+          fi
+          echo "Dedicated Staging token, account ID and non-Production D1 ID are present. Secret values are not printed."
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Generate and validate a temporary Staging-only Wrangler config
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = 'cloudflare/android-apk-release/wrangler.staging.toml';
+          const output = 'cloudflare/android-apk-release/wrangler.staging.generated.toml';
+          let config = fs.readFileSync(path, 'utf8');
+          const d1 = process.env.STAGING_D1_ID;
+          if (!d1 || d1 === '5105ebb3-435c-47b7-9983-2e171fa911cd') {
+            throw new Error('Refusing to use a missing or Production D1 ID.');
+          }
+          config = config.replace(
+            /^database_id\s*=\s*"00000000-0000-0000-0000-000000000000"\s*$/m,
+            'database_id = "' + d1 + '"'
+          );
+          if (!config.includes('database_id = "' + d1 + '"')) {
+            throw new Error('Staging D1 placeholder was not replaced exactly.');
+          }
+          const uploads = process.env.STAGING_UPLOADS === 'yes';
+          config = config.replace(
+            /^ALLOW_APK_UPLOADS\s*=\s*"false"\s*$/m,
+            'ALLOW_APK_UPLOADS = "' + (uploads ? 'true' : 'false') + '"'
+          );
+          const quote = value => JSON.stringify(String(value || ''));
+          config = config.replace(/^SMV_ANDROID_RELEASE_ADMIN_UIDS\s*=\s*""\s*$/m,
+            'SMV_ANDROID_RELEASE_ADMIN_UIDS = ' + quote(process.env.STAGING_ADMIN_UIDS));
+          config = config.replace(/^SMV_ANDROID_RELEASE_ADMIN_EMAILS\s*=\s*""\s*$/m,
+            'SMV_ANDROID_RELEASE_ADMIN_EMAILS = ' + quote(process.env.STAGING_ADMIN_EMAILS));
+          const required = [
+            ['name = "smv-astro-apk-release-api-staging"', 'Staging Worker name'],
+            ['bucket_name = "smv-astro-apk-releases-staging"', 'Staging R2 bucket'],
+            ['database_name = "smv-astro-apk-releases-staging"', 'Staging D1 database'],
+            ['FIREBASE_ALLOWED_PROJECT_IDS = "smv-astro-staging"', 'Staging Firebase project'],
+            ['ALLOWED_ORIGINS = "https://smv-astro-phase1-browser-staging-v2.onrender.com"', 'Staging browser origin'],
+            ['database_id = "' + d1 + '"', 'Staging D1 ID']
+          ];
+          for (const [needle, label] of required) {
+            if (!config.includes(needle)) throw new Error(label + ' validation failed.');
+          }
+          if (config.includes('5105ebb3-435c-47b7-9983-2e171fa911cd') ||
+              config.includes('smv-astro-apk-releases"') ||
+              config.includes('smv-astro-apk-release-api"')) {
+            throw new Error('Production APK release resource identity detected in Staging config.');
+          }
+          fs.writeFileSync(output, config, { mode: 0o600 });
+          console.log('Staging Worker, Firebase project, D1 ID and R2 bucket verified; uploads=' + (uploads ? 'enabled' : 'disabled') + '.');
+          NODE
+
+      - name: Verify live Staging D1 identity before migration
+        shell: bash
+        env:
+          EXPECTED_D1_NAME: smv-astro-apk-releases-staging
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 d1 info "$EXPECTED_D1_NAME" --json \
+            --config cloudflare/android-apk-release/wrangler.staging.generated.toml \
+            > "$RUNNER_TEMP/apk-release-staging-d1-info.json"
+          node <<'NODE'
+          const fs = require('node:fs');
+          const raw = fs.readFileSync(process.env.RUNNER_TEMP + '/apk-release-staging-d1-info.json', 'utf8');
+          const json = JSON.stringify(JSON.parse(raw)).toLowerCase();
+          if (!json.includes('smv-astro-apk-releases-staging') ||
+              !json.includes(process.env.STAGING_D1_ID.toLowerCase())) {
+            throw new Error('Live D1 identity does not match the dedicated Staging database. No migration was applied.');
+          }
+          if (json.includes('5105ebb3-435c-47b7-9983-2e171fa911cd')) {
+            throw new Error('Live D1 response contains the Production database ID. Refusing migration.');
+          }
+          console.log('Live Staging D1 name and ID verified.');
+          NODE
+
+      - name: Show pending Staging APK migrations
+        run: |
+          npx --yes wrangler@4 d1 migrations list smv-astro-apk-releases-staging --remote \
+            --config cloudflare/android-apk-release/wrangler.staging.generated.toml
+
+      - name: Apply migrations only to Staging APK D1
+        run: |
+          npx --yes wrangler@4 d1 migrations apply smv-astro-apk-releases-staging --remote \
+            --config cloudflare/android-apk-release/wrangler.staging.generated.toml
+
+      - name: Verify Staging migration state
+        run: |
+          npx --yes wrangler@4 d1 migrations list smv-astro-apk-releases-staging --remote \
+            --config cloudflare/android-apk-release/wrangler.staging.generated.toml
+
+      - name: Deploy only the Staging APK Worker
+        id: deploy_worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          LOG_FILE="$RUNNER_TEMP/apk-release-staging-wrangler.log"
+          npx --yes wrangler@4 deploy --config cloudflare/android-apk-release/wrangler.staging.generated.toml 2>&1 | tee "$LOG_FILE"
+          WORKER_URL="$(grep -Eo 'https://[A-Za-z0-9.-]+\.workers\.dev' "$LOG_FILE" | tail -n 1 || true)"
+          EXPECTED_URL="https://smv-astro-apk-release-api-staging.astroservices.workers.dev"
+          if [[ "$WORKER_URL" != "$EXPECTED_URL" ]]; then
+            echo "::error::Deployed URL did not match the expected isolated Staging Worker origin."
+            echo "Expected: $EXPECTED_URL"
+            echo "Observed: ${WORKER_URL:-not found}"
+            exit 1
+          fi
+          echo "worker_url=$WORKER_URL" >> "$GITHUB_OUTPUT"
+          echo "Staging APK Worker deployed at the expected origin."
+
+      - name: Verify Staging Worker health and upload gate
+        shell: bash
+        env:
+          WORKER_URL: ${{ steps.deploy_worker.outputs.worker_url }}
+          EXPECT_UPLOADS: ${{ inputs.enable_staging_admin_uploads }}
+        run: |
+          set -euo pipefail
+          HEALTH_FILE="$RUNNER_TEMP/apk-release-staging-health.json"
+          EXPECTED_UPLOADS=false
+          [[ "$EXPECT_UPLOADS" == "yes" ]] && EXPECTED_UPLOADS=true
+          HEALTH_OK=0
+          for attempt in {1..10}; do
+            HTTP_CODE="$(curl --silent --show-error --connect-timeout 5 --max-time 20 \
+              --output "$HEALTH_FILE" --write-out '%{http_code}' "$WORKER_URL/health" || true)"
+            if [[ "$HTTP_CODE" == "200" ]]; then
+              if node - "$HEALTH_FILE" "$EXPECTED_UPLOADS" <<'NODE'
+          const fs = require('node:fs');
+          const health = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const uploadsExpected = process.argv[3] === 'true';
+          const ok = health.success === true && health.ready === true &&
+            health.d1Ready === true && health.r2Ready === true &&
+            health.uploadsEnabled === uploadsExpected;
+          if (!ok) {
+            console.error('Staging Worker readiness:', JSON.stringify({
+              success: health.success === true,
+              ready: health.ready === true,
+              d1Ready: health.d1Ready === true,
+              r2Ready: health.r2Ready === true,
+              uploadsEnabled: health.uploadsEnabled === true
+            }));
+            process.exit(1);
+          }
+          console.log('Staging APK Worker health passed; D1/R2 ready; uploads=' + uploadsExpected + '.');
+          NODE
+              then HEALTH_OK=1; break; fi
+            fi
+            echo "::notice::Staging Worker health attempt $attempt/10 returned HTTP ${HTTP_CODE:-unavailable}; retrying."
+            sleep 3
+          done
+          if [[ "$HEALTH_OK" != "1" ]]; then
+            echo "::error::Staging APK Worker did not become ready. Public website routing is not activated by this workflow."
+            cat "$HEALTH_FILE" 2>/dev/null || true
+            exit 1
+          fi
+
+      - name: Validate Staging public APK metadata contract
+        shell: bash
+        env:
+          WORKER_URL: ${{ steps.deploy_worker.outputs.worker_url }}
+        run: |
+          set -euo pipefail
+          curl --silent --show-error --fail --connect-timeout 5 --max-time 20 \
+            "$WORKER_URL/public/android-app" > "$RUNNER_TEMP/apk-release-staging-public.json"
+          node <<'NODE'
+          const fs = require('node:fs');
+          const data = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/apk-release-staging-public.json', 'utf8'));
+          if (data.success !== true || typeof data.available !== 'boolean') {
+            throw new Error('Staging public APK metadata contract is invalid.');
+          }
+          if (data.available === true) {
+            const expectedOrigin = 'https://smv-astro-apk-release-api-staging.astroservices.workers.dev';
+            const download = new URL(data.downloadUrl);
+            if (data.packageName !== 'in.smvastroservices.smvastro' ||
+                !Number.isSafeInteger(Number(data.versionCode)) ||
+                download.origin !== expectedOrigin ||
+                download.pathname !== '/download/' + String(data.versionCode)) {
+              throw new Error('Staging APK metadata points outside the Staging Worker or has invalid package/version data.');
+            }
+          }
+          console.log('Staging APK public metadata contract passed; available=' + data.available + '.');
+          NODE
+
+      - name: Publish Staging deployment summary
+        if: always()
+        shell: bash
+        env:
+          WORKER_URL: ${{ steps.deploy_worker.outputs.worker_url }}
+          STAGING_UPLOADS: ${{ inputs.enable_staging_admin_uploads }}
+        run: |
+          {
+            echo "## SMV ASTRO APK Release Worker — Staging"
+            echo "- Source snapshot: f626895e2d2abbd1b4087fb39802fbb0d2deef3f (PR #296 head)"
+            echo "- Worker URL: ${WORKER_URL:-not captured}"
+            echo "- D1: smv-astro-apk-releases-staging"
+            echo "- R2: smv-astro-apk-releases-staging"
+            echo "- Firebase Auth project: smv-astro-staging"
+            echo "- Upload gate requested: ${STAGING_UPLOADS}"
+            echo "- Production APK Worker/D1/R2: not targeted"
+          } >> "$GITHUB_STEP_SUMMARY"

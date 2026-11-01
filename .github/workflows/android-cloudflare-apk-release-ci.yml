@@ -19,6 +19,7 @@ on:
       - 'test/android-permanent-release.test.mjs'
       - '.github/workflows/android-cloudflare-apk-release-ci.yml'
       - '.github/workflows/deploy-android-apk-release-worker.yml'
+      - '.github/workflows/deploy-android-apk-release-staging-worker.yml'
   push:
     branches: [main]
     paths:
@@ -38,6 +39,7 @@ on:
       - 'test/android-permanent-release.test.mjs'
       - '.github/workflows/android-cloudflare-apk-release-ci.yml'
       - '.github/workflows/deploy-android-apk-release-worker.yml'
+      - '.github/workflows/deploy-android-apk-release-staging-worker.yml'
 
 permissions:
   contents: read
@@ -51,7 +53,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Validate manual deployment workflow YAML
-        run: ruby -e 'require "yaml"; YAML.parse_file(".github/workflows/deploy-android-apk-release-worker.yml")'
+        run: |
+          ruby -e 'require "yaml"; YAML.parse_file(".github/workflows/deploy-android-apk-release-worker.yml")'
+          ruby -e 'require "yaml"; YAML.parse_file(".github/workflows/deploy-android-apk-release-staging-worker.yml")'
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
