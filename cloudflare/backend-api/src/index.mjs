@@ -42,6 +42,8 @@ import { registerAppointmentBookingRoute } from './appointment-booking-route.mjs
 import { registerAdminDashboardRoutes } from './admin-dashboard-routes.mjs';
 import { registerLegacyAstrologerApprovalRoutes } from './legacy-astrologer-approval-routes.mjs';
 import { registerLegacyQuestionActionRoutes } from './legacy-question-action-routes.mjs';
+import { registerLegacyAppointmentReadAndResponseRoutes } from './legacy-appointment-read-response-routes.mjs';
+import { registerCustomerAnswerCreditRoute } from './customer-answer-credit-route.mjs';
 
 const app = express();
 const verifyFirebaseIdToken = createFirebaseIdTokenVerifier();
@@ -320,6 +322,8 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     registerAdminDashboardRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerLegacyAstrologerApprovalRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerLegacyQuestionActionRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    registerLegacyAppointmentReadAndResponseRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    registerCustomerAnswerCreditRoute({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
   }
   const walletSchemaReady = async () => {
     try {
