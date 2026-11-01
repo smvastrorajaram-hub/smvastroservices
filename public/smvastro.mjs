@@ -72,7 +72,7 @@ import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWith
 import { getFirestore, collection, query, where, getDocs, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, writeBatch, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 window.__SMV_BUILD="V120-UI";
-const IS_SMV_PHASE1_STAGING = ["smv-astro-phase1-browser-staging.onrender.com", "smv-astro-phase1-browser-isolated.onrender.com", "smv-astro-phase1-browser-staging-v2.onrender.com"].includes(location.hostname);
+const IS_SMV_PHASE1_STAGING = ["smv-astro-phase1-browser-staging.onrender.com", "smv-astro-phase1-browser-isolated.onrender.com", "smv-astro-phase1-browser-staging-v2.onrender.com", "smvastro-website-staging.astroservices.workers.dev"].includes(location.hostname);
 const firebaseConfig = IS_SMV_PHASE1_STAGING
   ? {apiKey:"AIzaSyD9LzJ-7OKZMaVVf5kXa9aABBECS6kE8mA",authDomain:"smv-astro-staging.firebaseapp.com",projectId:"smv-astro-staging",storageBucket:"smv-astro-staging.firebasestorage.app",messagingSenderId:"73946216796",appId:"1:73946216796:web:09500761bec02699a4e999"}
   : {apiKey:"AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs",authDomain:(location.hostname==='smvastroservices.pages.dev'||location.hostname.endsWith('.smvastroservices.pages.dev')?'smv-astro.firebaseapp.com':'auth.smvastroservices.in'),projectId:"smv-astro",storageBucket:"smv-astro.firebasestorage.app",messagingSenderId:"299081899217",appId:"1:299081899217:web:8d558df08e86037ea539f0"};
@@ -86,7 +86,7 @@ try{
   console.error("SMV ASTRO Firebase initialization failed",initError);
 }
 const RAZORPAY_BACKEND_URL = IS_SMV_PHASE1_STAGING ? "https://smv-astro-phase1-staging.onrender.com" : "https://smvastroservices.onrender.com";
-const IS_SMV_CLOUDFLARE_STAGING_BROWSER = location.hostname === "smv-astro-phase1-browser-staging-v2.onrender.com";
+const IS_SMV_CLOUDFLARE_STAGING_BROWSER = ["smv-astro-phase1-browser-staging-v2.onrender.com", "smvastro-website-staging.astroservices.workers.dev"].includes(location.hostname);
  // Admin-only read-only check: staging probes Cloudflare without changing normal Render routing.
 const CLOUDFLARE_STAGING_BACKEND_URL = "https://smvastro-backend-api-staging.astroservices.workers.dev";
 // Single backend URL used by all protected API calls, including astrologer answer submission.
@@ -730,7 +730,7 @@ const SMV_ADMIN_SHORTCUTS=[
  ['adminWithdrawals','Withdrawals','parent'],
  ['adminOffersPromotions','Wallet Offers','self'],
  ['adminCommissionSettings','Live / Booking Commission','self'],
- ['adminAndroidAppManagementCard','Android App Releases','self']
+ ...(IS_SMV_PHASE1_STAGING ? [] : [['adminAndroidAppManagementCard','Android App Releases','self']])
 ];
 function smvWalletAuditMoney(paise){
  const n=Number(paise);
@@ -2548,14 +2548,11 @@ function initContentManager(){
 initContentManager();
 let smvAndroidApkLastTransport='existing Firebase/Render storage';
 function smvAndroidApkIsStaging(){
-  return location.hostname.includes('phase1-staging')||location.hostname.includes('phase1-browser');
+  return IS_SMV_PHASE1_STAGING||location.hostname.includes('phase1-staging')||location.hostname.includes('phase1-browser');
 }
 function smvAndroidApkWorkerBase(){
-  const isV2StagingHost=location.hostname==='smv-astro-phase1-browser-staging-v2.onrender.com';
-  if(smvAndroidApkIsStaging()&&!isV2StagingHost)return null;
-  const configured=String(isV2StagingHost
-    ?window.SMV_APK_RELEASE_STAGING_API_URL||''
-    :window.SMV_APK_RELEASE_ADMIN_API_URL||window.SMV_APK_RELEASE_API_URL||'').trim();
+  if(smvAndroidApkIsStaging())return null;
+  const configured=String(window.SMV_APK_RELEASE_ADMIN_API_URL||window.SMV_APK_RELEASE_API_URL||'').trim();
   if(!configured)return null;
   try{
     const url=new URL(configured);
@@ -2603,6 +2600,7 @@ async function smvAndroidApkWorkerRequest(worker,path,options={}){
   }
 }
 async function smvAndroidApkApi(path,options={},workerOnly=false){
+  if(smvAndroidApkIsStaging())throw new Error('Android APK download, release and test flows are disabled on Staging.');
   const worker=await smvAndroidApkWorkerStatus();
   const method=String(options.method||'GET').toUpperCase();
   const isUpload=method==='POST'&&path==='/admin/android-app/upload';
