@@ -30,6 +30,7 @@ import { registerGeoNamesRoutes } from './geonames-location-routes.mjs';
 import { registerPublicLegacyRoutes } from './public-legacy-routes.mjs';
 import { registerRazorpayConnectivityRoute } from './razorpay-connectivity-routes.mjs';
 import { registerLegacyReadRoutes } from './legacy-read-routes.mjs';
+import { registerLegacyDashboardReadRoutes } from './legacy-dashboard-read-routes.mjs';
 
 const app = express();
 const verifyFirebaseIdToken = createFirebaseIdTokenVerifier();
@@ -296,6 +297,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     registerAdminAccessRoute({ app, identityService: walletIdentityService });
     registerAccountRoleRoute({ app, identityService: walletIdentityService, firestore: firestoreAdmin });
     registerLegacyReadRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService, androidPackageName: String(env.SMV_ANDROID_PACKAGE || 'in.smvastroservices.smvastro') });
+    registerLegacyDashboardReadRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
   }
   const walletSchemaReady = async () => {
     try {
