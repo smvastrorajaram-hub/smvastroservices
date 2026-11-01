@@ -33,6 +33,7 @@ test('Staging APK Worker uses isolated Firebase, D1, R2 and origin with uploads 
   assert.match(adminClient, /window\.SMV_APK_RELEASE_STAGING_API_URL/);
   assert.match(publicClient, /location\.hostname === 'smv-astro-phase1-browser-staging-v2\.onrender\.com'/);
   assert.match(publicClient, /window\.SMV_APK_RELEASE_STAGING_API_URL/);
+  assert.match(publicClient, /location\.hostname\.includes\('phase1-browser'\)/);
   assert.doesNotMatch(publicClient, /SMV_APK_RELEASE_ADMIN_API_URL/);
 });
 
