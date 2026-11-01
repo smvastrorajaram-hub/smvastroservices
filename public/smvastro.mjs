@@ -1589,8 +1589,8 @@ function smvBindCustomerWallet({load=true}={}){
  const form=$('smvWalletRechargeForm');
  // Temporary non-PII diagnostic: exposes only whether a valid checkout contact exists.
  if(form){
-  const contact=String(window.__smvCustomerProfilePhone||'').replace(/[\\s().-]/g,'');
-  form.dataset.smvContactPrefillAvailable=/^\\+?\\d{7,15}$/.test(contact)?'yes':'no';
+  const contact=String(window.__smvCustomerProfilePhone||'').replace(/[\s().-]/g,'');
+  form.dataset.smvContactPrefillAvailable=/^\+?\d{7,15}$/.test(contact)?'yes':'no';
  }
  const submit=$('smvWalletRechargeButton');
  if(form){
