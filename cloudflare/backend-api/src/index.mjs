@@ -42,6 +42,8 @@ import { registerAppointmentBookingRoute } from './appointment-booking-route.mjs
 import { registerAdminDashboardRoutes } from './admin-dashboard-routes.mjs';
 import { registerLegacyAstrologerApprovalRoutes } from './legacy-astrologer-approval-routes.mjs';
 import { registerLegacyQuestionActionRoutes } from './legacy-question-action-routes.mjs';
+import { createResendEmailClient } from '../../../shared/backend-platform/resend-email-adapter.mjs';
+import { registerLegacyEmailRoutes } from './legacy-email-routes.mjs';
 import { registerLegacyAppointmentReadAndResponseRoutes } from './legacy-appointment-read-response-routes.mjs';
 import { registerCustomerAnswerCreditRoute } from './customer-answer-credit-route.mjs';
 
@@ -323,6 +325,19 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     registerLegacyAstrologerApprovalRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerLegacyQuestionActionRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerLegacyAppointmentReadAndResponseRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    const resendEmailClient = env.RESEND_API_KEY && env.RESEND_FROM
+      ? createResendEmailClient({
+          apiKey: String(env.RESEND_API_KEY),
+          from: String(env.RESEND_FROM)
+        })
+      : null;
+    registerLegacyEmailRoutes({
+      app,
+      firestore: firestoreAdmin,
+      identityService: walletIdentityService,
+      emailClient: resendEmailClient,
+      adminEmail: String(env.ADMIN_EMAIL || '')
+    });
     registerCustomerAnswerCreditRoute({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
   }
   const walletSchemaReady = async () => {
