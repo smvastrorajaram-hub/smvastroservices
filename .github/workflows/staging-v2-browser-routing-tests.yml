@@ -50,10 +50,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Check routing module and test syntax
+      - name: Check routing module, website Worker and test syntax
         run: |
           node --check public/backend-api-routing.mjs
+          node --check cloudflare/website-gateway/src/index.mjs
           node --check test/browser-backend-routing.test.mjs
+          node --check test/cloudflare-website-gateway.test.mjs
       - name: Run isolated Staging browser backend routing contract tests
         run: npm run test:browser-backend-routing && npm run test:cloudflare-website-gateway && npm run test:staging-legacy-route-guard
       - name: Check Staging server guard syntax
