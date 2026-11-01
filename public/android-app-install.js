@@ -20,6 +20,19 @@
     element.style.display = 'none';
   }
 
+  const stagingHosts = new Set([
+    'smv-astro-phase1-browser-staging.onrender.com',
+    'smv-astro-phase1-browser-isolated.onrender.com',
+    'smv-astro-phase1-browser-staging-v2.onrender.com',
+    'smvastro-website-staging.astroservices.workers.dev'
+  ]);
+  if (stagingHosts.has(location.hostname) ||
+      location.hostname.includes('phase1-staging') ||
+      location.hostname.includes('phase1-browser')) {
+    hide(section);
+    return;
+  }
+
   if (nativeApp) {
     hide(section);
     return;
@@ -50,13 +63,7 @@
   }
 
   function workerBase() {
-    const isV2StagingHost = location.hostname === 'smv-astro-phase1-browser-staging-v2.onrender.com';
-    if (!isV2StagingHost &&
-        (location.hostname.includes('phase1-staging') ||
-         location.hostname.includes('phase1-browser'))) return null;
-    const configured = String(isV2StagingHost
-      ? window.SMV_APK_RELEASE_STAGING_API_URL || ''
-      : window.SMV_APK_RELEASE_API_URL || '').trim();
+    const configured = String(window.SMV_APK_RELEASE_API_URL || '').trim();
     if (!configured) return null;
     try {
       const url = new URL(configured);

@@ -1,0 +1,89 @@
+name: Staging v2 browser backend routing tests
+
+on:
+  pull_request:
+    branches:
+      - feat/staging-browser-v2-host-routing-20261101
+    paths:
+      - 'public/backend-api-routing.mjs'
+      - 'cloudflare/backend-api/**'
+      - 'shared/backend-platform/**'
+      - 'public/index.html'
+      - 'public/android-app-install.js'
+      - 'cloudflare/website-gateway/**'
+      - 'test/cloudflare-website-gateway.test.mjs'
+      - 'server.js'
+      - 'shared/backend-platform/staging-legacy-route-guard.cjs'
+      - 'test/staging-legacy-route-guard.test.cjs'
+      - 'public/smvastro.mjs'
+      - 'test/browser-backend-routing.test.mjs'
+      - 'package.json'
+      - '.github/workflows/staging-v2-browser-routing-tests.yml'
+  push:
+    branches:
+      - feat/staging-v2-cloudflare-api-gateway-20261101
+    paths:
+      - 'public/backend-api-routing.mjs'
+      - 'public/smvastro.mjs'
+      - 'public/index.html'
+      - 'public/android-app-install.js'
+      - 'cloudflare/backend-api/**'
+      - 'cloudflare/website-gateway/**'
+      - 'shared/backend-platform/**'
+      - 'server.js'
+      - 'test/**'
+      - 'package.json'
+      - '.github/workflows/staging-v2-browser-routing-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  route-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout Staging v2 gateway source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check routing module, website Worker and test syntax
+        run: |
+          node --check public/backend-api-routing.mjs
+          node --check cloudflare/website-gateway/src/index.mjs
+          node --check test/browser-backend-routing.test.mjs
+          node --check test/cloudflare-website-gateway.test.mjs
+      - name: Run isolated Staging browser backend routing contract tests
+        run: npm run test:browser-backend-routing && npm run test:cloudflare-website-gateway && npm run test:staging-legacy-route-guard
+      - name: Check Staging server guard syntax
+        run: node --check server.js
+      - name: Install isolated Cloudflare API Worker dependencies
+        working-directory: cloudflare/backend-api
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Validate Cloudflare API Worker and business-domain tests
+        working-directory: cloudflare/backend-api
+        run: |
+          npm run check
+          npm run test:auth
+          npm run test:readiness
+          npm run test:inventory
+          npm run test:wallet-domain
+          npm run test:live-session-do
+          npm run test:wallet-live-audit
+      - name: Deploy Staging Cloudflare API Worker
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/feat/staging-v2-cloudflare-api-gateway-20261101') || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'feat/staging-v2-cloudflare-api-gateway-20261101')
+        working-directory: cloudflare/backend-api
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler@4 deploy --config wrangler.jsonc
+      - name: Deploy Staging Cloudflare website outage gateway
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/feat/staging-v2-cloudflare-api-gateway-20261101') || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'feat/staging-v2-cloudflare-api-gateway-20261101')
+        working-directory: cloudflare/website-gateway
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler@4 deploy --config wrangler.jsonc

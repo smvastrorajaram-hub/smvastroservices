@@ -26,6 +26,7 @@ import { createD1WithdrawalService } from '../../../shared/backend-platform/d1-l
 import { registerD1LiveSessionRoutes } from './live-session-routes.mjs';
 import { createRazorpayRestClient } from '../../../shared/backend-platform/razorpay-rest-adapter.mjs';
 import { isLegacyBackendPath, LEGACY_BACKEND_ROUTE_INVENTORY } from '../../../shared/backend-platform/legacy-backend-route-inventory.mjs';
+import { readBackendProviderReadiness, readD1SchemaReadiness } from '../../../shared/backend-platform/backend-readiness-state.mjs';
 
 const app = express();
 const verifyFirebaseIdToken = createFirebaseIdTokenVerifier();
@@ -235,6 +236,103 @@ let walletIdentityService = null;
 let firebaseIdentityService = null;
 let d1IdentityAuthorizationService = null;
 let d1IdentityAuthorizationReady = false;
+let firebaseFirestoreConnectivityProbe = null;
+let razorpayConnectivityProbe = null;
+let firebaseConnected = false;
+let razorpayProviderConnectionVerified = false;
+let connectivityProbeExpiresAt = 0;
+let connectivityProbeInFlight = null;
+
+async function checkBackendProviderConnectivity() {
+  if (Date.now() < connectivityProbeExpiresAt) {
+    return { firebaseConnected, razorpayConnected: razorpayProviderConnectionVerified };
+  }
+  if (connectivityProbeInFlight) return connectivityProbeInFlight;
+  connectivityProbeInFlight = (async () => {
+    const [firebaseResult, razorpayResult] = await Promise.all([
+      (async () => {
+        if (typeof firebaseFirestoreConnectivityProbe !== 'function') return false;
+        try {
+          const [documentResult, keysResponse] = await Promise.all([
+            firebaseFirestoreConnectivityProbe(),
+            fetch('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com', {
+              method: 'GET', headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(8000)
+            })
+          ]);
+          if (!keysResponse.ok) return false;
+          const keys = await keysResponse.json();
+          return !!documentResult && typeof documentResult.exists === 'boolean' &&
+            Array.isArray(keys?.keys) && keys.keys.length > 0;
+        } catch (_error) { return false; }
+      })(),
+      (async () => {
+        if (typeof razorpayConnectivityProbe !== 'function' || razorpayPolicy.mode !== 'test') return false;
+        try {
+          // Read-only Razorpay Test Mode order lookup; it never creates or captures a payment.
+          await razorpayConnectivityProbe();
+          return true;
+        } catch (_error) { return false; }
+      })()
+    ]);
+    firebaseConnected = firebaseResult === true;
+    razorpayProviderConnectionVerified = razorpayResult === true;
+    connectivityProbeExpiresAt = Date.now() + 30000;
+    return { firebaseConnected, razorpayConnected: razorpayProviderConnectionVerified };
+  })();
+  try { return await connectivityProbeInFlight; }
+  finally { connectivityProbeInFlight = null; }
+}
+
+
+async function readIdentityAuthorizationReadiness() {
+  const state = d1IdentityAuthorizationService
+    ? await d1IdentityAuthorizationService.readiness()
+    : {
+        enabled: identityProfileD1AuthorizationOpen,
+        ready: false,
+        reason: identityProfileD1AuthorizationOpen ? 'identity_runtime_unavailable' : 'disabled',
+        schemaReady: false,
+        inventoryComplete: false,
+        reconciliationComplete: false,
+        sourceQuiesced: false
+      };
+  d1IdentityAuthorizationReady = state.ready === true;
+  return state;
+}
+
+async function readSharedBackendReadiness() {
+  const [providerState, d1State] = await Promise.all([
+    readBackendProviderReadiness({
+      providerProbe: checkBackendProviderConnectivity,
+      identityProbe: readIdentityAuthorizationReadiness
+    }),
+    readD1SchemaReadiness(env.DB, String(env.FIREBASE_PROJECT_ID || 'smv-astro-staging'))
+  ]);
+  walletDomainSchemaReady = d1State.sharedDomainSchemaReady;
+  walletRechargeSchemaReady = d1State.walletRechargeSchemaReady;
+  liveSessionSchemaReady = d1State.liveSessionSchemaReady;
+  const attestation = d1State.identityProfileMigrationAttestation;
+  return {
+    ...providerState,
+    // These describe the D1 migration itself, even when the optional D1
+    // authorization cutover flag is still disabled.
+    identityProfileD1AuthorizationSchemaReady: d1State.identityProfileSchemaReady,
+    identityProfileD1AuthorizationInventoryComplete: attestation.inventoryComplete,
+    identityProfileD1AuthorizationReconciliationComplete: attestation.reconciliationComplete,
+    identityProfileD1AuthorizationSourceQuiesced: attestation.sourceQuiesced,
+    walletReadRouteGate: Object.freeze({
+      enabled: String(env.WALLET_READ_ROUTES_ENABLED || '').toLowerCase() === 'true',
+      backfillComplete: String(env.SMV_WALLET_DOMAIN_BACKFILL_COMPLETE || '').toLowerCase() === 'true',
+      cutoverComplete: String(env.SMV_WALLET_DOMAIN_CUTOVER_COMPLETE || '').toLowerCase() === 'true',
+      open: walletReadRouteGateOpen
+    }),
+    liveSessionRouteGate: Object.freeze({
+      enabled: liveSessionRoutesOpen,
+      schemaReady: d1State.liveSessionSchemaReady
+    }),
+    d1: d1State
+  };
+}
 
 function walletFirebaseServiceAccount() {
   const raw = String(env.FIREBASE_SERVICE_ACCOUNT_JSON || '').trim();
@@ -275,6 +373,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       allowedProjectIds: [projectId],
       credentials
     });
+    firebaseFirestoreConnectivityProbe = () => firestoreAdmin.getDocument('smv_settings/question');
     firebaseIdentityService = createFirebaseIdentityService({
       verifyIdToken: verifyFirebaseIdToken,
       firestore: firestoreAdmin,
@@ -286,6 +385,9 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     sharedWalletAdapter = createD1WalletAdapter({ db: env.DB });
     if (razorpayPolicy.enabled) {
       sharedRazorpayClient = createRazorpayRestClient({ keyId: razorpayKeyId, keySecret: razorpayKeySecret });
+      razorpayConnectivityProbe = () => sharedRazorpayClient.findOrderByReceipt(
+        'smv_cf_staging_probe', { amountPaise: 100, currency: 'INR' }
+      );
     }
     registerAdminAccessRoute({ app, identityService: walletIdentityService });
     registerAccountRoleRoute({ app, identityService: walletIdentityService, firestore: firestoreAdmin });
@@ -427,7 +529,10 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     liveSessionRoutesRegistered = true;
   }
 
-  if (razorpayPolicy.enabled && sharedRazorpayClient && firestoreAdmin && walletIdentityService) {
+  const legacyQuestionRoutesOpen = String(env.SMV_ENVIRONMENT || '') !== 'staging' ||
+    String(env.SMV_NEW_QUESTION_PAYMENTS_ENABLED || '').toLowerCase() === 'true' ||
+    String(env.SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED || '').toLowerCase() === 'true';
+  if (razorpayPolicy.enabled && sharedRazorpayClient && firestoreAdmin && walletIdentityService && legacyQuestionRoutesOpen) {
     registerLegacyRazorpayRoutes({
       app,
       identityService: walletIdentityService,
@@ -510,11 +615,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
 }
 
 app.get('/healthz', async (_req, res) => {
-  const identityGate = d1IdentityAuthorizationService
-    ? await d1IdentityAuthorizationService.readiness()
-    : { enabled: identityProfileD1AuthorizationOpen, ready: false,
-        reason: identityProfileD1AuthorizationOpen ? 'identity_runtime_unavailable' : 'disabled' };
-  d1IdentityAuthorizationReady = identityGate.ready === true;
+  const sharedReadiness = await readSharedBackendReadiness();
   return res.set(JSON_HEADERS).json({
     ok: true,
     service: 'smvastro-backend-api',
@@ -526,17 +627,22 @@ app.get('/healthz', async (_req, res) => {
     walletRechargeMode,
     walletOfferRoutesRegistered,
     liveSessionRoutesRegistered,
-    liveSessionSchemaReady,
+    liveSessionSchemaReady: sharedReadiness.d1.liveSessionSchemaReady,
+    walletRechargeSchemaReady: sharedReadiness.d1.walletRechargeSchemaReady,
+    identityProfileSchemaReady: sharedReadiness.d1.identityProfileSchemaReady,
+    identityProfileMigrationAttestation: sharedReadiness.d1.identityProfileMigrationAttestation,
+    walletReadRouteGate: sharedReadiness.walletReadRouteGate,
     identityProfileBackfillRoutesRegistered,
     identityProfileBackfillToolsEnabled: identityProfileBackfillToolsOpen,
     identityProfileBackfillPreviewOnly,
     identityProfileD1AuthorizationEnabled: identityProfileD1AuthorizationOpen,
-    identityProfileD1AuthorizationReady: d1IdentityAuthorizationReady,
+    identityProfileD1AuthorizationReady: sharedReadiness.identityProfileD1AuthorizationReady,
     productionTrafficEnabled: false
   });
 });
 
 app.get('/api/backend/readiness', async (_req, res) => {
+  const sharedReadiness = await readSharedBackendReadiness();
   if (!env.DB || typeof env.DB.prepare !== 'function') {
     return res.status(503).set(JSON_HEADERS).json({
       ok: false,
@@ -563,22 +669,32 @@ app.get('/api/backend/readiness', async (_req, res) => {
     }
     const walletReadEnabled = walletReadRoutesRegistered &&
       walletReadRouteGateOpen && walletDomainSchemaReady;
-    const identityGate = d1IdentityAuthorizationService
-      ? await d1IdentityAuthorizationService.readiness()
-      : { enabled: identityProfileD1AuthorizationOpen, ready: false,
-          reason: identityProfileD1AuthorizationOpen ? 'identity_runtime_unavailable' : 'disabled' };
-    d1IdentityAuthorizationReady = identityGate.ready === true;
+    const identityGate = {
+      enabled: identityProfileD1AuthorizationOpen,
+      ready: sharedReadiness.identityProfileD1AuthorizationReady,
+      reason: sharedReadiness.identityProfileD1AuthorizationReason
+    };
     return res.status(ready ? 200 : 503).set(JSON_HEADERS).json({
       ok: ready,
       ready,
       schemaVersion: row?.schema_version || null,
       sharedDomainSchemaVersion: domainSchemaVersion,
+      d1SchemaVersions: sharedReadiness.d1.schemaVersions,
+      walletRechargeSchemaReady: sharedReadiness.d1.walletRechargeSchemaReady,
+      liveSessionSchemaReady: sharedReadiness.d1.liveSessionSchemaReady,
+      identityProfileSchemaReady: sharedReadiness.d1.identityProfileSchemaReady,
+      identityProfileMigrationAttestation: sharedReadiness.d1.identityProfileMigrationAttestation,
       checks: {
         expressRuntime: true, d1Binding: true, walletSchema: ready,
         sharedDomainSchema: walletDomainSchemaReady
       },
-      firebaseConnected: false,
-      razorpayConnected: false,
+      backendActive: String(env.SMV_BACKEND_CLOUDFLARE_ACTIVE || 'false').toLowerCase() === 'true',
+      firebaseConnected: sharedReadiness.firebaseConnected,
+      firestoreConnected: sharedReadiness.firestoreConnected,
+      razorpayConnected: sharedReadiness.razorpayConnected,
+      razorpayProviderConnectionVerified: sharedReadiness.razorpayProviderConnectionVerified,
+      razorpayCredentialsConfigured: !!(razorpayPolicy.enabled && sharedRazorpayClient && razorpayKeyId && razorpayKeySecret),
+      razorpayMode: razorpayPolicy.mode,
       legacyRazorpayRoutesRegistered,
       legacyPrivateConsultationRoutesEnabled: String(env.SMV_ENVIRONMENT || '') === 'staging' && String(env.SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED || '').toLowerCase() === 'true',
       walletReadRoutesEnabled: walletReadEnabled,
@@ -593,6 +709,12 @@ app.get('/api/backend/readiness', async (_req, res) => {
       identityProfileD1AuthorizationEnabled: identityProfileD1AuthorizationOpen,
       identityProfileD1AuthorizationReady: d1IdentityAuthorizationReady,
       identityProfileD1AuthorizationReason: identityGate.reason,
+      identityProfileD1AuthorizationSchemaReady: sharedReadiness.identityProfileD1AuthorizationSchemaReady,
+      identityProfileD1AuthorizationInventoryComplete: sharedReadiness.identityProfileD1AuthorizationInventoryComplete,
+      identityProfileD1AuthorizationReconciliationComplete: sharedReadiness.identityProfileD1AuthorizationReconciliationComplete,
+      identityProfileD1AuthorizationSourceQuiesced: sharedReadiness.identityProfileD1AuthorizationSourceQuiesced,
+      walletReadRouteGate: sharedReadiness.walletReadRouteGate,
+      liveSessionRouteGate: sharedReadiness.liveSessionRouteGate,
       walletBusinessRoutesEnabled: false,
       liveCallChatRoutesEnabled: liveSessionRoutesRegistered && liveSessionRoutesOpen && liveSessionSchemaReady
     });
@@ -605,7 +727,8 @@ app.get('/api/backend/readiness', async (_req, res) => {
   }
 });
 
-app.get('/api/backend/migration-status', (_req, res) => {
+app.get('/api/backend/migration-status', async (_req, res) => {
+  const sharedReadiness = await readSharedBackendReadiness();
   return res.set(JSON_HEADERS).json({
     ok: true,
     phase: 'cloudflare-runtime-foundation',
@@ -614,8 +737,10 @@ app.get('/api/backend/migration-status', (_req, res) => {
     firebaseIdTokenVerification: true,
     firebaseUserScopedFirestoreRestAdapter: true,
     firebaseAdminUserManagementConnected: false,
-    firestoreConnected: false,
-    razorpayConnected: false,
+    firestoreConnected: sharedReadiness.firestoreConnected,
+    firebaseConnected: sharedReadiness.firebaseConnected,
+    razorpayConnected: sharedReadiness.razorpayConnected,
+    razorpayProviderConnectionVerified: sharedReadiness.razorpayProviderConnectionVerified,
     legacyRazorpayRoutesRegistered,
     legacyPrivateConsultationRoutesEnabled: String(env.SMV_ENVIRONMENT || '') === 'staging' && String(env.SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED || '').toLowerCase() === 'true',
     walletReadRoutesEnabled: walletReadRoutesRegistered && walletReadRouteGateOpen && walletDomainSchemaReady,
@@ -628,13 +753,41 @@ app.get('/api/backend/migration-status', (_req, res) => {
     identityProfileBackfillToolsEnabled: identityProfileBackfillToolsOpen,
     identityProfileBackfillPreviewOnly,
     identityProfileD1AuthorizationEnabled: identityProfileD1AuthorizationOpen,
-    identityProfileD1AuthorizationReady: d1IdentityAuthorizationReady,
+    identityProfileD1AuthorizationReady: sharedReadiness.identityProfileD1AuthorizationReady,
+    identityProfileD1AuthorizationReason: sharedReadiness.identityProfileD1AuthorizationReason,
+    identityProfileD1AuthorizationSchemaReady: sharedReadiness.identityProfileD1AuthorizationSchemaReady,
+    identityProfileD1AuthorizationInventoryComplete: sharedReadiness.identityProfileD1AuthorizationInventoryComplete,
+    identityProfileD1AuthorizationReconciliationComplete: sharedReadiness.identityProfileD1AuthorizationReconciliationComplete,
+    identityProfileD1AuthorizationSourceQuiesced: sharedReadiness.identityProfileD1AuthorizationSourceQuiesced,
+    d1SchemaVersions: sharedReadiness.d1.schemaVersions,
+    walletRechargeSchemaReady: sharedReadiness.d1.walletRechargeSchemaReady,
+    liveSessionSchemaReady: sharedReadiness.d1.liveSessionSchemaReady,
+    identityProfileSchemaReady: sharedReadiness.d1.identityProfileSchemaReady,
+    identityProfileMigrationAttestation: sharedReadiness.d1.identityProfileMigrationAttestation,
+    walletReadRouteGate: sharedReadiness.walletReadRouteGate,
+    liveSessionRouteGate: sharedReadiness.liveSessionRouteGate,
     walletBusinessRoutesEnabled: false,
     callChatRoutesEnabled: liveSessionRoutesRegistered && liveSessionRoutesOpen && liveSessionSchemaReady,
     liveSessionRoutesEnabled: liveSessionRoutesRegistered && liveSessionRoutesOpen && liveSessionSchemaReady,
     renderDependency: false,
     productionTrafficEnabled: false,
-    nextGate: identityProfileBackfillRoutesRegistered ? 'identity-profile-staging-preview-and-reconciliation' : liveSessionRoutesRegistered ? 'live-call-chat-conformance-and-session-timer-tests' : walletBackfillRoutesRegistered ? 'enable-staging-live-session-routes' : 'enable-staging-wallet-backfill-tools'
+    nextGate: !sharedReadiness.d1.identityProfileSchemaReady
+      ? 'apply-staging-identity-profile-schema'
+      : !sharedReadiness.identityProfileD1AuthorizationInventoryComplete
+        ? 'complete-identity-profile-import-inventory'
+        : !sharedReadiness.identityProfileD1AuthorizationReconciliationComplete
+          ? 'complete-identity-profile-reconciliation'
+          : !sharedReadiness.identityProfileD1AuthorizationSourceQuiesced
+            ? 'attest-staging-identity-profile-source-quiescence'
+            : !sharedReadiness.walletReadRouteGate.backfillComplete
+              ? 'complete-wallet-domain-backfill-and-reconciliation'
+              : !sharedReadiness.walletReadRouteGate.cutoverComplete
+                ? 'attest-wallet-domain-staging-cutover'
+                : !sharedReadiness.walletReadRouteGate.enabled
+                  ? 'enable-staging-wallet-read-routes'
+                  : !sharedReadiness.liveSessionRouteGate.enabled
+                    ? 'enable-staging-live-session-routes-after-wallet-smoke'
+                    : 'authenticated-wallet-recharge-live-booking-conformance'
   });
 });
 
