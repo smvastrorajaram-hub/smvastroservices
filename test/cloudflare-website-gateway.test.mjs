@@ -86,6 +86,15 @@ test("origin validation prevents proxying outside the isolated Staging Render ho
   assert.equal(fetchCalls, 0);
 });
 
+test("Cloudflare static fallback is configured to serve the website SPA shell for unknown navigation paths", async () => {
+  const fs = await import("node:fs");
+  const { fileURLToPath } = await import("node:url");
+  const root = new URL("../cloudflare/website-gateway/wrangler.jsonc", import.meta.url);
+  const config = fs.readFileSync(fileURLToPath(root), "utf8");
+  assert.match(config, /"not_found_handling": "single-page-application"/);
+  assert.match(config, /"run_worker_first": true/);
+});
+
 test("gateway health is available without contacting Render", async () => {
   let fetchCalls = 0;
   const result = await handleWebsiteRequest(
