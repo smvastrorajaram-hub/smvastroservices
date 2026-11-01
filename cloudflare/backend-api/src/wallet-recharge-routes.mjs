@@ -38,6 +38,7 @@ export function registerWalletRechargeRoutes({
   razorpay,
   razorpayKeyId,
   razorpayWebhookSecret,
+  razorpayMode = 'test',
   isReady = async () => false,
   cryptoImpl = globalThis.crypto
 } = {}) {
@@ -54,8 +55,14 @@ export function registerWalletRechargeRoutes({
 
   const keyId = String(razorpayKeyId || '').trim();
   const webhookSecret = String(razorpayWebhookSecret || '');
-  if (!keyId || !keyId.startsWith('rzp_test_')) {
-    throw new TypeError('Cloudflare Wallet recharge adapter accepts Razorpay Test Mode keys only.');
+  const selectedMode = String(razorpayMode || '').trim().toLowerCase();
+  const keyMatchesMode = selectedMode === 'test'
+    ? keyId.startsWith('rzp_test_')
+    : selectedMode === 'live'
+      ? keyId.startsWith('rzp_live_')
+      : false;
+  if (!keyMatchesMode || !webhookSecret) {
+    throw new TypeError('Cloudflare Wallet recharge adapter requires matching Test/Live Razorpay key mode and a webhook secret.');
   }
 
   async function customer(req) {
@@ -177,7 +184,7 @@ export function registerWalletRechargeRoutes({
 
       let payment = await razorpay.fetchPayment(paymentId);
       let view = safePaymentView(payment);
-      if (view.orderId !== orderId || view.amountPaise !== recharge.amountPaise || view.currency !== 'INR') {
+      if (view.id !== paymentId || view.orderId !== orderId || view.amountPaise !== recharge.amountPaise || view.currency !== 'INR') {
         throw walletRechargeError('WALLET_PAYMENT_MISMATCH', 'Razorpay payment details do not match this Wallet recharge.', 409);
       }
       if (view.status === 'authorized') {
@@ -209,6 +216,7 @@ export function registerWalletRechargeRoutes({
   });
 
   app.post('/wallet/recharge/webhook', async (req, res) => {
+    let activeClaim = null;
     try {
       if (!(await isReady())) return res.status(503).set('Cache-Control', 'no-store').json({
         success: false, error: 'Wallet recharge storage is not ready.', code: 'WALLET_SCHEMA_NOT_READY'
@@ -242,10 +250,28 @@ export function registerWalletRechargeRoutes({
         payload: { event: eventType, paymentId, orderId }
       });
       if (recorded.alreadyProcessed) return res.status(200).send('OK');
+      if (recorded.inProgress) {
+        return res.status(503).set({ 'Cache-Control':'no-store', 'Retry-After':'5' }).json({
+          success:false, error:'This Razorpay webhook event is already being processed.',
+          code:'RAZORPAY_WEBHOOK_IN_PROGRESS'
+        });
+      }
+      if (!recorded.claimToken) {
+        throw walletRechargeError('WALLET_WEBHOOK_CLAIM_UNAVAILABLE', 'The Razorpay webhook event could not be claimed safely.', 503);
+      }
+      activeClaim = { eventKey, claimToken: recorded.claimToken };
+
+      async function completeClaim() {
+        const completed = await walletAdapter.completeWebhookEvent(eventKey, recorded.claimToken);
+        if (completed?.changed === 0) {
+          throw walletRechargeError('WALLET_WEBHOOK_CLAIM_LOST', 'The Razorpay webhook processing lease is no longer owned by this request.', 503);
+        }
+        activeClaim = null;
+      }
 
       const recharge = await walletAdapter.getRechargeByOrderId(orderId);
       if (!recharge) {
-        await walletAdapter.completeWebhookEvent(eventKey);
+        await completeClaim();
         return res.status(200).send('OK');
       }
       if (eventType === 'payment.failed') {
@@ -254,27 +280,54 @@ export function registerWalletRechargeRoutes({
         if (recharge.status !== 'paid') {
           await walletAdapter.markRechargePaymentFailed({ orderId, paymentId, reason: 'razorpay_payment_failed' });
         }
-        await walletAdapter.completeWebhookEvent(eventKey);
+        await completeClaim();
         return res.status(200).send('OK');
       }
-      if (!['payment.captured', 'order.paid'].includes(eventType) || !paymentId) {
-        await walletAdapter.completeWebhookEvent(eventKey);
+      if (!['payment.authorized', 'payment.captured', 'order.paid'].includes(eventType) || !paymentId) {
+        await completeClaim();
         return res.status(200).send('OK');
       }
 
-      const payment = await razorpay.fetchPayment(paymentId);
-      const view = safePaymentView(payment);
-      if (view.orderId !== orderId || view.amountPaise !== recharge.amountPaise || view.currency !== 'INR' || view.status !== 'captured') {
-        throw walletRechargeError('WALLET_PAYMENT_MISMATCH', 'Captured Razorpay payment does not match this Wallet recharge.', 409);
+      let payment = await razorpay.fetchPayment(paymentId);
+      let view = safePaymentView(payment);
+      if (view.id !== paymentId || view.orderId !== orderId || view.amountPaise !== recharge.amountPaise || view.currency !== 'INR') {
+        throw walletRechargeError('WALLET_PAYMENT_MISMATCH', 'Razorpay payment details do not match this Wallet recharge.', 409);
+      }
+
+      // A verified authorized event can be the only event delivered when a
+      // browser callback is lost. Attempt capture and re-fetch after network
+      // errors; never credit until Razorpay itself reports status=captured.
+      if (eventType === 'payment.authorized' && view.status === 'authorized') {
+        try {
+          payment = await razorpay.capturePayment(paymentId, recharge.amountPaise, 'INR');
+        } catch {
+          payment = await razorpay.fetchPayment(paymentId);
+        }
+        view = safePaymentView(payment);
+      }
+      if (eventType === 'payment.authorized' && view.status === 'failed') {
+        // An out-of-order authorization notification must not revive a payment
+        // whose authoritative provider state is already failed.
+        await completeClaim();
+        return res.status(200).send('OK');
+      }
+      if (view.status !== 'captured') {
+        throw walletRechargeError('WALLET_PAYMENT_CAPTURE_PENDING', 'Razorpay has not confirmed a captured payment yet; provider retry is required.', 409);
       }
       await walletAdapter.finalizeRecharge({
         ownerUid: recharge.customerUid, rechargeId: recharge.rechargeId,
         orderId, paymentId, amountPaise: view.amountPaise, currency: view.currency,
         source: 'razorpay_webhook'
       });
-      await walletAdapter.completeWebhookEvent(eventKey);
+      await completeClaim();
       return res.status(200).send('OK');
     } catch (error) {
+      if (activeClaim && typeof walletAdapter.releaseWebhookEvent === 'function') {
+        await walletAdapter.releaseWebhookEvent(
+          activeClaim.eventKey, activeClaim.claimToken,
+          String(error?.code || error?.message || 'webhook_processing_failed')
+        ).catch(() => {});
+      }
       console.warn('[Wallet Recharge Webhook] processing failed:', error?.code || error?.message || error);
       return res.status(500).json({ success: false, error: 'Wallet webhook processing failed. Provider retry is required.' });
     }

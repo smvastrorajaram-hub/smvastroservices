@@ -13,6 +13,9 @@ import { createD1IdentityService } from '../../../shared/backend-platform/d1-ide
 import { createD1IdentityAuthorizationGate } from '../../../shared/backend-platform/d1-identity-authorization-gate.mjs';
 import { registerWalletReadRoutes, isWalletReadRouteGateOpen } from './wallet-read-routes.mjs';
 import { registerWalletRechargeRoutes } from './wallet-recharge-routes.mjs';
+import { registerLegacyRazorpayRoutes } from './legacy-razorpay-routes.mjs';
+import { resolveRazorpayMode } from '../../../shared/backend-platform/razorpay-mode-policy.mjs';
+import { registerAccountRoleRoute, registerAdminAccessRoute, registerPublicRuntimeReadRoutes } from './core-read-routes.mjs';
 import { registerWalletOfferRoutes } from './wallet-offer-routes.mjs';
 import { createWalletDomainBackfillService } from '../../../shared/backend-platform/d1-wallet-domain-backfill.mjs';
 import { registerWalletDomainBackfillRoutes } from './wallet-domain-backfill-routes.mjs';
@@ -63,9 +66,11 @@ app.use((req, res, next) => {
 const jsonBodyParser = express.json({ limit: '1mb', strict: true });
 const walletWebhookRawParser = express.raw({ type: 'application/json', limit: '1mb' });
 app.use((req, res, next) => {
-  if (req.path === '/wallet/recharge/webhook') return walletWebhookRawParser(req, res, next);
+  if (req.path === '/wallet/recharge/webhook' || req.path === '/razorpay/webhook') return walletWebhookRawParser(req, res, next);
   return jsonBodyParser(req, res, next);
 });
+
+registerPublicRuntimeReadRoutes({ app, env });
 
 app.get('/api/auth/session', async (req, res) => {
   const authorization = String(req.get('Authorization') || '');
@@ -194,10 +199,27 @@ app.get('/api/auth/authorization', async (req, res) => {
 
 
 const walletReadRouteGateOpen = isWalletReadRouteGateOpen(env);
+const razorpayKeyId = String(env.RAZORPAY_KEY_ID || '').trim();
+const razorpayKeySecret = String(env.RAZORPAY_KEY_SECRET || '').trim();
+const razorpayWebhookSecret = String(env.RAZORPAY_WEBHOOK_SECRET || '');
+const razorpayPolicy = resolveRazorpayMode({
+  environment: String(env.SMV_ENVIRONMENT || ''),
+  keyId: razorpayKeyId,
+  keySecret: razorpayKeySecret,
+  webhookSecret: razorpayWebhookSecret,
+  allowProductionLive:
+    String(env.SMV_RAZORPAY_LIVE_MODE_ENABLED || '').toLowerCase() === 'true' &&
+    String(env.SMV_BACKEND_CLOUDFLARE_ACTIVE || '').toLowerCase() === 'true',
+  allowProductionTest:
+    String(env.SMV_RAZORPAY_TEST_MODE_ENABLED || '').toLowerCase() === 'true'
+});
+let legacyRazorpayRoutesRegistered = false;
 let walletReadRoutesRegistered = false;
 let walletDomainSchemaReady = false;
 let walletRechargeSchemaReady = false;
 let walletRechargeRoutesRegistered = false;
+let walletRechargeMode = razorpayPolicy.mode;
+let sharedRazorpayClient = null;
 let walletOfferRoutesRegistered = false;
 let walletBackfillRoutesRegistered = false;
 let identityProfileBackfillRoutesRegistered = false;
@@ -234,7 +256,7 @@ function walletFirebaseServiceAccount() {
 // and cutover gates. D1 Identity/Profile authorization is separately opt-in and
 // remains fail-closed until its full staging import is attested.
 const requiresFirestoreAdmin = walletReadRouteGateOpen || walletBackfillToolsOpen ||
-  identityProfileBackfillToolsOpen || liveSessionRoutesOpen;
+  identityProfileBackfillToolsOpen || liveSessionRoutesOpen || razorpayPolicy.enabled;
 if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && typeof env.DB.prepare === 'function') {
   let credentials = null;
   let projectId = String(env.FIREBASE_PROJECT_ID || '').trim();
@@ -262,6 +284,11 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     });
     walletIdentityService = firebaseIdentityService;
     sharedWalletAdapter = createD1WalletAdapter({ db: env.DB });
+    if (razorpayPolicy.enabled) {
+      sharedRazorpayClient = createRazorpayRestClient({ keyId: razorpayKeyId, keySecret: razorpayKeySecret });
+    }
+    registerAdminAccessRoute({ app, identityService: walletIdentityService });
+    registerAccountRoleRoute({ app, identityService: walletIdentityService, firestore: firestoreAdmin });
   }
   const walletSchemaReady = async () => {
     try {
@@ -400,6 +427,28 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     liveSessionRoutesRegistered = true;
   }
 
+  if (razorpayPolicy.enabled && sharedRazorpayClient && firestoreAdmin && walletIdentityService) {
+    registerLegacyRazorpayRoutes({
+      app,
+      identityService: walletIdentityService,
+      firestore: firestoreAdmin,
+      walletAdapter: sharedWalletAdapter,
+      razorpay: sharedRazorpayClient,
+      razorpayKeyId,
+      razorpayKeySecretPresent: !!razorpayKeySecret,
+      razorpayWebhookSecret,
+      razorpayMode: razorpayPolicy.mode,
+      enablePrivateConsultation:
+        String(env.SMV_ENVIRONMENT || '') === 'staging' &&
+        String(env.SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED || '').toLowerCase() === 'true',
+      allowNewQuestions:
+        String(env.SMV_ENVIRONMENT || '') === 'staging' &&
+        String(env.SMV_NEW_QUESTION_PAYMENTS_ENABLED || '').toLowerCase() === 'true',
+      isD1Ready: checkWalletRechargeSchemaReady
+    });
+    legacyRazorpayRoutesRegistered = true;
+  }
+
   if (walletReadRouteGateOpen) {
     registerWalletOfferRoutes({
       app,
@@ -416,18 +465,15 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       isReady: walletSchemaReady
     });
     walletReadRoutesRegistered = true;
-    const razorpayKeyId = String(env.RAZORPAY_KEY_ID || '').trim();
-    const razorpayKeySecret = String(env.RAZORPAY_KEY_SECRET || '').trim();
-    const razorpayWebhookSecret = String(env.RAZORPAY_WEBHOOK_SECRET || '');
-    if (razorpayKeyId.startsWith('rzp_test_') && razorpayKeySecret && razorpayWebhookSecret) {
-      const razorpay = createRazorpayRestClient({ keyId: razorpayKeyId, keySecret: razorpayKeySecret });
+    if (razorpayPolicy.enabled && sharedRazorpayClient) {
       registerWalletRechargeRoutes({
         app,
         identityService: walletIdentityService,
         walletAdapter: sharedWalletAdapter,
-        razorpay,
+        razorpay: sharedRazorpayClient,
         razorpayKeyId,
         razorpayWebhookSecret,
+        razorpayMode: razorpayPolicy.mode,
         isReady: checkWalletRechargeSchemaReady
       });
       walletRechargeRoutesRegistered = true;
@@ -477,6 +523,7 @@ app.get('/healthz', async (_req, res) => {
     backendActive: String(env.SMV_BACKEND_CLOUDFLARE_ACTIVE || 'false') === 'true',
     walletReadRoutesRegistered,
     walletRechargeRoutesRegistered,
+    walletRechargeMode,
     walletOfferRoutesRegistered,
     liveSessionRoutesRegistered,
     liveSessionSchemaReady,
@@ -532,8 +579,11 @@ app.get('/api/backend/readiness', async (_req, res) => {
       },
       firebaseConnected: false,
       razorpayConnected: false,
+      legacyRazorpayRoutesRegistered,
+      legacyPrivateConsultationRoutesEnabled: String(env.SMV_ENVIRONMENT || '') === 'staging' && String(env.SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED || '').toLowerCase() === 'true',
       walletReadRoutesEnabled: walletReadEnabled,
       walletRechargeRoutesEnabled: walletRechargeRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
+      walletRechargeMode,
       walletOfferRoutesEnabled: walletOfferRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
       walletBackfillRoutesRegistered,
       walletBackfillToolsEnabled: walletBackfillToolsOpen,
@@ -566,8 +616,11 @@ app.get('/api/backend/migration-status', (_req, res) => {
     firebaseAdminUserManagementConnected: false,
     firestoreConnected: false,
     razorpayConnected: false,
+    legacyRazorpayRoutesRegistered,
+    legacyPrivateConsultationRoutesEnabled: String(env.SMV_ENVIRONMENT || '') === 'staging' && String(env.SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED || '').toLowerCase() === 'true',
     walletReadRoutesEnabled: walletReadRoutesRegistered && walletReadRouteGateOpen && walletDomainSchemaReady,
     walletRechargeRoutesEnabled: walletRechargeRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
+    walletRechargeMode,
     walletOfferRoutesEnabled: walletOfferRoutesRegistered && walletReadRouteGateOpen && walletRechargeSchemaReady,
     walletBackfillRoutesRegistered,
     walletBackfillToolsEnabled: walletBackfillToolsOpen,

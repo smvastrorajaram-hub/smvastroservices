@@ -729,36 +729,85 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     if (!/^[A-Za-z0-9:_-]{1,240}$/.test(key) || !/^[A-Za-z0-9._-]{1,100}$/.test(type)) {
       throw walletError('WALLET_WEBHOOK_EVENT_INVALID', 'Razorpay webhook event identity is invalid.', 400);
     }
+    if (typeof cryptoImpl?.randomUUID !== 'function') {
+      throw walletError('WALLET_WEBHOOK_CLAIM_UNAVAILABLE', 'Secure webhook claim tokens are unavailable.', 503);
+    }
+
     const timestamp = Number(now());
-    await statement(
-      `INSERT OR IGNORE INTO smv_domain_razorpay_webhook_events
-       (event_key,event_type,payment_id,order_id,processed,retry_count,payload_json,received_at_ms,processed_at_ms)
-       VALUES (?,?,?,?,0,0,?,?,NULL)`,
-      [key,type,paymentId,orderId,JSON.stringify(payload && typeof payload === 'object' ? payload : {}),timestamp]
-    ).run();
-    const row = await statement(
-      'SELECT processed,retry_count FROM smv_domain_razorpay_webhook_events WHERE event_key=? LIMIT 1',
+    const claimToken = cryptoImpl.randomUUID();
+    const leaseUntilMs = timestamp + 120_000;
+    const normalizedPayload = JSON.stringify(payload && typeof payload === 'object' ? payload : {});
+    // One SQLite statement is the exclusive claim: a duplicate delivery can
+    // only take over an unprocessed event after the previous lease expires.
+    const claimResult = await statement(
+      `INSERT INTO smv_domain_razorpay_webhook_events
+       (event_key,event_type,payment_id,order_id,processed,retry_count,payload_json,
+        received_at_ms,processed_at_ms,claim_token,lease_until_ms)
+       VALUES (?,?,?,?,0,1,?,?,NULL,?,?)
+       ON CONFLICT(event_key) DO UPDATE SET
+         event_type=excluded.event_type,
+         payment_id=COALESCE(excluded.payment_id,smv_domain_razorpay_webhook_events.payment_id),
+         order_id=COALESCE(excluded.order_id,smv_domain_razorpay_webhook_events.order_id),
+         retry_count=smv_domain_razorpay_webhook_events.retry_count+1,
+         payload_json=excluded.payload_json,
+         claim_token=excluded.claim_token,
+         lease_until_ms=excluded.lease_until_ms
+       WHERE smv_domain_razorpay_webhook_events.processed=0
+         AND smv_domain_razorpay_webhook_events.lease_until_ms<=excluded.received_at_ms
+       RETURNING event_key,processed,retry_count,claim_token`,
+      [key,type,paymentId,orderId,normalizedPayload,timestamp,claimToken,leaseUntilMs]
+    ).all();
+    const claimed = (claimResult?.results || [])[0];
+    if (claimed && claimed.claim_token === claimToken && Number(claimed.processed) === 0) {
+      return {
+        success:true, alreadyProcessed:false, inProgress:false, eventKey:key,
+        claimToken, leaseUntilMs, retryCount:Number(claimed.retry_count || 1)
+      };
+    }
+
+    const current = await statement(
+      'SELECT processed,retry_count,lease_until_ms FROM smv_domain_razorpay_webhook_events WHERE event_key=? LIMIT 1',
       [key]
     ).first();
-    if (Number(row?.processed) === 1) return { success:true, alreadyProcessed:true, eventKey:key };
-    await statement(
-      `UPDATE smv_domain_razorpay_webhook_events
-       SET retry_count=retry_count+1,payload_json=?,payment_id=COALESCE(?,payment_id),
-           order_id=COALESCE(?,order_id)
-       WHERE event_key=? AND processed=0`,
-      [JSON.stringify(payload && typeof payload === 'object' ? payload : {}),paymentId,orderId,key]
-    ).run();
-    return { success:true, alreadyProcessed:false, eventKey:key, retryCount:Number(row?.retry_count || 0) + 1 };
+    if (Number(current?.processed) === 1) {
+      return { success:true, alreadyProcessed:true, eventKey:key };
+    }
+    return {
+      success:true, alreadyProcessed:false, inProgress:true, eventKey:key,
+      leaseUntilMs:Number(current?.lease_until_ms || 0),
+      retryCount:Number(current?.retry_count || 0)
+    };
   }
 
-  async function completeWebhookEvent(eventKey) {
+  async function completeWebhookEvent(eventKey, claimToken) {
     const key = String(eventKey || '').trim();
+    const token = String(claimToken || '').trim();
+    if (!key || !token) return { success:false, changed:0 };
     const timestamp = Number(now());
     const result = await statement(
-      'UPDATE smv_domain_razorpay_webhook_events SET processed=1,processed_at_ms=? WHERE event_key=?',
-      [timestamp,key]
+      `UPDATE smv_domain_razorpay_webhook_events
+       SET processed=1,processed_at_ms=?,claim_token=NULL,lease_until_ms=0
+       WHERE event_key=? AND processed=0 AND claim_token=?`,
+      [timestamp,key,token]
     ).run();
     return { success:true, changed:Number(result?.meta?.changes || 0) };
+  }
+
+  async function releaseWebhookEvent(eventKey, claimToken, reason = 'webhook_processing_failed') {
+    const key = String(eventKey || '').trim();
+    const token = String(claimToken || '').trim();
+    if (!key || !token) return { success:false, changed:0 };
+    const timestamp = Number(now());
+    const result = await statement(
+      `UPDATE smv_domain_razorpay_webhook_events
+       SET claim_token=NULL,lease_until_ms=0,
+           payload_json=json_set(CASE WHEN json_valid(payload_json) THEN payload_json ELSE '{}' END,
+             '$.lastProcessingError',?),
+           received_at_ms=received_at_ms
+       WHERE event_key=? AND processed=0 AND claim_token=?`,
+      [String(reason || 'webhook_processing_failed').slice(0,160),key,token]
+    ).run();
+    return { success:true, changed:Number(result?.meta?.changes || 0), releasedAtMs:timestamp };
   }
 
   async function listTransactions(ownerUid, limit = 30) {
@@ -809,5 +858,5 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       .slice(0,max);
   }
 
-  return Object.freeze({ ensureWallet, getWallet, postWalletEntry, createRechargeIntent, attachRechargeOrder, markRechargeOrderFailed, getRechargeForOwner, listWalletOffers, saveWalletOffer, deleteWalletOffer, finalizeRecharge, getRechargeByOrderId, markRechargePaymentFailed, recordWebhookEvent, completeWebhookEvent, reserveWallet, settleReservation, listTransactions });
+  return Object.freeze({ ensureWallet, getWallet, postWalletEntry, createRechargeIntent, attachRechargeOrder, markRechargeOrderFailed, getRechargeForOwner, listWalletOffers, saveWalletOffer, deleteWalletOffer, finalizeRecharge, getRechargeByOrderId, markRechargePaymentFailed, recordWebhookEvent, completeWebhookEvent, releaseWebhookEvent, reserveWallet, settleReservation, listTransactions });
 }
