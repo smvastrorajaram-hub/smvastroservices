@@ -18,9 +18,9 @@ The production Worker runtime and D1 binding are deployed and verified, but this
 | Legacy method/path inventory | 149 |
 | Legacy GET pairs | 55 |
 | Legacy POST pairs | 94 |
-| Literal Worker handler pairs in reviewed route source files | 93 |
-| Exact legacy method+path pairs with a Worker handler | 80 (53.7%) |
-| Legacy pairs with no exact Worker handler | 69 (46.3%) |
+| Literal Worker handler pairs in reviewed route source files | 96 |
+| Exact legacy method+path pairs with a Worker handler | 83 (55.7%) |
+| Legacy pairs with no exact Worker handler | 66 (44.3%) |
 | Production business route families enabled | 0 |
 | Production traffic switched | No |
 | Production D1 writes/migrations performed by this audit | 0 |
@@ -33,7 +33,7 @@ The route inventory is maintained in [`legacy-backend-route-inventory.mjs`](http
 
 ### P0 — Route parity is incomplete (cutover blocker)
 
-There are 149 unique legacy method/path pairs. Of those, 80 have an exact method/path handler literal in the reviewed Worker source files; 69 have no exact handler and remain routed to the generic `BACKEND_MIGRATION_NOT_CUT_OVER` fail-closed guard. This fail-closed behavior is desirable while migration is incomplete, but it is not production parity.
+There are 149 unique legacy method/path pairs. Of those, 83 have an exact method/path handler literal in the reviewed Worker source files; 66 have no exact handler and remain routed to the generic `BACKEND_MIGRATION_NOT_CUT_OVER` fail-closed guard. This fail-closed behavior is desirable while migration is incomplete, but it is not production parity.
 
 The existing README says approximately 117 route registrations; the current version-controlled route inventory says 149. Use the inventory as the audit baseline until a fresh automated extraction of all active route registrations—including indirect router/module registrations—is compared against it.
 
@@ -93,7 +93,7 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | Razorpay | `test/wallet-recharge-routes.test.mjs`, `test/razorpay-mode-policy.test.mjs`, `test/razorpay-rest-adapter.test.mjs`, `test/legacy-razorpay-routes.test.mjs`, and `test/local-d1-live-payment-invariants.local.mjs`: key-mode gate, raw-body signature check, Question/Private Consultation verify/recovery/refunds, duplicate event handling, order/amount/ownership negatives, refund history lookup and stable idempotency request shape | Real Razorpay Sandbox duplicate webhook replay/refund provider proof; actual Staging Firestore/D1 E2E and complete out-of-order event matrix |
 | Live/Booking | `test/live-session-domain.test.mjs`, `test/live-session-routes.test.mjs` and `test/local-d1-live-payment-invariants.local.mjs`: capacity concurrency, stale booking release, settlement rollback, double-settlement prevention | Full D1 + Durable Object end-to-end ordering and duplicate request-ID replay coverage |
 | Durable timers/events | `test/live-session-coordinator.test.mjs`: durable deadline behavior and event-id dedupe | End-to-end D1+DO interaction under concurrent delivery |
-| Route inventory | `test/legacy-route-inventory.test.mjs`: 149 unique pairs; audit parser now finds 80 exact source pairs and 69 missing pairs | Contract equivalence for all remaining 69 routes and full legacy parity for every source match |
+| Route inventory | `test/legacy-route-inventory.test.mjs`: 149 unique pairs; audit parser now finds 83 exact source pairs and 66 missing pairs | Contract equivalence for all remaining 66 routes and full legacy parity for every source match |
 
 ## Route-by-route coverage matrix (149 inventory pairs)
 
@@ -120,12 +120,12 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | 17 | Appointments / Q&A / consultations | POST | `/astrologer/appointments/:id/respond` | No exact source handler; fails closed | — |
 | 18 | Appointments / Q&A / consultations | POST | `/appointment-booking` | No exact source handler; fails closed | — |
 | 19 | Other | GET | `/public/astrologers` | No exact source handler; fails closed | — |
-| 20 | Other | POST | `/astrologer/availability` | No exact source handler; fails closed | — |
+| 20 | Other | POST | `/astrologer/availability` | Exact source handler; approved profile, busy-session and pricing checks | `cloudflare/backend-api/src/legacy-business-routes.mjs` |
 | 21 | Appointments / Q&A / consultations | GET | `/public/astrologers/:astrologerId/reviews` | Exact source handler; approved reviews only | `cloudflare/backend-api/src/legacy-dashboard-read-routes.mjs` |
 | 22 | Appointments / Q&A / consultations | GET | `/customer/reviews` | Exact source handler; Customer UID scoped | `cloudflare/backend-api/src/legacy-dashboard-read-routes.mjs` |
-| 23 | Appointments / Q&A / consultations | POST | `/customer/submit-review` | No exact source handler; fails closed | — |
+| 23 | Appointments / Q&A / consultations | POST | `/customer/submit-review` | Exact source handler; transactionally enforces ownership and one-review rule | `cloudflare/backend-api/src/legacy-business-routes.mjs` |
 | 24 | Admin / configuration | GET | `/admin/appointments` | Exact source handler; Admin-only and bounded | `cloudflare/backend-api/src/legacy-dashboard-read-routes.mjs` |
-| 25 | Admin / configuration | POST | `/admin/appointment-status` | No exact source handler; fails closed | — |
+| 25 | Admin / configuration | POST | `/admin/appointment-status` | Exact source handler; Admin-only allowed status transitions | `cloudflare/backend-api/src/legacy-business-routes.mjs` |
 | 26 | Admin / configuration | POST | `/admin/approve-question` | No exact source handler; fails closed | — |
 | 27 | Appointments / Q&A / consultations | POST | `/astrologer/claim-question` | No exact source handler; fails closed | — |
 | 28 | Public config / content | GET | `/api-version` | Exact source handler; retains legacy feature/version contract | `cloudflare/backend-api/src/public-legacy-routes.mjs` |
