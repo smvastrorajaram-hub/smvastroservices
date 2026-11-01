@@ -15,6 +15,7 @@
     "test:quiz-reads": "node --test test/legacy-quiz-read-routes.test.mjs",
     "test:legacy-business": "node --test test/legacy-business-routes.test.mjs",
     "test:admin-astro-profiles": "node --test test/admin-astrologer-profile-routes.test.mjs",
+    "test:quiz-writes": "node --test test/legacy-quiz-write-routes.test.mjs",
     "test:wallet-domain": "node --test test/wallet-domain.test.mjs test/wallet-adapters.test.mjs",
     "test:live-session-do": "node --test test/live-session-coordinator.test.mjs",
     "test:wallet-live-audit": "node --test test/wallet-domain-backfill.test.mjs test/d1-wallet-domain-backfill.test.mjs test/wallet-live-readonly-audit.test.mjs"
