@@ -575,7 +575,7 @@ test('Scheduled Call/Chat start creates, accepts, schedules and links a session 
   };
 
   const f = fixture({
-    identity: astroIdentity,
+    identity: { uid: 'astro-1', role: 'astrologer', isAdmin: false },
     docs: {
       'smv_appointments/booking-1': { exists: true, data: {
         astrologerUid: 'astro-1', customerUid: 'customer-1',
@@ -623,7 +623,7 @@ test('Scheduled Call/Chat retry returns the existing session using the live serv
   const calls = [];
   const bindings = liveBindings();
   const f = fixture({
-    identity: astroIdentity,
+    identity: { uid: 'astro-1', role: 'astrologer', isAdmin: false },
     docs: {
       'smv_appointments/booking-1': { exists: true, data: {
         astrologerUid: 'astro-1', customerUid: 'customer-1',
