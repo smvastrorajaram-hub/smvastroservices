@@ -152,7 +152,7 @@ function isRetainedOutsideCloudflare(pathname) {
     /^\/(?:customer|admin|astrologer)\/private-consultations?(?:\/|$)/.test(pathname) ||
     /^\/private-consultation(?:\/|$)/.test(pathname) ||
     /^\/horoscope(?:-|\/)/.test(pathname) ||
-    /^\/admin\/horoscope(?:\/|$)/.test(pathname) ||
+    /^\/admin\/horoscope(?:-|\/|$)/.test(pathname) ||
     /^\/api\/prediction\//.test(pathname) ||
     pathname === "/contact-query" ||
     pathname === "/question-notify" ||

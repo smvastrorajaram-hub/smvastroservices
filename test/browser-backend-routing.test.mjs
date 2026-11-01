@@ -55,6 +55,7 @@ test("retired, Horoscope, email-unverified and unprovisioned APK routes stay pin
     ["/astrologer/private-consultation/submit-answer", "POST"],
     ["/horoscope-auth/session", "GET"],
     ["/admin/horoscope-feature-settings", "POST"],
+    ["/admin/private-consultations-data", "GET"],
     ["/api/prediction/horoscope", "POST"],
     ["/contact-query", "POST"],
     ["/question-notify", "POST"],
@@ -182,7 +183,6 @@ test("Wallet recharge and Live sessions fail closed and are never sent to Render
   await assert.rejects(router.fetch("/live/sessions", { method: "GET" }),
     error => error.code === "CLOUDFLARE_ROUTE_NOT_READY");
   assert.deepEqual(calls, [
-    cloudflareBaseUrl + "/api/backend/readiness",
     cloudflareBaseUrl + "/api/backend/readiness"
   ]);
 });
