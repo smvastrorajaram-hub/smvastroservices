@@ -20,6 +20,19 @@
     element.style.display = 'none';
   }
 
+  const stagingHosts = new Set([
+    'smv-astro-phase1-browser-staging.onrender.com',
+    'smv-astro-phase1-browser-isolated.onrender.com',
+    'smv-astro-phase1-browser-staging-v2.onrender.com',
+    'smvastro-website-staging.astroservices.workers.dev'
+  ]);
+  if (stagingHosts.has(location.hostname) ||
+      location.hostname.includes('phase1-staging') ||
+      location.hostname.includes('phase1-browser')) {
+    hide(section);
+    return;
+  }
+
   if (nativeApp) {
     hide(section);
     return;
