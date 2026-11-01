@@ -1,0 +1,44 @@
+name: Staging v2 Cloudflare backend API deployment
+
+on:
+  push:
+    branches:
+      - feat/staging-v2-cloudflare-api-gateway-20261101
+    paths:
+      - 'cloudflare/backend-api/**'
+      - 'shared/backend-platform/**'
+      - '.github/workflows/staging-v2-cloudflare-backend-api.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout isolated Staging backend source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated Worker dependencies
+        working-directory: cloudflare/backend-api
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Run Worker syntax, auth, inventory, Wallet and Live tests
+        working-directory: cloudflare/backend-api
+        run: |
+          npm run check
+          npm run test:auth
+          npm run test:inventory
+          npm run test:wallet-domain
+          npm run test:live-session-do
+          npm run test:wallet-live-audit
+      - name: Deploy Staging API Worker only
+        working-directory: cloudflare/backend-api
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler@4 deploy --config wrangler.jsonc
