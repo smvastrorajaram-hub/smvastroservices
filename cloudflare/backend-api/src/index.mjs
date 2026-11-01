@@ -47,6 +47,8 @@ import { registerLegacyEmailRoutes } from './legacy-email-routes.mjs';
 import { registerAstrologerSubmitAnswerRoute } from './astrologer-submit-answer-route.mjs';
 import { registerLegacyAppointmentReadAndResponseRoutes } from './legacy-appointment-read-response-routes.mjs';
 import { registerCustomerAnswerCreditRoute } from './customer-answer-credit-route.mjs';
+import { createGoogleServiceAccountTokenProvider } from '../../../shared/backend-platform/google-service-account-token.mjs';
+import { createFirebaseAuthAdminClient, createFcmSender, registerLegacyRouteParityGapRoutes } from './legacy-route-parity-gap-routes.mjs';
 
 const app = express();
 const verifyFirebaseIdToken = createFirebaseIdTokenVerifier();
@@ -132,6 +134,53 @@ app.get('/api/auth/session', async (req, res) => {
 
 app.get('/api/auth/authorization', async (req, res) => {
   const authorization = String(req.get('Authorization') || '');
+
+  // Register the remaining active legacy API contracts only after the staging
+  // Firebase Admin/Firestore transport and D1 repositories have been constructed.
+  // Credentials are used only to mint short-lived scoped OAuth tokens; no key
+  // material is stored in source or returned to callers.
+  const firebaseAdminOAuth = createGoogleServiceAccountTokenProvider({
+    credentials,
+    scope: 'https://www.googleapis.com/auth/identitytoolkit https://www.googleapis.com/auth/firebase.messaging'
+  });
+  const firebaseAuthAdmin = createFirebaseAuthAdminClient({
+    projectId,
+    tokenProvider: firebaseAdminOAuth
+  });
+  const fcmSender = createFcmSender({
+    projectId,
+    tokenProvider: firebaseAdminOAuth
+  });
+  const gapLiveService = env.DB && sharedWalletAdapter
+    ? createD1LiveSessionService({
+        db: env.DB,
+        walletAdapter: sharedWalletAdapter,
+        firestore: firestoreAdmin,
+        adminWalletUid: String(env.ADMIN_WALLET_UID || env.ADMIN_UID || '')
+      })
+    : null;
+  registerLegacyRouteParityGapRoutes({
+    app,
+    firestore: firestoreAdmin,
+    identityService: walletIdentityService,
+    projectId,
+    authAdmin: firebaseAuthAdmin,
+    walletAdapter: sharedWalletAdapter,
+    db: env.DB,
+    isWalletReady: walletSchemaReady,
+    isWalletBackfillReady: checkWalletBackfillSchemaReady,
+    fcmSender,
+    env,
+    apkReleaseService: env.APK_RELEASE_WORKER || null,
+    rawUploadParser: express.raw({
+      type: 'application/vnd.android.package-archive',
+      limit: 100 * 1024 * 1024
+    }),
+    liveService: gapLiveService,
+    isLiveReady: checkLiveSessionSchemaReady,
+    contentMirrorFirestore: null
+  });
+
   if (identityProfileD1AuthorizationOpen) {
     if (!d1IdentityAuthorizationService) {
       return res.status(503).set(JSON_HEADERS).json({
