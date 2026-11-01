@@ -94,3 +94,98 @@ test('admin access fails closed on unauthenticated or unavailable identity servi
     assert.equal(res.body.code, item.error.code);
   }
 });
+
+
+function firestoreFixture(documents = {}, queries = {}) {
+  const reads = [];
+  const queryCalls = [];
+  return {
+    reads, queryCalls,
+    async getDocument(documentPath) {
+      reads.push(documentPath);
+      return documents[documentPath] || {
+        exists: false, id: documentPath.split('/').pop(), data: null
+      };
+    },
+    async runQuery(options) {
+      queryCalls.push(options);
+      return queries[options.collectionPath + ':' + options.filters[0].field] || [];
+    }
+  };
+}
+
+test('account role returns Admin only from the verified Admin authorization result', async () => {
+  const { registerAccountRoleRoute } = await import('../src/core-read-routes.mjs');
+  const app = harness();
+  const firestore = firestoreFixture();
+  registerAccountRoleRoute({
+    app,
+    identityService: { async authenticateAuthorization() { return { uid: 'admin-1', isAdmin: true, role: 'admin' }; } },
+    firestore
+  });
+  const res = response();
+  await app.handlers.get('GET /account/role')(request(), res);
+  assert.deepEqual(res.body, { success: true, role: 'admin' });
+  assert.equal(firestore.reads.length, 0);
+});
+
+test('account role returns the verified customer profile contract', async () => {
+  const { registerAccountRoleRoute } = await import('../src/core-read-routes.mjs');
+  const app = harness();
+  const firestore = firestoreFixture({
+    'smv_users/customer-1': { exists: true, data: { uid: 'customer-1', role: 'customer', publicId: 'smvcr-12345' } }
+  });
+  registerAccountRoleRoute({
+    app,
+    identityService: { async authenticateAuthorization() { return { uid: 'customer-1', isAdmin: false, role: 'customer' }; } },
+    firestore
+  });
+  const res = response();
+  await app.handlers.get('GET /account/role')(request(), res);
+  assert.deepEqual(res.body, {
+    success: true, role: 'customer', profileFound: true,
+    astrologerProfileFound: false, astrologerProfileCollection: null
+  });
+});
+
+test('account role resolves canonical and legacy Astrologer documents by UID/public ID', async () => {
+  const { registerAccountRoleRoute } = await import('../src/core-read-routes.mjs');
+  for (const collection of ['smv_astrologers', 'smv_astrologer']) {
+    const app = harness();
+    const firestore = firestoreFixture({
+      'smv_users/astro-1': { exists: true, data: { uid: 'astro-1', role: 'customer', publicId: 'smvar-12345' } },
+      [collection + '/astro-1']: { exists: true, data: { uid: 'astro-1', publicId: 'smvar-12345', status: 'approved' } }
+    });
+    registerAccountRoleRoute({
+      app,
+      identityService: { async authenticateAuthorization() { return { uid: 'astro-1', isAdmin: false, role: 'customer' }; } },
+      firestore
+    });
+    const res = response();
+    await app.handlers.get('GET /account/role')(request(), res);
+    assert.equal(res.body.role, 'astrologer');
+    assert.equal(res.body.astrologerProfileFound, true);
+    assert.equal(res.body.astrologerProfileCollection, collection);
+  }
+});
+
+test('account role ignores an Astrologer profile linked to a different UID', async () => {
+  const { registerAccountRoleRoute } = await import('../src/core-read-routes.mjs');
+  const app = harness();
+  const firestore = firestoreFixture({
+    'smv_users/customer-2': { exists: true, data: { uid: 'customer-2', role: 'customer', publicId: 'smvcr-45678' } },
+    'smv_astrologers/customer-2': { exists: true, data: { uid: 'someone-else', status: 'approved' } }
+  }, {
+    'smv_astrologers:uid': [{ exists: true, data: { uid: 'someone-else', status: 'approved' } }],
+    'smv_astrologer:uid': [{ exists: true, data: { uid: 'someone-else', status: 'approved' } }]
+  });
+  registerAccountRoleRoute({
+    app,
+    identityService: { async authenticateAuthorization() { return { uid: 'customer-2', isAdmin: false, role: 'customer' }; } },
+    firestore
+  });
+  const res = response();
+  await app.handlers.get('GET /account/role')(request(), res);
+  assert.equal(res.body.role, 'customer');
+  assert.equal(res.body.astrologerProfileFound, false);
+});
