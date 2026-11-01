@@ -513,6 +513,9 @@ test('Private Consultation reject/refund and sync routes preserve Razorpay IDs a
         paymentStatus: 'paid', status: 'pending_admin_approval',
         razorpayOrderId: 'order_test_1', razorpayPaymentId: 'pay_123'
       }
+    },
+    razorpay: {
+      async fetchPayment(id) { return { id, order_id: 'order_test_1', amount: 1200, currency: 'INR', status: 'captured' }; }
     }
   });
   const rejected = responseHarness();
