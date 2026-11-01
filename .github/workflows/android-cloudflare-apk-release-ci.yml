@@ -118,4 +118,5 @@ jobs:
 
       - name: Validate Wrangler Worker bundle without deploying
         run: |
-          npx --yes wrangler@4 deploy --dry-run --config cloudflare/android-apk-release/wrangler.toml\n          npx --yes wrangler@4 deploy --dry-run --config cloudflare/android-apk-release/wrangler.staging.toml
+          npx --yes wrangler@4 deploy --dry-run --config cloudflare/android-apk-release/wrangler.toml
+          npx --yes wrangler@4 deploy --dry-run --config cloudflare/android-apk-release/wrangler.staging.toml
