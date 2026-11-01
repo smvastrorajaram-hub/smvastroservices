@@ -310,6 +310,28 @@ test('Last-known Dashboard role cache only stores Customer or Astrologer UI role
   assert.ok(frontend.includes("smvProfiles.delete(loadUid);"));
 });
 
+test('Astrologer profile-read failures preserve an open Dashboard and recover before retry on a fresh session', () => {
+  const frontend = read('public/smvastro.mjs');
+  const start = frontend.indexOf('async function loadDashboard(expectedRole=null,force=false,background=false)');
+  const end = frontend.indexOf('function openPayoutChange()', start);
+  assert.ok(start >= 0 && end > start, 'Dashboard render function exists');
+  const dashboard = frontend.slice(start, end);
+  const failure = dashboard.indexOf('if(data._smvProfileReadFailed&&astroProfileReadFailed&&!Object.keys(ad).length){');
+  const preserve = dashboard.indexOf("box?.querySelector('.smv-astrologer-dashboard')", failure);
+  const sync = dashboard.indexOf("const sync=await renderApi('/astrologer/sync-approval'", failure);
+  const fallback = dashboard.indexOf('if(data._smvProfileReadFailed&&astroProfileReadFailed&&!Object.keys(ad).length&&astroProfileSyncFailed)', sync);
+  assert.ok(failure >= 0 && preserve > failure && sync > preserve && fallback > sync,
+    'An open Dashboard is preserved first; a fresh session checks the authenticated backend before showing retry UI');
+  const preserveGuard = dashboard.slice(preserve, sync);
+  assert.ok(preserveGuard.includes('smvAstroProfileRefreshWarning'));
+  assert.ok(preserveGuard.includes('box.prepend(notice)'));
+  assert.ok(preserveGuard.includes('RETRY DASHBOARD UPDATE'));
+  assert.ok(preserveGuard.includes('smvLiveStatus('));
+  const recoveryGuard = dashboard.slice(sync, fallback);
+  assert.ok(recoveryGuard.includes('astroProfileSyncFailed=true'));
+  assert.ok(dashboard.indexOf('RETRY PROFILE CHECK', fallback) > fallback,
+    'Retry UI is rendered only after the backend reconciliation failure guard');
+});
 test('Astrologer Dashboard keeps one heading and parallelizes its first profile read', () => {
   const frontend = read('public/smvastro.mjs');
   const html = read('public/index.html');

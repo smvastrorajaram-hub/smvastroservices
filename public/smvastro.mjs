@@ -1779,20 +1779,43 @@ if(profileResult.snapshot?.exists()){
 
 // If the profile is unavailable, preserve the known role without guessing approval status.
 if(data._smvProfileReadFailed&&astroProfileReadFailed&&!Object.keys(ad).length){
-  box.innerHTML='<div class="card smv-dashboard-fast-shell"><span class="badge">ASTROLOGER</span><button class="btn gray" id="smvAstroDataRetry" type="button">REFRESH DASHBOARD</button></div>';
-  $('smvAstroDataRetry')?.addEventListener('click',()=>{
-    smvProfiles.delete(loadUid);
-    loadDashboard('astrologer',true).catch(error=>console.warn('Astrologer Dashboard refresh deferred:',error?.message||error));
-  });
-  dashboardReadyUid=loadUid;dashboardReadyRole=role;dashboardReadyAt=Date.now();
-  smvWatchDashboardEvents(role);
-  return;
+  // A transient read failure during a live-session/profile invalidation must not
+  // replace a previously rendered Astrologer Dashboard with the retry-only shell.
+  // Keep the last successful dashboard visible and offer a non-destructive retry.
+  if(box?.querySelector('.smv-astrologer-dashboard')){
+    let notice=$('smvAstroProfileRefreshWarning');
+    if(!notice){
+      notice=document.createElement('div');
+      notice.id='smvAstroProfileRefreshWarning';
+      notice.className='card';
+      const message=document.createElement('p');
+      message.className='small';
+      message.textContent='Astrologer profile data could not be refreshed just now. Your previously loaded Dashboard is still available.';
+      const retry=document.createElement('button');
+      retry.className='btn gray';
+      retry.type='button';
+      retry.textContent='RETRY DASHBOARD UPDATE';
+      retry.onclick=async()=>{
+        retry.disabled=true;
+        message.textContent='Retrying Astrologer Dashboard update…';
+        smvProfiles.delete(loadUid);
+        try{await loadDashboard('astrologer',true,false);}
+        catch(error){console.warn('Astrologer Dashboard retry skipped:',error?.message||error);}
+        finally{if(retry.isConnected)retry.disabled=false;}
+      };
+      notice.append(message,retry);
+      box.prepend(notice);
+    }
+    smvLiveStatus('Showing the last successfully loaded Astrologer Dashboard.');
+    return;
+  }
 }
 let userStatus=String(
   data.status||ad.status||'pending'
 ).toLowerCase();
 let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
 
+   let astroProfileSyncFailed=false;
    // A directory-visible approved record may be a legacy/duplicate document
    // while this dashboard reads the UID-keyed document. Reconcile only when the
    // local state is pending; the server confirms an existing approved record
@@ -1809,7 +1832,23 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
          data.status='active';data.role='astrologer';
          userStatus='active';astroStatus='approved';
        }
-     }catch(syncError){console.warn('Astrologer approval status refresh deferred:',syncError?.message||syncError);}
+     }catch(syncError){
+       astroProfileSyncFailed=true;
+       console.warn('Astrologer approval status refresh deferred:',syncError?.message||syncError);
+     }
+   }
+   // On a fresh browser session there is no previously rendered Dashboard to
+   // preserve. First let the authenticated backend reconcile an already-approved
+   // legacy/UID profile. Show retry UI only when that trusted check cannot complete.
+   if(data._smvProfileReadFailed&&astroProfileReadFailed&&!Object.keys(ad).length&&astroProfileSyncFailed){
+     box.innerHTML='<div class="card smv-dashboard-fast-shell"><span class="badge">ASTROLOGER</span><p class="small">We could not verify your Astrologer profile just now. Your account has not been changed. Please retry the secure profile check.</p><button class="btn gray" id="smvAstroDataRetry" type="button">RETRY PROFILE CHECK</button></div>';
+     $('smvAstroDataRetry')?.addEventListener('click',()=>{
+       smvProfiles.delete(loadUid);
+       loadDashboard('astrologer',true).catch(error=>console.warn('Astrologer Dashboard profile check deferred:',error?.message||error));
+     });
+     dashboardReadyUid=loadUid;dashboardReadyRole=role;dashboardReadyAt=Date.now();
+     smvWatchDashboardEvents(role);
+     return;
    }
  
    if(!['active','approved'].includes(astroStatus)){
