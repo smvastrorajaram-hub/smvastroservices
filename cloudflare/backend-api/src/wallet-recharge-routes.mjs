@@ -38,6 +38,7 @@ export function registerWalletRechargeRoutes({
   razorpay,
   razorpayKeyId,
   razorpayWebhookSecret,
+  razorpayMode = 'test',
   isReady = async () => false,
   cryptoImpl = globalThis.crypto
 } = {}) {
@@ -54,8 +55,14 @@ export function registerWalletRechargeRoutes({
 
   const keyId = String(razorpayKeyId || '').trim();
   const webhookSecret = String(razorpayWebhookSecret || '');
-  if (!keyId || !keyId.startsWith('rzp_test_')) {
-    throw new TypeError('Cloudflare Wallet recharge adapter accepts Razorpay Test Mode keys only.');
+  const selectedMode = String(razorpayMode || '').trim().toLowerCase();
+  const keyMatchesMode = selectedMode === 'test'
+    ? keyId.startsWith('rzp_test_')
+    : selectedMode === 'live'
+      ? keyId.startsWith('rzp_live_')
+      : false;
+  if (!keyMatchesMode || !webhookSecret) {
+    throw new TypeError('Cloudflare Wallet recharge adapter requires matching Test/Live Razorpay key mode and a webhook secret.');
   }
 
   async function customer(req) {
