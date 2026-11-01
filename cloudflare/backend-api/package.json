@@ -10,7 +10,8 @@
     "test:wallet-domain": "node --test test/wallet-domain.test.mjs test/wallet-adapters.test.mjs",
     "test:live-session-do": "node --test test/live-session-coordinator.test.mjs",
     "test:wallet-live-audit": "node --test test/wallet-domain-backfill.test.mjs test/d1-wallet-domain-backfill.test.mjs test/wallet-live-readonly-audit.test.mjs",
-    "test:readiness": "node --test test/backend-readiness-state.test.mjs"
+    "test:readiness": "node --test test/backend-readiness-state.test.mjs",
+    "test:razorpay-connectivity": "node --test test/razorpay-rest-adapter.test.mjs test/razorpay-connectivity-routes.test.mjs"
   },
   "dependencies": {
     "express": "5.1.0"
