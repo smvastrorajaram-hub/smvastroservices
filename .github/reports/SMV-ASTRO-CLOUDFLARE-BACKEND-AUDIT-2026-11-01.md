@@ -9,11 +9,11 @@
 
 **PR #298 verification head:** `fefa8f1596f47bfcd49fccfdf7c6d3c3a71c00ab`
 
-**Verified PR #298 CI head:** `fefa8f1596f47bfcd49fccfdf7c6d3c3a71c00ab`
+**Verified PR #298 code/test head:** `9f0a495cbcdb86504db96fba99cf08c67da03a30`
 
 ### Latest PR #298 CI evidence
 
-- Complete Cloudflare backend contract suite: **374/374 PASS** in both Staging integration and Production parity/security audit.
+- Complete Cloudflare backend contract suite: **375/375 PASS** in both Staging integration and Production parity/security audit.
 - Route source audit: **149 legacy routes / 144 Worker handler pairs / 131 exact method-path matches / 18 unmatched**.
 - Staging ephemeral local D1: **10 migrations applied locally only**; no remote D1 migration or customer data import.
 - Local-D1 Razorpay atomic webhook claims: **3/3 PASS**.
@@ -23,12 +23,12 @@
 - Production Worker validation: PASS; **deploy-production-worker SKIPPED**.
 
 CI workflow runs:
-- [Staging integration validation](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41311947482)
-- [Production parity/security audit](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41311947439)
-- [Wallet local-D1 reconciliation](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41311947544)
-- [Production Worker validation — deployment skipped](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41311947507)
+- [Staging integration validation](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41312262332)
+- [Production parity/security audit](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41312262228)
+- [Wallet local-D1 reconciliation](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41312262231)
+- [Production Worker validation — deployment skipped](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/41312262230)
 
-The 24 new route-parity contract tests use injected Firestore/D1/FCM/Auth adapters. They validate code paths and fail-closed gates; they do **not** establish real Firebase Auth Admin permissions, real FCM delivery, provisioned R2/Queue/DO resources, or APK Worker service-binding connectivity.
+The 25 added route-parity contract and initialization-wiring tests use injected Firestore/D1/FCM/Auth adapters. They validate code paths and fail-closed gates; they do **not** establish real Firebase Auth Admin permissions, real FCM delivery, provisioned R2/Queue/DO resources, or APK Worker service-binding connectivity.
 
 ### Prior CI evidence on PR #298
 
