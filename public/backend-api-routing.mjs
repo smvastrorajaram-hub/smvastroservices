@@ -1,8 +1,8 @@
 const RETRYABLE_GATEWAY_STATUSES = new Set([408, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524, 525, 526, 527, 530]);
 
 // Exact method/path pairs are cross-checked against real Cloudflare Worker registrations.
-// Unported legacy endpoints remain Render-pinned or are explicitly disabled on Staging.
-const CLOUDFLARE_LEGACY_ROUTE_LINES = \`GET /admin/access
+// Unported legacy handlers remain Render-pinned; retired Staging-only routes fail closed.
+const CLOUDFLARE_LEGACY_ROUTE_LINES = `GET /admin/access
 GET /account/role
 GET /admin/withdrawals-data
 GET /astrologer/earnings
@@ -46,9 +46,9 @@ POST /live/sessions/:id/messages
 GET /live/sessions/:id/messages
 POST /admin/withdrawal-mark-processing
 POST /admin/withdrawal-reject
-POST /live/sessions/:id/connection\`;
+POST /live/sessions/:id/connection`;
 export const CLOUDFLARE_LEGACY_ROUTE_PAIRS = Object.freeze(
-  CLOUDFLARE_LEGACY_ROUTE_LINES.split("\\n").filter(Boolean).map(line => {
+  CLOUDFLARE_LEGACY_ROUTE_LINES.split("\n").filter(Boolean).map(line => {
     const separator = line.indexOf(" ");
     return Object.freeze({ method: line.slice(0, separator), path: line.slice(separator + 1) });
   })
@@ -73,7 +73,6 @@ function routePatternMatches(pattern, pathname) {
 
 const STAGING_DISABLED_EXACT_PATHS = new Set([
   "/submit-answer",
-  "/astrologer/edit-answer",
   "/astrologer/edit-answer",
   "/question-notify",
   "/admin/approve-question",
@@ -103,36 +102,35 @@ const STAGING_DISABLED_EXACT_PATHS = new Set([
 export function isStagingDisabledPath(path) {
   const pathname = pathnameOf(path);
   return STAGING_DISABLED_EXACT_PATHS.has(pathname) ||
-    /^\\/admin\\/refund-trace(?:\\/|$)/.test(pathname) ||
-    /^\\/admin\\/private-consultation(?:\\/|$)/.test(pathname) ||
-    /^\\/astrologer\\/private-consultation(?:\\/|$)/.test(pathname) ||
-    /^\\/private-consultation(?:\\/|$)/.test(pathname);
+    /^\/admin\/refund-trace(?:\/|$)/.test(pathname) ||
+    /^\/admin\/private-consultation(?:\/|$)/.test(pathname) ||
+    /^\/astrologer\/private-consultation(?:\/|$)/.test(pathname) ||
+    /^\/private-consultation(?:\/|$)/.test(pathname);
 }
 
 function isRetainedOutsideCloudflare(pathname) {
-  return /^\\/horoscope(?:-|\\/)/.test(pathname) ||
-    /^\\/admin\\/horoscope(?:-|\\/|$)/.test(pathname) ||
-    /^\\/horoscope-payment(?:\\/|$)/.test(pathname) ||
-    /^\\/api\\/prediction\\//.test(pathname) ||
-    pathname === "/contact-query" ||
-    pathname === "/question-notify";
+  return /^\/horoscope(?:-|\/)/.test(pathname) ||
+    /^\/admin\/horoscope(?:-|\/|$)/.test(pathname) ||
+    /^\/horoscope-payment(?:\/|$)/.test(pathname) ||
+    /^\/api\/prediction\//.test(pathname) ||
+    pathname === "/contact-query";
 }
 
 function routeFamily(pathname) {
   if (pathname === "/public/push-config") return "publicConfig";
-  if (/^\\/admin\\/wallet\\/backfill(?:\\/|$)/.test(pathname) || pathname === "/admin/wallet/transactions") {
+  if (/^\/admin\/wallet\/backfill(?:\/|$)/.test(pathname) || pathname === "/admin/wallet/transactions") {
     return "walletBackfill";
   }
-  if (pathname === "/wallet/recharge-offers" || /^\\/admin\\/offers(?:\\/|$)/.test(pathname)) {
+  if (pathname === "/wallet/recharge-offers" || /^\/admin\/offers(?:\/|$)/.test(pathname)) {
     return "walletOffers";
   }
-  if (/^\\/wallet\\/recharge(?:\\/|$)/.test(pathname)) return "walletRecharge";
+  if (/^\/wallet\/recharge(?:\/|$)/.test(pathname)) return "walletRecharge";
   if (pathname === "/wallet" || pathname === "/wallet/transactions") return "walletRead";
-  if (/^\\/live(?:\\/|$)/.test(pathname) || /^\\/admin\\/live(?:\\/|$)/.test(pathname) ||
+  if (/^\/live(?:\/|$)/.test(pathname) || /^\/admin\/live(?:\/|$)/.test(pathname) ||
       pathname === "/astrologer/earnings" || pathname === "/astrologer/withdrawal-request" ||
       pathname === "/admin/withdrawals-data" || pathname === "/admin/withdrawal-mark-paid" ||
       pathname === "/admin/withdrawal-mark-processing" || pathname === "/admin/withdrawal-reject" ||
-      /^\\/admin\\/withdrawal-payout\\//.test(pathname)) return "live";
+      /^\/admin\/withdrawal-payout\//.test(pathname)) return "live";
   return "coreRead";
 }
 
@@ -163,10 +161,7 @@ export function classifyStagingBackendRoute(path, method = "GET") {
       exact === "GET /public/push-config") {
     return Object.freeze({ target: "render-primary", family: "renderRead" });
   }
-  return Object.freeze({
-    target: "cloudflare-primary",
-    family: routeFamily(pathname)
-  });
+  return Object.freeze({ target: "cloudflare-primary", family: routeFamily(pathname) });
 }
 
 export function isSafeReadMethod(method) {
@@ -201,7 +196,8 @@ export function isCloudflareRouteFamilyReady(family, readiness) {
     case "walletOffers":
       return readiness.backendActive === true && readiness.walletOfferRoutesEnabled === true;
     case "walletRecharge":
-      return readiness.backendActive === true && firebaseReady && readiness.walletRechargeRoutesEnabled === true && razorpayReady;
+      return readiness.backendActive === true && firebaseReady &&
+        readiness.walletRechargeRoutesEnabled === true && razorpayReady;
     case "live":
       return readiness.backendActive === true && firebaseReady && readiness.liveCallChatRoutesEnabled === true;
     default:
@@ -242,8 +238,8 @@ export function createBackendApiRouter({
     throw new TypeError("Render URL, Cloudflare URL and fetch implementation are required.");
   }
 
-  const renderBase = String(renderBaseUrl).replace(/\\/$/, "");
-  const cloudflareBase = String(cloudflareBaseUrl).replace(/\\/$/, "");
+  const renderBase = String(renderBaseUrl).replace(/\/$/, "");
+  const cloudflareBase = String(cloudflareBaseUrl).replace(/\/$/, "");
   let readinessValue = null;
   let readinessExpiresAt = 0;
   let readinessInFlight = null;
@@ -297,7 +293,7 @@ export function createBackendApiRouter({
         return response;
       }
       if (renderResponse) return renderResponse;
-      throw renderError || new Error("Cloudflare secondary read failed.");
+      throw renderError || new Error("Cloudflare secondary read returned a retryable gateway status.");
     } catch (error) {
       if (renderResponse) return renderResponse;
       throw renderError || error;
@@ -311,8 +307,7 @@ export function createBackendApiRouter({
       readiness = await getReadiness();
     } catch (_error) {
       if (family === "walletBackfill") return routeUnavailable(family);
-      // Nothing has been sent to Cloudflare yet. Render is the safe secondary,
-      // including for mutations, because there is no ambiguous payment/session outcome.
+      // No business request has reached Cloudflare; the Render secondary is safe.
       return renderSecondary(path, init);
     }
 
@@ -351,8 +346,7 @@ export function createBackendApiRouter({
     }
     if (classification.family === "renderPinned") return fetchImpl(renderBase + path, init);
 
-    // Ordinary/core reads are Render-primary; only explicitly registered GET/HEAD
-    // routes may use Cloudflare as a secondary.
+    // Registered core reads are Render-primary and use Cloudflare only as a safe GET/HEAD secondary.
     let renderResponse;
     try {
       renderResponse = await fetchImpl(renderBase + path, init);
