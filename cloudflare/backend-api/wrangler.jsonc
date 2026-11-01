@@ -25,7 +25,7 @@
     "SMV_RAZORPAY_LIVE_MODE_ENABLED": "false",
     "SMV_RAZORPAY_TEST_MODE_ENABLED": "true",
     "SMV_NEW_QUESTION_PAYMENTS_ENABLED": "true",
-    "SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED": "true",
+    "SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED": "false",
     "FIREBASE_AUTH_PROJECT_IDS": "smv-astro-staging",
     "SMV_PUBLIC_BACKEND_URL": "https://smvastro-backend-api-staging.astroservices.workers.dev",
     "ALLOWED_ORIGINS": "https://smv-astro-phase1-browser-staging.onrender.com,https://smv-astro-phase1-browser-staging-v2.onrender.com"
