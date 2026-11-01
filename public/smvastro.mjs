@@ -1587,13 +1587,6 @@ function smvBindCustomerWallet({load=true}={}){
  const refresh=$('smvWalletRefresh');
  if(refresh)refresh.onclick=()=>smvLoadCustomerWallet();
  const form=$('smvWalletRechargeForm');
- // Temporary non-PII diagnostic: exposes only whether a valid checkout contact exists.
- if(form){
-  const contact=String(window.__smvCustomerProfilePhone||'').replace(/[\s().-]/g,'');
-  form.dataset.smvContactPrefillAvailable=/^\+?\d{7,15}$/.test(contact)?'yes':'no';
-  form.dataset.smvProfileReadState=window.__smvCustomerProfileReadFailed?'failed':'ok';
-  form.dataset.smvPhoneFieldPresent=window.__smvCustomerProfilePhoneFieldPresent?'yes':'no';
- }
  const submit=$('smvWalletRechargeButton');
  if(form){
   const originalButtonLabel=submit?.textContent||'RECHARGE WALLET';
@@ -2228,8 +2221,6 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
    // Keep the stored mobile private in the dashboard UI, but prefill Razorpay Checkout.
    // Customer profiles store the canonical E.164 phone in phone/mobile.
    window.__smvCustomerProfilePhone=String(data.phone||data.mobile||data.phoneNumber||data.mobileNumber||'').trim();
-   window.__smvCustomerProfileReadFailed=!!data._smvProfileReadFailed;
-   window.__smvCustomerProfilePhoneFieldPresent=[data.phone,data.mobile,data.phoneNumber,data.mobileNumber].some(value=>typeof value==='string'&&value.trim().length>0);
    if(!active())return;
    if(background&&smvEditing("dashboard")){smvLiveQueue?.request();return;}
    box.innerHTML=`<div class="grid"><div class="card"><span class="badge">CUSTOMER</span><h3>Welcome, <span class="smv-dashboard-name">${escapeHtml(customerDisplayName)}</span></h3><p><b>Email verification:</b> ${currentUser.emailVerified?'<span class="smv-verified-badge customer-profile-result"><span class="smv-check">✓</span>Verified</span>':'<span class="customer-profile-result">Pending from registration</span>'}</p><p><b>Mobile:</b> <span class="customer-profile-result">Private</span></p></div></div>
