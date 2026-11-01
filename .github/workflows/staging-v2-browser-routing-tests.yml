@@ -44,4 +44,6 @@ jobs:
           node --check public/backend-api-routing.mjs
           node --check test/browser-backend-routing.test.mjs
       - name: Run isolated Staging browser backend routing contract tests
-        run: npm run test:browser-backend-routing && npm run test:cloudflare-website-gateway
+        run: npm run test:browser-backend-routing && npm run test:cloudflare-website-gateway && npm run test:staging-legacy-route-guard
+      - name: Check Staging server guard syntax
+        run: node --check server.js
