@@ -123,7 +123,12 @@ test('Admin takeover enforces minimum answer length and retains commission for A
  registerLegacyQuestionWorkflowRoutes({app,firestore,identityService});
  const short=response();
  await app.handlers.get('POST /admin/takeover-answer')(request({questionId:'q1',answer:'Too short'}),short);
- assert.equal(short.statusCode,200);
+ assert.equal(short.statusCode,400);
+ assert.equal(firestore.writes.length,0);
+
+ const valid=response();
+ await app.handlers.get('POST /admin/takeover-answer')(request({questionId:'q1',answer:'This answer contains enough words.'}),valid);
+ assert.equal(valid.statusCode,200);
  const update=firestore.writes.find(x=>x.type==='update');
  assert.equal(update.data.answerAuthorType,'admin');
  assert.equal(update.data.commissionStatus,'admin_retained');
