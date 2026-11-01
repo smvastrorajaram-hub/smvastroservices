@@ -17,16 +17,17 @@ const ROUTE_FILES = [
   'cloudflare/backend-api/src/legacy-razorpay-routes.mjs',
   'cloudflare/backend-api/src/geonames-location-routes.mjs',
   'cloudflare/backend-api/src/public-legacy-routes.mjs',
-  'cloudflare/backend-api/src/razorpay-connectivity-routes.mjs'
+  'cloudflare/backend-api/src/razorpay-connectivity-routes.mjs',
+  'cloudflare/backend-api/src/legacy-read-routes.mjs'
 ];
 const BASELINE = Object.freeze({
   inventoryRoutes: 149,
   getRoutes: 55,
   postRoutes: 94,
   uniquePairs: 149,
-  sourceHandlerPairs: 78,
-  exactLegacyMatches: 65,
-  missingLegacyHandlers: 84
+  sourceHandlerPairs: 83,
+  exactLegacyMatches: 70,
+  missingLegacyHandlers: 79
 });
 const PRODUCTION_DATABASE_ID = 'b1d5684c-3fcd-48fe-9571-ea41fc605c7d';
 
