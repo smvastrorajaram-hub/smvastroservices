@@ -27,6 +27,7 @@ import { registerD1LiveSessionRoutes } from './live-session-routes.mjs';
 import { createRazorpayRestClient } from '../../../shared/backend-platform/razorpay-rest-adapter.mjs';
 import { isLegacyBackendPath, LEGACY_BACKEND_ROUTE_INVENTORY } from '../../../shared/backend-platform/legacy-backend-route-inventory.mjs';
 import { registerGeoNamesRoutes } from './geonames-location-routes.mjs';
+import { registerPublicLegacyRoutes } from './public-legacy-routes.mjs';
 
 const app = express();
 const verifyFirebaseIdToken = createFirebaseIdTokenVerifier();
@@ -73,6 +74,7 @@ app.use((req, res, next) => {
 
 registerPublicRuntimeReadRoutes({ app, env });
 registerGeoNamesRoutes({ app, env });
+registerPublicLegacyRoutes({ app, env });
 
 app.get('/api/auth/session', async (req, res) => {
   const authorization = String(req.get('Authorization') || '');
