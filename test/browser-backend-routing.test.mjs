@@ -16,7 +16,7 @@ const workerRouteFiles = ["../cloudflare/backend-api/src/index.mjs","../cloudfla
 const workerRegisteredRoutePairs = new Set();
 for (const path of workerRouteFiles) {
   const source = readFileSync(new URL(path, import.meta.url), "utf8");
-  const expression = /\\bapp\\.(get|post|put|patch|delete)\\s*\\(\\s*(['"`])([^'"`]+)\\2/g;
+  const expression = /\bapp\.(get|post|put|patch|delete)\s*\(\s*(['"\x60])([^'"\x60]+)\2/g;
   for (const match of source.matchAll(expression)) {
     workerRegisteredRoutePairs.add(match[1].toUpperCase() + " " + match[3]);
   }
