@@ -26,16 +26,17 @@ const ROUTE_FILES = [
   'cloudflare/backend-api/src/legacy-quiz-write-routes.mjs',
   'cloudflare/backend-api/src/astrologer-answer-edit-route.mjs',
   'cloudflare/backend-api/src/admin-astrologer-catalog-routes.mjs',
-  'cloudflare/backend-api/src/legacy-question-workflow-routes.mjs'
+  'cloudflare/backend-api/src/legacy-question-workflow-routes.mjs',
+  'cloudflare/backend-api/src/appointment-booking-route.mjs'
 ];
 const BASELINE = Object.freeze({
   inventoryRoutes: 149,
   getRoutes: 55,
   postRoutes: 94,
   uniquePairs: 149,
-  sourceHandlerPairs: 109,
-  exactLegacyMatches: 96,
-  missingLegacyHandlers: 53
+  sourceHandlerPairs: 110,
+  exactLegacyMatches: 97,
+  missingLegacyHandlers: 52
 });
 const PRODUCTION_DATABASE_ID = 'b1d5684c-3fcd-48fe-9571-ea41fc605c7d';
 
