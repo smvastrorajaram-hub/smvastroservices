@@ -18,26 +18,26 @@ The production Worker runtime and D1 binding are deployed and verified, but this
 | Legacy method/path inventory | 149 |
 | Legacy GET pairs | 55 |
 | Legacy POST pairs | 94 |
-| Literal Worker handler pairs in reviewed route source files | 54 |
-| Exact legacy method+path pairs with a Worker handler | 41 (27.5%) |
-| Legacy pairs with no exact Worker handler | 108 (72.5%) |
+| Literal Worker handler pairs in reviewed route source files | 70 |
+| Exact legacy method+path pairs with a Worker handler | 57 (38.3%) |
+| Legacy pairs with no exact Worker handler | 92 (61.7%) |
 | Production business route families enabled | 0 |
 | Production traffic switched | No |
 | Production D1 writes/migrations performed by this audit | 0 |
 
 A matching source handler is **not** counted as parity: parity also requires request/response contract equivalence, authorization equivalence, persistence/reconciliation behavior, and conformance tests.
 
-The route inventory is maintained in [`legacy-backend-route-inventory.mjs`](https://github.com/smvastrorajaram-hub/smvastroservices/blob/integration/cloudflare-backend-staging-stack-20261031/shared/backend-platform/legacy-backend-route-inventory.mjs). The source-level audit parser reviewed the Worker `index.mjs` and Wallet, offer, recharge, Live, Wallet backfill, Identity/Profile backfill and core read route modules.
+The route inventory is maintained in [`legacy-backend-route-inventory.mjs`](https://github.com/smvastrorajaram-hub/smvastroservices/blob/integration/cloudflare-backend-staging-stack-20261031/shared/backend-platform/legacy-backend-route-inventory.mjs). The source-level audit parser reviewed `index.mjs`, Wallet, offer, recharge, Live, Wallet backfill, Identity/Profile backfill, core read, and the new `legacy-razorpay-routes.mjs` module. The latter adds 16 exact legacy method/path pairs.
 
 ## Priority findings
 
 ### P0 — Route parity is incomplete (cutover blocker)
 
-There are 149 unique legacy method/path pairs. Of those, 41 have an exact method/path handler literal in the reviewed Worker source files; 108 have no exact handler and are routed to the generic `BACKEND_MIGRATION_NOT_CUT_OVER` fail-closed guard. This fail-closed behavior is desirable while migration is incomplete, but it is not production parity.
+There are 149 unique legacy method/path pairs. Of those, 57 have an exact method/path handler literal in the reviewed Worker source files; 92 have no exact handler and remain routed to the generic `BACKEND_MIGRATION_NOT_CUT_OVER` fail-closed guard. This fail-closed behavior is desirable while migration is incomplete, but it is not production parity.
 
 The existing README says approximately 117 route registrations; the current version-controlled route inventory says 149. Use the inventory as the audit baseline until a fresh automated extraction of all active route registrations—including indirect router/module registrations—is compared against it.
 
-**Route mismatch to fix:** the legacy inventory contains `POST /razorpay/webhook`, while the new Wallet adapter registers `POST /wallet/recharge/webhook`. These are not an exact route match, and a frontend/provider contract migration has not been proven.
+**Unified webhook source route added:** `POST /razorpay/webhook` now has its own raw-body signature-verifying handler; it uses the shared D1 atomic event inbox and dispatches by stored Razorpay order metadata to Wallet, Question, and Staging-enabled Private Consultation records. It is not an alias for `/wallet/recharge/webhook`. The new source handler still requires Staging deployment and provider webhook replay tests before it can be treated as operational parity.
 
 ### P0 — Production Razorpay mode remains disabled; explicit Live-key support is implemented but not approved for cutover
 
@@ -69,7 +69,11 @@ Addressed in the current Draft PR:
 - Webhook events use an atomic D1 claim/lease with token-guarded completion/release and expired-lease recovery.
 - `payment.authorized` attempts capture and re-fetches authoritative provider state before credit; an unsettled or failed payment is never credited.
 - Local-D1 tests exercise concurrent duplicate deliveries, stale lease takeover, invalid webhook/payment signatures, wrong order/amount/currency/provider payment ID, retry after mismatch and duplicate replay with exactly one Wallet credit.
-- The REST adapter now exposes the legacy-compatible `fetchMultipleRefund`/`fetchPaymentRefunds` pagination contract for checking previously created refunds before retry, and validates `X-Refund-Idempotency` as 10–180 alphanumeric/hyphen/underscore characters. Six synthetic adapter tests verify pagination, invalid page bounds, malformed responses, and identical header/body reuse on retry. These are mock transport tests only: they do not prove Razorpay Sandbox processed a duplicate request as one refund. Provider sandbox replay/idempotency is still unverified; no Live refund path is approved.
+- The REST adapter exposes `fetchMultipleRefund`/`fetchPaymentRefunds`, order/payment lookup and pagination, and refund creation with a stable idempotency header.
+- `legacy-razorpay-routes.mjs` now registers the unified `POST /razorpay/webhook`, Question `/create-order` + `/verify-payment`, Question reject/retry/sync refund + trace, and Private Consultation create/retry/cancel/recover/verify + reject/retry/sync refund endpoints. Private Consultation payment routes are controlled by a separate Staging-only flag; they remain disabled in Production.
+- The webhook verifies the exact raw body, claims `X-Razorpay-Event-Id` through the shared D1 lease inbox, re-fetches authoritative captured payment details, records Question/Private Consultation payment and payment-ledger documents in Firestore transactions, and completes the event only after state reconciliation.
+- Question/Private Consultation refunds check existing provider refund history before sending a new refund, then persist provider refund IDs and bank references. 19 in-memory Firestore/D1-inbox route tests cover the main flows and negative cases. These are contract tests, not actual Firestore or Razorpay Sandbox E2E.
+- Six synthetic REST-adapter tests verify refund pagination, invalid page bounds, malformed responses and identical idempotency-header/body reuse. Provider sandbox replay/idempotency remains unverified; no Live refund path is approved.
 
 Razorpay's own guidance emphasizes verifying webhook signatures over the raw request body and handling duplicate/out-of-order webhooks; see [Razorpay security checklist](https://razorpay.com/security/checklist/) and [Razorpay webhook guidance](https://razorpay.com/blog/payment-gateway-webhooks-india/). No production payment request was made in this audit.
 
@@ -86,10 +90,10 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | Firebase ID-token | `test/firebase-id-token.test.mjs`: allowed project, bad project, expiry, malformed/non-RS256 token, bad signature, Firebase sign-in metadata | Add disabled/revoked-user policy and real staging project integration |
 | Authorization | `test/firebase-authorization.test.mjs`: mutable profile role alone cannot grant Admin; profile + approved astrologer record required | Real Security Rules/profile/admin allowlist E2E and negative cross-user tests |
 | Wallet | `test/wallet-adapters.test.mjs`: integer paise, reserve, settlement, duplicate idempotency | Real SQLite/D1 trigger/batch/concurrency and rollback tests |
-| Razorpay | `test/wallet-recharge-routes.test.mjs`, `test/razorpay-mode-policy.test.mjs`, `test/razorpay-rest-adapter.test.mjs`, `test/payment-email-queue-adapters.test.mjs`, and `test/local-d1-live-payment-invariants.local.mjs`: explicit key-mode gate, signature/order/amount/currency/provider-ID negatives, authorized webhook recovery, atomic event claims, exactly-once local replay credit, refund-list pagination, idempotency-key validation and same-payload retry contract | Real Razorpay Sandbox duplicate webhook replay and refund idempotency; complete unified Question/Private Consultation webhook state transition matrix |
+| Razorpay | `test/wallet-recharge-routes.test.mjs`, `test/razorpay-mode-policy.test.mjs`, `test/razorpay-rest-adapter.test.mjs`, `test/legacy-razorpay-routes.test.mjs`, and `test/local-d1-live-payment-invariants.local.mjs`: key-mode gate, raw-body signature check, Question/Private Consultation verify/recovery/refunds, duplicate event handling, order/amount/ownership negatives, refund history lookup and stable idempotency request shape | Real Razorpay Sandbox duplicate webhook replay/refund provider proof; actual Staging Firestore/D1 E2E and complete out-of-order event matrix |
 | Live/Booking | `test/live-session-domain.test.mjs`, `test/live-session-routes.test.mjs` and `test/local-d1-live-payment-invariants.local.mjs`: capacity concurrency, stale booking release, settlement rollback, double-settlement prevention | Full D1 + Durable Object end-to-end ordering and duplicate request-ID replay coverage |
 | Durable timers/events | `test/live-session-coordinator.test.mjs`: durable deadline behavior and event-id dedupe | End-to-end D1+DO interaction under concurrent delivery |
-| Route inventory | `test/legacy-route-inventory.test.mjs`: 149 unique pairs; audit parser now finds 41 exact source pairs and 108 missing pairs | Contract-equivalence cases and source parity for all remaining 108 legacy routes |
+| Route inventory | `test/legacy-route-inventory.test.mjs`: 149 unique pairs; audit parser now finds 57 exact source pairs and 92 missing pairs | Contract equivalence for all remaining 92 routes and full legacy parity for every source match |
 
 ## Route-by-route coverage matrix (149 inventory pairs)
 
@@ -126,10 +130,10 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | 27 | Appointments / Q&A / consultations | POST | `/astrologer/claim-question` | No exact source handler; fails closed | — |
 | 28 | Public config / content | GET | `/api-version` | No exact source handler; fails closed | — |
 | 29 | Admin / configuration | POST | `/admin/reject-question` | No exact source handler; fails closed | — |
-| 30 | Admin / configuration | POST | `/admin/retry-refund` | No exact source handler; fails closed | — |
-| 31 | Admin / configuration | GET | `/admin/refund-trace/:questionId` | No exact source handler; fails closed | — |
-| 32 | Other | POST | `/customer/sync-refund` | No exact source handler; fails closed | — |
-| 33 | Admin / configuration | POST | `/admin/sync-refund` | No exact source handler; fails closed | — |
+| 30 | Admin / configuration | POST | `/admin/retry-refund` | Exact legacy Question refund retry route | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
+| 31 | Admin / configuration | GET | `/admin/refund-trace/:questionId` | Exact source route; admin-only refund trace | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
+| 32 | Other | POST | `/customer/sync-refund` | Exact source route; customer ownership checked | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
+| 33 | Admin / configuration | POST | `/admin/sync-refund` | Exact source Question refund sync route | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
 | 34 | Admin / configuration | POST | `/admin/reallocate-question` | No exact source handler; fails closed | — |
 | 35 | Admin / configuration | POST | `/admin/edit-question` | No exact source handler; fails closed | — |
 | 36 | Admin / configuration | POST | `/admin/takeover-answer` | No exact source handler; fails closed | — |
@@ -178,24 +182,24 @@ Actual local-D1 tests now prove configured capacity under independent concurrent
 | 79 | Admin / configuration | POST | `/admin/private-consultation/set-workflow` | No exact source handler; fails closed | — |
 | 80 | Admin / configuration | POST | `/admin/private-consultation/approve-question` | No exact source handler; fails closed | — |
 | 81 | Admin / configuration | POST | `/admin/private-consultation/reject-question` | No exact source handler; fails closed | — |
-| 82 | Admin / configuration | POST | `/admin/private-consultation/retry-refund` | No exact source handler; fails closed | — |
-| 83 | Admin / configuration | POST | `/admin/private-consultation/sync-refund` | No exact source handler; fails closed | — |
+| 82 | Admin / configuration | POST | `/admin/private-consultation/retry-refund` | Exact source route; Staging-only feature gate | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
+| 83 | Admin / configuration | POST | `/admin/private-consultation/sync-refund` | Exact source route; Staging-only feature gate | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
 | 84 | Appointments / Q&A / consultations | GET | `/astrologer/private-consultations` | No exact source handler; fails closed | — |
 | 85 | Appointments / Q&A / consultations | POST | `/astrologer/private-consultation/submit-answer` | No exact source handler; fails closed | — |
 | 86 | Admin / configuration | POST | `/admin/private-consultation/approve-answer` | No exact source handler; fails closed | — |
 | 87 | Admin / configuration | POST | `/admin/private-consultation/reject-answer` | No exact source handler; fails closed | — |
-| 88 | Appointments / Q&A / consultations | POST | `/private-consultation/create-order` | No exact source handler; fails closed | — |
-| 89 | Appointments / Q&A / consultations | POST | `/private-consultation/retry-payment` | No exact source handler; fails closed | — |
-| 90 | Appointments / Q&A / consultations | POST | `/private-consultation/cancel-payment` | No exact source handler; fails closed | — |
-| 91 | Appointments / Q&A / consultations | POST | `/private-consultation/recover-payment` | No exact source handler; fails closed | — |
-| 92 | Appointments / Q&A / consultations | POST | `/private-consultation/verify-payment` | No exact source handler; fails closed | — |
-| 93 | Payments / earnings / withdrawals | POST | `/create-order` | No exact source handler; fails closed | — |
-| 94 | Payments / earnings / withdrawals | POST | `/verify-payment` | No exact source handler; fails closed | — |
+| 88 | Appointments / Q&A / consultations | POST | `/private-consultation/create-order` | Exact source route; Staging-only legacy payment gate | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
+| 89 | Appointments / Q&A / consultations | POST | `/private-consultation/retry-payment` | Exact source route; Staging-only legacy payment gate | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
+| 90 | Appointments / Q&A / consultations | POST | `/private-consultation/cancel-payment` | Exact source route; Staging-only legacy payment gate | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
+| 91 | Appointments / Q&A / consultations | POST | `/private-consultation/recover-payment` | Exact source route; Staging-only legacy payment gate | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
+| 92 | Appointments / Q&A / consultations | POST | `/private-consultation/verify-payment` | Exact source route; Staging-only legacy payment gate | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
+| 93 | Payments / earnings / withdrawals | POST | `/create-order` | Exact Question order route; customer-owned question contract | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
+| 94 | Payments / earnings / withdrawals | POST | `/verify-payment` | Exact Question verification; captured provider payment required | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
 | 95 | Payments / earnings / withdrawals | GET | `/astrologer/earnings` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/live-session-routes.mjs:170` |
 | 96 | Payments / earnings / withdrawals | POST | `/astrologer/withdrawal-request` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/live-session-routes.mjs:179` |
 | 97 | Admin / configuration | POST | `/admin/withdrawal-mark-paid` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/live-session-routes.mjs:234` |
 | 98 | Admin / configuration | GET | `/admin/withdrawal-payout/:withdrawalDocId` | Source handler exists; production remains disabled / gated | `cloudflare/backend-api/src/live-session-routes.mjs:203` |
-| 99 | Payments / earnings / withdrawals | POST | `/razorpay/webhook` | No exact source handler; fails closed | — |
+| 99 | Payments / earnings / withdrawals | POST | `/razorpay/webhook` | Exact unified raw-body signature + D1 event-claim route | `cloudflare/backend-api/src/legacy-razorpay-routes.mjs` |
 | 100 | Horoscope / predictions | GET | `/horoscope-auth/session` | No exact source handler; fails closed | — |
 | 101 | Horoscope / predictions | GET | `/horoscope-feature-config` | No exact source handler; fails closed | — |
 | 102 | Admin / configuration | POST | `/admin/horoscope-feature-settings` | No exact source handler; fails closed | — |
