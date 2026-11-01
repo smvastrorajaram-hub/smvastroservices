@@ -1101,7 +1101,7 @@ export function registerLegacyRouteParityGapRoutes({
         return res.status(409).json({ success: false, error: 'Accept this booking in the Astrologer dashboard before starting it.' });
       }
       if (currentStatus === 'in_progress' && appointment.liveSessionId) {
-        const existing = await liveService.listSessions(uid, 'astrologer');
+        const existing = await liveService.listSessions({ uid, role: 'astrologer' });
         const session = (existing || []).find(item => String(item.id) === String(appointment.liveSessionId));
         if (session) return noStore(res).json({ success: true, alreadyProcessed: true, kind: 'session', session });
       }
