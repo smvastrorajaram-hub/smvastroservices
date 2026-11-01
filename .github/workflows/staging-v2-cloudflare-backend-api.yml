@@ -1,3 +1,4 @@
+# Staging-only workflow; Production resources and traffic are excluded.
 name: Staging v2 Cloudflare backend API deployment
 
 on:
