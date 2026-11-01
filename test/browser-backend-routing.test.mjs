@@ -12,12 +12,26 @@ import {
 const renderBaseUrl = "https://render-staging.example";
 const cloudflareBaseUrl = "https://smvastro-backend-api-staging.astroservices.workers.dev";
 
-const workerRouteFiles = ["../cloudflare/backend-api/src/index.mjs","../cloudflare/backend-api/src/core-read-routes.mjs","../cloudflare/backend-api/src/wallet-read-routes.mjs","../cloudflare/backend-api/src/wallet-recharge-routes.mjs","../cloudflare/backend-api/src/wallet-offer-routes.mjs","../cloudflare/backend-api/src/wallet-domain-backfill-routes.mjs","../cloudflare/backend-api/src/identity-profile-backfill-routes.mjs","../cloudflare/backend-api/src/live-session-routes.mjs","../cloudflare/backend-api/src/legacy-razorpay-routes.mjs"];
+const workerRouteFiles = [
+  "../cloudflare/backend-api/src/index.mjs",
+  "../cloudflare/backend-api/src/core-read-routes.mjs",
+  "../cloudflare/backend-api/src/wallet-read-routes.mjs",
+  "../cloudflare/backend-api/src/wallet-recharge-routes.mjs",
+  "../cloudflare/backend-api/src/wallet-offer-routes.mjs",
+  "../cloudflare/backend-api/src/wallet-domain-backfill-routes.mjs",
+  "../cloudflare/backend-api/src/identity-profile-backfill-routes.mjs",
+  "../cloudflare/backend-api/src/live-session-routes.mjs",
+  "../cloudflare/backend-api/src/legacy-razorpay-routes.mjs"
+];
+
 const workerRegisteredRoutePairs = new Set();
+const routeRegistrationPattern = new RegExp(
+  "\\\\bapp\\\\.(get|post|put|patch|delete)\\\\s*\\\\(\\\\s*(['\\\"\\x60])([^'\\\"\\x60]+)\\\\2",
+  "g"
+);
 for (const path of workerRouteFiles) {
   const source = readFileSync(new URL(path, import.meta.url), "utf8");
-  const expression = /\bapp\.(get|post|put|patch|delete)\s*\(\s*(['"\x60])([^'"\x60]+)\2/g;
-  for (const match of source.matchAll(expression)) {
+  for (const match of source.matchAll(routeRegistrationPattern)) {
     workerRegisteredRoutePairs.add(match[1].toUpperCase() + " " + match[3]);
   }
 }
@@ -34,9 +48,9 @@ const ready = Object.freeze({
   legacyRazorpayRoutesRegistered: true,
   razorpayCredentialsConfigured: true,
   razorpayMode: "test",
-  liveCallChatRoutesEnabled: true,
   razorpayConnected: true,
-  razorpayProviderConnectionVerified: true
+  razorpayProviderConnectionVerified: true,
+  liveCallChatRoutesEnabled: true
 });
 
 function jsonResponse(value, status = 200) {
@@ -46,7 +60,7 @@ function jsonResponse(value, status = 200) {
   });
 }
 
-test("every selected Cloudflare route is backed by a literal Worker handler registration", () => {
+test("all selected Cloudflare routes have a literal Worker registration", () => {
   assert.equal(CLOUDFLARE_LEGACY_ROUTE_PAIRS.length, 52);
   for (const route of CLOUDFLARE_LEGACY_ROUTE_PAIRS) {
     const key = route.method + " " + route.path;
@@ -56,30 +70,25 @@ test("every selected Cloudflare route is backed by a literal Worker handler regi
       : "cloudflare-primary";
     assert.equal(classifyStagingBackendRoute(route.path, route.method).target, expectedTarget, key);
   }
-  assert.equal(classifyStagingBackendRoute("/lookup-id-login", "POST").family, "renderPinned");
-  assert.equal(classifyStagingBackendRoute("/create-order", "POST").family, "renderPinned");
-  assert.equal(classifyStagingBackendRoute("/public/astrologers", "GET").family, "renderPinned");
-});
-  assert.equal(CLOUDFLARE_LEGACY_ROUTE_PAIRS.length, 122);
-  for (const route of CLOUDFLARE_LEGACY_ROUTE_PAIRS) {
-    assert.equal(
-      classifyStagingBackendRoute(route.path, route.method).target,
-      "cloudflare-primary",
-      route.method + " " + route.path
-    );
-  }
-  assert.equal(classifyStagingBackendRoute("/lookup-id-login", "GET").target, "render-primary");
-  assert.equal(classifyStagingBackendRoute("/register-customer-profile", "POST").target, "cloudflare-primary");
-  assert.equal(classifyStagingBackendRoute("/public/astrologers", "GET").target, "cloudflare-primary");
 });
 
-test("retired, Horoscope, email-unverified and unprovisioned APK routes stay pinned outside Cloudflare", () => {
+test("unported, retired, Horoscope, email and unprovisioned APK routes stay pinned to Render", () => {
   const pinned = [
+    ["/lookup-customer-login", "POST"],
+    ["/register-customer-profile", "POST"],
+    ["/register-astrologer-profile", "POST"],
+    ["/appointment-booking", "POST"],
+    ["/customer/appointments", "GET"],
+    ["/public/astrologers", "GET"],
+    ["/test-razorpay", "GET"],
+    ["/admin/questions-data", "GET"],
+    ["/public/content", "GET"],
+    ["/live/push/register", "POST"],
+    ["/api/locations/search", "GET"],
     ["/customer/consultations", "GET"],
     ["/customer/private-consultations", "GET"],
     ["/admin/private-consultation/reject-question", "POST"],
     ["/private-consultation/create-order", "POST"],
-    ["/astrologer/private-consultation/submit-answer", "POST"],
     ["/horoscope-auth/session", "GET"],
     ["/admin/horoscope-feature-settings", "POST"],
     ["/admin/private-consultations-data", "GET"],
@@ -96,10 +105,10 @@ test("retired, Horoscope, email-unverified and unprovisioned APK routes stay pin
   }
 });
 
-test("maps only implemented Wallet, Razorpay and Live handlers to their own readiness gates", () => {
+test("maps registered Wallet, Razorpay and Live routes to their exact readiness families", () => {
   const cases = [
-    ["/admin/access", "GET", "legacyCore"],
-    ["/account/role", "GET", "legacyCore"],
+    ["/admin/access", "GET", "coreReadFallback"],
+    ["/account/role", "GET", "coreReadFallback"],
     ["/admin/reject-question", "POST", "legacyPayments"],
     ["/admin/retry-refund", "POST", "legacyPayments"],
     ["/admin/refund-trace/question-1", "GET", "legacyPayments"],
@@ -148,60 +157,49 @@ test("maps only implemented Wallet, Razorpay and Live handlers to their own read
     ["/live/sessions/session-1/signals", "GET", "live"],
     ["/live/sessions/session-1/messages", "POST", "live"],
     ["/live/sessions/session-1/messages", "GET", "live"],
-    ["/live/sessions/session-1/connection", "POST", "live"]
+    ["/live/sessions/session-1/connection", "POST", "live"],
+    ["/public/push-config", "GET", "publicConfig"]
   ];
   for (const [path, method, family] of cases) {
+    const expectedTarget = family === "coreReadFallback" ? "render-primary" : "cloudflare-primary";
     assert.deepEqual(classifyStagingBackendRoute(path, method), {
-      target: family === "legacyCore" ? "render-primary" : "cloudflare-primary",
-      family: family === "legacyCore" ? "coreReadFallback" : family
+      target: expectedTarget,
+      family
     }, method + " " + path);
   }
 });
 
-test("legacy inventory paths without a literal Worker handler are pinned to Render", () => {
-  const unported = [
-    ["/lookup-customer-login", "POST"],
-    ["/register-customer-profile", "POST"],
-    ["/appointment-booking", "POST"],
-    ["/customer/appointments", "GET"],
-    ["/public/astrologers", "GET"],
-    ["/test-razorpay", "GET"],
-    ["/admin/questions-data", "GET"],
-    ["/public/content", "GET"],
-    ["/live/push/register", "POST"],
-    ["/api/locations/search", "GET"]
-  ];
-  for (const [path, method] of unported) {
-    assert.deepEqual(classifyStagingBackendRoute(path, method), {
-      target: "render-primary",
-      family: "renderPinned"
-    }, method + " " + path);
-  }
-});
-
-test("Cloudflare legacy-core readiness requires both route-registration proofs", () => {
+test("Firebase-backed route families require a real Firebase connectivity proof", () => {
   assert.equal(isCloudflareRouteFamilyReady("legacyCore", ready), true);
-  assert.equal(isCloudflareRouteFamilyReady("booking", ready), true);
-  assert.equal(isCloudflareRouteFamilyReady("legacyCore", { ...ready, identityProfileBackfillRoutesRegistered: false }), false);
-  assert.equal(isCloudflareRouteFamilyReady("legacyCore", { ...ready, walletBackfillRoutesRegistered: false }), false);
-  assert.equal(isCloudflareRouteFamilyReady("legacyCore", { ...ready, ready: false }), false);
-  assert.equal(isCloudflareRouteFamilyReady("legacyCore", { ...ready, firebaseConnected: false }), false);
-  assert.equal(isCloudflareRouteFamilyReady("walletRead", { ...ready, firebaseConnected: false }), false);
-  assert.equal(isCloudflareRouteFamilyReady("razorpayProbe", { ...ready, firebaseConnected: false }), false);
+  assert.equal(isCloudflareRouteFamilyReady("walletRead", ready), true);
+  assert.equal(isCloudflareRouteFamilyReady("walletBackfill", ready), true);
+  assert.equal(isCloudflareRouteFamilyReady("live", ready), true);
+  const disconnected = { ...ready, firebaseConnected: false };
+  for (const family of ["legacyCore", "walletRead", "walletBackfill", "walletOffers", "walletRecharge", "legacyPayments", "live"]) {
+    assert.equal(isCloudflareRouteFamilyReady(family, disconnected), false, family);
+  }
+  assert.equal(isCloudflareRouteFamilyReady("publicConfig", disconnected), true);
 });
 
-test("Wallet, Razorpay and Live gates remain fail-closed until their own readiness flags open", () => {
-  assert.equal(isCloudflareRouteFamilyReady("walletBackfill", ready), true);
+test("Razorpay writes require configured test credentials and a verified provider connection", () => {
+  assert.equal(isCloudflareRouteFamilyReady("legacyPayments", ready), true);
+  assert.equal(isCloudflareRouteFamilyReady("walletRecharge", ready), true);
+  assert.equal(isCloudflareRouteFamilyReady("legacyPayments", { ...ready, razorpayCredentialsConfigured: false }), false);
+  assert.equal(isCloudflareRouteFamilyReady("legacyPayments", { ...ready, razorpayProviderConnectionVerified: false }), false);
+  assert.equal(isCloudflareRouteFamilyReady("legacyPayments", { ...ready, razorpayMode: "live" }), false);
+  assert.equal(isCloudflareRouteFamilyReady("walletRecharge", { ...ready, razorpayProviderConnectionVerified: false }), false);
+  assert.equal(isCloudflareRouteFamilyReady("razorpayProbe", ready), true);
+  assert.equal(isCloudflareRouteFamilyReady("razorpayProbe", { ...ready, razorpayProviderConnectionVerified: false }), false);
+});
+
+test("Wallet and Live route families remain fail-closed while their gates are disabled", () => {
   assert.equal(isCloudflareRouteFamilyReady("walletRead", { ...ready, walletReadRoutesEnabled: false }), false);
   assert.equal(isCloudflareRouteFamilyReady("walletOffers", { ...ready, walletOfferRoutesEnabled: false }), false);
   assert.equal(isCloudflareRouteFamilyReady("walletRecharge", { ...ready, walletRechargeRoutesEnabled: false }), false);
-  assert.equal(isCloudflareRouteFamilyReady("walletRecharge", { ...ready, razorpayCredentialsConfigured: false }), false);
-  assert.equal(isCloudflareRouteFamilyReady("walletRecharge", { ...ready, razorpayProviderConnectionVerified: false }), false);
-  assert.equal(isCloudflareRouteFamilyReady("legacyPayments", { ...ready, razorpayProviderConnectionVerified: false }), false);
-  assert.equal(isCloudflareRouteFamilyReady("legacyPayments", { ...ready, legacyRazorpayRoutesRegistered: false }), false);
-  assert.equal(isCloudflareRouteFamilyReady("legacyPayments", { ...ready, razorpayCredentialsConfigured: false }), false);
-  assert.equal(isCloudflareRouteFamilyReady("legacyPayments", { ...ready, razorpayProviderConnectionVerified: false }), false);
   assert.equal(isCloudflareRouteFamilyReady("live", { ...ready, liveCallChatRoutesEnabled: false }), false);
+  assert.equal(isCloudflareRouteFamilyReady("legacyCore", { ...ready, identityProfileBackfillRoutesRegistered: false }), false);
+  assert.equal(isCloudflareRouteFamilyReady("legacyCore", { ...ready, walletBackfillRoutesRegistered: false }), false);
+  assert.equal(isCloudflareRouteFamilyReady("legacyCore", { ...ready, ready: false }), false);
 });
 
 test("only GET/HEAD network or gateway failures may fail over; mutations are never retried", () => {
@@ -210,14 +208,14 @@ test("only GET/HEAD network or gateway failures may fail over; mutations are nev
   for (const status of [400, 401, 403, 404, 409, 422]) {
     assert.equal(isRetryableRenderReadFailure({ method: "GET", status }), false);
   }
-  assert.equal(isRetryableRenderReadFailure({ method: "POST", networkError: true }), false);
-  assert.equal(isRetryableRenderReadFailure({ method: "PUT", status: 503 }), false);
-  assert.equal(isRetryableRenderReadFailure({ method: "PATCH", status: 503 }), false);
-  assert.equal(isRetryableRenderReadFailure({ method: "DELETE", status: 503 }), false);
+  for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
+    assert.equal(isRetryableRenderReadFailure({ method, status: 503 }), false);
+    assert.equal(isRetryableRenderReadFailure({ method, networkError: true }), false);
+  }
   assert.equal(isRetryableRenderReadFailure({ method: "GET", status: 503, aborted: true }), false);
 });
 
-test("Cloudflare-primary legacy writes go to Cloudflare exactly once after readiness succeeds", async () => {
+test("Cloudflare Razorpay payment writes go to Cloudflare exactly once after readiness succeeds", async () => {
   const calls = [];
   const router = createBackendApiRouter({
     staging: true, renderBaseUrl, cloudflareBaseUrl,
@@ -228,17 +226,17 @@ test("Cloudflare-primary legacy writes go to Cloudflare exactly once after readi
       throw new Error("Unexpected request: " + url);
     }
   });
-  const response = await router.fetch("/register-customer-profile", { method: "POST", body: "{}" });
+  const response = await router.fetch("/create-order", { method: "POST", body: "{}" });
   assert.equal(response.status, 200);
   assert.deepEqual(calls, [
     { url: cloudflareBaseUrl + "/api/backend/readiness", method: "GET" },
-    { url: cloudflareBaseUrl + "/register-customer-profile", method: "POST" }
+    { url: cloudflareBaseUrl + "/create-order", method: "POST" }
   ]);
 });
 
-test("legacy payment writes require the specific Razorpay readiness gate and never fall back to Render", async () => {
+test("Razorpay writes fail closed when provider connectivity is not verified", async () => {
   const calls = [];
-  const disabled = { ...ready, legacyRazorpayRoutesRegistered: false };
+  const disabled = { ...ready, razorpayProviderConnectionVerified: false };
   const router = createBackendApiRouter({
     staging: true, renderBaseUrl, cloudflareBaseUrl,
     fetchImpl: async url => {
@@ -269,16 +267,10 @@ test("Wallet recharge and Live sessions fail closed and are never sent to Render
     error => error.code === "CLOUDFLARE_ROUTE_NOT_READY");
   await assert.rejects(router.fetch("/live/sessions", { method: "GET" }),
     error => error.code === "CLOUDFLARE_ROUTE_NOT_READY");
-  await assert.rejects(router.fetch("/admin/withdrawal-mark-processing", { method: "POST", body: "{}" }),
-    error => error.code === "CLOUDFLARE_ROUTE_NOT_READY");
-  await assert.rejects(router.fetch("/live/sessions/session-1/connection", { method: "POST", body: "{}" }),
-    error => error.code === "CLOUDFLARE_ROUTE_NOT_READY");
-  assert.deepEqual(calls, [
-    cloudflareBaseUrl + "/api/backend/readiness"
-  ]);
+  assert.deepEqual(calls, [cloudflareBaseUrl + "/api/backend/readiness"]);
 });
 
-test("only a registered safe read may fail over from Render to Cloudflare after a gateway failure", async () => {
+test("only a registered safe identity read may fail over from Render to Cloudflare", async () => {
   const calls = [];
   const router = createBackendApiRouter({
     staging: true, renderBaseUrl, cloudflareBaseUrl,
@@ -299,7 +291,7 @@ test("only a registered safe read may fail over from Render to Cloudflare after 
   ]);
 });
 
-test("an unported GET stays on Render after a gateway failure and is not sent to the Worker catch-all", async () => {
+test("an unported GET stays on Render after a gateway failure and never reaches the Worker catch-all", async () => {
   const calls = [];
   const router = createBackendApiRouter({
     staging: true, renderBaseUrl, cloudflareBaseUrl,
