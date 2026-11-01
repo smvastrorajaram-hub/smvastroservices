@@ -1633,11 +1633,11 @@ function smvBindCustomerWallet({load=true}={}){
     smvWalletSetMessage('Recharge order ready. Opening secure Razorpay Checkout…');
     const prefillName=String(window.__smvCustomerProfileName||currentUser.displayName||'').trim();
     const prefillEmail=String(currentUser.email||'').trim();
-    const prefillContact=String(window.__smvCustomerProfilePhone||currentUser.phoneNumber||'').replace(/[\\s().-]/g,'');
+    const prefillContact=String(window.__smvCustomerProfilePhone||currentUser.phoneNumber||'').replace(/[\s().-]/g,'');
     const checkoutPrefill={
      ...(prefillName?{name:prefillName}:{}),
      ...(prefillEmail?{email:prefillEmail}:{}),
-     ...( /^\\+?\\d{7,15}$/.test(prefillContact)?{contact:prefillContact}: {})
+     ...( /^\+?\d{7,15}$/.test(prefillContact)?{contact:prefillContact}: {})
     };
     const checkout=new RazorpayCtor({
      key:order.keyId,amount:Number(order.amount),currency:String(order.currency||'INR'),
