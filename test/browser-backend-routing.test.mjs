@@ -25,10 +25,7 @@ const workerRouteFiles = [
 ];
 
 const workerRegisteredRoutePairs = new Set();
-const routeRegistrationPattern = new RegExp(
-  "\\\\bapp\\\\.(get|post|put|patch|delete)\\\\s*\\\\(\\\\s*(['\\\"\\x60])([^'\\\"\\x60]+)\\\\2",
-  "g"
-);
+const routeRegistrationPattern = /\\bapp\\.(get|post|put|patch|delete)\\s*\\(\\s*(['"])([^'"]+)\\2/g;
 for (const path of workerRouteFiles) {
   const source = readFileSync(new URL(path, import.meta.url), "utf8");
   for (const match of source.matchAll(routeRegistrationPattern)) {
