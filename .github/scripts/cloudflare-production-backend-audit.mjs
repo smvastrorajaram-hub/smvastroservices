@@ -31,7 +31,7 @@ function pair(route) {
 
 function parseSourceRoutes(source, file) {
   const results = [];
-  const routePattern = /\\bapp\\.(get|post|put|patch|delete|options|all)\\(\\s*(['"])([^'"]+)\\2/g;
+  const routePattern = /\bapp\.(get|post|put|patch|delete|options|all)\(\s*(['"`])([^'"`]+)\2/g;
   let match;
   while ((match = routePattern.exec(source)) !== null) {
     results.push({
@@ -153,7 +153,7 @@ async function main() {
     'Production D1: `smvastro-wallet-production` (' + PRODUCTION_DATABASE_ID + ')',
     'This job performs source/config inspection only. It does not contact Cloudflare, deploy, migrate, import data, or change traffic.',
     ''
-  ].join('\\n');
+  ].join('\n');
 
   if (process.env.GITHUB_STEP_SUMMARY) {
     await appendFile(process.env.GITHUB_STEP_SUMMARY, markdown, 'utf8');
