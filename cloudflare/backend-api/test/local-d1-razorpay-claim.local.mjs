@@ -117,7 +117,9 @@ function makeD1Binding(sqlite) {
 
 test('local D1 atomically grants one claim to concurrent duplicate webhook deliveries', async () => {
   const { sqlite, file: dbPath } = await openMigratedLocalD1();
+  const db = makeD1Binding(sqlite);
   const nowMs = Date.now();
+  const adapter = createD1WalletAdapter({ db, now: () => nowMs });
   const eventKey = 'parallel_event_' + crypto.randomUUID();
 
   try {
