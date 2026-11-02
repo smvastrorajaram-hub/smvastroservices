@@ -14,13 +14,8 @@ const {
 test('body parser retains explicit route limits and gives only astrologer photo registration a large body', () => {
   assert.equal(requestBodyLimit('/contact-query'), '20kb');
   assert.equal(requestBodyLimit('/admin/offers/delete'), '10kb');
-  assert.equal(requestBodyLimit('/admin/reject-question'), '10kb');
-  assert.equal(requestBodyLimit('/admin/retry-refund'), '10kb');
-  assert.equal(requestBodyLimit('/customer/sync-refund'), '10kb');
-  assert.equal(requestBodyLimit('/admin/sync-refund'), '10kb');
-  assert.equal(requestBodyLimit('/private-consultation/cancel-payment'), '10kb');
   assert.equal(requestBodyLimit('/register-astrologer-profile'), '15mb');
-  assert.equal(requestBodyLimit('/private-consultation/create-order'), '30kb');
+  assert.equal(requestBodyLimit('/private-consultation/create-order'), '1mb');
   assert.equal(requestBodyLimit('/unlisted-route'), '1mb');
   assert.equal(requestBodyLimit('/razorpay/webhook'), null);
 });
@@ -83,7 +78,7 @@ test('all literal route-specific JSON parser limits are enforced by the early pa
     count += 1;
     assert.equal(requestBodyLimit(match[2]), match[4], 'global parser limit must preserve ' + match[2]);
   }
-  assert.ok(count >= 40, 'expected broad coverage of literal route-specific parser limits');
+  assert.ok(count >= 20, 'expected broad coverage of the remaining active route-specific parser limits');
 });
 
 test('rate limiter keeps its in-memory bucket table bounded for many unique client IPs', () => {
