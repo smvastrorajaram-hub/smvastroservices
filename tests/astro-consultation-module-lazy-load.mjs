@@ -16,7 +16,7 @@ test('consultation loader lazy-imports once and recovers a direct consultation l
   assert.match(loader, /import\(MODULE_URL\)/);
   assert.match(loader, /if\(pending\)return pending/);
   assert.match(loader, /smv:consult-open/);
-  assert.match(loader, /getElementById\\('consult'\\)/);
+  assert.match(loader, /getElementById\('consult'\)/);
   assert.equal(loader.includes('private-consultation'), false);
   assert.match(loader, /params\.get\('view'\)==='consult'/);
   assert.match(loader, /__smvEnsureConsultationModule/);
@@ -25,7 +25,7 @@ test('consultation loader lazy-imports once and recovers a direct consultation l
 test('router makes the consultation section visible before dispatching its load event', async () => {
   const router = await read('public-navigation.js');
   const visible = router.indexOf("target.classList.remove('hidden');");
-  const event = router.indexOf("window.dispatchEvent(new Event('smv:private-consultation-open'))");
+  const event = router.indexOf("window.dispatchEvent(new Event('smv:consult-open'))");
   assert.ok(visible >= 0 && event > visible);
 });
 
