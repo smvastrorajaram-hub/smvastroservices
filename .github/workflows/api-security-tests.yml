@@ -9,6 +9,9 @@ on:
       - 'test/verification-email.test.js'
       - 'test/api-security.test.js'
       - 'server.js'
+      - 'public/smvastro.mjs'
+      - 'public/verification-auth-state.mjs'
+      - 'test/verification-auth-state.test.mjs'
       - '.github/workflows/api-security-tests.yml'
   push:
     branches: [main]
@@ -40,8 +43,13 @@ jobs:
           node --check server.js
           node --check test/api-security.test.js
           node --check test/verification-email.test.js
+          node --check public/smvastro.mjs
+          node --check public/verification-auth-state.mjs
+          node --check test/verification-auth-state.test.mjs
       - name: Verify request policy and custom verification links
         run: node --test test/api-security.test.js test/verification-email.test.js
+      - name: Verify resend authentication state guard
+        run: node --test test/verification-auth-state.test.mjs
       - name: Install isolated Express runtime for HTTP integration tests
         run: npm install --prefix "${RUNNER_TEMP}/api-security-deps" --no-save --no-package-lock express@4.21.2
       - name: Verify actual HTTP 413, CORS, HMAC and 429 behavior
