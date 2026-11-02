@@ -28,7 +28,7 @@ function buildCustomVerificationHandlerUrl(generatedLink, { language = 'en' } = 
   if (apiKey !== FIREBASE_WEB_API_KEY) {
     throw new Error('Firebase returned an action link for an unexpected project API key.');
   }
-  const normalizedLanguage = String(language || 'en').toLowerCase().startsWith('ta') ? 'ta' : 'en';
+  const normalizedLanguage = 'en';
   const target = new URL(CUSTOM_VERIFICATION_HANDLER_URL);
   target.searchParams.set('mode', 'verifyEmail');
   target.searchParams.set('oobCode', actionCode);
@@ -54,19 +54,14 @@ function createVerificationEmail({ verificationUrl } = {}) {
     throw new Error('A valid SMV ASTRO custom verification URL is required.');
   }
   const safeUrl = escapeHtml(parsed.toString());
-  const subject = 'Verify your SMV ASTRO account | உங்கள் SMV ASTRO கணக்கை உறுதிப்படுத்தவும்';
+  const subject = 'Verify your SMV ASTRO account';
   const text = [
     'Hello,',
     '',
     'Please verify your SMV ASTRO email address by opening this secure link:',
     parsed.toString(),
     '',
-    'வணக்கம்,',
-    'உங்கள் SMV ASTRO மின்னஞ்சல் முகவரியை உறுதிப்படுத்த கீழே உள்ள பாதுகாப்பான இணைப்பைத் திறக்கவும்:',
-    parsed.toString(),
-    '',
     'This link can be used once. If you did not create this account, you can ignore this email.',
-    'இந்த இணைப்பை ஒருமுறை மட்டுமே பயன்படுத்த முடியும். நீங்கள் இந்தக் கணக்கை உருவாக்கவில்லை என்றால், இந்த மின்னஞ்சலைப் புறக்கணிக்கலாம்.',
     '',
     'SMV ASTRO SERVICES'
   ].join('\n');
@@ -79,10 +74,8 @@ function createVerificationEmail({ verificationUrl } = {}) {
     '    <p style="margin:0 0 20px;color:#805b27;font-size:13px;font-weight:700;letter-spacing:2px">SMV ASTRO SERVICES</p>',
     '    <h1 style="font-size:23px;line-height:1.3">Verify your email address</h1>',
     '    <p style="line-height:1.6">Please confirm that this email address belongs to you by using the secure button below.</p>',
-    '    <h2 style="font-size:20px;line-height:1.4">உங்கள் மின்னஞ்சலை உறுதிப்படுத்தவும்</h2>',
-    '    <p style="line-height:1.8">இந்த மின்னஞ்சல் முகவரி உங்களுடையது என்பதை உறுதிப்படுத்த, கீழே உள்ள பாதுகாப்பான பொத்தானை அழுத்தவும்.</p>',
-    '    <p style="margin:28px 0"><a href="' + safeUrl + '" style="display:inline-block;padding:14px 22px;border-radius:9px;background:#6f4b1d;color:#fff;text-decoration:none;font-weight:700">Verify Email · மின்னஞ்சலை உறுதிப்படுத்தவும்</a></p>',
-    '    <p style="font-size:13px;line-height:1.6;color:#62594d">This secure link can be used once. If you did not create this account, ignore this email.<br>இந்தப் பாதுகாப்பான இணைப்பை ஒருமுறை மட்டுமே பயன்படுத்த முடியும். நீங்கள் இந்தக் கணக்கை உருவாக்கவில்லை என்றால், இந்த மின்னஞ்சலைப் புறக்கணிக்கலாம்.</p>',
+    '    <p style="margin:28px 0"><a href="' + safeUrl + '" style="display:inline-block;padding:14px 22px;border-radius:9px;background:#6f4b1d;color:#fff;text-decoration:none;font-weight:700">Verify Email</a></p>',
+    '    <p style="font-size:13px;line-height:1.6;color:#62594d">This secure link can be used once. If you did not create this account, ignore this email.</p>',
     '    <p style="margin:24px 0 0;color:#746a5c;font-size:12px">SMV ASTRO SERVICES</p>',
     '  </main>',
     '</body>',
