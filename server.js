@@ -39,6 +39,16 @@ if (!admin.apps.length) {
 }
 const db = admin.firestore();
 const FieldValue = admin.firestore.FieldValue;
+const RAZORPAY_KEY_ID = String(process.env.RAZORPAY_KEY_ID || "").trim();
+const RAZORPAY_KEY_SECRET = String(process.env.RAZORPAY_KEY_SECRET || "").trim();
+const ADMIN_EMAIL = String(process.env.ADMIN_EMAIL || "").trim();
+const RESEND_API_KEY = String(process.env.RESEND_API_KEY || "").trim();
+const RESEND_FROM = String(process.env.RESEND_FROM || "onboarding@resend.dev").trim();
+const RESEND_TEST_RECIPIENT = String(process.env.RESEND_TEST_RECIPIENT || ADMIN_EMAIL || "").trim();
+
+const PHONE_VERIFICATION_MODE = String(process.env.PHONE_VERIFICATION_MODE || "email_unique").trim().toLowerCase();
+const WHATSAPP_OTP_PROVIDER = String(process.env.WHATSAPP_OTP_PROVIDER || "").trim().toLowerCase();
+
 const multiProjectFirestore=initializeMultiProjectFirestore({admin,primaryDb:db,env:process.env});
 // Project 5 becomes authoritative for the whole active Wallet + Call/Chat billing domain
 // only after the source integration gate, backfill, and dependency checks are all verified.
