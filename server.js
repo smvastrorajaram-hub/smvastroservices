@@ -413,7 +413,7 @@ app.post("/auth/send-password-reset-email", async (req, res) => {
   }
 
   const email = String(req.body?.email || "").trim().toLowerCase();
-  if (email.length > 254 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return genericResponse();
+  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return genericResponse();
 
   // Hash before using the address as a limiter key; no raw email is retained in
   // the limiter. The route also has a separate per-IP request policy.
