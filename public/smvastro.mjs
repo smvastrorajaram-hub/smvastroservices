@@ -199,6 +199,7 @@ function smvVerificationLanguage(){
 }
 async function smvSendVerificationEmail(user){
   if(!user)throw new Error("A signed-in Firebase account is required.");
+  auth.languageCode="en";
   if(IS_SMV_PHASE1_STAGING){
     await withTimeout(sendEmailVerification(user),15000);
     return {success:true,sent:true,provider:"firebase-staging"};
