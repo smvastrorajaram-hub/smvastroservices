@@ -105,6 +105,7 @@ function ratePolicyForRequest(req) {
   }
   if (method !== 'POST') return null;
   if (path === '/auth/send-verification-email') return { name: 'verification-email', windowMs: 15 * 60_000, max: 5 };
+  if (path === '/auth/send-password-reset-email') return { name: 'password-reset-email', windowMs: 15 * 60_000, max: 5 };
   if (path === '/lookup-customer-login' || path === '/lookup-id-login') {
     return { name: 'identity-lookup', windowMs: 15 * 60_000, max: 30 };
   }
