@@ -261,7 +261,7 @@ app.use(createRequestBodyParser(express));
 // write after the response has finished so it never delays Razorpay/payment or
 // any other request's critical path.
 const DASHBOARD_SIGNAL_PATHS=new Set([
-  '/register-customer-profile','/register-astrologer-profile','/customer/submit-review',
+  '/register-customer-profile','/register-astrologer-profile',
   '/admin/appointment-status','/admin/approve-astrologer','/admin/reject-astrologer',
   '/admin/astrologer-pricing','/admin/astrologer-languages','/admin/astrologer-profile-description',
   '/admin/astrologer-profile-permission','/admin/content/save','/admin/content/toggle','/admin/content/delete',
@@ -852,6 +852,14 @@ async function writeAdminAudit(action, questionId, userId, details = {}) {
   }
 }
 
+function scheduledBookingReadStatus(appointment, nowMs = Date.now()) {
+  const a = appointment || {};
+  const status = String(a.bookingStatus || 'requested').toLowerCase();
+  if (!['requested', 'accepted'].includes(status) || a.liveSessionId) return status;
+  const deadline = scheduledAppointmentStartDeadlineMs(a);
+  return deadline > 0 && Number(nowMs) >= deadline ? 'missed_by_astrologer' : status;
+}
+
 app.get("/astrologer/appointments", async (req,res)=>{
   const user=await requireUser(req,res);
   if(!user)return;
@@ -1203,10 +1211,8 @@ app.get("/public/astrologers/:astrologerId/reviews", async(req,res)=>{
     // astrologer-document read. The public directory itself exposes approved astrologers.
     // One indexed equality query only. Filter approval in memory so this
     // endpoint does not depend on a Firestore composite index.
-    // Reviews are keyed as `${questionId}_${customerUid}`. Public review lookup
-    // stays bounded and index-free: use the astrologer field equality query first.
-    // If an old project has no usable field index, return the actual backend error
-    // to the browser instead of hiding it behind a generic message.
+    // Keep the public profile review read bounded and index-free. This is a read-only
+    // display of approved historical profile reviews; Q&A question-based submission is retired.
     const snap=await sharedPublicRead("reviews:"+astrologerId,()=>db.collection("smv_reviews").where("astrologerId","==",astrologerId).limit(100).get());
     const reviews=snap.docs
       .map(d=>({id:d.id,...d.data()}))
@@ -1216,221 +1222,8 @@ app.get("/public/astrologers/:astrologerId/reviews", async(req,res)=>{
     return res.json({success:true,astrologerId,reviews});
    }catch(e){console.error("Public astrologer reviews load failed:",e);return res.status(500).json({error:e?.message||"Unable to load astrologer reviews.",code:e?.code||"REVIEWS_LOAD_FAILED"});}
 });
-// ============================================================
-// CUSTOMER REVIEW API
-// Server-side review submission — avoids Firestore client
-// permission problems and prevents duplicate reviews.
-// ============================================================
-
-app.get("/customer/reviews", async (req, res) => {
-  const user = await requireUser(req, res);
-  if (!user) return;
-
-  try {
-    const snap = await db.collection("smv_reviews")
-      .where("customerId", "==", user.uid)
-      .limit(200)
-      .get();
-
-    const reviews = snap.docs
-      .map(d => ({
-        id: d.id,
-        questionId: String(d.data()?.questionId || "")
-      }))
-      .filter(x => x.questionId);
-
-    return res.json({
-      success: true,
-      reviews
-    });
-  } catch (e) {
-    console.error(
-      "Customer review status load failed:",
-      e?.message || e
-    );
-
-    return res.status(500).json({
-      error: e?.message || "Unable to load customer review status."
-    });
-  }
-});
-
-
-app.post("/customer/submit-review", async (req, res) => {
-  const user = await requireUser(req, res);
-  if (!user) return;
-
-  const questionId =
-    String(req.body?.questionId || "").trim();
-
-  const astrologerId =
-    String(req.body?.astrologerId || "").trim();
-
-  const rating =
-    Number(req.body?.rating);
-
-  const review =
-    String(req.body?.review || "").trim();
-
-  try {
-
-    if (!questionId || !astrologerId) {
-      return res.status(400).json({
-        error: "Consultation information is missing."
-      });
-    }
-
-    if (
-      !Number.isInteger(rating) ||
-      rating < 1 ||
-      rating > 5
-    ) {
-      return res.status(400).json({
-        error: "Please select a rating from 1 to 5."
-      });
-    }
-
-    if (!review) {
-      return res.status(400).json({
-        error: "Please write your review."
-      });
-    }
-
-    const questionRef =
-      db.collection("smv_questions").doc(questionId);
-
-    const questionSnap =
-      await questionRef.get();
-
-    if (!questionSnap.exists) {
-      return res.status(404).json({
-        error: "Consultation not found."
-      });
-    }
-
-    const q = questionSnap.data() || {};
-
-    // Customer ownership check
-    if (
-      String(q.customerId || "") !==
-      String(user.uid)
-    ) {
-      return res.status(403).json({
-        error: "You are not allowed to review this consultation."
-      });
-    }
-
-    // Review is allowed only after final answer
-    if (String(q.status || "") !== "answered") {
-      return res.status(409).json({
-        error: "You can review only after the answer has been approved."
-      });
-    }
-
-    // Astrologer check
-    if (
-      String(q.astrologerId || "") !==
-      astrologerId
-    ) {
-      return res.status(409).json({
-        error: "Astrologer information does not match."
-      });
-    }
-
-    // One review per customer + question
-    const reviewId =
-      `${questionId}_${user.uid}`;
-
-    const reviewRef =
-      db.collection("smv_reviews").doc(reviewId);
-
-    const existing =
-      await reviewRef.get();
-
-    // Already reviewed
-    if (existing.exists) {
-
-      await questionRef.set({
-        reviewed: true,
-        reviewSubmittedAt:
-          q.reviewSubmittedAt ||
-          FieldValue.serverTimestamp()
-      }, {
-        merge: true
-      });
-
-      return res.json({
-        success: true,
-        alreadySubmitted: true,
-        reviewId
-      });
-    }
-
-    // Create review
-    await reviewRef.set({
-
-      questionId,
-
-      customerId: user.uid,
-
-      customerName:
-        q.customerName ||
-        q.birthName ||
-        "Customer",
-
-      astrologerId,
-
-      astrologerName:
-        q.astrologerName ||
-        "Astrologer",
-
-      rating,
-
-      review,
-
-      verified: true,
-
-      approved: false,
-
-      status: "pending",
-
-      createdAt:
-        FieldValue.serverTimestamp()
-
-    });
-
-    // Mark consultation as reviewed
-    await questionRef.set({
-
-      reviewed: true,
-
-      reviewSubmittedAt:
-        FieldValue.serverTimestamp()
-
-    }, {
-      merge: true
-    });
-
-    return res.json({
-      success: true,
-      alreadySubmitted: false,
-      reviewId
-    });
-
-  } catch (e) {
-
-    console.error(
-      "Customer review submission failed:",
-      e?.message || e
-    );
-
-    return res.status(500).json({
-      error:
-        e?.message ||
-        "Unable to submit review."
-    });
-  }
-});
+// Historical approved Astrologer reviews remain readable through the public profile endpoint above.
+// Customer review submission tied to retired Q&A question IDs has been removed.
 
 app.get("/admin/appointments", async(req,res)=>{
   const user=await requireUser(req,res); if(!user)return; if(!(await isAdminUser(user)))return res.status(403).json({error:"Admin access required."});
