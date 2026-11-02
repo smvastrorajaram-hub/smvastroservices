@@ -13,6 +13,7 @@ on:
       - 'test/live-push-notifications.test.js'
       - 'public/sw.js'
       - 'test/wallet-service.test.js'
+      - 'deployment-environment.js'
       - 'answer-credit.js'
       - 'test/staging-quota-read-reduction.test.cjs'
       - 'server.js'
@@ -63,6 +64,7 @@ jobs:
         run: |
           node --check firestore-read-cache.js
           node --check test/firestore-read-cache.test.js
+          node --check deployment-environment.js
           node --check answer-credit.js
           node --check test/staging-quota-read-reduction.test.cjs
           node --check server.js

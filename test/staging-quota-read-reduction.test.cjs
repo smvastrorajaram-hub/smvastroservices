@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const createAnswerCredit = require('../answer-credit');
+const { isStagingDeployment } = require('../deployment-environment');
 
 const read = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
 
@@ -24,6 +25,30 @@ test('disabling the legacy answer-credit scheduler performs zero Firestore reads
 
   assert.equal(service.start({ enabled: false }), null);
   assert.equal(reads, 0);
+});
+
+test('Render Node.js default NODE_ENV=production does not hide the Staging service identity', () => {
+  assert.equal(isStagingDeployment({
+    NODE_ENV: 'production',
+    RENDER_SERVICE_NAME: 'smv-astro-phase1-staging',
+    RENDER_SERVICE_ID: 'srv-dbes0alg1s2s73dk7ie0'
+  }), true);
+});
+
+test('Production Render service names do not accidentally disable the legacy scheduler', () => {
+  assert.equal(isStagingDeployment({
+    NODE_ENV: 'production',
+    RENDER_SERVICE_NAME: 'smv-astro-phase1-production',
+    FIREBASE_PROJECT_ID: 'smv-astro'
+  }), false);
+});
+
+test('explicit staging Firebase project remains a valid staging signal', () => {
+  assert.equal(isStagingDeployment({
+    NODE_ENV: 'production',
+    FIREBASE_PROJECT_ID: 'smv-astro-staging',
+    RENDER_SERVICE_NAME: 'service'
+  }), true);
 });
 
 test('Staging disables only the legacy answer-credit scheduler while Production keeps it enabled', () => {
