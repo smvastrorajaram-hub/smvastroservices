@@ -3831,7 +3831,7 @@ if(firebaseInitError){
 
 // Phase 1 Live Call / Chat client. Prices and settlement remain server-owned.
 let smvLiveEventController=null,smvLiveEventUid='',smvLiveEventRetry=null,smvLiveCurrentSession=null,smvLivePanelSessionId='',smvLivePricingLoadedAt=0;
-let smvLivePeer=null,smvLiveLocalStream=null,smvLiveRemoteStream=null,smvLiveSignalTimer=null,smvLiveMessageTimer=null,smvLiveDashboardTimer=null,smvLiveClockTimer=null;
+let smvLivePeer=null,smvLiveLocalStream=null,smvLiveRemoteStream=null,smvLiveVideoSender=null,smvLiveRemoteVideoTrack=null,smvLiveCameraFacing='user',smvLiveSignalTimer=null,smvLiveMessageTimer=null,smvLiveDashboardTimer=null,smvLiveClockTimer=null;
 let smvLiveEventStreamConnected=false,smvLiveTransportPrimedSessionId='';
 let smvLiveDashboardStatusTimer=null;
 const smvLiveDashboardSessionsById=new Map();
@@ -4076,10 +4076,10 @@ function smvLivePanelHtml(s,incoming){
  const rootStyle='height:calc(100dvh - 60px - env(safe-area-inset-bottom));max-height:calc(100dvh - 60px - env(safe-area-inset-bottom));overflow:hidden;display:flex;flex-direction:column;overscroll-behavior:contain;box-sizing:border-box;width:100%;max-width:100%;min-width:0;padding:8px 10px;background:#fff8e7;color:#30251b;-webkit-text-fill-color:#30251b;border:1px solid #d4af37;border-radius:10px;overflow-wrap:anywhere;line-height:1.35';
  const primaryStyle='background:#5b2a86;color:#fff;-webkit-text-fill-color:#fff;border:1px solid #d4af37;border-radius:8px;padding:7px 10px;min-height:36px;max-width:100%;white-space:normal;font-weight:700';
  const secondaryStyle='background:#fffaf0;color:#30251b;-webkit-text-fill-color:#30251b;border:1px solid #c9b8e4;border-radius:8px;padding:7px 10px;min-height:36px;max-width:100%;white-space:normal;font-weight:700';
- return '<div id="smvLiveSessionPanel" class="smv-live-session-panel" data-live-session="'+escapeHtml(id)+'" style="'+rootStyle+'"><div class="smv-live-session-body" style="flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;box-sizing:border-box;padding-bottom:8px"><span class="badge" style="display:inline-block;background:#5b2a86;color:#fff;-webkit-text-fill-color:#fff;border:1px solid #d4af37;padding:4px 8px;border-radius:6px">'+(call?'LIVE VOICE CALL':'LIVE TEXT CHAT')+'</span>'+
+ return '<div id="smvLiveSessionPanel" class="smv-live-session-panel" data-live-session="'+escapeHtml(id)+'" style="'+rootStyle+'"><div class="smv-live-session-body" style="flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;box-sizing:border-box;padding-bottom:8px"><span class="badge" style="display:inline-block;background:#5b2a86;color:#fff;-webkit-text-fill-color:#fff;border:1px solid #d4af37;padding:4px 8px;border-radius:6px">'+(call?'LIVE VIDEO CALL':'LIVE TEXT CHAT')+'</span>'+
  '<div style="display:flex;justify-content:flex-end;margin-top:6px" '+(incoming&&String(window.__smvCurrentRole||'').toLowerCase()==='astrologer'?'':'hidden')+'><button id="smvLiveRingToggleSession" class="btn smv-modal-action" style="'+secondaryStyle+'" type="button">ENABLE RING SOUND</button></div>'+
  '<h2 style="color:#30251b;-webkit-text-fill-color:#30251b;font-size:1.25rem;line-height:1.3;margin:12px 0;padding-right:40px;margin:6px 0;font-size:1.15rem">SMV ASTRO — '+(call?'Call':'Chat')+' Session</h2><p style="color:#30251b;-webkit-text-fill-color:#30251b;margin:4px 0"><b>Astrologer:</b> '+escapeHtml(smvLiveName(s.astrologerName,s.astrologerFullName,s.astrologerDisplayName)||'Astrologer')+'</p><p style="color:#30251b;-webkit-text-fill-color:#30251b;margin:4px 0"><b>Customer:</b> '+escapeHtml(smvLiveName(s.customerName,s.customerFullName,s.customerDisplayName)||'Customer')+'</p><p style="color:#6b6257;-webkit-text-fill-color:#6b6257;margin:4px 0"><b>You:</b> '+escapeHtml(youName)+' · <b>Other participant:</b> '+escapeHtml(otherName)+'</p>'+(s.birthDetails?'<p style="color:#30251b;-webkit-text-fill-color:#30251b;overflow-wrap:anywhere"><b>Customer Birth Details:</b> '+escapeHtml([s.birthDetails.birthDate,s.birthDetails.birthTime,s.birthDetails.birthPlace].filter(Boolean).join(' · '))+'</p>':'')+'<p style="color:#30251b;-webkit-text-fill-color:#30251b;margin:4px 0"><b>Duration:</b> '+Number(s.minutes||1)+' minute(s) · <b>Rate:</b> '+smvLiveMoney(s.ratePerMinutePaise)+' / minute</p><p style="color:#30251b;-webkit-text-fill-color:#30251b;margin:4px 0"><b>Status:</b> <span id="smvLiveSessionStatus">'+escapeHtml(smvLiveSessionStatusLabel(s))+'</span></p><p class="small" id="smvLiveSessionBilling" style="color:#6b6257;-webkit-text-fill-color:#6b6257;overflow-wrap:anywhere">Reserved: '+smvLiveMoney(s.reservedAmountPaise)+' · Each started minute is charged.</p><p class="small" id="smvLiveSessionCountdown" style="color:#6b6257;-webkit-text-fill-color:#6b6257"></p>'+
- '<div id="smvLiveCallArea" '+(call&&['connecting','active'].includes(String(s.state||''))?'':'hidden')+' style="margin:6px 0;padding:8px;border:1px solid #d4af37;border-radius:10px;background:#fffaf0;color:#2d1919"><audio id="smvLiveRemoteAudio" autoplay playsinline></audio><p id="smvLiveVoiceStatus" class="small" role="status" aria-live="polite" style="color:#5a3026;-webkit-text-fill-color:#5a3026;font-size:.95rem;line-height:1.5">Microphone not connected. Allow microphone access when asked, then connect.</p><div class="action-row" style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn smv-modal-action" style="'+primaryStyle+'" type="button" id="smvLiveConnectMic" '+(connectable?'':'hidden')+'>'+(viewerIsCustomer?'CONNECT TO ASTROLOGER':'CONNECT CUSTOMER CALL / MICROPHONE')+'</button><button class="btn smv-modal-action gray" style="'+secondaryStyle+'" type="button" id="smvLiveMute" disabled>Mute microphone</button></div><div id="smvLiveAudioInputWrap" hidden style="align-items:center;flex-wrap:wrap;gap:8px;margin-top:10px;color:#30251b"><label for="smvLiveAudioInput" style="font-weight:700;font-size:.9rem">Microphone input</label><select id="smvLiveAudioInput" aria-label="Microphone input device" style="flex:1 1 180px;min-width:0;min-height:42px;box-sizing:border-box;padding:8px;border:1px solid #b9a17b;border-radius:8px;background:#fffaf0;color:#30251b"><option value="default">System default (phone / connected headset)</option></select><button class="btn smv-modal-action gray" style="'+secondaryStyle+'" type="button" id="smvLiveRefreshAudioInputs">REFRESH DEVICES</button><p class="small" style="flex:1 0 100%;margin:0;color:#5a3026">Select your connected headset, Bluetooth, earbuds or earphones microphone here.</p></div></div>'+
+ '<div id="smvLiveCallArea" '+(call&&['connecting','active'].includes(String(s.state||''))?'':'hidden')+' style="margin:6px 0;padding:8px;border:1px solid #d4af37;border-radius:10px;background:#fffaf0;color:#2d1919"><div id="smvLiveVideoArea" hidden style="position:relative;display:grid;gap:8px;margin-bottom:8px"><div id="smvLiveRemoteVideoWrap" hidden><video id="smvLiveRemoteVideo" autoplay playsinline muted style="display:block;width:100%;aspect-ratio:16/9;max-height:340px;object-fit:cover;background:#171717;border:1px solid #6b6257;border-radius:10px"></video><p class="small" style="margin:3px 0;color:#5a3026">Other participant</p></div><div id="smvLiveLocalVideoWrap" hidden><video id="smvLiveLocalVideo" autoplay playsinline muted style="display:block;width:100%;max-width:220px;aspect-ratio:16/9;object-fit:cover;background:#171717;border:1px solid #6b6257;border-radius:10px"></video><p class="small" style="margin:3px 0;color:#5a3026">You</p></div></div><audio id="smvLiveRemoteAudio" autoplay playsinline></audio><p id="smvLiveVoiceStatus" class="small" role="status" aria-live="polite" style="color:#5a3026;-webkit-text-fill-color:#5a3026;font-size:.95rem;line-height:1.5">Microphone not connected. Allow microphone access when asked, then connect.</p><div class="action-row" style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn smv-modal-action" style="'+primaryStyle+'" type="button" id="smvLiveConnectMic" '+(connectable?'':'hidden')+'>'+(viewerIsCustomer?'CONNECT TO ASTROLOGER':'CONNECT CUSTOMER CALL / MICROPHONE')+'</button><button class="btn smv-modal-action gray" style="'+secondaryStyle+'" type="button" id="smvLiveMute" disabled>Mute microphone</button><button class="btn smv-modal-action gray" style="'+secondaryStyle+'" type="button" id="smvLiveCameraToggle" hidden disabled>TURN CAMERA ON</button><button class="btn smv-modal-action gray" style="'+secondaryStyle+'" type="button" id="smvLiveSwitchCamera" hidden disabled>SWITCH CAMERA</button></div><div id="smvLiveAudioInputWrap" hidden style="align-items:center;flex-wrap:wrap;gap:8px;margin-top:10px;color:#30251b"><label for="smvLiveAudioInput" style="font-weight:700;font-size:.9rem">Microphone input</label><select id="smvLiveAudioInput" aria-label="Microphone input device" style="flex:1 1 180px;min-width:0;min-height:42px;box-sizing:border-box;padding:8px;border:1px solid #b9a17b;border-radius:8px;background:#fffaf0;color:#30251b"><option value="default">System default (phone / connected headset)</option></select><button class="btn smv-modal-action gray" style="'+secondaryStyle+'" type="button" id="smvLiveRefreshAudioInputs">REFRESH DEVICES</button><p class="small" style="flex:1 0 100%;margin:0;color:#5a3026">Select your connected headset, Bluetooth, earbuds or earphones microphone here.</p></div></div>'+
  '<div id="smvLiveIncomingActions" class="action-row" '+(inv?'':'hidden')+' style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0"><button class="btn smv-modal-action" style="'+primaryStyle+'" id="smvLiveAccept" type="button">ACCEPT '+(call?'CALL':'CHAT')+'</button><button class="btn smv-modal-action gray" style="'+secondaryStyle+'" id="smvLiveReject" type="button">REJECT</button></div>'+
  '<p id="smvLiveWaiting" class="small" '+(active||inv||s.state==='ended'?'hidden':'')+' style="color:#6b6257;-webkit-text-fill-color:#6b6257">'+(s.state==='preparing'?(viewerIsCustomer?'Astrologer Generating Your Horoscope...':'Please generate the Customer horoscope now. The Customer is waiting for you.'):(incoming?'Incoming request. Accept to continue.':'Waiting for the Astrologer to accept. Billing starts only after both participants connect.'))+'</p>'+
  '<div id="smvLiveConnectChatWrap" '+(chat&&s.state==='connecting'&&String(s.astrologerUid||'')===String(currentUser?.uid||'')?'':'hidden')+' style="margin:10px 0"><button class="btn smv-modal-action" style="'+primaryStyle+'" id="smvLiveConnectChat" type="button">CONNECT CUSTOMER CHAT NOW</button></div>'+'<div id="smvLiveChatArea" '+(chat&&active?'':'hidden')+' style="margin:6px 0;padding:8px;border:1px solid #d4af37;border-radius:10px;background:#fffaf0;color:#2d1919"><div id="smvLiveMessages" role="log" aria-live="polite" style="flex:1 1 auto;min-height:120px;max-height:none;overflow:auto;border:1px solid #c9b8a0;border-radius:8px;padding:10px;background:#fffaf0;color:#30251b;overflow-wrap:anywhere"><p class="small" style="color:#62483b">Loading chat history…</p></div><form id="smvLiveMessageForm" style="display:grid;gap:10px;margin-top:10px"><textarea id="smvLiveMessageInput" maxlength="4000" rows="2" required placeholder="Type your message…" style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;min-height:60px;padding:7px;border:1px solid #b9a17b;border-radius:8px;background:#fffaf0;color:#30251b;resize:vertical;overflow-wrap:anywhere"></textarea><p id="smvLiveModerationNotice" role="status" aria-live="polite" hidden style="margin:0;color:#b91c1c;font-size:13px;font-weight:600"></p><button class="btn smv-modal-action" style="'+primaryStyle+'" id="smvLiveSendMessage" type="submit">SEND MESSAGE</button></form></div>'+
@@ -4153,6 +4153,88 @@ async function smvLivePrintReceipt(session){
 }
 function smvLiveClearTransport(){if(smvLiveSignalTimer)clearInterval(smvLiveSignalTimer);if(smvLiveMessageTimer)clearInterval(smvLiveMessageTimer);if(smvLiveClockTimer)clearInterval(smvLiveClockTimer);smvLiveSignalTimer=smvLiveMessageTimer=smvLiveClockTimer=null;smvLiveStopChatRecovery();smvLiveSignalSeen=new Set();smvLiveMessageSeen=new Set();smvLiveQueuedIce=[];smvLiveReadySentKey='';smvLiveOfferStartedKey='';smvLiveSignalSinceMs=0;smvLiveMessageSinceMs=0;smvLiveTransportPrimedSessionId='';}
 function smvLiveMuteUntilVoiceConnected(){const audio=$('smvLiveRemoteAudio');if(audio)audio.muted=true;}
+
+function smvLiveSyncVideoStage(){
+ const localTrack=smvLiveLocalStream?.getVideoTracks?.().find(track=>track.readyState==='live'&&track.enabled!==false)||null;
+ const remoteTrack=smvLiveRemoteVideoTrack;
+ const localVisible=!!localTrack,remoteVisible=!!remoteTrack&&remoteTrack.readyState==='live'&&!remoteTrack.muted;
+ const area=$('smvLiveVideoArea'),localWrap=$('smvLiveLocalVideoWrap'),remoteWrap=$('smvLiveRemoteVideoWrap');
+ if(localWrap)localWrap.hidden=!localVisible;
+ if(remoteWrap)remoteWrap.hidden=!remoteVisible;
+ if(area)area.hidden=!localVisible&&!remoteVisible;
+ const localVideo=$('smvLiveLocalVideo'),remoteVideo=$('smvLiveRemoteVideo');
+ if(localVideo&&localVisible){if(localVideo.srcObject!==smvLiveLocalStream)localVideo.srcObject=smvLiveLocalStream;localVideo.muted=true;localVideo.play?.().catch(()=>{});}
+ else if(localVideo&&localVideo.srcObject){try{localVideo.pause();localVideo.srcObject=null;}catch(_){}}
+ if(remoteVideo&&remoteVisible){if(smvLiveRemoteStream&&remoteVideo.srcObject!==smvLiveRemoteStream)remoteVideo.srcObject=smvLiveRemoteStream;remoteVideo.muted=true;remoteVideo.play?.().catch(()=>{});}
+}
+function smvLiveSyncVideoControls(){
+ const session=smvLiveCurrentSession,connectable=session?.mode==='call'&&['connecting','active'].includes(String(session.state||''))&&!!smvLivePeer;
+ const track=smvLiveLocalStream?.getVideoTracks?.().find(item=>item.readyState==='live')||null;
+ const toggle=$('smvLiveCameraToggle'),switcher=$('smvLiveSwitchCamera');
+ if(toggle){toggle.hidden=!connectable;toggle.disabled=!connectable;toggle.textContent=track&&track.enabled!==false?'TURN CAMERA OFF':'TURN CAMERA ON';}
+ if(switcher){switcher.hidden=!connectable||!track;switcher.disabled=!connectable||!track;}
+ smvLiveSyncVideoStage();
+}
+function smvLiveCameraErrorText(error){
+ const name=String(error?.name||'');
+ if(!window.isSecureContext||!navigator.mediaDevices?.getUserMedia)return 'Camera access requires an HTTPS page and a browser with camera support.';
+ if(name==='NotAllowedError'||name==='PermissionDeniedError'||name==='SecurityError')return 'Camera permission is blocked. Allow Camera for this site, then tap TURN CAMERA ON.';
+ if(name==='NotFoundError'||name==='DevicesNotFoundError')return 'No camera was detected on this device.';
+ if(name==='NotReadableError'||name==='TrackStartError')return 'The camera is busy. Close other apps using it, then retry.';
+ return 'Camera could not start: '+String(error?.message||error||'Unknown browser error')+'. Check site camera permission and retry.';
+}
+async function smvLiveReplaceCameraTrack(track){
+ const pc=smvLivePeer,stream=smvLiveLocalStream;
+ if(!pc||!stream||!track)throw new Error('Connect the call before enabling the camera.');
+ const sender=smvLiveVideoSender||pc.getTransceivers().find(item=>item.receiver?.track?.kind==='video')?.sender;
+ if(!sender)throw new Error('Video negotiation is not ready. Reconnect the call and retry.');
+ if(smvLivePeer!==pc||smvLiveLocalStream!==stream){try{track.stop();}catch(_){}throw new Error('The call changed while enabling the camera. Please retry.');}
+ try{await sender.replaceTrack(track);}
+ catch(error){try{track.stop();}catch(_){}throw new Error(smvLiveCameraErrorText(error));}
+ for(const oldTrack of stream.getVideoTracks())if(oldTrack!==track){stream.removeTrack(oldTrack);try{oldTrack.stop();}catch(_){}}
+ stream.addTrack(track);
+ smvLiveSyncVideoControls();
+}
+async function smvLiveEnableCamera(){
+ if(!smvLivePeer||!smvLiveLocalStream)throw new Error('Connect the microphone first, then turn on the camera.');
+ let cameraStream;
+ try{cameraStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:smvLiveCameraFacing},width:{ideal:640},height:{ideal:480}}});}
+ catch(error){throw new Error(smvLiveCameraErrorText(error));}
+ const track=cameraStream.getVideoTracks()[0];
+ if(!track){for(const item of cameraStream.getTracks())try{item.stop();}catch(_){}throw new Error('The selected device did not provide a camera video track.');}
+ try{await smvLiveReplaceCameraTrack(track);cameraStream.removeTrack(track);}
+ catch(error){for(const item of cameraStream.getTracks())try{item.stop();}catch(_){}throw error;}
+ const status=$('smvLiveVoiceStatus');if(status)status.textContent='Camera and microphone are ready. Video is being sent to '+smvLiveOtherParticipantName()+'.';
+}
+async function smvLiveDisableCamera(){
+ const pc=smvLivePeer,stream=smvLiveLocalStream,track=stream?.getVideoTracks?.()[0];
+ if(!pc||!stream||!track)return;
+ const sender=smvLiveVideoSender||pc.getTransceivers().find(item=>item.receiver?.track?.kind==='video')?.sender;
+ if(!sender)throw new Error('The video connection is not ready. Reconnect and retry.');
+ await sender.replaceTrack(null);
+ stream.removeTrack(track);try{track.stop();}catch(_){}
+ smvLiveSyncVideoControls();
+ const status=$('smvLiveVoiceStatus');if(status)status.textContent='Camera is off. The voice call continues.';
+}
+async function smvLiveToggleCamera(){
+ const track=smvLiveLocalStream?.getVideoTracks?.()[0];
+ if(track&&track.readyState==='live'&&track.enabled!==false)return smvLiveDisableCamera();
+ return smvLiveEnableCamera();
+}
+async function smvLiveSwitchCamera(){
+ const current=smvLiveLocalStream?.getVideoTracks?.()[0];
+ if(!current)throw new Error('Turn on the camera before switching between front and rear cameras.');
+ const nextFacing=smvLiveCameraFacing==='user'?'environment':'user';
+ let media;
+ try{media=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:nextFacing},width:{ideal:640},height:{ideal:480}}});}
+ catch(error){throw new Error(smvLiveCameraErrorText(error));}
+ const nextTrack=media.getVideoTracks()[0];
+ if(!nextTrack){for(const item of media.getTracks())try{item.stop();}catch(_){}throw new Error('The selected camera is unavailable.');}
+ try{await smvLiveReplaceCameraTrack(nextTrack);media.removeTrack(nextTrack);smvLiveCameraFacing=nextFacing;}
+ catch(error){for(const item of media.getTracks())try{item.stop();}catch(_){}throw error;}
+ const status=$('smvLiveVoiceStatus');if(status)status.textContent=nextFacing==='user'?'Front camera is active.':'Rear camera is active.';
+}
+
 function smvLiveSyncRemoteAudio(){
  const audio=$('smvLiveRemoteAudio');if(!audio)return;
  const connected=smvLiveCurrentSession?.mode==='call'&&smvLiveCurrentSession?.state==='active'&&smvLivePeer?.connectionState==='connected';
@@ -4162,10 +4244,12 @@ function smvLiveSyncRemoteAudio(){
 function smvLiveCloseMedia(){
  const audio=$('smvLiveRemoteAudio');
  if(audio){audio.muted=true;try{audio.pause();audio.srcObject=null;}catch(_){}}
+ for(const id of ['smvLiveRemoteVideo','smvLiveLocalVideo']){const video=$(id);if(video)try{video.pause();video.srcObject=null;}catch(_){}}
  try{smvLivePeer?.close();}catch(_){}
- smvLivePeer=null;
+ smvLivePeer=null;smvLiveVideoSender=null;smvLiveRemoteVideoTrack=null;
  for(const track of smvLiveLocalStream?.getTracks?.()||[])try{track.stop();}catch(_){}
  smvLiveLocalStream=null;smvLiveRemoteStream=null;
+ smvLiveSyncVideoStage();
 }
 function smvLiveSessionEndedMessage(session,wallet){
  const uid=String(currentUser?.uid||auth?.currentUser?.uid||'');
@@ -4195,6 +4279,7 @@ function smvLiveApplySession(session){
  if($('smvLiveSessionBilling'))$('smvLiveSessionBilling').textContent='Reserved: '+smvLiveMoney(s.reservedAmountPaise)+' · Charged: '+smvLiveMoney(s.actualChargePaise)+' · Released: '+smvLiveMoney(s.releasedAmountPaise);
  if($('smvLiveIncomingActions'))$('smvLiveIncomingActions').hidden=!(ringing&&s.astrologerUid===currentUser?.uid);
  const connectMic=$('smvLiveConnectMic');if(connectMic){connectMic.hidden=!(call&&['connecting','active'].includes(String(s.state||'')));connectMic.textContent=String(s.customerUid||'')===String(currentUser?.uid||'')?'CONNECT TO ASTROLOGER':'CONNECT CUSTOMER CALL / MICROPHONE';if(s.state==='ended')connectMic.disabled=true;}
+ smvLiveSyncVideoControls();
  const connectChatWrap=$('smvLiveConnectChatWrap');if(connectChatWrap)connectChatWrap.hidden=!(chat&&s.state==='connecting'&&String(s.astrologerUid||'')===String(currentUser?.uid||''));
  const waiting=$('smvLiveWaiting');if(waiting){waiting.hidden=active||(ringing&&s.astrologerUid===currentUser?.uid)||s.state==='ended';if(s.state==='preparing')waiting.textContent=String(s.customerUid||'')===String(currentUser?.uid||'')?'Astrologer Generating Your Horoscope...':'Please generate the Customer horoscope now. The Customer is waiting for you.';else if(s.state==='connecting')waiting.textContent=call?(String(s.customerUid||'')===String(currentUser?.uid||'')?'Horoscope preparation is complete. Tap CONNECT TO ASTROLOGER to start the voice call.':'Horoscope preparation is complete. Tap CONNECT CUSTOMER CALL / MICROPHONE to answer the voice call.'):(String(s.customerUid||'')===String(currentUser?.uid||'')?'Horoscope preparation is complete. Waiting for the Astrologer to accept Chat.':'Horoscope preparation is complete. Click ACCEPT CHAT to open the live Chat.');else if(ringing)waiting.textContent=s.astrologerUid===currentUser?.uid?'Customer request is ready. Accept to continue.':'Waiting for the Astrologer to accept. Billing starts only after both participants connect.';}
  const receipt=$('smvLiveDownloadReceipt');if(receipt)receipt.hidden=s.state!=='ended';
@@ -4330,9 +4415,9 @@ function smvLiveOpenSession(session,wallet,incoming){
    // The Astrologer's offer event can arrive before microphone permission is granted.
    // That signal remains unconsumed, so fetch it again once the peer is ready.
    await smvLiveReconcileCallSignals(id);
-   if(voice&&pc.connectionState!=='connected')voice.textContent='Microphone ready. Waiting for '+smvLiveOtherParticipantName()+ '…';
+   if(voice&&pc.connectionState!=='connected')voice.textContent=(smvLiveLocalStream?.getVideoTracks?.().some(track=>track.readyState==='live'&&track.enabled!==false)?'Camera and microphone ready. ':'Microphone ready; camera unavailable or off. ')+'Waiting for '+smvLiveOtherParticipantName()+ '…';
    const muteButton=$('smvLiveMute');if(muteButton)muteButton.disabled=false;
-   connectMic.textContent='MICROPHONE READY';
+   connectMic.textContent=smvLiveLocalStream?.getVideoTracks?.().some(track=>track.readyState==='live'&&track.enabled!==false)?'AUDIO & VIDEO READY':'AUDIO READY — ENABLE CAMERA';
   }catch(error){
    const message=smvLiveMediaErrorText(error);
    if(voice)voice.textContent=message;
@@ -4340,6 +4425,8 @@ function smvLiveOpenSession(session,wallet,incoming){
    connectMic.textContent='RETRY MICROPHONE';
   }finally{if(connectMic.isConnected)connectMic.disabled=false;}
  };
+ const cameraToggle=$('smvLiveCameraToggle');if(cameraToggle)cameraToggle.onclick=async()=>{cameraToggle.disabled=true;try{await smvLiveToggleCamera();}catch(error){smvLiveShowError(error);const status=$('smvLiveVoiceStatus');if(status)status.textContent=String(error?.message||error);}finally{smvLiveSyncVideoControls();}};
+ const cameraSwitch=$('smvLiveSwitchCamera');if(cameraSwitch)cameraSwitch.onclick=async()=>{cameraSwitch.disabled=true;try{await smvLiveSwitchCamera();}catch(error){smvLiveShowError(error);const status=$('smvLiveVoiceStatus');if(status)status.textContent=String(error?.message||error);}finally{smvLiveSyncVideoControls();}};
  const audioInputSelect=$('smvLiveAudioInput');
  if(audioInputSelect)audioInputSelect.onchange=async()=>{
   const selected=String(audioInputSelect.value||'default');
@@ -4359,6 +4446,7 @@ function smvLiveOpenSession(session,wallet,incoming){
   finally{refreshAudioInputs.disabled=false;}
  };
  const mute=$('smvLiveMute');if(mute)mute.onclick=()=>{const tracks=smvLiveLocalStream?.getAudioTracks?.()||[];if(!tracks.length)return;const enabled=tracks[0].enabled===false;tracks.forEach(t=>t.enabled=enabled);mute.textContent=enabled?'Mute microphone':'Unmute microphone';};
+ smvLiveSyncVideoControls();
  smvLiveApplySession(smvLiveCurrentSession);smvLiveStartTransport(id,smvLiveCurrentSession);
 }
 window.__smvOpenLiveSession=(session)=>smvLiveOpenSession(session,null,false);
@@ -4454,8 +4542,10 @@ async function smvLiveSwitchAudioInput(sessionId,deviceId){
  nextTrack.enabled=oldTrack?.enabled!==false;
  try{await sender.replaceTrack(nextTrack);}
  catch(error){for(const track of nextStream.getTracks())track.stop();if(voice)voice.textContent='Could not switch microphone. Your current microphone is still connected.';throw error;}
- smvLiveLocalStream=nextStream;
- for(const track of oldStream.getTracks())if(track!==nextTrack)try{track.stop();}catch(_){}
+ if(oldTrack)oldStream.removeTrack(oldTrack);
+ oldStream.addTrack(nextTrack);
+ nextStream.removeTrack(nextTrack);
+ if(oldTrack)try{oldTrack.stop();}catch(_){}
  await smvLiveRefreshAudioInputs(nextTrack).catch(error=>console.warn('Could not refresh microphone list:',error));
  const picked=select?.selectedOptions?.[0]?.textContent||nextTrack.label||'selected microphone';
  if(voice)voice.textContent='Microphone input: '+picked+'. Voice connection: '+pc.connectionState+'.';
@@ -4478,11 +4568,27 @@ async function smvLiveEnsurePeer(id){
  catch(error){if(voiceStatus)voiceStatus.textContent=smvLiveMediaErrorText(error);throw error;}
  if(voiceStatus)voiceStatus.textContent='Microphone ready. Connecting to '+smvLiveOtherParticipantName()+'…';
  smvLiveRemoteStream=new MediaStream();let iceServers=[{urls:'stun:stun.l.google.com:19302'}];try{const ice=await renderApi('/live/ice-config',{method:'GET',timeoutMs:8000});if(Array.isArray(ice.iceServers)&&ice.iceServers.length)iceServers=ice.iceServers;}catch(iceError){console.warn('TURN relay is not configured/reachable; using STUN only:',iceError?.message||iceError);}const pc=new RTCPeerConnection({iceServers});smvLivePeer=pc;
+ smvLiveVideoSender=pc.addTransceiver('video',{direction:'sendrecv'}).sender;
  for(const track of smvLiveLocalStream.getAudioTracks())pc.addTrack(track,smvLiveLocalStream);
- pc.ontrack=e=>{if(e.streams?.[0])smvLiveRemoteStream=e.streams[0];else if(e.track)smvLiveRemoteStream.addTrack(e.track);const audio=$('smvLiveRemoteAudio');if(audio){audio.srcObject=smvLiveRemoteStream;smvLiveMuteUntilVoiceConnected();smvLiveSyncRemoteAudio();}if($('smvLiveVoiceStatus'))$('smvLiveVoiceStatus').textContent='Voice connected.';};
+ pc.ontrack=e=>{
+  if(e.streams?.[0])smvLiveRemoteStream=e.streams[0];else if(e.track)smvLiveRemoteStream.addTrack(e.track);
+  const audio=$('smvLiveRemoteAudio');if(audio){audio.srcObject=smvLiveRemoteStream;smvLiveMuteUntilVoiceConnected();smvLiveSyncRemoteAudio();}
+  const remoteVideo=$('smvLiveRemoteVideo');if(remoteVideo){remoteVideo.srcObject=smvLiveRemoteStream;remoteVideo.muted=true;remoteVideo.playsInline=true;}
+  if(e.track?.kind==='video'){
+   smvLiveRemoteVideoTrack=e.track;
+   e.track.onunmute=()=>smvLiveSyncVideoStage();
+   e.track.onmute=()=>smvLiveSyncVideoStage();
+   e.track.onended=()=>smvLiveSyncVideoStage();
+   smvLiveSyncVideoStage();
+  }
+  if($('smvLiveVoiceStatus'))$('smvLiveVoiceStatus').textContent=e.track?.kind==='video'?'Video stream received.':'Voice connected.';
+ };
  pc.onicecandidate=e=>{if(e.candidate)renderApi('/live/sessions/'+encodeURIComponent(id)+'/signal',{method:'POST',body:JSON.stringify({type:'ice',payload:{candidate:e.candidate.toJSON()}})}).catch(err=>console.warn('ICE relay failed:',err));};
  pc.onconnectionstatechange=()=>{if($('smvLiveVoiceStatus'))$('smvLiveVoiceStatus').textContent='Voice connection: '+pc.connectionState;smvLiveSyncRemoteAudio();if(pc.connectionState==='connected')smvLiveMarkReady(id,true).catch(()=>{});if(pc.connectionState==='failed')smvLiveHandleMediaFailure(id,new Error('Voice network connection failed. Unused Wallet reserve is being returned.'));};
- const mute=$('smvLiveMute');if(mute)mute.disabled=false;smvLiveRefreshAudioInputs(smvLiveLocalStream.getAudioTracks()[0]).catch(error=>console.warn('Microphone input list unavailable:',error));return pc;
+ const mute=$('smvLiveMute');if(mute)mute.disabled=false;smvLiveRefreshAudioInputs(smvLiveLocalStream.getAudioTracks()[0]).catch(error=>console.warn('Microphone input list unavailable:',error));
+ smvLiveSyncVideoControls();
+ try{await smvLiveEnableCamera();}catch(cameraError){const status=$('smvLiveVoiceStatus');if(status)status.textContent='Microphone is ready. '+smvLiveCameraErrorText(cameraError)+' You can continue with voice or retry the camera.';console.warn('Live video camera permission/setup deferred:',cameraError);}
+ return pc;
 }
 async function smvLiveStartOffer(id){
  const key=String(id)+':'+String(currentUser?.uid||'');if(smvLiveOfferStartedKey===key)return;smvLiveOfferStartedKey=key;

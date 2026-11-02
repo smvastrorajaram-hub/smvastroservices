@@ -9,6 +9,7 @@ on:
       - 'live-session-service.js'
       - 'test/live-session-service.test.js'
       - 'test/live-push-notifications.test.js'
+      - 'test/live-video-call.test.js'
       - 'test/legacy-consultation-route-removal.test.cjs'
       - 'api-security.js'
       - 'test/api-security.test.js'
@@ -97,6 +98,7 @@ jobs:
           node --check live-session-service.js
           node --check test/live-session-service.test.js
           node --check test/live-push-notifications.test.js
+          node --check test/live-video-call.test.js
           node --check test/legacy-consultation-route-removal.test.cjs
           node --check api-security.js
           node --check test/api-security.test.js
@@ -124,5 +126,7 @@ jobs:
         run: npm run test:legacy-flow-removal
       - name: Run Live Session billing tests
         run: npm run test:live-session
+      - name: Run Live Video Call regression tests
+        run: node --test test/live-video-call.test.js
       - name: Run cream theme regression tests
         run: node --test test/cream-theme-audit.test.mjs
