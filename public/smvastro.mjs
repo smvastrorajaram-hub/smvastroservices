@@ -1489,7 +1489,7 @@ function smvBindCustomerBookingChat(){
   const role=String(window.__smvCurrentRole||'customer').toLowerCase();
   if(role!=='customer'){alert('Consult an Astrologer is available for Customer accounts. Please sign in with a Customer account.');return;}
   if(typeof window.__smvOpenBookingChat==='function'){window.__smvOpenBookingChat();return;}
-  if(typeof window.__smvNavigatePublic==='function'){window.__smvNavigatePublic('private-consultation');return;}
+  if(typeof window.__smvNavigatePublic==='function'){window.__smvNavigatePublic('consult');return;}
   location.href='./?view=consult';
  };
 }
