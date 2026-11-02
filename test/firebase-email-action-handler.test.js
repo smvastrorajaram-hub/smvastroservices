@@ -35,6 +35,16 @@ test('one-time action code is removed from the address bar and never logged', ()
   assert.doesNotMatch(moduleSource, /localStorage|sessionStorage/);
 });
 
+test('validates action codes against the fixed production project without rejecting a link-key mismatch locally', () => {
+  // The link's apiKey query parameter is metadata, not trusted Firebase config.
+  // Firebase must validate the oobCode and return the authoritative error.
+  assert.match(moduleSource, /const linkApiKey = params\.get\("apiKey"\) \|\| ""/);
+  assert.match(moduleSource, /!actionCode \|\| !linkApiKey/);
+  assert.doesNotMatch(moduleSource, /linkApiKey\s*!==\s*FIREBASE_CONFIG\.apiKey/);
+  assert.match(moduleSource, /auth\/api-key-not-valid/);
+  assert.match(moduleSource, /projectId: "smv-astro"/);
+});
+
 test('continue URLs are restricted to HTTPS production SMV domains', () => {
   assert.match(moduleSource, /candidate\.protocol === "https:"/);
   assert.match(moduleSource, /ALLOWED_CONTINUE_ORIGINS\.has\(candidate\.origin\)/);

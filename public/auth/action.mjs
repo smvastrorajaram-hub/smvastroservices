@@ -34,6 +34,7 @@ const COPY = {
     missing: "The link is incomplete. Open the complete link from your email.",
     failed: "We could not complete this request. Please request a new email and try again.",
     network: "A network error occurred. Check your connection and try again.",
+    apiKey: "Firebase rejected the configured API key. Please contact SMV ASTRO support; do not share the email link.",
     weak: "This password does not meet the project's password requirements.",
     busy: "Too many attempts. Please wait and try again.",
     saving: "Saving…",
@@ -58,6 +59,7 @@ const COPY = {
     missing: "இணைப்பு முழுமையாக இல்லை. மின்னஞ்சலில் உள்ள முழு இணைப்பைத் திறக்கவும்.",
     failed: "இந்தச் செயலை முடிக்க முடியவில்லை. புதிய மின்னஞ்சலைக் கோரி மீண்டும் முயற்சிக்கவும்.",
     network: "இணையத் தொடர்பில் சிக்கல். தொடர்பைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.",
+    apiKey: "Firebase API key அமைப்பில் சிக்கல் உள்ளது. SMV ASTRO ஆதரவைத் தொடர்புகொள்ளவும்; email link-ஐ யாரிடமும் பகிர வேண்டாம்.",
     weak: "இந்தக் கடவுச்சொல் திட்டத்தின் பாதுகாப்பு விதிகளைப் பூர்த்தி செய்யவில்லை.",
     busy: "பலமுறை முயற்சிக்கப்பட்டுள்ளது. சிறிது நேரம் கழித்து முயற்சிக்கவும்.",
     saving: "சேமிக்கப்படுகிறது…",
@@ -137,6 +139,9 @@ function errorMessage(error) {
       return t.busy;
     case "auth/network-request-failed":
       return t.network;
+    case "auth/invalid-api-key":
+    case "auth/api-key-not-valid":
+      return t.apiKey;
     default:
       return t.failed;
   }
@@ -217,10 +222,11 @@ async function main() {
     showError(t.missing);
     return;
   }
-  if (linkApiKey !== FIREBASE_CONFIG.apiKey) {
-    showError(t.invalid);
-    return;
-  }
+  // Do not compare the email link's apiKey with the frontend config locally.
+  // Firebase action links may carry a backend-managed key that differs from the
+  // currently configured web key. The link key is not used as app configuration:
+  // all action-code operations below run against this fixed smv-astro project,
+  // and Firebase itself validates whether the one-time code belongs to it.
 
   try {
     const app = initializeApp(FIREBASE_CONFIG);
