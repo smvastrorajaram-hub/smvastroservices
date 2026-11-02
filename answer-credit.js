@@ -54,7 +54,7 @@ module.exports=function createAnswerCredit({db,FieldValue,privateAmounts}){
    }
   }}finally{running=false;}
  }
- function start(){sweep().catch(e=>console.error('Answer credit sweep:',e.message));const timer=setInterval(()=>sweep().catch(e=>console.error('Answer credit sweep:',e.message)),15*60*1000);timer.unref?.();return timer;}
+ function start({enabled=true}={}){if(enabled!==true)return null;sweep().catch(e=>console.error('Answer credit sweep:',e.message));const timer=setInterval(()=>sweep().catch(e=>console.error('Answer credit sweep:',e.message)),15*60*1000);timer.unref?.();return timer;}
  return {settle,sweep,start};
 };
 module.exports.availableAt=availableAt;

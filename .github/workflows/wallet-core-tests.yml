@@ -13,6 +13,8 @@ on:
       - 'test/live-push-notifications.test.js'
       - 'public/sw.js'
       - 'test/wallet-service.test.js'
+      - 'answer-credit.js'
+      - 'test/staging-quota-read-reduction.test.cjs'
       - 'server.js'
       - 'public/index.html'
       - 'public/smvastro.mjs'
@@ -61,6 +63,8 @@ jobs:
         run: |
           node --check firestore-read-cache.js
           node --check test/firestore-read-cache.test.js
+          node --check answer-credit.js
+          node --check test/staging-quota-read-reduction.test.cjs
           node --check server.js
           node --check admin-auth.js
           node --check test/admin-auth.test.js
@@ -84,6 +88,8 @@ jobs:
         run: node --test test/razorpay-checkout-loader.test.mjs
       - name: Run Firestore role-cache tests
         run: npm run test:firestore-read-cache
+      - name: Run Staging Firestore read-reduction tests
+        run: npm run test:staging-quota-read-reduction
       - name: Run Wallet unit tests
         run: npm run test:wallet
       - name: Run Live Session billing tests
