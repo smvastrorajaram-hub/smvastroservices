@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>SMV ASTRO Firebase Link Diagnostic</title>
+  <style>
+    :root{color-scheme:light;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f6f2e9;color:#201b15}
+    *{box-sizing:border-box}
+    body{margin:0;padding:22px 14px}
+    main{max-width:680px;margin:0 auto;background:#fffdf8;border:1px solid #ded5c6;border-radius:16px;padding:22px}
+    h1{font-size:1.35rem;margin:0 0 12px}
+    p{line-height:1.55}
+    .warning{background:#fff4dc;border-left:4px solid #a66b00;padding:12px;margin:16px 0}
+    label{display:block;font-weight:650;margin:18px 0 7px}
+    textarea{width:100%;min-height:120px;padding:12px;border:1px solid #867b6e;border-radius:10px;font:14px/1.5 monospace;resize:vertical}
+    button{margin-top:12px;padding:12px 18px;border:0;border-radius:9px;background:#29231d;color:#fff;font-weight:700}
+    button:disabled{opacity:.55}
+    #result{margin-top:18px;padding:14px;border:1px solid #d4cabb;border-radius:10px;white-space:pre-wrap;overflow-wrap:anywhere}
+    #result[hidden]{display:none}
+    .small{font-size:.9rem;color:#534a40}
+    a{color:#59401c}
+  </style>
+</head>
+<body>
+<main>
+  <h1>SMV ASTRO — Firebase Link Diagnostic</h1>
+  <p>This page checks whether a newly generated Firebase email action code is accepted by the <strong>smv-astro</strong> Authentication project.</p>
+  <div class="warning">
+    <strong>Privacy and safety</strong>
+    <p class="small">Paste the complete link only into this page. The link is kept in this browser tab and is sent directly to Firebase for validation. It is not submitted to SMV ASTRO, Render, or Cloudflare servers. Do not send the link or its code to anyone.</p>
+    <p class="small">This is a read-only validation. It does not verify the email, reset the password, or consume the action code.</p>
+  </div>
+  <label for="actionLink">Paste the complete newest Firebase email link</label>
+  <textarea id="actionLink" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://smv-astro.firebaseapp.com/__/auth/action?..."></textarea>
+  <button id="checkButton" type="button">CHECK LINK WITHOUT USING IT</button>
+  <div id="result" role="status" aria-live="polite" hidden></div>
+  <p class="small">After the check, the link text is cleared from the input. The page does not store it in local storage or print it to the browser console.</p>
+</main>
+<script type="module">
+  import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+  import { getAuth, checkActionCode, verifyPasswordResetCode } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+  import { parseFirebaseActionLink, inspectFirebaseActionCode } from "./oob-code-diagnostic.mjs?v=1";
+
+  const input = document.getElementById("actionLink");
+  const button = document.getElementById("checkButton");
+  const result = document.getElementById("result");
+  const sdk = { checkActionCode, verifyPasswordResetCode };
+  const PRODUCTION_WEB_API_KEY = "AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs";
+
+  function show(text) {
+    result.textContent = text;
+    result.hidden = false;
+  }
+
+  button.addEventListener("click", async () => {
+    const pasted = input.value.trim();
+    input.value = "";
+    result.hidden = true;
+    button.disabled = true;
+
+    let app = null;
+    try {
+      const link = parseFirebaseActionLink(pasted);
+      pasted && void 0;
+      if (!["verifyEmail", "resetPassword"].includes(link.mode)) {
+        throw new Error("Unsupported Firebase action mode: " + link.mode);
+      }
+
+      app = initializeApp({
+        apiKey: link.apiKey,
+        authDomain: "smv-astro.firebaseapp.com",
+        projectId: "smv-astro"
+      }, "smv-oob-diagnostic-" + Date.now());
+
+      const auth = getAuth(app);
+      const checked = await inspectFirebaseActionCode({
+        auth,
+        mode: link.mode,
+        oobCode: link.oobCode,
+        sdk
+      });
+
+      if (!checked.valid) {
+        show(
+          "FIREBASE VALIDATION: REJECTED\n" +
+          "Action: " + checked.operation + "\n" +
+          "Firebase error: " + checked.errorCode + "\n" +
+          "Link API key matches current Production web config: " + (link.apiKey === PRODUCTION_WEB_API_KEY ? "YES" : "NO")
+        );
+      } else {
+        show(
+          "FIREBASE VALIDATION: VALID\n" +
+          "Action: " + checked.operation + "\n" +
+          "Firebase accepted this code for project: smv-astro\n" +
+          "Link API key matches current Production web config: " + (link.apiKey === PRODUCTION_WEB_API_KEY ? "YES" : "NO") + "\n\n" +
+          "The code was checked only. It was not applied or consumed."
+        );
+      }
+    } catch (error) {
+      const code = typeof error?.code === "string" ? error.code : "diagnostic/invalid-link";
+      show(
+        "FIREBASE VALIDATION: ERROR\n" +
+        "Error code: " + code + "\n" +
+        "The diagnostic did not apply the action or change the account."
+      );
+    } finally {
+      if (app) {
+        try { await deleteApp(app); } catch {}
+      }
+      button.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
