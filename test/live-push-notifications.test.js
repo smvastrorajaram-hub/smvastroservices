@@ -458,8 +458,8 @@ test('Admin home avoids eagerly reading the unused private-consultation history 
   assert.ok(route.includes('readCount("customers",db.collection("smv_users").where("role","==","customer"))'));
   assert.ok(!route.includes('readCollection("smv_private_consultations")'));
   assert.ok(!route.includes('privateConsultations: newestFirst('));
-  // The full history remains available through the existing dedicated section route.
-  assert.ok(server.includes('app.get("/admin/private-consultations-data"'));
+  // The old Private Consultation/Q&A Admin history endpoint is retired.
+  assert.equal(server.includes('app.get("/admin/private-consultations-data"'), false);
 });
 
 test('Admin dashboard reuses commission settings from its existing payload', () => {
