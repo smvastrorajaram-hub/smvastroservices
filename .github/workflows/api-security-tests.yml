@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'api-security.js'
+      - 'verification-email.js'
+      - 'test/verification-email.test.js'
       - 'test/api-security.test.js'
       - 'server.js'
       - '.github/workflows/api-security-tests.yml'
@@ -12,6 +14,8 @@ on:
     branches: [main]
     paths:
       - 'api-security.js'
+      - 'verification-email.js'
+      - 'test/verification-email.test.js'
       - 'test/api-security.test.js'
       - 'server.js'
       - '.github/workflows/api-security-tests.yml'
@@ -32,10 +36,12 @@ jobs:
       - name: Check source syntax
         run: |
           node --check api-security.js
+          node --check verification-email.js
           node --check server.js
           node --check test/api-security.test.js
-      - name: Verify request-size, CORS and rate-limit policy
-        run: node --test test/api-security.test.js
+          node --check test/verification-email.test.js
+      - name: Verify request policy and custom verification links
+        run: node --test test/api-security.test.js test/verification-email.test.js
       - name: Install isolated Express runtime for HTTP integration tests
         run: npm install --prefix "${RUNNER_TEMP}/api-security-deps" --no-save --no-package-lock express@4.21.2
       - name: Verify actual HTTP 413, CORS, HMAC and 429 behavior
