@@ -192,6 +192,20 @@ async function renderApi(path, options={}, authUserOverride=null){
   }finally{clearTimeout(timer);signal?.removeEventListener('abort',cancel);}
 }
 
+function smvVerificationLanguage(){ return "en"; }
+async function smvSendVerificationEmail(user){
+  if(!user)throw new Error("A signed-in Firebase account is required.");
+  if(IS_SMV_PHASE1_STAGING){
+    await withTimeout(sendEmailVerification(user),15000);
+    return {success:true,sent:true,provider:"firebase-staging"};
+  }
+  return renderApi("/auth/send-verification-email",{
+    method:"POST",
+    timeoutMs:15000,
+    body:JSON.stringify({language:smvVerificationLanguage()})
+  },user);
+}
+
 async function renderPublicApi(path, options={}){
   const headers={"Content-Type":"application/json",...(options.headers||{})};
   const response=await fetch(RAZORPAY_BACKEND_URL+path,{...options,headers});
@@ -202,6 +216,7 @@ async function renderPublicApi(path, options={}){
 const ADMIN_UID = IS_SMV_PHASE1_STAGING ? "" : "TwjeEIFS3Zcf1SxboLZoujm91Ky2";
 let currentUser=null, selectedAstro=null, pendingAfterLogin=null;
 let smvRegistrationInProgress=false; // V200: prevent auth listener from signing out a just-created unverified registration before secure profile setup finishes.
+let smvVerificationResendInProgress=false; // Preserve the unverified auth session only while its explicit verification request is running.
 let smvNavigationEpoch=0;
 // Dashboard hydration state is UI/navigation state only.
 let dashboardReadyUid=null;
@@ -842,7 +857,7 @@ function openAuth(mode="login"){
   $("submitAuth").onclick=()=>submitAuth(mode); $("switchAuth").onclick=(e)=>{e?.preventDefault?.();openAuth(isLogin?"register":"login")};
   $("password")?.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();submitAuth(mode)}});
   if(isLogin && $("googleAuthBtn")) $("googleAuthBtn").onclick=()=>signInWithGoogle();
-  if($("forgotAuth")) $("forgotAuth").onclick=async(e)=>{e?.preventDefault?.();const identifier=$("email").value.trim(),m=$("authMsg"); if(!identifier){m.innerHTML='<span class="error">Enter your registered Email, Customer ID or Astrologer ID first.</span>';return;} try{const resolved=await smvResolveLoginIdentifier(identifier);const {sendPasswordResetEmail}=await import("https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js");await withTimeout(sendPasswordResetEmail(auth,resolved.email));m.innerHTML='<span class="success">Password reset email sent. Please check Inbox and Spam.</span>';}catch(e){m.innerHTML='<span class="error">'+escapeHtml(e.message||String(e))+'</span>';}};
+  if($("forgotAuth")) $("forgotAuth").onclick=async(e)=>{e?.preventDefault?.();const identifier=$("email").value.trim(),m=$("authMsg"); if(!identifier){m.innerHTML='<span class="error">Enter your registered Email, Customer ID or Astrologer ID first.</span>';return;} try{const resolved=await smvResolveLoginIdentifier(identifier);if(IS_SMV_PHASE1_STAGING){const {sendPasswordResetEmail}=await import("https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js");await withTimeout(sendPasswordResetEmail(auth,resolved.email),15000);}else{const response=await fetch(BACKEND+'/auth/send-password-reset-email',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({email:resolved.email}),cache:'no-store'});const result=await response.json().catch(()=>({}));if(!response.ok||result?.success!==true)throw new Error(result?.error||'Password reset request could not be processed. Please try again.');}m.innerHTML='<span class="success">If an account exists for that email, password reset instructions will be sent. Please check Inbox and Spam.</span>';}catch(e){m.innerHTML='<span class="error">'+escapeHtml(e.message||String(e))+'</span>';}};
 }
 window.__smvOpenAuth = openAuth; window.__smvOpenAstroRegister = openAstroRegister;
 
@@ -1008,15 +1023,27 @@ async function resendVerificationEmail(){
    message("authMsg",'<span class="error">Please enter your email and password first.</span>');
    return;
  }
+ smvVerificationResendInProgress=true;
  try{
    const cred=await signInWithEmailAndPassword(auth,email,password);
-   await sendEmailVerification(cred.user);
+   const result=await smvSendVerificationEmail(cred.user);
    await signOut(auth);
    currentUser=null;
-   message("authMsg",'<span class="success"><b>Verification link sent successfully.</b> Please check your email.</span>');
+   if(result?.alreadyVerified){
+     message("authMsg",'<span class="success"><b>Your email address is already verified.</b> You can log in.</span>');
+   }else if(result?.sent){
+     message("authMsg",'<span class="success"><b>Verification link sent successfully.</b> Please check your email.</span>');
+   }else{
+     throw new Error("The verification email was not confirmed as sent. Please try again later.");
+   }
  }catch(e){
    try{await signOut(auth);}catch(_){}
-   message("authMsg",'<span class="error">Unable to send verification email. Please check your email and password.</span>');
+   currentUser=null;
+   const detail=e?.status===429||e?.status>=500?String(e.message||""):"";
+   const safe=detail||"Unable to send verification email. Please check your email and password.";
+   message("authMsg",'<span class="error">'+escapeHtml(safe)+'</span>');
+ }finally{
+   smvVerificationResendInProgress=false;
  }
 }
 window.resendVerificationEmail=resendVerificationEmail;
@@ -1186,6 +1213,7 @@ async function submitAuth(mode){
   let cred=null;
   let createdNewAuthUser=false;
   let profileResponse=null;
+  let verificationResult=null;
   smvRegistrationInProgress=true;
   try{
     try{
@@ -1223,7 +1251,7 @@ async function submitAuth(mode){
       body:JSON.stringify({name,phone,language:"en"})
     },cred.user);
     if(!profileResponse?.ok) throw new Error(profileResponse?.error||"Customer profile setup failed.");
-    try{await withTimeout(sendEmailVerification(cred.user),15000);}catch(ve){console.warn("Verification email could not be sent immediately",ve);}
+    try{verificationResult=await smvSendVerificationEmail(cred.user);}catch(ve){verificationResult={sent:false};console.warn("Custom verification email could not be sent immediately",ve?.message||ve);}
     // Registration is complete. Leave no unverified authenticated session behind;
     // the user verifies email and then performs a normal explicit login.
     try{if(auth?.currentUser?.uid===cred.user.uid) await signOut(auth);}catch(signOutErr){console.warn("Post-registration sign-out skipped",signOutErr);}
@@ -1240,7 +1268,12 @@ async function submitAuth(mode){
     throw profileErr;
   }
   const createdId = profileResponse?.publicId ? `<br><b>Your Customer ID:</b> ${escapeHtml(profileResponse.publicId)}<br><span class="small">Keep this ID safe. It can be used for future Customer ID login.</span>` : '';
-  msg.innerHTML='<span class="success"><b>Registration successful ✓</b>'+createdId+'<br>Mobile number saved. One mobile number can be used for only one account.<br>No SMS/OTP is required. Verification email sent. Please verify your email and login again.</span><button class="btn" id="registrationLoginBtn" style="margin-top:10px">Go to Login</button>';
+  const verificationStatus=verificationResult?.alreadyVerified
+    ?"Your email address is already verified. You can log in."
+    :verificationResult?.sent
+      ?"Verification email sent. Please verify your email and log in again."
+      :"Registration succeeded, but the verification email was not sent. Open Login and use Resend Verification Email."; 
+  msg.innerHTML='<span class="success"><b>Registration successful ✓</b>'+createdId+'<br>Mobile number saved. One mobile number can be used for only one account.<br>No SMS/OTP is required. '+escapeHtml(verificationStatus)+'</span><button class="btn" id="registrationLoginBtn" style="margin-top:10px">Go to Login</button>';
   $("registrationLoginBtn").onclick=async()=>{await logoutToHome();openAuth("login");};
  }catch(e){
   let t=e?.message||String(e);
@@ -1355,7 +1388,7 @@ $("astroRegistrationForm")?.addEventListener("submit",async e=>{
  smvRegistrationInProgress=true;
  try{
   const photoData=await compressPhoto(photoFile);
-  let cred=null, createdNewAstroAuthUser=false, profileResponse=null;
+  let cred=null, createdNewAstroAuthUser=false, profileResponse=null, verificationResult=null;
   try{
     cred=await withTimeout(createUserWithEmailAndPassword(auth,email,password),20000);
     createdNewAstroAuthUser=true;
@@ -1381,9 +1414,11 @@ $("astroRegistrationForm")?.addEventListener("submit",async e=>{
     throw networkErr;
   }
   if(!profileResponse?.ok) throw new Error(profileResponse?.error||"Astrologer profile setup failed.");
-  try{await withTimeout(sendEmailVerification(cred.user));}catch(ve){}
+  try{verificationResult=await smvSendVerificationEmail(cred.user);}catch(ve){verificationResult={sent:false};console.warn("Custom astrologer verification email could not be sent immediately",ve?.message||ve);}
   btn.textContent="SAVING PROFILE...";
-  form.reset();btn.disabled=false;btn.textContent="SUBMITTED ✓";await signOut(auth);currentUser=null;selectedAstro=null;hide("astro-register-form");hide("register-flow");hide("astro-flow");window.scrollTo({top:0,behavior:"smooth"});openModal('<h2>Registration Complete ✓</h2><p class="success"><b>Your astrologer application has been submitted successfully.</b></p><p><b>Your Astrologer ID: '+escapeHtml(profileResponse.publicId||'')+'</b></p><p>Keep this ID safe for future Astrologer ID login.</p><p>Your verification email has been sent.</p><p><b>Waiting for Admin Approval.</b></p><button class="btn gray" id="astroRegistrationClose">Close</button>');$("astroRegistrationClose").onclick=closeModal;
+  form.reset();btn.disabled=false;btn.textContent="SUBMITTED ✓";await signOut(auth);currentUser=null;selectedAstro=null;hide("astro-register-form");hide("register-flow");hide("astro-flow");window.scrollTo({top:0,behavior:"smooth"});
+  const verificationStatus=verificationResult?.alreadyVerified?"Your email address is already verified.":verificationResult?.sent?"Your verification email has been sent.":"Your application was submitted, but the verification email could not be sent. Please use Resend Verification Email from Login."; 
+  openModal('<h2>Registration Complete ✓</h2><p class="success"><b>Your astrologer application has been submitted successfully.</b></p><p><b>Your Astrologer ID: '+escapeHtml(profileResponse.publicId||'')+'</b></p><p>Keep this ID safe for future Astrologer ID login.</p><p>'+escapeHtml(verificationStatus)+'</p><p><b>Waiting for Admin Approval.</b></p><button class="btn gray" id="astroRegistrationClose">Close</button>');$("astroRegistrationClose").onclick=closeModal;
  }catch(err){
   // If this attempt created a brand-new Auth user but profile/ID creation failed
   // (for example because the mobile belongs to another account), remove only
@@ -3697,7 +3732,7 @@ if(auth){ onAuthStateChanged(auth,async user=>{
        // V200 registration race guard: createUserWithEmailAndPassword emits this
        // callback before the trusted backend has created smv_users/public ID.
        // Do not sign out the just-created user until that registration transaction finishes.
-       if(smvRegistrationInProgress){ armIdleTimer(); return; }
+       if(smvRegistrationInProgress || smvVerificationResendInProgress){ armIdleTimer(); return; }
        await signOut(auth); currentUser=null; clearIdleTimer(); lastAuthUid=null; hide("dashboard"); hide("admin"); hide("dashLink"); hide("adminLink"); smvSyncHeaderAuthNav(null); return;
      }
      // signInWithPopup also fires this listener. Let the explicit Google role
