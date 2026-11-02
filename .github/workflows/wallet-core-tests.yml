@@ -9,6 +9,12 @@ on:
       - 'live-session-service.js'
       - 'test/live-session-service.test.js'
       - 'test/live-push-notifications.test.js'
+      - 'test/legacy-consultation-route-removal.test.cjs'
+      - 'api-security.js'
+      - 'test/api-security.test.js'
+      - 'public/public-navigation.js'
+      - 'public/public-content.mjs'
+      - 'public/smvastro.css'
       - 'test/cream-theme-audit.test.mjs'
       - 'public/sw.js'
       - 'test/wallet-service.test.js'
@@ -91,6 +97,11 @@ jobs:
           node --check live-session-service.js
           node --check test/live-session-service.test.js
           node --check test/live-push-notifications.test.js
+          node --check test/legacy-consultation-route-removal.test.cjs
+          node --check api-security.js
+          node --check test/api-security.test.js
+          node --check public/public-navigation.js
+          node --check public/public-content.mjs
           node --check test/cream-theme-audit.test.mjs
           node --check public/sw.js
           node --check test/wallet-service.test.js
@@ -109,6 +120,8 @@ jobs:
         run: node --test test/multi-project-firestore.test.js
       - name: Run Wallet unit tests
         run: npm run test:wallet
+      - name: Run legacy Q&A / Private Consultation removal tests
+        run: npm run test:legacy-flow-removal
       - name: Run Live Session billing tests
         run: npm run test:live-session
       - name: Run cream theme regression tests
