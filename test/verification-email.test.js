@@ -26,7 +26,7 @@ test('Firebase-generated verification action is rewritten to the dedicated HTTPS
   assert.equal(url.searchParams.get('mode'), 'verifyEmail');
   assert.equal(url.searchParams.get('oobCode'), 'test-one-time-code');
   assert.equal(url.searchParams.get('apiKey'), FIREBASE_WEB_API_KEY);
-  assert.equal(url.searchParams.get('lang'), 'ta');
+  assert.equal(url.searchParams.get('lang'), 'en');
   assert.equal(url.searchParams.has('continueUrl'), false);
 });
 
@@ -37,12 +37,14 @@ test('verification link rewriting fails closed for wrong hosts, modes, paths and
   assert.throws(() => buildCustomVerificationHandlerUrl('https://sm-astro.firebaseapp.com/not-the-handler?mode=verifyEmail&oobCode=x&apiKey=' + FIREBASE_WEB_API_KEY));
 });
 
-test('bilingual email content uses the custom link and does not allow HTML link injection', () => {
-  const verificationUrl = buildCustomVerificationHandlerUrl(generatedLink());
+test('English email content uses the custom link and does not allow HTML link injection', () => {
+  const verificationUrl = buildCustomVerificationHandlerUrl(generatedLink(), { language: 'ta-IN' });
+  assert.equal(new URL(verificationUrl).searchParams.get('lang'), 'en');
   const email = createVerificationEmail({ verificationUrl });
   assert.match(email.subject, /SMV ASTRO/);
-  assert.match(email.text, /உங்கள் SMV ASTRO/);
-  assert.match(email.html, /உங்கள் மின்னஞ்சலை உறுதிப்படுத்தவும்/);
+  assert.match(email.text, /Please verify your SMV ASTRO email address/);
+  assert.match(email.html, />Verify Email<\/a>/);
+  assert.doesNotMatch(email.subject + email.text + email.html, /உங்கள்|மின்னஞ்சல்|உறுதிப்படுத்தவும்/);
   assert.ok(email.html.includes(verificationUrl.replace(/&/g, '&amp;')));
   assert.ok(!email.html.includes('href="https://smv-astro.firebaseapp.com'));
   assert.throws(() => createVerificationEmail({ verificationUrl: 'https://evil.example/auth/action.html?mode=verifyEmail' }));

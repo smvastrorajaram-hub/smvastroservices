@@ -1537,6 +1537,8 @@ section > h2:where(:not(.smv-type-root,.smv-type-root *)){font-size:25px;line-he
 .password-toggle:hover{background:transparent}
 .password-toggle:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .auth-note{margin:9px 2px 2px;text-align:center;font-size:12px;color:rgb(117, 102, 94);line-height:1.5}
+.auth-message:empty{display:none}
+.auth-message:not(:empty){display:block;margin:8px 0;padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;color:#29231b;line-height:1.5}
 @media (max-width: 520px){
 .modal{padding:7px;place-items:center}
 .modalbox{width:calc(-14px + 100vw);max-width:calc(-14px + 100vw);max-height:calc(-14px + 100dvh);margin:0px auto;padding:18px 13px 15px;border-radius:18px}
