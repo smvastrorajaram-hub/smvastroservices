@@ -187,3 +187,45 @@ test('Firestore batch write commits staged operations together', async () => {
   assert.equal(result.writeResults.length, 2);
   assert.equal(body.writes.length, 2);
 });
+
+test('maps Firestore RESOURCE_EXHAUSTED / HTTP 429 to a quota-specific safe error', async () => {
+  const client = clientWithFetch(async () => jsonResponse({
+    error: {
+      code: 429,
+      status: 'RESOURCE_EXHAUSTED',
+      message: 'private provider diagnostic detail'
+    }
+  }, 429));
+  await assert.rejects(() => client.listDocuments('smv_users', { pageSize: 1 }), error => {
+    assert.equal(error.code, 'FIRESTORE_QUOTA_EXCEEDED');
+    assert.equal(error.httpStatus, 429);
+    assert.equal(error.upstreamStatus, 'RESOURCE_EXHAUSTED');
+    assert.equal(error.upstreamCode, 429);
+    assert.equal(error.upstreamHttpStatus, 429);
+    assert.equal(error.message, 'FIRESTORE_QUOTA_EXCEEDED');
+    assert.equal(error.message.includes('private provider diagnostic detail'), false);
+    return true;
+  });
+});
+
+test('keeps missing Firestore IAM permission distinct from quota exhaustion', async () => {
+  const client = clientWithFetch(async () => jsonResponse({
+    error: { code: 403, status: 'PERMISSION_DENIED', message: 'private IAM detail' }
+  }, 403));
+  await assert.rejects(() => client.listDocuments('smv_users', { pageSize: 1 }), error => {
+    assert.equal(error.code, 'FIRESTORE_PERMISSION_DENIED');
+    assert.equal(error.httpStatus, 403);
+    assert.equal(error.message, 'FIRESTORE_PERMISSION_DENIED');
+    return true;
+  });
+});
+
+test('keeps unauthenticated service-account access distinct', async () => {
+  const client = clientWithFetch(async () => jsonResponse({
+    error: { code: 401, status: 'UNAUTHENTICATED' }
+  }, 401));
+  await assert.rejects(() => client.listDocuments('smv_users', { pageSize: 1 }), {
+    code: 'FIRESTORE_UNAUTHENTICATED',
+    httpStatus: 401
+  });
+});
