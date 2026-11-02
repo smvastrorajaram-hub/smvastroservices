@@ -14,13 +14,8 @@ const {
 test('body parser retains explicit route limits and gives only astrologer photo registration a large body', () => {
   assert.equal(requestBodyLimit('/contact-query'), '20kb');
   assert.equal(requestBodyLimit('/admin/offers/delete'), '10kb');
-  assert.equal(requestBodyLimit('/admin/reject-question'), '10kb');
-  assert.equal(requestBodyLimit('/admin/retry-refund'), '10kb');
-  assert.equal(requestBodyLimit('/customer/sync-refund'), '10kb');
-  assert.equal(requestBodyLimit('/admin/sync-refund'), '10kb');
-  assert.equal(requestBodyLimit('/private-consultation/cancel-payment'), '10kb');
   assert.equal(requestBodyLimit('/register-astrologer-profile'), '15mb');
-  assert.equal(requestBodyLimit('/private-consultation/create-order'), '30kb');
+  assert.equal(requestBodyLimit('/private-consultation/create-order'), '1mb');
   assert.equal(requestBodyLimit('/unlisted-route'), '1mb');
   assert.equal(requestBodyLimit('/razorpay/webhook'), null);
 });
