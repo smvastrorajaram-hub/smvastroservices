@@ -34,7 +34,6 @@ const BODY_LIMITS = Object.freeze({
   '/admin/content/delete': '5kb',
   '/admin/astrologer-languages': '10kb',
   '/admin/astrologer-pricing': '10kb',
-  '/private-consultation/cancel-payment': '10kb',
   '/admin/withdrawal-mark-paid': '5kb',
   '/admin/offers/save': '20kb',
   '/admin/offers/delete': '10kb'
