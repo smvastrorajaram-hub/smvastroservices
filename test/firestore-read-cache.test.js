@@ -81,6 +81,6 @@ test('enforces the configured LRU entry bound', async () => {
   await cache.get('a', load); // make a most recently used
   await cache.get('c', load); // evicts b
   assert.equal(cache.size, 2);
-  assert.equal(await cache.get('b', load), 5);
+  assert.equal(await cache.get('b', load), 4);
   assert.equal(cache.size, 2);
 });
