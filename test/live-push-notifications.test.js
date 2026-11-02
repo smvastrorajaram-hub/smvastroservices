@@ -1182,3 +1182,24 @@ test('Homepage removes its PWA install banner and presents the dedicated Android
   assert.equal(installer.includes('ghp_'), false);
 });
 
+
+
+test('A terminal Live Session refreshes Dashboard earnings and booking/session status without requiring the modal', () => {
+  const frontend = read('public/smvastro.mjs');
+  const helperStart = frontend.indexOf('function smvLiveRefreshDashboardAfterSessionEnd(session){');
+  const helperEnd = frontend.indexOf('function smvLiveHandleEvent(ev){', helperStart);
+  assert.ok(helperStart >= 0 && helperEnd > helperStart, 'terminal-session refresh helper exists');
+  const helper = frontend.slice(helperStart, helperEnd);
+  assert.ok(helper.includes('await loadDashboard(role,true,true)'), 'refreshes the parent Dashboard data');
+  assert.ok(helper.includes('await smvLiveLoadDashboard(role)'), 'refreshes Live Sessions and scheduled bookings');
+  assert.ok(helper.includes('session.customerUid,session.astrologerUid'), 'refresh applies only to the two session participants');
+  assert.ok(helper.includes('dashboardReadyAt=0'), 'marks hidden Dashboard data stale for the next visit');
+  const handlerStart = frontend.indexOf('function smvLiveHandleEvent(ev){');
+  const handlerEnd = frontend.indexOf('function smvLiveStopEventStream()', handlerStart);
+  const handler = frontend.slice(handlerStart, handlerEnd);
+  const endedAt = handler.indexOf("ev.type==='live.session.ended'");
+  const refreshAt = handler.indexOf('smvLiveRefreshDashboardAfterSessionEnd(s)', endedAt);
+  const modalGuardAt = handler.indexOf('if(s&&s.id===smvLivePanelSessionId)', endedAt);
+  assert.ok(endedAt >= 0 && refreshAt > endedAt, 'ended SSE events trigger dashboard refresh');
+  assert.ok(modalGuardAt < 0 || refreshAt < modalGuardAt, 'refresh does not depend on the session modal being open');
+});
