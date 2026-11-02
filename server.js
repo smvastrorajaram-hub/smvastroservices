@@ -2319,7 +2319,7 @@ app.get("/admin-data", async (req, res) => {
 
   try {
     // Admin landing only loads current management controls and Live Call/Chat earnings.
-    // Retired question/Private Consultation counts and histories are not Dashboard dependencies.
+    // Retired Q&A counts and histories are not Dashboard dependencies.
     const [customerCountResult, astrologers, livePayments, commission, astrologerAutoApproval, horoscopePayment] = await Promise.all([
       readCount("customers",db.collection("smv_users").where("role","==","customer")),
       readCollection("smv_astrologers"),
@@ -2425,7 +2425,7 @@ app.get("/astrologer/earnings", async (req, res) => {
     }
 
     // Previously credited consultation earnings remain included for accurate withdrawal eligibility.
-    // This is historical read-only accounting; the retired Q&A/Private Consultation routes are gone.
+    // This is historical read-only accounting; the retired Q&A endpoints are gone.
     const questions = questionSnap.docs.map(d=>({id:d.id,questionId:d.id,...d.data()}));
     const allPrivate = privateSnap.docs.map(d=>({id:d.id,consultationId:d.id,...d.data()}));
     const withdrawals = withdrawalSnap.docs.map(d=>({id:d.id,...d.data()}))
