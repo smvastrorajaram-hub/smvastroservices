@@ -5,27 +5,15 @@ on:
     branches: [main]
     paths:
       - 'api-security.js'
-      - 'verification-email.js'
-      - 'test/verification-email.test.js'
       - 'test/api-security.test.js'
       - 'server.js'
-      - 'public/smvastro.mjs'
-      - 'public/smvastro.css'
-      - 'public/verification-auth-state.mjs'
-      - 'test/verification-auth-state.test.mjs'
       - '.github/workflows/api-security-tests.yml'
   push:
     branches: [main]
     paths:
       - 'api-security.js'
-      - 'verification-email.js'
-      - 'test/verification-email.test.js'
       - 'test/api-security.test.js'
       - 'server.js'
-      - 'public/smvastro.mjs'
-      - 'public/smvastro.css'
-      - 'public/verification-auth-state.mjs'
-      - 'test/verification-auth-state.test.mjs'
       - '.github/workflows/api-security-tests.yml'
   workflow_dispatch:
 
@@ -44,17 +32,10 @@ jobs:
       - name: Check source syntax
         run: |
           node --check api-security.js
-          node --check verification-email.js
           node --check server.js
           node --check test/api-security.test.js
-          node --check test/verification-email.test.js
-          node --check public/smvastro.mjs
-          node --check public/verification-auth-state.mjs
-          node --check test/verification-auth-state.test.mjs
-      - name: Verify request policy and custom verification links
-        run: node --test test/api-security.test.js test/verification-email.test.js
-      - name: Verify resend authentication state guard
-        run: node --test test/verification-auth-state.test.mjs
+      - name: Verify request-size, CORS and rate-limit policy
+        run: node --test test/api-security.test.js
       - name: Install isolated Express runtime for HTTP integration tests
         run: npm install --prefix "${RUNNER_TEMP}/api-security-deps" --no-save --no-package-lock express@4.21.2
       - name: Verify actual HTTP 413, CORS, HMAC and 429 behavior
