@@ -8,7 +8,7 @@
   const MODULE_URL='./public-content.mjs?v=20261029-consult-module-lazy-v1';
   let pending=null;
   function isConsultVisible(){
-    const target=document.getElementById('private-consultation');
+    const target=document.getElementById('consult');
     return !!target && !target.classList.contains('hidden');
   }
   function ensureConsultationModule(){
@@ -28,7 +28,7 @@
   function onConsultOpen(){
     ensureConsultationModule().catch(()=>{});
   }
-  window.addEventListener('smv:private-consultation-open',onConsultOpen);
+  window.addEventListener('smv:consult-open',onConsultOpen);
   window.addEventListener('smv:app-ready',()=>{
     if(isConsultVisible())onConsultOpen();
   });
