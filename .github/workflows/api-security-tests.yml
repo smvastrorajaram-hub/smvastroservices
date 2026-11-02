@@ -6,7 +6,9 @@ on:
     paths:
       - 'api-security.js'
       - 'verification-email.js'
+      - 'public/smvastro.mjs'
       - 'test/verification-email.test.js'
+      - 'public/smvastro.mjs'
       - 'test/api-security.test.js'
       - 'server.js'
       - '.github/workflows/api-security-tests.yml'
@@ -33,12 +35,13 @@ jobs:
           node-version: '22'
       - name: Check source syntax
         run: |
+          node --check public/smvastro.mjs
           node --check api-security.js
           node --check verification-email.js
           node --check server.js
           node --check test/api-security.test.js
           node --check test/verification-email.test.js
-      - name: Verify request policy and Firebase verification emails
+      - name: Verify request policy and Firebase account action emails
         run: node --test test/api-security.test.js test/verification-email.test.js
       - name: Install isolated Express runtime for HTTP integration tests
         run: npm install --prefix "${RUNNER_TEMP}/api-security-deps" --no-save --no-package-lock express@4.21.2
