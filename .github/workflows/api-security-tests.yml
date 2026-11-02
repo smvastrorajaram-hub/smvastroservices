@@ -10,6 +10,7 @@ on:
       - 'test/api-security.test.js'
       - 'server.js'
       - 'public/smvastro.mjs'
+      - 'public/smvastro.css'
       - 'public/verification-auth-state.mjs'
       - 'test/verification-auth-state.test.mjs'
       - '.github/workflows/api-security-tests.yml'
@@ -21,6 +22,10 @@ on:
       - 'test/verification-email.test.js'
       - 'test/api-security.test.js'
       - 'server.js'
+      - 'public/smvastro.mjs'
+      - 'public/smvastro.css'
+      - 'public/verification-auth-state.mjs'
+      - 'test/verification-auth-state.test.mjs'
       - '.github/workflows/api-security-tests.yml'
   workflow_dispatch:
 
