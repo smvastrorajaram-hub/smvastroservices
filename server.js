@@ -261,23 +261,15 @@ app.use(createRequestBodyParser(express));
 // write after the response has finished so it never delays Razorpay/payment or
 // any other request's critical path.
 const DASHBOARD_SIGNAL_PATHS=new Set([
-  '/register-customer-profile','/register-astrologer-profile','/astrologer/edit-answer','/astrologer/claim-question','/submit-answer',
-  '/customer/submit-review','/admin/appointment-status','/admin/approve-question','/admin/reallocate-question','/admin/reject-question','/admin/retry-refund','/admin/sync-refund',
-  '/admin/approve-astrologer','/admin/reject-astrologer','/admin/astrologer-pricing','/admin/astrologer-languages',
-  '/admin/astrologer-profile-description','/admin/astrologer-profile-permission',
-  '/admin/content/save','/admin/content/toggle','/admin/content/delete',
-  '/admin/edit-question','/admin/takeover-answer','/astrologer/change-payout','/admin/payout-change-status',
-  '/admin/set-open-workflow','/customer/mark-answer-viewed','/admin/astrologer-quiz/load-defaults',
-  '/admin/astrologer-quiz/questions','/admin/astrologer-quiz/questions/delete','/admin/astrologer-auto-approval/settings',
-  '/webhooks/google-form/astrologer-qualification','/admin/private-consultation/set-commission',
-  '/admin/private-consultation/set-word-count','/admin/private-consultation/set-workflow',
-  '/admin/private-consultation/approve-question','/admin/private-consultation/reject-question',
-  '/admin/private-consultation/retry-refund','/admin/private-consultation/sync-refund',
-  '/astrologer/private-consultation/submit-answer','/admin/private-consultation/approve-answer',
-  '/admin/private-consultation/reject-answer',
-  '/private-consultation/recover-payment','/private-consultation/verify-payment','/admin/credit-commission',
-  '/admin/reject-answer','/admin/approve-answer','/customer/private-consultation/mark-viewed','/verify-payment',
-  '/astrologer/withdrawal-request','/admin/withdrawal-mark-paid','/admin/dashboard-touch','/razorpay/webhook'
+  '/register-customer-profile','/register-astrologer-profile','/customer/submit-review',
+  '/admin/appointment-status','/admin/approve-astrologer','/admin/reject-astrologer',
+  '/admin/astrologer-pricing','/admin/astrologer-languages','/admin/astrologer-profile-description',
+  '/admin/astrologer-profile-permission','/admin/content/save','/admin/content/toggle','/admin/content/delete',
+  '/astrologer/change-payout','/admin/payout-change-status','/admin/astrologer-quiz/load-defaults',
+  '/admin/astrologer-quiz/questions','/admin/astrologer-quiz/questions/delete',
+  '/admin/astrologer-auto-approval/settings','/webhooks/google-form/astrologer-qualification',
+  '/astrologer/withdrawal-request','/admin/withdrawal-mark-paid','/admin/dashboard-touch',
+  '/appointment-booking','/razorpay/webhook'
 ]);
 
 // Phase 1: short-lived Admin snapshot cache. It prevents duplicate whole-dashboard
@@ -289,14 +281,12 @@ function invalidateAdminDataCache(){adminDataCache={payload:null,expiresAt:0};}
 
 function dashboardSignalCategory(path=''){
   const p=String(path||'');
-  if(p.includes('/private-consultation/'))return 'private_consultations';
   if(p.includes('/withdrawal')||p.includes('/payout'))return 'withdrawals_payouts';
   if(p.includes('/review'))return 'reviews';
   if(p.includes('/astrologer-quiz/')||p.includes('/astrologer-auto-approval/'))return 'astrologer_settings';
-  if(p.includes('/set-open-workflow')||p.includes('/set-commission')||p.includes('/set-word-count')||p.includes('/set-workflow'))return 'settings';
-  if(p.includes('/approve-question')||p.includes('/reallocate-question')||p.includes('/reject-question')||p.includes('/retry-refund')||p.includes('/sync-refund')||p.includes('/edit-question')||p.includes('/takeover-answer')||p.includes('/approve-answer')||p.includes('/reject-answer')||p.includes('/submit-answer')||p.includes('/edit-answer')||p.includes('/claim-question')||p.includes('/mark-answer-viewed'))return 'questions';
   if(p.includes('/register-astrologer-profile')||p.includes('/google-form/astrologer-qualification')||p.includes('/approve-astrologer')||p.includes('/reject-astrologer')||p.includes('/astrologer-pricing'))return 'astrologers';
-  if(p.includes('/verify-payment')||p.includes('/recover-payment')||p.includes('/razorpay/webhook')||p.includes('/credit-commission'))return 'financial';
+  if(p.includes('/wallet/recharge/')||p.includes('/razorpay/webhook')||p.includes('/horoscope-payment/'))return 'financial';
+  if(p.includes('/appointment-booking')||p.includes('/appointment-status'))return 'appointments';
   return 'unknown';
 }
 
@@ -2434,8 +2424,8 @@ app.get("/astrologer/earnings", async (req, res) => {
       }
     }
 
-    // These projected result sets preserve all legacy credited money without
-    // downloading unrelated question/private-consultation fields.
+    // Previously credited consultation earnings remain included for accurate withdrawal eligibility.
+    // This is historical read-only accounting; the retired Q&A/Private Consultation routes are gone.
     const questions = questionSnap.docs.map(d=>({id:d.id,questionId:d.id,...d.data()}));
     const allPrivate = privateSnap.docs.map(d=>({id:d.id,consultationId:d.id,...d.data()}));
     const withdrawals = withdrawalSnap.docs.map(d=>({id:d.id,...d.data()}))
