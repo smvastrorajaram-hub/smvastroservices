@@ -39,6 +39,7 @@ test('CORS permits first-party sites and explicit configured origins, but not ar
 
 test('rate policy covers abuse-sensitive lookups/forms, public reads and payment creation', () => {
   assert.equal(ratePolicyForRequest({ method: 'POST', path: '/lookup-id-login' }).name, 'identity-lookup');
+  assert.deepEqual(ratePolicyForRequest({ method: 'POST', path: '/auth/send-verification-email' }), { name: 'verification-email', windowMs: 15 * 60_000, max: 5 });
   assert.equal(ratePolicyForRequest({ method: 'POST', path: '/contact-query' }).name, 'public-form');
   assert.equal(ratePolicyForRequest({ method: 'GET', path: '/public/astrologers' }).name, 'public-read');
   assert.equal(ratePolicyForRequest({ method: 'POST', path: '/wallet/recharge/create-order' }).name, 'payment-action');
