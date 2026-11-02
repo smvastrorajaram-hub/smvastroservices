@@ -62,7 +62,7 @@ test('English verification email points only to the dedicated white handler', ()
   const verificationUrl = buildCustomVerificationHandlerUrl(generatedLink());
   const email = createVerificationEmail({ verificationUrl });
   assert.equal(email.subject, 'Verify your SMV ASTRO account');
-  assert.match(email.text, /verify your SMV ASTRO email address/i);
+  assert.match(email.text, /confirm that this email address belongs to you/i);
   assert.match(email.html, /Verify your email address/);
   assert.match(email.html, /background:#ffffff/);
   assert.ok(email.html.includes(verificationUrl.replace(/&/g, '&amp;')));
