@@ -471,14 +471,14 @@
   const privateRating=v=>Math.max(0,Math.min(5,Number(v)||0));
   const privateStars=v=>{const n=privateRating(v);return `<span class="smv-rating-stars" aria-label="${n.toFixed(1)} out of 5">${[0,1,2,3,4].map(i=>`<span class="smv-rating-star" style="--fill:${Math.max(0,Math.min(1,n-i))*100}%">★</span>`).join('')}</span>`;};
   const privateSummary=v=>{const n=privateRating(v);return n?`${privateStars(n)} <strong>${Number(n.toFixed(1))}/5</strong>`:'<span class="smv-rating-none">No ratings yet</span>';};
-  let privateListRequest=null,privateListLoadedAt=0;
-  async function loadPrivateAstrologers(){
+  let astrologerListRequest=null,astrologerListLoadedAt=0;
+  async function loadAstrologerList(){
     const host=$('privateConsultationAstrologers');if(!host)return;
-    if(privateListRequest)return privateListRequest;
-    if(privateListLoadedAt)return;
+    if(astrologerListRequest)return astrologerListRequest;
+    if(astrologerListLoadedAt)return;
     if(!window.__smvGetPublicAstrologersOnce)return;
     host.innerHTML='<div class="empty">Loading approved astrologers...</div>';
-    privateListRequest=(async()=>{
+    astrologerListRequest=(async()=>{
       try{
         const items=await window.__smvGetPublicAstrologersOnce();
         try{await fb();}catch(authError){console.warn('Firebase auth not ready for Wallet-based duration limits:',authError?.message||authError);}
@@ -522,27 +522,27 @@
           host.append(row);
         }
         if(!items.length)host.innerHTML='<div class="empty">No approved astrologers available yet.</div>';
-        privateListLoadedAt=Date.now();
+        astrologerListLoadedAt=Date.now();
         smvRefreshLiveMinuteLimits(true).catch(()=>{});
       }catch(e){
         host.innerHTML='<div class="empty error">Unable to load approved astrologers. Please try again.</div><button type="button" class="smv-compact-control">TRY AGAIN</button>';
-        host.querySelector('button').onclick=()=>loadPrivateAstrologers();
-      }finally{privateListRequest=null;}
-    })();return privateListRequest;
+        host.querySelector('button').onclick=()=>loadAstrologerList();
+      }finally{astrologerListRequest=null;}
+    })();return astrologerListRequest;
   }
-  function openPrivateList(){if(!$('private-consultation')?.classList.contains('hidden'))loadPrivateAstrologers();}
-  window.addEventListener('smv:private-consultation-open',openPrivateList);
-  window.addEventListener('smv:app-ready',openPrivateList);
+  function openAstrologerList(){if(!$('consult')?.classList.contains('hidden'))loadAstrologerList();}
+  window.addEventListener('smv:consult-open',openAstrologerList);
+  window.addEventListener('smv:app-ready',openAstrologerList);
   window.addEventListener('smv:astrologer-availability-changed',()=>{
-    privateListLoadedAt=0;
-    if(!$('private-consultation')?.classList.contains('hidden')){
-      if(!privateListRequest)loadPrivateAstrologers();
+    astrologerListLoadedAt=0;
+    if(!$('consult')?.classList.contains('hidden')){
+      if(!astrologerListRequest)loadAstrologerList();
     }
   });
   window.addEventListener('smv:astrologer-pricing-changed',()=>{
-    privateListLoadedAt=0;
+    astrologerListLoadedAt=0;
     smvLiveWalletCache=null;
-    if(!$('private-consultation')?.classList.contains('hidden')&&!privateListRequest)loadPrivateAstrologers();
+    if(!$('consult')?.classList.contains('hidden')&&!astrologerListRequest)loadAstrologerList();
   });
   window.addEventListener('smv:auth-user',()=>{
     smvLiveWalletCache=null;
@@ -552,7 +552,7 @@
     smvLiveWalletCache=null;
     smvRefreshLiveMinuteLimits(false).catch(()=>{});
   });
-  openPrivateList();
+  openAstrologerList();
   window.addEventListener('smv:logged-out',()=>{
     walletBookingRequestId=null;walletBookingRequestOwner='';
   });
