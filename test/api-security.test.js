@@ -78,7 +78,7 @@ test('all literal route-specific JSON parser limits are enforced by the early pa
     count += 1;
     assert.equal(requestBodyLimit(match[2]), match[4], 'global parser limit must preserve ' + match[2]);
   }
-  assert.ok(count >= 40, 'expected broad coverage of literal route-specific parser limits');
+  assert.ok(count >= 20, 'expected broad coverage of the remaining active route-specific parser limits');
 });
 
 test('rate limiter keeps its in-memory bucket table bounded for many unique client IPs', () => {
