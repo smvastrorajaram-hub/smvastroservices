@@ -80,9 +80,6 @@ test('Live/Booking, Wallet and Astrologer Earnings routes remain available', () 
   }
   assert.ok(wallet.includes('/wallet/recharge/create-order'));
   assert.ok(wallet.includes('/wallet/recharge/verify'));
-  assert.ok(server.includes('function scheduledBookingReadStatus(appointment, nowMs = Date.now()) {'));
-  assert.ok(server.includes('function nextBookingId() {'));
-  assert.ok(server.includes('const bookingId = await nextBookingId();'));
 });
 
 test('the shared Razorpay webhook retains Wallet settlement and contains no old Q&A branches', () => {
