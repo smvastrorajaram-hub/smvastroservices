@@ -64,7 +64,6 @@
     let app = null;
     try {
       const link = parseFirebaseActionLink(pasted);
-      pasted && void 0;
       if (!["verifyEmail", "resetPassword"].includes(link.mode)) {
         throw new Error("Unsupported Firebase action mode: " + link.mode);
       }
