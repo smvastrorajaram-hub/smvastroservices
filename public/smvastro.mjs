@@ -687,7 +687,7 @@ async function resolveSmvRole(user, profileHint=null){
 
 // V194 — A cold reopen deliberately stays on Home, so the initial auth callback
 // does not spend a Firestore read resolving the role. Protected customer actions
-// (for example Private Consultation -> SELECT ASTROLOGER) can lazily resolve the
+// (for example Consult an Astrologer -> SELECT ASTROLOGER) can lazily resolve the
 // already-authenticated user's role on the first explicit click. This does NOT
 // open Dashboard and therefore preserves the V116/V193 cold-reopen invariant.
 async function smvEnsureCustomerSessionForProtectedAction(){
@@ -1478,7 +1478,7 @@ function smvBindCustomerBookingChat(){
   const role=String(window.__smvCurrentRole||'customer').toLowerCase();
   if(role!=='customer'){alert('Consult an Astrologer is available for Customer accounts. Please sign in with a Customer account.');return;}
   if(typeof window.__smvOpenBookingChat==='function'){window.__smvOpenBookingChat();return;}
-  if(typeof window.__smvNavigatePublic==='function'){window.__smvNavigatePublic('private-consultation');return;}
+  if(typeof window.__smvNavigatePublic==='function'){window.__smvNavigatePublic('consult');return;}
   location.href='./?view=consult';
  };
 }
@@ -1935,7 +1935,7 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
       finally{profileDescriptionSubmit.disabled=false;profileDescriptionSubmit.textContent='SUBMIT FOR ADMIN APPROVAL';}
     };
   }
-  // Legacy Private Consultation panel removed from the Astrologer Dashboard; Live Call / Chat is the consultation entry point.
+  // The Astrologer List and current Live Call / Chat entry point are the supported consultation flow.
 
   if($('withdrawBtn')) $('withdrawBtn').onclick = async () => {
 
