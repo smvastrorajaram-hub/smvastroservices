@@ -3,6 +3,8 @@ name: Wallet core tests
 on:
   pull_request:
     paths:
+      - 'firestore-read-cache.js'
+      - 'test/firestore-read-cache.test.js'
       - 'wallet-service.js'
       - 'admin-auth.js'
       - 'test/admin-auth.test.js'
@@ -57,6 +59,8 @@ jobs:
           node-version: '22'
       - name: Check JavaScript syntax
         run: |
+          node --check firestore-read-cache.js
+          node --check test/firestore-read-cache.test.js
           node --check server.js
           node --check admin-auth.js
           node --check test/admin-auth.test.js
@@ -78,6 +82,8 @@ jobs:
         run: node --test test/admin-auth.test.js
       - name: Run Razorpay Checkout reliability tests
         run: node --test test/razorpay-checkout-loader.test.mjs
+      - name: Run Firestore role-cache tests
+        run: npm run test:firestore-read-cache
       - name: Run Wallet unit tests
         run: npm run test:wallet
       - name: Run Live Session billing tests
