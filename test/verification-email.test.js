@@ -26,7 +26,7 @@ test('Firebase-generated verification action is rewritten to the dedicated HTTPS
   assert.equal(url.searchParams.get('mode'), 'verifyEmail');
   assert.equal(url.searchParams.get('oobCode'), 'test-one-time-code');
   assert.equal(url.searchParams.get('apiKey'), FIREBASE_WEB_API_KEY);
-  assert.equal(url.searchParams.get('lang'), 'ta');
+  assert.equal(url.searchParams.get('lang'), 'en');
   assert.equal(url.searchParams.has('continueUrl'), false);
 });
 
