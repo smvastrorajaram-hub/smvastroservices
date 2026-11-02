@@ -3441,22 +3441,22 @@ html body[data-smv-workspace="open"] #smv-dashboard-page:where(:not(.smv-css-isl
 @media (max-width: 600px){
 .smv-astro-directory-head img{width:60px;height:60px;flex-basis:60px}
 .smv-review-toggle:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important}}
-#private-consultation .smv-private-consult-row{display:block;padding:12px 0px;border-bottom:1px solid rgb(229, 229, 229)}
-#private-consultation .smv-private-consult-head{display:flex;gap:10px;align-items:center}
-#private-consultation .smv-private-consult-photo{width:54px;height:54px;border-radius:50%;object-fit:cover;flex:0 0 54px}
-#private-consultation .smv-private-consult-meta h4{margin:0px}
-#private-consultation .smv-private-consult-description{margin:7px 0px}
+#consult .smv-private-consult-row{display:block;padding:12px 0px;border-bottom:1px solid rgb(229, 229, 229)}
+#consult .smv-private-consult-head{display:flex;gap:10px;align-items:center}
+#consult .smv-private-consult-photo{width:54px;height:54px;border-radius:50%;object-fit:cover;flex:0 0 54px}
+#consult .smv-private-consult-meta h4{margin:0px}
+#consult .smv-private-consult-description{margin:7px 0px}
 @media (max-width: 700px){
-#private-consultation{padding-top:6px!important}
-#private-consultation .wrap{padding-left:8px!important;padding-right:8px!important}
-#private-consultation .section-title{margin-bottom:5px!important}
-#private-consultation .section-title h2{margin:0px 0px 3px!important}
-#private-consultation .section-title p{margin:0px 0px 6px!important}
-#private-consultation .smv-private-consult-row{padding:7px 2px!important}
-#private-consultation .smv-private-consult-head{gap:7px!important}
-#private-consultation .smv-private-consult-photo{width:44px!important;height:44px!important;flex:0 0 44px!important}
-#private-consultation .smv-private-consult-meta h4{margin:0px 0px 1px!important}
-#private-consultation .smv-private-consult-description{margin:4px 0px!important}}
+#consult{padding-top:6px!important}
+#consult .wrap{padding-left:8px!important;padding-right:8px!important}
+#consult .section-title{margin-bottom:5px!important}
+#consult .section-title h2{margin:0px 0px 3px!important}
+#consult .section-title p{margin:0px 0px 6px!important}
+#consult .smv-private-consult-row{padding:7px 2px!important}
+#consult .smv-private-consult-head{gap:7px!important}
+#consult .smv-private-consult-photo{width:44px!important;height:44px!important;flex:0 0 44px!important}
+#consult .smv-private-consult-meta h4{margin:0px 0px 1px!important}
+#consult .smv-private-consult-description{margin:4px 0px!important}}
 #smv-dashboard-page #dashboard .card:where(:not(.smv-css-island,.smv-css-island *)), #smv-dashboard-page #admin .card:where(:not(.smv-css-island,.smv-css-island *)), #smv-dashboard-page #dashboardContent .card:where(:not(.smv-css-island,.smv-css-island *)), #smv-dashboard-page #admin .card .card:where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;outline:0px!important;padding-left:0px!important;padding-right:0px!important}
 #admin button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn), #admin .btn:not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn), #admin input[type="button"], #admin input[type="submit"]{background:transparent!important;border:0px!important;border-radius:0px!important;box-shadow:none!important;outline:0px!important;color:#30251b!important;-webkit-text-fill-color:#30251b!important;width:auto!important;min-width:0px!important;min-height:0px!important;height:auto!important;padding:4px 0px!important}
 #admin .smv-admin-nav, #admin .action-row{background:transparent!important;border:0px!important;box-shadow:none!important}
@@ -3665,7 +3665,7 @@ html body.smv-sitemap-page.smv-sitemap-v2 nav.smv-sitemap-links > a span:where(:
 .smv-rating-none,
 .smv-rating-loading,
 .smv-rating-count:where(:not(.smv-type-root,.smv-type-root *)){font-size:14px}
-#private-consultation .smv-private-rating-summary{margin:5px 0px 6px}
+#consult .smv-private-rating-summary{margin:5px 0px 6px}
 @media (max-width: 700px){
 .smv-astro-rating-summary, .smv-private-rating-summary{gap:6px;margin:5px 0px}
 .smv-rating-star:where(:not(.smv-type-root,.smv-type-root *)){font-size:21px}
@@ -3677,9 +3677,9 @@ html body.smv-sitemap-page.smv-sitemap-v2 nav.smv-sitemap-links > a span:where(:
 .smv-consult-back:where(:not(.smv-type-root,.smv-type-root *)){font-style:inherit;font-size:inherit;line-height:inherit;font-family:inherit;font-weight:800}
 .smv-consult-dedicated-shell{width:100%;max-width:760px;margin:0px auto;padding:18px 16px 32px;box-sizing:border-box}
 .smv-consult-dedicated-shell.hidden{display:none}
-.smv-consult-dedicated-shell #private-consultation:where(:not(.hidden)){display:block;margin:0px;padding:0px}
-#private-consultation .smv-private-main-rating{display:flex;align-items:center;gap:7px;margin:7px 0px 5px}
-#private-consultation .smv-inline-reviews{width:auto;max-width:240px;margin:4px 0px 7px}
+.smv-consult-dedicated-shell #consult:where(:not(.hidden)){display:block;margin:0px;padding:0px}
+#consult .smv-private-main-rating{display:flex;align-items:center;gap:7px;margin:7px 0px 5px}
+#consult .smv-inline-reviews{width:auto;max-width:240px;margin:4px 0px 7px}
 #dashboardContent .smv-consultation-item .smv-question-text:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .smv-astrologer-dashboard .smv-astro-question-text:where(:not(.smv-css-island,.smv-css-island *)){color:#30251b!important;-webkit-text-fill-color:#30251b!important;}
 #dashboardContent .smv-consultation-item .smv-customer-answer-text:where(:not(.smv-css-island,.smv-css-island *)), #dashboardContent .smv-astrologer-dashboard .smv-astro-answer-text:where(:not(.smv-css-island,.smv-css-island *)){color:#30251b!important;-webkit-text-fill-color:#30251b!important;}
 #dashboardContent .smv-consultation-item .smv-customer-meta-line:where(:not(.smv-css-island,.smv-css-island *)){color:#30251b!important;-webkit-text-fill-color:#30251b!important;}
@@ -3718,10 +3718,10 @@ html body.smv-sitemap-page.smv-sitemap-v2 nav.smv-sitemap-links > a span:where(:
 #admin [data-qcard] > .action-row > [data-qsave], #admin [data-qcard] > .action-row > [data-qdelete]{flex:1 1 0px!important;width:auto!important;min-width:0px!important;margin:0px!important}
 #admin .action-row{display:flex!important;flex-flow:wrap!important;align-items:center!important;gap:8px!important}
 #admin .action-row > .btn, #admin .action-row > button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)){flex:1 1 calc(50% - 4px)!important;width:auto!important;min-width:0px!important}
-html body #private-consultation button.smv-compact-control{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;width:148px;height:29px;min-height:29px;padding:4px 6px;margin:5px 0px;border:1px solid rgb(200, 164, 93);border-radius:7px;background:rgb(139, 16, 29);color:rgb(255, 255, 255);white-space:nowrap;cursor:pointer;box-shadow:rgba(80, 19, 32, 0.125) 0px 3px 8px}
-html body #private-consultation button.smv-compact-control:disabled{opacity:0.5;cursor:not-allowed}
-#private-consultation .smv-private-sub-review{padding:5px 0px;border-bottom:1px solid rgb(238, 238, 238)}
-#private-consultation .smv-private-sub-review p{margin:3px 0px}
+html body #consult button.smv-compact-control{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;width:148px;height:29px;min-height:29px;padding:4px 6px;margin:5px 0px;border:1px solid rgb(200, 164, 93);border-radius:7px;background:rgb(139, 16, 29);color:rgb(255, 255, 255);white-space:nowrap;cursor:pointer;box-shadow:rgba(80, 19, 32, 0.125) 0px 3px 8px}
+html body #consult button.smv-compact-control:disabled{opacity:0.5;cursor:not-allowed}
+#consult .smv-private-sub-review{padding:5px 0px;border-bottom:1px solid rgb(238, 238, 238)}
+#consult .smv-private-sub-review p{margin:3px 0px}
 /* V213/V10: true centered Admin heading + stable 4 x 2 quick-link grid. */
 #admin > .card:first-child > div:first-child{width:100%!important;display:flex!important;justify-content:center!important;text-align:center!important}
 #admin > .card:first-child > div:first-child > div{width:100%!important;max-width:920px!important;margin:0 auto!important;text-align:center!important}
