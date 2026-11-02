@@ -860,6 +860,17 @@ function scheduledBookingReadStatus(appointment, nowMs = Date.now()) {
   return deadline > 0 && Number(nowMs) >= deadline ? 'missed_by_astrologer' : status;
 }
 
+function nextBookingId() {
+  const dateKey = indiaDateKey();
+  const ref = db.collection("smv_counters").doc(`booking_${dateKey}`);
+  return db.runTransaction(async tx => {
+    const snap = await tx.get(ref);
+    const next = (snap.exists ? Number(snap.data()?.lastNumber || 0) : 0) + 1;
+    tx.set(ref, { lastNumber: next, dateKey, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    return `SMV-BKG-${dateKey}-${String(next).padStart(2, "0")}`;
+  });
+}
+
 app.get("/astrologer/appointments", async (req,res)=>{
   const user=await requireUser(req,res);
   if(!user)return;
