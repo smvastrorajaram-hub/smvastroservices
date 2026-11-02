@@ -21,6 +21,8 @@ const PORT = process.env.PORT || 10000;
 // Admin membership is rechecked at least every five seconds; authorization still fails closed.
 const adminAllowlistCache=createTtlSingleFlightCache({ttlMs:5000,maxEntries:2000});
 const accountRoleCache=createTtlSingleFlightCache({ttlMs:5000,maxEntries:2000});
+// Public Wallet offer banners are display-only; reuse the same safe snapshot for 15 seconds.
+const walletRechargeOffersCache=createTtlSingleFlightCache({ttlMs:15000,maxEntries:1});
 const IS_STAGING_DEPLOYMENT = String(process.env.NODE_ENV || "").trim().toLowerCase() === "staging" || String(process.env.FIREBASE_PROJECT_ID || "").trim() === "smv-astro-staging";
 const ADMIN_UID = String(process.env.ADMIN_UID || (IS_STAGING_DEPLOYMENT ? "" : "TwjeEIFS3Zcf1SxboLZoujm91Ky2")).trim();
 const ADMIN_UIDS = new Set([ADMIN_UID, ...String(process.env.ADMIN_UIDS || '').split(',')].map(value => String(value || '').trim()).filter(Boolean));
@@ -4501,45 +4503,47 @@ function walletOfferView(docSnap) {
 // Award eligibility is still checked again inside the captured-recharge transaction.
 app.get('/wallet/recharge-offers', async (req, res) => {
   try {
-    const snap = await db.collection('smv_offers')
-      .where('offerType', '==', WALLET_RECHARGE_OFFER_TYPE).limit(100).get();
-    const nowMs = Date.now();
-    const offers = snap.docs.map(docSnap => {
-      const offer = docSnap.data() || {};
-      const minimum = Number(offer.minimumRechargeAmountPaise ?? 0);
-      const bonus = Number(offer.bonusMinutes);
-      const used = Number(offer.usedCount ?? 0);
-      const totalLimit = Number(offer.totalUsageLimit ?? 0);
-      const perCustomerLimit = Number(offer.perCustomerLimit ?? 1);
-      if (offer.enabled !== true ||
-          !Number.isSafeInteger(minimum) || minimum < 0 ||
-          !Number.isSafeInteger(bonus) || bonus < 1 || bonus > 1440 ||
-          !Number.isSafeInteger(used) || used < 0 ||
-          !Number.isSafeInteger(totalLimit) || totalLimit < 0 ||
-          !Number.isSafeInteger(perCustomerLimit) || perCustomerLimit < 0 ||
-          (totalLimit > 0 && used >= totalLimit)) return null;
-      if (offer.startAt) {
-        const start = offerDateMilliseconds(offer.startAt);
-        if (start === null || nowMs < start) return null;
-      }
-      if (offer.endAt) {
-        const end = offerDateMilliseconds(offer.endAt);
-        if (end === null || nowMs >= end) return null;
-      }
-      return {
-        id: docSnap.id,
-        name: walletOfferText(offer.name),
-        bannerTheme: WALLET_OFFER_THEMES.includes(offer.bannerTheme) ? offer.bannerTheme : 'auto',
-        minimumRechargeAmountPaise: minimum,
-        bonusMinutes: bonus,
-        perCustomerLimit,
-        startAt: offer.startAt || null,
-        endAt: offer.endAt || null,
-        priority: walletOfferWholeNumber(offer.priority, 0)
-      };
-    }).filter(Boolean).sort((a, b) =>
-      b.priority - a.priority || b.bonusMinutes - a.bonusMinutes || a.name.localeCompare(b.name)
-    );
+    const offers = await walletRechargeOffersCache.get('active', async () => {
+      const snap = await db.collection('smv_offers')
+        .where('offerType', '==', WALLET_RECHARGE_OFFER_TYPE).limit(100).get();
+      const nowMs = Date.now();
+      return snap.docs.map(docSnap => {
+        const offer = docSnap.data() || {};
+        const minimum = Number(offer.minimumRechargeAmountPaise ?? 0);
+        const bonus = Number(offer.bonusMinutes);
+        const used = Number(offer.usedCount ?? 0);
+        const totalLimit = Number(offer.totalUsageLimit ?? 0);
+        const perCustomerLimit = Number(offer.perCustomerLimit ?? 1);
+        if (offer.enabled !== true ||
+            !Number.isSafeInteger(minimum) || minimum < 0 ||
+            !Number.isSafeInteger(bonus) || bonus < 1 || bonus > 1440 ||
+            !Number.isSafeInteger(used) || used < 0 ||
+            !Number.isSafeInteger(totalLimit) || totalLimit < 0 ||
+            !Number.isSafeInteger(perCustomerLimit) || perCustomerLimit < 0 ||
+            (totalLimit > 0 && used >= totalLimit)) return null;
+        if (offer.startAt) {
+          const start = offerDateMilliseconds(offer.startAt);
+          if (start === null || nowMs < start) return null;
+        }
+        if (offer.endAt) {
+          const end = offerDateMilliseconds(offer.endAt);
+          if (end === null || nowMs >= end) return null;
+        }
+        return {
+          id: docSnap.id,
+          name: walletOfferText(offer.name),
+          bannerTheme: WALLET_OFFER_THEMES.includes(offer.bannerTheme) ? offer.bannerTheme : 'auto',
+          minimumRechargeAmountPaise: minimum,
+          bonusMinutes: bonus,
+          perCustomerLimit,
+          startAt: offer.startAt || null,
+          endAt: offer.endAt || null,
+          priority: walletOfferWholeNumber(offer.priority, 0)
+        };
+      }).filter(Boolean).sort((a, b) =>
+        b.priority - a.priority || b.bonusMinutes - a.bonusMinutes || a.name.localeCompare(b.name)
+      );
+    });
     return res.set('Cache-Control', 'no-store').json({ success: true, offers });
   } catch (error) {
     console.error('Public Wallet recharge offers read failed:', error?.stack || error);
@@ -4622,6 +4626,7 @@ app.post('/admin/offers/save', express.json({ limit: '20kb' }), async (req, res)
       createdAt: existing.createdAt || now, updatedAt: now, updatedBy: user.uid
     };
     await offerRef.set(data, { merge: true });
+    walletRechargeOffersCache.invalidate('active');
     return res.set('Cache-Control', 'no-store').json({ success: true, id: offerRef.id, offer: { id: offerRef.id, ...data } });
   } catch (error) {
     if (Number(error?.httpStatus)) return res.status(error.httpStatus).json({ success: false, error: error.message });
@@ -4645,6 +4650,7 @@ app.post('/admin/offers/delete', express.json({ limit: '10kb' }), async (req, re
       return res.status(409).json({ success: false, error: 'This Offer has redemption history. Turn it OFF instead of deleting it.' });
     }
     await ref.delete();
+    walletRechargeOffersCache.invalidate('active');
     return res.json({ success: true, id });
   } catch (error) {
     console.error('Admin Wallet Offer delete failed:', error?.stack || error);
@@ -4672,6 +4678,8 @@ app.use((req, res) => {
   return res.status(404).send("Not Found");
 });
 
-answerCredit.start();
+// The old Q&A/Private Consultation product is not part of the Staging Live/Booking test scope.
+// Keep its 15-minute Firestore sweep disabled on Staging only; Production retains the original scheduler.
+answerCredit.start({enabled: !IS_STAGING_DEPLOYMENT});
 
 app.listen(PORT, "0.0.0.0", () => console.log(`SMV ASTRO Razorpay backend running on port ${PORT}`));
