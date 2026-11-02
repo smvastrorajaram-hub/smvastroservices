@@ -4,6 +4,7 @@ const {registerLiveSessionRoutes,astrologerAvailabilityStatus}=require('./live-s
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
 const {isConfiguredAdminIdentity}=require('./admin-auth');
 const {createTtlSingleFlightCache}=require('./firestore-read-cache');
+const {isStagingDeployment}=require('./deployment-environment');
 const express = require("express");
 const crypto = require("crypto");
 const PredictionSynthesis = require("./prediction-synthesis");
@@ -23,7 +24,7 @@ const adminAllowlistCache=createTtlSingleFlightCache({ttlMs:5000,maxEntries:2000
 const accountRoleCache=createTtlSingleFlightCache({ttlMs:5000,maxEntries:2000});
 // Public Wallet offer banners are display-only; reuse the same safe snapshot for 15 seconds.
 const walletRechargeOffersCache=createTtlSingleFlightCache({ttlMs:15000,maxEntries:1});
-const IS_STAGING_DEPLOYMENT = String(process.env.NODE_ENV || "").trim().toLowerCase() === "staging" || String(process.env.FIREBASE_PROJECT_ID || "").trim() === "smv-astro-staging";
+const IS_STAGING_DEPLOYMENT = isStagingDeployment(process.env);
 const ADMIN_UID = String(process.env.ADMIN_UID || (IS_STAGING_DEPLOYMENT ? "" : "TwjeEIFS3Zcf1SxboLZoujm91Ky2")).trim();
 const ADMIN_UIDS = new Set([ADMIN_UID, ...String(process.env.ADMIN_UIDS || '').split(',')].map(value => String(value || '').trim()).filter(Boolean));
 const ADMIN_AUTH_EMAILS = new Set(String(process.env.ADMIN_AUTH_EMAILS || '').split(',').map(value => String(value || '').trim().toLowerCase()).filter(Boolean));
