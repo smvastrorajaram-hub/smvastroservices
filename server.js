@@ -6,6 +6,7 @@ const {isConfiguredAdminIdentity}=require('./admin-auth');
 const {getStorage}=require('firebase-admin/storage');
 const {inspectSmvAndroidApk,MAX_APK_BYTES,SMV_ANDROID_PACKAGE}=require('./android-app-release');
 const {initializeMultiProjectFirestore,resolveWalletDomainDatabase}=require('./multi-project-firestore');
+const {buildCustomVerificationHandlerUrl,createVerificationEmail,createVerificationEmailRateLimiter}=require('./verification-email');
 const express = require("express");
 const crypto = require("crypto");
 const PredictionSynthesis = require("./prediction-synthesis");
@@ -14,6 +15,7 @@ const admin = require("firebase-admin");
 
 
 const app = express();
+const verificationEmailRateLimiter=createVerificationEmailRateLimiter();
 app.use((req,res,next)=>{
  const started=process.hrtime.bigint();const json=res.json.bind(res);
  res.json=body=>{if(!res.headersSent)res.set('Server-Timing','app;dur='+Number(process.hrtime.bigint()-started)/1e6);return json(body);};next();
@@ -328,6 +330,69 @@ async function requireUser(req, res) {
     return null;
   }
 }
+
+// Send a Firebase-generated verification action through the existing Render Resend sender.
+app.post("/auth/send-verification-email", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  const identity = await requireUser(req, res);
+  if (!identity) return;
+
+  const projectId = String(process.env.FIREBASE_PROJECT_ID || admin.app()?.options?.projectId || "").trim();
+  if (projectId !== "smv-astro") {
+    return res.status(503).json({
+      success: false,
+      error: "Custom email verification is enabled only for the SMV ASTRO Production project."
+    });
+  }
+
+  // This endpoint intentionally uses the existing Render Resend credentials.
+  // Do not silently fall back to SMTP or the Resend test sender.
+  if (!RESEND_API_KEY || !String(process.env.RESEND_FROM || "").trim()) {
+    return res.status(503).json({
+      success: false,
+      error: "The production verification email sender is not configured."
+    });
+  }
+
+  try {
+    const userRecord = await admin.auth().getUser(identity.uid);
+    if (userRecord.disabled) {
+      return res.status(403).json({ success: false, error: "This account cannot request email verification." });
+    }
+    const tokenEmail = String(identity.email || "").trim().toLowerCase();
+    const email = String(userRecord.email || "").trim();
+    if (!email || !tokenEmail || tokenEmail !== email.toLowerCase()) {
+      return res.status(403).json({ success: false, error: "The authenticated account email could not be confirmed." });
+    }
+    if (userRecord.emailVerified) {
+      return res.json({ success: true, ok: true, sent: false, alreadyVerified: true });
+    }
+
+    const rate = verificationEmailRateLimiter.reserve(identity.uid);
+    if (!rate.allowed) {
+      res.set("Retry-After", String(rate.retryAfterSeconds));
+      return res.status(429).json({
+        success: false,
+        error: rate.reason === "daily_limit"
+          ? "The verification email limit has been reached. Please try again later."
+          : "A verification email was just requested. Please wait before trying again.",
+        retryAfterSeconds: rate.retryAfterSeconds
+      });
+    }
+
+    const generatedLink = await admin.auth().generateEmailVerificationLink(email);
+    const verificationUrl = buildCustomVerificationHandlerUrl(generatedLink);
+    const content = createVerificationEmail({ verificationUrl });
+    await sendEmail({ to: email, subject: content.subject, text: content.text, html: content.html });
+    return res.json({ success: true, ok: true, sent: true });
+  } catch (error) {
+    console.error("Custom verification email failed:", error?.message || error);
+    return res.status(502).json({
+      success: false,
+      error: "The verification email could not be sent. Please wait and request another link."
+    });
+  }
+});
 
 async function isAdminUser(user) {
   if (!user) return false;
