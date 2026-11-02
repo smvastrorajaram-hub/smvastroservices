@@ -1,0 +1,35 @@
+name: Firebase Custom Email Action Handler Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/auth/action.html'
+      - 'public/auth/action.mjs'
+      - 'test/firebase-email-action-handler.test.js'
+      - '.github/workflows/firebase-email-action-handler.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'public/auth/action.html'
+      - 'public/auth/action.mjs'
+      - 'test/firebase-email-action-handler.test.js'
+      - '.github/workflows/firebase-email-action-handler.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-email-action-handler:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check browser module syntax
+        run: node --check public/auth/action.mjs
+      - name: Test email action handler safety and routing
+        run: node --test test/firebase-email-action-handler.test.js
