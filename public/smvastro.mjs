@@ -1,4 +1,5 @@
 import { ensureRazorpayCheckout } from './razorpay-checkout-loader.mjs?v=20261026-payment-reliability-v1';
+import { shouldDeferUnverifiedSignOut } from './verification-auth-state.mjs';
 import './chat-moderation.js?v=20261030-chat-moderation-v1';
 
 // SMV ASTRO merged frontend application module
@@ -219,6 +220,7 @@ async function renderPublicApi(path, options={}){
 const ADMIN_UID = IS_SMV_PHASE1_STAGING ? "" : "TwjeEIFS3Zcf1SxboLZoujm91Ky2";
 let currentUser=null, selectedAstro=null, pendingAfterLogin=null;
 let smvRegistrationInProgress=false; // V200: prevent auth listener from signing out a just-created unverified registration before secure profile setup finishes.
+let smvVerificationResendInProgress=false; // Keep the temporary unverified Firebase session alive only while the trusted resend request runs.
 let smvNavigationEpoch=0;
 // Dashboard hydration state is UI/navigation state only.
 let dashboardReadyUid=null;
@@ -1025,6 +1027,9 @@ async function resendVerificationEmail(){
    message("authMsg",'<span class="error">Please enter your email and password first.</span>');
    return;
  }
+ // The global auth listener normally signs out every unverified user. Hold that
+ // guard open for this short, explicit resend flow so renderApi can use the ID token.
+ smvVerificationResendInProgress=true;
  try{
    const cred=await signInWithEmailAndPassword(auth,email,password);
    const result=await smvSendVerificationEmail(cred.user);
@@ -1039,9 +1044,12 @@ async function resendVerificationEmail(){
    }
  }catch(e){
    try{await signOut(auth);}catch(_){}
+   currentUser=null;
    const detail=e?.status===429||e?.status>=500?String(e.message||""):"";
    const safe=detail||"Unable to send verification email. Please check your email and password.";
    message("authMsg",'<span class="error">'+escapeHtml(safe)+'</span>');
+ }finally{
+   smvVerificationResendInProgress=false;
  }
 }
 window.resendVerificationEmail=resendVerificationEmail;
@@ -3725,10 +3733,12 @@ if(auth){ onAuthStateChanged(auth,async user=>{
      hide('smv-content-hub'); window.__smvContentVisible=false;
      lastAuthUid=user.uid; window.__SMV_LOGGED_OUT=false; touchSession(); armIdleTimer(); window.dispatchEvent(new Event('smv:auth-user'));
      if(user.uid!==ADMIN_UID && !user.emailVerified){
-       // V200 registration race guard: createUserWithEmailAndPassword emits this
-       // callback before the trusted backend has created smv_users/public ID.
-       // Do not sign out the just-created user until that registration transaction finishes.
-       if(smvRegistrationInProgress){ armIdleTimer(); return; }
+       // Registration and explicit resend both need a brief unverified Firebase
+       // session to finish their authenticated Render request before sign-out.
+       if(shouldDeferUnverifiedSignOut({
+         registrationInProgress:smvRegistrationInProgress,
+         verificationResendInProgress:smvVerificationResendInProgress
+       })){ armIdleTimer(); return; }
        await signOut(auth); currentUser=null; clearIdleTimer(); lastAuthUid=null; hide("dashboard"); hide("admin"); hide("dashLink"); hide("adminLink"); smvSyncHeaderAuthNav(null); return;
      }
      // signInWithPopup also fires this listener. Let the explicit Google role
