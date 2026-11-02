@@ -67,6 +67,26 @@ test('the current Astrologer List is kept behind the clean /consult route', () =
   assert.ok(frontend.includes("smvNavigatePublic('consult')"));
 });
 
+test('Production server restores all runtime environment declarations before their first use', () => {
+  const server = read('server.js');
+  const variables = [
+    'RAZORPAY_KEY_ID',
+    'RAZORPAY_KEY_SECRET',
+    'ADMIN_EMAIL',
+    'RESEND_API_KEY',
+    'RESEND_FROM',
+    'RESEND_TEST_RECIPIENT',
+    'PHONE_VERIFICATION_MODE',
+    'WHATSAPP_OTP_PROVIDER'
+  ];
+  for (const name of variables) {
+    const declaration = new RegExp('const\\s+' + name + '\\s*=\\s*String\\(process\\.env\\.' + name + '\\b');
+    assert.match(server, declaration, name + ' must be declared from its existing Render environment variable');
+  }
+  assert.ok(server.indexOf('const RAZORPAY_KEY_ID') < server.indexOf('if (!RAZORPAY_KEY_ID'));
+  assert.ok(server.indexOf('const PHONE_VERIFICATION_MODE') < server.indexOf('verificationMode: PHONE_VERIFICATION_MODE'));
+});
+
 test('Live/Booking, Wallet and Astrologer Earnings routes remain available', () => {
   const server = read('server.js');
   const live = read('live-session-service.js');
