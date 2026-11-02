@@ -1,6 +1,7 @@
 'use strict';
 
 const { walletLedgerDocId, parseRupeesToPaise } = require('./wallet-service');
+const { createTtlSingleFlightCache } = require('./firestore-read-cache');
 
 const SESSIONS = 'smv_live_sessions';
 const BOOKINGS = 'smv_live_bookings';
@@ -376,20 +377,26 @@ function createLiveSessionService({ app, db, FieldValue, crypto, requireUser, is
     return pricingInitPromise;
   }
 
+  // Avoid rereading the same authenticated role for every Live poll/message request.
+  const roleCache = createTtlSingleFlightCache({ ttlMs: 5000, maxEntries: 2000 });
   async function roleFor(user) {
-    if (await isAdminUser(user)) return 'admin';
-    const snap = await userRef(user.uid).get();
-    const role = String(snap.data()?.role || '').trim().toLowerCase();
-    if (role === 'astrologer') return 'astrologer';
-    // Some existing professional profiles retained an older Customer role during migration.
-    // A verified, approved Astrologer document owned by this Firebase UID is authoritative.
-    const astroSnap = await astroRef(user.uid).get();
-    if (astroSnap.exists) {
-      const astro = astroSnap.data() || {};
-      const status = String(astro.status || '').toLowerCase();
-      if ((!astro.uid || String(astro.uid) === String(user.uid)) && ['approved', 'active'].includes(status)) return 'astrologer';
-    }
-    return role === 'customer' ? 'customer' : '';
+    const uid=String(user?.uid||'').trim();
+    if(!uid)return '';
+    return roleCache.get(uid,async()=>{
+      if (await isAdminUser(user)) return 'admin';
+      const snap = await userRef(uid).get();
+      const role = String(snap.data()?.role || '').trim().toLowerCase();
+      if (role === 'astrologer') return 'astrologer';
+      // Some existing professional profiles retained an older Customer role during migration.
+      // A verified, approved Astrologer document owned by this Firebase UID is authoritative.
+      const astroSnap = await astroRef(uid).get();
+      if (astroSnap.exists) {
+        const astro = astroSnap.data() || {};
+        const status = String(astro.status || '').toLowerCase();
+        if ((!astro.uid || String(astro.uid) === uid) && ['approved', 'active'].includes(status)) return 'astrologer';
+      }
+      return role === 'customer' ? 'customer' : '';
+    });
   }
 
   function sendTo(uid, payload) {

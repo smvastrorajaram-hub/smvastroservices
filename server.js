@@ -3,6 +3,7 @@ const {registerWalletRoutes,walletLedgerDocId,WALLET_OFFER_THEMES,WALLET_RECHARG
 const {registerLiveSessionRoutes,astrologerAvailabilityStatus}=require('./live-session-service');
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
 const {isConfiguredAdminIdentity}=require('./admin-auth');
+const {createTtlSingleFlightCache}=require('./firestore-read-cache');
 const express = require("express");
 const crypto = require("crypto");
 const PredictionSynthesis = require("./prediction-synthesis");
@@ -16,6 +17,10 @@ app.use((req,res,next)=>{
  res.json=body=>{if(!res.headersSent)res.set('Server-Timing','app;dur='+Number(process.hrtime.bigint()-started)/1e6);return json(body);};next();
 });
 const PORT = process.env.PORT || 10000;
+// Short per-instance caches suppress repeated role/admin profile reads during dashboard polling.
+// Admin membership is rechecked at least every five seconds; authorization still fails closed.
+const adminAllowlistCache=createTtlSingleFlightCache({ttlMs:5000,maxEntries:2000});
+const accountRoleCache=createTtlSingleFlightCache({ttlMs:5000,maxEntries:2000});
 const IS_STAGING_DEPLOYMENT = String(process.env.NODE_ENV || "").trim().toLowerCase() === "staging" || String(process.env.FIREBASE_PROJECT_ID || "").trim() === "smv-astro-staging";
 const ADMIN_UID = String(process.env.ADMIN_UID || (IS_STAGING_DEPLOYMENT ? "" : "TwjeEIFS3Zcf1SxboLZoujm91Ky2")).trim();
 const ADMIN_UIDS = new Set([ADMIN_UID, ...String(process.env.ADMIN_UIDS || '').split(',')].map(value => String(value || '').trim()).filter(Boolean));
@@ -394,13 +399,17 @@ async function isAdminUser(user) {
     adminUids: ADMIN_UIDS,
     adminEmails: ADMIN_AUTH_EMAILS
   })) return true;
-  try {
-    const snap = await db.collection('smv_admins').doc(user.uid).get();
-    return snap.exists;
-  } catch (e) {
-    console.error('Admin allowlist lookup failed:', e?.message || e);
-    return false;
-  }
+  const uid=String(user.uid||'').trim();
+  if(!uid)return false;
+  return adminAllowlistCache.get(uid,async()=>{
+    try {
+      const snap = await db.collection('smv_admins').doc(uid).get();
+      return snap.exists;
+    } catch (e) {
+      console.error('Admin allowlist lookup failed:', e?.message || e);
+      return false;
+    }
+  });
 }
 
 // Return only the authenticated user's Admin status. The Admin SDK checks the
@@ -428,65 +437,61 @@ app.get("/account/role", async (req, res) => {
   const uid = String(user.uid || "").trim();
   if (!uid) return res.status(401).json({ success: false, error: "Authentication required." });
   try {
-    if (await isAdminUser(user)) {
-      res.set("Cache-Control", "no-store");
-      return res.json({ success: true, role: "admin" });
-    }
+    const account = await accountRoleCache.get(uid, async () => {
+      if (await isAdminUser(user)) return { role: "admin" };
 
-    const userSnap = await db.collection("smv_users").doc(uid).get();
-    const profile = userSnap.exists ? (userSnap.data() || {}) : {};
-    const publicId = String(profile.publicId || "").trim();
-    let astroProfile = null;
-    let astroCollection = "";
+      const userSnap = await db.collection("smv_users").doc(uid).get();
+      const profile = userSnap.exists ? (userSnap.data() || {}) : {};
+      const publicId = String(profile.publicId || "").trim();
+      let astroProfile = null;
+      let astroCollection = "";
 
-    // Canonical collection plus legacy singular spelling. Never identify an
-    // astrologer from collection membership alone unless the record is tied
-    // to this UID (or the UID's own unique publicId on a migrated legacy record).
-    for (const collectionName of ["smv_astrologers", "smv_astrologer"]) {
-      const directAstro = await db.collection(collectionName).doc(uid).get();
-      if (directAstro.exists) {
-        const candidate = directAstro.data() || {};
-        if (!candidate.uid || String(candidate.uid) === uid) {
-          astroProfile = candidate;
-          astroCollection = collectionName;
-          break;
-        }
-      }
-      if (!astroProfile) {
-        const byUid = await db.collection(collectionName).where("uid", "==", uid).limit(1).get();
-        if (!byUid.empty) {
-          const candidate = byUid.docs[0].data() || {};
+      // Preserve the UID and unique-public-ID ownership checks for legacy Astrologer records.
+      for (const collectionName of ["smv_astrologers", "smv_astrologer"]) {
+        const directAstro = await db.collection(collectionName).doc(uid).get();
+        if (directAstro.exists) {
+          const candidate = directAstro.data() || {};
           if (!candidate.uid || String(candidate.uid) === uid) {
             astroProfile = candidate;
             astroCollection = collectionName;
             break;
           }
         }
-      }
-      if (!astroProfile && publicId) {
-        const byPublicId = await db.collection(collectionName).where("publicId", "==", publicId).limit(1).get();
-        if (!byPublicId.empty) {
-          const candidate = byPublicId.docs[0].data() || {};
-          if ((!candidate.uid || String(candidate.uid) === uid) &&
-              String(candidate.publicId || "") === publicId) {
-            astroProfile = candidate;
-            astroCollection = collectionName;
-            break;
+        if (!astroProfile) {
+          const byUid = await db.collection(collectionName).where("uid", "==", uid).limit(1).get();
+          if (!byUid.empty) {
+            const candidate = byUid.docs[0].data() || {};
+            if (!candidate.uid || String(candidate.uid) === uid) {
+              astroProfile = candidate;
+              astroCollection = collectionName;
+            }
           }
         }
+        if (!astroProfile && publicId) {
+          const byPublicId = await db.collection(collectionName).where("publicId", "==", publicId).limit(1).get();
+          if (!byPublicId.empty) {
+            const candidate = byPublicId.docs[0].data() || {};
+            if ((!candidate.uid || String(candidate.uid) === uid) &&
+                String(candidate.publicId || "") === publicId) {
+              astroProfile = candidate;
+              astroCollection = collectionName;
+            }
+          }
+        }
+        if (astroProfile) break;
       }
-    }
 
-    const storedRole = String(profile.role || "").toLowerCase();
-    const role = astroProfile || storedRole === "astrologer" ? "astrologer" : "customer";
-    res.set("Cache-Control", "no-store");
-    return res.json({
-      success: true,
-      role,
-      profileFound: userSnap.exists,
-      astrologerProfileFound: !!astroProfile,
-      astrologerProfileCollection: astroCollection || null
+      const storedRole = String(profile.role || "").toLowerCase();
+      const role = astroProfile || storedRole === "astrologer" ? "astrologer" : "customer";
+      return {
+        role,
+        profileFound: userSnap.exists,
+        astrologerProfileFound: !!astroProfile,
+        astrologerProfileCollection: astroCollection || null
+      };
     });
+    res.set("Cache-Control", "no-store");
+    return res.json({ success: true, ...account });
   } catch (e) {
     console.error("Authenticated role lookup failed:", e?.message || e);
     return res.status(500).json({ success: false, error: "Unable to verify account role." });

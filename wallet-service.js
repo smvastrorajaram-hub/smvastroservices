@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('node:crypto');
+const { createTtlSingleFlightCache } = require('./firestore-read-cache');
 
 const WALLET_COLLECTION = 'smv_wallets';
 const TRANSACTION_COLLECTION = 'smv_wallet_transactions';
@@ -400,11 +401,18 @@ function createWalletService({ db, FieldValue }) {
 
 function registerWalletRoutes({ app, db, FieldValue, crypto, razorpay, razorpayKeyId, razorpayKeySecret, adminUid, requireUser, isAdminUser }) {
   const service = createWalletService({ db, FieldValue });
+  // The role is stable across rapid dashboard, Wallet and recharge requests.
+  // Keep the cache short and scoped to this service instance; Admin checks remain server-authoritative.
+  const roleCache = createTtlSingleFlightCache({ ttlMs: 5000, maxEntries: 2000 });
   async function readRole(user) {
-    if (await isAdminUser(user)) return 'admin';
-    const snap = await db.collection('smv_users').doc(user.uid).get();
-    const role = String(snap.data()?.role || user.role || '').toLowerCase();
-    return ['customer', 'astrologer'].includes(role) ? role : '';
+    const uid=String(user?.uid||'').trim();
+    if(!uid)return '';
+    return roleCache.get(uid,async()=>{
+      if (await isAdminUser(user)) return 'admin';
+      const snap = await db.collection('smv_users').doc(uid).get();
+      const role = String(snap.data()?.role || user.role || '').toLowerCase();
+      return ['customer', 'astrologer'].includes(role) ? role : '';
+    });
   }
   function ownerFor(user, role) {
     return role === 'admin' ? String(adminUid || user.uid) : String(user.uid);
