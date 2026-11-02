@@ -80,6 +80,10 @@ test('Live/Booking, Wallet and Astrologer Earnings routes remain available', () 
   }
   assert.ok(wallet.includes('/wallet/recharge/create-order'));
   assert.ok(wallet.includes('/wallet/recharge/verify'));
+  assert.ok(server.includes('function nextBookingId() {'), 'scheduled booking ID generator must exist');
+  assert.ok(server.includes('const bookingId = await nextBookingId();'), 'scheduled Call/Chat submission must obtain a daily booking ID');
+  assert.ok(server.includes('db.collection("smv_counters").doc(`booking_${dateKey}`)'), 'daily booking IDs must use the existing counter document');
+  assert.ok(server.includes('return `SMV-BKG-${dateKey}-${String(next).padStart(2, "0")}`;'), 'booking IDs retain the existing public format');
 });
 
 test('the shared Razorpay webhook retains Wallet settlement and contains no old Q&A branches', () => {
