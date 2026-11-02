@@ -36,7 +36,7 @@
     return smvLiveWalletCache;
   }
   async function smvRefreshLiveMinuteLimits(force=true){
-    const rows=[...document.querySelectorAll('#privateConsultationAstrologers .smv-private-consult-row')];
+    const rows=[...document.querySelectorAll('#consultAstrologers .smv-private-consult-row')];
     if(!rows.length)return;
     let wallet=null, walletError='';
     try{await fb();if(auth?.currentUser)wallet=await smvFetchLiveWallet(force);}
@@ -473,7 +473,7 @@
   const privateSummary=v=>{const n=privateRating(v);return n?`${privateStars(n)} <strong>${Number(n.toFixed(1))}/5</strong>`:'<span class="smv-rating-none">No ratings yet</span>';};
   let astrologerListRequest=null,astrologerListLoadedAt=0;
   async function loadAstrologerList(){
-    const host=$('privateConsultationAstrologers');if(!host)return;
+    const host=$('consultAstrologers');if(!host)return;
     if(astrologerListRequest)return astrologerListRequest;
     if(astrologerListLoadedAt)return;
     if(!window.__smvGetPublicAstrologersOnce)return;
