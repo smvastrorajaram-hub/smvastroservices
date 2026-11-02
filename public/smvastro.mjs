@@ -4609,6 +4609,26 @@ async function smvLiveReconcileAfterEventStreamConnect(){
  if(session.mode==='chat')await smvLivePollMessages(id).catch(error=>console.warn('Chat history recovery after SSE reconnect skipped:',error?.message||error));
  else if(session.mode==='call')await smvLiveReconcileCallSignals(id).catch(error=>console.warn('Call signal recovery after SSE reconnect skipped:',error?.message||error));
 }
+function smvLiveRefreshDashboardAfterSessionEnd(session){
+ const uid=String(currentUser?.uid||''),role=String(window.__smvCurrentRole||'').toLowerCase();
+ if(!uid||!session||!['customer','astrologer'].includes(role))return;
+ if(![session.customerUid,session.astrologerUid].some(participant=>String(participant||'')===uid))return;
+ // Refresh the full Dashboard (earnings/profile) and its Live/Booking panels even
+ // when the session modal was dismissed before the terminal SSE event arrived.
+ if(document.hidden||$('dashboard')?.classList.contains('hidden')){
+  dashboardReadyAt=0;
+  return;
+ }
+ const refresh=async()=>{
+  try{
+   await loadDashboard(role,true,true);
+   if(currentUser?.uid===uid)await smvLiveLoadDashboard(role);
+  }catch(error){
+   console.warn('Dashboard refresh after Live Session ended deferred:',error?.message||error);
+  }
+ };
+ void refresh();
+}
 function smvLiveHandleEvent(ev){
  if(!ev||typeof ev!=='object')return;
  if(ev.type==='live.session.request'||ev.type==='live.session.updated'){
@@ -4619,7 +4639,14 @@ function smvLiveHandleEvent(ev){
   else if(['preparing','connecting','active'].includes(s.state)&&s.astrologerUid===currentUser?.uid&&!smvLiveRingSuppressedIds.has(String(s.id||'')))smvLiveOpenSession(s,null,false);
   else if(['preparing','ringing','connecting','active'].includes(s.state)&&s.customerUid===currentUser?.uid&&!smvLiveRingSuppressedIds.has(String(s.id||'')))smvLiveOpenSession(s,null,false);
  }else if(ev.type==='live.session.ended'){
-  const s=ev.session;if(s)smvLiveUpdateDashboardSessionStatus(s);if(s&&s.id===smvLivePanelSessionId){smvLiveApplySession(s);const result=$('smvLiveSessionResult');if(result)result.textContent=smvLiveSessionEndedMessage(s,ev.wallet);loadDashboard(window.__smvCurrentRole||null,true,true).catch(()=>{});}
+  const s=ev.session;
+  if(s)smvLiveUpdateDashboardSessionStatus(s);
+  if(s)smvLiveRefreshDashboardAfterSessionEnd(s);
+  if(s&&s.id===smvLivePanelSessionId){
+   smvLiveApplySession(s);
+   const result=$('smvLiveSessionResult');
+   if(result)result.textContent=smvLiveSessionEndedMessage(s,ev.wallet);
+  }
  }else if(ev.type==='live.chat.message'&&ev.message?.sessionId===smvLivePanelSessionId){
   if($('smvLiveMessages')){const ms=Date.parse(ev.message.createdAt||'');if(Number.isFinite(ms))smvLiveMessageSinceMs=Math.max(smvLiveMessageSinceMs,ms);smvLiveAppendMessage(ev.message);}
  }else if(ev.type==='live.call.signal'&&ev.signal?.sessionId===smvLivePanelSessionId){
