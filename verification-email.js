@@ -1,40 +1,62 @@
 'use strict';
 
-const CUSTOM_VERIFICATION_HANDLER_URL = 'https://verify.smvastroservices.in/auth/action.html';
+const CUSTOM_ACCOUNT_ACTION_HANDLER_URL = 'https://verify.smvastroservices.in/auth/action.html';
 const FIREBASE_ACTION_HOSTS = new Set([
   'smv-astro.firebaseapp.com',
   'smv-astro.web.app',
   'auth.smvastroservices.in'
 ]);
+const ACCOUNT_ACTIONS = Object.freeze({
+  verifyEmail: {
+    subject: 'Verify your SMV ASTRO account',
+    title: 'Verify your email address',
+    instruction: 'Please confirm that this email address belongs to you using the secure button below.',
+    button: 'Verify email',
+    disclaimer: 'This secure link can be used once. If you did not create this account, ignore this email.'
+  },
+  resetPassword: {
+    subject: 'Reset your SMV ASTRO password',
+    title: 'Create a new password',
+    instruction: 'A password reset was requested for your SMV ASTRO account. Use the secure button below to choose a new password.',
+    button: 'Reset password',
+    disclaimer: 'This secure link can be used once. If you did not request a password reset, you can ignore this email.'
+  }
+});
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function buildCustomVerificationHandlerUrl(generatedLink) {
+function buildCustomAccountActionHandlerUrl(generatedLink, expectedMode) {
+  if (!Object.prototype.hasOwnProperty.call(ACCOUNT_ACTIONS, expectedMode)) {
+    throw new Error('Unsupported Firebase account action mode.');
+  }
   if (typeof generatedLink !== 'string' || !generatedLink.trim()) {
-    throw new TypeError('A Firebase-generated email verification link is required.');
+    throw new TypeError('A Firebase-generated account action link is required.');
   }
   const source = new URL(generatedLink);
   if (source.protocol !== 'https:' ||
       !FIREBASE_ACTION_HOSTS.has(source.hostname.toLowerCase()) ||
       source.pathname !== '/__/auth/action') {
-    throw new Error('Firebase returned an unexpected email action link host or path.');
+    throw new Error('Firebase returned an unexpected account action link host or path.');
   }
   const mode = source.searchParams.get('mode');
   const actionCode = source.searchParams.get('oobCode');
   const apiKey = source.searchParams.get('apiKey');
-  if (mode !== 'verifyEmail' || !actionCode || actionCode.length > 4096 ||
+  if (mode !== expectedMode || !actionCode || actionCode.length > 4096 ||
       !apiKey || apiKey.length > 256) {
-    throw new Error('Firebase returned an incomplete email verification action link.');
+    throw new Error('Firebase returned an incomplete or unexpected account action link.');
   }
 
-  // The Firebase link's apiKey is metadata. Never use it as SDK configuration
-  // and do not reject it locally: Firebase validates the one-time action code
-  // against the fixed Production project when the handler applies the code.
-  const target = new URL(CUSTOM_VERIFICATION_HANDLER_URL);
-  target.searchParams.set('mode', 'verifyEmail');
+  // Keep the Firebase-generated one-time code and link metadata intact. Firebase
+  // validates the code against the fixed Production project in the handler UI.
+  const target = new URL(CUSTOM_ACCOUNT_ACTION_HANDLER_URL);
+  target.searchParams.set('mode', mode);
   target.searchParams.set('oobCode', actionCode);
   target.searchParams.set('apiKey', apiKey);
   target.searchParams.set('lang', 'en');
   return target.toString();
+}
+
+function buildCustomVerificationHandlerUrl(generatedLink) {
+  return buildCustomAccountActionHandlerUrl(generatedLink, 'verifyEmail');
 }
 
 function escapeHtml(value) {
@@ -43,25 +65,26 @@ function escapeHtml(value) {
   }[character]));
 }
 
-function createVerificationEmail({ verificationUrl } = {}) {
-  const parsed = new URL(String(verificationUrl || ''));
+function createAccountActionEmail({ actionUrl, mode } = {}) {
+  const action = ACCOUNT_ACTIONS[mode];
+  if (!action) throw new Error('Unsupported SMV ASTRO account action email mode.');
+  const parsed = new URL(String(actionUrl || ''));
   if (parsed.protocol !== 'https:' ||
       parsed.origin !== 'https://verify.smvastroservices.in' ||
       parsed.pathname !== '/auth/action.html' ||
-      parsed.searchParams.get('mode') !== 'verifyEmail' ||
+      parsed.searchParams.get('mode') !== mode ||
       !parsed.searchParams.get('oobCode') ||
       !parsed.searchParams.get('apiKey')) {
-    throw new Error('A valid SMV ASTRO custom verification URL is required.');
+    throw new Error('A valid SMV ASTRO custom account action URL is required.');
   }
   const safeUrl = escapeHtml(parsed.toString());
-  const subject = 'Verify your SMV ASTRO account';
   const text = [
     'Hello,',
     '',
-    'Please verify your SMV ASTRO email address by opening this secure link:',
+    action.instruction,
     parsed.toString(),
     '',
-    'This link can be used once. If you did not create this account, you can ignore this email.',
+    action.disclaimer,
     '',
     'SMV ASTRO SERVICES'
   ].join('\n');
@@ -72,16 +95,20 @@ function createVerificationEmail({ verificationUrl } = {}) {
     '<body style="margin:0;padding:24px 14px;background:#ffffff;color:#202124;font-family:Arial,Helvetica,sans-serif">',
     '  <main style="max-width:440px;margin:0 auto;padding:24px;background:#ffffff;border:1px solid #eceff1;border-radius:14px">',
     '    <p style="margin:0 0 18px;color:#80643c;font-size:11px;font-weight:700;letter-spacing:2px">SMV ASTRO SERVICES</p>',
-    '    <h1 style="margin:0 0 9px;font-size:19px;line-height:1.35;font-weight:650">Verify your email address</h1>',
-    '    <p style="margin:0;color:#687078;font-size:13px;line-height:1.6">Please confirm that this email address belongs to you using the secure button below.</p>',
-    '    <p style="margin:22px 0"><a href="' + safeUrl + '" style="display:inline-block;padding:12px 18px;border-radius:8px;background:#242629;color:#ffffff;text-decoration:none;font-size:13px;font-weight:650">Verify email</a></p>',
-    '    <p style="margin:0;color:#858b91;font-size:11px;line-height:1.55">This secure link can be used once. If you did not create this account, ignore this email.</p>',
+    '    <h1 style="margin:0 0 9px;font-size:19px;line-height:1.35;font-weight:650">' + action.title + '</h1>',
+    '    <p style="margin:0;color:#687078;font-size:13px;line-height:1.6">' + action.instruction + '</p>',
+    '    <p style="margin:22px 0"><a href="' + safeUrl + '" style="display:inline-block;padding:12px 18px;border-radius:8px;background:#242629;color:#ffffff;text-decoration:none;font-size:13px;font-weight:650">' + action.button + '</a></p>',
+    '    <p style="margin:0;color:#858b91;font-size:11px;line-height:1.55">' + action.disclaimer + '</p>',
     '    <p style="margin:20px 0 0;color:#858b91;font-size:11px">SMV ASTRO SERVICES</p>',
     '  </main>',
     '</body>',
     '</html>'
   ].join('\n');
-  return { subject, text, html };
+  return { subject: action.subject, text, html };
+}
+
+function createVerificationEmail({ verificationUrl } = {}) {
+  return createAccountActionEmail({ actionUrl: verificationUrl, mode: 'verifyEmail' });
 }
 
 function createVerificationEmailRateLimiter({
@@ -94,7 +121,7 @@ function createVerificationEmailRateLimiter({
   const attemptsByUid = new Map();
   function reserve(uid) {
     const key = String(uid || '').trim();
-    if (!key) throw new TypeError('A Firebase user ID is required for verification email rate limiting.');
+    if (!key) throw new TypeError('A Firebase identity key is required for account action email rate limiting.');
     const timestamp = Number(now());
     const recent = (attemptsByUid.get(key) || [])
       .filter(value => Number.isFinite(value) && value > timestamp - windowMs);
@@ -125,8 +152,10 @@ function createVerificationEmailRateLimiter({
 }
 
 module.exports = {
-  CUSTOM_VERIFICATION_HANDLER_URL,
+  CUSTOM_ACCOUNT_ACTION_HANDLER_URL,
+  buildCustomAccountActionHandlerUrl,
   buildCustomVerificationHandlerUrl,
+  createAccountActionEmail,
   createVerificationEmail,
   createVerificationEmailRateLimiter
 };
