@@ -45,6 +45,9 @@ test('the current Astrologer List is kept behind the clean /consult route', () =
   const content = read('public/public-content.mjs');
   const frontend = read('public/smvastro.mjs');
   assert.ok(html.includes('id="consult"'));
+  assert.ok(html.includes('id="consultAstrologers"'));
+  assert.equal(html.includes('privateConsultationAstrologers'), false);
+  assert.ok(content.includes('consultAstrologers'));
   assert.ok(html.includes('aria-label="Astrologers List"'));
   assert.ok(html.includes('Astrologers List'));
   assert.ok(html.includes('data-smv-route="consult"'));
