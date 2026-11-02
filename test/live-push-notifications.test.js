@@ -103,3 +103,17 @@ test('Customer dashboard, live forms and booking location suggestions use black 
   assert.ok(places.includes("colorScheme:'light'"));
   assert.equal(content.split('question-place-search.mjs?v=20261026-livechat-scroll-place-black-v2').length-1,2);
 });
+
+
+test('Scheduled profile Call/Chat bookings match the current browser form contract', () => {
+  const server = read('server.js');
+  const start = server.indexOf('app.post("/appointment-booking"');
+  const end = server.indexOf('\nlet publicAstrologersCache', start);
+  assert.ok(start >= 0 && end > start, 'appointment booking route is present');
+  const route = server.slice(start, end);
+  assert.ok(route.includes('if(!name||(!astrologerId&&(!email||!mobile))||!type||!preferredDate||!preferredTime)'), 'email/mobile remain required only for generic appointments');
+  assert.ok(route.includes('if(email&&!/'), 'email is validated when present, not forced for profile-linked bookings');
+  assert.equal(route.includes('if(type==="Chat Consultation"&&!question)'), false, 'scheduled Chat booking topic is optional');
+  assert.ok(route.includes('...(astrologerId?{}:{email,mobile})'), 'scheduled bookings do not persist extra contact fields');
+  assert.ok(route.includes('notes,question:astrologerId&&type==="Chat Consultation"?question:""'), 'scheduled Chat notes and optional question are stored consistently');
+});
