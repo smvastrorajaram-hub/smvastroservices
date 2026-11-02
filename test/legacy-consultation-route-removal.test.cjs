@@ -22,6 +22,7 @@ test('legacy Q&A and Private Consultation API routes are removed', () => {
     ['post','/customer/mark-answer-viewed'], ['get','/customer/consultations'],
     ['get','/customer/private-consultations'], ['post','/customer/private-consultation/mark-viewed'],
     ['get','/admin/private-consultations-data'], ['get','/admin/questions-data'],
+    ['get','/customer/reviews'], ['post','/customer/submit-review'],
     ['post','/admin/private-consultation/set-commission'], ['post','/admin/private-consultation/set-word-count'],
     ['post','/admin/private-consultation/set-workflow'], ['post','/admin/private-consultation/approve-question'],
     ['post','/admin/private-consultation/reject-question'], ['post','/admin/private-consultation/retry-refund'],
@@ -56,7 +57,11 @@ test('the current Astrologer List is kept behind the clean /consult route', () =
   assert.ok(navigation.includes("'consult'"));
   assert.ok(navigation.includes("params.get('view')==='consult'"));
   assert.ok(navigation.includes('window.__smvOpenBookingChat'));
-  assert.ok(content.includes('/public/astrologers'));
+  assert.ok(frontend.includes("publicJSON('/public/astrologers')"));
+  assert.ok(content.includes('window.__smvGetPublicAstrologersOnce()'));
+  assert.ok(server.includes('app.get("/public/astrologers/:astrologerId/reviews"'));
+  assert.equal(hasRoute(server, 'get', '/customer/reviews'), false);
+  assert.equal(hasRoute(server, 'post', '/customer/submit-review'), false);
   assert.ok(content.includes('smv:consult-open'));
   assert.ok(frontend.includes("smvNavigatePublic('consult')"));
 });
