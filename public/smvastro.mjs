@@ -194,8 +194,8 @@ async function renderApi(path, options={}, authUserOverride=null){
 }
 
 function smvVerificationLanguage(){
-  const candidates=[document.documentElement?.lang,navigator.language,...(Array.isArray(navigator.languages)?navigator.languages:[])];
-  return candidates.some(value=>/^ta(?:[-_]|$)/i.test(String(value||"").trim()))?"ta":"en";
+  // Account-security emails and their action pages use English consistently.
+  return "en";
 }
 async function smvSendVerificationEmail(user){
   if(!user)throw new Error("A signed-in Firebase account is required.");
@@ -848,7 +848,7 @@ function openAuth(mode="login"){
   closeModal(); const isLogin=mode==="login";
   openModal(`<div class="auth-shell" data-auth-mode="${isLogin?'login':'register'}">
     <div class="auth-hero"><div class="auth-hero-icon"><img src="./assets/smv-brand-logo.png" alt="SMV ASTRO" width="72" height="72"></div><h2>${isLogin?"Welcome Back":"Create Account"}</h2><p>${isLogin?"Sign in to continue to your SMV ASTRO dashboard.":"Create your secure customer account."}</p></div>
-    <div id="authMsg" class="small"></div>
+    <div id="authMsg" class="small auth-message" aria-live="polite" role="status"></div>
     ${!isLogin?`<label class="auth-field-label">Full Name</label><input class="auth-field" id="name" placeholder="Your full name" autocomplete="name"><label class="auth-field-label">Mobile Number</label><input class="auth-field" id="phone" placeholder="Your mobile number" autocomplete="tel">`:""}
     <label class="auth-field-label"><strong>${isLogin?"Email / Customer ID / Astrologer ID":"Email"}</strong></label><input class="auth-field" id="email" type="${isLogin?'text':'email'}" placeholder="${isLogin?'Email / Customer ID / Astrologer ID':'Email'}" autocomplete="${isLogin?'username':'email'}"${isLogin?' autocapitalize="none" spellcheck="false"':''}>
     <label class="auth-field-label"><strong>Password</strong></label><div class="password-wrap"><input class="auth-field" id="password" type="password" placeholder="Minimum 6 characters" autocomplete="${isLogin?"current-password":"new-password"}"><button type="button" class="password-toggle" id="passwordToggle" aria-label="Show password" aria-pressed="false">${smvPasswordEye(false)}</button></div>
@@ -861,7 +861,7 @@ function openAuth(mode="login"){
   $("submitAuth").onclick=()=>submitAuth(mode); $("switchAuth").onclick=(e)=>{e?.preventDefault?.();openAuth(isLogin?"register":"login")};
   $("password")?.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();submitAuth(mode)}});
   if(isLogin && $("googleAuthBtn")) $("googleAuthBtn").onclick=()=>signInWithGoogle();
-  if($("forgotAuth")) $("forgotAuth").onclick=async(e)=>{e?.preventDefault?.();const identifier=$("email").value.trim(),m=$("authMsg"); if(!identifier){m.innerHTML='<span class="error">Enter your registered Email, Customer ID or Astrologer ID first.</span>';return;} try{const resolved=await smvResolveLoginIdentifier(identifier);const {sendPasswordResetEmail}=await import("https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js");await withTimeout(sendPasswordResetEmail(auth,resolved.email));m.innerHTML='<span class="success">Password reset email sent. Please check Inbox and Spam.</span>';}catch(e){m.innerHTML='<span class="error">'+escapeHtml(e.message||String(e))+'</span>';}};
+  if($("forgotAuth")) $("forgotAuth").onclick=async(e)=>{e?.preventDefault?.();const identifier=$("email").value.trim(),m=$("authMsg"); if(!identifier){m.innerHTML='<span class="error">Enter your registered Email, Customer ID or Astrologer ID first.</span>';return;} try{const resolved=await smvResolveLoginIdentifier(identifier);const {sendPasswordResetEmail}=await import("https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js");auth.languageCode="en";await withTimeout(sendPasswordResetEmail(auth,resolved.email));m.innerHTML='<span class="success">Password reset email sent. Please check your inbox and spam folder.</span>';}catch(e){m.innerHTML='<span class="error">'+escapeHtml(e.message||String(e))+'</span>';}};
 }
 window.__smvOpenAuth = openAuth; window.__smvOpenAstroRegister = openAstroRegister;
 
