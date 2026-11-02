@@ -13,24 +13,11 @@ const DEFAULT_ALLOWED_ORIGINS = Object.freeze([
 // default and explicit smaller limits where the route already defined one.
 const BODY_LIMITS = Object.freeze({
   '/contact-query': '20kb',
-  '/question-notify': '20kb',
   '/appointment-booking': '20kb',
   '/astrologer/availability': '5kb',
   '/admin/appointment-status': '5kb',
-  '/admin/approve-question': '10kb',
-  '/admin/reject-question': '10kb',
-  '/admin/retry-refund': '10kb',
-  '/customer/sync-refund': '10kb',
-  '/admin/sync-refund': '10kb',
-  '/astrologer/claim-question': '10kb',
-  '/admin/reallocate-question': '10kb',
-  '/admin/edit-question': '20kb',
-  '/admin/takeover-answer': '30kb',
   '/astrologer/change-payout': '10kb',
   '/admin/payout-change-status': '5kb',
-  '/admin/set-open-workflow': '10kb',
-  '/customer/mark-answer-viewed': '10kb',
-  '/customer/private-consultation/mark-viewed': '10kb',
   '/admin/astrologer-quiz/load-defaults': '10kb',
   '/admin/astrologer-quiz/questions': '50kb',
   '/admin/astrologer-quiz/questions/delete': '10kb',
@@ -47,22 +34,7 @@ const BODY_LIMITS = Object.freeze({
   '/admin/content/delete': '5kb',
   '/admin/astrologer-languages': '10kb',
   '/admin/astrologer-pricing': '10kb',
-  '/admin/private-consultation/set-commission': '5kb',
-  '/admin/private-consultation/set-word-count': '5kb',
-  '/admin/private-consultation/set-workflow': '5kb',
-  '/admin/private-consultation/approve-question': '10kb',
-  '/admin/private-consultation/reject-question': '10kb',
-  '/admin/private-consultation/retry-refund': '10kb',
-  '/admin/private-consultation/sync-refund': '10kb',
-  '/astrologer/private-consultation/submit-answer': '30kb',
-  '/admin/private-consultation/approve-answer': '10kb',
-  '/admin/private-consultation/reject-answer': '10kb',
-  '/private-consultation/create-order': '30kb',
-  '/private-consultation/retry-payment': '10kb',
   '/private-consultation/cancel-payment': '10kb',
-  '/private-consultation/cancel-payment': '10kb',
-  '/private-consultation/recover-payment': '10kb',
-  '/private-consultation/verify-payment': '15kb',
   '/admin/withdrawal-mark-paid': '5kb',
   '/admin/offers/save': '20kb',
   '/admin/offers/delete': '10kb'
@@ -137,18 +109,13 @@ function ratePolicyForRequest(req) {
     return { name: 'identity-lookup', windowMs: 15 * 60_000, max: 30 };
   }
   if (path === '/admin/android-app/upload') return { name: 'admin-apk-upload', windowMs: 60 * 60_000, max: 5 };
-  if (path === '/contact-query' || path === '/question-notify') {
+  if (path === '/contact-query') {
     return { name: 'public-form', windowMs: 15 * 60_000, max: 20 };
   }
   if (
     path === '/appointment-booking' ||
     path === '/wallet/recharge/create-order' ||
-    path === '/wallet/recharge/verify' ||
-    path === '/private-consultation/create-order' ||
-    path === '/private-consultation/retry-payment' ||
-    path === '/private-consultation/recover-payment' ||
-    path === '/private-consultation/verify-payment' ||
-    path === '/verify-payment'
+    path === '/wallet/recharge/verify'
   ) return { name: 'payment-action', windowMs: 60_000, max: 60 };
   return null;
 }
