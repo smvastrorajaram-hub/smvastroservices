@@ -1,9 +1,9 @@
 (function(){
  'use strict';
- const targets=new Set(['home','english-horoscope','private-consultation','smv-content-hub','publicBlogs','publicMedia','about','contact','askNowSection','faq']);
+ const targets=new Set(['home','english-horoscope','consult','smv-content-hub','publicBlogs','publicMedia','about','contact','askNowSection','faq']);
  let revision=0;
  function selection(id){
-  const mapped={publicBlogs:'publicBlogs',publicMedia:'publicMedia',askNowSection:'home','smv-content-hub':'publicBlogs','private-consultation':'private-consultation'};
+  const mapped={publicBlogs:'publicBlogs',publicMedia:'publicMedia',askNowSection:'home','smv-content-hub':'publicBlogs','consult':'consult'};
   document.querySelectorAll('#smvPremiumHeaderV9 .smv9-menu > a,#smvPremiumHeaderV9 .smv9-menu > button').forEach(el=>{
    const key=el.dataset.smvRoute||(el.getAttribute('href')||'').slice(1),active=key===(mapped[id]||id);
    el.classList.remove('active');el.classList.toggle('smv-nav-current',active);
@@ -32,14 +32,14 @@
   const ticket=++revision;window.__SMV_PUBLIC_ROUTE=id;window.__smvPreparePublicNavigation?.();
   ['dashboard','admin','ask-flow','register-flow','astro-register-form','astro-flow','contact'].forEach(key=>document.getElementById(key)?.classList.add('hidden'));
   document.body.dataset.smvWorkspace='closed';document.body.classList.remove('smv-horoscope-active');
-  const dedicated=id==='private-consultation';
+  const dedicated=id==='consult';
   setDedicatedConsultView(dedicated);
   const publicSections=['home','askNowSection','faq','smv-content-hub','english-horoscope','about','smv-master-services'];
-  if(id==='private-consultation'){
+  if(id==='consult'){
    target.classList.remove('hidden');
-   window.dispatchEvent(new Event('smv:private-consultation-open'));
+   window.dispatchEvent(new Event('smv:consult-open'));
   }else{
-   document.getElementById('private-consultation')?.classList.add('hidden');
+   document.getElementById('consult')?.classList.add('hidden');
    publicSections.forEach(key=>document.getElementById(key)?.classList.remove('hidden'));
   }
   if(id==='contact')target.classList.remove('hidden');
@@ -60,7 +60,7 @@
  window.__smvNavigatePublic=navigate;
  // All customer-facing chat entry points use this one canonical workflow.
  window.__smvOpenBookingChat=function(){
-  if(navigate('private-consultation'))return true;
+  if(navigate('consult'))return true;
   location.href='./?view=consult';
   return false;
  };
@@ -68,13 +68,13 @@
   if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
   const control=event.target.closest?.('a[href^="#"],[data-smv-route]');if(!control)return;
   const id=control.dataset.smvRoute||(control.getAttribute('href')||'').slice(1);if(!targets.has(id))return;
-  if(id==='private-consultation'){
+  if(id==='consult'){
    event.preventDefault();event.stopImmediatePropagation();navigate(id);return;
   }
   event.preventDefault();event.stopImmediatePropagation();navigate(id);
  },true);
  document.addEventListener('click',event=>{
-  const back=event.target.closest?.('#privateConsultationBack');if(!back)return;
+  const back=event.target.closest?.('#consultBack');if(!back)return;
   event.preventDefault();event.stopImmediatePropagation();
   navigate('home',{historyMode:'push'});
  },true);
@@ -82,7 +82,7 @@
  window.addEventListener('popstate',()=>{const id=location.hash.slice(1)||'home';if(targets.has(id))navigate(id,{historyMode:'none'});});
  function restore(){
   const params=new URLSearchParams(location.search);
-  if(params.get('view')==='consult'){navigate('private-consultation',{historyMode:'replace'});return;}
+  if(params.get('view')==='consult'){navigate('consult',{historyMode:'replace'});return;}
   setDedicatedConsultView(false);
   window.__smvSyncWorkspace?.();
   const id=location.hash.slice(1);if(targets.has(id)&&id!=='home')navigate(id,{historyMode:'none'});

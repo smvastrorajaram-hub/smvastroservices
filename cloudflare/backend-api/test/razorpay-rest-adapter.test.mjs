@@ -152,3 +152,30 @@ test('fetchOrderPayments rejects invalid IDs and malformed pagination before net
   await assert.rejects(client.fetchOrderPayments('order_123456', { skip: -1 }), error => error.code === 'RAZORPAY_ORDER_PAYMENT_LIST_INVALID');
   assert.equal(calls.length, 0);
 });
+test('testConnection probes Razorpay with a read-only order-list GET and creates no orders', async () => {
+  const { client, calls } = clientWithFetch(async () => response({
+    entity: 'collection',
+    count: 1,
+    items: [{ id: 'order_existing_1' }]
+  }));
+
+  const result = await client.testConnection();
+
+  assert.deepEqual(result, { ok: true, visibleOrders: 1 });
+  assert.equal(calls.length, 1);
+  const url = new URL(calls[0].url);
+  assert.equal(url.pathname, '/v1/orders');
+  assert.equal(url.searchParams.get('count'), '1');
+  assert.equal(calls[0].init.method, 'GET');
+  assert.equal(calls[0].init.body, undefined);
+  assert.equal(calls[0].init.headers.Authorization, 'Basic ' + btoa('rzp_test_sample_key:test_secret_value'));
+});
+
+test('testConnection rejects malformed provider responses', async () => {
+  const { client, calls } = clientWithFetch(async () => response({ entity: 'collection', items: null }));
+  await assert.rejects(
+    client.testConnection(),
+    error => error.code === 'RAZORPAY_RESPONSE_INVALID' && error.httpStatus === 502
+  );
+  assert.equal(calls.length, 1);
+});

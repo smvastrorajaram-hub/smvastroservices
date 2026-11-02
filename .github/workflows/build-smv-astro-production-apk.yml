@@ -27,6 +27,8 @@ on:
       - "test/android-permanent-release.test.mjs"
       - "test/android-google-native-signin.test.mjs"
       - "public/smvastro.mjs"
+      - "public/backend-api-routing.mjs"
+      - "test/browser-backend-routing.test.mjs"
       - "docs/android-native-call-ringtone.md"
   push:
     paths:
@@ -36,6 +38,8 @@ on:
       - ".github/workflows/build-smv-astro-production-apk.yml"
       - "test/android-permanent-release.test.mjs"
       - "public/smvastro.mjs"
+      - "public/backend-api-routing.mjs"
+      - "test/browser-backend-routing.test.mjs"
       - "test/android-google-native-signin.test.mjs"
       - "docs/android-native-call-ringtone.md"
 
@@ -160,6 +164,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+
+      - name: Verify guarded Staging Browser API routing contracts
+        run: node --test test/browser-backend-routing.test.mjs
 
       - name: Verify permanent Release and native Google sign-in configuration
         run: node --test test/android-permanent-release.test.mjs test/android-google-native-signin.test.mjs

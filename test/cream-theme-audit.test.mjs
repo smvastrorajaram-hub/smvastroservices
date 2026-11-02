@@ -131,13 +131,13 @@ test('shared UI stylesheet must not override hero and content headings with pale
 });
 
 test('main page cache versions point to the audited theme assets', () => {
-  assert.ok(html.includes('smvastro.css?v=20261028-cream-content-contrast-v6'));
+  assert.ok(html.includes('smvastro.css?v=20261102-staging-consult-route-cleanup-v1'));
   assert.ok(html.includes('android-app-install.css?v=20261030-admin-apk-manager-v2'));
   assert.ok(html.includes('smv-ui.css?v=20261028-cream-content-contrast-v3'));
-  assert.ok(html.includes('smvastro.mjs?v=20261102-staging-session-refresh-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261102-staging-cloudflare-consult-cleanup-v1'));
   assert.ok(html.includes('android-app-install.js?v=20261031-apk-release-card-v2'));
-  assert.ok(html.includes('public-content-loader.js?v=20261102-staging-session-refresh-v1'));
+  assert.ok(html.includes('public-content-loader.js?v=20261102-staging-consult-route-cleanup-v1'));
   assert.doesNotMatch(html, /<script[^>]+src=["'][^"']*public-content\.mjs/);
   const lazyLoader = read('../public/public-content-loader.js');
-  assert.ok(lazyLoader.includes('public-content.mjs?v=20261102-staging-session-refresh-v1'));
+  assert.ok(lazyLoader.includes('public-content.mjs?v=20261102-staging-consult-route-cleanup-v1'));
 });
