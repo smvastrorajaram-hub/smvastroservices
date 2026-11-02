@@ -168,8 +168,17 @@ if (!credentialsText) {
       }
       console.log(preflightOnly ? 'READ_ONLY_PREVIEW_PREFLIGHT_COMPLETE' : 'READ_ONLY_PREVIEW_COMPLETE');
     } catch (error) {
-      const code = String(error?.code || error?.message || 'PREVIEW_FAILED');
-      fail('Read-only Identity/Profile preview failed safely (' + code + '). No D1 writes were executed.');
+      const rawCode = String(error?.code || error?.message || 'PREVIEW_FAILED');
+      const code = /^[A-Z0-9_:-]{1,100}$/.test(rawCode) ? rawCode : 'PREVIEW_FAILED';
+      const status = Number(error?.httpStatus);
+      const upstreamStatus = String(error?.upstreamStatus || '');
+      const safeUpstreamStatus = /^[A-Z0-9_]{1,64}$/.test(upstreamStatus) ? upstreamStatus : '';
+      const details = [
+        Number.isInteger(status) && status >= 400 && status <= 599 ? 'HTTP ' + status : '',
+        safeUpstreamStatus
+      ].filter(Boolean).join('; ');
+      fail('Read-only Identity/Profile preview failed safely (' + code +
+        (details ? '; ' + details : '') + '). No D1 writes were executed.');
     }
   }
 }

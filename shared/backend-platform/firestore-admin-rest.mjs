@@ -295,13 +295,21 @@ export function buildFirestoreStructuredQuery({ collectionPath, filters = [], or
 
 function mapFirestoreStatus(responseStatus, payload) {
   const upstreamStatus = String(payload?.error?.status || '');
-  const code = upstreamStatus === 'ABORTED' ? 'FIRESTORE_ABORTED' :
+  const code = upstreamStatus === 'RESOURCE_EXHAUSTED' || responseStatus === 429 ? 'FIRESTORE_QUOTA_EXCEEDED' :
+    upstreamStatus === 'ABORTED' ? 'FIRESTORE_ABORTED' :
     responseStatus === 401 ? 'FIRESTORE_UNAUTHENTICATED' :
     responseStatus === 403 ? 'FIRESTORE_PERMISSION_DENIED' :
     responseStatus === 404 ? 'FIRESTORE_NOT_FOUND' :
     responseStatus >= 500 ? 'FIRESTORE_UPSTREAM_UNAVAILABLE' : 'FIRESTORE_REQUEST_REJECTED';
-  return firestoreError(code, responseStatus >= 500 ? 503 : responseStatus === 404 ? 404 : responseStatus === 403 ? 403 : responseStatus === 401 ? 401 : 502, {
-    upstreamStatus, upstreamCode: Number(payload?.error?.code || responseStatus)
+  const safeStatus = responseStatus >= 500 ? 503 :
+    responseStatus === 429 ? 429 :
+    responseStatus === 404 ? 404 :
+    responseStatus === 403 ? 403 :
+    responseStatus === 401 ? 401 : 502;
+  return firestoreError(code, safeStatus, {
+    upstreamStatus,
+    upstreamCode: Number(payload?.error?.code || responseStatus),
+    upstreamHttpStatus: Number(responseStatus)
   });
 }
 
