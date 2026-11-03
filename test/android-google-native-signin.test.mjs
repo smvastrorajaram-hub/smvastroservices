@@ -64,13 +64,13 @@ test('Android Google login reuses Firebase Web Auth and preserves the existing r
   assert.equal(frontend.includes('signInWithRedirect'), false);
 });
 
-test('v1.2 Android build and CI validate the native sign-in sources without changing signing identity', () => {
+test('Production Android build and CI validate the native sign-in sources without changing signing identity', () => {
   const workflow = read('.github/workflows/build-smv-astro-production-apk.yml');
   const gradle = read('smvastroproduction/build.gradle');
   const androidTest = read('test/android-permanent-release.test.mjs');
 
   assert.ok(workflow.includes('default: "v1.2"'));
-  assert.ok(workflow.includes("vars.SMV_ANDROID_VERSION_NAME || 'v1.2'"));
+  assert.ok(workflow.includes("vars.SMV_ANDROID_VERSION_NAME || 'v1.7'"));
   assert.ok(workflow.includes('test/android-google-native-signin.test.mjs'));
   assert.ok(workflow.includes('public/smvastro.mjs'));
   assert.ok(workflow.includes(':smvastroproduction:assembleDebug'));
