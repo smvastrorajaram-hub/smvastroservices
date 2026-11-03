@@ -88,7 +88,8 @@ jobs:
             [/^database_name\s*=\s*"([^"]+)"\s*$/m, 'smv-astro-apk-releases', 'D1 database name'],
             [/^database_id\s*=\s*"([^"]+)"\s*$/m, '5105ebb3-435c-47b7-9983-2e171fa911cd', 'D1 database ID'],
             [/^ALLOW_APK_UPLOADS\s*=\s*"([^"]+)"\s*$/m, 'true', 'APK upload safety gate'],
-            [/^ALLOW_APK_DELETES\s*=\s*"([^"]+)"\s*$/m, 'true', 'Historical APK delete safety gate']
+            [/^ALLOW_APK_DELETES\s*=\s*"([^"]+)"\s*$/m, 'true', 'Historical APK delete safety gate'],
+            [/^MULTI_APP_RELEASES_ENABLED\s*=\s*"([^"]+)"\s*$/m, 'true', 'Multi-app release safety gate'],
             [/^ALLOWED_ORIGINS\s*=\s*"([^"]+)"\s*$/m, 'https://smvastroservices.in,https://www.smvastroservices.in,https://horoscope.smvastroservices.in,https://calendar.smvastroservices.in,https://smvastro.pages.dev,https://smvastroservices.pages.dev', 'SMV app download page origins'],
           ];
           for (const [pattern, expected, label] of checks) {
@@ -172,7 +173,8 @@ jobs:
             health.d1Ready === true &&
             health.r2Ready === true &&
             health.uploadsEnabled === true &&
-            health.deletesEnabled === true;
+            health.deletesEnabled === true &&
+            health.multiAppReleasesEnabled === true;
           if (!ready) {
             console.error('APK Worker readiness is incomplete:', JSON.stringify({
               success: health.success === true,
@@ -180,11 +182,12 @@ jobs:
               d1Ready: health.d1Ready === true,
               r2Ready: health.r2Ready === true,
               uploadsEnabled: health.uploadsEnabled === true,
-              deletesEnabled: health.deletesEnabled === true
+              deletesEnabled: health.deletesEnabled === true,
+              multiAppReleasesEnabled: health.multiAppReleasesEnabled === true
             }));
             process.exit(1);
           }
-          console.log('Worker health: D1 schema ready; R2 read-only probe succeeded; Admin APK upload and historical deletion gates are enabled.');
+          console.log('Worker health: D1 schema and app-scoped releases ready; R2 read-only probe succeeded; Admin upload, historical deletion and Multi-App gates are enabled.');
           NODE
               then
                 HEALTH_OK=1
