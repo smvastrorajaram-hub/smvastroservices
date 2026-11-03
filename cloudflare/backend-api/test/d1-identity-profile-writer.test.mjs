@@ -26,9 +26,8 @@ test('writes a fresh Customer identity/profile, public ID and hashed phone to D1
   const user = writes.find(item => item.sql.includes('smv_domain_identity_users'));
   assert.equal(user.values[0], 'smv-astro');
   assert.equal(user.values[1], 'customer-1');
-  assert.equal(user.values[3], 'customer');
-  assert.equal(user.values[4], 'active');
-  assert.equal(user.values[8].length, 64);
+  assert.equal(user.sql.includes("'customer','active'"), true);
+  assert.equal(user.values[6].length, 64);
   assert.ok(writes.some(item => item.sql.includes('smv_domain_identity_public_ids')));
   assert.ok(writes.some(item => item.sql.includes('smv_domain_identity_phones')));
 });
@@ -47,7 +46,7 @@ test('writes Astrologer pending identity status separately from profile role', a
   const writes = db.batches[0];
   const user = writes.find(item => item.sql.includes('smv_domain_identity_users'));
   const astro = writes.find(item => item.sql.includes('smv_domain_identity_astrologers'));
-  assert.equal(user.values[4], 'pending');
+  assert.equal(user.values[3], 'pending');
   assert.equal(astro.values[3], 'pending');
   assert.equal(JSON.stringify(writes).includes('MUST_NOT_WRITE'), false);
   assert.ok(writes.some(item => item.sql.includes('smv_domain_identity_public_ids')));
