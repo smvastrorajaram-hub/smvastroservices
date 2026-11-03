@@ -11,7 +11,7 @@ assert.doesNotMatch(css, /\.site-header|\.site-footer|\.temple-hero|\.temple-cop
 assert.doesNotMatch(language, /document\.querySelector\('\.temple-hero img'\)\.alt/);
 assert.match(language, /\$\('smvHoroscopeControls'\)/);
 assert.doesNotMatch(pwa, /#siteFooter/);
-assert.match(pwa, /getElementById\('smvHoroscopeInstallArea'\)/);
+assert.match(pwa, /navigator\.serviceWorker\.register/);
 for (const id of ['smvHoroscopeControls', 'smvHoroscopeAuth', 'languageTamil', 'languageEnglish',
   'english-horoscope', 'tamil-horoscope', 'smvMarriageMatching', 'smvHoroscopeAndroidApkSection']) assert.ok(html.includes('id="' + id + '"'), 'missing preserved feature/control: ' + id);
 assert.ok(html.includes('id="smvHoroscopeAndroidApkSection"'), 'Horoscope must expose the signed APK download card');
