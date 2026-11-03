@@ -2942,6 +2942,10 @@ async function loadAdminPanelData(background=false){
  if(!currentUser || !(await isCurrentAdmin())){hide('admin');hide('adminLink');return;}
   if(!background)loadAdminContent().catch(e=>console.warn('Admin content unavailable:',e));
   if(!background)loadAdminAndroidAppRelease().catch(e=>console.warn('Android app release status unavailable:',e));
+  if(!background){
+    loadAdminAndroidAppReleaseFor('horoscope').catch(e=>console.warn('Horoscope Android app release status unavailable:',e));
+    loadAdminAndroidAppReleaseFor('calendar').catch(e=>console.warn('Calendar Android app release status unavailable:',e));
+  }
  if(!background){hidePrimarySections('admin');show('smv-dashboard-page');show('admin');}
  smvEnsureAdminQuickLinks();
  setTimeout(()=>window.__smvRefreshAdminSections?.(),0);
