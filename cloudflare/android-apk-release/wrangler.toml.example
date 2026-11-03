@@ -8,8 +8,9 @@ workers_dev = true
 FIREBASE_ALLOWED_PROJECT_IDS = "smv-astro"
 SMV_ANDROID_RELEASE_ADMIN_UIDS = "TwjeEIFS3Zcf1SxboLZoujm91Ky2"
 SMV_ANDROID_RELEASE_ADMIN_EMAILS = ""
-ALLOWED_ORIGINS = "https://smvastroservices.in,https://www.smvastroservices.in,https://smvastro.pages.dev,https://smvastroservices.pages.dev"
+ALLOWED_ORIGINS = "https://smvastroservices.in,https://www.smvastroservices.in,https://horoscope.smvastroservices.in,https://calendar.smvastroservices.in,https://smvastro.pages.dev,https://smvastroservices.pages.dev"
 ALLOW_APK_UPLOADS = "false"
+ALLOW_APK_DELETES = "false"
 MAX_APK_BYTES = "104857600"
 
 [[r2_buckets]]
