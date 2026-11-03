@@ -20,10 +20,17 @@ if(location.hostname==='smvastroservices.pages.dev'){
 <meta content="Sri Madurai Veerayah Astro Services offers online astrology services, horoscope, Tamil horoscope, marriage matching, customer registration and astrologer registration." property="og:description"/>
 <meta content="https://smvastroservices.in/" property="og:url"/>
 <script id="smv-staging-origin-canonical">
-if(location.hostname==='smvastro-website-staging.astroservices.workers.dev'){
+(()=>{
+ const stagingHosts=new Set([
+  'smv-astro-phase1-browser-staging.onrender.com',
+  'smv-astro-phase1-browser-isolated.onrender.com',
+  'smv-astro-phase1-browser-staging-v2.onrender.com',
+  'smvastro-website-staging.astroservices.workers.dev'
+ ]);
+ if(!stagingHosts.has(location.hostname))return;
  const canonical=document.querySelector('link[rel="canonical"]');if(canonical)canonical.href=location.origin+'/';
  const og=document.querySelector('meta[property="og:url"]');if(og)og.content=location.origin+'/';
-}
+})();
 </script>
 <script id="smv-staging-apk-and-legacy-ui-guard">
 (()=>{
@@ -45,6 +52,11 @@ if(location.hostname==='smvastro-website-staging.astroservices.workers.dev'){
 <link href="./assets/favicon-64.png" rel="icon" sizes="64x64" type="image/png"/>
 <link href="./assets/icon-192.png" rel="apple-touch-icon"/>
 <meta content="#8b1717" name="theme-color">
+<script id="smv-staging-theme-color">
+if(['smv-astro-phase1-browser-staging.onrender.com','smv-astro-phase1-browser-isolated.onrender.com','smv-astro-phase1-browser-staging-v2.onrender.com','smvastro-website-staging.astroservices.workers.dev'].includes(location.hostname)){
+ const themeColor=document.querySelector('meta[name="theme-color"]');if(themeColor)themeColor.setAttribute('content','#fff8e7');
+}
+</script>
 <meta content="yes" name="mobile-web-app-capable">
 <meta content="yes" name="apple-mobile-web-app-capable">
 <meta content="black-translucent" name="apple-mobile-web-app-status-bar-style">
@@ -458,7 +470,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 <script src="./dashboard-window.js"></script>
 <script id="smv-apk-release-api-config">window.SMV_APK_RELEASE_API_URL = window.SMV_APK_RELEASE_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev"; window.SMV_APK_RELEASE_ADMIN_API_URL = window.SMV_APK_RELEASE_ADMIN_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev";</script>
-<script src="./smvastro.mjs?v=20261102-staging-cloudflare-consult-cleanup-v1" type="module"></script>
+<script src="./smvastro.mjs?v=20261103-staging-live-video-call-v1" type="module"></script>
 <!-- Legacy fallback authentication block removed in V109. Main Firebase auth is the single login system. -->
 <script>
 (function(){
