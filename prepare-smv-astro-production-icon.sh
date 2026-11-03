@@ -19,17 +19,20 @@ mkdir -p "$generator_dir" \
 cat > "$generator_dir/SmvLauncherIconGenerator.java" <<'JAVA'
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
+import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import javax.imageio.ImageIO;
 import java.nio.file.*;
 
 public final class SmvLauncherIconGenerator {
-  private static final int ADAPTIVE_CANVAS = 432;
-  private static final int ADAPTIVE_ART_SIZE = 384;
+  private static final int ADAPTIVE_CANVAS = 432; // 108dp at 4px per dp
+  private static final int ADAPTIVE_ART_SIZE = 232; // 58dp, inside Android's central 66dp safe zone
+  private static final int ADAPTIVE_ART_CORNER_RADIUS = 64; // 16dp rounded corners
   private static final int ROUND_CANVAS = 512;
-  private static final int ROUND_ART_SIZE = 480;
-  private static final int LAUNCHER_BACKGROUND = 0x260719;
+  private static final int ROUND_ART_SIZE = 275; // Same 58dp visual size at 512px
+  private static final int ROUND_ART_CORNER_RADIUS = 76; // Same 16dp visual radius
+  private static final int LAUNCHER_BACKGROUND = 0xFFFFFF;
 
   private static int red(int rgb) { return (rgb >>> 16) & 255; }
   private static int green(int rgb) { return (rgb >>> 8) & 255; }
@@ -162,10 +165,49 @@ public final class SmvLauncherIconGenerator {
     }
   }
 
-  private static BufferedImage drawScaled(BufferedImage source, int canvasSize, int artSize) {
+  private static void verifyWhiteBackground(BufferedImage image, String label) {
+    int w = image.getWidth(), h = image.getHeight();
+    int[][] points = {{w / 2, 8}, {8, h / 2}, {w - 9, h / 2}, {w / 2, h - 9}};
+    for (int[] point : points) {
+      int pixel = image.getRGB(point[0], point[1]);
+      if ((pixel >>> 24) != 255 || (pixel & 0xFFFFFF) != 0xFFFFFF) {
+        throw new IllegalStateException(label + " must show a solid white background around the centered artwork.");
+      }
+    }
+    if ((image.getRGB(w / 2, h / 2) >>> 24) < 200) {
+      throw new IllegalStateException(label + " lost its centered SMV ASTRO artwork.");
+    }
+  }
+
+  private static RoundRectangle2D centeredArtworkShape(int canvasSize, int artSize, int cornerRadius) {
+    int offset = (canvasSize - artSize) / 2;
+    return new RoundRectangle2D.Double(offset, offset, artSize, artSize, cornerRadius * 2.0, cornerRadius * 2.0);
+  }
+
+  // Transparent adaptive foreground containing a centered rounded-square artwork tile.
+  private static BufferedImage drawCenteredForeground(BufferedImage source, int canvasSize, int artSize, int cornerRadius) {
     BufferedImage output = new BufferedImage(canvasSize, canvasSize, BufferedImage.TYPE_INT_ARGB);
     Graphics2D g = qualityGraphics(output);
     int offset = (canvasSize - artSize) / 2;
+    g.setClip(centeredArtworkShape(canvasSize, artSize, cornerRadius));
+    g.setComposite(AlphaComposite.SrcOver);
+    g.drawImage(source, offset, offset, artSize, artSize, null);
+    g.dispose();
+    return output;
+  }
+
+  // Legacy square and round fallbacks use the same centered artwork on white.
+  private static BufferedImage drawCenteredWhiteIcon(BufferedImage source, int canvasSize, int artSize, int cornerRadius, boolean circularBackground) {
+    BufferedImage output = new BufferedImage(canvasSize, canvasSize, BufferedImage.TYPE_INT_ARGB);
+    Graphics2D g = qualityGraphics(output);
+    if (circularBackground) {
+      g.setClip(new Ellipse2D.Double(0, 0, canvasSize, canvasSize));
+    }
+    g.setColor(Color.WHITE);
+    g.fillRect(0, 0, canvasSize, canvasSize);
+    g.setComposite(AlphaComposite.SrcOver);
+    int offset = (canvasSize - artSize) / 2;
+    g.clip(centeredArtworkShape(canvasSize, artSize, cornerRadius));
     g.drawImage(source, offset, offset, artSize, artSize, null);
     g.dispose();
     return output;
@@ -183,27 +225,20 @@ public final class SmvLauncherIconGenerator {
     BufferedImage transparent = removeOuterWhiteBackground(original);
     verifyTransparentCorners(transparent, "Transparent source icon");
 
-    // Square legacy launcher: same existing artwork, only the outside canvas
-    // becomes transparent; no logo, words, border or artwork is redesigned.
-    ImageIO.write(transparent, "png", res.resolve("mipmap-nodpi/ic_launcher.png").toFile());
+    // Square fallback: solid white canvas with the complete artwork centered as a smaller tile.
+    BufferedImage square = drawCenteredWhiteIcon(transparent, ROUND_CANVAS, ROUND_ART_SIZE, ROUND_ART_CORNER_RADIUS, false);
+    verifyWhiteBackground(square, "Square fallback");
+    ImageIO.write(square, "png", res.resolve("mipmap-nodpi/ic_launcher.png").toFile());
 
-    // Android adaptive foreground: retain the full composition at a slightly
-    // inset size so central wording survives circular and squircle masks.
-    BufferedImage adaptiveForeground = drawScaled(transparent, ADAPTIVE_CANVAS, ADAPTIVE_ART_SIZE);
+    // Adaptive foreground: a 58dp centered artwork tile inside the 66dp safe-zone region.
+    BufferedImage adaptiveForeground = drawCenteredForeground(transparent, ADAPTIVE_CANVAS, ADAPTIVE_ART_SIZE, ADAPTIVE_ART_CORNER_RADIUS);
     verifyTransparentCorners(adaptiveForeground, "Adaptive foreground");
     ImageIO.write(adaptiveForeground, "png", res.resolve("drawable-nodpi/ic_launcher_foreground.png").toFile());
 
-    // Legacy round launcher: a circular burgundy background with the same
-    // transparent artwork inset so the original wordmark remains visible.
-    BufferedImage round = new BufferedImage(ROUND_CANVAS, ROUND_CANVAS, BufferedImage.TYPE_INT_ARGB);
-    Graphics2D rg = qualityGraphics(round);
-    rg.setClip(new Ellipse2D.Double(0, 0, ROUND_CANVAS, ROUND_CANVAS));
-    rg.setColor(new Color(LAUNCHER_BACKGROUND));
-    rg.fillRect(0, 0, ROUND_CANVAS, ROUND_CANVAS);
-    rg.setComposite(AlphaComposite.SrcOver);
-    int roundOffset = (ROUND_CANVAS - ROUND_ART_SIZE) / 2;
-    rg.drawImage(transparent, roundOffset, roundOffset, ROUND_ART_SIZE, ROUND_ART_SIZE, null);
-    rg.dispose();
+    // Legacy round fallback: white circular background with the same centered artwork tile.
+    BufferedImage round = drawCenteredWhiteIcon(transparent, ROUND_CANVAS, ROUND_ART_SIZE, ROUND_ART_CORNER_RADIUS, true);
+    verifyTransparentCorners(round, "Round fallback");
+    verifyWhiteBackground(round, "Round fallback");
     ImageIO.write(round, "png", res.resolve("mipmap-nodpi/ic_launcher_round.png").toFile());
 
     String colorHex = String.format("#%06X", LAUNCHER_BACKGROUND);
@@ -221,7 +256,7 @@ public final class SmvLauncherIconGenerator {
 
     System.out.println("PASS: Removed only the outer near-white connected background from the existing SMV ASTRO artwork.");
     System.out.println("PASS: Preserved the central artwork and verified transparent corners in the square and adaptive PNGs.");
-    System.out.println("Generated adaptive, round and square launcher assets from public/assets/icon-512.png. Background: " + colorHex);
+    System.out.println("Generated centered white-background adaptive, round and square launcher assets from smvastroproduction/launcher/icon-512.png. Background: " + colorHex);
   }
 }
 JAVA

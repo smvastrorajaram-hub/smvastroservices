@@ -2,13 +2,18 @@
 
 The Production Android app lives in `smvastroproduction/`, has launcher name **SMV ASTRO**, and uses package `in.smvastroservices.smvastro`. The modules `smvastro/`, `smvhoroscope/`, and `smvcalendar/` remain separate Test APKs. The existing `.github/workflows/build-test-apks.yml` workflow is not changed.
 
-## Android launcher icon: transparent background and adaptive masks
+## Android launcher icon: centered white tile inside the system mask
 
-The Production APK uses its Android-only source artwork at `smvastroproduction/launcher/icon-512.png`. This starts as a byte-for-byte copy of the existing approved SMV ASTRO design, but is stored separately from `public/assets/icon-512.png`, the website favicon and Horoscope PWA artwork. Future Android-only icon changes are made to this Android source file. During the Android build, the Java image-preparation step flood-fills only near-white pixels connected to the outer image canvas, makes that exterior transparent, and de-mattes its antialiased edge. White details enclosed inside the icon frame are retained.
+The Production APK uses the Android-only source artwork at `smvastroproduction/launcher/icon-512.png`, separate from `public/assets/icon-512.png` and all Website/PWA files. The Android build removes only the near-white canvas connected to the outside of this source image; the original logo, lettering and gold frame remain the artwork.
 
-The processed transparent artwork is used for the legacy square icon. Android 8.0+ uses the dedicated adaptive foreground with a small inset and a separate deep-burgundy background; the legacy round resource uses the same image clipped to a circle. The Production manifest continues to select `@mipmap/ic_launcher` and `@mipmap/ic_launcher_round`. This is an Android-only transformation: `public/assets/icon-512.png`, the website favicon, PWA manifest, page UI, backend, Firebase, Razorpay, Render and Cloudflare assets are not modified.
+The launcher appearance is intentionally a white-background tile with the complete SMV ASTRO artwork centered at a smaller size:
+- Android adaptive foreground: a 58dp rounded-square artwork tile inside a 108dp canvas, with a separate white adaptive background.
+- Android safe zone: the complete rounded tile is inset to remain inside the central 66dp mask-safe region used for circle/squircle launchers.
+- Legacy square and round icons: the same centered tile on a solid white background; the round fallback has only the area outside its white circle transparent.
 
-The isolated icon-fix branch build produced signed Release v1.7 (versionCode 1007) with the existing permanent signing certificate. On subsequent pushes to `main`, the workflow derives the next vMAJOR.MINOR release version from the monotonically increasing GitHub Actions workflow run number, then creates a signed Release APK. The run counter does not require a repository variable or signing-secret changes. Changing only `smvastroproduction/launcher/icon-512.png` triggers this Android workflow; editing the Website/PWA icon does not. The permanent keystore is not regenerated or rotated.
+The phone launcher supplies the outside mask (Pebble, Round, Squircle, Material-style or Square); the complete SMV ASTRO tile stays centered with a visible white margin. No new logo artwork is created.
+
+Changing only `smvastroproduction/launcher/icon-512.png` triggers the Android workflow. The workflow automatically allocates the next vMAJOR.MINOR version and builds a signed Release APK using the existing permanent signing certificate. The Production Website, Horoscope PWA, Calendar, Firebase, Razorpay, Render and Cloudflare assets are not changed.
 
 ## Native incoming-call ringtone
 

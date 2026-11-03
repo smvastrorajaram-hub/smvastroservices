@@ -60,13 +60,15 @@ function decodeRgbaPng(file) {
   }
   return {
     width, height, pixels,
-    alphaAt(x, y) { return pixels[(y * width + x) * 4 + 3]; }
+    alphaAt(x, y) { return pixels[(y * width + x) * 4 + 3]; },
+    rgbaAt(x, y) { const i = (y * width + x) * 4; return [...pixels.subarray(i, i + 4)]; }
   };
 }
 
 test('Android icon source is isolated from all website and PWA icon assets', () => {
   const sourcePath = 'smvastroproduction/launcher/icon-512.png';
   const source = bytes(sourcePath);
+  assert.deepEqual(source, bytes('public/assets/icon-512.png'), 'Android source starts as the same approved artwork, stored separately');
   assert.equal(source.toString('hex', 0, 8), '89504e470d0a1a0a');
   assert.equal(source.toString('ascii', 12, 16), 'IHDR');
   assert.deepEqual([source.readUInt32BE(16), source.readUInt32BE(20)], [512, 512]);
@@ -90,22 +92,20 @@ test('Production manifest points at adaptive and round launcher resources withou
   assert.doesNotMatch(manifest, /android:icon="@drawable\/app_icon"/);
 });
 
-test('The existing artwork is cleaned only at the outer white canvas and retains the gold-framed center', () => {
-  const source = bytes('public/assets/icon-512.png');
+test('Square fallback uses a white outer canvas and a smaller centered SMV ASTRO tile', () => {
+  const source = bytes('smvastroproduction/launcher/icon-512.png');
   const sourceWidth = source.readUInt32BE(16), sourceHeight = source.readUInt32BE(20);
   assert.deepEqual([sourceWidth, sourceHeight], [512, 512]);
 
   const square = decodeRgbaPng(res + '/mipmap-nodpi/ic_launcher.png');
   assert.deepEqual([square.width, square.height], [512, 512]);
-  for (const [x, y] of [[0,0],[511,0],[0,511],[511,511]]) {
-    assert.equal(square.alphaAt(x, y), 0, 'outer square canvas corner must be transparent');
-  }
+  assert.deepEqual(square.rgbaAt(0, 0), [255, 255, 255, 255], 'square fallback canvas must be solid white');
+  assert.deepEqual(square.rgbaAt(8, 256), [255, 255, 255, 255], 'white margin must remain visible around the artwork');
   assert.ok(square.alphaAt(256, 256) > 200, 'the center of the existing SMV ASTRO artwork must remain opaque');
-  assert.ok(square.alphaAt(256, 40) > 0, 'the upper gold frame must remain present');
-  assert.ok(square.alphaAt(256, 256) > 0, 'the icon artwork must not be erased');
+  assert.notDeepEqual(square.rgbaAt(256, 256), [255, 255, 255, 255], 'the existing artwork must remain visible inside the white tile');
 });
 
-test('Adaptive foreground and legacy round fallback preserve the alpha mask', () => {
+test('Adaptive foreground stays inside the safe zone; round fallback has a centered tile on white', () => {
   const foreground = decodeRgbaPng(res + '/drawable-nodpi/ic_launcher_foreground.png');
   assert.deepEqual([foreground.width, foreground.height], [432, 432]);
   for (const [x, y] of [[0,0],[431,0],[0,431],[431,431]]) {
@@ -113,31 +113,46 @@ test('Adaptive foreground and legacy round fallback preserve the alpha mask', ()
   }
   assert.ok(foreground.alphaAt(216, 216) > 200, 'adaptive icon must retain the central logo');
 
+  let minX=foreground.width, minY=foreground.height, maxX=-1, maxY=-1;
+  for (let y=0; y<foreground.height; y++) {
+    for (let x=0; x<foreground.width; x++) {
+      if (foreground.alphaAt(x,y)>8) {
+        minX=Math.min(minX,x); minY=Math.min(minY,y);
+        maxX=Math.max(maxX,x); maxY=Math.max(maxY,y);
+      }
+    }
+  }
+  assert.ok(minX >= 100 && minY >= 100 && maxX <= 331 && maxY <= 331,
+    'the complete artwork tile must stay within the centered 58dp safe-zone footprint');
+
   const round = decodeRgbaPng(res + '/mipmap-nodpi/ic_launcher_round.png');
   assert.deepEqual([round.width, round.height], [512, 512]);
   for (const [x, y] of [[0,0],[511,0],[0,511],[511,511]]) {
-    assert.equal(round.alphaAt(x, y), 0, 'round legacy fallback corners must be transparent');
+    assert.equal(round.alphaAt(x, y), 0, 'outside of the round white background must be transparent');
   }
-  assert.ok(round.alphaAt(256, 256) > 200, 'round fallback must retain the central artwork');
+  assert.deepEqual(round.rgbaAt(256, 8), [255,255,255,255], 'round background must be white');
+  assert.deepEqual(round.rgbaAt(16, 256), [255,255,255,255], 'round icon needs even white margins');
+  assert.ok(round.alphaAt(256, 256) > 200, 'round fallback must retain the centered artwork');
 });
 
-test('Adaptive XML layers resolve to the dedicated foreground and a separate burgundy background', () => {
+test('Adaptive XML layers resolve to the centered foreground and a separate white background', () => {
   for (const name of ['ic_launcher', 'ic_launcher_round']) {
     const xml = read(res + '/mipmap-anydpi-v26/' + name + '.xml');
     assert.match(xml, /<adaptive-icon/);
     assert.match(xml, /@color\/smv_launcher_background/);
     assert.match(xml, /@drawable\/ic_launcher_foreground/);
   }
-  assert.match(read(res + '/values/colors.xml'), /<color name="smv_launcher_background">#260719<\/color>/);
+  assert.match(read(res + '/values/colors.xml'), /<color name="smv_launcher_background">#FFFFFF<\/color>/);
 });
 
-test('The icon preparation never replaces website assets or downloads another logo', () => {
+test('The Android icon generator keeps the website/PWA artwork isolated and centered on white', () => {
   const script = read('prepare-smv-astro-production-icon.sh');
-  assert.match(script, /public\/assets\/icon-512\.png/);
+  assert.match(script, /smvastroproduction\/launcher\/icon-512\.png/);
   assert.match(script, /removeOuterWhiteBackground/);
   assert.match(script, /isOuterBackgroundCandidate/);
   assert.match(script, /verifyTransparentCorners/);
+  assert.match(script, /ADAPTIVE_ART_SIZE = 232/);
+  assert.match(script, /ADAPTIVE_ART_CORNER_RADIUS = 64/);
+  assert.match(script, /Color\.WHITE/);
   assert.doesNotMatch(script, /curl|wget|smvastroservices\.in/i);
-  assert.doesNotMatch(script, /curl|wget|smvastroservices\.in/i);
-  assert.ok(read('.github/workflows/build-smv-astro-production-apk.yml').includes("github.ref == 'refs/heads/fix/android-launcher-mask-background-20261103' && 'v1.7'"));
 });
