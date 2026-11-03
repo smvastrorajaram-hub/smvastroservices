@@ -192,15 +192,15 @@ jobs:
                 ready='true'
                 break
               fi
-              echo 'HTTP 200 reached an older or not-yet-converged Worker version; waiting for the configured inactive Production version.'
+              echo 'HTTP 200 reached an older or not-yet-converged Worker version; waiting for the configured active Production version.'
             fi
             sleep 5
           done
           if [ "$ready" = 'true' ]; then
-            echo 'Production Worker health and inactive feature gates verified.'
+            echo 'Production Worker health and active financial feature gates verified.'
             exit 0
           fi
-          echo 'Production Worker did not converge to the expected inactive Production configuration.'
+          echo 'Production Worker did not converge to the expected active Production configuration.'
           test -f /tmp/smv-worker-health.headers && grep -iE '^(HTTP/|cf-error-type:|cf-error-origin:|cf-ray:)' /tmp/smv-worker-health.headers || true
           test -f /tmp/smv-worker-health.json && cat /tmp/smv-worker-health.json || true
           exit 1
