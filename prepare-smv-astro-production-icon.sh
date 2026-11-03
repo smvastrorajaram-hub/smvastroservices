@@ -27,10 +27,10 @@ import java.nio.file.*;
 
 public final class SmvLauncherIconGenerator {
   private static final int ADAPTIVE_CANVAS = 432; // 108dp at 4px per dp
-  private static final int ADAPTIVE_ART_SIZE = 232; // 58dp, inside Android's central 66dp safe zone
+  private static final int ADAPTIVE_ART_SIZE = 264; // 66dp, fills the official Android mask-safe square
   private static final int ADAPTIVE_ART_CORNER_RADIUS = 64; // 16dp rounded corners
   private static final int ROUND_CANVAS = 512;
-  private static final int ROUND_ART_SIZE = 275; // Same 58dp visual size at 512px
+  private static final int ROUND_ART_SIZE = 313; // 66dp visual size at the 108dp adaptive-canvas ratio
   private static final int ROUND_ART_CORNER_RADIUS = 76; // Same 16dp visual radius
   private static final int LAUNCHER_BACKGROUND = 0xFFFFFF;
 
