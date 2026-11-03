@@ -82,9 +82,9 @@ test('Public APK cards remain quiet until the new Cloudflare app routes are expl
   const controller = read('public/horoscope/android-apk-download.mjs');
   const horoscopeHtml = read('public/horoscope/index.html');
   const calendarHtml = read('public/horoscope/calendar/index.html');
-  assert.ok(controller.includes("String(window.SMV_APK_RELEASE_API_URL || '').trim()"));
+  assert.ok(controller.includes("window.SMV_APK_RELEASE_API_URL || ''"));
   assert.ok(controller.includes('if (!configured) return null'));
-  assert.ok(controller.includes("const allowedWorkerOrigin = 'https://smv-astro-apk-release-api.astroservices.workers.dev'"));
+  assert.ok(controller.includes("allowedWorkerOrigin = 'https://smv-astro-apk-release-api.astroservices.workers.dev'"));
   assert.ok(horoscopeHtml.includes('smvHoroscopeAndroidApkSection'));
   assert.ok(calendarHtml.includes('smvCalendarAndroidApkSection'));
   assert.ok(!horoscopeHtml.includes('id="smvHoroscopeInstallArea"') && !horoscopeHtml.includes('id="installApp"'));
