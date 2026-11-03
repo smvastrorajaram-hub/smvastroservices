@@ -84,8 +84,53 @@ jobs:
           UNION ALL SELECT 'audit:smv_payouts:warning', CAST(COUNT(*) AS TEXT) FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_payouts' AND mapping_status='warning'
           SQL
           )"
-          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "$query" > /tmp/smv-prod-identity-d1.json
-          node --input-type=module -e "import fs from 'node:fs'; const s=fs.readFileSync('/tmp/smv-prod-identity-d1.json','utf8'); const start=Math.min(...[s.indexOf('['),s.indexOf('{')].filter(i=>i>=0)); if(!Number.isFinite(start)) process.exit(1); JSON.parse(s.slice(start)); console.log('PASS: Production D1 Identity/Profile audit SQL executed in read-only SELECT mode.');"
+          if ! npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "$query" > /tmp/smv-prod-identity-d1.json 2> /tmp/smv-prod-identity-d1.stderr; then
+            echo 'Production D1 read-only SELECT failed; diagnostic output follows.'
+            cat /tmp/smv-prod-identity-d1.stderr
+            cat /tmp/smv-prod-identity-d1.json
+            exit 1
+          fi
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const raw = fs.readFileSync('/tmp/smv-prod-identity-d1.json', 'utf8').replace(/\u001b\[[0-9;]*m/g, '');
+          const starts = [...raw.matchAll(/(?:^|\n)(?=\s*[\[{])/g)]
+            .map(match => match.index === 0 ? 0 : match.index + 1);
+          let parsed;
+          for (const start of starts) {
+            try { parsed = JSON.parse(raw.slice(start).trim()); break; } catch {}
+          }
+          if (parsed === undefined) {
+            console.error('Production D1 returned output that was not valid JSON. Sanitized read-only response follows:');
+            console.error(raw.slice(0, 12000));
+            process.exit(1);
+          }
+          const items = Array.isArray(parsed) ? parsed : [parsed];
+          const normalized = [];
+          function visit(value) {
+            if (Array.isArray(value)) return value.forEach(visit);
+            if (!value || typeof value !== 'object') return;
+            if (Array.isArray(value.results)) {
+              for (const row of value.results) {
+                if (row && typeof row.metric === 'string' && row.value !== undefined) {
+                  normalized.push({ metric: row.metric, value: String(row.value) });
+                }
+              }
+            }
+            for (const child of Object.values(value)) visit(child);
+          }
+          visit(items);
+          if (!normalized.length) {
+            console.error('Production D1 returned no count rows. Sanitized response follows:');
+            console.error(raw.slice(0, 12000));
+            process.exit(1);
+          }
+          console.log('PASS: Production D1 Identity/Profile audit SQL executed in read-only SELECT mode.');
+          console.log(JSON.stringify(normalized.sort((a,b)=>a.metric.localeCompare(b.metric)), null, 2));
+          fs.writeFileSync('/tmp/smv-prod-identity-d1-normalized.json', JSON.stringify(normalized.map(row => ({
+            metric: row.metric, value: row.value
+          }))));
+          NODE
+          cp /tmp/smv-prod-identity-d1-normalized.json /tmp/smv-prod-identity-d1.json
 
       - name: Count Firebase Project 1 source collections using read-only Firestore aggregation
         shell: bash
