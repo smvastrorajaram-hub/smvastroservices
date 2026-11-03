@@ -122,8 +122,8 @@ test('Adaptive foreground stays inside the safe zone; round fallback has a cente
       }
     }
   }
-  assert.ok(minX >= 84 && minY >= 84 && maxX <= 347 && maxY <= 347,
-    'the complete artwork tile must stay within the centered 66dp Android mask-safe square');
+  assert.ok(minX >= 100 && minY >= 100 && maxX <= 331 && maxY <= 331,
+    'the complete 58dp artwork tile must stay inside Android’s centered 66dp mask-safe square');
 
   const round = decodeRgbaPng(res + '/mipmap-nodpi/ic_launcher_round.png');
   assert.deepEqual([round.width, round.height], [512, 512]);
@@ -151,8 +151,8 @@ test('The Android icon generator keeps the website/PWA artwork isolated and cent
   assert.match(script, /removeOuterWhiteBackground/);
   assert.match(script, /isOuterBackgroundCandidate/);
   assert.match(script, /verifyTransparentCorners/);
-  assert.match(script, /ADAPTIVE_ART_SIZE = 264/);
-  assert.match(script, /ROUND_ART_SIZE = 313/);
+  assert.match(script, /ADAPTIVE_ART_SIZE = 232/);
+  assert.match(script, /ROUND_ART_SIZE = 275/);
   assert.match(script, /Color\.WHITE/);
   assert.doesNotMatch(script, /curl|wget|smvastroservices\.in/i);
 });
