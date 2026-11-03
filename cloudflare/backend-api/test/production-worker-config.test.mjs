@@ -14,6 +14,9 @@ test('Production Worker uses the exact requested Worker name, D1 ID, Firebase Pr
   assert.equal(config.vars.FIREBASE_PROJECT_ID, 'smv-astro');
   assert.equal(config.vars.FIREBASE_AUTH_PROJECT_IDS, 'smv-astro');
   assert.equal(config.vars.ALLOWED_ORIGINS, 'https://smvastroservices.in');
+  assert.equal(config.observability.enabled, true);
+  assert.equal(config.observability.logs.invocation_logs, true);
+  assert.equal(config.observability.logs.head_sampling_rate, 1);
   assert.deepEqual(config.d1_databases, [{
     binding: 'DB',
     database_name: 'smvastro-wallet-production',
@@ -35,6 +38,17 @@ test('Production Worker enables D1 Wallet, Razorpay Live and Live/Booking routes
   assert.equal(config.workers_dev, true);
   assert.equal(config.preview_urls, false);
   assert.equal(config.routes, undefined);
+});
+
+test('Production diagnostic probe Workers have separate names and cannot bind Production D1', () => {
+  const native = JSON.parse(fs.readFileSync(path.join(root, 'wrangler.native-probe.jsonc'), 'utf8'));
+  const express = JSON.parse(fs.readFileSync(path.join(root, 'wrangler.express-probe.jsonc'), 'utf8'));
+  assert.equal(native.name, 'smvastroservices-native-probe');
+  assert.equal(express.name, 'smvastroservices-http-probe');
+  assert.equal(native.d1_databases, undefined);
+  assert.equal(express.d1_databases, undefined);
+  assert.equal(native.durable_objects, undefined);
+  assert.equal(express.durable_objects, undefined);
 });
 
 test('Production frontend keeps Cloudflare financial routing opt-in until Worker deployment has been verified', () => {
