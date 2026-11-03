@@ -228,8 +228,8 @@ jobs:
         with:
           name: SMV-HOROSCOPE-CALENDAR-DEBUG-TEST-APKS
           path: |
-            smvhoroscopeproduction/build/outputs/apk/debug/smvhoroscopeproduction-debug.apk
-            smvcalendarproduction/build/outputs/apk/debug/smvcalendarproduction-debug.apk
+            smvhoroscopeproduction/build/outputs/apk/debug/
+            smvcalendarproduction/build/outputs/apk/debug/
           if-no-files-found: error
           retention-days: 7
 
