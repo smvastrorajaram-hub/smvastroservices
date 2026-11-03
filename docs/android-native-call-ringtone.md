@@ -7,9 +7,11 @@ The Production Android app lives in `smvastroproduction/`, has launcher name **S
 The Production APK uses the Android-only source artwork at `smvastroproduction/launcher/icon-512.png`, separate from `public/assets/icon-512.png` and all Website/PWA files. The Android build removes only the near-white canvas connected to the outside of this source image; the original logo, lettering and gold frame remain the artwork.
 
 The launcher appearance is intentionally a white-background tile with the complete SMV ASTRO artwork centered at a smaller size:
-- Android adaptive foreground: a 58dp rounded-square artwork tile inside a 108dp canvas, with a separate white adaptive background.
-- Android safe zone: the complete rounded tile is inset to remain inside the central 66dp mask-safe region used for circle/squircle launchers.
-- Legacy square and round icons: the same centered tile on a solid white background; the round fallback has only the area outside its white circle transparent.
+- Android adaptive foreground: a 66dp rounded-square artwork tile inside the 108dp canvas, with a separate white adaptive background.
+- Android safe zone: the complete artwork occupies no more than the central 66×66dp mask-safe area, so its lettering remains protected under the OEM circle/squircle masks.
+- Legacy square and round icons: the same centered 66dp tile on a solid white background; the round fallback has only the area outside its white circle transparent.
+
+The previous 58dp artwork tile left more white margin than desired. It is enlarged to the Android-recommended 66dp maximum. A 75dp critical-artwork tile would exceed the documented mask-safe region and could reintroduce clipping on Round/Pebble-style launchers, so the production design intentionally stops at 66dp.
 
 The phone launcher supplies the outside mask (Pebble, Round, Squircle, Material-style or Square); the complete SMV ASTRO tile stays centered with a visible white margin. No new logo artwork is created.
 
