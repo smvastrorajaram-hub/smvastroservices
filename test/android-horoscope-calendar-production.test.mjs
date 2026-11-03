@@ -55,6 +55,15 @@ test('Production Horoscope and Calendar use their own stable Play Store applicat
   }
 });
 
+test('SMV ASTRO Production launches the matching new production Horoscope or Calendar APK when installed', () => {
+  const astroMain = read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java');
+  assert.ok(astroMain.includes('return "in.smvastroservices.horoscope";'));
+  assert.ok(astroMain.includes('return "in.smvastroservices.calendar";'));
+  assert.ok(astroMain.includes('getLaunchIntentForPackage(packageName)'));
+  assert.equal(astroMain.includes('in.smvastroservices.horoscope.test'), false);
+  assert.equal(astroMain.includes('in.smvastroservices.calendar.test'), false);
+});
+
 test('Existing Horoscope and Calendar QA APK modules remain test-only and keep their package IDs', () => {
   assert.match(read('smvhoroscope/build.gradle'), /applicationId "in\.smvastr[o]services\.horoscope\.test"/);
   assert.match(read('smvcalendar/build.gradle'), /applicationId "in\.smvastr[o]services\.calendar\.test"/);
