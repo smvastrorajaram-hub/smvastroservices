@@ -25,6 +25,7 @@ on:
       - "prepare-smv-astro-production-icon.sh"
       - ".github/workflows/build-smv-astro-production-apk.yml"
       - "test/android-permanent-release.test.mjs"
+      - "test/android-launcher-icon.test.mjs"
       - "test/android-google-native-signin.test.mjs"
       - "public/smvastro.mjs"
       - "docs/android-native-call-ringtone.md"
@@ -35,6 +36,7 @@ on:
       - "prepare-smv-astro-production-icon.sh"
       - ".github/workflows/build-smv-astro-production-apk.yml"
       - "test/android-permanent-release.test.mjs"
+      - "test/android-launcher-icon.test.mjs"
       - "public/smvastro.mjs"
       - "test/android-google-native-signin.test.mjs"
       - "docs/android-native-call-ringtone.md"
@@ -185,6 +187,9 @@ jobs:
 
       - name: Prepare official SMV ASTRO app icon
         run: bash prepare-smv-astro-production-icon.sh
+
+      - name: Verify Android adaptive and legacy launcher icon resources
+        run: node --test test/android-launcher-icon.test.mjs
 
       - name: Validate Firebase Android App ID and ordered version
         shell: bash
