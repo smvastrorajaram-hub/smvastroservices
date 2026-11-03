@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "SMVAndroidApps"
-include(":smvastro", ":smvhoroscope", ":smvcalendar", ":smvastroproduction")
+include(":smvastro", ":smvhoroscope", ":smvcalendar", ":smvastroproduction", ":smvhoroscopeproduction", ":smvcalendarproduction")
