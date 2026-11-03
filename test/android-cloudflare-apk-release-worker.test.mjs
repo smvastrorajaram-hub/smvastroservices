@@ -227,6 +227,7 @@ test('health exposes readiness but never enables publishing by default', async (
     r2Ready: true,
     uploadsEnabled: false,
     deletesEnabled: true,
+    multiAppReleasesEnabled: false,
     hasReleaseRecords: false
   });
 });
@@ -247,6 +248,7 @@ test('health performs a read-only R2 binding probe and fails closed when R2 is u
     r2Ready: false,
     uploadsEnabled: false,
     deletesEnabled: false,
+    multiAppReleasesEnabled: false,
     hasReleaseRecords: false
   });
   assert.equal(logged.length, 1);
