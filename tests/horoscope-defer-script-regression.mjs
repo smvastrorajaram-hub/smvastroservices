@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const html = await readFile(new URL('../public/horoscope/index.html', import.meta.url), 'utf8');
+const calendarHtml = await readFile(new URL('../public/horoscope/calendar/index.html', import.meta.url), 'utf8');
 const tags = [...html.matchAll(/<script\b([^>]*)>/gi)].map(match => match[1]);
 const source = attrs => (attrs.match(/\bsrc\s*=\s*['"]([^'"]+)['"]/i) || [])[1] || null;
 const modules = attrs => /\btype\s*=\s*['"]module['"]/i.test(attrs);
@@ -33,4 +34,12 @@ test('calculation-engine lazy loading and marriage-matching on-demand loading re
   assert.match(html, /__smvEnsureCalculationNarrativeEngines/);
   assert.match(html, /smvMarriageMatching/);
   assert.match(html, /IntersectionObserver/);
+});
+
+test('published Horoscope and Calendar APK cards both use the public release Worker', () => {
+  const publicWorkerConfig = '<script id="smv-apk-release-api-config">window.SMV_APK_RELEASE_API_URL = window.SMV_APK_RELEASE_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev";</script>';
+  assert.ok(html.includes(publicWorkerConfig), 'Horoscope page must configure the public APK release Worker');
+  assert.ok(calendarHtml.includes(publicWorkerConfig), 'Calendar page must configure the public APK release Worker');
+  assert.ok(html.indexOf(publicWorkerConfig) < html.indexOf('src="./android-apk-download.mjs"'));
+  assert.ok(calendarHtml.indexOf(publicWorkerConfig) < calendarHtml.indexOf('src="../android-apk-download.mjs"'));
 });
