@@ -2603,7 +2603,10 @@ const SMV_ADMIN_ANDROID_APPS={
   calendar:{label:'SMV CALENDAR',prefix:'adminCalendarAndroidApp',workerPath:'/admin/android-apps/calendar',fallback:false}
 };
 function smvAdminAndroidAppElement(appId,suffix){
-  const app=SMV_ADMIN_ANDROID_APPS[appId];return app?$(app.prefix+suffix):null;
+  const app=SMV_ADMIN_ANDROID_APPS[appId];
+  if(!app)return null;
+  if(appId==='astro'&&suffix==='BackendStatus')return $('adminAndroidApkBackendStatus');
+  return $(app.prefix+suffix);
 }
 function smvAdminAndroidAppHistoryPath(appId){
   return appId==='astro'?'/admin/android-app/versions':app.workerPath+'/versions';
