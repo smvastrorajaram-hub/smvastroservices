@@ -154,6 +154,7 @@ jobs:
     env:
       SMV_FIREBASE_ANDROID_APP_ID: ${{ vars.SMV_FIREBASE_ANDROID_APP_ID || '1:299081899217:android:09e43164cfdd015ba539f0' }}
       SMV_ANDROID_VERSION_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.version_name || vars.SMV_ANDROID_VERSION_NAME || 'v1.2' }}
+      SMV_SIGNED_RELEASE: ${{ (github.event_name == 'workflow_dispatch' && inputs.build_signed_release) || (github.event_name == 'push' && github.ref == 'refs/heads/fix/android-launcher-mask-background-20261103') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -190,6 +191,18 @@ jobs:
 
       - name: Verify Android adaptive and legacy launcher icon resources
         run: node --test test/android-launcher-icon.test.mjs
+
+      - name: Upload generated Android launcher icon previews
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMV-ASTRO-ANDROID-LAUNCHER-ICON-PREVIEW
+          path: |
+            smvastroproduction/src/main/res/mipmap-nodpi/ic_launcher.png
+            smvastroproduction/src/main/res/mipmap-nodpi/ic_launcher_round.png
+            smvastroproduction/src/main/res/drawable-nodpi/ic_launcher_foreground.png
+          if-no-files-found: error
+          retention-days: 7
+
 
       - name: Validate Firebase Android App ID and ordered version
         shell: bash
@@ -247,7 +260,7 @@ jobs:
             :smvastroproduction:assembleRelease
 
       - name: Validate permanent Release signing secrets
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_signed_release }}
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
         shell: bash
         env:
           SMV_ANDROID_KEYSTORE_BASE64: ${{ secrets.SMV_ANDROID_KEYSTORE_BASE64 }}
@@ -272,7 +285,7 @@ jobs:
           fi
 
       - name: Restore permanent signing keystore securely
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_signed_release }}
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
         shell: bash
         env:
           SMV_ANDROID_KEYSTORE_BASE64: ${{ secrets.SMV_ANDROID_KEYSTORE_BASE64 }}
@@ -291,7 +304,7 @@ jobs:
           echo "SMV_ANDROID_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
 
       - name: Build signed SMV ASTRO Permanent Release APK
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_signed_release }}
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
         env:
           SMV_ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/smv-astro-release.p12
           SMV_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.SMV_ANDROID_KEYSTORE_PASSWORD }}
@@ -303,14 +316,14 @@ jobs:
             :smvastroproduction:assembleRelease
 
       - name: Verify signed Release APK certificate
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_signed_release }}
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
         run: |
           apk="smvastroproduction/build/outputs/apk/release/smvastroproduction-release.apk"
           test -s "$apk"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk"
 
       - name: Upload permanent signed Release APK
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_signed_release }}
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: SMV-ASTRO-PERMANENT-RELEASE-APK
@@ -318,5 +331,5 @@ jobs:
           retention-days: 30
 
       - name: Remove signing keystore from the runner
-        if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.build_signed_release }}
+        if: ${{ always() && env.SMV_SIGNED_RELEASE == 'true' }}
         run: rm -f "$RUNNER_TEMP/smv-astro-release.p12"

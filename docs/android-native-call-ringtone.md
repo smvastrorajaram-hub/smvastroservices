@@ -2,13 +2,13 @@
 
 The Production Android app lives in `smvastroproduction/`, has launcher name **SMV ASTRO**, and uses package `in.smvastroservices.smvastro`. The modules `smvastro/`, `smvhoroscope/`, and `smvcalendar/` remain separate Test APKs. The existing `.github/workflows/build-test-apks.yml` workflow is not changed.
 
-## Android launcher icon: reuse the existing SMV ASTRO artwork
+## Android launcher icon: transparent background and adaptive masks
 
-The Production APK reuses the existing repository artwork at `public/assets/icon-512.png`; no replacement logo, crop, or Production Website asset change is introduced. The build script generates Android-specific resources from that same square icon: a centered, transparent 432×432 adaptive foreground, a matching sampled-color background, and a circular legacy fallback. The original 512×512 artwork remains the square legacy fallback.
+The Production APK reuses the current repository artwork at `public/assets/icon-512.png`; the brand image, wordmark and gold frame are not redesigned. During the Android build, the Java image-preparation step flood-fills only near-white pixels connected to the outer image canvas, makes that exterior transparent, and de-mattes its antialiased edge. White details enclosed inside the icon frame are retained.
 
-The Production manifest selects `@mipmap/ic_launcher` and `@mipmap/ic_launcher_round`. Android 8.0+ uses the adaptive foreground/background layers and applies the device launcher mask (circle, rounded square, squircle/pebble-like, and other supported shapes). The artwork is inset so the existing complete emblem and wordmark are protected from mask cropping as far as the source artwork permits.
+The processed transparent artwork is used for the legacy square icon. Android 8.0+ uses the dedicated adaptive foreground with a small inset and a separate deep-burgundy background; the legacy round resource uses the same image clipped to a circle. The Production manifest continues to select `@mipmap/ic_launcher` and `@mipmap/ic_launcher_round`. This is an Android-only transformation: `public/assets/icon-512.png`, the website favicon, PWA manifest, page UI, backend, Firebase, Razorpay, Render and Cloudflare assets are not modified.
 
-The preparation script reads the icon from the repository checkout and does not fetch or modify the Production Website. This is an Android APK resource change only: no website favicon, PWA manifest, page UI, backend, Firebase, Razorpay, Render, or Cloudflare resource is changed. An already-installed app needs a newly built and installed APK to receive the launcher icon update.
+The icon-fix branch also produces a signed Release APK using the already configured permanent signing secrets, at version `v1.2`, and uploads the square/adaptive/round PNG previews as a separate short-retention artifact. The permanent keystore is not regenerated or rotated.
 
 ## Native incoming-call ringtone
 
