@@ -75,9 +75,9 @@ public final class SmvLauncherIconGenerator {
     // Provide a circular pre-adaptive fallback with enough inset for the full artwork.
     BufferedImage round = new BufferedImage(512, 512, BufferedImage.TYPE_INT_ARGB);
     Graphics2D rg = qualityGraphics(round);
+    rg.setClip(new Ellipse2D.Double(0, 0, 512, 512));
     rg.setColor(backgroundColor);
     rg.fillRect(0, 0, 512, 512);
-    rg.setClip(new Ellipse2D.Double(0, 0, 512, 512));
     int roundSize = 350;
     int roundOffset = (512 - roundSize) / 2;
     rg.drawImage(source, roundOffset, roundOffset, roundSize, roundSize, null);
