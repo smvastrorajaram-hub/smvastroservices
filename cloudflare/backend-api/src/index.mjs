@@ -621,7 +621,8 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
         environment: String(env.SMV_ENVIRONMENT || ''),
         sourceProjectId: identityProjectId,
         projectIds: configuredProjectIds,
-        productionApproved: String(env.SMV_IDENTITY_PROFILE_PRODUCTION_AUTHORIZATION_APPROVED || '').trim().toLowerCase() === 'true'
+        productionApproved: String(env.SMV_IDENTITY_PROFILE_PRODUCTION_AUTHORIZATION_APPROVED || '').trim().toLowerCase() === 'true',
+        freshStartApproved: String(env.SMV_IDENTITY_PROFILE_FRESH_START_APPROVED || '').trim().toLowerCase() === 'true'
       });
       walletIdentityService = d1IdentityAuthorizationService;
     }
