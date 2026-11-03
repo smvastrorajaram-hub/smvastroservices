@@ -55,3 +55,10 @@ After successful validation, Admin uploads are stored at immutable versioned R2 
 - POST `/admin/android-app/upload` — verified Admin, exact APK content type, up to 100 MiB, APK package/version/permanent signing validation, strictly increasing versionCode, and per-UID rate limiting; stores the binary in R2 and release metadata in D1.
 
 CI validates the bundle with a non-deploying Wrangler dry-run and runs source tests. It does not apply remote migrations, upload APKs, or deploy to Cloudflare. Do not add secrets or APK binaries to this repository.
+
+
+## Historical APK deletion
+
+- Admin-only `DELETE /admin/android-app/versions/:versionCode` requires `ALLOW_APK_DELETES=true`.
+- Only older APK files stored in the dedicated R2 bucket can be deleted from this manager. The highest/current release is always protected.
+- Legacy Firebase archive records are shown as protected because this Worker intentionally has no Firebase Storage delete authority.
