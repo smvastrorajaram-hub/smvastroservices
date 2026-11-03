@@ -48,7 +48,12 @@ test('Production deploy workflow provisions and validates Firebase Project 1 cre
   assert.match(workflow, /FIREBASE_PROJECT_1_SERVICE_ACCOUNT_JSON/);
   assert.match(workflow, /project_id !== 'smv-astro'/);
   assert.match(workflow, /secret put FIREBASE_SERVICE_ACCOUNT_JSON/);
-  assert.match(workflow, /firebaseConnected!==true/);
+  // Inactive Production must not require Firebase connectivity: its service
+  // account is intentionally not exercised while backend and domain gates are OFF.
+  assert.match(workflow, /d\.backendActive!==false/);
+  assert.match(workflow, /d\.walletReadRoutesRegistered!==false/);
+  assert.match(workflow, /d\.walletRechargeMode!=='disabled'/);
+  assert.match(workflow, /d\.liveSessionRoutesRegistered!==false/);
 });
 
 test('Production diagnostic probe Workers have separate names and cannot bind Production D1', () => {
