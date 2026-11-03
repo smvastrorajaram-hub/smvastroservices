@@ -240,4 +240,3 @@ for asset in \
 done
 
 echo "Existing SMV ASTRO artwork is ready for transparent square, adaptive and round Android launchers."
-JAVA
