@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-source_icon="public/assets/icon-512.png"
+source_icon="smvastroproduction/launcher/icon-512.png"
 res="smvastroproduction/src/main/res"
 generator_dir="/tmp/smv-astro-icon-generator"
 

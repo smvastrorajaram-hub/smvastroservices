@@ -4,11 +4,11 @@ The Production Android app lives in `smvastroproduction/`, has launcher name **S
 
 ## Android launcher icon: transparent background and adaptive masks
 
-The Production APK reuses the current repository artwork at `public/assets/icon-512.png`; the brand image, wordmark and gold frame are not redesigned. During the Android build, the Java image-preparation step flood-fills only near-white pixels connected to the outer image canvas, makes that exterior transparent, and de-mattes its antialiased edge. White details enclosed inside the icon frame are retained.
+The Production APK uses its Android-only source artwork at `smvastroproduction/launcher/icon-512.png`. This starts as a byte-for-byte copy of the existing approved SMV ASTRO design, but is stored separately from `public/assets/icon-512.png`, the website favicon and Horoscope PWA artwork. Future Android-only icon changes are made to this Android source file. During the Android build, the Java image-preparation step flood-fills only near-white pixels connected to the outer image canvas, makes that exterior transparent, and de-mattes its antialiased edge. White details enclosed inside the icon frame are retained.
 
 The processed transparent artwork is used for the legacy square icon. Android 8.0+ uses the dedicated adaptive foreground with a small inset and a separate deep-burgundy background; the legacy round resource uses the same image clipped to a circle. The Production manifest continues to select `@mipmap/ic_launcher` and `@mipmap/ic_launcher_round`. This is an Android-only transformation: `public/assets/icon-512.png`, the website favicon, PWA manifest, page UI, backend, Firebase, Razorpay, Render and Cloudflare assets are not modified.
 
-The icon-fix branch produces a signed Release APK at version `v1.7` (Android versionCode 1007), using the already configured permanent signing secrets. This is newer than the latest previously signed v1.6 build, so it can update that installation. The square/adaptive/round PNG previews are uploaded as a separate short-retention artifact. The permanent keystore is not regenerated or rotated.
+The isolated icon-fix branch build produced signed Release v1.7 (versionCode 1007) with the existing permanent signing certificate. On subsequent pushes to `main`, the workflow automatically allocates and stores the next vMAJOR.MINOR release version in the repository Actions variable `SMV_ANDROID_VERSION_NAME`, then creates a signed Release APK. Changing only `smvastroproduction/launcher/icon-512.png` triggers this Android workflow; editing the Website/PWA icon does not. The permanent keystore is not regenerated or rotated.
 
 ## Native incoming-call ringtone
 

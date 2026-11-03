@@ -64,6 +64,22 @@ function decodeRgbaPng(file) {
   };
 }
 
+test('Android icon source is isolated from all website and PWA icon assets', () => {
+  const sourcePath = 'smvastroproduction/launcher/icon-512.png';
+  const source = bytes(sourcePath);
+  assert.equal(source.toString('hex', 0, 8), '89504e470d0a1a0a');
+  assert.equal(source.toString('ascii', 12, 16), 'IHDR');
+  assert.deepEqual([source.readUInt32BE(16), source.readUInt32BE(20)], [512, 512]);
+  const script = read('prepare-smv-astro-production-icon.sh');
+  assert.match(script, /source_icon="smvastroproduction\/launcher\/icon-512\.png"/);
+  assert.doesNotMatch(script, /source_icon="public\/assets\/icon-512\.png"/);
+  const workflow = read('.github/workflows/build-smv-astro-production-apk.yml');
+  assert.equal((workflow.match(/"smvastroproduction\/launcher\/icon-512\.png"/g) || []).length, 2);
+  assert.match(workflow, /github\.ref == 'refs\/heads\/main'/);
+  assert.match(workflow, /actions:\s*write/);
+  assert.match(workflow, /Allocate the next permanent Android release version on main pushes/);
+});
+
 test('Production manifest points at adaptive and round launcher resources without changing app identity', () => {
   const manifest = read('smvastroproduction/src/main/AndroidManifest.xml');
   assert.match(manifest, /android:icon="@mipmap\/ic_launcher"/);
@@ -121,6 +137,6 @@ test('The icon preparation never replaces website assets or downloads another lo
   assert.match(script, /isOuterBackgroundCandidate/);
   assert.match(script, /verifyTransparentCorners/);
   assert.doesNotMatch(script, /curl|wget|smvastroservices\.in/i);
-  assert.doesNotMatch(script, /public\/assets\/icon-512\.png[" ]+--output/);
+  assert.doesNotMatch(script, /curl|wget|smvastroservices\.in/i);
   assert.ok(read('.github/workflows/build-smv-astro-production-apk.yml').includes("github.ref == 'refs/heads/fix/android-launcher-mask-background-20261103' && 'v1.7'"));
 });
