@@ -136,7 +136,8 @@ export function registerBackendReadinessRoute({
   db,
   firebaseConnectivityProbe = async () => false,
   getRuntimeState = () => ({}),
-  getIdentityGate = async () => ({ enabled: false, ready: false, reason: 'disabled' })
+  getIdentityGate = async () => ({ enabled: false, ready: false, reason: 'disabled' }),
+  getRazorpayVerification = async () => ({ connected: false, connectionVerified: false, checkedAt: null })
 }) {
   app.get('/api/backend/readiness', async (_req, res) => {
     const schema = await inspectBackendSchema(db);
@@ -162,6 +163,13 @@ export function registerBackendReadinessRoute({
     }
 
     const razorpayPolicy = runtime.razorpayPolicy || {};
+    let razorpayVerification = { connected: false, connectionVerified: false, checkedAt: null };
+    try {
+      const verification = await getRazorpayVerification();
+      if (verification && typeof verification === 'object') razorpayVerification = verification;
+    } catch {
+      // Provider connectivity is an independent live check; failures remain unverified.
+    }
     const walletReadRoutesEnabled = runtime.walletReadRoutesRegistered === true &&
       runtime.walletReadRouteGateOpen === true && schema.checks.sharedDomainSchema;
     const walletRechargeRoutesEnabled = runtime.walletRechargeRoutesRegistered === true &&
@@ -194,10 +202,13 @@ export function registerBackendReadinessRoute({
       },
       firebaseConnected,
       firestoreConnected: firebaseConnected,
-      razorpayConnected: false,
+      razorpayConnected: razorpayVerification.connected === true,
       razorpayCredentialsConfigured: razorpayPolicy.enabled === true &&
         !!runtime.razorpayKeyId && !!runtime.razorpayKeySecret && !!runtime.razorpayWebhookSecret,
-      razorpayProviderConnectionVerified: false,
+      razorpayProviderConnectionVerified: razorpayVerification.connectionVerified === true,
+      razorpayProviderConnectionCheckedAt: typeof razorpayVerification.checkedAt === 'string'
+        ? razorpayVerification.checkedAt
+        : null,
       razorpayMode: String(razorpayPolicy.mode || 'disabled'),
       razorpayPolicyReason: String(razorpayPolicy.reason || 'disabled'),
       legacyRazorpayRoutesRegistered: runtime.legacyRazorpayRoutesRegistered === true,
