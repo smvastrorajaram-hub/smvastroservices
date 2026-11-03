@@ -1,39 +1,44 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Reuse the already approved Horoscope and Calendar PWA artwork without changing
-# the website/PWA files. The existing helper downloads icons into the TEST modules;
-# copy those generated files into the new production modules only.
+# Read the approved live PWA artwork into the existing isolated test modules.
+# The source assets and all website/PWA icon files remain read-only.
 bash prepare-icons.sh
+
+generator_dir="/tmp/smv-product-launcher-icon-generator"
+mkdir -p "$generator_dir"
+javac -encoding UTF-8 -d "$generator_dir" tools/SmvProductLauncherIconGenerator.java
 
 copy_product_icon() {
   source_module="$1"
   production_module="$2"
-  mkdir -p "$production_module/src/main/res/drawable-nodpi" \
-           "$production_module/src/main/res/mipmap-nodpi"
 
-  source_drawable="$source_module/src/main/res/drawable"
-  production_drawable="$production_module/src/main/res/drawable-nodpi"
-  production_mipmap="$production_module/src/main/res/mipmap-nodpi"
+  source_icon="$source_module/src/main/res/drawable/app_icon.png"
+  production_res="$production_module/src/main/res"
 
-  test -s "$source_drawable/app_icon.png"
-  cp "$source_drawable/app_icon.png" "$production_mipmap/ic_launcher.png"
-  cp "$source_drawable/app_icon.png" "$production_mipmap/ic_launcher_round.png"
+  test -s "$source_icon" || {
+    echo "::error::Approved app icon is missing: $source_icon"
+    exit 1
+  }
 
-  if [[ -s "$source_drawable/app_icon_foreground.png" ]]; then
-    cp "$source_drawable/app_icon_foreground.png" "$production_drawable/app_icon_foreground.png"
-  else
-    cp "$source_drawable/app_icon.png" "$production_drawable/app_icon_foreground.png"
-  fi
+  java -Djava.awt.headless=true -cp "$generator_dir" \
+    SmvProductLauncherIconGenerator "$source_icon" "$production_res"
+
+  for asset in \
+    "$production_res/drawable-nodpi/ic_launcher_foreground.png" \
+    "$production_res/mipmap-nodpi/ic_launcher.png" \
+    "$production_res/mipmap-nodpi/ic_launcher_round.png" \
+    "$production_res/mipmap-anydpi-v26/ic_launcher.xml" \
+    "$production_res/mipmap-anydpi-v26/ic_launcher_round.xml" \
+    "$production_res/values/colors.xml"; do
+    test -s "$asset" || {
+      echo "::error::Generated launcher resource is missing: $asset"
+      exit 1
+    }
+  done
 }
 
 copy_product_icon smvhoroscope smvhoroscopeproduction
 copy_product_icon smvcalendar smvcalendarproduction
 
-for module in smvhoroscopeproduction smvcalendarproduction; do
-  test -s "$module/src/main/res/drawable-nodpi/app_icon_foreground.png"
-  test -s "$module/src/main/res/mipmap-nodpi/ic_launcher.png"
-  test -s "$module/src/main/res/mipmap-nodpi/ic_launcher_round.png"
-done
-
-echo "PASS: Production Horoscope and Calendar launcher resources were copied from the approved PWA artwork."
+echo "PASS: SMV HOROSCOPE and SMV CALENDAR now use the SMV ASTRO 58dp white-background launcher treatment."
