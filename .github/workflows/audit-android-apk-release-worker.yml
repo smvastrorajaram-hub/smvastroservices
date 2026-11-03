@@ -77,8 +77,8 @@ jobs:
             [/^bucket_name\s*=\s*"([^"]+)"\s*$/m, 'smv-astro-apk-releases', 'R2 bucket'],
             [/^database_name\s*=\s*"([^"]+)"\s*$/m, 'smv-astro-apk-releases', 'D1 database name'],
             [/^database_id\s*=\s*"([^"]+)"\s*$/m, '5105ebb3-435c-47b7-9983-2e171fa911cd', 'D1 database ID'],
-            [/^binding\s*=\s*"DB"\s*$/m, 'DB', 'D1 binding'],
-            [/^binding\s*=\s*"APK_RELEASES"\s*$/m, 'APK_RELEASES', 'R2 binding'],
+            [/^binding\s*=\s*"(DB)"\s*$/m, 'DB', 'D1 binding'],
+            [/^binding\s*=\s*"(APK_RELEASES)"\s*$/m, 'APK_RELEASES', 'R2 binding'],
             [/^ALLOW_APK_UPLOADS\s*=\s*"([^"]+)"\s*$/m, 'true', 'upload gate'],
             [/^ALLOW_APK_DELETES\s*=\s*"([^"]+)"\s*$/m, 'true', 'delete gate'],
             [/^MULTI_APP_RELEASES_ENABLED\s*=\s*"([^"]+)"\s*$/m, 'true', 'multi-app gate']
