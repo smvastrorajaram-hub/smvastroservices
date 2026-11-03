@@ -33,12 +33,24 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Verify Cloudflare deployment credentials
+      - name: Verify Cloudflare API token
         shell: bash
         run: |
           set -euo pipefail
           test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Missing CLOUDFLARE_API_TOKEN secret in GitHub production environment.'; exit 1; }
-          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo 'Missing CLOUDFLARE_ACCOUNT_ID secret in GitHub production environment.'; exit 1; }
+
+      - name: Resolve Cloudflare account from the exact Production D1 ID
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+            account_id="$(node .github/scripts/resolve-cloudflare-account-from-production-d1.mjs)"
+            test -n "$account_id" || { echo 'Unable to resolve the Cloudflare account for Production D1.'; exit 1; }
+            echo "CLOUDFLARE_ACCOUNT_ID=$account_id" >> "$GITHUB_ENV"
+            echo 'Resolved the Cloudflare account containing smvastro-wallet-production.'
+          else
+            echo 'Using the configured CLOUDFLARE_ACCOUNT_ID secret.'
+          fi
 
       - name: Install Worker dependencies
         run: npm install --prefix cloudflare/backend-api --no-package-lock --ignore-scripts --no-audit --no-fund

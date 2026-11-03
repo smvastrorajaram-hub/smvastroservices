@@ -7,12 +7,14 @@ on:
       - "cloudflare/backend-api/**"
       - "shared/backend-platform/**"
       - ".github/workflows/cloudflare-backend-api-contract-tests.yml"
+      - ".github/scripts/resolve-cloudflare-account-from-production-d1.*"
   push:
     branches: [main]
     paths:
       - "cloudflare/backend-api/**"
       - "shared/backend-platform/**"
       - ".github/workflows/cloudflare-backend-api-contract-tests.yml"
+      - ".github/scripts/resolve-cloudflare-account-from-production-d1.*"
 
 permissions:
   contents: read
@@ -39,6 +41,9 @@ jobs:
 
       - name: Check JavaScript syntax
         run: npm --prefix cloudflare/backend-api run check
+
+      - name: Test Production Cloudflare account resolver
+        run: node --test .github/scripts/resolve-cloudflare-account-from-production-d1.test.mjs
 
       - name: Run backend contract tests
         working-directory: cloudflare/backend-api
