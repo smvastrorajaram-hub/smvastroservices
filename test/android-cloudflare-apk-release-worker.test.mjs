@@ -11,6 +11,18 @@ class FakeD1 {
     this.attempts = [];
   }
 
+  key(appId, versionCode) {
+    return appId === 'astro' ? Number(versionCode) : appId + ':' + Number(versionCode);
+  }
+
+  rowsFor(appId) {
+    return [...this.releases.values()].filter(row => (row.app_id || 'astro') === appId);
+  }
+
+  latestCode(appId) {
+    return Math.max(0, ...this.rowsFor(appId).map(row => Number(row.version_code || 0)));
+  }
+
   async batch(statements) {
     const oldReleases = new Map(this.releases);
     try {
@@ -39,14 +51,20 @@ class FakeD1 {
           return { count: db.attempts.filter(row => row.uid === uid && row.attempted_at >= after).length };
         }
         if (sql.includes('ORDER BY version_code DESC LIMIT 1')) {
-          return [...db.releases.values()].sort((a, b) => b.version_code - a.version_code)[0] || null;
+          const appId = args[0] || 'astro';
+          return db.rowsFor(appId).sort((a, b) => b.version_code - a.version_code)[0] || null;
+        }
+        if (sql.includes('WHERE app_id = ? AND version_code = ?')) {
+          const [appId, versionCode] = args;
+          return db.releases.get(db.key(appId, versionCode)) || null;
         }
         if (sql.includes('WHERE version_code = ?')) return db.releases.get(Number(args[0])) || null;
         throw new Error('Unsupported FakeD1 first() SQL: ' + sql);
       },
       async all() {
         if (sql.includes('ORDER BY version_code DESC LIMIT 100')) {
-          return { results: [...db.releases.values()].sort((a, b) => b.version_code - a.version_code).slice(0, 100) };
+          const appId = args[0] || 'astro';
+          return { results: db.rowsFor(appId).sort((a, b) => b.version_code - a.version_code).slice(0, 100) };
         }
         throw new Error('Unsupported FakeD1 all() SQL: ' + sql);
       },
@@ -61,11 +79,12 @@ class FakeD1 {
         }
         if (sql.startsWith('INSERT OR IGNORE INTO android_app_releases')) {
           const [package_name, version_name, version_code, external_download_url, size_bytes, uploaded_at] = args;
-          if (db.releases.has(Number(version_code))) return { success: true, meta: { changes: 0 } };
-          const current = Math.max(1000, ...db.releases.keys());
+          const key = db.key('astro', version_code);
+          if (db.releases.has(key)) return { success: true, meta: { changes: 0 } };
+          const current = Math.max(1000, db.latestCode('astro'));
           if (Number(version_code) <= current) throw new Error('VERSION_CODE_NOT_INCREASING');
-          db.releases.set(Number(version_code), {
-            package_name, version_name, version_code: Number(version_code),
+          db.releases.set(key, {
+            app_id: 'astro', package_name, version_name, version_code: Number(version_code),
             storage_provider: 'firebase', object_key: null, external_download_url,
             sha256: null, certificate_sha256: null, size_bytes: Number(size_bytes),
             uploaded_by: 'legacy-migration', uploaded_at: Number(uploaded_at)
@@ -73,22 +92,25 @@ class FakeD1 {
           return { success: true, meta: { changes: 1 } };
         }
         if (sql.startsWith('DELETE FROM android_app_releases')) {
-          const code = Number(args[0]);
-          const row = db.releases.get(code);
-          const latest = Math.max(0, ...db.releases.keys());
-          if (row && row.storage_provider === 'r2' && code < latest) {
-            db.releases.delete(code);
+          const [appId, versionCode] = args;
+          const key = db.key(appId, versionCode);
+          const row = db.releases.get(key);
+          const latest = db.latestCode(appId);
+          if (row && row.storage_provider === 'r2' && Number(versionCode) < latest) {
+            db.releases.delete(key);
             return { success: true, meta: { changes: 1 } };
           }
           return { success: true, meta: { changes: 0 } };
         }
         if (sql.startsWith('INSERT INTO android_app_releases')) {
-          const [package_name, version_name, version_code, object_key, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at] = args;
-          const current = Math.max(1000, ...db.releases.keys());
+          const [app_id, package_name, version_name, version_code, object_key, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at] = args;
+          const key = db.key(app_id, version_code);
+          const baseline = app_id === 'astro' ? 1000 : 999;
+          const current = Math.max(baseline, db.latestCode(app_id));
           if (Number(version_code) <= current) throw new Error('VERSION_CODE_NOT_INCREASING');
-          if (db.releases.has(Number(version_code))) throw new Error('UNIQUE constraint failed: android_app_releases.version_code');
-          db.releases.set(Number(version_code), {
-            package_name, version_name, version_code: Number(version_code),
+          if (db.releases.has(key)) throw new Error('UNIQUE constraint failed: android_app_releases.app_id, android_app_releases.version_code');
+          db.releases.set(key, {
+            app_id, package_name, version_name, version_code: Number(version_code),
             storage_provider: 'r2', object_key, external_download_url: null,
             sha256, certificate_sha256, size_bytes: Number(size_bytes), uploaded_by, uploaded_at: Number(uploaded_at)
           });
@@ -99,7 +121,6 @@ class FakeD1 {
     };
   }
 }
-
 class FakeR2 {
   constructor() { this.objects = new Map(); }
   async put(key, value, options) {
@@ -135,7 +156,7 @@ function envFor({ uploadsEnabled = true } = {}) {
     MAX_APK_BYTES: String(100 * 1024 * 1024),
     FIREBASE_ALLOWED_PROJECT_IDS: 'smv-astro',
     SMV_ANDROID_RELEASE_ADMIN_UIDS: 'admin-uid',
-    ALLOWED_ORIGINS: 'https://smvastroservices.in',
+    ALLOWED_ORIGINS: 'https://smvastroservices.in,https://horoscope.smvastroservices.in,https://calendar.smvastroservices.in',
   };
 }
 
