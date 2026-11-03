@@ -161,6 +161,10 @@ jobs:
 
       - name: Build both permanently signed Release APKs
         if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+        env:
+          SMV_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.SMV_ANDROID_KEYSTORE_PASSWORD }}
+          SMV_ANDROID_KEY_ALIAS: ${{ secrets.SMV_ANDROID_KEY_ALIAS }}
+          SMV_ANDROID_KEY_PASSWORD: ${{ secrets.SMV_ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
           gradle --no-daemon -PsmvHoroscopeVersionName="$SMV_HOROSCOPE_ANDROID_VERSION_NAME" -PsmvCalendarVersionName="$SMV_CALENDAR_ANDROID_VERSION_NAME" \
