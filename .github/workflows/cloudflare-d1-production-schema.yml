@@ -18,7 +18,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: cloudflare-production-d1-safety-${{ github.ref }}
+  group: cloudflare-production-d1-safety-main
   cancel-in-progress: true
 
 jobs:
@@ -36,7 +36,6 @@ jobs:
           node --input-type=module <<'NODE'
           import { readFileSync } from 'node:fs';
 
-          const workflowPath = '.github/workflows/cloudflare-d1-production-d1-schema.yml';
           const actualPath = '.github/workflows/cloudflare-d1-production-schema.yml';
           const source = readFileSync(actualPath, 'utf8');
 
@@ -49,8 +48,8 @@ jobs:
           ];
 
           const violations = forbidden.filter(token => source.includes(token));
-          const hasWranglerCommand = /^\\s*(?:run|command):[^\\n]*\\bwrangler\\b/im.test(source);
-          const hasCloudflareCredentialReference = /(?:secrets|vars)\\.CLOUDFLARE_/i.test(source);
+          const hasWranglerCommand = /^\s*(?:run|command):[^\n]*\bwrangler\b/im.test(source);
+          const hasCloudflareCredentialReference = /(?:secrets|vars)\.CLOUDFLARE_/i.test(source);
 
           if (violations.length || hasWranglerCommand || hasCloudflareCredentialReference) {
             console.error('FAIL: Production D1 workflow contains a remote-write or Cloudflare credential path.');
@@ -58,7 +57,7 @@ jobs:
           }
 
           if (!/^  pull_request:/m.test(source) || !/^  push:/m.test(source) ||
-              !/branches:\\s*\\[main\\]/m.test(source)) {
+              !/branches:\s*\[main\]/m.test(source)) {
             console.error('FAIL: Production D1 safety gate must validate main PRs and main pushes.');
             process.exit(1);
           }
