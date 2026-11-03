@@ -27,7 +27,8 @@ export function createD1IdentityAuthorizationGate({
   environment = 'unknown',
   sourceProjectId = '',
   projectIds = [],
-  productionApproved = false
+  productionApproved = false,
+  freshStartApproved = false
 } = {}) {
   const projects = valuesOf(projectIds);
   const source = String(sourceProjectId || '').trim();
@@ -47,6 +48,9 @@ export function createD1IdentityAuthorizationGate({
     if (!expectedProject) return { ...base, reason: 'environment_not_supported' };
     if (environment === 'production' && productionApproved !== true) {
       return { ...base, reason: 'production_approval_missing' };
+    }
+    if (environment === 'production' && freshStartApproved !== true) {
+      return { ...base, reason: 'fresh_start_approval_missing' };
     }
     if (source !== expectedProject) {
       return { ...base, reason: environment + '_scope_mismatch' };
@@ -73,10 +77,12 @@ export function createD1IdentityAuthorizationGate({
       const inventoryComplete = Number(migration?.inventory_complete) === 1;
       const reconciliationComplete = Number(migration?.reconciliation_complete) === 1;
       const sourceQuiesced = Number(migration?.source_quiesced) === 1;
-      const ready = schemaReady && inventoryComplete && reconciliationComplete && sourceQuiesced;
+      const freshStartMode = environment === 'production' && freshStartApproved === true;
+      const ready = schemaReady && (freshStartMode ||
+        (inventoryComplete && reconciliationComplete && sourceQuiesced));
       return {
         ...base, ready, schemaReady, inventoryComplete, reconciliationComplete, sourceQuiesced,
-        reason: ready ? 'ready' : 'migration_attestation_incomplete'
+        freshStartMode, reason: ready ? (freshStartMode ? 'fresh_start_approved' : 'ready') : 'migration_attestation_incomplete'
       };
     } catch {
       return { ...base, reason: 'd1_readiness_unavailable' };
