@@ -82,16 +82,16 @@ test('Public APK cards remain quiet until the new Cloudflare app routes are expl
   const controller = read('public/horoscope/android-apk-download.mjs');
   const horoscopeHtml = read('public/horoscope/index.html');
   const calendarHtml = read('public/horoscope/calendar/index.html');
-  assert.match(controller, /window\\.SMV_APK_RELEASE_API_URL \\|\\| ''/);
-  assert.match(controller, /if \\(!configured\\) return null/);
-  assert.match(controller, /allowedWorkerOrigin = 'https:\\/\\/smv-astro-apk-release-api\\.astroservices\\.workers\\.dev'/);
-  assert.match(horoscopeHtml, /smvHoroscopeAndroidApkSection/);
-  assert.match(calendarHtml, /smvCalendarAndroidApkSection/);
-  assert.doesNotMatch(horoscopeHtml, /id="smvHoroscopeInstallArea"|id="installApp"/);
-  assert.doesNotMatch(calendarHtml, /id="smvCalendarInstallArea"|id="calInstall"/);
-  assert.match(horoscopeHtml, /rel="manifest"/);
-  assert.match(horoscopeHtml, /pwa\\.js/);
-  assert.match(calendarHtml, /calendar-pwa\\.mjs/);
+  assert.ok(controller.includes("String(window.SMV_APK_RELEASE_API_URL || '').trim()"));
+  assert.ok(controller.includes('if (!configured) return null'));
+  assert.ok(controller.includes("const allowedWorkerOrigin = 'https://smv-astro-apk-release-api.astroservices.workers.dev'"));
+  assert.ok(horoscopeHtml.includes('smvHoroscopeAndroidApkSection'));
+  assert.ok(calendarHtml.includes('smvCalendarAndroidApkSection'));
+  assert.ok(!horoscopeHtml.includes('id="smvHoroscopeInstallArea"') && !horoscopeHtml.includes('id="installApp"'));
+  assert.ok(!calendarHtml.includes('id="smvCalendarInstallArea"') && !calendarHtml.includes('id="calInstall"'));
+  assert.ok(horoscopeHtml.includes('rel="manifest"'));
+  assert.ok(horoscopeHtml.includes('pwa.js'));
+  assert.ok(calendarHtml.includes('calendar-pwa.mjs'));
 });
 
 test('The production release workflow compiles both apps, signs with the existing certificate and publishes separate artifacts', () => {
