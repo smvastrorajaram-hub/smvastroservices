@@ -270,7 +270,7 @@ test('empty Admin history and unknown downloads are resolved from D1 without Ren
     headers: { Authorization: 'Bearer admin-token' }
   }), env);
   assert.equal(current.status, 200);
-  assert.deepEqual(await current.json(), { success: true, available: false });
+  assert.deepEqual(await current.json(), { success: true, available: false, appId: 'astro', appName: 'SMV ASTRO' });
 
   const history = await worker.fetch(new Request('https://apk.example/admin/android-app/versions', {
     headers: { Authorization: 'Bearer admin-token' }
@@ -356,7 +356,7 @@ test('Admin can delete an archived R2 APK, but never the current release', async
     method: 'DELETE', headers: { Authorization: 'Bearer admin-token', Origin: 'https://smvastroservices.in' }
   }), env);
   assert.equal(removed.status, 200);
-  assert.deepEqual(await removed.json(), { success: true, deleted: true, deletedVersionCode: 1001 });
+  assert.deepEqual(await removed.json(), { success: true, deleted: true, deletedAppId: 'astro', deletedVersionCode: 1001 });
   assert.equal(env.DB.releases.has(1001), false);
   assert.equal(env.APK_RELEASES.objects.has(oldRow.object_key), false);
   const current = await worker.fetch(new Request('https://apk.example/public/android-app'), env);
