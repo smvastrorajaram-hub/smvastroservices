@@ -2614,6 +2614,22 @@ function smvAdminAndroidAppHistoryPath(appId){
 function smvAdminAndroidAppDeletePath(appId,versionCode){
   return (appId==='astro'?'/admin/android-app/versions':app.workerPath+'/versions')+'/'+encodeURIComponent(String(versionCode));
 }
+async function smvAndroidApkPublicHistory(appId,workerStatus){
+  const base=String(workerStatus?.base||'').trim();
+  if(!base||!['horoscope','calendar'].includes(appId))return null;
+  const response=await fetch(base+'/public/android-apps/'+encodeURIComponent(appId)+'/versions',{
+    method:'GET',
+    mode:'cors',
+    credentials:'omit',
+    headers:{Accept:'application/json'},
+    cache:'no-store',
+    signal:AbortSignal.timeout(20000)
+  });
+  let data;
+  try{data=await response.json();}catch(_){throw new Error('Cloudflare APK history returned an invalid response ('+response.status+').');}
+  if(!response.ok||data?.success!==true)throw new Error(data?.error||'Cloudflare APK history returned HTTP '+response.status+'.');
+  return data;
+}
 async function loadAdminAndroidAppHistoryFor(appId='astro'){
   const app=SMV_ADMIN_ANDROID_APPS[appId];if(!app)return;
   const container=smvAdminAndroidAppElement(appId,'History');
@@ -2625,7 +2641,12 @@ async function loadAdminAndroidAppHistoryFor(appId='astro'){
     return;
   }
   try{
-    const history=await smvAndroidApkApi(smvAdminAndroidAppHistoryPath(appId),{method:'GET'},true);
+    // The Horoscope/Calendar APKs are already public downloads. Read their
+    // sanitized version metadata without an Admin bearer token; delete actions
+    // remain protected by the Admin-authenticated endpoint below.
+    const history=appId==='astro'
+      ?await smvAndroidApkApi(smvAdminAndroidAppHistoryPath(appId),{method:'GET'},true)
+      :await smvAndroidApkPublicHistory(appId,workerStatus);
     if(!history){
       container.innerHTML='<div class="small">Cloudflare APK history will appear after the dedicated Worker, R2 bucket and D1 database are ready.</div>';
       return;
