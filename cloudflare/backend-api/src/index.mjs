@@ -30,6 +30,7 @@ import { isLegacyBackendPath, LEGACY_BACKEND_ROUTE_INVENTORY } from '../../../sh
 import { registerGeoNamesRoutes } from './geonames-location-routes.mjs';
 import { registerPublicLegacyRoutes } from './public-legacy-routes.mjs';
 import { registerRazorpayConnectivityRoute } from './razorpay-connectivity-routes.mjs';
+import { createRazorpayProviderVerificationProbe } from './razorpay-connectivity-probe.mjs';
 import { registerRootRuntimeRoute } from './root-runtime-route.mjs';
 import { registerLegacyReadRoutes } from './legacy-read-routes.mjs';
 import { registerLegacyDashboardReadRoutes } from './legacy-dashboard-read-routes.mjs';
@@ -247,6 +248,15 @@ let walletRechargeSchemaReady = false;
 let walletRechargeRoutesRegistered = false;
 let walletRechargeMode = razorpayPolicy.mode;
 let sharedRazorpayClient = null;
+let getRazorpayProviderVerification = async () => ({
+  connected: false,
+  connectionVerified: false,
+  mode: String(razorpayPolicy.mode || 'disabled'),
+  operation: 'GET /orders?count=1',
+  checkedAt: null,
+  ordersVisible: null,
+  code: 'RAZORPAY_CREDENTIALS_NOT_CONFIGURED'
+});
 let walletOfferRoutesRegistered = false;
 let walletBackfillRoutesRegistered = false;
 let identityProfileBackfillRoutesRegistered = false;
@@ -320,6 +330,11 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     sharedWalletAdapter = createD1WalletAdapter({ db: env.DB });
     if (razorpayPolicy.enabled) {
       sharedRazorpayClient = createRazorpayRestClient({ keyId: razorpayKeyId, keySecret: razorpayKeySecret });
+      getRazorpayProviderVerification = createRazorpayProviderVerificationProbe({
+        razorpay: sharedRazorpayClient,
+        mode: razorpayPolicy.mode,
+        credentialsConfigured: true
+      });
     }
     registerAdminAccessRoute({ app, identityService: walletIdentityService });
     registerAccountRoleRoute({ app, identityService: walletIdentityService, firestore: firestoreAdmin });
@@ -547,7 +562,8 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       razorpay: sharedRazorpayClient,
       mode: razorpayPolicy.mode,
       keyId: razorpayKeyId,
-      credentialsConfigured: true
+      credentialsConfigured: true,
+      getVerification: getRazorpayProviderVerification
     });
     registerLegacyRazorpayRoutes({
       app,
@@ -635,6 +651,7 @@ app.get('/healthz', async (_req, res) => {
   walletRechargeSchemaReady = schema.checks.walletRechargeSchema;
   liveSessionSchemaReady = schema.checks.liveSessionSchema;
   const firebaseConnected = await firebaseConnectivityProbe();
+  const razorpayVerification = await getRazorpayProviderVerification();
   const identityGate = d1IdentityAuthorizationService
     ? await d1IdentityAuthorizationService.readiness()
     : { enabled: identityProfileD1AuthorizationOpen, ready: false,
@@ -650,6 +667,9 @@ app.get('/healthz', async (_req, res) => {
     backendActive: String(env.SMV_BACKEND_CLOUDFLARE_ACTIVE || 'false') === 'true',
     firebaseConnected,
     firestoreConnected: firebaseConnected,
+    razorpayConnected: razorpayVerification.connected === true,
+    razorpayProviderConnectionVerified: razorpayVerification.connectionVerified === true,
+    razorpayProviderConnectionCheckedAt: razorpayVerification.checkedAt || null,
     walletReadRoutesRegistered,
     walletRechargeRoutesRegistered,
     walletRechargeMode,
@@ -669,6 +689,7 @@ registerBackendReadinessRoute({
   app,
   db: env.DB,
   firebaseConnectivityProbe,
+  getRazorpayVerification: () => getRazorpayProviderVerification(),
   getRuntimeState: () => ({
     razorpayPolicy,
     razorpayKeyId,
@@ -705,6 +726,7 @@ app.get('/api/backend/migration-status', async (_req, res) => {
   walletRechargeSchemaReady = schema.checks.walletRechargeSchema;
   liveSessionSchemaReady = schema.checks.liveSessionSchema;
   const firebaseConnected = await firebaseConnectivityProbe();
+  const razorpayVerification = await getRazorpayProviderVerification();
   return res.set(JSON_HEADERS).json({
     ok: true,
     phase: 'cloudflare-runtime-foundation',
@@ -720,9 +742,10 @@ app.get('/api/backend/migration-status', async (_req, res) => {
     firebaseAdminUserManagementConnected: false,
     firebaseConnected,
     firestoreConnected: firebaseConnected,
-    razorpayConnected: false,
+    razorpayConnected: razorpayVerification.connected === true,
     razorpayCredentialsConfigured: razorpayPolicy.enabled && !!razorpayKeyId && !!razorpayKeySecret && !!razorpayWebhookSecret,
-    razorpayProviderConnectionVerified: false,
+    razorpayProviderConnectionVerified: razorpayVerification.connectionVerified === true,
+    razorpayProviderConnectionCheckedAt: razorpayVerification.checkedAt || null,
     razorpayMode: razorpayPolicy.mode,
     razorpayPolicyReason: razorpayPolicy.reason,
     legacyRazorpayRoutesRegistered,

@@ -160,3 +160,51 @@ test('GET /api/backend/readiness returns 503 for incomplete Production schema', 
   assert.equal(response.body.ready, false);
   assert.equal(response.body.schemaMigrations['0003_notification_inbox'], false);
 });
+
+
+test('GET /api/backend/readiness reflects the actual Razorpay provider probe result', async () => {
+  const handlers = new Map();
+  const app = { get(path, handler) { handlers.set('GET ' + path, handler); } };
+  const response = responseRecorder();
+
+  registerBackendReadinessRoute({
+    app,
+    db: dbWith(readyRow()),
+    getRuntimeState: () => ({
+      razorpayPolicy: { enabled: true, mode: 'live', reason: 'production_live_mode_explicitly_enabled' },
+      razorpayKeyId: 'rzp_live_key',
+      razorpayKeySecret: 'configured',
+      razorpayWebhookSecret: 'configured'
+    }),
+    getRazorpayVerification: async () => ({
+      connected: true,
+      connectionVerified: true,
+      checkedAt: '2026-11-04T10:00:00.000Z',
+      ordersVisible: 2
+    })
+  });
+
+  await handlers.get('GET /api/backend/readiness')({}, response);
+
+  assert.equal(response.body.razorpayConnected, true);
+  assert.equal(response.body.razorpayProviderConnectionVerified, true);
+  assert.equal(response.body.razorpayProviderConnectionCheckedAt, '2026-11-04T10:00:00.000Z');
+});
+
+test('GET /api/backend/readiness fails closed when the Razorpay provider probe throws', async () => {
+  const handlers = new Map();
+  const app = { get(path, handler) { handlers.set('GET ' + path, handler); } };
+  const response = responseRecorder();
+
+  registerBackendReadinessRoute({
+    app,
+    db: dbWith(readyRow()),
+    getRazorpayVerification: async () => { throw new Error('private error'); }
+  });
+
+  await handlers.get('GET /api/backend/readiness')({}, response);
+
+  assert.equal(response.body.razorpayConnected, false);
+  assert.equal(response.body.razorpayProviderConnectionVerified, false);
+  assert.equal(response.body.razorpayProviderConnectionCheckedAt, null);
+});

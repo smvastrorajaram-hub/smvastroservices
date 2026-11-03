@@ -91,3 +91,55 @@ test('Razorpay provider failure is sanitized and never exposes upstream details'
   assert.equal(res.body.code, 'RAZORPAY_REQUEST_REJECTED');
   assert.equal(JSON.stringify(res.body).includes('secret provider details'), false);
 });
+
+
+test('Admin Razorpay check forces the shared live provider verification and uses its result', async () => {
+  const app = harness();
+  let directCalls = 0;
+  let forceArgument = null;
+  registerRazorpayConnectivityRoute({
+    app,
+    identityService: { async authenticateAuthorization() { return { uid: 'admin-1', role: 'admin', isAdmin: true }; } },
+    razorpay: { async testConnection() { directCalls += 1; return { visibleOrders: 99 }; } },
+    getVerification: async options => {
+      forceArgument = options;
+      return { connected: true, connectionVerified: true, ordersVisible: 4 };
+    },
+    mode: 'live',
+    keyId: 'rzp_live_secret-prefix',
+    credentialsConfigured: true
+  });
+
+  const res = response();
+  await app.handlers.get('GET /test-razorpay')(request(), res);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.connectionVerified, true);
+  assert.equal(res.body.ordersVisible, 4);
+  assert.deepEqual(forceArgument, { force: true });
+  assert.equal(directCalls, 0);
+});
+
+test('Admin Razorpay check reports a failed shared provider verification as unverified', async () => {
+  const app = harness();
+  registerRazorpayConnectivityRoute({
+    app,
+    identityService: { async authenticateAuthorization() { return { uid: 'admin-1', role: 'admin', isAdmin: true }; } },
+    razorpay: { async testConnection() { return { visibleOrders: 0 }; } },
+    getVerification: async () => ({
+      connected: false,
+      connectionVerified: false,
+      code: 'RAZORPAY_REQUEST_REJECTED'
+    }),
+    mode: 'live',
+    keyId: 'rzp_live_secret-prefix',
+    credentialsConfigured: true
+  });
+
+  const res = response();
+  await app.handlers.get('GET /test-razorpay')(request(), res);
+
+  assert.equal(res.statusCode, 502);
+  assert.equal(res.body.connectionVerified, false);
+  assert.equal(res.body.code, 'RAZORPAY_REQUEST_REJECTED');
+});
