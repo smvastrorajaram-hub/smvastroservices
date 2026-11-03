@@ -191,12 +191,17 @@ function getApkV2CertificateFingerprint(buffer) {
 
 function inspectSmvAndroidApk(buffer, options = {}) {
   if (!Buffer.isBuffer(buffer) || buffer.length < 1024 || buffer.length > MAX_APK_BYTES) {
-    throw new Error('Upload a valid SMV ASTRO APK between 1 KB and 100 MB.');
+    throw new Error('Upload a valid SMV Android APK between 1 KB and 100 MB.');
   }
   const manifest = readZipEntry(buffer, 'AndroidManifest.xml');
   if (!manifest) throw new Error('The uploaded file does not contain AndroidManifest.xml.');
   const metadata = parseAndroidBinaryManifest(manifest);
-  if (metadata.packageName !== SMV_ANDROID_PACKAGE) throw new Error('This APK is not the SMV ASTRO Production app.');
+  const expectedPackageName = String(options.expectedPackageName || SMV_ANDROID_PACKAGE);
+  const appLabel = String(options.appLabel || 'SMV ASTRO');
+  if (!/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+$/.test(expectedPackageName)) {
+    throw new Error('The expected Android package name is invalid.');
+  }
+  if (metadata.packageName !== expectedPackageName) throw new Error('This APK is not the ' + appLabel + ' Production app.');
   const match = /^v([1-9][0-9]*)\.([0-9]{1,3})$/.exec(metadata.versionName);
   if (!match) throw new Error('The APK versionName must use the ordered vMAJOR.MINOR format (for example, v1.0).');
   const expectedVersionCode = Number(match[1]) * 1000 + Number(match[2]);
@@ -205,7 +210,7 @@ function inspectSmvAndroidApk(buffer, options = {}) {
   }
   const fingerprint = getApkV2CertificateFingerprint(buffer);
   const expectedFingerprint = String(options.expectedCertificateFingerprint || SMV_RELEASE_CERT_SHA256).replace(/[^A-Fa-f0-9]/g, '').toUpperCase();
-  if (fingerprint !== expectedFingerprint) throw new Error('The APK signing certificate does not match the permanent SMV ASTRO Release key.');
+  if (fingerprint !== expectedFingerprint) throw new Error('The APK signing certificate does not match the permanent SMV Android Release key.');
   return { ...metadata, certificateSha256: fingerprint, size: buffer.length, sha256: crypto.createHash('sha256').update(buffer).digest('hex') };
 }
 
