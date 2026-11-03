@@ -48,7 +48,7 @@ function respond(request, env, body, status = 200, suppliedHeaders = {}) {
   headers.append('Vary', 'Origin');
   if (origin && allowedOrigins(env).has(origin)) {
     headers.set('Access-Control-Allow-Origin', origin);
-    headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    headers.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
     headers.set('Access-Control-Allow-Headers', 'Authorization, Content-Type, Accept');
     headers.set('Access-Control-Max-Age', '86400');
   }
@@ -223,7 +223,11 @@ async function listReleaseHistory(env, request) {
     'SELECT package_name, version_name, version_code, storage_provider, object_key, external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at FROM android_app_releases ORDER BY version_code DESC LIMIT 100'
   ).all();
   const rows = Array.isArray(result?.results) ? result.results : [];
-  return rows.map(row => publicReleaseFromRow(row, request, true));
+  return rows.map((row, index) => ({
+    ...publicReleaseFromRow(row, request, true),
+    isCurrent: index === 0,
+    canDelete: index > 0 && row.storage_provider === 'r2'
+  }));
 }
 
 async function recordUploadAttempt(env, uid, now) {
@@ -312,6 +316,7 @@ export function createAndroidApkReleaseWorker({
             d1Ready,
             r2Ready,
             uploadsEnabled: ready && String(env.ALLOW_APK_UPLOADS || '').toLowerCase() === 'true',
+            deletesEnabled: ready && String(env.ALLOW_APK_DELETES || '').toLowerCase() === 'true',
             hasReleaseRecords
           }, 200, { 'Cache-Control': 'no-store' });
         }
@@ -358,6 +363,32 @@ export function createAndroidApkReleaseWorker({
           });
         }
 
+        const deleteVersionMatch = /^\/admin\/android-app\/versions\/([1-9][0-9]{2,9})$/.exec(path);
+        if (deleteVersionMatch && request.method === 'DELETE') {
+          const auth = await requireAdmin(request, env, verifyToken);
+          if (auth.response) return auth.response;
+          if (!(await hasReleaseSchema(env))) return json(request, env, { success: false, error: 'Cloudflare APK storage is not configured.' }, 503);
+          if (String(env.ALLOW_APK_DELETES || '').toLowerCase() !== 'true') return json(request, env, { success: false, error: 'Historical APK deletion is disabled until the Admin release manager is verified.' }, 503);
+          const versionCode = Number(deleteVersionMatch[1]);
+          const row = await rowByVersion(env.DB, versionCode);
+          if (!row) return json(request, env, { success: false, error: 'This archived Android APK version was not found.' }, 404);
+          const latest = await latestRow(env.DB);
+          if (Number(latest?.version_code || 0) <= versionCode) return json(request, env, { success: false, error: 'The current published APK is protected and cannot be deleted.' }, 409);
+          if (row.storage_provider !== 'r2') return json(request, env, { success: false, error: 'This legacy Firebase APK is protected from deletion in the R2 manager.' }, 409);
+          const objectKey = String(row.object_key || '');
+          const expectedPrefix = 'smv-astro/android/releases/' + versionCode + '/';
+          if (!objectKey.startsWith(expectedPrefix) || !objectKey.endsWith('.apk')) return json(request, env, { success: false, error: 'The archived APK storage path failed validation; nothing was deleted.' }, 409);
+          try {
+            await env.APK_RELEASES.delete(objectKey);
+            const deleted = await env.DB.prepare("DELETE FROM android_app_releases WHERE version_code = ? AND storage_provider = 'r2' AND version_code < (SELECT MAX(version_code) FROM android_app_releases)").bind(versionCode).run();
+            const changes = Number(deleted?.meta?.changes ?? deleted?.changes ?? 0);
+            if (changes !== 1) return json(request, env, { success: false, error: 'The release changed while deletion was processing. Refresh the history and try again.' }, 409);
+          } catch (error) {
+            logDiagnosticError(logger, request, path, 'delete-archived-apk', error, requestId);
+            return json(request, env, { success: false, error: 'The archived APK could not be fully removed. Refresh the history before retrying.' }, 503);
+          }
+          return json(request, env, { success: true, deleted: true, deletedVersionCode: versionCode }, 200, { 'Cache-Control': 'no-store' });
+        }
         if (path === '/admin/android-app/upload' && request.method === 'POST') {
           const auth = await requireAdmin(request, env, verifyToken);
           if (auth.response) return auth.response;
