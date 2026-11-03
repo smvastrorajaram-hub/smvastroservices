@@ -151,3 +151,68 @@ test('Public APK download controller accepts only signed metadata from the dedic
   assert.match(controller, /window\.SMV_APK_RELEASE_API_URL/);
   assert.match(controller, /AbortSignal\.timeout/);
 });
+
+test('Admin has three separate signed APK managers with version history refresh and protected archive deletion controls', () => {
+  const html = read('public/index.html');
+  const manager = read('public/smvastro.mjs');
+  const worker = read('cloudflare/android-apk-release/worker.mjs');
+  for (const app of ['astro', 'horoscope', 'calendar']) {
+    const prefix = app === 'astro' ? 'adminAndroidApp' : app === 'horoscope' ? 'adminHoroscopeAndroidApp' : 'adminCalendarAndroidApp';
+    assert.ok(html.includes('id="' + prefix + 'File"'));
+    assert.ok(html.includes('id="' + prefix + 'Upload"'));
+    assert.ok(html.includes('id="' + prefix + 'Refresh"'));
+    assert.ok(html.includes('id="' + prefix + 'History"'));
+    assert.ok(manager.includes("appId==='astro'?'/admin/android-app/upload':app.workerPath+'/upload'") || app === 'astro');
+  }
+  assert.ok(html.includes('id="adminGroupAppManagement"'));
+  assert.ok(html.includes('id="adminHoroscopeAndroidAppManagementCard"'));
+  assert.ok(html.includes('id="adminCalendarAndroidAppManagementCard"'));
+  assert.ok(manager.includes("method:'DELETE'"));
+  assert.ok(manager.includes('DELETE OLD APK'));
+  assert.ok(worker.includes('ALLOW_APK_DELETES'));
+  assert.ok(worker.includes('The current published APK is protected and cannot be deleted.'));
+  assert.ok(worker.includes("row.storage_provider !== 'r2'"));
+  assert.ok(worker.includes('DELETE FROM android_app_releases WHERE app_id = ?'));
+});
+
+test('Horoscope and Calendar public areas show app-specific APK downloads while retaining the offline PWA shell', () => {
+  const horoscope = read('public/horoscope/index.html');
+  const horoscopePwa = read('public/horoscope/pwa.js');
+  const calendar = read('public/horoscope/calendar/index.html');
+  const calendarPwa = read('public/horoscope/calendar/calendar-pwa.mjs');
+  const calendarContent = read('public/horoscope/daily-calendar.mjs');
+  const apkController = read('public/horoscope/android-apk-download.mjs');
+
+  assert.ok(horoscope.includes('id="smvHoroscopeAndroidApkSection"'));
+  assert.ok(horoscope.includes('./android-apk-download.mjs'));
+  assert.equal(horoscope.includes('id="smvHoroscopeInstallArea"'), false);
+  assert.equal(horoscope.includes('id="installApp"'), false);
+  assert.ok(horoscope.includes('rel="manifest"'));
+  assert.ok(horoscope.includes('pwa.js'));
+  assert.ok(horoscopePwa.includes("navigator.serviceWorker.register('./sw.js'"));
+  
+  assert.ok(calendar.includes('id="smvCalendarAndroidApkSection"'));
+  assert.ok(calendar.includes('../android-apk-download.mjs'));
+  assert.equal(calendar.includes('id="smvCalendarInstallArea"'), false);
+  assert.equal(calendar.includes('id="calInstall"'), false);
+  assert.ok(calendar.includes('id="calendarManifest"'));
+  assert.ok(calendar.includes('calendar-pwa.mjs'));
+  assert.ok(calendarPwa.includes("navigator.serviceWorker.register('./sw.js'"));
+  assert.ok(calendarContent.includes('cal-download-app-link'));
+  assert.ok(calendarContent.includes('#smvCalendarAndroidApkSection'));
+  assert.ok(apkController.includes('/public/android-apps/'));
+  assert.ok(apkController.includes('credentials: \'omit\''));
+  assert.ok(apkController.includes('in.smvastroservices.horoscope'));
+  assert.ok(apkController.includes('in.smvastroservices.calendar'));
+});
+
+test('APK download controller validates app identity and exact Worker origin before showing download', () => {
+  const controller = read('public/horoscope/android-apk-download.mjs');
+  assert.ok(controller.includes("release.appId !== appId"));
+  assert.ok(controller.includes("release.packageName !== expectedPackage"));
+  assert.ok(controller.includes("url.origin !== origin"));
+  assert.ok(controller.includes("url.pathname !== expectedPath"));
+  assert.ok(controller.includes("credentials: 'omit'"));
+  assert.ok(controller.includes("mode: 'cors'"));
+  assert.ok(controller.includes("url.protocol !== 'https:'"));
+});
