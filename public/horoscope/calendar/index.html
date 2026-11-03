@@ -132,18 +132,6 @@
   }
 })();
 </script>
-<script id="smv-v352-pages-calendar-install-guard">
-(()=>{
-  if(location.hostname!=='smvastroservices.pages.dev')return;
-  if(!document.documentElement.classList.contains('smv-v352-pages-standalone'))return;
-  // A standalone window may belong to the parent ASTRO PWA; NEVER infer that
-  // the nested Calendar PWA is installed, or change its shared-origin flag.
-  const area=document.getElementById('smvCalendarInstallArea');
-  if(area)area.hidden=true;
-  const link=document.querySelector('.cal-app-link');
-  if(link)link.hidden=true;
-  // The CSS guard also covers Calendar panels rebuilt after language switches.
-})();
-</script>
+
 </body>
 </html>
