@@ -2541,7 +2541,7 @@ async function smvAndroidApkWorkerStatus(){
     if(!response.ok)return null;
     const health=await response.json();
     return health?.success===true&&health.ready===true
-      ?{base,uploadsEnabled:health.uploadsEnabled===true,deletesEnabled:health.deletesEnabled===true,hasReleaseRecords:health.hasReleaseRecords===true}
+      ?{base,uploadsEnabled:health.uploadsEnabled===true,deletesEnabled:health.deletesEnabled===true,multiAppReleasesEnabled:health.multiAppReleasesEnabled===true,hasReleaseRecords:health.hasReleaseRecords===true}
       :null;
   }catch(_){return null;}
 }
@@ -2620,6 +2620,10 @@ async function loadAdminAndroidAppHistoryFor(appId='astro'){
   if(!container)return;
   container.innerHTML='<div class="empty">Checking '+escapeHtml(app.label)+' APK version history…</div>';
   const workerStatus=await smvAndroidApkWorkerStatus();
+  if(appId!=='astro'&&workerStatus?.multiAppReleasesEnabled!==true){
+    container.innerHTML='<div class="small">The SMV HOROSCOPE/CALENDAR APK release service is waiting for its app-scoped Worker + D1 migration. Existing SMV ASTRO release management is unaffected.</div>';
+    return;
+  }
   try{
     const history=await smvAndroidApkApi(smvAdminAndroidAppHistoryPath(appId),{method:'GET'},true);
     if(!history){
@@ -2676,6 +2680,18 @@ async function loadAdminAndroidAppReleaseFor(appId='astro'){
   if(!current||!msg||!currentUser)return;
   const backendStatus=smvAdminAndroidAppElement(appId,'BackendStatus');
   const workerStatus=await smvAndroidApkWorkerStatus();
+  const uploadButton=smvAdminAndroidAppElement(appId,'Upload');
+  if(appId!=='astro'&&workerStatus?.multiAppReleasesEnabled!==true){
+    if(uploadButton)uploadButton.disabled=true;
+    if(backendStatus){
+      backendStatus.textContent='Waiting for the app-scoped Cloudflare Worker + D1 migration. No HOROSCOPE/CALENDAR upload or delete is attempted until it is ready.';
+      backendStatus.className='small';
+    }
+    current.innerHTML='<div class="empty">Multi-App APK management is not deployed yet. The existing SMV ASTRO APK manager remains available.</div>';
+    msg.textContent='Tap REFRESH CURRENT VERSION after the dedicated Multi-App Worker has been deployed.';
+    return;
+  }
+  if(uploadButton)uploadButton.disabled=false;
   if(backendStatus){
     if(workerStatus?.uploadsEnabled){
       backendStatus.textContent='Cloudflare APK service READY · R2/D1 connected · Admin APK publishing ENABLED.';
@@ -2724,6 +2740,14 @@ async function uploadAdminAndroidAppFor(appId='astro'){
   const file=smvAdminAndroidAppElement(appId,'File')?.files?.[0];
   const button=smvAdminAndroidAppElement(appId,'Upload');
   const msg=smvAdminAndroidAppElement(appId,'Msg');
+  if(appId!=='astro'){
+    const workerStatus=await smvAndroidApkWorkerStatus();
+    if(workerStatus?.multiAppReleasesEnabled!==true){
+      if(msg)msg.textContent='HOROSCOPE/CALENDAR APK upload is safely disabled until the app-scoped Worker + D1 migration is deployed.';
+      if(button)button.disabled=true;
+      return;
+    }
+  }
   if(!file){if(msg)msg.textContent='Select the '+app.label+' signed production APK first.';return;}
   if(!/\.apk$/i.test(file.name||'')||file.size<1024||file.size>100*1024*1024){
     if(msg)msg.textContent='Select a valid .apk file between 1 KB and 100 MB.';
