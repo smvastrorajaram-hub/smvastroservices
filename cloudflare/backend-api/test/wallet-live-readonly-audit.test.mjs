@@ -1,0 +1,268 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { webcrypto } from 'node:crypto';
+import {
+  createStrictReadOnlyD1Guard,
+  createWalletLiveReadOnlyAudit,
+  WALLET_LIVE_READONLY_AUDIT_COLLECTIONS
+} from '../../../shared/backend-platform/wallet-live-readonly-audit.mjs';
+
+function doc(id, data) {
+  return { id, exists: true, data, updateTime: new Date('2026-10-31T00:00:00Z') };
+}
+
+function fixtureCollections() {
+  return {
+    smv_wallets: [
+      doc('wallet-1', { ownerUid:'wallet-1', ownerRole:'customer', availableBalancePaise:11000,
+        reservedBalancePaise:0, bonusMinutesBalance:6, reservedBonusMinutes:0, version:2 }),
+      doc('wallet-2', { ownerUid:'wallet-2', ownerRole:'customer', availableBalancePaise:7000,
+        reservedBalancePaise:500, bonusMinutesBalance:0, reservedBonusMinutes:0, version:4 })
+    ],
+    smv_wallet_transactions: [
+      doc('ledger-1', { ownerUid:'wallet-1', ownerRole:'customer', type:'recharge', direction:'credit',
+        amountPaise:5000, balanceAfterPaise:5000, reservedBalanceAfterPaise:0,
+        bonusMinutes:0, bonusMinutesCredited:3, bonusMinutesBalanceAfter:3,
+        reservedBonusMinutesAfter:0, idempotencyKey:'recharge:payment-1', referenceType:'razorpay_payment',
+        referenceId:'payment-1', createdAt:new Date('2026-10-30T00:00:00Z') }),
+      doc('ledger-2', { ownerUid:'wallet-1', ownerRole:'customer', type:'recharge', direction:'credit',
+        amountPaise:6000, balanceAfterPaise:11000, reservedBalanceAfterPaise:0,
+        bonusMinutes:0, bonusMinutesCredited:3, bonusMinutesBalanceAfter:6,
+        reservedBonusMinutesAfter:0, idempotencyKey:'recharge:payment-1', referenceType:'razorpay_payment',
+        referenceId:'payment-2', createdAt:new Date('2026-10-30T00:01:00Z') })
+    ],
+    smv_wallet_recharges: [
+      doc('recharge-1', { customerUid:'wallet-1', amountPaise:5000, status:'paid',
+        razorpayOrderId:'order-1', razorpayPaymentId:'payment-1', paidAmountPaise:5000,
+        bonusMinutesCredited:3, bonusMinutesBalanceAfter:3 })
+    ],
+    smv_offers: [
+      doc('offer-1', { offerType:'wallet_recharge_bonus_minutes', name:'Test bonus',
+        enabled:true, minimumRechargeAmountPaise:5000, bonusMinutes:3,
+        perCustomerLimit:1, totalUsageLimit:100, usedCount:1, priority:1 }),
+      doc('offer-unrelated', { offerType:'other_campaign', name:'Out of scope fixture' })
+    ],
+    smv_offer_audit: [
+      doc('offer-audit-1', { service:'wallet_recharge', action:'redeemed', createdAt:new Date() })
+    ],
+    smv_offer_usage_counters: [
+      doc('usage-1', { offerId:'offer-1', customerUid:'wallet-1',
+        redemptionCount:1, lastRechargeId:'recharge-1' })
+    ],
+    smv_live_sessions: [
+      doc('session.with.dot', { customerUid:'wallet-1', astrologerUid:'astro-1',
+        mode:'chat', state:'completed', appointmentId:'appointment-1',
+        reservedAmountPaise:500, reservedBonusMinutes:1, actualChargePaise:300,
+        releasedAmountPaise:200, freeMinutesUsed:0, bonusMinutesReleased:1,
+        astrologerCommissionPercent:20, adminCommissionPercent:80,
+        astrologerCommissionPaise:60, adminCommissionPaise:240 }),
+      doc('s'.repeat(200), { customerUid:'wallet-1', astrologerUid:'astro-1',
+        mode:'call', state:'active', reservedAmountPaise:0, reservedBonusMinutes:0 })
+    ],
+    smv_live_bookings: [
+      doc('booking-1', { customerUid:'wallet-1', astrologerUid:'astro-1',
+        mode:'call', status:'completed', liveSessionId:'missing-session',
+        walletReservationState:'settled', reservedAmountPaise:500, reservedBonusMinutes:0 })
+    ],
+    smv_appointments: [
+      doc('appointment-1', { customerUid:'wallet-1', astrologerUid:'astro-1',
+        bookingKind:'scheduled_chat_request', status:'completed',
+        liveSessionId:'session.with.dot', preferredDate:'2026-10-31', preferredTime:'10:00' })
+    ],
+    smv_payments: [
+      doc('earning-1', { source:'live_session', astrologerUid:'astro-1',
+        customerUid:'wallet-1', sessionId:'missing-earning-session',
+        grossAmountPaise:10000, earningAmountPaise:8000, commissionPercent:80, adminCommissionPercent:20,
+        status:'completed' })
+    ],
+    smv_withdrawals: [
+      doc('withdrawal-1', { astrologerUid:'astro-1', amountPaise:30000, status:'pending' })
+    ],
+    smv_withdrawal_payouts: [
+      doc('withdrawal-1', { withdrawalId:'withdrawal-1',
+        bankAccountNumber:'SENSITIVE-BANK-VALUE', ifsc:'SENSITIVE-IFSC-VALUE' })
+    ],
+    razorpay_orders: [
+      doc('order-1', { serviceName:'SMV ASTRO Wallet Recharge',
+        amountPaise:5000, status:'paid', razorpayPaymentId:'payment-1',
+        walletRechargeId:'recharge-1', firebaseUid:'wallet-1', idempotencyKey:'recharge-1' })
+    ],
+    razorpay_webhook_events: [
+      doc('webhook-1', { event:'payment.captured', eventId:'event-1',
+        razorpayOrderId:'missing-order', razorpayPaymentId:'missing-payment',
+        processed:true, retryCount:1 })
+    ],
+    'smv_live_sessions/session.with.dot/messages': [
+      doc('message-1', { senderUid:'wallet-1', text:'First message' }),
+      doc('message-2', { senderUid:'astro-1', text:'Second message' })
+    ],
+    'smv_live_sessions/session.with.dot/signals': [
+      doc('signal-1', { senderUid:'wallet-1', signalType:'offer',
+        payload:{ description:'test-only' } })
+    ]
+  };
+}
+
+function firestoreFixture() {
+  const collections = fixtureCollections();
+  const calls = [];
+  const firestore = {
+    projectId:'smv-astro-staging',
+    async listDocuments(path, { pageSize = 100, pageToken = '' } = {}) {
+      calls.push({ path, pageToken });
+      const documents = collections[path] || [];
+      const offset = Number(pageToken || 0);
+      const page = documents.slice(offset, offset + pageSize);
+      const next = offset + page.length;
+      return {
+        documents:page,
+        nextPageToken:next < documents.length ? String(next) : ''
+      };
+    },
+    async getDocument(path) {
+      const id = path.split('/').pop();
+      return { exists:['liveSessionPricing','commission'].includes(id), id,
+        data:id === 'liveSessionPricing' ? { callRatePaisePerMinute:100 } : { astroPercent:20, adminPercent:80 } };
+    }
+  };
+  return { firestore, calls };
+}
+
+test('inventory covers every requested Wallet, Razorpay, Live, earnings and billing source', () => {
+  assert.equal(WALLET_LIVE_READONLY_AUDIT_COLLECTIONS.length,17);
+  for (const key of [
+    'wallets','walletTransactions','walletRecharges','walletRechargeOffers','walletOfferAudit',
+    'walletOfferUsageCounters','liveSessions','liveBookings','liveSessionMessages','liveSessionSignals',
+    'scheduledCallChatAppointments','liveSessionEarnings','withdrawals','withdrawalPayouts',
+    'walletRechargeOrders','razorpayWebhookEvents','billingSettings'
+  ]) assert.ok(WALLET_LIVE_READONLY_AUDIT_COLLECTIONS.includes(key),key);
+});
+
+test('full audit paginates every collection and discovers every session child collection', async () => {
+  const { firestore, calls } = firestoreFixture();
+  const audit = createWalletLiveReadOnlyAudit({
+    firestore, pageSize:1, cryptoImpl:webcrypto
+  });
+  const report = await audit.run();
+  const byKey = Object.fromEntries(report.collections.map(item=>[item.collection,item]));
+
+  assert.equal(report.complete,true);
+  assert.equal(byKey.wallets.totalSourceDocuments,2);
+  assert.equal(byKey.wallets.pagesScanned,2);
+  assert.equal(byKey.liveSessionMessages.totalSourceDocuments,2);
+  assert.equal(byKey.liveSessionMessages.pagesScanned,3);
+  assert.equal(byKey.liveSessionMessages.parentSessionsScanned,2);
+  assert.equal(byKey.liveSessionSignals.totalSourceDocuments,1);
+  assert.equal(byKey.liveSessionSignals.parentSessionsScanned,2);
+  assert.ok(calls.some(call=>call.path==='smv_live_sessions/session.with.dot/messages'));
+  assert.ok(calls.some(call=>call.path==='smv_live_sessions/session.with.dot/signals'));
+  assert.ok(calls.some(call=>call.path==='smv_live_sessions/'+'s'.repeat(200)+'/messages'));
+  assert.equal(byKey.billingSettings.totalSourceDocuments,2);
+  assert.equal(byKey.walletRechargeOffers.totalSourceDocuments,2);
+  assert.equal(byKey.walletRechargeOffers.domainMappableRecords,1);
+  assert.equal(byKey.walletRechargeOffers.outOfScopeRecords,1);
+  assert.equal(report.totals.sourceDocuments,23);
+  assert.equal(report.totals.pagesScanned,25);
+});
+
+test('audit surfaces keyless private payout warnings and normalized Razorpay orders without leaking data', async () => {
+  const { firestore } = firestoreFixture();
+  const report = await createWalletLiveReadOnlyAudit({
+    firestore, pageSize:2, cryptoImpl:webcrypto
+  }).run();
+  const byKey = Object.fromEntries(report.collections.map(item=>[item.collection,item]));
+
+  assert.equal(byKey.withdrawalPayouts.unmappableRecords,1);
+  assert.equal(byKey.withdrawalPayouts.plannedD1Statements,0);
+  assert.equal(byKey.withdrawalPayouts.warningCounts.PAYOUT_ENCRYPTION_KEY_MISSING,1);
+  assert.equal(byKey.walletRechargeOrders.domainMappableRecords,1);
+  assert.equal(byKey.walletRechargeOrders.plannedD1Statements,2);
+  assert.ok(report.securityBlockers.some(item=>item.includes('AES-256-GCM')));
+  const json = JSON.stringify(report);
+  for (const value of [
+    'SENSITIVE-BANK-VALUE','SENSITIVE-IFSC-VALUE','wallet-1','astro-1',
+    'message-1','session.with.dot','payment-1'
+  ]) assert.equal(json.includes(value),false);
+  assert.equal(report.personalDataReturned,false);
+  assert.equal(report.credentialsReturned,false);
+  assert.equal(report.cutoverSafe,false);
+});
+
+test('consistency audit detects wallet idempotency conflicts and broken booking/settlement/payment links', async () => {
+  const { firestore } = firestoreFixture();
+  const report = await createWalletLiveReadOnlyAudit({ firestore, pageSize:3, cryptoImpl:webcrypto }).run();
+  const checks = report.relatedRecordsConsistency.missingReferences;
+  const duplicates = report.relatedRecordsConsistency.duplicateOrIdempotencyConflicts;
+
+  assert.equal(duplicates.walletTransactionIdempotencyDuplicateGroups,1);
+  assert.equal(duplicates.walletTransactionIdempotencyConflictGroups,1);
+  assert.equal(checks.liveBookingsMissingSession,1);
+  assert.equal(checks.liveSessionEarningsMissingSession,1);
+  assert.equal(checks.razorpayWebhooksMissingOrder,1);
+  assert.equal(checks.razorpayWebhooksMissingRechargePayment,1);
+  assert.equal(checks.walletOfferUsageMissingRecharge,0);
+  assert.equal(checks.liveSessionsMissingScheduledAppointment,0);
+  assert.equal(checks.scheduledAppointmentsMissingSession,0);
+
+  const finance = report.financialReconciliation;
+  assert.equal(finance.walletBalance.walletsChecked,2);
+  assert.equal(finance.walletBalance.walletsWithLedger,1);
+  assert.equal(finance.walletBalance.nonInitialWalletsMissingLedger,1);
+  assert.equal(finance.walletBalance.snapshotMismatches,0);
+  assert.equal(finance.walletBalance.conflictingLatestTimestampSnapshots,0);
+  assert.equal(finance.paidRecharge.paidRechargesChecked,1);
+  assert.equal(finance.paidRecharge.missingWalletRechargeOrders,0);
+  assert.equal(finance.paidRecharge.missingRechargeCreditLedger,0);
+  assert.equal(finance.paidRecharge.rechargeCreditAmountMismatches,0);
+  assert.equal(finance.paidRecharge.rechargeBonusMinuteMismatches,0);
+  assert.equal(finance.liveReservationSettlement.sessionsMissingReservationLedger,1);
+  assert.equal(finance.liveReservationSettlement.endedSessionsMissingUsageLedger,1);
+  assert.equal(finance.liveReservationSettlement.sessionsMissingCashReleaseLedger,1);
+  assert.equal(finance.liveReservationSettlement.sessionsMissingBonusReleaseLedger,1);
+  assert.equal(finance.liveReservationSettlement.sessionBonusMinutesNotReconciled,0);
+  assert.equal(finance.liveReservationSettlement.sessionCommissionAmountMismatches,0);
+  assert.equal(finance.liveReservationSettlement.chargedSessionsMissingEarning,1);
+  assert.equal(finance.billingConfiguration.commissionPercentValid,true);
+  assert.equal(finance.withdrawal.withdrawalsWithInvalidAmount,0);
+});
+
+test('missing commission setting fails closed and is reported as a billing readiness blocker', async () => {
+  const { firestore } = firestoreFixture();
+  const scopedFirestore = {
+    projectId: firestore.projectId,
+    listDocuments: (...args) => firestore.listDocuments(...args),
+    getDocument: async path => path === 'smv_settings/commission'
+      ? { exists:false, id:'commission', data:null }
+      : firestore.getDocument(path)
+  };
+  const report = await createWalletLiveReadOnlyAudit({
+    firestore:scopedFirestore, pageSize:3, cryptoImpl:webcrypto
+  }).run();
+  const billing = report.financialReconciliation.billingConfiguration;
+
+  assert.equal(billing.pricingSettingPresent,true);
+  assert.equal(billing.commissionSettingPresent,false);
+  assert.equal(billing.commissionPercentValid,false);
+  assert.ok(billing.missingSettings.includes('smv_settings/commission'));
+  assert.equal(billing.commissionEffectivePercentValid,true);
+  assert.equal(billing.effectiveCommissionSource,'legacy_runtime_fallback');
+  assert.equal(billing.effectiveAstroPercent,20);
+  assert.equal(billing.effectiveAdminPercent,80);
+  assert.equal(report.securityBlockers.some(item =>
+    item.includes('smv_settings/commission is missing')
+  ),false);
+});
+
+test('read-only D1 guard rejects batch, exec and prepared statement execution', () => {
+  const db=createStrictReadOnlyD1Guard();
+  assert.throws(()=>db.batch([]),/READ_ONLY_PREVIEW_WRITE_GUARD/);
+  assert.throws(()=>db.exec('DELETE FROM x'),/READ_ONLY_PREVIEW_WRITE_GUARD/);
+  assert.throws(()=>db.prepare('SELECT 1').bind().run(),/READ_ONLY_PREVIEW_WRITE_GUARD/);
+  assert.throws(()=>db.prepare('SELECT 1').bind().all(),/READ_ONLY_PREVIEW_WRITE_GUARD/);
+});
+
+test('audit rejects a Firestore client from any Firebase project except staging', () => {
+  assert.throws(()=>createWalletLiveReadOnlyAudit({
+    firestore:{ projectId:'smv-astro-production', listDocuments(){}, getDocument(){} }
+  }),error=>error?.code==='FIRESTORE_PROJECT_SCOPE_REJECTED');
+});

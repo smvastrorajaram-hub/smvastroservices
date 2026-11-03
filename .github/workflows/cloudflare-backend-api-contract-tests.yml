@@ -1,0 +1,50 @@
+name: Cloudflare backend API contract tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "cloudflare/backend-api/**"
+      - "shared/backend-platform/**"
+      - ".github/workflows/cloudflare-backend-api-contract-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "cloudflare/backend-api/**"
+      - "shared/backend-platform/**"
+      - ".github/workflows/cloudflare-backend-api-contract-tests.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-backend-api-contract-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-and-contract-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install isolated Worker package dependencies
+        run: npm install --prefix cloudflare/backend-api --no-package-lock --ignore-scripts --no-audit --no-fund
+
+      - name: Check JavaScript syntax
+        run: npm --prefix cloudflare/backend-api run check
+
+      - name: Run backend contract tests
+        working-directory: cloudflare/backend-api
+        run: node --test test/*.test.mjs ../../shared/backend-platform/test/*.test.mjs
+
+      - name: Apply D1 migrations to an ephemeral local database only
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 migrations apply smvastro-wallet-staging --local --config wrangler.jsonc
+

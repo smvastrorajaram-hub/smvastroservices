@@ -1,0 +1,284 @@
+function base64(value) {
+  const bytes = new TextEncoder().encode(String(value));
+  let binary = '';
+  for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(offset, Math.min(bytes.length, offset + 0x8000)));
+  }
+  return btoa(binary);
+}
+
+function hex(bytes) {
+  return Array.from(new Uint8Array(bytes), value => value.toString(16).padStart(2, '0')).join('');
+}
+
+function fromHex(value) {
+  const input = String(value || '').trim().toLowerCase();
+  if (!/^[a-f0-9]{64}$/.test(input)) return null;
+  const result = new Uint8Array(32);
+  for (let i = 0; i < 32; i += 1) result[i] = Number.parseInt(input.slice(i * 2, i * 2 + 2), 16);
+  return result;
+}
+
+function fixedCompare(left, right) {
+  if (!left || !right || left.length !== right.length) return false;
+  let diff = 0;
+  for (let i = 0; i < left.length; i += 1) diff |= left[i] ^ right[i];
+  return diff === 0;
+}
+
+function validPaise(value, { allowZero = false } = {}) {
+  const amount = Number(value);
+  return Number.isSafeInteger(amount) && amount >= (allowZero ? 0 : 1) ? amount : null;
+}
+
+function cleanId(value, max = 128) {
+  const id = String(value || '').trim();
+  return id && id.length <= max && /^[A-Za-z0-9_-]+$/.test(id) ? id : '';
+}
+
+/** Fetch-based Razorpay REST client. It never reads environment globals or mode-switches keys itself. */
+export function createRazorpayRestClient({
+  keyId,
+  keySecret,
+  fetchImpl = globalThis.fetch,
+  cryptoImpl = globalThis.crypto,
+  baseUrl = 'https://api.razorpay.com/v1'
+} = {}) {
+  const id = String(keyId || '').trim();
+  const secret = String(keySecret || '').trim();
+  const root = String(baseUrl || '').replace(/\/+$/, '');
+  if (!id || !secret || !/^https:\/\//i.test(root) || typeof fetchImpl !== 'function' ||
+      typeof cryptoImpl?.subtle?.importKey !== 'function' || typeof cryptoImpl?.subtle?.sign !== 'function') {
+    throw new TypeError('Razorpay credentials, HTTPS endpoint, Fetch and WebCrypto are required.');
+  }
+  const authorization = 'Basic ' + base64(id + ':' + secret);
+
+  async function request(path, { method = 'GET', body, headers = {} } = {}) {
+    let response;
+    try {
+      response = await fetchImpl(root + path, {
+        method,
+        headers: {
+          Authorization: authorization,
+          Accept: 'application/json',
+          ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+          ...headers
+        },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+        signal: AbortSignal.timeout(15000)
+      });
+    } catch {
+      throw Object.assign(new Error('Razorpay is temporarily unavailable.'), { code: 'RAZORPAY_UPSTREAM_UNAVAILABLE', httpStatus: 503 });
+    }
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw Object.assign(new Error('Razorpay rejected the request.'), {
+        code: 'RAZORPAY_REQUEST_REJECTED',
+        httpStatus: response.status >= 500 ? 503 : 502,
+        upstreamStatus: response.status,
+        upstreamCode: String(payload?.error?.code || '').slice(0, 80)
+      });
+    }
+    return payload;
+  }
+
+  async function hmacHex(value, signingSecret = secret) {
+    const key = await cryptoImpl.subtle.importKey(
+      'raw', new TextEncoder().encode(String(signingSecret)),
+      { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    );
+    return hex(await cryptoImpl.subtle.sign('HMAC', key, new TextEncoder().encode(String(value))));
+  }
+
+  async function verifyPaymentSignature({ orderId, paymentId, signature } = {}) {
+    const order = cleanId(orderId);
+    const payment = cleanId(paymentId);
+    const expectedSignature = fromHex(signature);
+    if (!order || !payment || !expectedSignature) return false;
+    return fixedCompare(expectedSignature, fromHex(await hmacHex(order + '|' + payment)));
+  }
+
+  async function verifyWebhookSignature({ rawBody, signature, webhookSecret } = {}) {
+    const provided = fromHex(signature);
+    const secretValue = String(webhookSecret || '');
+    if (!provided || !secretValue || rawBody == null) return false;
+    const raw = typeof rawBody === 'string'
+      ? rawBody
+      : rawBody instanceof ArrayBuffer
+        ? new TextDecoder().decode(rawBody)
+        : ArrayBuffer.isView(rawBody)
+          ? new TextDecoder().decode(rawBody)
+          : '';
+    if (!raw) return false;
+    return fixedCompare(provided, fromHex(await hmacHex(raw, secretValue)));
+  }
+
+  /**
+   * Read-only credential probe. GET /orders?count=1 validates provider
+   * authentication without creating a payment/order or moving money.
+   */
+  async function testConnection() {
+    const payload = await request('/orders?count=1');
+    if (!payload || !Array.isArray(payload.items)) {
+      throw Object.assign(new Error('Razorpay returned an invalid order-list response.'), {
+        code: 'RAZORPAY_RESPONSE_INVALID',
+        httpStatus: 502
+      });
+    }
+    return Object.freeze({ ok: true, visibleOrders: payload.items.length });
+  }
+
+  async function createOrder({ amountPaise, currency = 'INR', receipt, notes = {} } = {}) {
+    const amount = validPaise(amountPaise);
+    const receiptId = String(receipt || '').trim();
+    if (amount === null || String(currency).toUpperCase() !== 'INR' ||
+        !receiptId || receiptId.length > 40 || /[^A-Za-z0-9_-]/.test(receiptId)) {
+      throw Object.assign(new Error('Razorpay order details are invalid.'), { code: 'RAZORPAY_ORDER_INVALID', httpStatus: 400 });
+    }
+    const payload = await request('/orders', {
+      method: 'POST',
+      body: { amount, currency: 'INR', receipt: receiptId, notes: notes && typeof notes === 'object' ? notes : {} }
+    });
+    if (!cleanId(payload?.id, 64) || Number(payload.amount) !== amount || String(payload.currency || '') !== 'INR') {
+      throw Object.assign(new Error('Razorpay returned an invalid order response.'), { code: 'RAZORPAY_RESPONSE_INVALID', httpStatus: 502 });
+    }
+    return Object.freeze({
+      id: String(payload.id), amount: Number(payload.amount),
+      currency: String(payload.currency), status: String(payload.status || ''),
+      receipt: String(payload.receipt || receiptId)
+    });
+  }
+
+  async function findOrderByReceipt(receipt, { amountPaise, currency = 'INR' } = {}) {
+    const receiptId = String(receipt || '').trim();
+    const amount = validPaise(amountPaise);
+    if (!receiptId || receiptId.length > 40 || /[^A-Za-z0-9_-]/.test(receiptId) ||
+        amount === null || String(currency).toUpperCase() !== 'INR') {
+      throw Object.assign(new Error('Razorpay order recovery details are invalid.'), { code: 'RAZORPAY_ORDER_RECOVERY_INVALID', httpStatus: 400 });
+    }
+    const payload = await request('/orders?receipt=' + encodeURIComponent(receiptId) + '&count=10');
+    const candidates = (Array.isArray(payload?.items) ? payload.items : []).filter(item =>
+      String(item?.receipt || '') === receiptId &&
+      Number(item?.amount) === amount &&
+      String(item?.currency || '').toUpperCase() === 'INR'
+    );
+    if (candidates.length > 1) {
+      throw Object.assign(new Error('Multiple Razorpay orders share the same recharge receipt.'), { code: 'RAZORPAY_ORDER_RECOVERY_AMBIGUOUS', httpStatus: 409 });
+    }
+    if (!candidates.length) return null;
+    const order = candidates[0];
+    if (!cleanId(order.id, 64)) throw Object.assign(new Error('Razorpay order recovery returned an invalid order ID.'), { code: 'RAZORPAY_RESPONSE_INVALID', httpStatus: 502 });
+    return Object.freeze({
+      id: String(order.id), amount: Number(order.amount), currency: String(order.currency),
+      status: String(order.status || ''), receipt: receiptId
+    });
+  }
+
+  async function fetchOrder(orderId) {
+    const idValue = cleanId(orderId, 64);
+    if (!idValue) throw Object.assign(new Error('Razorpay order ID is invalid.'), { code: 'RAZORPAY_ORDER_ID_INVALID', httpStatus: 400 });
+    const payload = await request('/orders/' + encodeURIComponent(idValue));
+    if (String(payload?.id || '') !== idValue || Number(payload?.amount) < 1 ||
+        String(payload?.currency || '').toUpperCase() !== 'INR') {
+      throw Object.assign(new Error('Razorpay returned an invalid order response.'), { code: 'RAZORPAY_RESPONSE_INVALID', httpStatus: 502 });
+    }
+    return payload;
+  }
+
+  async function fetchOrderPayments(orderId, { count = 100, skip = 0 } = {}) {
+    const idValue = cleanId(orderId, 64);
+    const pageSize = Number(count);
+    const offset = Number(skip);
+    if (!idValue || !Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100 ||
+        !Number.isInteger(offset) || offset < 0 || offset > 9900) {
+      throw Object.assign(new Error('Razorpay order payment-list details are invalid.'), {
+        code: 'RAZORPAY_ORDER_PAYMENT_LIST_INVALID', httpStatus: 400
+      });
+    }
+    const payload = await request(
+      '/orders/' + encodeURIComponent(idValue) + '/payments?count=' + pageSize + '&skip=' + offset
+    );
+    if (!payload || !Array.isArray(payload.items)) {
+      throw Object.assign(new Error('Razorpay returned an invalid order payment-list response.'), {
+        code: 'RAZORPAY_RESPONSE_INVALID', httpStatus: 502
+      });
+    }
+    return payload;
+  }
+
+  async function fetchPayment(paymentId) {
+    const idValue = cleanId(paymentId, 64);
+    if (!idValue) throw Object.assign(new Error('Razorpay payment ID is invalid.'), { code: 'RAZORPAY_PAYMENT_ID_INVALID', httpStatus: 400 });
+    return request('/payments/' + encodeURIComponent(idValue));
+  }
+
+  async function capturePayment(paymentId, amountPaise, currency = 'INR') {
+    const idValue = cleanId(paymentId, 64);
+    const amount = validPaise(amountPaise);
+    if (!idValue || amount === null || String(currency).toUpperCase() !== 'INR') {
+      throw Object.assign(new Error('Razorpay capture details are invalid.'), { code: 'RAZORPAY_CAPTURE_INVALID', httpStatus: 400 });
+    }
+    const payload = await request('/payments/' + encodeURIComponent(idValue) + '/capture', {
+      method: 'POST',
+      body: { amount, currency: 'INR' }
+    });
+    if (String(payload.id || '') !== idValue || Number(payload.amount) !== amount ||
+        String(payload.currency || '') !== 'INR') {
+      throw Object.assign(new Error('Razorpay returned an invalid capture response.'), { code: 'RAZORPAY_RESPONSE_INVALID', httpStatus: 502 });
+    }
+    return payload;
+  }
+
+  async function fetchPaymentRefunds(paymentId, { count = 100, skip = 0 } = {}) {
+    const idValue = cleanId(paymentId, 64);
+    const pageSize = Number(count);
+    const offset = Number(skip);
+    if (!idValue || !Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100 ||
+        !Number.isInteger(offset) || offset < 0 || offset > 9900) {
+      throw Object.assign(new Error('Razorpay payment refund-list details are invalid.'), {
+        code: 'RAZORPAY_REFUND_LIST_INVALID', httpStatus: 400
+      });
+    }
+    const payload = await request(
+      '/payments/' + encodeURIComponent(idValue) + '/refunds?count=' + pageSize + '&skip=' + offset
+    );
+    if (!payload || !Array.isArray(payload.items)) {
+      throw Object.assign(new Error('Razorpay returned an invalid payment refund-list response.'), {
+        code: 'RAZORPAY_RESPONSE_INVALID', httpStatus: 502
+      });
+    }
+    return payload;
+  }
+
+  // Keep the historical Node SDK method name available to shared refund
+  // orchestration while exposing the clearer REST-adapter name as well.
+  const fetchMultipleRefund = fetchPaymentRefunds;
+
+  async function fetchRefund(refundId) {
+    const idValue = cleanId(refundId, 64);
+    if (!idValue) throw Object.assign(new Error('Razorpay refund ID is invalid.'), { code: 'RAZORPAY_REFUND_ID_INVALID', httpStatus: 400 });
+    return request('/refunds/' + encodeURIComponent(idValue));
+  }
+
+  async function refundPayment(paymentId, { amountPaise, receipt, notes = {}, idempotencyKey } = {}) {
+    const pid = cleanId(paymentId, 64);
+    const amount = validPaise(amountPaise);
+    const receiptId = String(receipt || '').trim();
+    const key = String(idempotencyKey || '').trim();
+    if (!pid || amount === null || !receiptId || receiptId.length > 40 ||
+        !/^[A-Za-z0-9_-]+$/.test(receiptId) || !/^[A-Za-z0-9_-]{10,180}$/.test(key)) {
+      throw Object.assign(new Error('Razorpay refund details are invalid.'), { code: 'RAZORPAY_REFUND_INVALID', httpStatus: 400 });
+    }
+    const payload = await request('/payments/' + encodeURIComponent(pid) + '/refund', {
+      method: 'POST',
+      headers: { 'X-Refund-Idempotency': key },
+      body: { amount, receipt: receiptId, notes: notes && typeof notes === 'object' ? notes : {}, speed: 'normal' }
+    });
+    if (!cleanId(payload?.id, 64) || String(payload.payment_id || pid) !== pid || Number(payload.amount) !== amount) {
+      throw Object.assign(new Error('Razorpay returned an invalid refund response.'), { code: 'RAZORPAY_RESPONSE_INVALID', httpStatus: 502 });
+    }
+    return Object.freeze({ id: String(payload.id), paymentId: pid, amount: Number(payload.amount), status: String(payload.status || '') });
+  }
+
+  return Object.freeze({ testConnection, createOrder, findOrderByReceipt, fetchOrder, fetchOrderPayments, fetchPayment, fetchPaymentRefunds, fetchMultipleRefund, capturePayment, fetchRefund, refundPayment, verifyPaymentSignature, verifyWebhookSignature });
+}
