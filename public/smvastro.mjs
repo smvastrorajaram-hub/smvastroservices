@@ -85,8 +85,17 @@ try{
   console.error("SMV ASTRO Firebase initialization failed",initError);
 }
 const RAZORPAY_BACKEND_URL = IS_SMV_PHASE1_STAGING ? "https://smv-astro-phase1-staging.onrender.com" : "https://smvastroservices.onrender.com";
-// Single backend URL used by all protected API calls, including astrologer answer submission.
-// Keep this in the main Firebase module so it is available to the answer-submit handler.
+const CLOUDFLARE_FINANCIAL_BACKEND_URL = IS_SMV_PHASE1_STAGING
+  ? "https://smvastro-backend-api-staging.astroservices.workers.dev"
+  : "https://smvastroservices.astroservices.workers.dev";
+function smvApiBackend(path) {
+  const pathname = String(path || '').split('?')[0].toLowerCase();
+  const financialRoute = /^\/(?:wallet(?:\/|$)|live\/(?:requests|sessions(?:\/|$)|bookings(?:\/|$)|pricing(?:\/|$)|ice-config(?:\/|$)|events(?:\/|$)|scheduled-appointments(?:\/|$))|appointment-booking(?:\/|$)|test-razorpay(?:\/|$)|astrologer\/(?:earnings|withdrawal-request)(?:\/|$)|admin\/(?:withdrawals-data|withdrawal-payout|withdrawal-mark-processing|withdrawal-reject|withdrawal-mark-paid|offers)(?:\/|$))/.test(pathname);
+  return window.SMV_CLOUDFLARE_FINANCIAL_API_ENABLED === true && financialRoute
+    ? CLOUDFLARE_FINANCIAL_BACKEND_URL
+    : RAZORPAY_BACKEND_URL;
+}
+// Legacy APIs, Horoscope/Calendar and FCM push registration/status stay on Render.
 const BACKEND=RAZORPAY_BACKEND_URL; window.SMV_BACKEND_URL=RAZORPAY_BACKEND_URL;
 
 let smvHomeWalletOffersFetchedAt=0, smvHomeWalletOffersRequest=null;
@@ -109,7 +118,7 @@ async function smvLoadHomeWalletRechargeOffers(force=false){
  if(smvHomeWalletOffersRequest)return smvHomeWalletOffersRequest;
  smvHomeWalletOffersRequest=(async()=>{
   try{
-   const response=await fetch(BACKEND+'/wallet/recharge-offers',{headers:{Accept:'application/json'},cache:'no-store'});
+   const response=await fetch(smvApiBackend('/wallet/recharge-offers')+'/wallet/recharge-offers',{headers:{Accept:'application/json'},cache:'no-store'});
    if(!response.ok)throw new Error('Offer request failed ('+response.status+').');
    const result=await response.json();
    if(result?.success!==true||!Array.isArray(result.offers))throw new Error(result?.error||'Active Wallet offers are unavailable.');
@@ -174,7 +183,8 @@ async function renderApi(path, options={}, authUserOverride=null){
     headers.set('Authorization','Bearer '+token);
     headers.set('Accept','application/json');
     if(request.body!=null&&!(request.body instanceof FormData)&&!headers.has('Content-Type'))headers.set('Content-Type','application/json');
-    const response=await fetch(RAZORPAY_BACKEND_URL+path,{...request,headers,cache:'no-store',signal:controller.signal});
+    const apiBackend=smvApiBackend(path);
+    const response=await fetch(apiBackend+path,{...request,headers,cache:'no-store',signal:controller.signal});
     if(auth?.currentUser?.uid!==user.uid)throw new Error('Your login changed. Please try again.');
     if(response.status===204)return {};
     let data;
@@ -208,7 +218,7 @@ async function smvSendVerificationEmail(user){
 
 async function renderPublicApi(path, options={}){
   const headers={"Content-Type":"application/json",...(options.headers||{})};
-  const response=await fetch(RAZORPAY_BACKEND_URL+path,{...options,headers});
+  const response=await fetch(smvApiBackend(path)+path,{...options,headers});
   let data=null; try{data=await response.json();}catch(e){data={};}
   if(!response.ok) throw new Error(data?.error||`Render backend error (${response.status})`);
   return data;
@@ -4725,7 +4735,7 @@ function smvLiveStartEventStream(){
  (async()=>{
   let watchdog=null,lastByteAt=Date.now();
   try{
-   const token=await user.getIdToken(),resp=await fetch(BACKEND+'/live/events',{headers:{Authorization:'Bearer '+token,Accept:'text/event-stream'},cache:'no-store',signal:controller.signal});
+   const token=await user.getIdToken(),resp=await fetch(smvApiBackend('/live/events')+'/live/events',{headers:{Authorization:'Bearer '+token,Accept:'text/event-stream'},cache:'no-store',signal:controller.signal});
    if(!resp.ok||!resp.body)throw new Error('Live event stream HTTP '+resp.status);
    const reader=resp.body.getReader(),decoder=new TextDecoder();let buffer='';
    // Some proxies keep HTTP 200 open after the application stream has stalled.

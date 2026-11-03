@@ -130,22 +130,33 @@ test('Wallet routes reject unknown roles and surface identity failures', async (
   assert.equal(unauthenticated.body.code, 'AUTH_REQUIRED');
 });
 
-test('Wallet read route gate requires explicit enablement, verified backfill and explicit cutover', () => {
-  assert.equal(isWalletReadRouteGateOpen({}), false);
-  assert.equal(isWalletReadRouteGateOpen({ WALLET_READ_ROUTES_ENABLED: 'true' }), false);
-  assert.equal(isWalletReadRouteGateOpen({
-    WALLET_READ_ROUTES_ENABLED: 'true',
-    SMV_WALLET_DOMAIN_BACKFILL_COMPLETE: 'true'
-  }), false);
-  assert.equal(isWalletReadRouteGateOpen({
-    WALLET_READ_ROUTES_ENABLED: 'true',
-    SMV_WALLET_DOMAIN_CUTOVER_COMPLETE: 'true'
-  }), false);
-  assert.equal(isWalletReadRouteGateOpen({
+test('Wallet read route gate requires matching environment, explicit enablement, backfill and cutover', () => {
+  const allEnabled = {
     WALLET_READ_ROUTES_ENABLED: 'true',
     SMV_WALLET_DOMAIN_BACKFILL_COMPLETE: 'true',
     SMV_WALLET_DOMAIN_CUTOVER_COMPLETE: 'true'
+  };
+  assert.equal(isWalletReadRouteGateOpen({}), false);
+  assert.equal(isWalletReadRouteGateOpen({ ...allEnabled, SMV_ENVIRONMENT: 'staging' }), true);
+  assert.equal(isWalletReadRouteGateOpen({ ...allEnabled }), false);
+  assert.equal(isWalletReadRouteGateOpen({
+    ...allEnabled,
+    SMV_ENVIRONMENT: 'production',
+    FIREBASE_PROJECT_ID: 'smv-astro',
+    SMV_BACKEND_CLOUDFLARE_ACTIVE: 'true'
   }), true);
+  assert.equal(isWalletReadRouteGateOpen({
+    ...allEnabled,
+    SMV_ENVIRONMENT: 'production',
+    FIREBASE_PROJECT_ID: 'project-5',
+    SMV_BACKEND_CLOUDFLARE_ACTIVE: 'true'
+  }), false);
+  assert.equal(isWalletReadRouteGateOpen({
+    ...allEnabled,
+    SMV_ENVIRONMENT: 'production',
+    FIREBASE_PROJECT_ID: 'smv-astro',
+    SMV_BACKEND_CLOUDFLARE_ACTIVE: 'false'
+  }), false);
 });
 
 test('Wallet read handlers fail closed until D1 shared domain migration is ready', async () => {

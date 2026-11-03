@@ -66,18 +66,39 @@ test('backfill tools fail closed when the explicit staging flag is off',async()=
   assert.equal(state.calls.length,0);
 });
 
-test('backfill tooling refuses non-staging environments and other Firebase projects',async()=>{
+test('backfill tooling accepts only matching Staging or Production Firebase projects',async()=>{
   for(const overrides of [
-    {environment:'production'},
-    {sourceProjectId:'smv-astro-production'}
+    {environment:'production',sourceProjectId:'smv-astro-staging'},
+    {environment:'staging',sourceProjectId:'smv-astro'},
+    {environment:'production',sourceProjectId:'project-5'}
   ]) {
     const state=fixture(overrides);
     const res=responseHarness();
     await state.app.handlers.get('GET /admin/wallet/backfill/status')(request(),res);
     assert.equal(res.statusCode,403);
-    assert.equal(res.body.code,'BACKFILL_STAGING_ONLY');
+    assert.equal(res.body.code,'BACKFILL_ENVIRONMENT_PROJECT_MISMATCH');
     assert.equal(state.calls.length,0);
   }
+});
+
+test('Production Project 1 backfill supports preview and read-only reconciliation',async()=>{
+  const state=fixture({environment:'production',sourceProjectId:'smv-astro'});
+  const preview=responseHarness();
+  await state.app.handlers.get('POST /admin/wallet/backfill/preview')(
+    request({collection:'wallets',pageSize:20}),preview
+  );
+  assert.equal(preview.statusCode,200);
+  assert.equal(preview.body.sourceProjectId,'smv-astro');
+  assert.equal(preview.body.mode,'read_only_preview');
+  assert.equal(preview.body.writesPerformed,0);
+
+  const reconcile=responseHarness();
+  await state.app.handlers.get('POST /admin/wallet/backfill/reconcile')(
+    request({collection:'wallets'}),reconcile
+  );
+  assert.equal(reconcile.statusCode,200);
+  assert.equal(reconcile.body.mode,'read_only_reconciliation');
+  assert.equal(reconcile.body.cutoverSafe,false);
 });
 
 test('Preview and reconcile are read-only and return their write count as zero',async()=>{
@@ -132,6 +153,33 @@ test('Apply requires an explicit source project confirmation and then imports on
   assert.equal(allowed.body.sourceDataDeleted,false);
   assert.equal(allowed.body.cutoverComplete,false);
   assert.equal(state.calls.filter(call=>call[0]==='apply').length,1);
+});
+
+test('Production Project 1 import still requires quiescence, confirmation and Cloudflare traffic OFF',async()=>{
+  const blocked=fixture({
+    environment:'production',sourceProjectId:'smv-astro',
+    quiesced:false
+  });
+  const blockedResponse=responseHarness();
+  await blocked.app.handlers.get('POST /admin/wallet/backfill/apply')(
+    request({collection:'wallets',confirmSourceProjectId:'smv-astro'}),blockedResponse
+  );
+  assert.equal(blockedResponse.statusCode,409);
+  assert.equal(blockedResponse.body.code,'BACKFILL_APPLY_GATE_CLOSED');
+
+  const ready=fixture({
+    environment:'production',sourceProjectId:'smv-astro',
+    quiesced:true
+  });
+  const imported=responseHarness();
+  await ready.app.handlers.get('POST /admin/wallet/backfill/apply')(
+    request({collection:'wallets',confirmSourceProjectId:'smv-astro',pageSize:25}),imported
+  );
+  assert.equal(imported.statusCode,200);
+  assert.equal(imported.body.mode,'production_page_import');
+  assert.equal(imported.body.sourceProjectId,'smv-astro');
+  assert.equal(imported.body.sourceDataDeleted,false);
+  assert.equal(imported.body.cutoverComplete,false);
 });
 
 test('reconciliation returns conflict rather than declaring a mismatched page safe',async()=>{
