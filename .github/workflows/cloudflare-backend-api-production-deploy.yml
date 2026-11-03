@@ -59,12 +59,15 @@ jobs:
         run: npx --yes wrangler@4.156.0 deploy --config cloudflare/backend-api/wrangler.production.jsonc
 
       - name: Verify Production Worker health endpoint
+        id: production-health
         shell: bash
         run: |
           set -euo pipefail
           ROOT='https://smvastroservices.astroservices.workers.dev'
+          status='000'
           for attempt in 1 2 3 4 5 6; do
-            status="$(curl --silent --show-error --connect-timeout 10 --max-time 20 --output /tmp/smv-worker-health.json --write-out '%{http_code}' "$ROOT/healthz" || true)"
+            status="$(curl --silent --show-error --connect-timeout 10 --max-time 20 --dump-header /tmp/smv-worker-health.headers --output /tmp/smv-worker-health.json --write-out '%{http_code}' "$ROOT/healthz" || true)"
+            echo "Production Worker health attempt $attempt returned HTTP $status."
             if [ "$status" = "200" ]; then
               cat /tmp/smv-worker-health.json
               node --input-type=module -e "import fs from 'node:fs'; const d=JSON.parse(fs.readFileSync('/tmp/smv-worker-health.json','utf8')); if(d.environment!=='production'||d.backendActive!==true||d.liveSessionRoutesRegistered!==true) process.exit(1);"
@@ -73,5 +76,30 @@ jobs:
             sleep 5
           done
           echo 'Production Worker health check did not return the expected active Production runtime.'
+          test -f /tmp/smv-worker-health.headers && grep -iE '^(HTTP/|cf-error-type:|cf-error-origin:|cf-ray:)' /tmp/smv-worker-health.headers || true
           test -f /tmp/smv-worker-health.json && cat /tmp/smv-worker-health.json || true
           exit 1
+
+      - name: Capture Production Worker runtime logs after health failure
+        if: failure()
+        continue-on-error: true
+        timeout-minutes: 1
+        shell: bash
+        run: |
+          set +e
+          echo 'Starting a short Workers tail capture for the deployed Production Worker.'
+          timeout 25s npx --yes wrangler@4.156.0 tail smvastroservices --format json > /tmp/smvastro-production-worker-tail.jsonl 2>&1 &
+          tail_pid=$!
+          sleep 3
+          for attempt in 1 2 3 4; do
+            curl --silent --show-error --connect-timeout 10 --max-time 15 --dump-header "/tmp/smv-worker-tail-health-$attempt.headers" --output "/tmp/smv-worker-tail-health-$attempt.json" 'https://smvastroservices.astroservices.workers.dev/healthz' || true
+            sleep 2
+          done
+          wait "$tail_pid"
+          tail_status=$?
+          echo "wrangler tail exit status: $tail_status"
+          test -f /tmp/smvastro-production-worker-tail.jsonl && cat /tmp/smvastro-production-worker-tail.jsonl || true
+          for f in /tmp/smv-worker-tail-health-*.headers /tmp/smv-worker-tail-health-*.json; do
+            test -f "$f" && { echo "--- $f ---"; cat "$f"; }
+          done
+          exit 0
