@@ -173,14 +173,29 @@ jobs:
         run: |
           set -euo pipefail
           expected="7a3be159218a38083986dec117c0bd281b3ef42bda65f2bb7b8c9946b5293401"
+          apksigner="$ANDROID_HOME/build-tools/36.0.0/apksigner"
           for module in smvhoroscopeproduction smvcalendarproduction; do
             apk="$module/build/outputs/apk/release/$module-release.apk"
             test -s "$apk"
-            report="$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk")"
-            grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true' <<< "$report"
+            if ! report="$("$apksigner" verify --verbose --print-certs "$apk" 2>&1)"; then
+              printf '%s\\n' "$report"
+              echo "::error::$module APK signature verification failed; see the apksigner diagnostics above."
+              exit 1
+            fi
+            # Certificate fingerprints are public certificate metadata, not signing secrets.
+            # Print them so a failed release can be diagnosed without weakening the check.
+            printf '%s\\n' "$report"
+            if ! grep -Fq 'Verified using v2 scheme (APK Signature Scheme v2): true' <<< "$report"; then
+              echo "::error::$module APK is not verified with APK Signature Scheme v2."
+              exit 1
+            fi
             actual="$(sed -n 's/.*Signer #1 certificate SHA-256 digest: //p' <<< "$report" | tr '[:upper:]' '[:lower:]' | tr -d ':')"
+            if [[ -z "$actual" ]]; then
+              echo "::error::$module APK did not report a signer certificate SHA-256 fingerprint."
+              exit 1
+            fi
             if [[ "$actual" != "$expected" ]]; then
-              echo "::error::$module certificate does not match the permanent SMV Android signing key."
+              echo "::error::$module certificate fingerprint mismatch: expected $expected, found $actual."
               exit 1
             fi
             echo "PASS: $module is signed with APK Signature Scheme v2 and the existing permanent SMV Android certificate."
