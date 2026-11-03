@@ -213,6 +213,7 @@ test('health performs a read-only R2 binding probe and fails closed when R2 is u
     d1Ready: true,
     r2Ready: false,
     uploadsEnabled: false,
+    deletesEnabled: false,
     hasReleaseRecords: false
   });
   assert.equal(logged.length, 1);
