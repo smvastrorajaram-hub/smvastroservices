@@ -2541,7 +2541,7 @@ async function smvAndroidApkWorkerStatus(){
     if(!response.ok)return null;
     const health=await response.json();
     return health?.success===true&&health.ready===true
-      ?{base,uploadsEnabled:health.uploadsEnabled===true,hasReleaseRecords:health.hasReleaseRecords===true}
+      ?{base,uploadsEnabled:health.uploadsEnabled===true,deletesEnabled:health.deletesEnabled===true,hasReleaseRecords:health.hasReleaseRecords===true}
       :null;
   }catch(_){return null;}
 }
@@ -2601,6 +2601,7 @@ async function loadAdminAndroidAppHistory(){
   const container=$('adminAndroidAppHistory');
   if(!container)return;
   container.innerHTML='<div class="empty">Checking Cloudflare APK version history…</div>';
+  const workerStatus=await smvAndroidApkWorkerStatus();
   try{
     const history=await smvAndroidApkApi('/admin/android-app/versions',{method:'GET'},true);
     if(!history){
@@ -2618,10 +2619,37 @@ async function loadAdminAndroidAppHistory(){
       const label='SMV ASTRO '+String(release.versionName||'APK')+' · code '+String(release.versionCode||'—');
       const date=release.uploadedAt?smvDateTime(new Date(Number(release.uploadedAt))):'';
       const link=safeUrl?'<a class="btn gray" href="'+escapeHtml(safeUrl.href)+'" rel="noopener" download>DOWNLOAD APK</a>':'<span class="small">Download link unavailable</span>';
-      return '<div class="card" style="margin-top:8px"><div><b>'+escapeHtml(label)+'</b></div><div class="small">'+escapeHtml(date)+' · '+escapeHtml(String(release.storageProvider||'stored release'))+'</div><div class="action-row">'+link+'</div></div>';
+      const deleteAction=release.canDelete===true&&workerStatus?.deletesEnabled===true
+        ?'<button class="btn gray smv-admin-apk-delete" type="button" data-version-code="'+escapeHtml(String(release.versionCode))+'">DELETE OLD APK</button>'
+        :release.isCurrent===true
+          ?'<span class="small">Current release · protected</span>'
+          :release.storageProvider==='r2'
+            ?'<span class="small">Delete is disabled</span>'
+            :'<span class="small">Legacy archive · protected here</span>';
+      return '<div class="card" style="margin-top:8px"><div><b>'+escapeHtml(label)+'</b></div><div class="small">'+escapeHtml(date)+' · '+escapeHtml(String(release.storageProvider||'stored release'))+'</div><div class="action-row">'+link+deleteAction+'</div></div>';
     }).join('');
+    container.querySelectorAll('.smv-admin-apk-delete').forEach(button=>{
+      button.addEventListener('click',()=>deleteAdminAndroidAppVersion(button.dataset.versionCode,button));
+    });
   }catch(error){
     container.innerHTML='<div class="small">Unable to load Cloudflare APK history: '+escapeHtml(error?.message||String(error))+'</div>';
+  }
+}
+async function deleteAdminAndroidAppVersion(versionCode,button){
+  const code=String(versionCode||'').trim();
+  if(!/^[1-9][0-9]{2,9}$/.test(code))return;
+  if(!window.confirm('Permanently delete archived SMV ASTRO APK versionCode '+code+'? The current published APK cannot be deleted.'))return;
+  const msg=$('adminAndroidAppMsg');
+  if(button){button.disabled=true;button.textContent='DELETING…';}
+  if(msg)msg.textContent='Removing archived APK '+code+' from Cloudflare R2 and its release history…';
+  try{
+    const result=await smvAndroidApkApi('/admin/android-app/versions/'+encodeURIComponent(code),{method:'DELETE'},true);
+    if(result?.success!==true||result.deleted!==true)throw new Error(result?.error||'APK deletion was not confirmed.');
+    if(msg)msg.textContent='Archived APK versionCode '+code+' was deleted. The current published version remains unchanged.';
+    await loadAdminAndroidAppRelease();
+  }catch(error){
+    if(msg)msg.textContent=error?.message||String(error);
+    if(button){button.disabled=false;button.textContent='DELETE OLD APK';}
   }
 }
 async function loadAdminAndroidAppRelease(){
