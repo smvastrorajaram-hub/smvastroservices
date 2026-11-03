@@ -1,10 +1,11 @@
 name: Cloudflare Production D1 readiness audit
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - Cloudflare Production Backend Worker deploy
+    types: [completed]
     branches: [main]
-    paths:
-      - '.github/workflows/cloudflare-production-d1-readiness-audit.yml'
   workflow_dispatch:
 
 permissions:
@@ -16,6 +17,7 @@ concurrency:
 
 jobs:
   audit-production-d1:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production
@@ -23,8 +25,10 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
-      - name: Checkout source
+      - name: Checkout the exact Production Worker deployment revision
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -53,7 +57,7 @@ jobs:
         working-directory: cloudflare/backend-api
         run: |
           set -euo pipefail
-          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "SELECT name, type FROM sqlite_master WHERE name IN ('smv_wallet_schema_meta','smv_domain_schema_meta','smv_domain_wallets','smv_domain_live_sessions','smv_domain_live_bookings','smv_domain_razorpay_webhook_events') ORDER BY type, name; SELECT schema_key, schema_version FROM smv_domain_schema_meta ORDER BY schema_key;"
+          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "SELECT name, type FROM sqlite_master WHERE name IN ('smv_wallet_schema_meta','smv_domain_schema_meta','smv_domain_wallets','smv_domain_live_sessions','smv_domain_live_bookings','smv_domain_razorpay_webhook_events','smv_domain_notification_inbox','smv_domain_offer_redemptions','smv_domain_identity_users') ORDER BY type, name; SELECT schema_key, schema_version FROM smv_domain_schema_meta ORDER BY schema_key; SELECT name FROM pragma_table_info('smv_domain_razorpay_webhook_events') WHERE name IN ('claim_token','lease_until_ms') ORDER BY name; SELECT name, type FROM sqlite_master WHERE type='trigger' AND name IN ('smv_domain_offer_redemption_validate','smv_domain_offer_redemption_apply','smv_domain_live_booking_release_pending_validate') ORDER BY name;"
 
       - name: Count Production Wallet and Live domain rows only (no record values)
         working-directory: cloudflare/backend-api
@@ -61,7 +65,7 @@ jobs:
           set -euo pipefail
           npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "SELECT 'wallets' AS domain, COUNT(*) AS row_count FROM smv_domain_wallets; SELECT 'wallet_ledger' AS domain, COUNT(*) AS row_count FROM smv_domain_wallet_ledger; SELECT 'wallet_recharges' AS domain, COUNT(*) AS row_count FROM smv_domain_wallet_recharges; SELECT 'legacy_wallet_documents' AS domain, COUNT(*) AS row_count FROM smv_domain_legacy_documents; SELECT 'legacy_wallet_transactions' AS domain, COUNT(*) AS row_count FROM smv_domain_legacy_wallet_transactions; SELECT 'legacy_wallet_recharges' AS domain, COUNT(*) AS row_count FROM smv_domain_legacy_wallet_recharges; SELECT 'live_sessions' AS domain, COUNT(*) AS row_count FROM smv_domain_live_sessions; SELECT 'live_bookings' AS domain, COUNT(*) AS row_count FROM smv_domain_live_bookings; SELECT 'live_messages' AS domain, COUNT(*) AS row_count FROM smv_domain_live_messages; SELECT 'live_signals' AS domain, COUNT(*) AS row_count FROM smv_domain_live_signals; SELECT 'earnings' AS domain, COUNT(*) AS row_count FROM smv_domain_earnings; SELECT 'withdrawals' AS domain, COUNT(*) AS row_count FROM smv_domain_withdrawals;"
 
-      - name: Read Production Worker health and migration status
+      - name: Verify live Production Worker health, schema readiness and inactive cutover gates
         shell: bash
         run: |
           set -euo pipefail
@@ -73,4 +77,57 @@ jobs:
             echo "GET $path => HTTP $code"
             cat "/tmp/smv-prod-$safe_name.json" || true
             echo
+            test "$code" = '200' || { echo "Production endpoint $path did not return HTTP 200."; exit 1; }
           done
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const read = name => JSON.parse(fs.readFileSync('/tmp/smv-prod-' + name + '.json', 'utf8'));
+          const health = read('__healthz');
+          const readiness = read('__api_backend_readiness');
+          const migration = read('__api_backend_migration_status');
+          const required = [
+            '0002_shared_domain_repository',
+            '0003_notification_inbox',
+            '0004_wallet_offer_redemptions',
+            '0005_legacy_wallet_backfill',
+            '0006_d1_live_wallet_settlement',
+            '0007_identity_profile_domain',
+            '0008_identity_profile_backfill_audit',
+            '0009_wallet_razorpay_payout_encryption',
+            '0010_razorpay_webhook_claim_leases',
+            '0011_live_booking_release_claim'
+          ];
+          const failed = [];
+          if (health.ok !== true || health.environment !== 'production') failed.push('Production Worker health/environment');
+          for (const [name, value] of Object.entries({
+            backendActive: health.backendActive,
+            walletReadRoutesRegistered: health.walletReadRoutesRegistered,
+            walletRechargeRoutesRegistered: health.walletRechargeRoutesRegistered,
+            walletOfferRoutesRegistered: health.walletOfferRoutesRegistered,
+            liveSessionRoutesRegistered: health.liveSessionRoutesRegistered,
+            identityProfileD1AuthorizationEnabled: health.identityProfileD1AuthorizationEnabled
+          })) if (value !== false) failed.push('inactive gate: ' + name);
+          if (health.walletRechargeMode !== 'disabled') failed.push('walletRechargeMode must be disabled');
+          if (readiness.ok !== true || readiness.ready !== true) failed.push('/api/backend/readiness must PASS');
+          if (readiness.checks?.d1Binding !== true || readiness.checks?.allRequiredMigrations !== true) failed.push('D1 binding/migration checks');
+          for (const name of required) {
+            if (readiness.migrationStatus?.[name] !== true) failed.push('readiness migration: ' + name);
+            if (migration.migrationStatus?.[name] !== true) failed.push('migration-status migration: ' + name);
+          }
+          if (migration.ok !== true || migration.schemaReady !== true) failed.push('/api/backend/migration-status schemaReady');
+          for (const [name, value] of Object.entries({
+            walletReadRoutesEnabled: migration.walletReadRoutesEnabled,
+            walletRechargeRoutesEnabled: migration.walletRechargeRoutesEnabled,
+            walletOfferRoutesEnabled: migration.walletOfferRoutesEnabled,
+            liveSessionRoutesEnabled: migration.liveSessionRoutesEnabled,
+            productionTrafficEnabled: migration.productionTrafficEnabled
+          })) if (value !== false) failed.push('migration-status gate: ' + name);
+          if (migration.razorpayMode !== 'disabled') failed.push('Razorpay must remain disabled');
+          if (failed.length) {
+            console.error('Production readiness audit FAILED:', failed.join('; '));
+            process.exit(1);
+          }
+          console.log('PASS: all 10 Production D1 migration contracts are present.');
+          console.log('PASS: /api/backend/readiness and /api/backend/migration-status return HTTP 200 with schema readiness true.');
+          console.log('PASS: Worker, Wallet, Live Session, Identity/Profile authorization and Razorpay remain disabled.');
+          NODE
