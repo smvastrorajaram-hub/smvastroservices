@@ -124,8 +124,8 @@ jobs:
           let credentials;
           try { credentials = JSON.parse(process.env.FIREBASE_CREDENTIAL_CANDIDATE || ''); }
           catch { console.error('Firebase service-account JSON is not valid JSON.'); process.exit(1); }
-          const validEmail = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(String(credentials?.client_email || ''));
-          const validKey = /-----BEGIN PRIVATE KEY-----[\\s\\S]+-----END PRIVATE KEY-----/.test(String(credentials?.private_key || '').replace(/\\\\n/g, '\\n'));
+          const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(credentials?.client_email || ''));
+          const validKey = /-----BEGIN PRIVATE KEY-----[\s\S]+-----END PRIVATE KEY-----/.test(String(credentials?.private_key || '').replace(/\\n/g, '\n'));
           if (credentials?.project_id !== 'smv-astro' || !validEmail || !validKey) {
             console.error('Firebase service-account JSON must be complete and belong to project_id smv-astro.');
             process.exit(1);
@@ -136,8 +136,8 @@ jobs:
           elif [ -n "$email" ] && [ -n "$private_key" ]; then
             FIREBASE_CREDENTIAL_EMAIL="$email" FIREBASE_CREDENTIAL_PRIVATE_KEY="$private_key" node --input-type=module <<'NODE'
           const email = String(process.env.FIREBASE_CREDENTIAL_EMAIL || '');
-          const key = String(process.env.FIREBASE_CREDENTIAL_PRIVATE_KEY || '').replace(/\\\\n/g, '\\n');
-          if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) ||
+          const key = String(process.env.FIREBASE_CREDENTIAL_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
               !/-----BEGIN PRIVATE KEY-----[\\s\\S]+-----END PRIVATE KEY-----/.test(key)) {
             console.error('Firebase email/private-key pair is incomplete or not a PKCS#8 service-account key.');
             process.exit(1);
