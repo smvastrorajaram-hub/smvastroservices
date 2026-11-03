@@ -52,25 +52,7 @@ jobs:
             echo 'Using the configured CLOUDFLARE_ACCOUNT_ID secret.'
           fi
 
-      - name: Audit Production Worker secret names (values stay hidden)
-        shell: bash
-        run: |
-          set -euo pipefail
-          npx --yes wrangler@4.156.0 secret list --config cloudflare/backend-api/wrangler.production.jsonc --format json > /tmp/smv-production-worker-secrets.json
-          node --input-type=module <<'NODE'
-          import fs from 'node:fs';
-          const entries = JSON.parse(fs.readFileSync('/tmp/smv-production-worker-secrets.json','utf8'));
-          const names = new Set((Array.isArray(entries) ? entries : []).map(item => String(item?.name || '')));
-          console.log('Production Worker secret names:', [...names].filter(Boolean).sort().join(', ') || '(none)');
-          const firebaseJson = names.has('FIREBASE_SERVICE_ACCOUNT_JSON');
-          const firebaseParts = names.has('FIREBASE_CLIENT_EMAIL') && names.has('FIREBASE_PRIVATE_KEY');
-          for (const [label, present] of [
-            ['Firebase Project 1 service account', firebaseJson || firebaseParts],
-            ['Razorpay Live key ID', names.has('RAZORPAY_KEY_ID')],
-            ['Razorpay Live key secret', names.has('RAZORPAY_KEY_SECRET')],
-            ['Razorpay webhook secret', names.has('RAZORPAY_WEBHOOK_SECRET')]
-          ]) console.log((present ? 'PRESENT: ' : 'MISSING: ') + label);
-          NODE
+
 
       - name: Install Worker dependencies
         run: npm install --prefix cloudflare/backend-api --no-package-lock --ignore-scripts --no-audit --no-fund
@@ -121,6 +103,75 @@ jobs:
           echo 'Express Node HTTP bridge probe failed; Production API redeployment was not attempted.'
           exit 1
 
+      - name: Sync Firebase Project 1 service account into Production Worker
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_PRODUCTION_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_PROJECT_1_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_PROJECT_1_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          FIREBASE_PRODUCTION_CLIENT_EMAIL: ${{ secrets.FIREBASE_PRODUCTION_CLIENT_EMAIL }}
+          FIREBASE_PRODUCTION_PRIVATE_KEY: ${{ secrets.FIREBASE_PRODUCTION_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          json="${FIREBASE_SERVICE_ACCOUNT_JSON:-${FIREBASE_PRODUCTION_SERVICE_ACCOUNT_JSON:-${FIREBASE_PROJECT_1_SERVICE_ACCOUNT_JSON:-}}}"
+          email="${FIREBASE_CLIENT_EMAIL:-${FIREBASE_PRODUCTION_CLIENT_EMAIL:-}}"
+          private_key="${FIREBASE_PRIVATE_KEY:-${FIREBASE_PRODUCTION_PRIVATE_KEY:-}}"
+
+          if [ -n "$json" ]; then
+            FIREBASE_CREDENTIAL_CANDIDATE="$json" node --input-type=module <<'NODE'
+          let credentials;
+          try { credentials = JSON.parse(process.env.FIREBASE_CREDENTIAL_CANDIDATE || ''); }
+          catch { console.error('Firebase service-account JSON is not valid JSON.'); process.exit(1); }
+          const validEmail = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(String(credentials?.client_email || ''));
+          const validKey = /-----BEGIN PRIVATE KEY-----[\\s\\S]+-----END PRIVATE KEY-----/.test(String(credentials?.private_key || '').replace(/\\\\n/g, '\\n'));
+          if (credentials?.project_id !== 'smv-astro' || !validEmail || !validKey) {
+            console.error('Firebase service-account JSON must be complete and belong to project_id smv-astro.');
+            process.exit(1);
+          }
+          console.log('Validated Firebase Project 1 service-account JSON. Secret value remains hidden.');
+          NODE
+            printf '%s' "$json" | npx --yes wrangler@4.156.0 secret put FIREBASE_SERVICE_ACCOUNT_JSON --config cloudflare/backend-api/wrangler.production.jsonc
+          elif [ -n "$email" ] && [ -n "$private_key" ]; then
+            FIREBASE_CREDENTIAL_EMAIL="$email" FIREBASE_CREDENTIAL_PRIVATE_KEY="$private_key" node --input-type=module <<'NODE'
+          const email = String(process.env.FIREBASE_CREDENTIAL_EMAIL || '');
+          const key = String(process.env.FIREBASE_CREDENTIAL_PRIVATE_KEY || '').replace(/\\\\n/g, '\\n');
+          if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) ||
+              !/-----BEGIN PRIVATE KEY-----[\\s\\S]+-----END PRIVATE KEY-----/.test(key)) {
+            console.error('Firebase email/private-key pair is incomplete or not a PKCS#8 service-account key.');
+            process.exit(1);
+          }
+          console.log('Validated Firebase Project 1 service-account email and PKCS#8 key. Secret values remain hidden.');
+          NODE
+            printf '%s' "$email" | npx --yes wrangler@4.156.0 secret put FIREBASE_CLIENT_EMAIL --config cloudflare/backend-api/wrangler.production.jsonc
+            printf '%s' "$private_key" | npx --yes wrangler@4.156.0 secret put FIREBASE_PRIVATE_KEY --config cloudflare/backend-api/wrangler.production.jsonc
+          else
+            echo 'Missing GitHub Production environment secrets. Set FIREBASE_SERVICE_ACCOUNT_JSON (project_id smv-astro), or both FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY. Do not paste private keys into chat.'
+            exit 1
+          fi
+
+      - name: Audit required Production Worker secret names (values stay hidden)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.156.0 secret list --config cloudflare/backend-api/wrangler.production.jsonc --format json > /tmp/smv-production-worker-secrets.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const entries = JSON.parse(fs.readFileSync('/tmp/smv-production-worker-secrets.json','utf8'));
+          const names = new Set((Array.isArray(entries) ? entries : []).map(item => String(item?.name || '')));
+          const firebaseReady = names.has('FIREBASE_SERVICE_ACCOUNT_JSON') ||
+            (names.has('FIREBASE_CLIENT_EMAIL') && names.has('FIREBASE_PRIVATE_KEY'));
+          const required = [
+            ['Firebase Project 1 service account', firebaseReady],
+            ['Razorpay Live key ID', names.has('RAZORPAY_KEY_ID')],
+            ['Razorpay Live key secret', names.has('RAZORPAY_KEY_SECRET')],
+            ['Razorpay webhook secret', names.has('RAZORPAY_WEBHOOK_SECRET')]
+          ];
+          for (const [label, present] of required) console.log((present ? 'PRESENT: ' : 'MISSING: ') + label);
+          if (required.some(([, present]) => !present)) process.exit(1);
+          NODE
+
       - name: Deploy the configured Production Worker
         run: npx --yes wrangler@4.156.0 deploy --config cloudflare/backend-api/wrangler.production.jsonc
 
@@ -136,7 +187,7 @@ jobs:
             echo "Production Worker health attempt $attempt returned HTTP $status."
             if [ "$status" = "200" ]; then
               cat /tmp/smv-worker-health.json
-              node --input-type=module -e "import fs from 'node:fs'; const d=JSON.parse(fs.readFileSync('/tmp/smv-worker-health.json','utf8')); if(d.environment!=='production'||d.backendActive!==true||d.liveSessionRoutesRegistered!==true) process.exit(1);"
+              node --input-type=module -e "import fs from 'node:fs'; const d=JSON.parse(fs.readFileSync('/tmp/smv-worker-health.json','utf8')); if(d.environment!=='production'||d.backendActive!==true||d.liveSessionRoutesRegistered!==true||d.firebaseConnected!==true) process.exit(1);"
               exit 0
             fi
             sleep 5
