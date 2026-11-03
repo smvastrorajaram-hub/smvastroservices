@@ -15,9 +15,10 @@ function gateError() {
 }
 
 /**
- * Keeps D1 authorization disabled until the isolated staging project has a
- * complete import inventory, clean reconciliation and an explicitly quiesced
- * Firestore source. This gate never changes either store.
+ * Keeps D1 authorization disabled until the selected environment's exact
+ * Firebase project has a complete import inventory, clean reconciliation and
+ * an explicitly quiesced Firestore source. Production additionally requires a
+ * separate approval flag. This gate never changes either store.
  */
 export function createD1IdentityAuthorizationGate({
   identityService,
