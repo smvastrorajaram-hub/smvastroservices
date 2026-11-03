@@ -1,4 +1,5 @@
 import { FirestoreFieldValue } from '../../../shared/backend-platform/firestore-admin-rest.mjs';
+import { createD1IdentityProfileWriter } from '../../../shared/backend-platform/d1-identity-profile-writer.mjs';
 
 function sendError(res,error,fallback) {
   const status=Number(error?.httpStatus)||500;
@@ -11,11 +12,32 @@ function uidOf(data,fallback=''){return String(data?.uid||fallback||'').trim();}
 function validId(value){const id=String(value||'').trim();return id.length>0&&id.length<=200&&!id.includes('/')?id:'';}
 function adminError(){return Object.assign(new Error('Admin access denied.'),{code:'ADMIN_REQUIRED',httpStatus:403});}
 
-export function registerLegacyAstrologerApprovalRoutes({app,firestore,identityService}={}) {
+export function registerLegacyAstrologerApprovalRoutes({app,firestore,identityService,db,projectId}={}) {
   if(!app||typeof app.post!=='function'||typeof firestore?.runTransaction!=='function'||
      typeof firestore?.getDocument!=='function'||typeof firestore?.runQuery!=='function'||
      !identityService||typeof identityService.authenticateAuthorization!=='function') {
     throw new TypeError('Astrologer approval routes require Firestore transactions and verified identity.');
+  }
+  const identityProfileWriter=db&&projectId
+    ?createD1IdentityProfileWriter({db,projectId})
+    :null;
+  async function syncAstrologerIdentity({uid,userProfile={},astroProfile={},status='pending'}={}){
+    if(!identityProfileWriter)return;
+    await identityProfileWriter.upsertAstrologerProfile({
+      uid,
+      email:userProfile.email||'',
+      emailVerified:userProfile.emailVerified===true||userProfile.email_verified===true,
+      name:userProfile.name||astroProfile.name||astroProfile.fullName||'',
+      phone:userProfile.phoneNormalized||userProfile.phone||userProfile.mobile||'',
+      publicId:userProfile.publicId||astroProfile.publicId||'',
+      status,
+      specialization:astroProfile.specialization||astroProfile.expertise||'',
+      experience:astroProfile.experience??astroProfile.experienceYears??0,
+      bio:astroProfile.bio||astroProfile.about||'',
+      languages:astroProfile.languages||astroProfile.spokenLanguages||[],
+      phoneVerified:userProfile.phoneVerified===true,
+      verificationMode:userProfile.verificationMethod==='whatsapp'?'whatsapp':'email_unique'
+    });
   }
   async function requireAdmin(req){
     const actor=await identityService.authenticateAuthorization(req.get('Authorization'));
@@ -55,8 +77,9 @@ export function registerLegacyAstrologerApprovalRoutes({app,firestore,identitySe
         tx.set('smv_admin_audit/ASTROLOGER_APPROVED_'+uid,{
           action:'ASTROLOGER_APPROVED',targetUid:uid,actorUid:String(actor.uid||''),createdAt:timestamp
         },{merge:true});
-        return {uid,status:'approved'};
+        return {uid,status:'approved',astroProfile:astro,userProfile};
       });
+      await syncAstrologerIdentity({uid:result.uid,userProfile:result.userProfile,astroProfile:result.astroProfile,status:'approved'});
       return res.set('Cache-Control','no-store').json({success:true,astrologerId,uid:result.uid,status:result.status});
     } catch(error) {
       return sendError(res,error,'Unable to approve the Astrologer application. No partial profile changes were committed.');
@@ -90,8 +113,9 @@ export function registerLegacyAstrologerApprovalRoutes({app,firestore,identitySe
         tx.set('smv_admin_audit/ASTROLOGER_REJECTED_'+uid,{
           action:'ASTROLOGER_REJECTED',targetUid:uid,actorUid:String(actor.uid||''),details:{reason},createdAt:timestamp
         },{merge:true});
-        return {uid};
+        return {uid,astroProfile:astro,userProfile:userSnapshot.data||{}};
       });
+      await syncAstrologerIdentity({uid:result.uid,userProfile:result.userProfile,astroProfile:result.astroProfile,status:'rejected'});
       return res.set('Cache-Control','no-store').json({success:true,astrologerId,uid:result.uid,status:'rejected'});
     } catch(error) {
       return sendError(res,error,'Unable to reject the Astrologer application. No partial changes were committed.');
@@ -146,6 +170,17 @@ export function registerLegacyAstrologerApprovalRoutes({app,firestore,identitySe
         tx.set('smv_users/'+uid,{uid,role:'astrologer',status:'active',approvedAt:patch.approvedAt,updatedAt:timestamp},{merge:true});
         return {approved:true,status:'approved',count:records.length,price:Number.isFinite(price)&&price>0?price:null};
       });
+      if(result.approved){
+        const [freshUser,freshAstro]=await Promise.all([
+          firestore.getDocument('smv_users/'+uid),
+          firestore.getDocument('smv_astrologers/'+uid)
+        ]);
+        await syncAstrologerIdentity({
+          uid,userProfile:freshUser.data||profile,
+          astroProfile:freshAstro.data||{},
+          status:'approved'
+        });
+      }
       return res.set('Cache-Control','no-store').json({success:true,approved:result.approved,status:result.status,pricePerQuestion:result.price??null,reconciledProfiles:result.count});
     } catch(error) {
       return sendError(res,error,'Unable to refresh the Astrologer approval state. Please try again.');

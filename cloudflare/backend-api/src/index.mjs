@@ -334,7 +334,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     registerLegacyQuestionWorkflowRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerAppointmentBookingRoute({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerAdminDashboardRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
-    registerLegacyAstrologerApprovalRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    registerLegacyAstrologerApprovalRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService, db: env.DB, projectId });
     registerLegacyQuestionActionRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerLegacyAppointmentReadAndResponseRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     const resendEmailClient = env.RESEND_API_KEY && env.RESEND_FROM
@@ -621,7 +621,8 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
         environment: String(env.SMV_ENVIRONMENT || ''),
         sourceProjectId: identityProjectId,
         projectIds: configuredProjectIds,
-        productionApproved: String(env.SMV_IDENTITY_PROFILE_PRODUCTION_AUTHORIZATION_APPROVED || '').trim().toLowerCase() === 'true'
+        productionApproved: String(env.SMV_IDENTITY_PROFILE_PRODUCTION_AUTHORIZATION_APPROVED || '').trim().toLowerCase() === 'true',
+        freshStartApproved: String(env.SMV_IDENTITY_PROFILE_FRESH_START_APPROVED || '').trim().toLowerCase() === 'true'
       });
       walletIdentityService = d1IdentityAuthorizationService;
     }

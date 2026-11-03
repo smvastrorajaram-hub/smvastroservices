@@ -27,6 +27,20 @@ Razorpay operates in **Live Mode only**. The Worker accepts only a `rzp_live_` k
 
 Production D1 migrations 0002–0011 were applied and read-only audited against the exact Production database. The deploy workflow now verifies the actual Worker health and `/api/backend/readiness` response before reporting success.
 
+## Identity/Profile authorization — owner-approved fresh start
+
+Production Identity/Profile authorization is enabled in the Wrangler Production config with an explicit fresh-start approval. This is intentionally **not** a historical Firebase profile import:
+
+- Firebase Authentication in Project 1 (`smv-astro`) continues to issue and verify credentials.
+- D1 is authoritative for application Customer/Astrologer/Admin authorization after the fresh-start gate opens.
+- Existing Firebase profile, phone-registry, public-ID and payout records are not copied or deleted by this cutover. Existing non-Admin accounts have no preloaded D1 role and may resolve as `unknown` until the Customer/Astrologer registration flow re-establishes the D1 profile.
+- New Customer and Astrologer registration writes the profile, role/status, public ID and hashed phone to D1 after the existing Firebase-backed registration transaction. Astrologer Admin approval/rejection also mirrors the role/status into D1.
+- Bank and payout fields are deliberately excluded from the registration profile writer; no payout documents are imported by this fresh start.
+- The existing configured Admin UID remains project-scoped to Firebase Project 1 and is recognized by the D1 identity resolver without requiring a profile row.
+- The three historical backfill attestations remain unset. Fresh-start authorization is enabled through its own explicit approval flag and still requires the D1 Identity/Profile schema to be ready.
+
+This mode is an intentional clean D1 role/profile start. Do not turn off Firebase Auth or delete the Firebase collections as part of this change. A rollback disables D1 Identity/Profile authorization and returns the authorization endpoint to the Firebase-backed resolver.
+
 ## Browser routing
 
 `public/index.html` enables `window.SMV_CLOUDFLARE_FINANCIAL_API_ENABLED = true`. The existing frontend resolver switches only these API families to `https://smvastroservices.astroservices.workers.dev`:

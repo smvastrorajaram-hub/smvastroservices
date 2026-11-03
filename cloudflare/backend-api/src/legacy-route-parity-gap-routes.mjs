@@ -1,4 +1,5 @@
 import { FirestoreFieldValue } from '../../../shared/backend-platform/firestore-admin-rest.mjs';
+import { createD1IdentityProfileWriter } from '../../../shared/backend-platform/d1-identity-profile-writer.mjs';
 
 const IDENTITY_TOOLKIT_ROOT = 'https://identitytoolkit.googleapis.com/v1';
 const FCM_ROOT = 'https://fcm.googleapis.com/v1/projects/';
@@ -303,6 +304,28 @@ export function registerLegacyRouteParityGapRoutes({
     throw new TypeError('Legacy parity routes require an HTTP app, privileged Firestore adapter and Firebase identity.');
   }
 
+  const identityProfileWriter = db && projectId
+    ? createD1IdentityProfileWriter({ db, projectId })
+    : null;
+  async function writeCustomerIdentity(user, values) {
+    if (!identityProfileWriter) return;
+    await identityProfileWriter.upsertCustomerProfile({
+      uid: user.uid, email: user.email, emailVerified: user.emailVerified === true,
+      name: values.name, phone: values.phone, publicId: values.publicId,
+      phoneVerified: values.phoneVerified === true, verificationMode: values.verificationMode,
+      language: values.language || 'en'
+    });
+  }
+  async function writeAstrologerIdentity(user, values) {
+    if (!identityProfileWriter) return;
+    await identityProfileWriter.upsertAstrologerProfile({
+      uid: user.uid, email: user.email, emailVerified: user.emailVerified === true,
+      name: values.name, phone: values.phone, publicId: values.publicId,
+      status: values.status || 'pending', specialization: values.specialization,
+      experience: values.experience, bio: values.bio, languages: values.languages,
+      phoneVerified: values.phoneVerified === true, verificationMode: values.verificationMode
+    });
+  }
   async function authenticate(req) {
     try {
       return await identityService.authenticateAuthorization(req.get('Authorization'));
@@ -440,6 +463,12 @@ export function registerLegacyRouteParityGapRoutes({
         await firestore.setDocument(userPath, {
           name, fullName: name, displayName: name, updatedAt: FirestoreFieldValue.serverTimestamp()
         }, { merge: true });
+        await writeCustomerIdentity(user, {
+          name, phone: phone.e164, publicId: existing.data.publicId,
+          phoneVerified: existing.data.phoneVerified === true,
+          verificationMode: existing.data.verificationMethod === 'whatsapp' ? 'whatsapp' : 'email_unique',
+          language: req.body?.language || existing.data.language || 'en'
+        });
         return res.json({ ok: true, alreadyRegistered: true, publicId: existing.data.publicId });
       }
       if (await preflightPhone(phone, uid)) return res.status(409).json({
@@ -491,6 +520,11 @@ export function registerLegacyRouteParityGapRoutes({
               });
             }
           });
+          await writeCustomerIdentity(user, {
+            name, phone: phone.e164, publicId,
+            phoneVerified: false, verificationMode: normalizePhoneMode(env),
+            language: req.body?.language || 'en'
+          });
           return res.set('Cache-Control', 'no-store').json({
             ok: true, publicId, phone: phone.e164, phoneVerificationMode: normalizePhoneMode(env)
           });
@@ -541,6 +575,7 @@ export function registerLegacyRouteParityGapRoutes({
       const userPath = 'smv_users/' + uid;
       const astroPath = 'smv_astrologers/' + uid;
       const existing = await firestore.getDocument(userPath);
+      const existingAstrologer = await firestore.getDocument(astroPath);
       const existingRole = String(existing.data?.role || '').toLowerCase();
       if (existing.exists && existingRole && existingRole !== 'astrologer') {
         return res.status(409).json({ error: 'This Firebase account already belongs to a different SMV ASTRO role. Please use the correct account.' });
@@ -558,6 +593,13 @@ export function registerLegacyRouteParityGapRoutes({
           }, { merge: true })
         ];
         await Promise.all([userSave, astroSave]);
+        await writeAstrologerIdentity(user, {
+          name, phone: mobile, publicId: existing.data.publicId,
+          status: existingAstrologer.data?.status || existing.data.status || 'pending',
+          specialization, experience, bio, languages,
+          phoneVerified: existing.data.phoneVerified === true,
+          verificationMode: existing.data.verificationMethod === 'whatsapp' ? 'whatsapp' : 'email_unique'
+        });
         return res.json({ ok: true, alreadyRegistered: true, publicId: existing.data.publicId, name, languages });
       }
       if (await preflightPhone(phone, uid)) return res.status(409).json({
@@ -611,6 +653,11 @@ export function registerLegacyRouteParityGapRoutes({
               message: 'Your astrologer application is pending Admin approval.',
               createdAt: FirestoreFieldValue.serverTimestamp(), read: false
             });
+          });
+          await writeAstrologerIdentity(user, {
+            name, phone: phone.e164, publicId, status: 'pending',
+            specialization, experience, bio, languages,
+            phoneVerified: false, verificationMode: normalizePhoneMode(env)
           });
           return res.set('Cache-Control', 'no-store').json({
             ok: true, publicId, phone: phone.e164, phoneVerificationMode: normalizePhoneMode(env)

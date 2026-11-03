@@ -25,7 +25,7 @@ test('Production Worker uses the exact requested Worker name, D1 ID, Firebase Pr
   }]);
 });
 
-test('Production Worker enables D1 Wallet, Live Booking and Razorpay Live for the confirmed empty-customer cutover', () => {
+test('Production Worker enables D1 Identity authorization for the explicitly approved fresh start', () => {
   assert.equal(config.vars.SMV_BACKEND_CLOUDFLARE_ACTIVE, 'true');
   assert.equal(config.vars.SMV_WALLET_DOMAIN_BACKFILL_COMPLETE, 'true');
   assert.equal(config.vars.SMV_WALLET_DOMAIN_CUTOVER_COMPLETE, 'true');
@@ -33,7 +33,11 @@ test('Production Worker enables D1 Wallet, Live Booking and Razorpay Live for th
   assert.equal(config.vars.SMV_LIVE_SESSION_ROUTES_ENABLED, 'true');
   assert.equal(config.vars.SMV_RAZORPAY_LIVE_MODE_ENABLED, 'true');
   assert.equal(config.vars.SMV_RAZORPAY_TEST_MODE_ENABLED, 'false');
-  assert.equal(config.vars.SMV_IDENTITY_PROFILE_D1_AUTHORIZATION_ENABLED, 'false');
+  assert.equal(config.vars.SMV_IDENTITY_PROFILE_CUTOVER_COMPLETE, 'true');
+  assert.equal(config.vars.SMV_IDENTITY_PROFILE_D1_AUTHORIZATION_ENABLED, 'true');
+  assert.equal(config.vars.SMV_IDENTITY_PROFILE_PRODUCTION_AUTHORIZATION_APPROVED, 'true');
+  assert.equal(config.vars.SMV_IDENTITY_PROFILE_FRESH_START_APPROVED, 'true');
+  assert.equal(config.vars.SMV_IDENTITY_PROFILE_BACKFILL_ENABLED, 'false');
   assert.equal(config.vars.SMV_WALLET_BACKFILL_TOOLS_ENABLED, 'false');
   assert.equal(config.workers_dev, true);
   assert.equal(config.preview_urls, false);

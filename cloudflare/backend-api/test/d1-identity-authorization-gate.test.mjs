@@ -6,7 +6,7 @@ function setup({
   enabled = true, environment = 'staging', sourceProjectId = 'smv-astro-staging',
   projectIds = ['smv-astro-staging'], schemaVersion = '0008_identity_profile_backfill_audit',
   inventoryComplete = 1, reconciliationComplete = 1, sourceQuiesced = 1, fail = false,
-  productionApproved = false
+  productionApproved = false, freshStartApproved = false
 } = {}) {
   const calls = [];
   const db = {
@@ -29,7 +29,7 @@ function setup({
     return { uid: 'staging-user', role: 'customer', isAdmin: false, header };
   } };
   const gate = createD1IdentityAuthorizationGate({
-    identityService, db, enabled, environment, sourceProjectId, projectIds, productionApproved
+    identityService, db, enabled, environment, sourceProjectId, projectIds, productionApproved, freshStartApproved
   });
   return { gate, calls, get authCalls() { return authCalls; } };
 }
@@ -76,12 +76,21 @@ test('Production D1 authorization requires explicit approval and the exact Proje
   assert.equal((await wrongProject.gate.readiness()).ready, false);
   assert.equal(wrongProject.calls.length, 0);
 
-  const readyProduction = setup({
+  const approvalOnly = setup({
     environment: 'production', sourceProjectId: 'smv-astro',
     projectIds: ['smv-astro'], productionApproved: true
   });
+  assert.equal((await approvalOnly.gate.readiness()).reason, 'fresh_start_approval_missing');
+  assert.equal(approvalOnly.calls.length, 0);
+
+  const readyProduction = setup({
+    environment: 'production', sourceProjectId: 'smv-astro',
+    projectIds: ['smv-astro'], productionApproved: true, freshStartApproved: true,
+    inventoryComplete: 0, reconciliationComplete: 0, sourceQuiesced: 0
+  });
   const ready = await readyProduction.gate.readiness();
   assert.equal(ready.ready, true);
+  assert.equal(ready.freshStartMode, true);
   const user = await readyProduction.gate.authenticateAuthorization('Bearer production-token');
   assert.equal(user.role, 'customer');
   assert.equal(readyProduction.authCalls, 1);
