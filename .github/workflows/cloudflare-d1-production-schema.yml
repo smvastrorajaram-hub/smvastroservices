@@ -1,0 +1,69 @@
+name: Cloudflare Production D1 provisioning safety gate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/cloudflare-d1-production-schema.yml"
+      - ".github/scripts/provision-cloudflare-production-d1-schema.mjs"
+      - "cloudflare/backend-api/migrations/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/cloudflare-d1-production-schema.yml"
+      - ".github/scripts/provision-cloudflare-production-d1-schema.mjs"
+      - "cloudflare/backend-api/migrations/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-production-d1-safety-main
+  cancel-in-progress: true
+
+jobs:
+  validate-no-remote-production-d1:
+    name: Block automatic Production D1 writes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Verify Production D1 workflow is local-only
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+
+          const actualPath = '.github/workflows/cloudflare-d1-production-schema.yml';
+          const source = readFileSync(actualPath, 'utf8');
+
+          const forbidden = [
+            ['--', 'provision-remote'].join(''),
+            ['d1', 'migrations', 'apply'].join(' ') + ' --remote',
+            ['wrangler-action', '@v4'].join(''),
+            ['secrets', '.CLOUDFLARE_API_TOKEN'].join(''),
+            ['vars', '.CLOUDFLARE_ACCOUNT_ID'].join('')
+          ];
+
+          const violations = forbidden.filter(token => source.includes(token));
+          const hasWranglerCommand = /^\s*(?:run|command):[^\n]*\bwrangler\b/im.test(source);
+          const hasCloudflareCredentialReference = /(?:secrets|vars)\.CLOUDFLARE_/i.test(source);
+
+          if (violations.length || hasWranglerCommand || hasCloudflareCredentialReference) {
+            console.error('FAIL: Production D1 workflow contains a remote-write or Cloudflare credential path.');
+            process.exit(1);
+          }
+
+          if (!/^  pull_request:/m.test(source) || !/^  push:/m.test(source) ||
+              !/branches:\s*\[main\]/m.test(source)) {
+            console.error('FAIL: Production D1 safety gate must validate main PRs and main pushes.');
+            process.exit(1);
+          }
+
+          console.log('PASS: automatic workflow contains no remote D1 migration/provision command.');
+          console.log('PASS: no Cloudflare API credential is injected into this workflow.');
+          console.log('PASS: this gate runs only as a source validation check on main.');
+          console.log('PASS: no Production D1, Worker, Firebase, Render or DNS API is contacted.');
+          NODE
