@@ -81,3 +81,64 @@ test('The production release workflow compiles both apps, signs with the existin
   assert.match(workflow, /SMV-CALENDAR-PERMANENT-RELEASE-APK/);
   assert.match(workflow, /if-no-files-found: error/);
 });
+
+test('Admin Dashboard exposes separate upload, version history, refresh and delete managers for all three signed apps', () => {
+  const html = read('public/index.html');
+  const frontend = read('public/smvastro.mjs');
+  for (const id of [
+    'adminAndroidAppUpload', 'adminAndroidAppHistory',
+    'adminHoroscopeAndroidAppUpload', 'adminHoroscopeAndroidAppHistory',
+    'adminCalendarAndroidAppUpload', 'adminCalendarAndroidAppHistory'
+  ]) assert.ok(html.includes('id="' + id + '"'), 'missing Admin APK manager control: ' + id);
+  assert.match(frontend, /SMV_ADMIN_ANDROID_APPS/);
+  assert.match(frontend, /loadAdminAndroidAppReleaseFor/);
+  assert.match(frontend, /uploadAdminAndroidAppFor/);
+  assert.match(frontend, /deleteAdminAndroidAppVersionFor/);
+  assert.match(frontend, /admin\/android-apps\/horoscope/);
+  assert.match(frontend, /admin\/android-apps\/calendar/);
+  assert.match(frontend, /DELETE OLD APK/);
+  assert.match(frontend, /current published version cannot be deleted/i);
+});
+
+test('Horoscope and Calendar public pages use signed APK downloads instead of PWA install buttons', () => {
+  const horoscope = read('public/horoscope/index.html');
+  const calendar = read('public/horoscope/calendar/index.html');
+  const daily = read('public/horoscope/daily-calendar.mjs');
+  const apkController = read('public/horoscope/android-apk-download.mjs');
+  const horoscopePwa = read('public/horoscope/pwa.js');
+  const calendarPwa = read('public/horoscope/calendar/calendar-pwa.mjs');
+
+  assert.ok(horoscope.includes('id="smvHoroscopeAndroidApkSection"'));
+  assert.ok(calendar.includes('id="smvCalendarAndroidApkSection"'));
+  assert.ok(horoscope.includes('android-apk-download.mjs'));
+  assert.ok(calendar.includes('../android-apk-download.mjs'));
+  assert.equal(horoscope.includes('id="smvHoroscopeInstallArea"'), false);
+  assert.equal(horoscope.includes('id="installApp"'), false);
+  assert.equal(calendar.includes('id="smvCalendarInstallArea"'), false);
+  assert.equal(calendar.includes('id="calInstall"'), false);
+  assert.doesNotMatch(daily, /class="cal-app-link"/);
+  assert.match(daily, /cal-download-app-link/);
+  assert.match(daily, /smvCalendarAndroidApkSection/);
+  assert.match(apkController, /public\/android-apps\/\' \+ appId/);
+  assert.match(apkController, /in\.smvastroservices\.horoscope/);
+  assert.match(apkController, /in\.smvastroservices\.calendar/);
+  assert.match(apkController, /downloadUrl/);
+  assert.match(horoscopePwa, /serviceWorker\.register/);
+  assert.match(calendarPwa, /serviceWorker\.register/);
+  assert.ok(horoscope.includes('rel="manifest"'));
+  assert.ok(calendar.includes('rel="manifest"'));
+  assert.ok(calendar.includes('calendarManifest'));
+});
+
+test('Public APK download controller accepts only signed metadata from the dedicated APK Worker origin', () => {
+  const controller = read('public/horoscope/android-apk-download.mjs');
+  assert.match(controller, /credentials: 'omit'/);
+  assert.match(controller, /mode: 'cors'/);
+  assert.match(controller, /expectedPackage/);
+  assert.match(controller, /release\.appId !== appId/);
+  assert.match(controller, /release\.packageName !== expectedPackage/);
+  assert.match(controller, /url\.origin !== origin/);
+  assert.match(controller, /url\.pathname !== expectedPath/);
+  assert.match(controller, /window\.SMV_APK_RELEASE_API_URL/);
+  assert.match(controller, /AbortSignal\.timeout/);
+});
