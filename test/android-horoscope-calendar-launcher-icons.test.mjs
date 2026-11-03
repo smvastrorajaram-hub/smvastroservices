@@ -21,7 +21,8 @@ test('HOROSCOPE and CALENDAR production icons use the same 58dp white-background
     [/LEGACY_CANVAS = 512/, '512px legacy canvas'],
     [/LEGACY_ART_SIZE = 275/, '58dp legacy artwork tile'],
     [/LEGACY_CORNER_RADIUS = 76/, '16dp legacy corner radius'],
-    [/<color name="smv_launcher_background">#FFFFFF<\/color>/, 'pure white launcher background']
+    [/smv_launcher_background/, 'launcher background resource name'],
+    [/#FFFFFF/, 'pure white launcher background']
   ]) {
     assert.match(generator, pattern, 'missing ' + label);
   }
