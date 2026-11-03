@@ -53,6 +53,7 @@ import { createGoogleServiceAccountTokenProvider } from '../../../shared/backend
 import { createFirebaseAuthAdminClient, createFcmSender, registerLegacyRouteParityGapRoutes } from './legacy-route-parity-gap-routes.mjs';
 import { createFirebaseConnectivityProbe } from './firebase-connectivity-probe.mjs';
 import { inspectBackendSchema, registerBackendReadinessRoute } from './backend-readiness.mjs';
+import { resolveConfiguredAdminUids } from './admin-identity-configuration.mjs';
 
 const app = express();
 const verifyFirebaseIdToken = createFirebaseIdTokenVerifier();
@@ -204,7 +205,7 @@ app.get('/api/auth/authorization', async (req, res) => {
       profileDocument,
       adminDocument,
       astrologerDocument,
-      adminUids: String(env.ADMIN_UIDS || '').split(','),
+      adminUids: resolveConfiguredAdminUids(env),
       adminEmails: String(env.ADMIN_AUTH_EMAILS || '').split(',')
     });
 
@@ -312,7 +313,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       verifyIdToken: verifyFirebaseIdToken,
       firestore: firestoreAdmin,
       projectIds: [projectId],
-      adminUids: [env.ADMIN_UID || '', ...String(env.ADMIN_UIDS || '').split(',')],
+      adminUids: resolveConfiguredAdminUids(env),
       adminEmails: String(env.ADMIN_AUTH_EMAILS || '').split(',')
     });
     walletIdentityService = firebaseIdentityService;
