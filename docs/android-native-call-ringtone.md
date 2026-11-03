@@ -2,6 +2,14 @@
 
 The Production Android app lives in `smvastroproduction/`, has launcher name **SMV ASTRO**, and uses package `in.smvastroservices.smvastro`. The modules `smvastro/`, `smvhoroscope/`, and `smvcalendar/` remain separate Test APKs. The existing `.github/workflows/build-test-apks.yml` workflow is not changed.
 
+## Android launcher icon: reuse the existing SMV ASTRO artwork
+
+The Production APK reuses the existing repository artwork at `public/assets/icon-512.png`; no replacement logo, crop, or Production Website asset change is introduced. The build script generates Android-specific resources from that same square icon: a centered, transparent 432×432 adaptive foreground, a matching sampled-color background, and a circular legacy fallback. The original 512×512 artwork remains the square legacy fallback.
+
+The Production manifest selects `@mipmap/ic_launcher` and `@mipmap/ic_launcher_round`. Android 8.0+ uses the adaptive foreground/background layers and applies the device launcher mask (circle, rounded square, squircle/pebble-like, and other supported shapes). The artwork is inset so the existing complete emblem and wordmark are protected from mask cropping as far as the source artwork permits.
+
+The preparation script reads the icon from the repository checkout and does not fetch or modify the Production Website. This is an Android APK resource change only: no website favicon, PWA manifest, page UI, backend, Firebase, Razorpay, Render, or Cloudflare resource is changed. An already-installed app needs a newly built and installed APK to receive the launcher icon update.
+
 ## Native incoming-call ringtone
 
 - The Production Android app registers a native Firebase Cloud Messaging token and posts it to `POST /live/push/register` with `platform: native-android`. The server derives the owner from the verified Firebase ID token and refuses a token already owned by another account.
