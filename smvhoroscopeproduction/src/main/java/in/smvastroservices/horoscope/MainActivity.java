@@ -137,7 +137,7 @@ public class MainActivity extends Activity {
                 "var id='smv-android-production-hide-pwa-install';" +
                 "if(!document.getElementById(id)){" +
                 "var s=document.createElement('style');s.id=id;" +
-                "s.textContent='#smvInstallAppSection,#smvHoroscopeInstallArea,#smvCalendarInstallArea,#smvHoroscopeAndroidApkSection,#smvCalendarAndroidApkSection,.cal-app-link{display:none!important;visibility:hidden!important}';" +
+                "s.textContent='#smvInstallAppSection,#smvHoroscopeInstallArea,#smvCalendarInstallArea,#smvHoroscopeAndroidApkSection,#smvCalendarAndroidApkSection,.cal-app-link,.cal-download-app-link{display:none!important;visibility:hidden!important}';" +
                 "(document.head||document.documentElement).appendChild(s);" +
                 "}" +
                 "['smvInstallAppSection','smvHoroscopeInstallArea','smvCalendarInstallArea','smvHoroscopeAndroidApkSection','smvCalendarAndroidApkSection'].forEach(function(x){var e=document.getElementById(x);if(e){e.hidden=true;e.setAttribute('aria-hidden','true');}});" +
