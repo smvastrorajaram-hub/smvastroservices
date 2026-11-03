@@ -1,0 +1,220 @@
+name: Build SMV HOROSCOPE and SMV CALENDAR Production Android APKs
+
+on:
+  workflow_dispatch:
+    inputs:
+      horoscope_version_name:
+        description: "SMV HOROSCOPE version (v1.0, v1.1, v2.0...)"
+        required: true
+        type: string
+        default: "v1.0"
+      calendar_version_name:
+        description: "SMV CALENDAR version (independent sequence)"
+        required: true
+        type: string
+        default: "v1.0"
+      build_signed_release:
+        description: "Build both permanent signed Release APKs with the existing SMV Android signing key"
+        required: true
+        type: boolean
+        default: true
+  pull_request:
+    paths:
+      - "settings.gradle"
+      - "prepare-icons.sh"
+      - "prepare-smv-horoscope-calendar-production-icons.sh"
+      - "smvhoroscopeproduction/**"
+      - "smvcalendarproduction/**"
+      - "smvhoroscope/**"
+      - "smvcalendar/**"
+      - "smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java"
+      - ".github/workflows/build-smv-horoscope-calendar-production-apks.yml"
+      - "test/android-horoscope-calendar-production.test.mjs"
+  push:
+    paths:
+      - "settings.gradle"
+      - "prepare-icons.sh"
+      - "prepare-smv-horoscope-calendar-production-icons.sh"
+      - "smvhoroscopeproduction/**"
+      - "smvcalendarproduction/**"
+      - "smvhoroscope/**"
+      - "smvcalendar/**"
+      - "smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java"
+      - ".github/workflows/build-smv-horoscope-calendar-production-apks.yml"
+      - "test/android-horoscope-calendar-production.test.mjs"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smv-horoscope-calendar-production-apks-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      SMV_HOROSCOPE_ANDROID_VERSION_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.horoscope_version_name || 'v1.0' }}
+      SMV_CALENDAR_ANDROID_VERSION_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.calendar_version_name || 'v1.0' }}
+      SMV_SIGNED_RELEASE: ${{ (github.event_name == 'workflow_dispatch' && inputs.build_signed_release) || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node 22 production app regression tests
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Verify independent production packages and test-module isolation
+        run: node --test test/android-horoscope-calendar-production.test.mjs test/android-permanent-release.test.mjs
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Gradle 9.6
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.6.0"
+
+      - name: Prepare production Horoscope and Calendar icons
+        run: bash prepare-smv-horoscope-calendar-production-icons.sh
+
+      - name: Validate production launcher resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          for module in smvhoroscopeproduction smvcalendarproduction; do
+            test -s "$module/src/main/res/drawable-nodpi/app_icon_foreground.png"
+            test -s "$module/src/main/res/mipmap-nodpi/ic_launcher.png"
+            test -s "$module/src/main/res/mipmap-nodpi/ic_launcher_round.png"
+          done
+          echo "PASS: Both production Android apps have square, round and adaptive foreground resources."
+
+      - name: Build Horoscope and Calendar Debug APKs (test builds only)
+        run: |
+          gradle --no-daemon \
+            :smvhoroscopeproduction:assembleDebug \
+            :smvcalendarproduction:assembleDebug
+
+      - name: Compile both Release variants without signing (PR/push validation only)
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.build_signed_release }}
+        run: |
+          gradle --no-daemon -PsmvHoroscopeVersionName="$SMV_HOROSCOPE_ANDROID_VERSION_NAME" -PsmvCalendarVersionName="$SMV_CALENDAR_ANDROID_VERSION_NAME" \
+            :smvhoroscopeproduction:assembleRelease \
+            :smvcalendarproduction:assembleRelease
+
+      - name: Validate shared permanent Android Release signing secrets
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+        shell: bash
+        env:
+          SMV_ANDROID_KEYSTORE_BASE64: ${{ secrets.SMV_ANDROID_KEYSTORE_BASE64 }}
+          SMV_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.SMV_ANDROID_KEYSTORE_PASSWORD }}
+          SMV_ANDROID_KEY_ALIAS: ${{ secrets.SMV_ANDROID_KEY_ALIAS }}
+          SMV_ANDROID_KEY_PASSWORD: ${{ secrets.SMV_ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          missing=""
+          for secret_name in SMV_ANDROID_KEYSTORE_BASE64 SMV_ANDROID_KEYSTORE_PASSWORD SMV_ANDROID_KEY_ALIAS SMV_ANDROID_KEY_PASSWORD; do
+            if [[ -z "$(printenv "$secret_name" || true)" ]]; then
+              missing="$missing $secret_name"
+            fi
+          done
+          if [[ -n "$missing" ]]; then
+            echo "::error::Missing repository Actions signing secrets:$missing"
+            exit 1
+          fi
+          if [[ "$SMV_ANDROID_KEY_ALIAS" != "smvastro-release" ]]; then
+            echo "::error::The shared permanent Android key alias must remain smvastro-release."
+            exit 1
+          fi
+          echo "Permanent Android signing secrets are present; values are not printed."
+
+      - name: Restore permanent PKCS12 Android signing keystore
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+        shell: bash
+        env:
+          SMV_ANDROID_KEYSTORE_BASE64: ${{ secrets.SMV_ANDROID_KEYSTORE_BASE64 }}
+          SMV_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.SMV_ANDROID_KEYSTORE_PASSWORD }}
+          SMV_ANDROID_KEY_ALIAS: ${{ secrets.SMV_ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          set +x
+          umask 077
+          keystore_path="$RUNNER_TEMP/smv-astro-release.p12"
+          printf '%s' "$SMV_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
+          test -s "$keystore_path"
+          keytool -list -keystore "$keystore_path" -storetype PKCS12 -storepass "$SMV_ANDROID_KEYSTORE_PASSWORD" -alias "$SMV_ANDROID_KEY_ALIAS" >/dev/null
+          echo "SMV_ANDROID_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
+
+      - name: Build both permanently signed Release APKs
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+        run: |
+          set -euo pipefail
+          gradle --no-daemon -PsmvHoroscopeVersionName="$SMV_HOROSCOPE_ANDROID_VERSION_NAME" -PsmvCalendarVersionName="$SMV_CALENDAR_ANDROID_VERSION_NAME" \
+            :smvhoroscopeproduction:assembleRelease \
+            :smvcalendarproduction:assembleRelease
+
+      - name: Verify v2 signature and permanent certificate on both APKs
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="7a3be159218a38083986dec117c0bd281b3ef42bda65f2bb7b8c9946b5293401"
+          for module in smvhoroscopeproduction smvcalendarproduction; do
+            apk="$module/build/outputs/apk/release/$module-release.apk"
+            test -s "$apk"
+            report="$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk")"
+            grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true' <<< "$report"
+            actual="$(sed -n 's/.*Signer #1 certificate SHA-256 digest: //p' <<< "$report" | tr '[:upper:]' '[:lower:]' | tr -d ':')"
+            if [[ "$actual" != "$expected" ]]; then
+              echo "::error::$module certificate does not match the permanent SMV Android signing key."
+              exit 1
+            fi
+            echo "PASS: $module is signed with APK Signature Scheme v2 and the existing permanent SMV Android certificate."
+          done
+
+      - name: Upload signed SMV HOROSCOPE Production APK
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMV-HOROSCOPE-PERMANENT-RELEASE-APK
+          path: smvhoroscopeproduction/build/outputs/apk/release/smvhoroscopeproduction-release.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload signed SMV CALENDAR Production APK
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMV-CALENDAR-PERMANENT-RELEASE-APK
+          path: smvcalendarproduction/build/outputs/apk/release/smvcalendarproduction-release.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload debug test APKs
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMV-HOROSCOPE-CALENDAR-DEBUG-TEST-APKS
+          path: |
+            smvhoroscopeproduction/build/outputs/apk/debug/smvhoroscopeproduction-debug.apk
+            smvcalendarproduction/build/outputs/apk/debug/smvcalendarproduction-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Remove temporary signing keystore
+        if: ${{ always() && env.SMV_SIGNED_RELEASE == 'true' }}
+        run: rm -f "$RUNNER_TEMP/smv-astro-release.p12"

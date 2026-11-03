@@ -5,6 +5,11 @@ import { createFirebaseIdTokenVerifier } from '../../shared/backend-platform/fir
 import androidReleaseModule from '../../android-app-release.js';
 
 const { inspectSmvAndroidApk, MAX_APK_BYTES, SMV_ANDROID_PACKAGE } = androidReleaseModule;
+const ANDROID_APPS = Object.freeze({
+  astro: { appId: 'astro', label: 'SMV ASTRO', packageName: SMV_ANDROID_PACKAGE, firstVersionCode: 1001 },
+  horoscope: { appId: 'horoscope', label: 'SMV HOROSCOPE', packageName: 'in.smvastroservices.horoscope', firstVersionCode: 1000 },
+  calendar: { appId: 'calendar', label: 'SMV CALENDAR', packageName: 'in.smvastroservices.calendar', firstVersionCode: 1000 }
+});
 const DEFAULT_WORKER_ADMIN_UID = 'TwjeEIFS3Zcf1SxboLZoujm91Ky2';
 const FIREBASE_BUCKETS = new Set([
   'smv-astro.firebasestorage.app',
@@ -24,6 +29,8 @@ function allowedOrigins(env) {
     'https://www.smvastroservices.in',
     'https://smvastro.pages.dev',
     'https://smvastroservices.pages.dev',
+    'https://horoscope.smvastroservices.in',
+    'https://calendar.smvastroservices.in',
     'https://smvastro.workers.dev'
   ].join(',')));
 }
@@ -48,7 +55,7 @@ function respond(request, env, body, status = 200, suppliedHeaders = {}) {
   headers.append('Vary', 'Origin');
   if (origin && allowedOrigins(env).has(origin)) {
     headers.set('Access-Control-Allow-Origin', origin);
-    headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    headers.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
     headers.set('Access-Control-Allow-Headers', 'Authorization, Content-Type, Accept');
     headers.set('Access-Control-Max-Age', '86400');
   }
@@ -163,16 +170,16 @@ async function hasR2Connection(env) {
   return true;
 }
 
-async function latestRow(db) {
+async function latestRow(db, appId = 'astro') {
   return db.prepare(
-    'SELECT package_name, version_name, version_code, storage_provider, object_key, external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at FROM android_app_releases ORDER BY version_code DESC LIMIT 1'
-  ).first();
+    'SELECT app_id, package_name, version_name, version_code, storage_provider, object_key, external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at FROM android_app_releases WHERE app_id = ? ORDER BY version_code DESC LIMIT 1'
+  ).bind(appId).first();
 }
 
-async function rowByVersion(db, versionCode) {
+async function rowByVersion(db, versionCode, appId = 'astro') {
   return db.prepare(
-    'SELECT package_name, version_name, version_code, storage_provider, object_key, external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at FROM android_app_releases WHERE version_code = ? LIMIT 1'
-  ).bind(versionCode).first();
+    'SELECT app_id, package_name, version_name, version_code, storage_provider, object_key, external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at FROM android_app_releases WHERE app_id = ? AND version_code = ? LIMIT 1'
+  ).bind(appId, versionCode).first();
 }
 
 function safeLegacyDownloadUrl(value, expectedVersionCode) {
@@ -187,20 +194,25 @@ function safeLegacyDownloadUrl(value, expectedVersionCode) {
 }
 
 
-function publicDownloadUrl(request, versionCode) {
+function publicDownloadUrl(request, appId, versionCode) {
   const url = new URL(request.url);
-  return url.origin + routePrefix(url) + '/download/' + String(versionCode);
+  const path = appId === 'astro'
+    ? '/download/' + String(versionCode)
+    : '/download/' + appId + '/' + String(versionCode);
+  return url.origin + routePrefix(url) + path;
 }
 
-function publicReleaseFromRow(row, request, includeAdminFields = false) {
+function publicReleaseFromRow(row, request, includeAdminFields = false, appId = 'astro') {
   if (!row) return { success: true, available: false };
   const data = {
     success: true,
     available: true,
-    packageName: String(row.package_name || SMV_ANDROID_PACKAGE),
+    appId,
+    appName: String(ANDROID_APPS[appId]?.label || 'SMV Android App'),
+    packageName: String(row.package_name || ANDROID_APPS[appId]?.packageName || SMV_ANDROID_PACKAGE),
     versionName: String(row.version_name || ''),
     versionCode: Number(row.version_code),
-    downloadUrl: publicDownloadUrl(request, row.version_code),
+    downloadUrl: publicDownloadUrl(request, appId, row.version_code),
     size: Number(row.size_bytes || 0),
     uploadedAt: Number(row.uploaded_at || 0)
   };
@@ -213,17 +225,21 @@ function publicReleaseFromRow(row, request, includeAdminFields = false) {
   return data;
 }
 
-async function currentRelease(env, request) {
-  const row = await latestRow(env.DB);
-  return publicReleaseFromRow(row, request, false);
+async function currentRelease(env, request, appId = 'astro') {
+  const row = await latestRow(env.DB, appId);
+  return publicReleaseFromRow(row, request, false, appId);
 }
 
-async function listReleaseHistory(env, request) {
+async function listReleaseHistory(env, request, appId = 'astro') {
   const result = await env.DB.prepare(
-    'SELECT package_name, version_name, version_code, storage_provider, object_key, external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at FROM android_app_releases ORDER BY version_code DESC LIMIT 100'
-  ).all();
+    'SELECT app_id, package_name, version_name, version_code, storage_provider, object_key, external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at FROM android_app_releases WHERE app_id = ? ORDER BY version_code DESC LIMIT 100'
+  ).bind(appId).all();
   const rows = Array.isArray(result?.results) ? result.results : [];
-  return rows.map(row => publicReleaseFromRow(row, request, true));
+  return rows.map((row, index) => ({
+    ...publicReleaseFromRow(row, request, true, appId),
+    isCurrent: index === 0,
+    canDelete: index > 0 && row.storage_provider === 'r2'
+  }));
 }
 
 async function recordUploadAttempt(env, uid, now) {
@@ -245,23 +261,36 @@ async function recordUploadAttempt(env, uid, now) {
   return true;
 }
 
+function multiAppReleasesEnabled(env) {
+  return String(env.MULTI_APP_RELEASES_ENABLED || '').toLowerCase() === 'true';
+}
+
+function multiAppGateResponse(request, env, appId) {
+  if (appId === 'astro' || multiAppReleasesEnabled(env)) return null;
+  return json(request, env, {
+    success: false,
+    error: 'Horoscope and Calendar APK management is disabled until the app-scoped D1 migration and Worker deployment are verified.'
+  }, 503);
+}
+
 function safeMaximumBytes(env) {
   const configured = Number(env.MAX_APK_BYTES || MAX_APK_BYTES);
   return Number.isSafeInteger(configured) && configured >= 1024 && configured <= MAX_APK_BYTES
     ? configured : MAX_APK_BYTES;
 }
 
-async function handleDownload(request, env, versionCode) {
+async function handleDownload(request, env, versionCode, appId = 'astro') {
   if (!/^[1-9][0-9]{2,9}$/.test(versionCode)) {
     return json(request, env, { success: false, error: 'Invalid Android versionCode.' }, 400);
   }
-  const row = await rowByVersion(env.DB, Number(versionCode));
+  const row = await rowByVersion(env.DB, Number(versionCode), appId);
   if (!row) {
     return json(request, env, { success: false, error: 'This Android APK version was not found.' }, 404);
   }
   // Existing Firebase rows are served only when explicitly present in D1 as
   // archived history. New releases are stored and streamed from Cloudflare R2.
   if (row.storage_provider === 'firebase') {
+    if (appId !== 'astro') return json(request, env, { success: false, error: 'Legacy Firebase APK download is only supported for SMV ASTRO.' }, 409);
     const target = safeLegacyDownloadUrl(row.external_download_url, row.version_code);
     if (!target) return json(request, env, { success: false, error: 'The archived APK download target failed validation.' }, 503);
     return respond(request, env, null, 302, { Location: target, 'Cache-Control': 'no-store' });
@@ -269,9 +298,10 @@ async function handleDownload(request, env, versionCode) {
   const object = await env.APK_RELEASES.get(String(row.object_key || ''));
   if (!object) return json(request, env, { success: false, error: 'The stored APK object is missing.' }, 404);
   const safeVersion = String(row.version_name || '').replace(/[^A-Za-z0-9.-]/g, '');
+  const safeAppName = String(ANDROID_APPS[appId]?.label || 'SMV ANDROID').replace(/[^A-Za-z0-9-]/g, '-');
   const headers = {
     'Content-Type': APK_CONTENT_TYPE,
-    'Content-Disposition': 'attachment; filename="SMV-ASTRO-' + safeVersion + '.apk"',
+    'Content-Disposition': 'attachment; filename="' + safeAppName + '-' + safeVersion + '.apk"',
     'Cache-Control': 'public, max-age=31536000, immutable',
     'Content-Length': String(Number(row.size_bytes || object.size || 0))
   };
@@ -312,53 +342,110 @@ export function createAndroidApkReleaseWorker({
             d1Ready,
             r2Ready,
             uploadsEnabled: ready && String(env.ALLOW_APK_UPLOADS || '').toLowerCase() === 'true',
+            deletesEnabled: ready && String(env.ALLOW_APK_DELETES || '').toLowerCase() === 'true',
+            multiAppReleasesEnabled: ready && multiAppReleasesEnabled(env),
             hasReleaseRecords
           }, 200, { 'Cache-Control': 'no-store' });
         }
 
-        if (path === '/public/android-app' && request.method === 'GET') {
+        const publicAppMatch = /^\/public\/android-apps\/(astro|horoscope|calendar)$/.exec(path);
+        if ((path === '/public/android-app' || publicAppMatch) && request.method === 'GET') {
           if (!(await hasReleaseSchema(env))) {
             return json(request, env, { success: false, available: false, error: 'Cloudflare APK storage is not configured.' }, 503);
           }
-          const release = await currentRelease(env, request);
+          const appId = publicAppMatch ? publicAppMatch[1] : 'astro';
+          const gated = multiAppGateResponse(request, env, appId);
+          if (gated) return gated;
+          const release = await currentRelease(env, request, appId);
           return json(request, env, release, 200, {
             'Cache-Control': 'public, max-age=30, stale-while-revalidate=120'
           });
         }
 
-        const downloadMatch = /^\/download\/([^/]+)$/.exec(path);
-        if (downloadMatch && request.method === 'GET') {
+        const multiDownloadMatch = /^\/download\/(astro|horoscope|calendar)\/([1-9][0-9]{2,9})$/.exec(path);
+        const astroDownloadMatch = /^\/download\/([1-9][0-9]{2,9})$/.exec(path);
+        if ((multiDownloadMatch || astroDownloadMatch) && request.method === 'GET') {
           if (!(await hasReleaseSchema(env))) {
             return json(request, env, { success: false, error: 'Cloudflare APK storage is not configured.' }, 503);
           }
-          return await handleDownload(request, env, downloadMatch[1]);
+          const appId = multiDownloadMatch ? multiDownloadMatch[1] : 'astro';
+          const gated = multiAppGateResponse(request, env, appId);
+          if (gated) return gated;
+          const versionCode = multiDownloadMatch ? multiDownloadMatch[2] : astroDownloadMatch[1];
+          return await handleDownload(request, env, versionCode, appId);
         }
 
-        if (path === '/admin/android-app' && request.method === 'GET') {
+        const adminAppMatch = /^\/admin\/android-apps\/(astro|horoscope|calendar)$/.exec(path);
+        const adminAppId = path === '/admin/android-app' ? 'astro' : adminAppMatch?.[1];
+        if (adminAppId && request.method === 'GET') {
           const auth = await requireAdmin(request, env, verifyToken);
           if (auth.response) return auth.response;
+          const gated = multiAppGateResponse(request, env, adminAppId);
+          if (gated) return gated;
           if (!(await hasReleaseSchema(env))) {
             return json(request, env, { success: false, error: 'Cloudflare APK storage is not configured.' }, 503);
           }
-          const row = await latestRow(env.DB);
+          const row = await latestRow(env.DB, adminAppId);
           return json(request, env, row
-            ? publicReleaseFromRow(row, request, true)
-            : { success: true, available: false });
+            ? publicReleaseFromRow(row, request, true, adminAppId)
+            : { success: true, available: false, appId: adminAppId, appName: ANDROID_APPS[adminAppId].label });
         }
 
-        if (path === '/admin/android-app/versions' && request.method === 'GET') {
+        const adminHistoryMatch = /^\/admin\/android-apps\/(astro|horoscope|calendar)\/versions$/.exec(path);
+        if ((path === '/admin/android-app/versions' || adminHistoryMatch) && request.method === 'GET') {
           const auth = await requireAdmin(request, env, verifyToken);
           if (auth.response) return auth.response;
           if (!(await hasReleaseSchema(env))) {
             return json(request, env, { success: false, error: 'Cloudflare APK storage is not configured.' }, 503);
           }
+          const appId = adminHistoryMatch ? adminHistoryMatch[1] : 'astro';
+          const gated = multiAppGateResponse(request, env, appId);
+          if (gated) return gated;
           return json(request, env, {
             success: true,
-            versions: await listReleaseHistory(env, request)
+            appId,
+            versions: await listReleaseHistory(env, request, appId)
           });
         }
 
-        if (path === '/admin/android-app/upload' && request.method === 'POST') {
+        const deleteMultiMatch = /^\/admin\/android-apps\/(astro|horoscope|calendar)\/versions\/([1-9][0-9]{2,9})$/.exec(path);
+        const deleteAstroMatch = /^\/admin\/android-app\/versions\/([1-9][0-9]{2,9})$/.exec(path);
+        if ((deleteMultiMatch || deleteAstroMatch) && request.method === 'DELETE') {
+          const auth = await requireAdmin(request, env, verifyToken);
+          if (auth.response) return auth.response;
+          if (!(await hasReleaseSchema(env))) return json(request, env, { success: false, error: 'Cloudflare APK storage is not configured.' }, 503);
+          if (String(env.ALLOW_APK_DELETES || '').toLowerCase() !== 'true') return json(request, env, { success: false, error: 'Historical APK deletion is disabled until the Admin release manager is verified.' }, 503);
+          const appId = deleteMultiMatch ? deleteMultiMatch[1] : 'astro';
+          const gated = multiAppGateResponse(request, env, appId);
+          if (gated) return gated;
+          const versionCode = Number(deleteMultiMatch ? deleteMultiMatch[2] : deleteAstroMatch[1]);
+          const row = await rowByVersion(env.DB, versionCode, appId);
+          if (!row) return json(request, env, { success: false, error: 'This archived Android APK version was not found.' }, 404);
+          const latest = await latestRow(env.DB, appId);
+          if (Number(latest?.version_code || 0) <= versionCode) return json(request, env, { success: false, error: 'The current published APK is protected and cannot be deleted.' }, 409);
+          if (row.storage_provider !== 'r2') return json(request, env, { success: false, error: 'This legacy Firebase APK is protected from deletion in the R2 manager.' }, 409);
+          const objectKey = String(row.object_key || '');
+          const expectedPrefix = 'smv-' + appId + '/android/releases/' + versionCode + '/';
+          if (!objectKey.startsWith(expectedPrefix) || !objectKey.endsWith('.apk')) return json(request, env, { success: false, error: 'The archived APK storage path failed validation; nothing was deleted.' }, 409);
+          try {
+            await env.APK_RELEASES.delete(objectKey);
+            const deleted = await env.DB.prepare("DELETE FROM android_app_releases WHERE app_id = ? AND version_code = ? AND storage_provider = 'r2' AND version_code < (SELECT MAX(version_code) FROM android_app_releases WHERE app_id = ?)")
+              .bind(appId, versionCode, appId).run();
+            const changes = Number(deleted?.meta?.changes ?? deleted?.changes ?? 0);
+            if (changes !== 1) return json(request, env, { success: false, error: 'The release changed while deletion was processing. Refresh the history and try again.' }, 409);
+          } catch (error) {
+            logDiagnosticError(logger, request, path, 'delete-archived-apk', error, requestId);
+            return json(request, env, { success: false, error: 'The archived APK could not be fully removed. Refresh the history before retrying.' }, 503);
+          }
+          return json(request, env, { success: true, deleted: true, deletedAppId: appId, deletedVersionCode: versionCode }, 200, { 'Cache-Control': 'no-store' });
+        }
+
+        const uploadMultiMatch = /^\/admin\/android-apps\/(astro|horoscope|calendar)\/upload$/.exec(path);
+        if ((path === '/admin/android-app/upload' || uploadMultiMatch) && request.method === 'POST') {
+          const appId = uploadMultiMatch ? uploadMultiMatch[1] : 'astro';
+          const gated = multiAppGateResponse(request, env, appId);
+          if (gated) return gated;
+          const appSpec = ANDROID_APPS[appId];
           const auth = await requireAdmin(request, env, verifyToken);
           if (auth.response) return auth.response;
           if (!(await hasReleaseSchema(env))) {
@@ -387,31 +474,31 @@ export function createAndroidApkReleaseWorker({
 
           let apk;
           try {
-            apk = inspectApk(Buffer.from(arrayBuffer));
+            apk = inspectApk(Buffer.from(arrayBuffer), { expectedPackageName: appSpec.packageName, appLabel: appSpec.label });
           } catch (error) {
-            return json(request, env, { success: false, error: error?.message || 'The APK failed SMV ASTRO Release validation.' }, 400);
+            return json(request, env, { success: false, error: error?.message || 'The APK failed SMV Android Release validation.' }, 400);
           }
-          if (apk.packageName !== SMV_ANDROID_PACKAGE) {
-            return json(request, env, { success: false, error: 'This APK is not the SMV ASTRO Production app.' }, 400);
+          if (apk.packageName !== appSpec.packageName) {
+            return json(request, env, { success: false, error: 'This APK is not the ' + appSpec.label + ' Production app.' }, 400);
           }
 
           let current;
           try {
-            current = await latestRow(env.DB);
+            current = await latestRow(env.DB, appId);
           } catch (error) {
             return json(request, env, { success: false, error: error?.message || 'Unable to establish the current APK version.' }, 503);
           }
-          const currentCode = Math.max(1000, Number(current?.version_code || 0));
+          const currentCode = Math.max(appSpec.firstVersionCode - 1, Number(current?.version_code || 0));
           if (Number(apk.versionCode) <= currentCode) {
             return json(request, env, {
               success: false,
-              error: 'The uploaded APK must have a higher versionCode than the current published version.',
+              error: 'The uploaded APK must have a higher versionCode than the current published version for ' + appSpec.label + '.',
               currentVersionCode: currentCode,
               uploadedVersionCode: Number(apk.versionCode)
             }, 409);
           }
 
-          const objectKey = 'smv-astro/android/releases/' + String(apk.versionCode) + '/' + globalThis.crypto.randomUUID() + '.apk';
+          const objectKey = 'smv-' + appId + '/android/releases/' + String(apk.versionCode) + '/' + globalThis.crypto.randomUUID() + '.apk';
           let stored = false;
           try {
             await env.APK_RELEASES.put(objectKey, Buffer.from(arrayBuffer), {
@@ -420,6 +507,8 @@ export function createAndroidApkReleaseWorker({
                 cacheControl: 'public, max-age=31536000, immutable'
               },
               customMetadata: {
+                appId,
+                appLabel: appSpec.label,
                 packageName: apk.packageName,
                 versionName: apk.versionName,
                 versionCode: String(apk.versionCode),
@@ -428,10 +517,10 @@ export function createAndroidApkReleaseWorker({
               }
             });
             stored = true;
-            const insertStatements = [];
-            insertStatements.push(env.DB.prepare(
-              "INSERT INTO android_app_releases (package_name, version_name, version_code, storage_provider, object_key, external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at) VALUES (?, ?, ?, 'r2', ?, NULL, ?, ?, ?, ?, ?)"
+            await env.DB.prepare(
+              "INSERT INTO android_app_releases (app_id, package_name, version_name, version_code, storage_provider, object_key, external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at) VALUES (?, ?, ?, ?, 'r2', ?, NULL, ?, ?, ?, ?, ?)"
             ).bind(
+              appId,
               apk.packageName,
               apk.versionName,
               Number(apk.versionCode),
@@ -441,28 +530,26 @@ export function createAndroidApkReleaseWorker({
               Number(apk.size || arrayBuffer.byteLength),
               String(auth.identity.uid),
               now
-            ));
-            if (insertStatements.length > 1) await env.DB.batch(insertStatements);
-            else await insertStatements[0].run();
+            ).run();
           } catch (error) {
             if (stored) {
               try { await env.APK_RELEASES.delete(objectKey); } catch (_) {}
             }
             const message = String(error?.message || error);
-            if (/VERSION_CODE_NOT_INCREASING|UNIQUE constraint failed: android_app_releases\.version_code/i.test(message)) {
-              const latest = await latestRow(env.DB);
+            if (/VERSION_CODE_NOT_INCREASING|UNIQUE constraint failed: android_app_releases\\.app_id, android_app_releases\\.version_code|UNIQUE constraint failed: android_app_releases\\.app_id|UNIQUE constraint failed: android_app_releases\\.version_code/i.test(message)) {
+              const latest = await latestRow(env.DB, appId);
               return json(request, env, {
                 success: false,
-                error: 'A newer or equal Android APK version was published while this upload was processing.',
-                currentVersionCode: Math.max(1000, Number(latest?.version_code || 0)),
+                error: 'A newer or equal ' + appSpec.label + ' APK version was published while this upload was processing.',
+                currentVersionCode: Math.max(appSpec.firstVersionCode - 1, Number(latest?.version_code || 0)),
                 uploadedVersionCode: Number(apk.versionCode)
               }, 409);
             }
-            return json(request, env, { success: false, error: 'The APK could not be stored in Cloudflare R2 and D1.' }, 503);
+            return json(request, env, { success: false, error: 'The ' + appSpec.label + ' APK could not be stored in Cloudflare R2 and D1.' }, 503);
           }
 
-          const row = await rowByVersion(env.DB, Number(apk.versionCode));
-          return json(request, env, publicReleaseFromRow(row, request, true), 200, { 'Cache-Control': 'no-store' });
+          const row = await rowByVersion(env.DB, Number(apk.versionCode), appId);
+          return json(request, env, publicReleaseFromRow(row, request, true, appId), 200, { 'Cache-Control': 'no-store' });
         }
 
         return json(request, env, { success: false, error: 'APK release route was not found.' }, 404);

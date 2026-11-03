@@ -2541,7 +2541,7 @@ async function smvAndroidApkWorkerStatus(){
     if(!response.ok)return null;
     const health=await response.json();
     return health?.success===true&&health.ready===true
-      ?{base,uploadsEnabled:health.uploadsEnabled===true,hasReleaseRecords:health.hasReleaseRecords===true}
+      ?{base,uploadsEnabled:health.uploadsEnabled===true,deletesEnabled:health.deletesEnabled===true,multiAppReleasesEnabled:health.multiAppReleasesEnabled===true,hasReleaseRecords:health.hasReleaseRecords===true}
       :null;
   }catch(_){return null;}
 }
@@ -2575,7 +2575,7 @@ async function smvAndroidApkWorkerRequest(worker,path,options={}){
 async function smvAndroidApkApi(path,options={},workerOnly=false){
   const worker=await smvAndroidApkWorkerStatus();
   const method=String(options.method||'GET').toUpperCase();
-  const isUpload=method==='POST'&&path==='/admin/android-app/upload';
+  const isUpload=method==='POST'&&/^\/admin\/(?:android-app\/upload|android-apps\/(?:astro|horoscope|calendar)\/upload)$/.test(path);
   if(worker&&(!isUpload||worker.uploadsEnabled))return smvAndroidApkWorkerRequest(worker,path,options);
   if(workerOnly)return worker?smvAndroidApkWorkerRequest(worker,path,options):null;
   if(worker&&isUpload&&worker.hasReleaseRecords){
@@ -2588,7 +2588,7 @@ function smvAndroidApkSafeDownloadUrl(value,workerBase){
   let url;
   try{url=new URL(String(value||''));}catch(_){return null;}
   if(url.protocol!=='https:'||url.username||url.password||url.hash)return null;
-  if(workerBase&&url.origin===workerBase&&/^\/(?:api\/android-app\/)?download\/[1-9][0-9]{2,9}$/.test(url.pathname)&&!url.search)return url;
+  if(workerBase&&url.origin===workerBase&&/^\/(?:api\/android-app\/)?download\/(?:(?:astro|horoscope|calendar)\/)?[1-9][0-9]{2,9}$/.test(url.pathname)&&!url.search)return url;
   if(url.hostname!=='firebasestorage.googleapis.com')return null;
   let decodedPath;
   try{decodedPath=decodeURIComponent(url.pathname);}catch(_){return null;}
@@ -2597,60 +2597,124 @@ function smvAndroidApkSafeDownloadUrl(value,workerBase){
      url.searchParams.get('alt')!=='media'||!url.searchParams.get('token'))return null;
   return url;
 }
-async function loadAdminAndroidAppHistory(){
-  const container=$('adminAndroidAppHistory');
+const SMV_ADMIN_ANDROID_APPS={
+  astro:{label:'SMV ASTRO',prefix:'adminAndroidApp',workerPath:'/admin/android-app',legacyPath:'/admin/android-app',fallback:true},
+  horoscope:{label:'SMV HOROSCOPE',prefix:'adminHoroscopeAndroidApp',workerPath:'/admin/android-apps/horoscope',fallback:false},
+  calendar:{label:'SMV CALENDAR',prefix:'adminCalendarAndroidApp',workerPath:'/admin/android-apps/calendar',fallback:false}
+};
+function smvAdminAndroidAppElement(appId,suffix){
+  const app=SMV_ADMIN_ANDROID_APPS[appId];
+  if(!app)return null;
+  if(appId==='astro'&&suffix==='BackendStatus')return $('adminAndroidApkBackendStatus');
+  return $(app.prefix+suffix);
+}
+function smvAdminAndroidAppHistoryPath(appId){
+  return appId==='astro'?'/admin/android-app/versions':app.workerPath+'/versions';
+}
+function smvAdminAndroidAppDeletePath(appId,versionCode){
+  return (appId==='astro'?'/admin/android-app/versions':app.workerPath+'/versions')+'/'+encodeURIComponent(String(versionCode));
+}
+async function loadAdminAndroidAppHistoryFor(appId='astro'){
+  const app=SMV_ADMIN_ANDROID_APPS[appId];if(!app)return;
+  const container=smvAdminAndroidAppElement(appId,'History');
   if(!container)return;
-  container.innerHTML='<div class="empty">Checking Cloudflare APK version history…</div>';
+  container.innerHTML='<div class="empty">Checking '+escapeHtml(app.label)+' APK version history…</div>';
+  const workerStatus=await smvAndroidApkWorkerStatus();
+  if(appId!=='astro'&&workerStatus?.multiAppReleasesEnabled!==true){
+    container.innerHTML='<div class="small">The SMV HOROSCOPE/CALENDAR APK release service is waiting for its app-scoped Worker + D1 migration. Existing SMV ASTRO release management is unaffected.</div>';
+    return;
+  }
   try{
-    const history=await smvAndroidApkApi('/admin/android-app/versions',{method:'GET'},true);
+    const history=await smvAndroidApkApi(smvAdminAndroidAppHistoryPath(appId),{method:'GET'},true);
     if(!history){
-      container.innerHTML='<div class="small">Cloudflare APK history will appear here after the dedicated Worker, R2 bucket and D1 database are ready and APK uploads are enabled. Until then, the existing APK upload remains available.</div>';
+      container.innerHTML='<div class="small">Cloudflare APK history will appear after the dedicated Worker, R2 bucket and D1 database are ready.</div>';
       return;
     }
     const workerBase=smvAndroidApkWorkerBase();
     const versions=Array.isArray(history.versions)?history.versions:[];
     if(!versions.length){
-      container.innerHTML='<div class="empty">No Cloudflare APK releases are recorded yet.</div>';
+      container.innerHTML='<div class="empty">No '+escapeHtml(app.label)+' APK releases are recorded yet.</div>';
       return;
     }
     container.innerHTML='<h4>Saved APK versions</h4>'+versions.map(release=>{
       const safeUrl=smvAndroidApkSafeDownloadUrl(release.downloadUrl,workerBase);
-      const label='SMV ASTRO '+String(release.versionName||'APK')+' · code '+String(release.versionCode||'—');
+      const label=app.label+' '+String(release.versionName||'APK')+' · code '+String(release.versionCode||'—');
       const date=release.uploadedAt?smvDateTime(new Date(Number(release.uploadedAt))):'';
       const link=safeUrl?'<a class="btn gray" href="'+escapeHtml(safeUrl.href)+'" rel="noopener" download>DOWNLOAD APK</a>':'<span class="small">Download link unavailable</span>';
-      return '<div class="card" style="margin-top:8px"><div><b>'+escapeHtml(label)+'</b></div><div class="small">'+escapeHtml(date)+' · '+escapeHtml(String(release.storageProvider||'stored release'))+'</div><div class="action-row">'+link+'</div></div>';
+      const deleteAction=release.canDelete===true&&workerStatus?.deletesEnabled===true
+        ?'<button class="btn gray smv-admin-apk-delete" type="button" data-app-id="'+appId+'" data-version-code="'+escapeHtml(String(release.versionCode))+'">DELETE OLD APK</button>'
+        :release.isCurrent===true
+          ?'<span class="small">Current release · protected</span>'
+          :release.storageProvider==='r2'
+            ?'<span class="small">Delete is disabled</span>'
+            :'<span class="small">Legacy archive · protected here</span>';
+      return '<div class="card" style="margin-top:8px"><div><b>'+escapeHtml(label)+'</b></div><div class="small">'+escapeHtml(date)+' · '+escapeHtml(String(release.storageProvider||'stored release'))+'</div><div class="action-row">'+link+deleteAction+'</div></div>';
     }).join('');
+    container.querySelectorAll('.smv-admin-apk-delete').forEach(button=>{
+      button.addEventListener('click',()=>deleteAdminAndroidAppVersionFor(button.dataset.appId,button.dataset.versionCode,button));
+    });
   }catch(error){
-    container.innerHTML='<div class="small">Unable to load Cloudflare APK history: '+escapeHtml(error?.message||String(error))+'</div>';
+    container.innerHTML='<div class="small">Unable to load '+escapeHtml(app.label)+' APK history: '+escapeHtml(error?.message||String(error))+'</div>';
   }
 }
-async function loadAdminAndroidAppRelease(){
-  const current=$('adminAndroidAppCurrent'),msg=$('adminAndroidAppMsg');
+async function deleteAdminAndroidAppVersionFor(appId,versionCode,button){
+  const app=SMV_ADMIN_ANDROID_APPS[appId],code=String(versionCode||'').trim();
+  if(!app||!/^[1-9][0-9]{2,9}$/.test(code))return;
+  if(!window.confirm('Permanently delete archived '+app.label+' APK versionCode '+code+'? The current published version cannot be deleted.'))return;
+  const msg=smvAdminAndroidAppElement(appId,'Msg');
+  if(button){button.disabled=true;button.textContent='DELETING…';}
+  if(msg)msg.textContent='Removing archived '+app.label+' APK '+code+' from Cloudflare R2 and release history…';
+  try{
+    const result=await smvAndroidApkApi(smvAdminAndroidAppDeletePath(appId,code),{method:'DELETE'},true);
+    if(result?.success!==true||result.deleted!==true)throw new Error(result?.error||'APK deletion was not confirmed.');
+    if(msg)msg.textContent='Archived '+app.label+' APK versionCode '+code+' was deleted. The current version remains unchanged.';
+    await loadAdminAndroidAppReleaseFor(appId);
+  }catch(error){
+    if(msg)msg.textContent=error?.message||String(error);
+    if(button){button.disabled=false;button.textContent='DELETE OLD APK';}
+  }
+}
+async function loadAdminAndroidAppReleaseFor(appId='astro'){
+  const app=SMV_ADMIN_ANDROID_APPS[appId];if(!app)return;
+  const current=smvAdminAndroidAppElement(appId,'Current'),msg=smvAdminAndroidAppElement(appId,'Msg');
   if(!current||!msg||!currentUser)return;
-  const backendStatus=$('adminAndroidApkBackendStatus');
+  const backendStatus=smvAdminAndroidAppElement(appId,'BackendStatus');
   const workerStatus=await smvAndroidApkWorkerStatus();
+  const uploadButton=smvAdminAndroidAppElement(appId,'Upload');
+  if(appId!=='astro'&&workerStatus?.multiAppReleasesEnabled!==true){
+    if(uploadButton)uploadButton.disabled=true;
+    if(backendStatus){
+      backendStatus.textContent='Waiting for the app-scoped Cloudflare Worker + D1 migration. No HOROSCOPE/CALENDAR upload or delete is attempted until it is ready.';
+      backendStatus.className='small';
+    }
+    current.innerHTML='<div class="empty">Multi-App APK management is not deployed yet. The existing SMV ASTRO APK manager remains available.</div>';
+    msg.textContent='Tap REFRESH CURRENT VERSION after the dedicated Multi-App Worker has been deployed.';
+    return;
+  }
+  if(uploadButton)uploadButton.disabled=false;
   if(backendStatus){
     if(workerStatus?.uploadsEnabled){
       backendStatus.textContent='Cloudflare APK service READY · R2/D1 connected · Admin APK publishing ENABLED.';
       backendStatus.className='small success';
     }else if(workerStatus){
-      backendStatus.textContent=workerStatus.hasReleaseRecords
-        ?'Cloudflare APK service READY · current release is protected · Admin publishing is disabled on the Worker.'
-        :'Cloudflare APK service READY · Admin publishing is disabled; the legacy upload route is available until Cloudflare owns a release.';
+      backendStatus.textContent='Cloudflare APK service READY · '+app.label+' uploads are disabled on the Worker until its release gate is enabled.';
       backendStatus.className='small';
     }else{
-      backendStatus.textContent='Cloudflare APK service is not connected yet. The existing Firebase/Render release route is still used until the Worker URL is configured and healthy.';
+      backendStatus.textContent='Cloudflare APK service is not connected yet. Uploading remains disabled until the app-specific release API is ready.';
       backendStatus.className='small';
     }
   }
-  msg.textContent='Loading current Android app release…';
+  msg.textContent='Loading current '+app.label+' Android release…';
   try{
-    const release=await smvAndroidApkApi('/admin/android-app',{method:'GET'});
-    if(release?.success!==true)throw new Error(release?.error||'Unable to load Android app release.');
+    const endpoint=appId==='astro'?'/admin/android-app':app.workerPath;
+    const release=await smvAndroidApkApi(endpoint,{method:'GET'},!app.fallback);
+    if(release?.success!==true)throw new Error(release?.error||'Unable to load '+app.label+' Android app release.');
     if(release.available!==true){
-      current.innerHTML='<div class="empty">No permanent Android APK has been published yet.</div>';
-      msg.textContent='No website-managed APK pointer is available. The first upload must use a higher versionCode than the permanent v1.0 app.';
-      await loadAdminAndroidAppHistory();
+      current.innerHTML='<div class="empty">No '+escapeHtml(app.label)+' production APK has been published yet.</div>';
+      msg.textContent=app.fallback
+        ?'The first ASTRO release must use a versionCode above the permanent v1.0 baseline.'
+        :'Upload the first '+app.label+' signed production APK as v1.0 / versionCode 1000.';
+      await loadAdminAndroidAppHistoryFor(appId);
       return;
     }
     const size=Number(release.size||0);
@@ -2663,56 +2727,77 @@ async function loadAdminAndroidAppRelease(){
       '<div class="card"><b>APK size</b><div>'+escapeHtml(sizeLabel)+'</div></div>'+
       '<div class="card"><b>Storage</b><div>'+escapeHtml(provider)+'</div></div>'+
       '</div><p class="small">Uploaded: '+escapeHtml(uploaded)+'</p>';
-    msg.textContent='Current permanent Android APK is published. New uploads must have a higher versionCode and the same permanent Release signing key. Website status uses this version.';
-    await loadAdminAndroidAppHistory();
+    msg.textContent=app.label+' signed APK is published. New uploads must use a higher versionCode for this app and the same permanent Release signing key.';
+    await loadAdminAndroidAppHistoryFor(appId);
   }catch(error){
-    current.innerHTML='<div class="empty error">Unable to load current Android release.</div>';
+    current.innerHTML='<div class="empty error">Unable to load '+escapeHtml(app.label)+' Android release.</div>';
     msg.textContent=error?.message||String(error);
     throw error;
   }
 }
-async function uploadAdminAndroidApp(){
-  const file=$('adminAndroidAppFile')?.files?.[0],button=$('adminAndroidAppUpload'),msg=$('adminAndroidAppMsg');
-  if(!file){if(msg)msg.textContent='Select the production signed APK first.';return;}
+async function uploadAdminAndroidAppFor(appId='astro'){
+  const app=SMV_ADMIN_ANDROID_APPS[appId];if(!app)return;
+  const file=smvAdminAndroidAppElement(appId,'File')?.files?.[0];
+  const button=smvAdminAndroidAppElement(appId,'Upload');
+  const msg=smvAdminAndroidAppElement(appId,'Msg');
+  if(appId!=='astro'){
+    const workerStatus=await smvAndroidApkWorkerStatus();
+    if(workerStatus?.multiAppReleasesEnabled!==true){
+      if(msg)msg.textContent='HOROSCOPE/CALENDAR APK upload is safely disabled until the app-scoped Worker + D1 migration is deployed.';
+      if(button)button.disabled=true;
+      return;
+    }
+  }
+  if(!file){if(msg)msg.textContent='Select the '+app.label+' signed production APK first.';return;}
   if(!/\.apk$/i.test(file.name||'')||file.size<1024||file.size>100*1024*1024){
     if(msg)msg.textContent='Select a valid .apk file between 1 KB and 100 MB.';
     return;
   }
   if(button){button.disabled=true;button.textContent='VALIDATING & UPLOADING…';}
-  if(msg)msg.textContent='Uploading APK. The service checks package, version sequence and permanent Release signing certificate.';
+  if(msg)msg.textContent='Uploading '+app.label+' APK. The service checks package, app-specific version sequence and permanent Release signing certificate.';
   try{
-    const result=await smvAndroidApkApi('/admin/android-app/upload',{
+    const endpoint=appId==='astro'?'/admin/android-app/upload':app.workerPath+'/upload';
+    const result=await smvAndroidApkApi(endpoint,{
       method:'POST',
       headers:{'Content-Type':'application/vnd.android.package-archive'},
       body:file,
       timeoutMs:120000
-    });
-    if(result?.success!==true||result.available!==true)throw new Error(result?.error||'APK upload was not confirmed.');
-    if($('adminAndroidAppFile'))$('adminAndroidAppFile').value='';
+    },!app.fallback);
+    if(result?.success!==true||result.available!==true)throw new Error(result?.error||app.label+' APK upload was not confirmed.');
+    const input=smvAdminAndroidAppElement(appId,'File');
+    if(input)input.value='';
     const provider=String(result.storageProvider||smvAndroidApkLastTransport);
-    if(msg)msg.textContent='Published successfully: '+result.versionName+' (versionCode '+result.versionCode+') using '+provider+'. Homepage Install / Update status now uses this release.';
-    await loadAdminAndroidAppRelease();
+    if(msg)msg.textContent='Published successfully: '+result.versionName+' (versionCode '+result.versionCode+') using '+provider+'.';
+    await loadAdminAndroidAppReleaseFor(appId);
   }catch(error){
     if(msg)msg.textContent=error?.message||String(error);
   }finally{
     if(button){button.disabled=false;button.textContent='UPLOAD NEW APP VERSION';}
   }
 }
+async function loadAdminAndroidAppHistory(){return loadAdminAndroidAppHistoryFor('astro');}
+async function loadAdminAndroidAppRelease(){return loadAdminAndroidAppReleaseFor('astro');}
+async function uploadAdminAndroidApp(){return uploadAdminAndroidAppFor('astro');}
 (function initAdminAndroidAppManager(){
-  const upload=$('adminAndroidAppUpload'),refresh=$('adminAndroidAppRefresh'),file=$('adminAndroidAppFile'),fileInfo=$('adminAndroidAppFileInfo');
-  if(upload&&!upload.dataset.smvBound){upload.dataset.smvBound='1';upload.addEventListener('click',uploadAdminAndroidApp);}
-  if(refresh&&!refresh.dataset.smvBound){refresh.dataset.smvBound='1';refresh.addEventListener('click',()=>loadAdminAndroidAppRelease().catch(()=>{}));}
-  if(file&&!file.dataset.smvBound){
-    file.dataset.smvBound='1';
-    file.addEventListener('change',()=>{
-      const selected=file.files?.[0];
-      if(!fileInfo)return;
-      fileInfo.textContent=selected
-        ?'Selected APK: '+selected.name+' · '+(selected.size/1024/1024).toFixed(2)+' MB. Package, version and signing certificate are checked by Cloudflare before publishing.'
-        :'APK limit: 100 MB. The server verifies package, versionCode and permanent Release signature.';
-    });
+  for(const appId of Object.keys(SMV_ADMIN_ANDROID_APPS)){
+    const upload=smvAdminAndroidAppElement(appId,'Upload');
+    const refresh=smvAdminAndroidAppElement(appId,'Refresh');
+    const file=smvAdminAndroidAppElement(appId,'File');
+    const fileInfo=smvAdminAndroidAppElement(appId,'FileInfo');
+    if(upload&&!upload.dataset.smvBound){upload.dataset.smvBound='1';upload.addEventListener('click',()=>uploadAdminAndroidAppFor(appId));}
+    if(refresh&&!refresh.dataset.smvBound){refresh.dataset.smvBound='1';refresh.addEventListener('click',()=>loadAdminAndroidAppReleaseFor(appId).catch(()=>{}));}
+    if(file&&!file.dataset.smvBound){
+      file.dataset.smvBound='1';
+      file.addEventListener('change',()=>{
+        const selected=file.files?.[0];if(!fileInfo)return;
+        fileInfo.textContent=selected
+          ?'Selected APK: '+selected.name+' · '+(selected.size/1024/1024).toFixed(2)+' MB. Package, app version and signing certificate will be checked before publishing.'
+          :'APK limit: 100 MB. The server verifies package, app-specific versionCode and permanent Release signature.';
+      });
+    }
   }
 })();
+
 
 smvArmPublicContentLazyLoad();
 
@@ -2881,6 +2966,10 @@ async function loadAdminPanelData(background=false){
  if(!currentUser || !(await isCurrentAdmin())){hide('admin');hide('adminLink');return;}
   if(!background)loadAdminContent().catch(e=>console.warn('Admin content unavailable:',e));
   if(!background)loadAdminAndroidAppRelease().catch(e=>console.warn('Android app release status unavailable:',e));
+  if(!background){
+    loadAdminAndroidAppReleaseFor('horoscope').catch(e=>console.warn('Horoscope Android app release status unavailable:',e));
+    loadAdminAndroidAppReleaseFor('calendar').catch(e=>console.warn('Calendar Android app release status unavailable:',e));
+  }
  if(!background){hidePrimarySections('admin');show('smv-dashboard-page');show('admin');}
  smvEnsureAdminQuickLinks();
  setTimeout(()=>window.__smvRefreshAdminSections?.(),0);

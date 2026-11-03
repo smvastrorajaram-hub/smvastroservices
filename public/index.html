@@ -367,6 +367,28 @@ document.addEventListener('DOMContentLoaded', function(){
   <div id="adminAndroidAppCurrent"><div class="empty">Loading current Android release…</div></div>
   <div id="adminAndroidAppHistory" class="small" aria-live="polite"><div class="empty">Cloudflare APK history is available after the release service is configured.</div></div>
 </div>
+  <div class="card" id="adminHoroscopeAndroidAppManagementCard">
+    <h3>SMV HOROSCOPE APK Install &amp; Update Manager</h3>
+    <p class="small">Upload the separately signed SMV HOROSCOPE Production APK. It uses package <code>in.smvastroservices.horoscope</code> and its own version sequence, starting at v1.0 / code 1000.</p>
+    <div class="small" id="adminHoroscopeAndroidAppBackendStatus" role="status" aria-live="polite">Checking Cloudflare APK publishing service…</div>
+    <div class="grid"><label><b>Select signed HOROSCOPE production APK</b><input id="adminHoroscopeAndroidAppFile" type="file" accept=".apk,application/vnd.android.package-archive"/></label></div>
+    <div class="small" id="adminHoroscopeAndroidAppFileInfo" aria-live="polite">APK limit: 100 MB. Package, app-specific versionCode and permanent signature are verified before publishing.</div>
+    <div class="action-row"><button class="btn" id="adminHoroscopeAndroidAppUpload" type="button">UPLOAD NEW APP VERSION</button><button class="btn gray" id="adminHoroscopeAndroidAppRefresh" type="button">REFRESH CURRENT VERSION</button></div>
+    <div class="small" id="adminHoroscopeAndroidAppMsg" role="status" aria-live="polite">Current HOROSCOPE release has not been loaded.</div>
+    <div id="adminHoroscopeAndroidAppCurrent"><div class="empty">Loading current HOROSCOPE release…</div></div>
+    <div id="adminHoroscopeAndroidAppHistory" class="small" aria-live="polite"><div class="empty">Cloudflare APK history is available after the release service is configured.</div></div>
+  </div>
+  <div class="card" id="adminCalendarAndroidAppManagementCard">
+    <h3>SMV CALENDAR APK Install &amp; Update Manager</h3>
+    <p class="small">Upload the separately signed SMV CALENDAR Production APK. It uses package <code>in.smvastroservices.calendar</code> and its own version sequence, starting at v1.0 / code 1000.</p>
+    <div class="small" id="adminCalendarAndroidAppBackendStatus" role="status" aria-live="polite">Checking Cloudflare APK publishing service…</div>
+    <div class="grid"><label><b>Select signed CALENDAR production APK</b><input id="adminCalendarAndroidAppFile" type="file" accept=".apk,application/vnd.android.package-archive"/></label></div>
+    <div class="small" id="adminCalendarAndroidAppFileInfo" aria-live="polite">APK limit: 100 MB. Package, app-specific versionCode and permanent signature are verified before publishing.</div>
+    <div class="action-row"><button class="btn" id="adminCalendarAndroidAppUpload" type="button">UPLOAD NEW APP VERSION</button><button class="btn gray" id="adminCalendarAndroidAppRefresh" type="button">REFRESH CURRENT VERSION</button></div>
+    <div class="small" id="adminCalendarAndroidAppMsg" role="status" aria-live="polite">Current CALENDAR release has not been loaded.</div>
+    <div id="adminCalendarAndroidAppCurrent"><div class="empty">Loading current CALENDAR release…</div></div>
+    <div id="adminCalendarAndroidAppHistory" class="small" aria-live="polite"><div class="empty">Cloudflare APK history is available after the release service is configured.</div></div>
+  </div>
 </section>
 
 </section></div>

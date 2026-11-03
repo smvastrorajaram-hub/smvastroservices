@@ -20,10 +20,7 @@
   }
 })();
 </script>
-<style id="smv-v352-pages-standalone-install-hidden">
-html.smv-v352-pages-standalone #smvCalendarInstallArea,
-html.smv-v352-pages-standalone .cal-app-link{display:none!important;}
-</style>
+
 <script id="smv-v350-host-nav">(()=>{const h=location.hostname.toLowerCase();if(h!=='smvastroservices.pages.dev'&&!h.endsWith('.smvastroservices.pages.dev'))return;const c=document.querySelector('link[rel="canonical"]');if(c&&h==='smvastroservices.pages.dev')c.href=location.origin+'/horoscope/calendar/';document.addEventListener('DOMContentLoaded',()=>{const nav=document.querySelector('.calendar-product-nav');if(!nav)return;const a=nav.querySelector('a[href="https://smvastroservices.in/"]');const b=nav.querySelector('a[href="https://horoscope.smvastroservices.in/"]');if(a){a.href='/';a.removeAttribute('target');}if(b){b.href='/horoscope/';b.removeAttribute('target');}});})();</script>
 <script>
 (()=>{const h=location.hostname.toLowerCase();if(h==='smvastroservices.in'||h==='www.smvastroservices.in'){location.replace('https://calendar.smvastroservices.in/'+location.search+location.hash);}})();
@@ -54,11 +51,14 @@ html.smv-v352-pages-standalone .cal-app-link{display:none!important;}
 <nav class="calendar-language-switch" aria-label="Calendar language"><button id="calTamil" lang="ta" type="button">தமிழ்</button><button id="calEnglish" lang="en" type="button">English</button></nav>
 </header>
 <main class="calendar-page-shell"><section id="smvDailyCalendar" aria-label="Daily Calendar"></section></main>
-<footer class="calendar-install" id="smvCalendarInstallArea" hidden>
-<div class="calendar-install-inner"><button id="calInstall" type="button"><img src="../assets/calendar-192.png" width="36" height="36" alt=""> <span>Install SMV CALENDAR</span></button><p id="calInstallStatus" role="status"></p></div>
-</footer>
+<section class="card smv-android-apk-card" id="smvCalendarAndroidApkSection" aria-label="SMV CALENDAR Android app download">
+  <div class="smv-android-apk-heading"><span class="smv-android-apk-mark" aria-hidden="true">APK</span><div><h3>SMV CALENDAR Android App</h3><p data-apk-version class="small"></p></div></div>
+  <p data-apk-status class="small" role="status" aria-live="polite">Checking Android APK…</p>
+  <a data-apk-download class="btn" href="#" hidden rel="noopener">DOWNLOAD SMV CALENDAR APK</a>
+</section>
 <script src="../location-search-online-offline.js"></script>
 <script src="../horoscope.js"></script>
+<script type="module" src="../android-apk-download.mjs"></script>
 <script type="module" src="calendar-pwa.mjs?v=20261024-admin-cache-v7"></script>
 <script type="module" src="../daily-calendar.mjs?v=20261024-sunmoon-regex-fix-v3"></script>
 <script type="module" id="smv-calendar-rasi-palan-loader">
@@ -132,18 +132,6 @@ html.smv-v352-pages-standalone .cal-app-link{display:none!important;}
   }
 })();
 </script>
-<script id="smv-v352-pages-calendar-install-guard">
-(()=>{
-  if(location.hostname!=='smvastroservices.pages.dev')return;
-  if(!document.documentElement.classList.contains('smv-v352-pages-standalone'))return;
-  // A standalone window may belong to the parent ASTRO PWA; NEVER infer that
-  // the nested Calendar PWA is installed, or change its shared-origin flag.
-  const area=document.getElementById('smvCalendarInstallArea');
-  if(area)area.hidden=true;
-  const link=document.querySelector('.cal-app-link');
-  if(link)link.hidden=true;
-  // The CSS guard also covers Calendar panels rebuilt after language switches.
-})();
-</script>
+
 </body>
 </html>

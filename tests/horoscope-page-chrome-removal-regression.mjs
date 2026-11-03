@@ -13,8 +13,13 @@ assert.match(language, /\$\('smvHoroscopeControls'\)/);
 assert.doesNotMatch(pwa, /#siteFooter/);
 assert.match(pwa, /getElementById\('smvHoroscopeInstallArea'\)/);
 for (const id of ['smvHoroscopeControls', 'smvHoroscopeAuth', 'languageTamil', 'languageEnglish',
-  'english-horoscope', 'tamil-horoscope', 'smvMarriageMatching', 'smvHoroscopeInstallArea',
-  'installApp', 'installStatus']) assert.ok(html.includes('id="' + id + '"'), 'missing preserved feature/control: ' + id);
+  'english-horoscope', 'tamil-horoscope', 'smvMarriageMatching', 'smvHoroscopeAndroidApkSection']) assert.ok(html.includes('id="' + id + '"'), 'missing preserved feature/control: ' + id);
+assert.ok(html.includes('id="smvHoroscopeAndroidApkSection"'), 'Horoscope must expose the signed APK download card');
+assert.ok(html.includes('./android-apk-download.mjs'), 'Horoscope must load the public APK metadata controller');
+assert.equal(html.includes('id="smvHoroscopeInstallArea"'), false, 'old PWA install card must be replaced');
+assert.equal(html.includes('id="installApp"'), false, 'old PWA install button must be removed');
+assert.ok(html.includes('rel="manifest"'), 'the Horoscope web manifest is retained');
+assert.ok(html.includes('pwa.js'), 'the Horoscope offline service-worker module is retained');
 for (const file of ['public/horoscope/header-layout.css', 'public/horoscope/assets/hero-desktop.png',
   'public/horoscope/assets/hero-mobile.png', 'public/horoscope/assets/temple-frame.png']) {
   assert.equal(existsSync(new URL('../' + file, import.meta.url)), false, 'obsolete chrome asset/file remains: ' + file);
