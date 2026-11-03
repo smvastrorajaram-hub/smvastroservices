@@ -21,6 +21,7 @@ on:
   pull_request:
     paths:
       - "smvastroproduction/**"
+      - "smvastroproduction/launcher/icon-512.png"
       - "settings.gradle"
       - "prepare-smv-astro-production-icon.sh"
       - ".github/workflows/build-smv-astro-production-apk.yml"
@@ -32,6 +33,7 @@ on:
   push:
     paths:
       - "smvastroproduction/**"
+      - "smvastroproduction/launcher/icon-512.png"
       - "settings.gradle"
       - "prepare-smv-astro-production-icon.sh"
       - ".github/workflows/build-smv-astro-production-apk.yml"
@@ -151,9 +153,13 @@ jobs:
   build:
     if: ${{ github.event_name != 'workflow_dispatch' || !inputs.generate_release_keystore }}
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
     env:
       SMV_FIREBASE_ANDROID_APP_ID: ${{ vars.SMV_FIREBASE_ANDROID_APP_ID || '1:299081899217:android:09e43164cfdd015ba539f0' }}
-      SMV_ANDROID_VERSION_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.version_name || vars.SMV_ANDROID_VERSION_NAME || 'v1.2' }}
+      SMV_ANDROID_VERSION_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.version_name || (github.event_name == 'push' && github.ref == 'refs/heads/fix/android-launcher-mask-background-20261103' && 'v1.7') || vars.SMV_ANDROID_VERSION_NAME || 'v1.7' }}
+      SMV_SIGNED_RELEASE: ${{ (github.event_name == 'workflow_dispatch' && inputs.build_signed_release) || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -190,6 +196,59 @@ jobs:
 
       - name: Verify Android adaptive and legacy launcher icon resources
         run: node --test test/android-launcher-icon.test.mjs
+
+      - name: Upload generated Android launcher icon previews
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMV-ASTRO-ANDROID-LAUNCHER-ICON-PREVIEW
+          path: |
+            smvastroproduction/src/main/res/mipmap-nodpi/ic_launcher.png
+            smvastroproduction/src/main/res/mipmap-nodpi/ic_launcher_round.png
+            smvastroproduction/src/main/res/drawable-nodpi/ic_launcher_foreground.png
+          if-no-files-found: error
+          retention-days: 7
+
+
+      - name: Allocate the next permanent Android release version on main pushes
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          variable_endpoint="repos/${GITHUB_REPOSITORY}/actions/variables/SMV_ANDROID_VERSION_NAME"
+          current_version="$(gh api "$variable_endpoint" --jq '.value' 2>/dev/null || true)"
+          if [[ ! "$current_version" =~ ^v([1-9][0-9]*)\.([0-9]{1,3})$ ]]; then
+            current_version="v1.7"
+          fi
+          [[ "$current_version" =~ ^v([1-9][0-9]*)\.([0-9]{1,3})$ ]]
+          major="${BASH_REMATCH[1]}"
+          minor="${BASH_REMATCH[2]}"
+          current_code=$((10#$major * 1000 + 10#$minor))
+
+          # v1.7 / versionCode 1007 is the last permanent release built
+          # from the isolated icon-fix branch. Never create a non-updating APK.
+          if (( current_code < 1007 )); then
+            major=1
+            minor=7
+          fi
+
+          if (( 10#$minor >= 999 )); then
+            major=$((10#$major + 1))
+            minor=0
+          else
+            minor=$((10#$minor + 1))
+          fi
+          next_version="v${major}.${minor}"
+
+          if gh api -X PATCH "$variable_endpoint" -f value="$next_version" >/dev/null 2>&1; then
+            :
+          else
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/actions/variables" \
+              -f name="SMV_ANDROID_VERSION_NAME" -f value="$next_version" >/dev/null
+          fi
+          echo "SMV_ANDROID_VERSION_NAME=$next_version" >> "$GITHUB_ENV"
+          echo "Allocated next SMV ASTRO signed Android release: $next_version"
 
       - name: Validate Firebase Android App ID and ordered version
         shell: bash
@@ -247,7 +306,7 @@ jobs:
             :smvastroproduction:assembleRelease
 
       - name: Validate permanent Release signing secrets
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_signed_release }}
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
         shell: bash
         env:
           SMV_ANDROID_KEYSTORE_BASE64: ${{ secrets.SMV_ANDROID_KEYSTORE_BASE64 }}
@@ -272,7 +331,7 @@ jobs:
           fi
 
       - name: Restore permanent signing keystore securely
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_signed_release }}
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
         shell: bash
         env:
           SMV_ANDROID_KEYSTORE_BASE64: ${{ secrets.SMV_ANDROID_KEYSTORE_BASE64 }}
@@ -291,7 +350,7 @@ jobs:
           echo "SMV_ANDROID_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
 
       - name: Build signed SMV ASTRO Permanent Release APK
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_signed_release }}
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
         env:
           SMV_ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/smv-astro-release.p12
           SMV_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.SMV_ANDROID_KEYSTORE_PASSWORD }}
@@ -303,14 +362,14 @@ jobs:
             :smvastroproduction:assembleRelease
 
       - name: Verify signed Release APK certificate
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_signed_release }}
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
         run: |
           apk="smvastroproduction/build/outputs/apk/release/smvastroproduction-release.apk"
           test -s "$apk"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk"
 
       - name: Upload permanent signed Release APK
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_signed_release }}
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: SMV-ASTRO-PERMANENT-RELEASE-APK
@@ -318,5 +377,5 @@ jobs:
           retention-days: 30
 
       - name: Remove signing keystore from the runner
-        if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.build_signed_release }}
+        if: ${{ always() && env.SMV_SIGNED_RELEASE == 'true' }}
         run: rm -f "$RUNNER_TEMP/smv-astro-release.p12"
