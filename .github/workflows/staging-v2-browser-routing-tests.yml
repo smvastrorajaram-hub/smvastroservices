@@ -17,6 +17,7 @@ on:
       - 'test/staging-legacy-route-guard.test.cjs'
       - 'public/smvastro.mjs'
       - 'test/browser-backend-routing.test.mjs'
+      - 'test/staging-site-version.test.mjs'
       - 'package.json'
       - '.github/workflows/staging-v2-browser-routing-tests.yml'
   push:
@@ -55,9 +56,10 @@ jobs:
           node --check public/backend-api-routing.mjs
           node --check cloudflare/website-gateway/src/index.mjs
           node --check test/browser-backend-routing.test.mjs
+          node --check test/staging-site-version.test.mjs
           node --check test/cloudflare-website-gateway.test.mjs
       - name: Run isolated Staging browser backend routing contract tests
-        run: npm run test:browser-backend-routing && npm run test:cloudflare-website-gateway && npm run test:staging-legacy-route-guard
+        run: npm run test:browser-backend-routing && npm run test:cloudflare-website-gateway && npm run test:staging-legacy-route-guard && node --test test/staging-site-version.test.mjs
       - name: Check Staging server guard syntax
         run: node --check server.js
       - name: Install isolated Cloudflare API Worker dependencies
