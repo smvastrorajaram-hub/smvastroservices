@@ -49,6 +49,12 @@ jobs:
         working-directory: cloudflare/backend-api
         run: npx --yes wrangler@4.156.0 d1 migrations list smvastro-wallet-production --remote --config wrangler.production.jsonc
 
+      - name: Read Production D1 schema markers only (SELECT queries)
+        working-directory: cloudflare/backend-api
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "SELECT name, type FROM sqlite_master WHERE name IN ('smv_wallet_schema_meta','smv_domain_schema_meta','smv_domain_wallets','smv_domain_live_sessions','smv_domain_live_bookings','smv_domain_razorpay_webhook_events') ORDER BY type, name; SELECT schema_key, schema_version FROM smv_domain_schema_meta ORDER BY schema_key;"
+
       - name: Read Production Worker health and migration status
         shell: bash
         run: |
