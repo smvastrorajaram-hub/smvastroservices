@@ -21,7 +21,8 @@ export function registerRazorpayConnectivityRoute({
   razorpay,
   mode = 'disabled',
   keyId = '',
-  credentialsConfigured = false
+  credentialsConfigured = false,
+  getVerification = null
 } = {}) {
   if (!app || typeof app.get !== 'function' ||
       !identityService || typeof identityService.authenticateAuthorization !== 'function' ||
@@ -45,7 +46,18 @@ export function registerRazorpayConnectivityRoute({
         });
       }
 
-      const result = await razorpay.testConnection();
+      const result = typeof getVerification === 'function'
+        ? await getVerification({ force: true })
+        : await razorpay.testConnection();
+      if (typeof getVerification === 'function' && result?.connectionVerified !== true) {
+        return sendError(res, Object.assign(new Error('Razorpay connectivity could not be verified.'), {
+          code: String(result?.code || 'RAZORPAY_CONNECTIVITY_CHECK_FAILED'),
+          httpStatus: 502
+        }));
+      }
+      const visibleOrders = typeof getVerification === 'function'
+        ? result.ordersVisible
+        : result.visibleOrders;
       return res.set('Cache-Control', 'no-store').json({
         ok: true,
         connectionVerified: true,
@@ -54,7 +66,7 @@ export function registerRazorpayConnectivityRoute({
         keyPrefix: String(keyId).slice(0, 9),
         operation: 'GET /orders?count=1',
         readOnly: true,
-        ordersVisible: Number(result.visibleOrders) || 0,
+        ordersVisible: Number(visibleOrders) || 0,
         message: 'Razorpay ' + mode + ' credentials were accepted by the provider.'
       });
     } catch (error) {
