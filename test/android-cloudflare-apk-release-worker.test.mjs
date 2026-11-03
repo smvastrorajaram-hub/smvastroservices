@@ -153,9 +153,6 @@ function envFor({ uploadsEnabled = true } = {}) {
     APK_RELEASES: new FakeR2(),
     ALLOW_APK_UPLOADS: uploadsEnabled ? 'true' : 'false',
     ALLOW_APK_DELETES: 'true',
-    // Unit tests exercise the explicit multi-app-enabled path. Wrangler deployment
-    // configs remain fail-closed until the remote D1 migration and Worker are verified.
-    MULTI_APP_RELEASES_ENABLED: 'true',
     MAX_APK_BYTES: String(100 * 1024 * 1024),
     FIREBASE_ALLOWED_PROJECT_IDS: 'smv-astro',
     SMV_ANDROID_RELEASE_ADMIN_UIDS: 'admin-uid',
@@ -396,6 +393,8 @@ test('APK history deletion requires Admin authorization, the delete gate and an 
 
 test('Horoscope and Calendar have independent package identities, version sequences and downloads', async () => {
   const env = envFor();
+  // Enable the gated multi-app feature only for tests that exercise those routes.
+  env.MULTI_APP_RELEASES_ENABLED = 'true';
   const { worker } = makeWorker(env);
   const horoscopePackage = 'in.smvastroservices.horoscope';
   const calendarPackage = 'in.smvastroservices.calendar';
@@ -433,6 +432,8 @@ test('Horoscope and Calendar have independent package identities, version sequen
 
 test('Each Admin app manager can upload only its assigned package and protects only its own current release', async () => {
   const env = envFor();
+  // Enable the gated multi-app feature only for tests that exercise those routes.
+  env.MULTI_APP_RELEASES_ENABLED = 'true';
   const { worker } = makeWorker(env);
   const mismatch = await uploadProduct(worker, env, 'calendar', 'v1.0', 1000, 'in.smvastroservices.horoscope');
   assert.equal(mismatch.status, 400);
@@ -460,6 +461,8 @@ test('Each Admin app manager can upload only its assigned package and protects o
 
 test('Public Horoscope and Calendar APK metadata are CORS-accessible only from their own approved origins', async () => {
   const env = envFor();
+  // Enable the gated multi-app feature only for tests that exercise those routes.
+  env.MULTI_APP_RELEASES_ENABLED = 'true';
   const { worker } = makeWorker(env);
   const allowed = await worker.fetch(new Request('https://apk.example/public/android-apps/horoscope', {
     headers: { Origin: 'https://horoscope.smvastroservices.in' }
