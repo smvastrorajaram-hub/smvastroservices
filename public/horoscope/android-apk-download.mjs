@@ -16,17 +16,18 @@
   const status = card.querySelector('[data-apk-status]');
   const details = card.querySelector('[data-apk-version]');
   const download = card.querySelector('[data-apk-download]');
-  const workerDefault = 'https://smv-astro-apk-release-api.astroservices.workers.dev';
+  const allowedWorkerOrigin = 'https://smv-astro-apk-release-api.astroservices.workers.dev';
 
   const language = () => document.documentElement.lang === 'ta' ? 'ta' : 'en';
   const message = (en, ta) => language() === 'ta' ? ta : en;
   const setStatus = value => { if (status) status.textContent = value; };
   const workerOrigin = () => {
-    const configured = String(window.SMV_APK_RELEASE_API_URL || workerDefault).trim();
+    const configured = String(window.SMV_APK_RELEASE_API_URL || '').trim();
+    if (!configured) return null;
     try {
       const url = new URL(configured);
       if (url.protocol !== 'https:' || url.username || url.password || url.pathname !== '/' || url.search || url.hash) return null;
-      if (url.origin !== new URL(workerDefault).origin) return null;
+      if (url.origin !== allowedWorkerOrigin) return null;
       return url.origin;
     } catch (_) {
       return null;
