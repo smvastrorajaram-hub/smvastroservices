@@ -78,13 +78,19 @@ test('The approved PWA artwork is reused only as launcher input for the new prod
   assert.doesNotMatch(script, /public\/(horoscope|assets)\/.*(write|rm|delete)/i);
 });
 
-test('Public APK cards remain quiet until the new Cloudflare app routes are explicitly configured', () => {
+test('Public Horoscope and Calendar APK cards point to the verified Cloudflare release Worker', () => {
   const controller = read('public/horoscope/android-apk-download.mjs');
   const horoscopeHtml = read('public/horoscope/index.html');
   const calendarHtml = read('public/horoscope/calendar/index.html');
+  const publicApiConfig = '<script id="smv-apk-release-api-config">window.SMV_APK_RELEASE_API_URL = window.SMV_APK_RELEASE_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev";</script>';
+
   assert.ok(controller.includes("window.SMV_APK_RELEASE_API_URL || ''"));
   assert.ok(controller.includes('if (!configured) return null'));
   assert.ok(controller.includes("allowedWorkerOrigin = 'https://smv-astro-apk-release-api.astroservices.workers.dev'"));
+  assert.ok(horoscopeHtml.includes(publicApiConfig), 'Horoscope must configure the public APK release Worker');
+  assert.ok(calendarHtml.includes(publicApiConfig), 'Calendar must configure the public APK release Worker');
+  assert.ok(horoscopeHtml.indexOf(publicApiConfig) < horoscopeHtml.indexOf('./android-apk-download.mjs'));
+  assert.ok(calendarHtml.indexOf(publicApiConfig) < calendarHtml.indexOf('../android-apk-download.mjs'));
   assert.ok(horoscopeHtml.includes('smvHoroscopeAndroidApkSection'));
   assert.ok(calendarHtml.includes('smvCalendarAndroidApkSection'));
   assert.ok(!horoscopeHtml.includes('id="smvHoroscopeInstallArea"') && !horoscopeHtml.includes('id="installApp"'));
