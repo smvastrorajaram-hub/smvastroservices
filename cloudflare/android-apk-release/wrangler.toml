@@ -11,6 +11,7 @@ SMV_ANDROID_RELEASE_ADMIN_EMAILS = ""
 ALLOWED_ORIGINS = "https://smvastroservices.in,https://www.smvastroservices.in,https://horoscope.smvastroservices.in,https://calendar.smvastroservices.in,https://smvastro.pages.dev,https://smvastroservices.pages.dev"
 ALLOW_APK_UPLOADS = "true"
 ALLOW_APK_DELETES = "true"
+MULTI_APP_RELEASES_ENABLED = "true"
 MAX_APK_BYTES = "104857600"
 
 [[r2_buckets]]
