@@ -5,7 +5,8 @@ import { createD1IdentityAuthorizationGate } from '../../../shared/backend-platf
 function setup({
   enabled = true, environment = 'staging', sourceProjectId = 'smv-astro-staging',
   projectIds = ['smv-astro-staging'], schemaVersion = '0008_identity_profile_backfill_audit',
-  inventoryComplete = 1, reconciliationComplete = 1, sourceQuiesced = 1, fail = false
+  inventoryComplete = 1, reconciliationComplete = 1, sourceQuiesced = 1, fail = false,
+  productionApproved = false
 } = {}) {
   const calls = [];
   const db = {
@@ -28,7 +29,7 @@ function setup({
     return { uid: 'staging-user', role: 'customer', isAdmin: false, header };
   } };
   const gate = createD1IdentityAuthorizationGate({
-    identityService, db, enabled, environment, sourceProjectId, projectIds
+    identityService, db, enabled, environment, sourceProjectId, projectIds, productionApproved
   });
   return { gate, calls, get authCalls() { return authCalls; } };
 }
@@ -54,9 +55,36 @@ test('D1 authorization is restricted to the single isolated staging Firebase pro
     const state = setup(options);
     const readiness = await state.gate.readiness();
     assert.equal(readiness.ready, false);
-    assert.match(readiness.reason, /scope_mismatch|allowlist_mismatch/);
+    assert.match(readiness.reason, /scope_mismatch|allowlist_mismatch|production_approval_missing/);
     assert.equal(state.calls.length, 0);
   }
+});
+
+test('Production D1 authorization requires explicit approval and the exact Project 1 allowlist', async () => {
+  const missingApproval = setup({
+    environment: 'production', sourceProjectId: 'smv-astro', projectIds: ['smv-astro']
+  });
+  const blocked = await missingApproval.gate.readiness();
+  assert.equal(blocked.ready, false);
+  assert.equal(blocked.reason, 'production_approval_missing');
+  assert.equal(missingApproval.calls.length, 0);
+
+  const wrongProject = setup({
+    environment: 'production', sourceProjectId: 'smv-astro',
+    projectIds: ['smv-astro-staging'], productionApproved: true
+  });
+  assert.equal((await wrongProject.gate.readiness()).ready, false);
+  assert.equal(wrongProject.calls.length, 0);
+
+  const readyProduction = setup({
+    environment: 'production', sourceProjectId: 'smv-astro',
+    projectIds: ['smv-astro'], productionApproved: true
+  });
+  const ready = await readyProduction.gate.readiness();
+  assert.equal(ready.ready, true);
+  const user = await readyProduction.gate.authenticateAuthorization('Bearer production-token');
+  assert.equal(user.role, 'customer');
+  assert.equal(readyProduction.authCalls, 1);
 });
 
 test('D1 authorization requires schema 0008 and all three explicit migration attestations', async () => {
