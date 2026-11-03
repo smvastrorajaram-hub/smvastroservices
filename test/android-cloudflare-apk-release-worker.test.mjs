@@ -693,6 +693,9 @@ test('deployment workflow retries edge-propagation failures and requires D1/R2 r
   assert.ok(workflow.includes('for attempt in {1..10}'));
   assert.ok(workflow.includes('health.d1Ready === true'));
   assert.ok(workflow.includes('health.r2Ready === true'));
+  assert.ok(workflow.includes('health.deletesEnabled === true'));
+  assert.ok(workflow.includes('/public/android-apps/horoscope'));
+  assert.ok(workflow.includes('/public/android-apps/calendar'));
   assert.ok(workflow.includes('Worker health did not become ready after bounded propagation retries'));
   assert.ok(workflow.includes('Public APK metadata'));
   assert.ok(workflow.includes("typeof data.available !== 'boolean'"));
