@@ -58,30 +58,54 @@ jobs:
           set -euo pipefail
           query="$(cat <<'SQL'
           SELECT 'd1:identity_users' AS metric, CAST(COUNT(*) AS TEXT) AS value FROM smv_domain_identity_users WHERE firebase_project_id='smv-astro'
-          UNION ALL SELECT 'd1:identity_astrologers', CAST(COUNT(*) AS TEXT) FROM smv_domain_identity_astrologers WHERE firebase_project_id='smv-astro'
-          UNION ALL SELECT 'd1:identity_admins', CAST(COUNT(*) AS TEXT) FROM smv_domain_identity_admins WHERE firebase_project_id='smv-astro'
-          UNION ALL SELECT 'd1:identity_phones', CAST(COUNT(*) AS TEXT) FROM smv_domain_identity_phones WHERE firebase_project_id='smv-astro'
-          UNION ALL SELECT 'd1:identity_public_ids', CAST(COUNT(*) AS TEXT) FROM smv_domain_identity_public_ids WHERE firebase_project_id='smv-astro'
-          UNION ALL SELECT 'd1:identity_payout_profiles', CAST(COUNT(*) AS TEXT) FROM smv_domain_identity_payout_profiles WHERE firebase_project_id='smv-astro'
-          UNION ALL SELECT 'd1:identity_import_audit', CAST(COUNT(*) AS TEXT) FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro'
-          UNION ALL SELECT 'd1:identity_migration_meta', CAST(COUNT(*) AS TEXT) FROM smv_domain_identity_migration_meta WHERE source_project_id='smv-astro'
-          UNION ALL SELECT 'meta:inventory_complete', CAST(COALESCE(MAX(inventory_complete),0) AS TEXT) FROM smv_domain_identity_migration_meta WHERE source_project_id='smv-astro'
-          UNION ALL SELECT 'meta:reconciliation_complete', CAST(COALESCE(MAX(reconciliation_complete),0) AS TEXT) FROM smv_domain_identity_migration_meta WHERE source_project_id='smv-astro'
-          UNION ALL SELECT 'meta:source_quiesced', CAST(COALESCE(MAX(source_quiesced),0) AS TEXT) FROM smv_domain_identity_migration_meta WHERE source_project_id='smv-astro'
-          UNION ALL SELECT 'audit:smv_users:total', CAST(COUNT(*) AS TEXT) FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_users'
-          UNION ALL SELECT 'audit:smv_users:warning', CAST(COUNT(*) AS TEXT) FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_users' AND mapping_status='warning'
-          UNION ALL SELECT 'audit:smv_astrologers:total', CAST(COUNT(*) AS TEXT) FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_astrologers'
-          UNION ALL SELECT 'audit:smv_astrologers:warning', CAST(COUNT(*) AS TEXT) FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_astrologers' AND mapping_status='warning'
-          UNION ALL SELECT 'audit:smv_astrologer:total', CAST(COUNT(*) AS TEXT) FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_astrologer'
-          UNION ALL SELECT 'audit:smv_astrologer:warning', CAST(COUNT(*) AS TEXT) FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_astrologer' AND mapping_status='warning'
-          UNION ALL SELECT 'audit:smv_admins:total', CAST(COUNT(*) AS TEXT) FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_admins'
-          UNION ALL SELECT 'audit:smv_admins:warning', CAST(COUNT(*) AS TEXT) FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_admins' AND mapping_status='warning'
-          UNION ALL SELECT 'audit:smv_phone_registry:total', CAST(COUNT(*) AS TEXT) FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_phone_registry'
-          UNION ALL SELECT 'audit:smv_phone_registry:warning', CAST(COUNT(*) AS TEXT) FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_phone_registry' AND mapping_status='warning'
-          UNION ALL SELECT 'audit:smv_public_ids:total', CAST(COUNT(*) AS TEXT) FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_public_ids'
-          UNION ALL SELECT 'audit:smv_public_ids:warning', CAST(COUNT(*) AS TEXT) FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_public_ids' AND mapping_status='warning'
-          UNION ALL SELECT 'audit:smv_payouts:total', CAST(COUNT(*) AS TEXT) FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_payouts'
-          UNION ALL SELECT 'audit:smv_payouts:warning', CAST(COUNT(*) AS TEXT) FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_payouts' AND mapping_status='warning'
+          ;
+          SELECT 'd1:identity_astrologers' AS metric, CAST(COUNT(*) AS TEXT) AS value FROM smv_domain_identity_astrologers WHERE firebase_project_id='smv-astro'
+          ;
+          SELECT 'd1:identity_admins' AS metric, CAST(COUNT(*) AS TEXT) AS value FROM smv_domain_identity_admins WHERE firebase_project_id='smv-astro'
+          ;
+          SELECT 'd1:identity_phones' AS metric, CAST(COUNT(*) AS TEXT) AS value FROM smv_domain_identity_phones WHERE firebase_project_id='smv-astro'
+          ;
+          SELECT 'd1:identity_public_ids' AS metric, CAST(COUNT(*) AS TEXT) AS value FROM smv_domain_identity_public_ids WHERE firebase_project_id='smv-astro'
+          ;
+          SELECT 'd1:identity_payout_profiles' AS metric, CAST(COUNT(*) AS TEXT) AS value FROM smv_domain_identity_payout_profiles WHERE firebase_project_id='smv-astro'
+          ;
+          SELECT 'd1:identity_import_audit' AS metric, CAST(COUNT(*) AS TEXT) AS value FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro'
+          ;
+          SELECT 'd1:identity_migration_meta' AS metric, CAST(COUNT(*) AS TEXT) AS value FROM smv_domain_identity_migration_meta WHERE source_project_id='smv-astro'
+          ;
+          SELECT 'meta:inventory_complete' AS metric, CAST(COALESCE(MAX(inventory_complete),0) AS TEXT) AS value FROM smv_domain_identity_migration_meta WHERE source_project_id='smv-astro'
+          ;
+          SELECT 'meta:reconciliation_complete' AS metric, CAST(COALESCE(MAX(reconciliation_complete),0) AS TEXT) AS value FROM smv_domain_identity_migration_meta WHERE source_project_id='smv-astro'
+          ;
+          SELECT 'meta:source_quiesced' AS metric, CAST(COALESCE(MAX(source_quiesced),0) AS TEXT) AS value FROM smv_domain_identity_migration_meta WHERE source_project_id='smv-astro'
+          ;
+          SELECT 'audit:smv_users:total' AS metric, CAST(COUNT(*) AS TEXT) AS value FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_users'
+          ;
+          SELECT 'audit:smv_users:warning' AS metric, CAST(COUNT(*) AS TEXT) AS value FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_users' AND mapping_status='warning'
+          ;
+          SELECT 'audit:smv_astrologers:total' AS metric, CAST(COUNT(*) AS TEXT) AS value FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_astrologers'
+          ;
+          SELECT 'audit:smv_astrologers:warning' AS metric, CAST(COUNT(*) AS TEXT) AS value FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_astrologers' AND mapping_status='warning'
+          ;
+          SELECT 'audit:smv_astrologer:total' AS metric, CAST(COUNT(*) AS TEXT) AS value FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_astrologer'
+          ;
+          SELECT 'audit:smv_astrologer:warning' AS metric, CAST(COUNT(*) AS TEXT) AS value FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_astrologer' AND mapping_status='warning'
+          ;
+          SELECT 'audit:smv_admins:total' AS metric, CAST(COUNT(*) AS TEXT) AS value FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_admins'
+          ;
+          SELECT 'audit:smv_admins:warning' AS metric, CAST(COUNT(*) AS TEXT) AS value FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_admins' AND mapping_status='warning'
+          ;
+          SELECT 'audit:smv_phone_registry:total' AS metric, CAST(COUNT(*) AS TEXT) AS value FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_phone_registry'
+          ;
+          SELECT 'audit:smv_phone_registry:warning' AS metric, CAST(COUNT(*) AS TEXT) AS value FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_phone_registry' AND mapping_status='warning'
+          ;
+          SELECT 'audit:smv_public_ids:total' AS metric, CAST(COUNT(*) AS TEXT) AS value FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_public_ids'
+          ;
+          SELECT 'audit:smv_public_ids:warning' AS metric, CAST(COUNT(*) AS TEXT) AS value FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_public_ids' AND mapping_status='warning'
+          ;
+          SELECT 'audit:smv_payouts:total' AS metric, CAST(COUNT(*) AS TEXT) AS value FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_payouts'
+          ;
+          SELECT 'audit:smv_payouts:warning' AS metric, CAST(COUNT(*) AS TEXT) AS value FROM smv_domain_identity_import_audit WHERE source_project_id='smv-astro' AND source_collection='smv_payouts' AND mapping_status='warning';
           SQL
           )"
           if ! npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "$query" > /tmp/smv-prod-identity-d1.json 2> /tmp/smv-prod-identity-d1.stderr; then
