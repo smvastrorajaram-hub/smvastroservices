@@ -1,0 +1,239 @@
+name: Read-only SMV Android APK Release Worker Readiness Audit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smv-astro-apk-release-worker-readiness-audit
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Confirm read-only audit on main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require main branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "::error::Run this read-only audit from the main branch only."
+            exit 1
+          fi
+          echo "Read-only audit confirmed on main; no deployment or migration step is available in this workflow."
+
+  audit:
+    name: Inspect dedicated APK Release D1, R2 and public Worker health
+    needs: preflight
+    if: ${{ needs.preflight.result == 'success' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_APK_RELEASE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      EXPECTED_D1_NAME: smv-astro-apk-releases
+      EXPECTED_D1_ID: 5105ebb3-435c-47b7-9983-2e171fa911cd
+      WORKER_URL: https://smv-astro-apk-release-api.astroservices.workers.dev
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Check dedicated Cloudflare credentials without printing values
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=""
+          for variable in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID; do
+            if [[ -z "$(printenv "$variable" || true)" ]]; then
+              missing="$missing $variable"
+            fi
+          done
+          if [[ -n "$missing" ]]; then
+            echo "::error::Readiness audit cannot query live Cloudflare resources; missing configured secret/variable:$missing. Do not paste credential values into chat."
+            exit 1
+          fi
+          echo "Cloudflare credential and account variable are configured; values are not printed."
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Verify committed Worker, D1 and R2 identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          const file = 'cloudflare/android-apk-release/wrangler.toml';
+          const config = fs.readFileSync(file, 'utf8');
+          const checks = [
+            [/^name\s*=\s*"([^"]+)"\s*$/m, 'smv-astro-apk-release-api', 'Worker name'],
+            [/^bucket_name\s*=\s*"([^"]+)"\s*$/m, 'smv-astro-apk-releases', 'R2 bucket'],
+            [/^database_name\s*=\s*"([^"]+)"\s*$/m, 'smv-astro-apk-releases', 'D1 database name'],
+            [/^database_id\s*=\s*"([^"]+)"\s*$/m, '5105ebb3-435c-47b7-9983-2e171fa911cd', 'D1 database ID'],
+            [/^binding\s*=\s*"DB"\s*$/m, 'DB', 'D1 binding'],
+            [/^binding\s*=\s*"APK_RELEASES"\s*$/m, 'APK_RELEASES', 'R2 binding'],
+            [/^ALLOW_APK_UPLOADS\s*=\s*"([^"]+)"\s*$/m, 'true', 'upload gate'],
+            [/^ALLOW_APK_DELETES\s*=\s*"([^"]+)"\s*$/m, 'true', 'delete gate'],
+            [/^MULTI_APP_RELEASES_ENABLED\s*=\s*"([^"]+)"\s*$/m, 'true', 'multi-app gate']
+          ];
+          for (const [pattern, expected, label] of checks) {
+            const match = config.match(pattern);
+            if (!match || match[1] !== expected) {
+              throw new Error(label + ' mismatch in committed Worker config.');
+            }
+          }
+          if (!config.includes('migrations_dir = "./migrations"')) {
+            throw new Error('The dedicated Worker is not pointed at the committed migration directory.');
+          }
+          console.log('Committed Worker name, dedicated D1 ID, R2 bucket, bindings and gates match the audited values.');
+          NODE
+
+      - name: Verify live D1 database identity before read-only queries
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 d1 info "$EXPECTED_D1_NAME" --json \
+            --config cloudflare/android-apk-release/wrangler.toml \
+            > "$RUNNER_TEMP/apk-release-audit-d1-info.json"
+          node <<'NODE'
+          const fs = require('node:fs');
+          const output = fs.readFileSync(process.env.RUNNER_TEMP + '/apk-release-audit-d1-info.json', 'utf8');
+          const data = JSON.parse(output);
+          const serialized = JSON.stringify(data).toLowerCase();
+          if (!serialized.includes(process.env.EXPECTED_D1_NAME.toLowerCase()) ||
+              !serialized.includes(process.env.EXPECTED_D1_ID.toLowerCase())) {
+            throw new Error('Live D1 name/ID mismatch. No D1 query or mutation was attempted after this check.');
+          }
+          console.log('Live D1 identity matches the dedicated APK Release database.');
+          NODE
+
+      - name: Display remote migration state
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 d1 migrations list "$EXPECTED_D1_NAME" --remote \
+            --config cloudflare/android-apk-release/wrangler.toml
+
+      - name: Verify migrated D1 schema and safety triggers using SELECT only
+        shell: bash
+        run: |
+          set -euo pipefail
+          CONFIG="--config cloudflare/android-apk-release/wrangler.toml"
+          npx --yes wrangler@4 d1 execute "$EXPECTED_D1_NAME" --remote $CONFIG \
+            --command "SELECT app_id FROM android_app_releases LIMIT 0"
+          npx --yes wrangler@4 d1 execute "$EXPECTED_D1_NAME" --remote $CONFIG \
+            --command "SELECT uid, attempted_at FROM android_apk_upload_attempts LIMIT 0"
+          TRIGGERS="$RUNNER_TEMP/apk-release-audit-triggers.txt"
+          npx --yes wrangler@4 d1 execute "$EXPECTED_D1_NAME" --remote $CONFIG \
+            --command "SELECT name FROM sqlite_master WHERE type='trigger' AND name IN ('android_app_releases_monotonic_version','android_app_releases_package_matches_app','android_apk_upload_attempts_hourly_limit') ORDER BY name" \
+            > "$TRIGGERS"
+          for trigger in android_app_releases_monotonic_version android_app_releases_package_matches_app android_apk_upload_attempts_hourly_limit; do
+            if ! grep -Fq "$trigger" "$TRIGGERS"; then
+              cat "$TRIGGERS"
+              echo "::error::Expected D1 safety trigger is missing: $trigger"
+              exit 1
+            fi
+          done
+          echo "D1 app-scoped schema, upload-attempt table and version/package/rate-limit triggers are present."
+
+      - name: Verify live Worker health and read-only R2 probe
+        id: worker_health
+        shell: bash
+        run: |
+          set -euo pipefail
+          HEALTH_FILE="$RUNNER_TEMP/apk-release-audit-health.json"
+          for attempt in {1..4}; do
+            HTTP_CODE="$(curl --silent --show-error --connect-timeout 5 --max-time 20 \
+              --output "$HEALTH_FILE" --write-out '%{http_code}' "$WORKER_URL/health" || true)"
+            if [[ "$HTTP_CODE" == "200" ]] && node - "$HEALTH_FILE" <<'NODE'
+          const fs = require('node:fs');
+          const health = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const ready = health.success === true &&
+            health.ready === true &&
+            health.d1Ready === true &&
+            health.r2Ready === true &&
+            health.uploadsEnabled === true &&
+            health.deletesEnabled === true &&
+            health.multiAppReleasesEnabled === true;
+          if (!ready) {
+            console.error('Worker readiness flags:', JSON.stringify({
+              success: health.success === true,
+              ready: health.ready === true,
+              d1Ready: health.d1Ready === true,
+              r2Ready: health.r2Ready === true,
+              uploadsEnabled: health.uploadsEnabled === true,
+              deletesEnabled: health.deletesEnabled === true,
+              multiAppReleasesEnabled: health.multiAppReleasesEnabled === true
+            }));
+            process.exit(1);
+          }
+          console.log('Worker is ready: D1, read-only R2 HEAD, Admin upload/delete and multi-app gates are all enabled.');
+          NODE
+            then
+              echo "status=ready" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "::notice::Worker health attempt $attempt/4 returned HTTP ${HTTP_CODE:-unavailable} or incomplete readiness; retrying."
+            sleep 3
+          done
+          cat "$HEALTH_FILE" 2>/dev/null || true
+          echo "::error::Live APK Release Worker did not pass readiness checks."
+          exit 1
+
+      - name: Verify public Horoscope and Calendar metadata contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          for app in horoscope calendar; do
+            metadata="$RUNNER_TEMP/apk-release-audit-$app.json"
+            status="$(curl --silent --show-error --connect-timeout 5 --max-time 20 \
+              --output "$metadata" --write-out '%{http_code}' "$WORKER_URL/public/android-apps/$app" || true)"
+            if [[ "$status" != "200" ]]; then
+              cat "$metadata" 2>/dev/null || true
+              echo "::error::Public $app metadata endpoint returned HTTP ${status:-unavailable}."
+              exit 1
+            fi
+            APP_ID="$app" WORKER_URL="$WORKER_URL" node - "$metadata" <<'NODE'
+          const fs = require('node:fs');
+          const data = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const app = process.env.APP_ID;
+          const expectedPackage = app === 'horoscope'
+            ? 'in.smvastroservices.horoscope'
+            : 'in.smvastroservices.calendar';
+          if (data.success !== true || typeof data.available !== 'boolean') {
+            throw new Error('Public metadata contract failed for ' + app + '.');
+          }
+          if (data.available === true) {
+            const download = new URL(data.downloadUrl);
+            const expectedPath = '/download/' + app + '/' + String(data.versionCode);
+            if (data.appId !== app || data.packageName !== expectedPackage ||
+                !Number.isSafeInteger(Number(data.versionCode)) ||
+                Number(data.versionCode) < 1000 ||
+                !/^v[1-9][0-9]*\.[0-9]{1,3}$/.test(String(data.versionName || '')) ||
+                download.origin !== new URL(process.env.WORKER_URL).origin ||
+                download.pathname !== expectedPath) {
+              throw new Error('Public metadata package/version/download-origin mismatch for ' + app + '.');
+            }
+          }
+          console.log(app + ' metadata contract: PASS; available=' + data.available + '.');
+          NODE
+          done
+
+      - name: Publish read-only readiness summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## APK Release Worker — Read-only Readiness Audit"
+            echo "- Scope: dedicated APK Release D1, R2 binding and Worker only."
+            echo "- Mutations: none (no migration apply, deploy, APK upload or delete)."
+            echo "- Worker health result: ${{ steps.worker_health.outputs.status || 'not passed' }}."
+            echo "- A green run confirms live D1 identity/schema, safety triggers, R2 health probe and public Horoscope/Calendar metadata contracts."
+          } >> "$GITHUB_STEP_SUMMARY"
