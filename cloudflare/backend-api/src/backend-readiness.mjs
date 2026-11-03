@@ -1,0 +1,225 @@
+'use strict';
+
+const REQUIRED_SCHEMA_QUERY = [
+  "SELECT",
+  "  (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = 'shared-domain' LIMIT 1) AS shared_domain_version,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'smv_domain_notification_inbox') AS notification_inbox_table_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'idx_smv_domain_notification_inbox_state') AS notification_inbox_index_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'smv_domain_wallet_offer_redemption_usage') AS offer_redemption_usage_table_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'smv_domain_offer_redemptions') AS offer_redemptions_table_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_offer_redemption_validate') AS offer_redemption_validate_trigger_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_offer_redemption_apply') AS offer_redemption_apply_trigger_count,",
+  "  (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = 'wallet-recharges' LIMIT 1) AS wallet_recharges_version,",
+  "  (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = 'live-sessions' LIMIT 1) AS live_sessions_version,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'smv_domain_identity_users') AS identity_users_table_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'smv_domain_identity_migration_meta') AS identity_migration_meta_table_count,",
+  "  (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = 'identity-profiles' LIMIT 1) AS identity_profiles_version,",
+  "  (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = 'wallet-security' LIMIT 1) AS wallet_security_version,",
+  "  (SELECT COUNT(*) FROM pragma_table_info('smv_domain_razorpay_webhook_events') WHERE name IN ('claim_token', 'lease_until_ms')) AS razorpay_claim_columns_count,",
+  "  (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = 'live-booking-release-guard' LIMIT 1) AS live_booking_release_version,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_live_booking_release_pending_validate') AS live_booking_release_trigger_count"
+].join('\n');
+
+const MIGRATION_KEYS = [
+  '0002_shared_domain_repository',
+  '0003_notification_inbox',
+  '0004_wallet_offer_redemptions',
+  '0005_legacy_wallet_backfill',
+  '0006_d1_live_wallet_settlement',
+  '0007_identity_profile_domain',
+  '0008_identity_profile_backfill_audit',
+  '0009_wallet_razorpay_payout_encryption',
+  '0010_razorpay_webhook_claim_leases',
+  '0011_live_booking_release_claim'
+];
+
+function countIs(value, expected) {
+  return Number(value || 0) === expected;
+}
+
+function unavailableSchema(d1Binding, querySucceeded = false) {
+  const schemaMigrations = Object.fromEntries(MIGRATION_KEYS.map(key => [key, false]));
+  return {
+    d1Binding,
+    querySucceeded,
+    ready: false,
+    schemaVersion: null,
+    sharedDomainSchemaVersion: null,
+    schemaMigrations,
+    migrationStatus: schemaMigrations,
+    checks: {
+      sharedDomainSchema: false,
+      walletSchema: false,
+      walletRechargeSchema: false,
+      liveSessionSchema: false,
+      identityProfileSchema: false,
+      walletSecuritySchema: false,
+      razorpayWebhookClaimSchema: false,
+      liveBookingReleaseSchema: false,
+      allRequiredMigrations: false
+    }
+  };
+}
+
+/**
+ * Inspect live D1 schema on every call. Nothing is cached between requests;
+ * failures and partially-applied migrations always fail closed.
+ */
+export async function inspectBackendSchema(db) {
+  if (!db || typeof db.prepare !== 'function') return unavailableSchema(false);
+
+  try {
+    const row = await db.prepare(REQUIRED_SCHEMA_QUERY).first();
+    if (!row || typeof row !== 'object') return unavailableSchema(true, true);
+
+    const schemaMigrations = {
+      '0002_shared_domain_repository':
+        row.shared_domain_version === '0002_shared_domain_repository',
+      '0003_notification_inbox':
+        countIs(row.notification_inbox_table_count, 1) &&
+        countIs(row.notification_inbox_index_count, 1),
+      '0004_wallet_offer_redemptions':
+        countIs(row.offer_redemption_usage_table_count, 1) &&
+        countIs(row.offer_redemptions_table_count, 1) &&
+        countIs(row.offer_redemption_validate_trigger_count, 1) &&
+        countIs(row.offer_redemption_apply_trigger_count, 1),
+      '0005_legacy_wallet_backfill':
+        row.wallet_recharges_version === '0005_legacy_wallet_backfill',
+      '0006_d1_live_wallet_settlement':
+        row.live_sessions_version === '0006_d1_live_wallet_settlement',
+      '0007_identity_profile_domain':
+        countIs(row.identity_users_table_count, 1) &&
+        countIs(row.identity_migration_meta_table_count, 1),
+      '0008_identity_profile_backfill_audit':
+        row.identity_profiles_version === '0008_identity_profile_backfill_audit',
+      '0009_wallet_razorpay_payout_encryption':
+        row.wallet_security_version === '0009_wallet_razorpay_payout_encryption',
+      '0010_razorpay_webhook_claim_leases':
+        countIs(row.razorpay_claim_columns_count, 2),
+      '0011_live_booking_release_claim':
+        row.live_booking_release_version === '0011_live_booking_release_claim' &&
+        countIs(row.live_booking_release_trigger_count, 1)
+    };
+    const allRequiredMigrations = Object.values(schemaMigrations).every(Boolean);
+    const checks = {
+      sharedDomainSchema: schemaMigrations['0002_shared_domain_repository'],
+      walletSchema: schemaMigrations['0002_shared_domain_repository'] &&
+        schemaMigrations['0005_legacy_wallet_backfill'] &&
+        schemaMigrations['0009_wallet_razorpay_payout_encryption'],
+      walletRechargeSchema: schemaMigrations['0005_legacy_wallet_backfill'],
+      liveSessionSchema: schemaMigrations['0006_d1_live_wallet_settlement'],
+      identityProfileSchema: schemaMigrations['0007_identity_profile_domain'] &&
+        schemaMigrations['0008_identity_profile_backfill_audit'],
+      walletSecuritySchema: schemaMigrations['0009_wallet_razorpay_payout_encryption'],
+      razorpayWebhookClaimSchema: schemaMigrations['0010_razorpay_webhook_claim_leases'],
+      liveBookingReleaseSchema: schemaMigrations['0011_live_booking_release_claim'],
+      allRequiredMigrations
+    };
+
+    return {
+      d1Binding: true,
+      querySucceeded: true,
+      ready: allRequiredMigrations,
+      schemaVersion: row.shared_domain_version || null,
+      sharedDomainSchemaVersion: row.shared_domain_version || null,
+      schemaMigrations,
+      migrationStatus: schemaMigrations,
+      checks
+    };
+  } catch {
+    return unavailableSchema(true);
+  }
+}
+
+export function registerBackendReadinessRoute({
+  app,
+  db,
+  firebaseConnectivityProbe = async () => false,
+  getRuntimeState = () => ({}),
+  getIdentityGate = async () => ({ enabled: false, ready: false, reason: 'disabled' })
+}) {
+  app.get('/api/backend/readiness', async (_req, res) => {
+    const schema = await inspectBackendSchema(db);
+    let firebaseConnected = false;
+    try {
+      firebaseConnected = (await firebaseConnectivityProbe()) === true;
+    } catch {
+      firebaseConnected = false;
+    }
+
+    let runtime = {};
+    try {
+      runtime = getRuntimeState() || {};
+    } catch {
+      runtime = {};
+    }
+
+    let identityGate = { enabled: false, ready: false, reason: 'identity_runtime_unavailable' };
+    try {
+      identityGate = await getIdentityGate();
+    } catch {
+      // Identity/Profile authorization is a separate opt-in gate; fail it closed.
+    }
+
+    const razorpayPolicy = runtime.razorpayPolicy || {};
+    const walletReadRoutesEnabled = runtime.walletReadRoutesRegistered === true &&
+      runtime.walletReadRouteGateOpen === true && schema.checks.sharedDomainSchema;
+    const walletRechargeRoutesEnabled = runtime.walletRechargeRoutesRegistered === true &&
+      runtime.walletReadRouteGateOpen === true && schema.checks.walletRechargeSchema;
+    const walletOfferRoutesEnabled = runtime.walletOfferRoutesRegistered === true &&
+      runtime.walletReadRouteGateOpen === true && schema.checks.walletRechargeSchema;
+    const liveCallChatRoutesEnabled = runtime.liveSessionRoutesRegistered === true &&
+      runtime.liveSessionRoutesOpen === true && schema.checks.liveSessionSchema;
+
+    const body = {
+      ok: schema.ready,
+      ready: schema.ready,
+      schemaVersion: schema.schemaVersion,
+      sharedDomainSchemaVersion: schema.sharedDomainSchemaVersion,
+      migrationStatus: schema.migrationStatus,
+      schemaMigrations: schema.schemaMigrations,
+      checks: {
+        expressRuntime: true,
+        d1Binding: schema.d1Binding,
+        schemaQuerySucceeded: schema.querySucceeded,
+        walletSchema: schema.checks.walletSchema,
+        sharedDomainSchema: schema.checks.sharedDomainSchema,
+        walletRechargeSchema: schema.checks.walletRechargeSchema,
+        liveSessionSchema: schema.checks.liveSessionSchema,
+        identityProfileSchema: schema.checks.identityProfileSchema,
+        walletSecuritySchema: schema.checks.walletSecuritySchema,
+        razorpayWebhookClaimSchema: schema.checks.razorpayWebhookClaimSchema,
+        liveBookingReleaseSchema: schema.checks.liveBookingReleaseSchema,
+        allRequiredMigrations: schema.checks.allRequiredMigrations
+      },
+      firebaseConnected,
+      firestoreConnected: firebaseConnected,
+      razorpayConnected: false,
+      razorpayCredentialsConfigured: razorpayPolicy.enabled === true &&
+        !!runtime.razorpayKeyId && !!runtime.razorpayKeySecret && !!runtime.razorpayWebhookSecret,
+      razorpayProviderConnectionVerified: false,
+      razorpayMode: String(razorpayPolicy.mode || 'disabled'),
+      razorpayPolicyReason: String(razorpayPolicy.reason || 'disabled'),
+      legacyRazorpayRoutesRegistered: runtime.legacyRazorpayRoutesRegistered === true,
+      legacyPrivateConsultationRoutesEnabled: false,
+      walletReadRoutesEnabled,
+      walletRechargeRoutesEnabled,
+      walletRechargeMode: String(runtime.walletRechargeMode || 'disabled'),
+      walletOfferRoutesEnabled,
+      walletBackfillRoutesRegistered: runtime.walletBackfillRoutesRegistered === true,
+      walletBackfillToolsEnabled: runtime.walletBackfillToolsOpen === true,
+      identityProfileBackfillRoutesRegistered: runtime.identityProfileBackfillRoutesRegistered === true,
+      identityProfileBackfillToolsEnabled: runtime.identityProfileBackfillToolsOpen === true,
+      identityProfileBackfillPreviewOnly: runtime.identityProfileBackfillPreviewOnly !== false,
+      identityProfileD1AuthorizationEnabled: runtime.identityProfileD1AuthorizationOpen === true,
+      identityProfileD1AuthorizationReady: identityGate.ready === true,
+      identityProfileD1AuthorizationReason: String(identityGate.reason || 'unknown'),
+      walletBusinessRoutesEnabled: false,
+      liveCallChatRoutesEnabled
+    };
+
+    return res.status(schema.ready ? 200 : 503)
+      .set({ 'Cache-Control': 'no-store' })
+      .json(body);
+  });
+}
