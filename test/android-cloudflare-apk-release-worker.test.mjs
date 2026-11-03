@@ -153,6 +153,9 @@ function envFor({ uploadsEnabled = true } = {}) {
     APK_RELEASES: new FakeR2(),
     ALLOW_APK_UPLOADS: uploadsEnabled ? 'true' : 'false',
     ALLOW_APK_DELETES: 'true',
+    // Unit tests exercise the explicit multi-app-enabled path. Wrangler deployment
+    // configs remain fail-closed until the remote D1 migration and Worker are verified.
+    MULTI_APP_RELEASES_ENABLED: 'true',
     MAX_APK_BYTES: String(100 * 1024 * 1024),
     FIREBASE_ALLOWED_PROJECT_IDS: 'smv-astro',
     SMV_ANDROID_RELEASE_ADMIN_UIDS: 'admin-uid',
