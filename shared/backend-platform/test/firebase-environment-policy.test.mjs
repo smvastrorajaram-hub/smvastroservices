@@ -40,6 +40,12 @@ test('Production D1 Identity authorization needs enabled, cutover-complete and e
     ...base,
     SMV_IDENTITY_PROFILE_CUTOVER_COMPLETE: 'true',
     SMV_IDENTITY_PROFILE_PRODUCTION_AUTHORIZATION_APPROVED: 'true'
+  }), false);
+  assert.equal(isD1IdentityAuthorizationAllowed({
+    ...base,
+    SMV_IDENTITY_PROFILE_CUTOVER_COMPLETE: 'true',
+    SMV_IDENTITY_PROFILE_PRODUCTION_AUTHORIZATION_APPROVED: 'true',
+    SMV_IDENTITY_PROFILE_FRESH_START_APPROVED: 'true'
   }), true);
   assert.equal(isD1IdentityAuthorizationAllowed({
     ...base,
