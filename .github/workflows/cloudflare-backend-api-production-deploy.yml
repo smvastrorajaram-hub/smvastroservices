@@ -187,7 +187,7 @@ jobs:
             echo "Production Worker health attempt $attempt returned HTTP $status."
             if [ "$status" = "200" ]; then
               cat /tmp/smv-worker-health.json
-              node --input-type=module -e "import fs from 'node:fs'; const d=JSON.parse(fs.readFileSync('/tmp/smv-worker-health.json','utf8')); if(d.environment!=='production'||d.backendActive!==true||d.liveSessionRoutesRegistered!==true||d.firebaseConnected!==true) process.exit(1);"
+              node --input-type=module -e "import fs from 'node:fs'; const d=JSON.parse(fs.readFileSync('/tmp/smv-worker-health.json','utf8')); if(d.environment!=='production'||d.backendActive!==false||d.firebaseConnected!==true||d.walletReadRoutesRegistered!==false||d.liveSessionRoutesRegistered!==false) process.exit(1);"
               exit 0
             fi
             sleep 5

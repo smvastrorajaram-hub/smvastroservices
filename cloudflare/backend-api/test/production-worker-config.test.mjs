@@ -25,13 +25,13 @@ test('Production Worker uses the exact requested Worker name, D1 ID, Firebase Pr
   }]);
 });
 
-test('Production Worker enables D1 Wallet, Razorpay Live and Live/Booking routes, not D1 Identity', () => {
-  assert.equal(config.vars.SMV_BACKEND_CLOUDFLARE_ACTIVE, 'true');
-  assert.equal(config.vars.SMV_WALLET_DOMAIN_BACKFILL_COMPLETE, 'true');
-  assert.equal(config.vars.SMV_WALLET_DOMAIN_CUTOVER_COMPLETE, 'true');
-  assert.equal(config.vars.WALLET_READ_ROUTES_ENABLED, 'true');
-  assert.equal(config.vars.SMV_LIVE_SESSION_ROUTES_ENABLED, 'true');
-  assert.equal(config.vars.SMV_RAZORPAY_LIVE_MODE_ENABLED, 'true');
+test('Production Worker remains inactive until Project 1 Wallet backfill is complete', () => {
+  assert.equal(config.vars.SMV_BACKEND_CLOUDFLARE_ACTIVE, 'false');
+  assert.equal(config.vars.SMV_WALLET_DOMAIN_BACKFILL_COMPLETE, 'false');
+  assert.equal(config.vars.SMV_WALLET_DOMAIN_CUTOVER_COMPLETE, 'false');
+  assert.equal(config.vars.WALLET_READ_ROUTES_ENABLED, 'false');
+  assert.equal(config.vars.SMV_LIVE_SESSION_ROUTES_ENABLED, 'false');
+  assert.equal(config.vars.SMV_RAZORPAY_LIVE_MODE_ENABLED, 'false');
   assert.equal(config.vars.SMV_RAZORPAY_TEST_MODE_ENABLED, 'false');
   assert.equal(config.vars.SMV_IDENTITY_PROFILE_D1_AUTHORIZATION_ENABLED, 'false');
   assert.equal(config.vars.SMV_WALLET_BACKFILL_TOOLS_ENABLED, 'false');
