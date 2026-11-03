@@ -27,14 +27,28 @@ test('staging with no configured project IDs stays fail-closed', () => {
   assert.deepEqual(resolveFirebaseAuthProjectIds({ SMV_ENVIRONMENT: 'staging' }), []);
 });
 
-test('D1 Identity authorization cannot be enabled in Production', () => {
-  assert.equal(isD1IdentityAuthorizationAllowed({
+test('Production D1 Identity authorization needs enabled, cutover-complete and explicit approval flags', () => {
+  const base = {
     SMV_ENVIRONMENT: 'production',
     SMV_IDENTITY_PROFILE_D1_AUTHORIZATION_ENABLED: 'true'
+  };
+  assert.equal(isD1IdentityAuthorizationAllowed(base), false);
+  assert.equal(isD1IdentityAuthorizationAllowed({
+    ...base, SMV_IDENTITY_PROFILE_CUTOVER_COMPLETE: 'true'
+  }), false);
+  assert.equal(isD1IdentityAuthorizationAllowed({
+    ...base,
+    SMV_IDENTITY_PROFILE_CUTOVER_COMPLETE: 'true',
+    SMV_IDENTITY_PROFILE_PRODUCTION_AUTHORIZATION_APPROVED: 'true'
+  }), true);
+  assert.equal(isD1IdentityAuthorizationAllowed({
+    ...base,
+    SMV_IDENTITY_PROFILE_CUTOVER_COMPLETE: 'false',
+    SMV_IDENTITY_PROFILE_PRODUCTION_AUTHORIZATION_APPROVED: 'true'
   }), false);
 });
 
-test('D1 Identity authorization remains opt-in for staging only', () => {
+test('D1 Identity authorization remains opt-in for staging and rejects unknown environments', () => {
   assert.equal(isD1IdentityAuthorizationAllowed({
     SMV_ENVIRONMENT: 'staging',
     SMV_IDENTITY_PROFILE_D1_AUTHORIZATION_ENABLED: 'true'
@@ -42,5 +56,9 @@ test('D1 Identity authorization remains opt-in for staging only', () => {
   assert.equal(isD1IdentityAuthorizationAllowed({
     SMV_ENVIRONMENT: 'staging',
     SMV_IDENTITY_PROFILE_D1_AUTHORIZATION_ENABLED: 'false'
+  }), false);
+  assert.equal(isD1IdentityAuthorizationAllowed({
+    SMV_ENVIRONMENT: 'development',
+    SMV_IDENTITY_PROFILE_D1_AUTHORIZATION_ENABLED: 'true'
   }), false);
 });
