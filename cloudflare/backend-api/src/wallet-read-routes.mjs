@@ -1,7 +1,13 @@
 import { safePaise, safeMinutes, walletError } from '../../../shared/backend-platform/wallet-domain.mjs';
 
 export function isWalletReadRouteGateOpen(env = {}) {
-  return String(env.WALLET_READ_ROUTES_ENABLED || '').toLowerCase() === 'true' &&
+  const environment = String(env.SMV_ENVIRONMENT || '').trim().toLowerCase();
+  const stagingScope = environment === 'staging';
+  const productionScope = environment === 'production' &&
+    String(env.FIREBASE_PROJECT_ID || '').trim() === 'smv-astro' &&
+    String(env.SMV_BACKEND_CLOUDFLARE_ACTIVE || '').trim().toLowerCase() === 'true';
+  return (stagingScope || productionScope) &&
+    String(env.WALLET_READ_ROUTES_ENABLED || '').toLowerCase() === 'true' &&
     String(env.SMV_WALLET_DOMAIN_BACKFILL_COMPLETE || '').toLowerCase() === 'true' &&
     String(env.SMV_WALLET_DOMAIN_CUTOVER_COMPLETE || '').toLowerCase() === 'true';
 }

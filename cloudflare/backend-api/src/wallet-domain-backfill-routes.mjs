@@ -33,8 +33,8 @@ function requestOptions(body={}) {
 
 /**
  * Admin-only, resumable Firestore -> D1 import controls.
- * Preview/reconcile never write. Apply is limited to the explicit staging
- * environment and requires a quiesced source plus an incomplete cutover gate.
+ * Preview/reconcile never write. Apply is limited to the matching isolated
+ * Staging project or Production Firebase Project 1, and requires a quiesced source.
  */
 export function registerWalletDomainBackfillRoutes({
   app,identityService,backfillService,firestore,
@@ -64,8 +64,13 @@ export function registerWalletDomainBackfillRoutes({
     if(toolsEnabled!==true) {
       throw Object.assign(new Error('Wallet backfill tools are disabled.'),{code:'BACKFILL_TOOLS_DISABLED',httpStatus:503});
     }
-    if(environment!=='staging'||String(sourceProjectId)!=='smv-astro-staging') {
-      throw Object.assign(new Error('Backfill tooling is restricted to the isolated SMV ASTRO staging Firebase project.'),{code:'BACKFILL_STAGING_ONLY',httpStatus:403});
+    const expectedProjectId = environment === 'production'
+      ? 'smv-astro'
+      : environment === 'staging'
+        ? 'smv-astro-staging'
+        : '';
+    if(!expectedProjectId||String(sourceProjectId)!==expectedProjectId) {
+      throw Object.assign(new Error('Backfill environment and Firebase source project do not match.'),{code:'BACKFILL_ENVIRONMENT_PROJECT_MISMATCH',httpStatus:403});
     }
     if(!(await isReady())) {
       throw Object.assign(new Error('D1 Wallet backfill schema 0005 is not ready.'),{code:'BACKFILL_SCHEMA_NOT_READY',httpStatus:503});
@@ -126,7 +131,7 @@ export function registerWalletDomainBackfillRoutes({
       const options=requestOptions(req.body||{});
       const result=await backfillService.applyPage(options);
       return res.set('Cache-Control','no-store').json({
-        success:true,sourceProjectId,mode:'staging_page_import',
+        success:true,sourceProjectId,mode:environment+'_page_import',
         sourceQuiescent:preflight.ok,sourceDataDeleted:false,cutoverComplete:false,...result
       });
     } catch(error) {

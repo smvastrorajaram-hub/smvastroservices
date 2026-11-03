@@ -55,8 +55,11 @@ export function registerD1LiveSessionRoutes({
     return role===user.role?user:{...user,role};
   }
   async function assertReady() {
-    if(routesEnabled!==true||environment!=='staging'||sourceProjectId!=='smv-astro-staging') {
-      throw httpError('LIVE_ROUTES_DISABLED','Live Call/Chat routes are restricted to the isolated staging environment.',503);
+    const stagingScope = environment === 'staging' && sourceProjectId === 'smv-astro-staging';
+    const productionScope = environment === 'production' && sourceProjectId === 'smv-astro' &&
+      String(env.SMV_BACKEND_CLOUDFLARE_ACTIVE || '').trim().toLowerCase() === 'true';
+    if(routesEnabled!==true||!(stagingScope||productionScope)) {
+      throw httpError('LIVE_ROUTES_DISABLED','Live Call/Chat routes require the matching Firebase project and an enabled backend environment.',503);
     }
     if(!(await isReady())) throw httpError('LIVE_SCHEMA_NOT_READY','D1 Live Session schema 0006 is not ready.',503);
   }

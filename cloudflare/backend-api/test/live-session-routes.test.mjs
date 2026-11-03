@@ -79,7 +79,11 @@ function fixture(overrides={}) {
   };
   registerD1LiveSessionRoutes({
     app,identityService,liveService,withdrawalService,
-    env:{LIVE_SESSION_COORDINATOR:namespace,LIVE_USER_EVENT_HUB:namespace},
+    env:{
+      LIVE_SESSION_COORDINATOR:namespace,
+      LIVE_USER_EVENT_HUB:namespace,
+      SMV_BACKEND_CLOUDFLARE_ACTIVE:overrides.backendActive===true?'true':'false'
+    },
     routesEnabled:overrides.routesEnabled??true,
     environment:overrides.environment||'staging',
     sourceProjectId:overrides.sourceProjectId||'smv-astro-staging',
@@ -88,12 +92,38 @@ function fixture(overrides={}) {
   return {app,calls,liveService,withdrawalService};
 }
 
-test('Live routes fail closed when the flag is disabled, environment is production or schema is missing',async()=>{
-  for(const opts of [{routesEnabled:false},{environment:'production'},{sourceProjectId:'smv-astro-production'},{isReady:async()=>false}]) {
+test('Live routes fail closed when disabled, the Firebase project is mismatched or schema is missing',async()=>{
+  for(const opts of [
+    {routesEnabled:false},
+    {sourceProjectId:'smv-astro'},
+    {environment:'staging',sourceProjectId:'smv-astro'},
+    {isReady:async()=>false}
+  ]) {
     const f=fixture(opts),res=responseHarness();
     await f.app.handlers.get('GET /live/pricing')(req(),res);
     assert.equal(res.statusCode,503);
     assert.equal(res.body.success,false);
+  }
+});
+
+test('Production Live routes accept only Firebase Project 1 after backend activation',async()=>{
+  const allowed=fixture({
+    environment:'production',sourceProjectId:'smv-astro',backendActive:true
+  });
+  const res=responseHarness();
+  await allowed.app.handlers.get('GET /live/pricing')(req(),res);
+  assert.equal(res.statusCode,200);
+  assert.equal(res.body.success,true);
+
+  for(const opts of [
+    {environment:'production',sourceProjectId:'smv-astro-staging',backendActive:true},
+    {environment:'production',sourceProjectId:'project-5',backendActive:true},
+    {environment:'production',sourceProjectId:'smv-astro',backendActive:false}
+  ]) {
+    const blocked=fixture(opts),response=responseHarness();
+    await blocked.app.handlers.get('GET /live/pricing')(req(),response);
+    assert.equal(response.statusCode,503);
+    assert.equal(response.body.code,'LIVE_ROUTES_DISABLED');
   }
 });
 

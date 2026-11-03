@@ -2,6 +2,11 @@
 (function(){
   const IS_SMV_PHASE1_STAGING=["smv-astro-phase1-browser-staging.onrender.com","smv-astro-phase1-browser-isolated.onrender.com"].includes(location.hostname);
   const BACKEND=IS_SMV_PHASE1_STAGING?"https://smv-astro-phase1-staging.onrender.com":"https://smvastroservices.onrender.com";
+  const CLOUDFLARE_FINANCIAL_BACKEND=IS_SMV_PHASE1_STAGING
+    ?"https://smvastro-backend-api-staging.astroservices.workers.dev"
+    :"https://smvastroservices.astroservices.workers.dev";
+  const FINANCIAL_BACKEND=window.SMV_CLOUDFLARE_FINANCIAL_API_ENABLED===true
+    ?CLOUDFLARE_FINANCIAL_BACKEND:BACKEND;
   const FBCONFIG=IS_SMV_PHASE1_STAGING
     ? {apiKey:"AIzaSyD9LzJ-7OKZMaVVf5kXa9aABBECS6kE8mA",authDomain:"smv-astro-staging.firebaseapp.com",projectId:"smv-astro-staging",storageBucket:"smv-astro-staging.firebasestorage.app",messagingSenderId:"73946216796",appId:"1:73946216796:web:09500761bec02699a4e999"}
     : {apiKey:"AIzaSyCKXyfZ9sjGmej7ygxHpzHNcNysMXHuvSs",authDomain:(location.hostname==='smvastroservices.pages.dev'||location.hostname.endsWith('.smvastroservices.pages.dev')?'smv-astro.firebaseapp.com':'auth.smvastroservices.in'),projectId:"smv-astro",storageBucket:"smv-astro.firebasestorage.app",messagingSenderId:"299081899217",appId:"1:299081899217:web:8d558df08e86037ea539f0"};
@@ -28,7 +33,7 @@
     if(!user)return null;
     if(!force&&smvLiveWalletCache&&smvLiveWalletCache.userUid===user.uid&&Date.now()-smvLiveWalletCache.loadedAt<8000)return smvLiveWalletCache;
     const token=await user.getIdToken();
-    const response=await fetch(BACKEND+'/wallet',{method:'GET',cache:'no-store',headers:{Authorization:'Bearer '+token,Accept:'application/json'}});
+    const response=await fetch(FINANCIAL_BACKEND+'/wallet',{method:'GET',cache:'no-store',headers:{Authorization:'Bearer '+token,Accept:'application/json'}});
     let data={};try{data=await response.json();}catch(_){}
     if(!response.ok||data.success!==true||!data.wallet)throw new Error(data.error||'Unable to read your current Wallet balance.');
     if(auth?.currentUser?.uid!==user.uid)throw new Error('Login changed while checking Wallet. Please try again.');
@@ -150,7 +155,7 @@
       if(length>max)throw new Error('Maximum affordable duration for this Astrologer’s '+kind.toUpperCase()+' is '+max+' minute(s). At '+smvLiveMoney(ratePaise)+'/minute, your Wallet has '+smvLiveMoney(available)+'.');
       const token=await user.getIdToken();
       const requestId=(window.crypto&&typeof window.crypto.randomUUID==='function')?window.crypto.randomUUID():('live-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));
-      const response=await fetch(BACKEND+'/live/requests',{
+      const response=await fetch(FINANCIAL_BACKEND+'/live/requests',{
         method:'POST',cache:'no-store',
         headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',Accept:'application/json'},
         body:JSON.stringify({astrologerId:String(astrologer.id||''),mode:kind,minutes:length,requestId,customerName:String(birthDetails?.customerName||user.displayName||'').trim(),birthDetails:{birthDate:String(birthDetails?.birthDate||''),birthTime:String(birthDetails?.birthTime||''),birthPlace:String(birthDetails?.birthPlace||'').trim(),birthLatitude:String(birthDetails?.birthLatitude||''),birthLongitude:String(birthDetails?.birthLongitude||''),birthTimezone:String(birthDetails?.birthTimezone||'')}})
@@ -398,7 +403,7 @@
       if(message)message.textContent='Submitting your '+bookingLabel+' Booking request…';
       try{
         const token=await user.getIdToken();
-        const response=await fetch(BACKEND+'/appointment-booking',{
+        const response=await fetch(FINANCIAL_BACKEND+'/appointment-booking',{
           method:'POST',cache:'no-store',
           headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
           body:JSON.stringify({

@@ -44,7 +44,11 @@ jobs:
         working-directory: cloudflare/backend-api
         run: node --test test/*.test.mjs ../../shared/backend-platform/test/*.test.mjs
 
-      - name: Apply D1 migrations to an ephemeral local database only
+      - name: Apply D1 migrations to an ephemeral Staging-configured local database only
         working-directory: cloudflare/backend-api
         run: npx --yes wrangler@4.156.0 d1 migrations apply smvastro-wallet-staging --local --config wrangler.jsonc
+
+      - name: Validate Production Worker D1 binding with local migrations only
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 migrations apply smvastro-wallet-production --local --config wrangler.production.jsonc
 
