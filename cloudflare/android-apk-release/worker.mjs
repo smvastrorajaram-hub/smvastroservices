@@ -333,7 +333,7 @@ export function createAndroidApkReleaseWorker({
           }, 200, { 'Cache-Control': 'no-store' });
         }
 
-        const publicAppMatch = /^\\/public\\/android-apps\\/(astro|horoscope|calendar)$/.exec(path);
+        const publicAppMatch = /^\/public\/android-apps\/(astro|horoscope|calendar)$/.exec(path);
         if ((path === '/public/android-app' || publicAppMatch) && request.method === 'GET') {
           if (!(await hasReleaseSchema(env))) {
             return json(request, env, { success: false, available: false, error: 'Cloudflare APK storage is not configured.' }, 503);
@@ -345,8 +345,8 @@ export function createAndroidApkReleaseWorker({
           });
         }
 
-        const multiDownloadMatch = /^\\/download\\/(astro|horoscope|calendar)\\/([1-9][0-9]{2,9})$/.exec(path);
-        const astroDownloadMatch = /^\\/download\\/([1-9][0-9]{2,9})$/.exec(path);
+        const multiDownloadMatch = /^\/download\/(astro|horoscope|calendar)\/([1-9][0-9]{2,9})$/.exec(path);
+        const astroDownloadMatch = /^\/download\/([1-9][0-9]{2,9})$/.exec(path);
         if ((multiDownloadMatch || astroDownloadMatch) && request.method === 'GET') {
           if (!(await hasReleaseSchema(env))) {
             return json(request, env, { success: false, error: 'Cloudflare APK storage is not configured.' }, 503);
@@ -356,7 +356,7 @@ export function createAndroidApkReleaseWorker({
           return await handleDownload(request, env, versionCode, appId);
         }
 
-        const adminAppMatch = /^\\/admin\\/android-apps\\/(astro|horoscope|calendar)$/.exec(path);
+        const adminAppMatch = /^\/admin\/android-apps\/(astro|horoscope|calendar)$/.exec(path);
         const adminAppId = path === '/admin/android-app' ? 'astro' : adminAppMatch?.[1];
         if (adminAppId && request.method === 'GET') {
           const auth = await requireAdmin(request, env, verifyToken);
@@ -370,7 +370,7 @@ export function createAndroidApkReleaseWorker({
             : { success: true, available: false, appId: adminAppId, appName: ANDROID_APPS[adminAppId].label });
         }
 
-        const adminHistoryMatch = /^\\/admin\\/android-apps\\/(astro|horoscope|calendar)\\/versions$/.exec(path);
+        const adminHistoryMatch = /^\/admin\/android-apps\/(astro|horoscope|calendar)\/versions$/.exec(path);
         if ((path === '/admin/android-app/versions' || adminHistoryMatch) && request.method === 'GET') {
           const auth = await requireAdmin(request, env, verifyToken);
           if (auth.response) return auth.response;
@@ -385,8 +385,8 @@ export function createAndroidApkReleaseWorker({
           });
         }
 
-        const deleteMultiMatch = /^\\/admin\\/android-apps\\/(astro|horoscope|calendar)\\/versions\\/([1-9][0-9]{2,9})$/.exec(path);
-        const deleteAstroMatch = /^\\/admin\\/android-app\\/versions\\/([1-9][0-9]{2,9})$/.exec(path);
+        const deleteMultiMatch = /^\/admin\/android-apps\/(astro|horoscope|calendar)\/versions\/([1-9][0-9]{2,9})$/.exec(path);
+        const deleteAstroMatch = /^\/admin\/android-app\/versions\/([1-9][0-9]{2,9})$/.exec(path);
         if ((deleteMultiMatch || deleteAstroMatch) && request.method === 'DELETE') {
           const auth = await requireAdmin(request, env, verifyToken);
           if (auth.response) return auth.response;
@@ -415,7 +415,7 @@ export function createAndroidApkReleaseWorker({
           return json(request, env, { success: true, deleted: true, deletedAppId: appId, deletedVersionCode: versionCode }, 200, { 'Cache-Control': 'no-store' });
         }
 
-        const uploadMultiMatch = /^\\/admin\\/android-apps\\/(astro|horoscope|calendar)\\/upload$/.exec(path);
+        const uploadMultiMatch = /^\/admin\/android-apps\/(astro|horoscope|calendar)\/upload$/.exec(path);
         if ((path === '/admin/android-app/upload' || uploadMultiMatch) && request.method === 'POST') {
           const appId = uploadMultiMatch ? uploadMultiMatch[1] : 'astro';
           const appSpec = ANDROID_APPS[appId];
