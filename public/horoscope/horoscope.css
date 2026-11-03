@@ -2874,11 +2874,26 @@ details>*{display:block!important}
 /* Direct Print/Save PDF: the live result retains today's Panchang/Hora. */
 @media print{#tamilHoroscopeResult .panchang-card,#tamilHoroscopeResult .hora-card,#englishHoroscopeResult .panchang-card,#englishHoroscopeResult .hora-card,[data-smv-screen-only^="daily-"]{display:none!important}}
 
-/* Native Android APK download panel; PWA manifests and offline service workers remain intact. */
-.smv-android-apk-card{max-width:1180px;margin:24px auto;padding:18px 20px;display:flex;flex-direction:column;gap:10px;background:#fff;border:1px solid #e6d9bd;border-radius:14px;color:#342918}
-.smv-android-apk-heading{display:flex;align-items:center;gap:12px}
-.smv-android-apk-heading h3{margin:0}
-.smv-android-apk-mark{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:6px 9px;border-radius:10px;background:#fff3d7;color:#714817;font-size:13px;font-weight:900;letter-spacing:.4px}
-.smv-android-apk-card p{margin:0}
-.smv-android-apk-card [data-apk-download]{align-self:flex-start;text-decoration:none}
-@media(max-width:680px){.smv-android-apk-card{margin:16px 8px;padding:14px}}
+/* Native Android APK cards reuse the SMV ASTRO app-icon layout.
+   This is presentation only; PWA routes, manifests and service workers are unchanged. */
+.smv-android-apk-section[hidden]{display:none}
+.smv-android-apk-section{width:100%;max-width:1260px;margin:8px auto 18px;padding:0 24px;box-sizing:border-box}
+.smv-android-apk-card{display:flex;align-items:center;gap:16px;max-width:980px;margin:0 auto;padding:15px 17px;border:1px solid #d7c69f;border-radius:14px;background:#fffaf0;color:#30251b;box-sizing:border-box}
+.smv-android-apk-icon-wrap{flex:0 0 58px;width:58px;height:58px}
+.smv-android-apk-icon-wrap img{display:block;width:58px;height:58px;object-fit:contain}
+.smv-android-apk-copy{flex:1 1 auto;min-width:0}
+.smv-android-apk-eyebrow{margin:0 0 4px;color:#765a27;font-size:11px;font-weight:800;letter-spacing:.08em}
+.smv-android-apk-copy h2{margin:0 0 5px;color:#24103f;font-size:17px;line-height:1.3}
+.smv-android-apk-copy>p:not(.smv-android-apk-eyebrow){margin:0;color:#51445f;font-size:13px;line-height:1.45}
+.smv-android-apk-copy .smv-android-apk-status{margin-top:6px;color:#765a27;font-size:12px}
+.smv-android-apk-actions{display:flex;flex:0 0 auto;flex-direction:column;align-items:stretch;gap:7px;min-width:185px}
+.smv-android-apk-download{display:block;padding:11px 14px;border:1px solid #24103f;border-radius:8px;background:#24103f;color:#fff;font-size:13px;font-weight:800;text-align:center;text-decoration:none}
+.smv-android-apk-download:hover{filter:brightness(1.06)}
+@media(max-width:650px){
+  .smv-android-apk-section{margin:8px auto 14px;padding:0 10px}
+  .smv-android-apk-card{display:grid;grid-template-columns:48px minmax(0,1fr);gap:10px;padding:13px 12px}
+  .smv-android-apk-icon-wrap,.smv-android-apk-icon-wrap img{width:48px;height:48px}
+  .smv-android-apk-copy h2{font-size:15px}
+  .smv-android-apk-copy>p:not(.smv-android-apk-eyebrow){font-size:12px}
+  .smv-android-apk-actions{grid-column:1/-1;min-width:0;width:100%}
+}
