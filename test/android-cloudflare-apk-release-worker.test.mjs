@@ -183,12 +183,24 @@ function makeWorker(env, { logger = { error() {} } } = {}) {
   return { worker, env };
 }
 
-function apkPayload(versionName, versionCode) {
+function apkPayload(versionName, versionCode, packageName = PACKAGE) {
   return Buffer.from(JSON.stringify({
-    packageName: PACKAGE,
+    packageName,
     versionName,
     versionCode
   }).padEnd(1100, ' '));
+}
+
+async function uploadProduct(worker, env, appId, versionName, versionCode, packageName) {
+  return worker.fetch(new Request('https://smv-astro-apk-release-api.smvastro.workers.dev/admin/android-apps/' + appId + '/upload', {
+    method: 'POST',
+    headers: {
+      Authorization: 'Bearer admin-token',
+      'Content-Type': 'application/vnd.android.package-archive',
+      Origin: appId === 'horoscope' ? 'https://horoscope.smvastroservices.in' : 'https://calendar.smvastroservices.in'
+    },
+    body: apkPayload(versionName, versionCode, packageName)
+  }), env);
 }
 
 async function upload(worker, env, versionName, versionCode, token = 'admin-token') {
@@ -377,6 +389,84 @@ test('APK history deletion requires Admin authorization, the delete gate and an 
   }), env);
   assert.equal(legacy.status, 409);
   assert.equal(env.DB.releases.has(1000), true);
+});
+
+test('Horoscope and Calendar have independent package identities, version sequences and downloads', async () => {
+  const env = envFor();
+  const { worker } = makeWorker(env);
+  const horoscopePackage = 'in.smvastroservices.horoscope';
+  const calendarPackage = 'in.smvastroservices.calendar';
+
+  const horoscopeUpload = await uploadProduct(worker, env, 'horoscope', 'v1.0', 1000, horoscopePackage);
+  assert.equal(horoscopeUpload.status, 200);
+  const horoscopeRelease = await horoscopeUpload.json();
+  assert.equal(horoscopeRelease.appId, 'horoscope');
+  assert.equal(horoscopeRelease.packageName, horoscopePackage);
+  assert.equal(horoscopeRelease.versionCode, 1000);
+  assert.match(horoscopeRelease.downloadUrl, /\\/download\\/horoscope\\/1000$/);
+
+  const calendarUpload = await uploadProduct(worker, env, 'calendar', 'v1.0', 1000, calendarPackage);
+  assert.equal(calendarUpload.status, 200);
+  const calendarRelease = await calendarUpload.json();
+  assert.equal(calendarRelease.appId, 'calendar');
+  assert.equal(calendarRelease.packageName, calendarPackage);
+  assert.equal(calendarRelease.versionCode, 1000);
+  assert.match(calendarRelease.downloadUrl, /\\/download\\/calendar\\/1000$/);
+
+  const [horoscopePublic, calendarPublic] = await Promise.all([
+    worker.fetch(new Request('https://apk.example/public/android-apps/horoscope'), env),
+    worker.fetch(new Request('https://apk.example/public/android-apps/calendar'), env)
+  ]);
+  assert.equal((await horoscopePublic.json()).packageName, horoscopePackage);
+  assert.equal((await calendarPublic.json()).packageName, calendarPackage);
+
+  const horoscopeDownload = await worker.fetch(new Request(horoscopeRelease.downloadUrl), env);
+  const calendarDownload = await worker.fetch(new Request(calendarRelease.downloadUrl), env);
+  assert.equal(horoscopeDownload.status, 200);
+  assert.equal(calendarDownload.status, 200);
+  assert.equal((await horoscopeDownload.arrayBuffer()).byteLength, 1100);
+  assert.equal((await calendarDownload.arrayBuffer()).byteLength, 1100);
+});
+
+test('Each Admin app manager can upload only its assigned package and protects only its own current release', async () => {
+  const env = envFor();
+  const { worker } = makeWorker(env);
+  const mismatch = await uploadProduct(worker, env, 'calendar', 'v1.0', 1000, 'in.smvastroservices.horoscope');
+  assert.equal(mismatch.status, 400);
+
+  assert.equal((await uploadProduct(worker, env, 'horoscope', 'v1.0', 1000, 'in.smvastroservices.horoscope')).status, 200);
+  assert.equal((await uploadProduct(worker, env, 'horoscope', 'v1.1', 1001, 'in.smvastroservices.horoscope')).status, 200);
+  assert.equal((await uploadProduct(worker, env, 'calendar', 'v1.0', 1000, 'in.smvastroservices.calendar')).status, 200);
+
+  const protectedCalendar = await worker.fetch(new Request('https://apk.example/admin/android-apps/calendar/versions/1000', {
+    method: 'DELETE', headers: { Authorization: 'Bearer admin-token' }
+  }), env);
+  assert.equal(protectedCalendar.status, 409);
+
+  const deletedHoroscope = await worker.fetch(new Request('https://apk.example/admin/android-apps/horoscope/versions/1000', {
+    method: 'DELETE', headers: { Authorization: 'Bearer admin-token' }
+  }), env);
+  assert.equal(deletedHoroscope.status, 200);
+  assert.equal(env.DB.releases.has('horoscope:1000'), false);
+  assert.equal(env.DB.releases.has('horoscope:1001'), true);
+  assert.equal(env.DB.releases.has('calendar:1000'), true);
+
+  const calendarLatest = await worker.fetch(new Request('https://apk.example/public/android-apps/calendar'), env);
+  assert.equal((await calendarLatest.json()).versionCode, 1000);
+});
+
+test('Public Horoscope and Calendar APK metadata are CORS-accessible only from their own approved origins', async () => {
+  const env = envFor();
+  const { worker } = makeWorker(env);
+  const allowed = await worker.fetch(new Request('https://apk.example/public/android-apps/horoscope', {
+    headers: { Origin: 'https://horoscope.smvastroservices.in' }
+  }), env);
+  assert.equal(allowed.headers.get('Access-Control-Allow-Origin'), 'https://horoscope.smvastroservices.in');
+
+  const denied = await worker.fetch(new Request('https://apk.example/public/android-apps/calendar', {
+    headers: { Origin: 'https://evil.example' }
+  }), env);
+  assert.equal(denied.headers.get('Access-Control-Allow-Origin'), null);
 });
 
 test('versionCode 1000 is rejected as the pre-release baseline without writing D1 or R2', async () => {
