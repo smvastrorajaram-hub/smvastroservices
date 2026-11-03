@@ -11,7 +11,7 @@ def appVersionName = providers.gradleProperty("smvVersionName")
         .orElse(providers.environmentVariable("SMV_ANDROID_VERSION_NAME"))
         .orElse("v1.0")
         .get()
-def versionMatcher = appVersionName =~ /^v([1-9][0-9]*)\\.([0-9]{1,3})$/
+def versionMatcher = appVersionName =~ /^v([1-9][0-9]*)\.([0-9]{1,3})$/
 if (!versionMatcher.matches()) {
     throw new GradleException("SMV Android version must use vMAJOR.MINOR format, for example v1.0 or v1.1 (minor must be 0-999).")
 }
