@@ -82,9 +82,9 @@ jobs:
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           const read = name => JSON.parse(fs.readFileSync('/tmp/smv-prod-' + name + '.json', 'utf8'));
-          const health = read('__healthz');
-          const readiness = read('__api_backend_readiness');
-          const migration = read('__api_backend_migration_status');
+          const health = read('_healthz');
+          const readiness = read('_api_backend_readiness');
+          const migration = read('_api_backend_migration_status');
           const required = [
             '0002_shared_domain_repository',
             '0003_notification_inbox',
