@@ -1,13 +1,6 @@
 name: Cloudflare Production D1 schema migrations
 
 on:
-  # The one-time fresh-start PR merge runs this workflow against the exact
-  # Production D1 database. It applies only versioned additive migrations;
-  # no user rows are deleted or reset by this workflow.
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/cloudflare-production-d1-migrations.yml"
   workflow_dispatch:
     inputs:
       confirm_database_name:
@@ -24,7 +17,7 @@ concurrency:
 
 jobs:
   apply-production-d1-migrations:
-    if: ${{ github.event_name == 'push' || inputs.confirm_database_name == 'smvastro-wallet-production' }}
+    if: ${{ inputs.confirm_database_name == 'smvastro-wallet-production' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: production
