@@ -611,7 +611,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
         verifyIdToken: verifyFirebaseIdToken,
         db: env.DB,
         projectIds: configuredProjectIds,
-        adminUids: projectScopedAdminEntries([env.ADMIN_UID || '', ...String(env.ADMIN_UIDS || '').split(',')]),
+        adminUids: projectScopedAdminEntries(resolveConfiguredAdminUids(env)),
         adminEmails: projectScopedAdminEntries(String(env.ADMIN_AUTH_EMAILS || '').split(','))
       });
       d1IdentityAuthorizationService = createD1IdentityAuthorizationGate({
@@ -620,7 +620,8 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
         enabled: true,
         environment: String(env.SMV_ENVIRONMENT || ''),
         sourceProjectId: identityProjectId,
-        projectIds: configuredProjectIds
+        projectIds: configuredProjectIds,
+        productionApproved: String(env.SMV_IDENTITY_PROFILE_PRODUCTION_AUTHORIZATION_APPROVED || '').trim().toLowerCase() === 'true'
       });
       walletIdentityService = d1IdentityAuthorizationService;
     }
