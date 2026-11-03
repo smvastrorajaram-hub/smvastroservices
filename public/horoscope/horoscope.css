@@ -2873,3 +2873,12 @@ details>*{display:block!important}
 
 /* Direct Print/Save PDF: the live result retains today's Panchang/Hora. */
 @media print{#tamilHoroscopeResult .panchang-card,#tamilHoroscopeResult .hora-card,#englishHoroscopeResult .panchang-card,#englishHoroscopeResult .hora-card,[data-smv-screen-only^="daily-"]{display:none!important}}
+
+/* Native Android APK download panel; PWA manifests and offline service workers remain intact. */
+.smv-android-apk-card{max-width:1180px;margin:24px auto;padding:18px 20px;display:flex;flex-direction:column;gap:10px;background:#fff;border:1px solid #e6d9bd;border-radius:14px;color:#342918}
+.smv-android-apk-heading{display:flex;align-items:center;gap:12px}
+.smv-android-apk-heading h3{margin:0}
+.smv-android-apk-mark{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:6px 9px;border-radius:10px;background:#fff3d7;color:#714817;font-size:13px;font-weight:900;letter-spacing:.4px}
+.smv-android-apk-card p{margin:0}
+.smv-android-apk-card [data-apk-download]{align-self:flex-start;text-decoration:none}
+@media(max-width:680px){.smv-android-apk-card{margin:16px 8px;padding:14px}}
