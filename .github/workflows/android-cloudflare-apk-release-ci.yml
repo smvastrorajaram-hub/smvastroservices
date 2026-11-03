@@ -19,6 +19,7 @@ on:
       - 'test/android-permanent-release.test.mjs'
       - '.github/workflows/android-cloudflare-apk-release-ci.yml'
       - '.github/workflows/deploy-android-apk-release-worker.yml'
+      - '.github/workflows/audit-android-apk-release-worker.yml'
       - '.github/workflows/deploy-android-apk-release-staging-worker.yml'
   push:
     branches: [main]
@@ -39,6 +40,7 @@ on:
       - 'test/android-permanent-release.test.mjs'
       - '.github/workflows/android-cloudflare-apk-release-ci.yml'
       - '.github/workflows/deploy-android-apk-release-worker.yml'
+      - '.github/workflows/audit-android-apk-release-worker.yml'
       - '.github/workflows/deploy-android-apk-release-staging-worker.yml'
 
 permissions:
@@ -56,6 +58,7 @@ jobs:
         run: |
           ruby -e 'require "yaml"; YAML.parse_file(".github/workflows/deploy-android-apk-release-worker.yml")'
           ruby -e 'require "yaml"; YAML.parse_file(".github/workflows/deploy-android-apk-release-staging-worker.yml")'
+          ruby -e 'require "yaml"; YAML.parse_file(".github/workflows/audit-android-apk-release-worker.yml")'
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -76,42 +79,94 @@ jobs:
       - name: Run APK release and existing permanent-signing regression tests
         run: node --test test/android-cloudflare-apk-release-worker.test.mjs test/android-permanent-release.test.mjs test/live-push-notifications.test.js test/cream-theme-audit.test.mjs test/android-apk-browser-fallback.test.mjs
 
-      - name: Validate D1 migration and database-level safety triggers
+      - name: Apply and validate the full D1 migration chain in SQLite
         run: |
           python3 - <<'PY'
           import sqlite3
           from pathlib import Path
 
-          sql = Path("cloudflare/android-apk-release/migrations/0001_android_app_releases.sql").read_text()
+          migrations = Path("cloudflare/android-apk-release/migrations")
           db = sqlite3.connect(":memory:")
-          db.executescript(sql)
+          db.executescript((migrations / "0001_android_app_releases.sql").read_text())
 
-          def release(code, version, key):
+          def legacy_release(code, version, storage, key, url):
               db.execute(
                   """INSERT INTO android_app_releases
                   (package_name, version_name, version_code, storage_provider, object_key,
                    external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at)
-                  VALUES (?, ?, ?, 'r2', ?, NULL, ?, ?, ?, ?, ?)""",
-                  ("in.smvastroservices.smvastro", version, code, key, "a" * 64, "b" * 64, 1024, "admin-test", 1700000000000),
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                  ("in.smvastroservices.smvastro", version, code, storage, key, url,
+                   "a" * 64, "b" * 64, 1024, "admin-test", 1700000000000),
               )
 
-          release(1001, "v1.1", "releases/1001/a.apk")
-          try:
-              release(1001, "v1.1", "releases/1001/b.apk")
-              raise AssertionError("D1 allowed a duplicate/non-increasing versionCode")
-          except sqlite3.IntegrityError as exc:
-              assert "VERSION_CODE_NOT_INCREASING" in str(exc)
+          # Seed both an R2 release and a legacy Firebase archive before the app-scope migration.
+          legacy_release(1001, "v1.1", "r2", "releases/1001/a.apk", None)
+          legacy_release(
+              1002, "v1.2", "firebase", None,
+              "https://firebasestorage.googleapis.com/v0/b/smv-astro.firebasestorage.app/o/smv-astro%2Fandroid%2Freleases%2F1002%2Farchive.apk",
+          )
 
           for index in range(5):
-              db.execute("INSERT INTO android_apk_upload_attempts (uid, attempted_at) VALUES (?, ?)", ("admin-test", 2000000 + index))
+              db.execute(
+                  "INSERT INTO android_apk_upload_attempts (uid, attempted_at) VALUES (?, ?)",
+                  ("admin-test", 2000000 + index),
+              )
+
+          db.executescript((migrations / "0002_multi_product_android_app_releases.sql").read_text())
+          columns = {row[1] for row in db.execute("PRAGMA table_info(android_app_releases)")}
+          assert {"app_id", "package_name", "version_code", "storage_provider", "object_key", "external_download_url"} <= columns
+
+          preserved = db.execute(
+              "SELECT app_id, version_code, storage_provider, object_key, external_download_url "
+              "FROM android_app_releases ORDER BY version_code"
+          ).fetchall()
+          assert preserved == [
+              ("astro", 1001, "r2", "releases/1001/a.apk", None),
+              ("astro", 1002, "firebase", None,
+               "https://firebasestorage.googleapis.com/v0/b/smv-astro.firebasestorage.app/o/smv-astro%2Fandroid%2Freleases%2F1002%2Farchive.apk"),
+          ], f"Legacy ASTRO release metadata was not preserved: {preserved!r}"
+
+          def app_release(app_id, package, code, version, key):
+              db.execute(
+                  """INSERT INTO android_app_releases
+                  (app_id, package_name, version_name, version_code, storage_provider, object_key,
+                   external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at)
+                  VALUES (?, ?, ?, ?, 'r2', ?, NULL, ?, ?, ?, ?, ?)""",
+                  (app_id, package, version, code, key, "c" * 64, "d" * 64,
+                   2048, "admin-test", 1700000000001),
+              )
+
+          # Independent products must be allowed to start at the same v1.0/versionCode 1000.
+          app_release("horoscope", "in.smvastroservices.horoscope", 1000, "v1.0", "horoscope/1000/a.apk")
+          app_release("calendar", "in.smvastroservices.calendar", 1000, "v1.0", "calendar/1000/a.apk")
+          app_release("astro", "in.smvastroservices.smvastro", 1003, "v1.3", "astro/1003/a.apk")
+
           try:
-              db.execute("INSERT INTO android_apk_upload_attempts (uid, attempted_at) VALUES (?, ?)", ("admin-test", 2000010))
+              app_release("horoscope", "in.smvastroservices.horoscope", 1000, "v1.0", "horoscope/1000/b.apk")
+              raise AssertionError("D1 allowed a duplicate/non-increasing versionCode for HOROSCOPE")
+          except sqlite3.IntegrityError as exc:
+              assert "VERSION_CODE_NOT_INCREASING" in str(exc), str(exc)
+
+          try:
+              app_release("horoscope", "in.smvastroservices.calendar", 1001, "v1.1", "horoscope/1001/bad-package.apk")
+              raise AssertionError("D1 allowed a package name that does not match app_id")
+          except sqlite3.IntegrityError as exc:
+              assert "APK_PACKAGE_DOES_NOT_MATCH_APP" in str(exc), str(exc)
+
+          try:
+              db.execute(
+                  "INSERT INTO android_apk_upload_attempts (uid, attempted_at) VALUES (?, ?)",
+                  ("admin-test", 2000010),
+              )
               raise AssertionError("D1 allowed more than five APK attempts per hour")
           except sqlite3.IntegrityError as exc:
-              assert "APK_UPLOAD_RATE_LIMIT" in str(exc)
+              assert "APK_UPLOAD_RATE_LIMIT" in str(exc), str(exc)
 
-          assert db.execute("SELECT MAX(version_code) FROM android_app_releases").fetchone()[0] == 1001
-          print("D1 APK migration, monotonic version trigger and hourly rate-limit trigger: PASS")
+          assert db.execute("SELECT COUNT(*) FROM android_apk_upload_attempts").fetchone()[0] == 5
+          assert db.execute(
+              "SELECT version_code FROM android_app_releases WHERE app_id='astro' ORDER BY version_code DESC LIMIT 1"
+          ).fetchone()[0] == 1003
+          print("PASS: both D1 migrations apply in order; ASTRO R2/Firebase history is preserved; per-app version gates, package matching and hourly rate limit work.")
           PY
 
       - name: Validate Wrangler Worker bundle without deploying
