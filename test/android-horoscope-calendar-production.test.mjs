@@ -166,6 +166,34 @@ test('Horoscope and Calendar public pages use signed APK downloads instead of PW
   assert.ok(calendar.includes('calendarManifest'));
 });
 
+test('Horoscope and Calendar bottom Android app cards reuse the SMV ASTRO icon-card presentation', () => {
+  const horoscope = read('public/horoscope/index.html');
+  const calendar = read('public/horoscope/calendar/index.html');
+  const sharedStyles = read('public/horoscope/horoscope.css');
+  const calendarTheme = read('public/horoscope/calendar-theme.css');
+
+  assert.ok(horoscope.includes('class="smv-android-apk-section"'));
+  assert.ok(calendar.includes('class="smv-android-apk-section"'));
+  assert.ok(horoscope.includes('src="assets/icon-192.png"'));
+  assert.ok(calendar.includes('src="../assets/calendar-192.png"'));
+  for (const html of [horoscope, calendar]) {
+    assert.ok(html.includes('class="smv-android-apk-icon-wrap"'));
+    assert.ok(html.includes('class="smv-android-apk-copy"'));
+    assert.ok(html.includes('class="smv-android-apk-actions"'));
+    assert.ok(html.includes('class="smv-android-apk-download"'));
+    assert.ok(html.includes('data-apk-version'));
+    assert.ok(html.includes('data-apk-status'));
+    assert.ok(html.includes('data-apk-download'));
+  }
+  assert.ok(sharedStyles.includes('.smv-android-apk-icon-wrap'));
+  assert.ok(sharedStyles.includes('.smv-android-apk-copy h2'));
+  assert.ok(sharedStyles.includes('.smv-android-apk-download'));
+  assert.match(calendarTheme, /cal-download-app-link \.cal-app-badge\{display:none\}/);
+  assert.match(read('public/horoscope/daily-calendar.mjs'), /href="\$\{calendarAppPage\?'#smvCalendarAndroidApkSection'/);
+  assert.match(read('public/horoscope/manifest-en.webmanifest'), /"scope": "\/horoscope\/");
+  assert.match(read('public/horoscope/calendar/manifest-en.webmanifest'), /"scope": "\/horoscope\/calendar\//);
+});
+
 test('Public APK download controller accepts only signed metadata from the dedicated APK Worker origin', () => {
   const controller = read('public/horoscope/android-apk-download.mjs');
   assert.match(controller, /credentials: 'omit'/);
