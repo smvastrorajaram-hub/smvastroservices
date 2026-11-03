@@ -75,6 +75,52 @@ jobs:
       - name: Install Worker dependencies
         run: npm install --prefix cloudflare/backend-api --no-package-lock --ignore-scripts --no-audit --no-fund
 
+      - name: Deploy isolated native Worker runtime probe
+        run: npx --yes wrangler@4.156.0 deploy --config cloudflare/backend-api/wrangler.native-probe.jsonc
+
+      - name: Verify native Worker runtime probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT='https://smvastroservices-native-probe.astroservices.workers.dev'
+          status='000'
+          for attempt in 1 2 3 4 5; do
+            status="$(curl --silent --show-error --connect-timeout 10 --max-time 15 --output /tmp/smv-native-probe.json --write-out '%{http_code}' "$ROOT/healthz" || true)"
+            echo "Native runtime probe attempt $attempt returned HTTP $status."
+            if [ "$status" = "200" ]; then
+              cat /tmp/smv-native-probe.json
+              node --input-type=module -e "import fs from 'node:fs'; const d=JSON.parse(fs.readFileSync('/tmp/smv-native-probe.json','utf8')); if(d.ok!==true||d.probe!=='native-worker-runtime') process.exit(1);"
+              exit 0
+            fi
+            sleep 3
+          done
+          test -f /tmp/smv-native-probe.json && cat /tmp/smv-native-probe.json || true
+          echo 'Native Worker runtime probe failed; Production API redeployment was not attempted.'
+          exit 1
+
+      - name: Deploy isolated Express Node HTTP bridge probe
+        run: npx --yes wrangler@4.156.0 deploy --config cloudflare/backend-api/wrangler.express-probe.jsonc
+
+      - name: Verify Express Node HTTP bridge probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT='https://smvastroservices-http-probe.astroservices.workers.dev'
+          status='000'
+          for attempt in 1 2 3 4 5; do
+            status="$(curl --silent --show-error --connect-timeout 10 --max-time 15 --output /tmp/smv-express-probe.json --write-out '%{http_code}' "$ROOT/healthz" || true)"
+            echo "Express Node HTTP bridge probe attempt $attempt returned HTTP $status."
+            if [ "$status" = "200" ]; then
+              cat /tmp/smv-express-probe.json
+              node --input-type=module -e "import fs from 'node:fs'; const d=JSON.parse(fs.readFileSync('/tmp/smv-express-probe.json','utf8')); if(d.ok!==true||d.probe!=='express-http-server-runtime') process.exit(1);"
+              exit 0
+            fi
+            sleep 3
+          done
+          test -f /tmp/smv-express-probe.json && cat /tmp/smv-express-probe.json || true
+          echo 'Express Node HTTP bridge probe failed; Production API redeployment was not attempted.'
+          exit 1
+
       - name: Deploy the configured Production Worker
         run: npx --yes wrangler@4.156.0 deploy --config cloudflare/backend-api/wrangler.production.jsonc
 

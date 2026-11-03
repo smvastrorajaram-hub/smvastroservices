@@ -1,0 +1,13 @@
+{
+  "name": "smvastroservices-http-probe",
+  "main": "src/runtime-probes/express-http.mjs",
+  "compatibility_date": "2026-10-31",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": {
+    "enabled": true,
+    "logs": { "invocation_logs": true, "head_sampling_rate": 1 }
+  },
+  "vars": { "SMV_RUNTIME_DIAGNOSTIC_PROBE": "express-http" }
+}

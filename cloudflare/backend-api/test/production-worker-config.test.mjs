@@ -40,6 +40,17 @@ test('Production Worker enables D1 Wallet, Razorpay Live and Live/Booking routes
   assert.equal(config.routes, undefined);
 });
 
+test('Production diagnostic probe Workers have separate names and cannot bind Production D1', () => {
+  const native = JSON.parse(fs.readFileSync(path.join(root, 'wrangler.native-probe.jsonc'), 'utf8'));
+  const express = JSON.parse(fs.readFileSync(path.join(root, 'wrangler.express-probe.jsonc'), 'utf8'));
+  assert.equal(native.name, 'smvastroservices-native-probe');
+  assert.equal(express.name, 'smvastroservices-http-probe');
+  assert.equal(native.d1_databases, undefined);
+  assert.equal(express.d1_databases, undefined);
+  assert.equal(native.durable_objects, undefined);
+  assert.equal(express.durable_objects, undefined);
+});
+
 test('Production frontend keeps Cloudflare financial routing opt-in until Worker deployment has been verified', () => {
   const html = fs.readFileSync(path.join(root, '..', '..', 'public', 'index.html'), 'utf8');
   const frontend = fs.readFileSync(path.join(root, '..', '..', 'public', 'smvastro.mjs'), 'utf8');
