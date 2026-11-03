@@ -72,6 +72,16 @@ class FakeD1 {
           });
           return { success: true, meta: { changes: 1 } };
         }
+        if (sql.startsWith('DELETE FROM android_app_releases')) {
+          const code = Number(args[0]);
+          const row = db.releases.get(code);
+          const latest = Math.max(0, ...db.releases.keys());
+          if (row && row.storage_provider === 'r2' && code < latest) {
+            db.releases.delete(code);
+            return { success: true, meta: { changes: 1 } };
+          }
+          return { success: true, meta: { changes: 0 } };
+        }
         if (sql.startsWith('INSERT INTO android_app_releases')) {
           const [package_name, version_name, version_code, object_key, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at] = args;
           const current = Math.max(1000, ...db.releases.keys());
@@ -121,6 +131,7 @@ function envFor({ uploadsEnabled = true } = {}) {
     DB: new FakeD1(),
     APK_RELEASES: new FakeR2(),
     ALLOW_APK_UPLOADS: uploadsEnabled ? 'true' : 'false',
+    ALLOW_APK_DELETES: 'true',
     MAX_APK_BYTES: String(100 * 1024 * 1024),
     FIREBASE_ALLOWED_PROJECT_IDS: 'smv-astro',
     SMV_ANDROID_RELEASE_ADMIN_UIDS: 'admin-uid',
@@ -182,6 +193,7 @@ test('health exposes readiness but never enables publishing by default', async (
     d1Ready: true,
     r2Ready: true,
     uploadsEnabled: false,
+    deletesEnabled: true,
     hasReleaseRecords: false
   });
 });
@@ -290,6 +302,59 @@ test('Admin upload publishes the newer signed APK to R2 and D1 and download serv
   assert.equal(downloaded.headers.get('content-type'), 'application/vnd.android.package-archive');
   assert.equal(downloaded.headers.get('content-disposition'), 'attachment; filename="SMV-ASTRO-v1.1.apk"');
   assert.deepEqual(Buffer.from(await downloaded.arrayBuffer()), postedBytes);
+});
+
+test('Admin can delete an archived R2 APK, but never the current release', async () => {
+  const env = envFor();
+  const { worker } = makeWorker(env);
+  assert.equal((await upload(worker, env, 'v1.1', 1001)).status, 200);
+  assert.equal((await upload(worker, env, 'v1.2', 1002)).status, 200);
+  const oldRow = env.DB.releases.get(1001);
+  assert.ok(oldRow && env.APK_RELEASES.objects.has(oldRow.object_key));
+
+  const protectedCurrent = await worker.fetch(new Request('https://apk.example/admin/android-app/versions/1002', {
+    method: 'DELETE', headers: { Authorization: 'Bearer admin-token' }
+  }), env);
+  assert.equal(protectedCurrent.status, 409);
+  assert.ok(env.DB.releases.has(1002));
+
+  const removed = await worker.fetch(new Request('https://apk.example/admin/android-app/versions/1001', {
+    method: 'DELETE', headers: { Authorization: 'Bearer admin-token', Origin: 'https://smvastroservices.in' }
+  }), env);
+  assert.equal(removed.status, 200);
+  assert.deepEqual(await removed.json(), { success: true, deleted: true, deletedVersionCode: 1001 });
+  assert.equal(env.DB.releases.has(1001), false);
+  assert.equal(env.APK_RELEASES.objects.has(oldRow.object_key), false);
+  const current = await worker.fetch(new Request('https://apk.example/public/android-app'), env);
+  assert.equal((await current.json()).versionCode, 1002);
+});
+
+test('APK history deletion requires Admin authorization, the delete gate and an R2 historical object', async () => {
+  const env = envFor();
+  const { worker } = makeWorker(env);
+  await upload(worker, env, 'v1.1', 1001);
+  await upload(worker, env, 'v1.2', 1002);
+  const unauth = await worker.fetch(new Request('https://apk.example/admin/android-app/versions/1001', { method: 'DELETE' }), env);
+  assert.equal(unauth.status, 401);
+
+  env.ALLOW_APK_DELETES = 'false';
+  const disabled = await worker.fetch(new Request('https://apk.example/admin/android-app/versions/1001', {
+    method: 'DELETE', headers: { Authorization: 'Bearer admin-token' }
+  }), env);
+  assert.equal(disabled.status, 503);
+  env.ALLOW_APK_DELETES = 'true';
+
+  env.DB.releases.set(1000, {
+    package_name: PACKAGE, version_name: 'v1.0', version_code: 1000,
+    storage_provider: 'firebase', object_key: null, external_download_url: LEGACY_URL,
+    sha256: null, certificate_sha256: null, size_bytes: 2300,
+    uploaded_by: 'legacy-migration', uploaded_at: 1700000000000
+  });
+  const legacy = await worker.fetch(new Request('https://apk.example/admin/android-app/versions/1000', {
+    method: 'DELETE', headers: { Authorization: 'Bearer admin-token' }
+  }), env);
+  assert.equal(legacy.status, 409);
+  assert.equal(env.DB.releases.has(1000), true);
 });
 
 test('versionCode 1000 is rejected as the pre-release baseline without writing D1 or R2', async () => {
