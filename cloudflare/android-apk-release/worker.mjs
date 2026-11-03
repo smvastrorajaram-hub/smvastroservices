@@ -267,27 +267,39 @@ function safeMaximumBytes(env) {
     ? configured : MAX_APK_BYTES;
 }
 
-async function handleDownload(request, env, versionCode) {
-  if (!/^[1-9][0-9]{2,9}$/.test(versionCode)) {
+async function handleDownload(request, env, versionCode, appId = 'astro') {
+  if (!/^[1-9][0-9]{2,9}$/.test(String(versionCode))) {
     return json(request, env, { success: false, error: 'Invalid Android versionCode.' }, 400);
   }
-  const row = await rowByVersion(env.DB, Number(versionCode));
-  if (!row) {
-    return json(request, env, { success: false, error: 'This Android APK version was not found.' }, 404);
+  if (!ANDROID_APPS[appId]) {
+    return json(request, env, { success: false, error: 'Unknown Android app.' }, 404);
   }
-  // Existing Firebase rows are served only when explicitly present in D1 as
-  // archived history. New releases are stored and streamed from Cloudflare R2.
+  const row = await rowByVersion(env.DB, Number(versionCode), appId);
+  if (!row) {
+    return json(request, env, { success: false, error: 'This ' + ANDROID_APPS[appId].label + ' APK version was not found.' }, 404);
+  }
+  // Legacy Firebase download support remains intentionally limited to existing
+  // ASTRO archives. Horoscope and Calendar releases are immutable R2 objects.
   if (row.storage_provider === 'firebase') {
+    if (appId !== 'astro') {
+      return json(request, env, { success: false, error: 'Legacy Firebase APK downloads are only supported for SMV ASTRO.' }, 409);
+    }
     const target = safeLegacyDownloadUrl(row.external_download_url, row.version_code);
     if (!target) return json(request, env, { success: false, error: 'The archived APK download target failed validation.' }, 503);
     return respond(request, env, null, 302, { Location: target, 'Cache-Control': 'no-store' });
   }
-  const object = await env.APK_RELEASES.get(String(row.object_key || ''));
+  const objectKey = String(row.object_key || '');
+  const expectedPrefix = 'smv-' + appId + '/android/releases/' + String(versionCode) + '/';
+  if (!objectKey.startsWith(expectedPrefix) || !objectKey.endsWith('.apk')) {
+    return json(request, env, { success: false, error: 'The stored APK object path failed app/version validation.' }, 409);
+  }
+  const object = await env.APK_RELEASES.get(objectKey);
   if (!object) return json(request, env, { success: false, error: 'The stored APK object is missing.' }, 404);
   const safeVersion = String(row.version_name || '').replace(/[^A-Za-z0-9.-]/g, '');
+  const appFileName = String(ANDROID_APPS[appId].label || 'SMV-ANDROID').replace(/[^A-Za-z0-9-]/g, '-');
   const headers = {
     'Content-Type': APK_CONTENT_TYPE,
-    'Content-Disposition': 'attachment; filename="SMV-ASTRO-' + safeVersion + '.apk"',
+    'Content-Disposition': 'attachment; filename="' + appFileName + '-' + safeVersion + '.apk"',
     'Cache-Control': 'public, max-age=31536000, immutable',
     'Content-Length': String(Number(row.size_bytes || object.size || 0))
   };
