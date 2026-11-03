@@ -19,7 +19,7 @@ const browser = await puppeteer.launch({
 const runtimeErrors = [];
 try {
   const page = await browser.newPage();
-  page.on('console', message => { if (message.type() === 'error') runtimeErrors.push('console: ' + message.text()); });
+  page.on('console', message => { if (message.type() === 'error') { const location=message.location?.()||{}; runtimeErrors.push('console: ' + message.text() + (location.url ? ' [source=' + location.url + ']' : '')); } });
   // Test the deployed current source, not an installed/stale PWA service-worker shell.
   await page.setBypassServiceWorker(true);
   // Keep the deployed source test independent from the Calendar PWA's one-time
@@ -40,6 +40,7 @@ try {
   });
   await page.setCacheEnabled(false);
   page.setDefaultTimeout(90000);
+  page.on('response', response => { if (response.status() >= 400) runtimeErrors.push('http ' + response.status() + ': ' + response.url()); });
   page.on('pageerror', error => runtimeErrors.push(error.message));
   let ready = false;
   let lastError = null;
