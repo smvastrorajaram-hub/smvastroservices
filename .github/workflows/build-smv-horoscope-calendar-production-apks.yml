@@ -109,8 +109,19 @@ jobs:
             :smvhoroscopeproduction:assembleDebug \
             :smvcalendarproduction:assembleDebug
 
+      - name: Upload debug test APKs
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMV-HOROSCOPE-CALENDAR-DEBUG-TEST-APKS
+          path: |
+            smvhoroscopeproduction/build/outputs/apk/debug/
+            smvcalendarproduction/build/outputs/apk/debug/
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Compile both Release variants without signing (PR/push validation only)
-        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.build_signed_release }}
+        if: ${{ env.SMV_SIGNED_RELEASE != 'true' }}
         run: |
           # Do not let a cached/previous unsigned Release APK be reused for the signed publication.
           gradle --no-daemon --no-build-cache -PsmvHoroscopeVersionName="$SMV_HOROSCOPE_ANDROID_VERSION_NAME" -PsmvCalendarVersionName="$SMV_CALENDAR_ANDROID_VERSION_NAME" \
@@ -164,9 +175,15 @@ jobs:
 
       - name: Build both permanently signed Release APKs
         if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+        env:
+          SMV_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.SMV_ANDROID_KEYSTORE_PASSWORD }}
+          SMV_ANDROID_KEY_ALIAS: ${{ secrets.SMV_ANDROID_KEY_ALIAS }}
+          SMV_ANDROID_KEY_PASSWORD: ${{ secrets.SMV_ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          gradle --no-daemon -PsmvHoroscopeVersionName="$SMV_HOROSCOPE_ANDROID_VERSION_NAME" -PsmvCalendarVersionName="$SMV_CALENDAR_ANDROID_VERSION_NAME" \
+          gradle --no-daemon --no-build-cache -PsmvHoroscopeVersionName="$SMV_HOROSCOPE_ANDROID_VERSION_NAME" -PsmvCalendarVersionName="$SMV_CALENDAR_ANDROID_VERSION_NAME" \
+            :smvhoroscopeproduction:clean \
+            :smvcalendarproduction:clean \
             :smvhoroscopeproduction:assembleRelease \
             :smvcalendarproduction:assembleRelease
 
@@ -222,16 +239,6 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Upload debug test APKs
-        if: ${{ github.event_name != 'workflow_dispatch' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: SMV-HOROSCOPE-CALENDAR-DEBUG-TEST-APKS
-          path: |
-            smvhoroscopeproduction/build/outputs/apk/debug/
-            smvcalendarproduction/build/outputs/apk/debug/
-          if-no-files-found: error
-          retention-days: 7
 
       - name: Remove temporary signing keystore
         if: ${{ always() && env.SMV_SIGNED_RELEASE == 'true' }}
