@@ -7,8 +7,8 @@ def releaseKeyPassword = providers.environmentVariable("SMV_ANDROID_KEY_PASSWORD
 def releaseSigningConfigured = [releaseKeystorePath, releaseKeystorePassword, releaseKeyAlias, releaseKeyPassword]
         .every { value -> value != null && !value.trim().isEmpty() }
 
-def appVersionName = providers.gradleProperty("smvVersionName")
-        .orElse(providers.environmentVariable("SMV_ANDROID_VERSION_NAME"))
+def appVersionName = providers.gradleProperty("smvHoroscopeVersionName")
+        .orElse(providers.environmentVariable("SMV_HOROSCOPE_ANDROID_VERSION_NAME"))
         .orElse("v1.0")
         .get()
 def versionMatcher = appVersionName =~ /^v([1-9][0-9]*)\.([0-9]{1,3})$/
