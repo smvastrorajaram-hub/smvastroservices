@@ -153,7 +153,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SMV_FIREBASE_ANDROID_APP_ID: ${{ vars.SMV_FIREBASE_ANDROID_APP_ID || '1:299081899217:android:09e43164cfdd015ba539f0' }}
-      SMV_ANDROID_VERSION_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.version_name || vars.SMV_ANDROID_VERSION_NAME || 'v1.2' }}
+      SMV_ANDROID_VERSION_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.version_name || (github.event_name == 'push' && github.ref == 'refs/heads/fix/android-launcher-mask-background-20261103' && 'v1.7') || vars.SMV_ANDROID_VERSION_NAME || 'v1.2' }}
       SMV_SIGNED_RELEASE: ${{ (github.event_name == 'workflow_dispatch' && inputs.build_signed_release) || (github.event_name == 'push' && github.ref == 'refs/heads/fix/android-launcher-mask-background-20261103') }}
     steps:
       - name: Checkout

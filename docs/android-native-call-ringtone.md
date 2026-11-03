@@ -8,7 +8,7 @@ The Production APK reuses the current repository artwork at `public/assets/icon-
 
 The processed transparent artwork is used for the legacy square icon. Android 8.0+ uses the dedicated adaptive foreground with a small inset and a separate deep-burgundy background; the legacy round resource uses the same image clipped to a circle. The Production manifest continues to select `@mipmap/ic_launcher` and `@mipmap/ic_launcher_round`. This is an Android-only transformation: `public/assets/icon-512.png`, the website favicon, PWA manifest, page UI, backend, Firebase, Razorpay, Render and Cloudflare assets are not modified.
 
-The icon-fix branch also produces a signed Release APK using the already configured permanent signing secrets, at version `v1.2`, and uploads the square/adaptive/round PNG previews as a separate short-retention artifact. The permanent keystore is not regenerated or rotated.
+The icon-fix branch produces a signed Release APK at version `v1.7` (Android versionCode 1007), using the already configured permanent signing secrets. This is newer than the latest previously signed v1.6 build, so it can update that installation. The square/adaptive/round PNG previews are uploaded as a separate short-retention artifact. The permanent keystore is not regenerated or rotated.
 
 ## Native incoming-call ringtone
 

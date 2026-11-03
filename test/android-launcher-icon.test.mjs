@@ -122,4 +122,5 @@ test('The icon preparation never replaces website assets or downloads another lo
   assert.match(script, /verifyTransparentCorners/);
   assert.doesNotMatch(script, /curl|wget|smvastroservices\.in/i);
   assert.doesNotMatch(script, /public\/assets\/icon-512\.png[" ]+--output/);
+  assert.match(read('.github/workflows/build-smv-astro-production-apk.yml'), /refs\/heads\/fix\/android-launcher-mask-background-20261103 && 'v1\.7'/);
 });
