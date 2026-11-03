@@ -403,7 +403,7 @@ test('Horoscope and Calendar have independent package identities, version sequen
   assert.equal(horoscopeRelease.appId, 'horoscope');
   assert.equal(horoscopeRelease.packageName, horoscopePackage);
   assert.equal(horoscopeRelease.versionCode, 1000);
-  assert.match(horoscopeRelease.downloadUrl, /\\/download\\/horoscope\\/1000$/);
+  assert.ok(new URL(horoscopeRelease.downloadUrl).pathname.endsWith('/download/horoscope/1000'));
 
   const calendarUpload = await uploadProduct(worker, env, 'calendar', 'v1.0', 1000, calendarPackage);
   assert.equal(calendarUpload.status, 200);
@@ -411,7 +411,7 @@ test('Horoscope and Calendar have independent package identities, version sequen
   assert.equal(calendarRelease.appId, 'calendar');
   assert.equal(calendarRelease.packageName, calendarPackage);
   assert.equal(calendarRelease.versionCode, 1000);
-  assert.match(calendarRelease.downloadUrl, /\\/download\\/calendar\\/1000$/);
+  assert.ok(new URL(calendarRelease.downloadUrl).pathname.endsWith('/download/calendar/1000'));
 
   const [horoscopePublic, calendarPublic] = await Promise.all([
     worker.fetch(new Request('https://apk.example/public/android-apps/horoscope'), env),
