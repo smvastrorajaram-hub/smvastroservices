@@ -76,6 +76,14 @@ const identities = {
     throw Object.assign(new Error('Invalid token'),{httpStatus:401,code:'AUTH_REQUIRED'});
   }
 };
+function identityDb() {
+  const batches=[];
+  return {
+    batches,
+    prepare(sql) { return { bind(...values) { return { sql, values }; } }; },
+    async batch(statements) { batches.push(statements); return statements.map(() => ({ success:true })); }
+  };
+}
 function register(options={}) {
   const app=harness();
   const firestore=options.firestore || fixture();
@@ -125,7 +133,8 @@ test('ID login lookup rejects invalid IDs and role mismatches before Auth Admin 
 
 test('Customer registration claims a normalized unique phone and creates public ID and initial Wallet in one transaction',async()=>{
   const firestore=fixture();
-  const {app}=register({firestore,env:{SMV_WALLET_DOMAIN_CUTOVER_COMPLETE:'false'}});
+  const db=identityDb();
+  const {app}=register({firestore,db,projectId:'smv-astro',env:{SMV_WALLET_DOMAIN_CUTOVER_COMPLETE:'false'}});
   const res=response();
   await app.handlers.get('POST /register-customer-profile')?.(request({token:'customer',body:{name:'Customer One',phone:'+91 98765 43210'}}),res);
   assert.equal(res.statusCode,200,JSON.stringify(res.body));
@@ -134,6 +143,10 @@ test('Customer registration claims a normalized unique phone and creates public 
   assert.ok(firestore.calls.writes.some(w=>w.path.startsWith('smv_phone_registry/')));
   assert.ok(firestore.calls.writes.some(w=>w.path==='smv_users/customer-1'&&w.data.role==='customer'));
   assert.ok(firestore.calls.writes.some(w=>w.path==='smv_wallets/customer-1'&&w.data.ownerRole==='customer'));
+  assert.equal(db.batches.length,1);
+  assert.ok(db.batches[0].some(statement=>statement.sql.includes('smv_domain_identity_users')));
+  assert.ok(db.batches[0].some(statement=>statement.sql.includes('smv_domain_identity_public_ids')));
+  assert.ok(db.batches[0].some(statement=>statement.sql.includes('smv_domain_identity_phones')));
   const firstWrite=firestore.calls.writes.findIndex(w=>w.type!=='read');
   assert.ok(firstWrite>=0);
 });
@@ -156,7 +169,8 @@ test('Customer registration cannot overwrite an existing Astrologer role or clai
 
 test('Astrologer registration validates required fields and saves approval-pending profile and payout securely',async()=>{
   const firestore=fixture();
-  const {app}=register({firestore});
+  const db=identityDb();
+  const {app}=register({firestore,db,projectId:'smv-astro'});
   const invalid=response();
   await app.handlers.get('POST /register-astrologer-profile')(request({body:{name:'Astrologer'}}),invalid);
   assert.equal(invalid.statusCode,400);
@@ -172,6 +186,11 @@ test('Astrologer registration validates required fields and saves approval-pendi
   assert.ok(firestore.calls.writes.some(w=>w.path==='smv_astrologers/astro-1'&&w.data.status==='pending'));
   assert.ok(firestore.calls.writes.some(w=>w.path==='smv_payouts/astro-1'&&w.data.status==='pending_admin_review'));
   assert.ok(firestore.calls.writes.some(w=>w.path.startsWith('smv_notifications/')));
+  assert.equal(db.batches.length,1);
+  assert.ok(db.batches[0].some(statement=>statement.sql.includes('smv_domain_identity_users')));
+  assert.ok(db.batches[0].some(statement=>statement.sql.includes('smv_domain_identity_astrologers')));
+  assert.ok(db.batches[0].some(statement=>statement.sql.includes('smv_domain_identity_public_ids')));
+  assert.ok(db.batches[0].some(statement=>statement.sql.includes('smv_domain_identity_phones')));
 });
 
 test('Public astrologer listing excludes unverified and disabled Firebase accounts',async()=>{
