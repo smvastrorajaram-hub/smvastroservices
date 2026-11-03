@@ -32,3 +32,6 @@
 /* V228 hardening: current date colour-only indicator. */
 #smvDailyCalendar .cal-month-grid button.cal-today,#smvDailyCalendar .cal-month-grid button.cal-today[aria-current="date"]{background:#f7d978!important;border:2px solid #a96d00!important;box-shadow:inset 0 0 0 2px #fff6cf!important}
 #smvDailyCalendar .cal-month-grid button.cal-today>strong{color:#572f00!important;font-weight:900!important}
+
+/* The APK shortcut keeps its original PWA-safe anchor target; only the decorative hero badge is hidden. */
+#smvDailyCalendar .cal-header .cal-download-app-link .cal-app-badge{display:none}
