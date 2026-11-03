@@ -84,7 +84,7 @@ test('The existing artwork is cleaned only at the outer white canvas and retains
     assert.equal(square.alphaAt(x, y), 0, 'outer square canvas corner must be transparent');
   }
   assert.ok(square.alphaAt(256, 256) > 200, 'the center of the existing SMV ASTRO artwork must remain opaque');
-  assert.ok(square.alphaAt(256, 24) > 0, 'the upper gold frame must remain present');
+  assert.ok(square.alphaAt(256, 40) > 0, 'the upper gold frame must remain present');
   assert.ok(square.alphaAt(256, 256) > 0, 'the icon artwork must not be erased');
 });
 

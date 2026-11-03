@@ -200,6 +200,7 @@ public final class SmvLauncherIconGenerator {
     rg.setClip(new Ellipse2D.Double(0, 0, ROUND_CANVAS, ROUND_CANVAS));
     rg.setColor(new Color(LAUNCHER_BACKGROUND));
     rg.fillRect(0, 0, ROUND_CANVAS, ROUND_CANVAS);
+    rg.setComposite(AlphaComposite.SrcOver);
     int roundOffset = (ROUND_CANVAS - ROUND_ART_SIZE) / 2;
     rg.drawImage(transparent, roundOffset, roundOffset, ROUND_ART_SIZE, ROUND_ART_SIZE, null);
     rg.dispose();
