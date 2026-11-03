@@ -289,7 +289,7 @@ async function handleDownload(request, env, versionCode, appId = 'astro') {
   const safeAppName = String(ANDROID_APPS[appId]?.label || 'SMV ANDROID').replace(/[^A-Za-z0-9-]/g, '-');
   const headers = {
     'Content-Type': APK_CONTENT_TYPE,
-    'Content-Disposition': 'attachment; filename="SMV-ASTRO-' + safeVersion + '.apk"',
+    'Content-Disposition': 'attachment; filename="' + safeAppName + '-' + safeVersion + '.apk"',
     'Cache-Control': 'public, max-age=31536000, immutable',
     'Content-Length': String(Number(row.size_bytes || object.size || 0))
   };
