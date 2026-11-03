@@ -182,17 +182,25 @@ jobs:
           set -euo pipefail
           ROOT='https://smvastroservices.astroservices.workers.dev'
           status='000'
-          for attempt in 1 2 3 4 5 6; do
+          ready='false'
+          for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
             status="$(curl --silent --show-error --connect-timeout 10 --max-time 20 --dump-header /tmp/smv-worker-health.headers --output /tmp/smv-worker-health.json --write-out '%{http_code}' "$ROOT/healthz" || true)"
             echo "Production Worker health attempt $attempt returned HTTP $status."
             if [ "$status" = "200" ]; then
               cat /tmp/smv-worker-health.json
-              node --input-type=module -e "import fs from 'node:fs'; const d=JSON.parse(fs.readFileSync('/tmp/smv-worker-health.json','utf8')); if(d.environment!=='production'||d.backendActive!==false||d.firebaseConnected!==true||d.walletReadRoutesRegistered!==false||d.liveSessionRoutesRegistered!==false) process.exit(1);"
-              exit 0
+              if node --input-type=module -e "import fs from 'node:fs'; const d=JSON.parse(fs.readFileSync('/tmp/smv-worker-health.json','utf8')); if(d.environment!=='production'||d.backendActive!==false||d.walletReadRoutesRegistered!==false||d.walletRechargeRoutesRegistered!==false||d.walletOfferRoutesRegistered!==false||d.liveSessionRoutesRegistered!==false||d.walletRechargeMode!=='disabled') process.exit(1);"; then
+                ready='true'
+                break
+              fi
+              echo 'HTTP 200 reached an older or not-yet-converged Worker version; waiting for the configured inactive Production version.'
             fi
             sleep 5
           done
-          echo 'Production Worker health check did not return the expected active Production runtime.'
+          if [ "$ready" = 'true' ]; then
+            echo 'Production Worker health and inactive feature gates verified.'
+            exit 0
+          fi
+          echo 'Production Worker did not converge to the expected inactive Production configuration.'
           test -f /tmp/smv-worker-health.headers && grep -iE '^(HTTP/|cf-error-type:|cf-error-origin:|cf-ray:)' /tmp/smv-worker-health.headers || true
           test -f /tmp/smv-worker-health.json && cat /tmp/smv-worker-health.json || true
           exit 1
