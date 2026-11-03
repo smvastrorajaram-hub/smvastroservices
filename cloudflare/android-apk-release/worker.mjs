@@ -5,6 +5,11 @@ import { createFirebaseIdTokenVerifier } from '../../shared/backend-platform/fir
 import androidReleaseModule from '../../android-app-release.js';
 
 const { inspectSmvAndroidApk, MAX_APK_BYTES, SMV_ANDROID_PACKAGE } = androidReleaseModule;
+const ANDROID_APPS = Object.freeze({
+  astro: { appId: 'astro', label: 'SMV ASTRO', packageName: SMV_ANDROID_PACKAGE, firstVersionCode: 1001 },
+  horoscope: { appId: 'horoscope', label: 'SMV HOROSCOPE', packageName: 'in.smvastroservices.horoscope', firstVersionCode: 1000 },
+  calendar: { appId: 'calendar', label: 'SMV CALENDAR', packageName: 'in.smvastroservices.calendar', firstVersionCode: 1000 }
+});
 const DEFAULT_WORKER_ADMIN_UID = 'TwjeEIFS3Zcf1SxboLZoujm91Ky2';
 const FIREBASE_BUCKETS = new Set([
   'smv-astro.firebasestorage.app',
@@ -24,6 +29,8 @@ function allowedOrigins(env) {
     'https://www.smvastroservices.in',
     'https://smvastro.pages.dev',
     'https://smvastroservices.pages.dev',
+    'https://horoscope.smvastroservices.in',
+    'https://calendar.smvastroservices.in',
     'https://smvastro.workers.dev'
   ].join(',')));
 }
@@ -163,16 +170,16 @@ async function hasR2Connection(env) {
   return true;
 }
 
-async function latestRow(db) {
+async function latestRow(db, appId = 'astro') {
   return db.prepare(
-    'SELECT package_name, version_name, version_code, storage_provider, object_key, external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at FROM android_app_releases ORDER BY version_code DESC LIMIT 1'
-  ).first();
+    'SELECT app_id, package_name, version_name, version_code, storage_provider, object_key, external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at FROM android_app_releases WHERE app_id = ? ORDER BY version_code DESC LIMIT 1'
+  ).bind(appId).first();
 }
 
-async function rowByVersion(db, versionCode) {
+async function rowByVersion(db, versionCode, appId = 'astro') {
   return db.prepare(
-    'SELECT package_name, version_name, version_code, storage_provider, object_key, external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at FROM android_app_releases WHERE version_code = ? LIMIT 1'
-  ).bind(versionCode).first();
+    'SELECT app_id, package_name, version_name, version_code, storage_provider, object_key, external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at FROM android_app_releases WHERE app_id = ? AND version_code = ? LIMIT 1'
+  ).bind(appId, versionCode).first();
 }
 
 function safeLegacyDownloadUrl(value, expectedVersionCode) {
@@ -187,20 +194,25 @@ function safeLegacyDownloadUrl(value, expectedVersionCode) {
 }
 
 
-function publicDownloadUrl(request, versionCode) {
+function publicDownloadUrl(request, appId, versionCode) {
   const url = new URL(request.url);
-  return url.origin + routePrefix(url) + '/download/' + String(versionCode);
+  const path = appId === 'astro'
+    ? '/download/' + String(versionCode)
+    : '/download/' + appId + '/' + String(versionCode);
+  return url.origin + routePrefix(url) + path;
 }
 
-function publicReleaseFromRow(row, request, includeAdminFields = false) {
+function publicReleaseFromRow(row, request, includeAdminFields = false, appId = 'astro') {
   if (!row) return { success: true, available: false };
   const data = {
     success: true,
     available: true,
-    packageName: String(row.package_name || SMV_ANDROID_PACKAGE),
+    appId,
+    appName: String(ANDROID_APPS[appId]?.label || 'SMV Android App'),
+    packageName: String(row.package_name || ANDROID_APPS[appId]?.packageName || SMV_ANDROID_PACKAGE),
     versionName: String(row.version_name || ''),
     versionCode: Number(row.version_code),
-    downloadUrl: publicDownloadUrl(request, row.version_code),
+    downloadUrl: publicDownloadUrl(request, appId, row.version_code),
     size: Number(row.size_bytes || 0),
     uploadedAt: Number(row.uploaded_at || 0)
   };
@@ -213,18 +225,18 @@ function publicReleaseFromRow(row, request, includeAdminFields = false) {
   return data;
 }
 
-async function currentRelease(env, request) {
-  const row = await latestRow(env.DB);
-  return publicReleaseFromRow(row, request, false);
+async function currentRelease(env, request, appId = 'astro') {
+  const row = await latestRow(env.DB, appId);
+  return publicReleaseFromRow(row, request, false, appId);
 }
 
-async function listReleaseHistory(env, request) {
+async function listReleaseHistory(env, request, appId = 'astro') {
   const result = await env.DB.prepare(
-    'SELECT package_name, version_name, version_code, storage_provider, object_key, external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at FROM android_app_releases ORDER BY version_code DESC LIMIT 100'
-  ).all();
+    'SELECT app_id, package_name, version_name, version_code, storage_provider, object_key, external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at FROM android_app_releases WHERE app_id = ? ORDER BY version_code DESC LIMIT 100'
+  ).bind(appId).all();
   const rows = Array.isArray(result?.results) ? result.results : [];
   return rows.map((row, index) => ({
-    ...publicReleaseFromRow(row, request, true),
+    ...publicReleaseFromRow(row, request, true, appId),
     isCurrent: index === 0,
     canDelete: index > 0 && row.storage_provider === 'r2'
   }));
