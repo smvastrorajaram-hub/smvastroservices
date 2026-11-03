@@ -100,11 +100,11 @@ test('The production release workflow compiles both apps, signs with the existin
   assert.match(workflow, /:smvcalendarproduction:assembleRelease/);
   assert.match(workflow, /SMV_ANDROID_KEYSTORE_BASE64/);
   assert.match(workflow, /smvastro-release/);
-  assert.match(workflow, /github\\.ref == 'refs\\/heads\\/main'/);
+  assert.ok(workflow.includes("github.ref == 'refs/heads/main'"));
   assert.match(workflow, /SMV_HOROSCOPE_ANDROID_VERSION_NAME/);
   assert.match(workflow, /SMV_CALENDAR_ANDROID_VERSION_NAME/);
-  assert.match(workflow, /inputs\\.horoscope_version_name/);
-  assert.match(workflow, /inputs\\.calendar_version_name/);
+  assert.ok(workflow.includes('inputs.horoscope_version_name'));
+  assert.ok(workflow.includes('inputs.calendar_version_name'));
   assert.match(workflow, /APK Signature Scheme v2/);
   assert.match(workflow, /7a3be159218a38083986dec117c0bd281b3ef42bda65f2bb7b8c9946b5293401/);
   assert.match(workflow, /SMV-HOROSCOPE-PERMANENT-RELEASE-APK/);
