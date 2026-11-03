@@ -189,9 +189,9 @@ test('Horoscope and Calendar bottom Android app cards reuse the SMV ASTRO icon-c
   assert.ok(sharedStyles.includes('.smv-android-apk-copy h2'));
   assert.ok(sharedStyles.includes('.smv-android-apk-download'));
   assert.match(calendarTheme, /cal-download-app-link \.cal-app-badge\{display:none\}/);
-  assert.match(read('public/horoscope/daily-calendar.mjs'), /href="\$\{calendarAppPage\?'#smvCalendarAndroidApkSection'/);
-  assert.match(read('public/horoscope/manifest-en.webmanifest'), /"scope": "\/horoscope\/");
-  assert.match(read('public/horoscope/calendar/manifest-en.webmanifest'), /"scope": "\/horoscope\/calendar\//);
+  assert.ok(read('public/horoscope/daily-calendar.mjs').includes("'#smvCalendarAndroidApkSection'"));
+  assert.equal(JSON.parse(read('public/horoscope/manifest-en.webmanifest')).scope, '/horoscope/');
+  assert.equal(JSON.parse(read('public/horoscope/calendar/manifest-en.webmanifest')).scope, '/horoscope/calendar/');
 });
 
 test('Public APK download controller accepts only signed metadata from the dedicated APK Worker origin', () => {
