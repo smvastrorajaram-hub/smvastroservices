@@ -25,13 +25,13 @@ test('Production Worker uses the exact requested Worker name, D1 ID, Firebase Pr
   }]);
 });
 
-test('Production Worker remains inactive until Project 1 Wallet backfill is complete', () => {
-  assert.equal(config.vars.SMV_BACKEND_CLOUDFLARE_ACTIVE, 'false');
-  assert.equal(config.vars.SMV_WALLET_DOMAIN_BACKFILL_COMPLETE, 'false');
-  assert.equal(config.vars.SMV_WALLET_DOMAIN_CUTOVER_COMPLETE, 'false');
-  assert.equal(config.vars.WALLET_READ_ROUTES_ENABLED, 'false');
-  assert.equal(config.vars.SMV_LIVE_SESSION_ROUTES_ENABLED, 'false');
-  assert.equal(config.vars.SMV_RAZORPAY_LIVE_MODE_ENABLED, 'false');
+test('Production Worker enables D1 Wallet, Live Booking and Razorpay Live for the confirmed empty-customer cutover', () => {
+  assert.equal(config.vars.SMV_BACKEND_CLOUDFLARE_ACTIVE, 'true');
+  assert.equal(config.vars.SMV_WALLET_DOMAIN_BACKFILL_COMPLETE, 'true');
+  assert.equal(config.vars.SMV_WALLET_DOMAIN_CUTOVER_COMPLETE, 'true');
+  assert.equal(config.vars.WALLET_READ_ROUTES_ENABLED, 'true');
+  assert.equal(config.vars.SMV_LIVE_SESSION_ROUTES_ENABLED, 'true');
+  assert.equal(config.vars.SMV_RAZORPAY_LIVE_MODE_ENABLED, 'true');
   assert.equal(config.vars.SMV_RAZORPAY_TEST_MODE_ENABLED, 'false');
   assert.equal(config.vars.SMV_IDENTITY_PROFILE_D1_AUTHORIZATION_ENABLED, 'false');
   assert.equal(config.vars.SMV_WALLET_BACKFILL_TOOLS_ENABLED, 'false');
@@ -48,12 +48,17 @@ test('Production deploy workflow provisions and validates Firebase Project 1 cre
   assert.match(workflow, /FIREBASE_PROJECT_1_SERVICE_ACCOUNT_JSON/);
   assert.match(workflow, /project_id !== 'smv-astro'/);
   assert.match(workflow, /secret put FIREBASE_SERVICE_ACCOUNT_JSON/);
-  // Inactive Production must not require Firebase connectivity: its service
-  // account is intentionally not exercised while backend and domain gates are OFF.
-  assert.match(workflow, /d\.backendActive!==false/);
-  assert.match(workflow, /d\.walletReadRoutesRegistered!==false/);
-  assert.match(workflow, /d\.walletRechargeMode!=='disabled'/);
-  assert.match(workflow, /d\.liveSessionRoutesRegistered!==false/);
+  // Production deploy must fail closed unless Firebase Project 1 and every
+  // financial feature gate report ready/enabled on the actual Worker revision.
+  assert.match(workflow, /d\.backendActive!==true/);
+  assert.match(workflow, /d\.firebaseConnected!==true/);
+  assert.match(workflow, /d\.walletReadRoutesRegistered!==true/);
+  assert.match(workflow, /d\.walletRechargeRoutesRegistered!==true/);
+  assert.match(workflow, /d\.walletRechargeMode!=='live'/);
+  assert.match(workflow, /d\.liveSessionRoutesRegistered!==true/);
+  assert.match(workflow, /d\.razorpayMode!=='live'/);
+  assert.match(workflow, /d\.walletRechargeRoutesEnabled!==true/);
+  assert.match(workflow, /d\.liveCallChatRoutesEnabled!==true/);
 });
 
 test('Production diagnostic probe Workers have separate names and cannot bind Production D1', () => {
@@ -67,11 +72,11 @@ test('Production diagnostic probe Workers have separate names and cannot bind Pr
   assert.equal(express.durable_objects, undefined);
 });
 
-test('Production frontend keeps Cloudflare financial routing opt-in until Worker deployment has been verified', () => {
+test('Production frontend enables Cloudflare financial routing after Worker deployment is configured', () => {
   const html = fs.readFileSync(path.join(root, '..', '..', 'public', 'index.html'), 'utf8');
   const frontend = fs.readFileSync(path.join(root, '..', '..', 'public', 'smvastro.mjs'), 'utf8');
   const publicContent = fs.readFileSync(path.join(root, '..', '..', 'public', 'public-content.mjs'), 'utf8');
-  assert.match(html, /SMV_CLOUDFLARE_FINANCIAL_API_ENABLED\s*=\s*false/);
+  assert.match(html, /SMV_CLOUDFLARE_FINANCIAL_API_ENABLED\s*=\s*true/);
   assert.match(frontend, /SMV_CLOUDFLARE_FINANCIAL_API_ENABLED\s*===\s*true/);
   assert.match(frontend, /smvastroservices\.astroservices\.workers\.dev/);
   assert.match(frontend, /live\/push/);

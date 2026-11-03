@@ -10,20 +10,32 @@
 - Allowed Origin: `https://smvastroservices.in`
 - Workers.dev is enabled; no custom domain or production Pages/Render routes are created by this config.
 
-## Enabled Worker domains
+## Production financial cutover
 
-The production Wrangler config selects Production Project 1, the Production D1 binding, Wallet cutover gates, Live Session/Booking routes and Razorpay Live mode. D1 Identity/Profile authorization stays disabled; all Customer/Astrologer/Admin identity and role checks remain Firebase Project 1-backed.
+The Production Worker is configured to enable the Cloudflare D1 financial domains for the confirmed new-customer launch:
 
-Production D1 migrations 0002–0011 can be inspected and applied through the manual `Cloudflare Production D1 schema migrations` workflow. The workflow first prints the remote migration state and applies only pending migrations after the exact database name is confirmed.
+- `SMV_BACKEND_CLOUDFLARE_ACTIVE=true`
+- `SMV_WALLET_DOMAIN_BACKFILL_COMPLETE=true` and `SMV_WALLET_DOMAIN_CUTOVER_COMPLETE=true`
+- `WALLET_READ_ROUTES_ENABLED=true`
+- `SMV_LIVE_SESSION_ROUTES_ENABLED=true`
+- `SMV_RAZORPAY_LIVE_MODE_ENABLED=true`
+- `SMV_RAZORPAY_TEST_MODE_ENABLED=false`
+
+The owner confirmed there are no real customers to migrate. The existing Production D1 domain tables were read-only audited as empty; no historical Firebase Wallet documents or Render test records are imported. New Wallet balances and financial transactions are created in Production D1. Firebase Project 1 (`smv-astro`) remains the authentication, user-profile and role authority; D1 Identity/Profile authorization remains disabled. The Admin identity and role checks continue to use Firebase Project 1.
+
+Razorpay operates in **Live Mode only**. The Worker accepts only a `rzp_live_` key ID with the configured server-side key secret and webhook secret. Production Test Mode remains disabled. The deploy readiness check verifies that the live-mode policy is active and the credentials are present; the separate Admin-only `GET /test-razorpay` endpoint performs the provider's read-only `GET /orders?count=1` connectivity check.
+
+Production D1 migrations 0002–0011 were applied and read-only audited against the exact Production database. The deploy workflow now verifies the actual Worker health and `/api/backend/readiness` response before reporting success.
 
 ## Browser routing
 
-The frontend resolver switches only these API families when `window.SMV_CLOUDFLARE_FINANCIAL_API_ENABLED === true`:
-- Wallet and Wallet recharge/offer endpoints
-- Live Call/Chat sessions, bookings, event stream, pricing and ICE configuration
+`public/index.html` enables `window.SMV_CLOUDFLARE_FINANCIAL_API_ENABLED = true`. The existing frontend resolver switches only these API families to `https://smvastroservices.astroservices.workers.dev`:
+
+- Wallet, Wallet balance/transactions, recharge and offers
+- Live Call/Chat sessions, Bookings, event stream, pricing and ICE configuration
 - Appointment booking, Razorpay connectivity check, Astrologer earnings/withdrawal and Admin withdrawal/Wallet-offer routes
 
-The default in `public/index.html` is deliberately `false` in this PR. FCM push registration/status/test, other legacy APIs, Horoscope and Calendar remain on their existing Render/production endpoints. After the Worker deploy health check returns the Production runtime and Wallet/Live/Booking/Razorpay Live checks pass on the exact Worker URL, change the frontend flag to `true` in a separate frontend deployment to switch website traffic.
+FCM push registration/status/test and other unfinished legacy APIs remain on their existing backend. Horoscope and Calendar code, deployments, DNS and their independent PWA repositories are not changed by this financial-routing cutover. The Pages workflow skips satellite PWA redeployment unless files under `public/horoscope/` actually change.
 
 ## Required Cloudflare Worker secrets
 
