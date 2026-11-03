@@ -267,17 +267,18 @@ function safeMaximumBytes(env) {
     ? configured : MAX_APK_BYTES;
 }
 
-async function handleDownload(request, env, versionCode) {
+async function handleDownload(request, env, versionCode, appId = 'astro') {
   if (!/^[1-9][0-9]{2,9}$/.test(versionCode)) {
     return json(request, env, { success: false, error: 'Invalid Android versionCode.' }, 400);
   }
-  const row = await rowByVersion(env.DB, Number(versionCode));
+  const row = await rowByVersion(env.DB, Number(versionCode), appId);
   if (!row) {
     return json(request, env, { success: false, error: 'This Android APK version was not found.' }, 404);
   }
   // Existing Firebase rows are served only when explicitly present in D1 as
   // archived history. New releases are stored and streamed from Cloudflare R2.
   if (row.storage_provider === 'firebase') {
+    if (appId !== 'astro') return json(request, env, { success: false, error: 'Legacy Firebase APK download is only supported for SMV ASTRO.' }, 409);
     const target = safeLegacyDownloadUrl(row.external_download_url, row.version_code);
     if (!target) return json(request, env, { success: false, error: 'The archived APK download target failed validation.' }, 503);
     return respond(request, env, null, 302, { Location: target, 'Cache-Control': 'no-store' });
@@ -285,6 +286,7 @@ async function handleDownload(request, env, versionCode) {
   const object = await env.APK_RELEASES.get(String(row.object_key || ''));
   if (!object) return json(request, env, { success: false, error: 'The stored APK object is missing.' }, 404);
   const safeVersion = String(row.version_name || '').replace(/[^A-Za-z0-9.-]/g, '');
+  const safeAppName = String(ANDROID_APPS[appId]?.label || 'SMV ANDROID').replace(/[^A-Za-z0-9-]/g, '-');
   const headers = {
     'Content-Type': APK_CONTENT_TYPE,
     'Content-Disposition': 'attachment; filename="SMV-ASTRO-' + safeVersion + '.apk"',
