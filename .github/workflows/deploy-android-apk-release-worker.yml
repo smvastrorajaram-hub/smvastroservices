@@ -88,8 +88,8 @@ jobs:
             [/^database_name\s*=\s*"([^"]+)"\s*$/m, 'smv-astro-apk-releases', 'D1 database name'],
             [/^database_id\s*=\s*"([^"]+)"\s*$/m, '5105ebb3-435c-47b7-9983-2e171fa911cd', 'D1 database ID'],
             [/^ALLOW_APK_UPLOADS\s*=\s*"([^"]+)"\s*$/m, 'true', 'APK upload safety gate'],
-            [/^ALLOW_APK_DELETES\s*=\s*"([^"]+)"\s*$/m, 'true', 'Historical APK delete safety gate']
-            [/^ALLOWED_ORIGINS\s*=\s*"([^"]+)"\s*$/m, 'https://smvastroservices.in,https://www.smvastroservices.in,https://horoscope.smvastroservices.in,https://calendar.smvastroservices.in,https://smvastro.pages.dev,https://smvastroservices.pages.dev', 'SMV app download page origins'],
+            [/^ALLOW_APK_DELETES\s*=\s*"([^"]+)"\s*$/m, 'true', 'Historical APK delete safety gate'],
+            [/^ALLOWED_ORIGINS\s*=\s*"([^"]+)"\s*$/m, 'https://smvastroservices.in,https://www.smvastroservices.in,https://horoscope.smvastroservices.in,https://calendar.smvastroservices.in,https://smvastro.pages.dev,https://smvastroservices.pages.dev', 'SMV app download page origins']
           ];
           for (const [pattern, expected, label] of checks) {
             const match = config.match(pattern);
