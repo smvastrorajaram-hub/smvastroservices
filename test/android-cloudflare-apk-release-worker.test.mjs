@@ -428,8 +428,16 @@ test('Horoscope and Calendar have independent package identities, version sequen
   const calendarDownload = await worker.fetch(new Request(calendarRelease.downloadUrl), env);
   assert.equal(horoscopeDownload.status, 200);
   assert.equal(calendarDownload.status, 200);
-  assert.equal((await horoscopeDownload.arrayBuffer()).byteLength, 1100);
-  assert.equal((await calendarDownload.arrayBuffer()).byteLength, 1100);
+  assert.deepEqual(
+    Buffer.from(await horoscopeDownload.arrayBuffer()),
+    apkPayload('v1.0', 1000, horoscopePackage),
+    'Horoscope download must stream the exact bytes accepted by its upload'
+  );
+  assert.deepEqual(
+    Buffer.from(await calendarDownload.arrayBuffer()),
+    apkPayload('v1.0', 1000, calendarPackage),
+    'Calendar download must stream the exact bytes accepted by its upload'
+  );
 });
 
 test('Each Admin app manager can upload only its assigned package and protects only its own current release', async () => {
