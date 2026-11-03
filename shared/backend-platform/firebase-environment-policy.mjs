@@ -9,9 +9,14 @@ export function resolveFirebaseAuthProjectIds(env = {}) {
     .filter(Boolean);
 }
 
-// D1 Identity/Profile authorization is a staging experiment only.
-// Production Customer/Astrologer/Admin authorization remains Firebase-backed.
+// Staging remains opt-in. Production requires a separate deployment approval and
+// an explicitly completed identity/profile cutover in addition to the feature flag.
 export function isD1IdentityAuthorizationAllowed(env = {}) {
-  return String(env.SMV_ENVIRONMENT || '').trim().toLowerCase() === 'staging' &&
-    String(env.SMV_IDENTITY_PROFILE_D1_AUTHORIZATION_ENABLED || '').trim().toLowerCase() === 'true';
+  const environment = String(env.SMV_ENVIRONMENT || '').trim().toLowerCase();
+  const enabled = String(env.SMV_IDENTITY_PROFILE_D1_AUTHORIZATION_ENABLED || '').trim().toLowerCase() === 'true';
+  if (!enabled) return false;
+  if (environment === 'staging') return true;
+  if (environment !== 'production') return false;
+  return String(env.SMV_IDENTITY_PROFILE_CUTOVER_COMPLETE || '').trim().toLowerCase() === 'true' &&
+    String(env.SMV_IDENTITY_PROFILE_PRODUCTION_AUTHORIZATION_APPROVED || '').trim().toLowerCase() === 'true';
 }

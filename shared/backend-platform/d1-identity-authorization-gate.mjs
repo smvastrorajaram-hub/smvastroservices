@@ -1,6 +1,5 @@
 'use strict';
 
-const REQUIRED_PROJECT_ID = 'smv-astro-staging';
 const REQUIRED_SCHEMA_VERSION = '0008_identity_profile_backfill_audit';
 
 function valuesOf(value) {
@@ -10,15 +9,16 @@ function valuesOf(value) {
 
 function gateError() {
   return Object.assign(
-    new Error('D1 Identity/Profile authorization is not ready for staging.'),
+    new Error('D1 Identity/Profile authorization is not ready for this environment.'),
     { code: 'IDENTITY_D1_AUTHORIZATION_NOT_READY', httpStatus: 503 }
   );
 }
 
 /**
- * Keeps D1 authorization disabled until the isolated staging project has a
- * complete import inventory, clean reconciliation and an explicitly quiesced
- * Firestore source. This gate never changes either store.
+ * Keeps D1 authorization disabled until the selected environment's exact
+ * Firebase project has a complete import inventory, clean reconciliation and
+ * an explicitly quiesced Firestore source. Production additionally requires a
+ * separate approval flag. This gate never changes either store.
  */
 export function createD1IdentityAuthorizationGate({
   identityService,
@@ -26,10 +26,13 @@ export function createD1IdentityAuthorizationGate({
   enabled = false,
   environment = 'unknown',
   sourceProjectId = '',
-  projectIds = []
+  projectIds = [],
+  productionApproved = false
 } = {}) {
   const projects = valuesOf(projectIds);
   const source = String(sourceProjectId || '').trim();
+  const expectedProject = environment === 'staging' ? 'smv-astro-staging' :
+    environment === 'production' ? 'smv-astro' : '';
 
   async function readiness() {
     const base = {
@@ -41,10 +44,14 @@ export function createD1IdentityAuthorizationGate({
       sourceQuiesced: false
     };
     if (enabled !== true) return { ...base, reason: 'disabled' };
-    if (environment !== 'staging' || source !== REQUIRED_PROJECT_ID) {
-      return { ...base, reason: 'staging_scope_mismatch' };
+    if (!expectedProject) return { ...base, reason: 'environment_not_supported' };
+    if (environment === 'production' && productionApproved !== true) {
+      return { ...base, reason: 'production_approval_missing' };
     }
-    if (projects.length !== 1 || projects[0] !== REQUIRED_PROJECT_ID) {
+    if (source !== expectedProject) {
+      return { ...base, reason: environment + '_scope_mismatch' };
+    }
+    if (projects.length !== 1 || projects[0] !== expectedProject) {
       return { ...base, reason: 'firebase_project_allowlist_mismatch' };
     }
     if (!db || typeof db.prepare !== 'function' ||
@@ -60,7 +67,7 @@ export function createD1IdentityAuthorizationGate({
         db.prepare(
           'SELECT inventory_complete,reconciliation_complete,source_quiesced ' +
           'FROM smv_domain_identity_migration_meta WHERE source_project_id = ? LIMIT 1'
-        ).bind(REQUIRED_PROJECT_ID).first()
+        ).bind(expectedProject).first()
       ]);
       const schemaReady = String(schema?.schema_version || '') === REQUIRED_SCHEMA_VERSION;
       const inventoryComplete = Number(migration?.inventory_complete) === 1;
