@@ -18,5 +18,6 @@ export function isD1IdentityAuthorizationAllowed(env = {}) {
   if (environment === 'staging') return true;
   if (environment !== 'production') return false;
   return String(env.SMV_IDENTITY_PROFILE_CUTOVER_COMPLETE || '').trim().toLowerCase() === 'true' &&
-    String(env.SMV_IDENTITY_PROFILE_PRODUCTION_AUTHORIZATION_APPROVED || '').trim().toLowerCase() === 'true';
+    String(env.SMV_IDENTITY_PROFILE_PRODUCTION_AUTHORIZATION_APPROVED || '').trim().toLowerCase() === 'true' &&
+    String(env.SMV_IDENTITY_PROFILE_FRESH_START_APPROVED || '').trim().toLowerCase() === 'true';
 }
