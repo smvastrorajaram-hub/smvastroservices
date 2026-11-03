@@ -173,6 +173,9 @@ test('Admin has three separate signed APK managers with version history refresh 
   assert.ok(worker.includes('The current published APK is protected and cannot be deleted.'));
   assert.ok(worker.includes("row.storage_provider !== 'r2'"));
   assert.ok(worker.includes('DELETE FROM android_app_releases WHERE app_id = ?'));
+  assert.ok(manager.includes("loadAdminAndroidAppReleaseFor('astro')"));
+  assert.ok(manager.includes("loadAdminAndroidAppReleaseFor('horoscope')"));
+  assert.ok(manager.includes("loadAdminAndroidAppReleaseFor('calendar')"));
 });
 
 test('Horoscope and Calendar public areas show app-specific APK downloads while retaining the offline PWA shell', () => {
