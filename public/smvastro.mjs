@@ -2588,8 +2588,7 @@ function smvAndroidApkSafeDownloadUrl(value,workerBase){
   let url;
   try{url=new URL(String(value||''));}catch(_){return null;}
   if(url.protocol!=='https:'||url.username||url.password||url.hash)return null;
-  if(workerBase&&url.origin===workerBase&&/^\/(?:api\/android-app\/)?download\/(?:astro|horoscope|calendar\/)?[1-9][0-9]{2,9}$/.test(url.pathname)&&!url.search)return url;
-  if(workerBase&&url.origin===workerBase&&/^\/(?:api\/android-app\/)?download\/(?:astro|horoscope|calendar)\/[1-9][0-9]{2,9}$/.test(url.pathname)&&!url.search)return url;
+  if(workerBase&&url.origin===workerBase&&/^\\/(?:api\\/android-app\\/)?download\\/(?:(?:astro|horoscope|calendar)\\/)?[1-9][0-9]{2,9}$/.test(url.pathname)&&!url.search)return url;
   if(url.hostname!=='firebasestorage.googleapis.com')return null;
   let decodedPath;
   try{decodedPath=decodeURIComponent(url.pathname);}catch(_){return null;}
