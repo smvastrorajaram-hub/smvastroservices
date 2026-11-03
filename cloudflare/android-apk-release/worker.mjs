@@ -261,6 +261,18 @@ async function recordUploadAttempt(env, uid, now) {
   return true;
 }
 
+function multiAppReleasesEnabled(env) {
+  return String(env.MULTI_APP_RELEASES_ENABLED || '').toLowerCase() === 'true';
+}
+
+function multiAppGateResponse(request, env, appId) {
+  if (appId === 'astro' || multiAppReleasesEnabled(env)) return null;
+  return json(request, env, {
+    success: false,
+    error: 'Horoscope and Calendar APK management is disabled until the app-scoped D1 migration and Worker deployment are verified.'
+  }, 503);
+}
+
 function safeMaximumBytes(env) {
   const configured = Number(env.MAX_APK_BYTES || MAX_APK_BYTES);
   return Number.isSafeInteger(configured) && configured >= 1024 && configured <= MAX_APK_BYTES
@@ -331,6 +343,7 @@ export function createAndroidApkReleaseWorker({
             r2Ready,
             uploadsEnabled: ready && String(env.ALLOW_APK_UPLOADS || '').toLowerCase() === 'true',
             deletesEnabled: ready && String(env.ALLOW_APK_DELETES || '').toLowerCase() === 'true',
+            multiAppReleasesEnabled: ready && multiAppReleasesEnabled(env),
             hasReleaseRecords
           }, 200, { 'Cache-Control': 'no-store' });
         }
@@ -341,6 +354,8 @@ export function createAndroidApkReleaseWorker({
             return json(request, env, { success: false, available: false, error: 'Cloudflare APK storage is not configured.' }, 503);
           }
           const appId = publicAppMatch ? publicAppMatch[1] : 'astro';
+          const gated = multiAppGateResponse(request, env, appId);
+          if (gated) return gated;
           const release = await currentRelease(env, request, appId);
           return json(request, env, release, 200, {
             'Cache-Control': 'public, max-age=30, stale-while-revalidate=120'
@@ -354,6 +369,8 @@ export function createAndroidApkReleaseWorker({
             return json(request, env, { success: false, error: 'Cloudflare APK storage is not configured.' }, 503);
           }
           const appId = multiDownloadMatch ? multiDownloadMatch[1] : 'astro';
+          const gated = multiAppGateResponse(request, env, appId);
+          if (gated) return gated;
           const versionCode = multiDownloadMatch ? multiDownloadMatch[2] : astroDownloadMatch[1];
           return await handleDownload(request, env, versionCode, appId);
         }
@@ -363,6 +380,8 @@ export function createAndroidApkReleaseWorker({
         if (adminAppId && request.method === 'GET') {
           const auth = await requireAdmin(request, env, verifyToken);
           if (auth.response) return auth.response;
+          const gated = multiAppGateResponse(request, env, adminAppId);
+          if (gated) return gated;
           if (!(await hasReleaseSchema(env))) {
             return json(request, env, { success: false, error: 'Cloudflare APK storage is not configured.' }, 503);
           }
@@ -380,6 +399,8 @@ export function createAndroidApkReleaseWorker({
             return json(request, env, { success: false, error: 'Cloudflare APK storage is not configured.' }, 503);
           }
           const appId = adminHistoryMatch ? adminHistoryMatch[1] : 'astro';
+          const gated = multiAppGateResponse(request, env, appId);
+          if (gated) return gated;
           return json(request, env, {
             success: true,
             appId,
@@ -395,6 +416,8 @@ export function createAndroidApkReleaseWorker({
           if (!(await hasReleaseSchema(env))) return json(request, env, { success: false, error: 'Cloudflare APK storage is not configured.' }, 503);
           if (String(env.ALLOW_APK_DELETES || '').toLowerCase() !== 'true') return json(request, env, { success: false, error: 'Historical APK deletion is disabled until the Admin release manager is verified.' }, 503);
           const appId = deleteMultiMatch ? deleteMultiMatch[1] : 'astro';
+          const gated = multiAppGateResponse(request, env, appId);
+          if (gated) return gated;
           const versionCode = Number(deleteMultiMatch ? deleteMultiMatch[2] : deleteAstroMatch[1]);
           const row = await rowByVersion(env.DB, versionCode, appId);
           if (!row) return json(request, env, { success: false, error: 'This archived Android APK version was not found.' }, 404);
@@ -420,6 +443,8 @@ export function createAndroidApkReleaseWorker({
         const uploadMultiMatch = /^\/admin\/android-apps\/(astro|horoscope|calendar)\/upload$/.exec(path);
         if ((path === '/admin/android-app/upload' || uploadMultiMatch) && request.method === 'POST') {
           const appId = uploadMultiMatch ? uploadMultiMatch[1] : 'astro';
+          const gated = multiAppGateResponse(request, env, appId);
+          if (gated) return gated;
           const appSpec = ANDROID_APPS[appId];
           const auth = await requireAdmin(request, env, verifyToken);
           if (auth.response) return auth.response;
