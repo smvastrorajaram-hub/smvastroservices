@@ -242,6 +242,22 @@ async function listReleaseHistory(env, request, appId = 'astro') {
   }));
 }
 
+async function listPublicReleaseHistory(env, request, appId) {
+  // The binaries and current release metadata are already publicly downloadable.
+  // Expose only the minimum version-list fields; never return uploader IDs,
+  // hashes, signer fingerprints or internal R2 object keys.
+  const result = await env.DB.prepare(
+    'SELECT app_id, package_name, version_name, version_code, storage_provider, size_bytes, uploaded_at FROM android_app_releases WHERE app_id = ? ORDER BY version_code DESC LIMIT 100'
+  ).bind(appId).all();
+  const rows = Array.isArray(result?.results) ? result.results : [];
+  return rows.map((row, index) => ({
+    ...publicReleaseFromRow(row, request, false, appId),
+    storageProvider: String(row.storage_provider || 'r2'),
+    isCurrent: index === 0,
+    canDelete: index > 0 && row.storage_provider === 'r2'
+  }));
+}
+
 async function recordUploadAttempt(env, uid, now) {
   const result = await env.DB.prepare(
     'SELECT COUNT(*) AS count FROM android_apk_upload_attempts WHERE uid = ? AND attempted_at >= ?'
@@ -358,6 +374,23 @@ export function createAndroidApkReleaseWorker({
           if (gated) return gated;
           const release = await currentRelease(env, request, appId);
           return json(request, env, release, 200, {
+            'Cache-Control': 'public, max-age=30, stale-while-revalidate=120'
+          });
+        }
+
+        const publicHistoryMatch = /^\\/public\\/android-apps\\/(horoscope|calendar)\\/versions$/.exec(path);
+        if (publicHistoryMatch && request.method === 'GET') {
+          if (!(await hasReleaseSchema(env))) {
+            return json(request, env, { success: false, error: 'Cloudflare APK storage is not configured.' }, 503);
+          }
+          const appId = publicHistoryMatch[1];
+          const gated = multiAppGateResponse(request, env, appId);
+          if (gated) return gated;
+          return json(request, env, {
+            success: true,
+            appId,
+            versions: await listPublicReleaseHistory(env, request, appId)
+          }, 200, {
             'Cache-Control': 'public, max-age=30, stale-while-revalidate=120'
           });
         }
