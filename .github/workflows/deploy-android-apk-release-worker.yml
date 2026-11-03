@@ -87,8 +87,9 @@ jobs:
             [/^bucket_name\s*=\s*"([^"]+)"\s*$/m, 'smv-astro-apk-releases', 'R2 bucket'],
             [/^database_name\s*=\s*"([^"]+)"\s*$/m, 'smv-astro-apk-releases', 'D1 database name'],
             [/^database_id\s*=\s*"([^"]+)"\s*$/m, '5105ebb3-435c-47b7-9983-2e171fa911cd', 'D1 database ID'],
-            [/^ALLOW_APK_UPLOADS\s*=\s*"([^"]+)"\s*$/m, 'true', 'APK upload safety gate']
+            [/^ALLOW_APK_UPLOADS\s*=\s*"([^"]+)"\s*$/m, 'true', 'APK upload safety gate'],
             [/^ALLOW_APK_DELETES\s*=\s*"([^"]+)"\s*$/m, 'true', 'Historical APK delete safety gate']
+            [/^ALLOWED_ORIGINS\s*=\s*"([^"]+)"\s*$/m, 'https://smvastroservices.in,https://www.smvastroservices.in,https://horoscope.smvastroservices.in,https://calendar.smvastroservices.in,https://smvastro.pages.dev,https://smvastroservices.pages.dev', 'SMV app download page origins'],
           ];
           for (const [pattern, expected, label] of checks) {
             const match = config.match(pattern);
@@ -96,7 +97,7 @@ jobs:
               throw new Error(`${label} mismatch in ${file}; refusing deployment.`);
             }
           }
-          console.log('Exact APK Worker, R2 bucket and D1 identity verified; APK Admin APK uploads are enabled.');
+          console.log('Exact APK Worker, R2 bucket, D1 identity, release origins and Admin safety gates verified.');
           NODE
 
       - name: Verify the live D1 database identity before migration
@@ -170,18 +171,20 @@ jobs:
             health.ready === true &&
             health.d1Ready === true &&
             health.r2Ready === true &&
-            health.uploadsEnabled === true;
+            health.uploadsEnabled === true &&
+            health.deletesEnabled === true;
           if (!ready) {
             console.error('APK Worker readiness is incomplete:', JSON.stringify({
               success: health.success === true,
               ready: health.ready === true,
               d1Ready: health.d1Ready === true,
               r2Ready: health.r2Ready === true,
-              uploadsEnabled: health.uploadsEnabled === true
+              uploadsEnabled: health.uploadsEnabled === true,
+              deletesEnabled: health.deletesEnabled === true
             }));
             process.exit(1);
           }
-          console.log('Worker health: D1 schema ready; R2 read-only probe succeeded; Admin APK publishing is enabled.');
+          console.log('Worker health: D1 schema ready; R2 read-only probe succeeded; Admin APK upload and historical deletion gates are enabled.');
           NODE
               then
                 HEALTH_OK=1
@@ -258,7 +261,7 @@ jobs:
             if [[ -n "$WORKER_URL" ]]; then
               echo "- Worker URL: $WORKER_URL"
               echo "- Health endpoint: $WORKER_URL/health"
-              echo "- Public metadata endpoint: $WORKER_URL/public/android-app"
+              echo "- Public metadata endpoints: $WORKER_URL/public/android-app (ASTRO), $WORKER_URL/public/android-apps/horoscope, $WORKER_URL/public/android-apps/calendar"
             else
               echo "- Worker URL: not captured; inspect the deployment step."
             fi
