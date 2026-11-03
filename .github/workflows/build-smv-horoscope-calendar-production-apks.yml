@@ -3,8 +3,13 @@ name: Build SMV HOROSCOPE and SMV CALENDAR Production Android APKs
 on:
   workflow_dispatch:
     inputs:
-      version_name:
-        description: "Release version shared by the two new products (v1.0, v1.1, v2.0...)"
+      horoscope_version_name:
+        description: "SMV HOROSCOPE version (v1.0, v1.1, v2.0...)"
+        required: true
+        type: string
+        default: "v1.0"
+      calendar_version_name:
+        description: "SMV CALENDAR version (independent sequence)"
         required: true
         type: string
         default: "v1.0"
@@ -50,7 +55,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
-      SMV_ANDROID_VERSION_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.version_name || 'v1.0' }}
+      SMV_HOROSCOPE_ANDROID_VERSION_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.horoscope_version_name || 'v1.0' }}
+      SMV_CALENDAR_ANDROID_VERSION_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.calendar_version_name || 'v1.0' }}
       SMV_SIGNED_RELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.build_signed_release }}
     steps:
       - name: Checkout
@@ -106,7 +112,7 @@ jobs:
       - name: Compile both Release variants without signing (PR/push validation only)
         if: ${{ github.event_name != 'workflow_dispatch' || !inputs.build_signed_release }}
         run: |
-          gradle --no-daemon -PsmvVersionName="$SMV_ANDROID_VERSION_NAME" \
+          gradle --no-daemon -PsmvHoroscopeVersionName="$SMV_HOROSCOPE_ANDROID_VERSION_NAME" -PsmvCalendarVersionName="$SMV_CALENDAR_ANDROID_VERSION_NAME" \
             :smvhoroscopeproduction:assembleRelease \
             :smvcalendarproduction:assembleRelease
 
@@ -157,7 +163,7 @@ jobs:
         if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
         run: |
           set -euo pipefail
-          gradle --no-daemon -PsmvVersionName="$SMV_ANDROID_VERSION_NAME" \
+          gradle --no-daemon -PsmvHoroscopeVersionName="$SMV_HOROSCOPE_ANDROID_VERSION_NAME" -PsmvCalendarVersionName="$SMV_CALENDAR_ANDROID_VERSION_NAME" \
             :smvhoroscopeproduction:assembleRelease \
             :smvcalendarproduction:assembleRelease
 
