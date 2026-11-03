@@ -72,21 +72,23 @@ jobs:
           node --check cloudflare/android-apk-release/worker.mjs
           node --check public/android-app-install.js
           node --check public/smvastro.mjs
+          node --check public/horoscope/android-apk-download.mjs
+          node --check public/horoscope/daily-calendar.mjs
 
       - name: Run APK release and existing permanent-signing regression tests
-        run: node --test test/android-cloudflare-apk-release-worker.test.mjs test/android-permanent-release.test.mjs test/live-push-notifications.test.js test/cream-theme-audit.test.mjs test/android-apk-browser-fallback.test.mjs
+        run: node --test test/android-cloudflare-apk-release-worker.test.mjs test/android-permanent-release.test.mjs test/live-push-notifications.test.js test/cream-theme-audit.test.mjs test/android-apk-browser-fallback.test.mjs test/android-horoscope-calendar-production.test.mjs tests/horoscope-page-chrome-removal-regression.mjs
 
-      - name: Validate D1 migration and database-level safety triggers
+      - name: Validate D1 migrations and per-app version isolation
         run: |
           python3 - <<'PY'
           import sqlite3
           from pathlib import Path
 
-          sql = Path("cloudflare/android-apk-release/migrations/0001_android_app_releases.sql").read_text()
+          migrations = Path("cloudflare/android-apk-release/migrations")
           db = sqlite3.connect(":memory:")
-          db.executescript(sql)
+          db.executescript((migrations / "0001_android_app_releases.sql").read_text())
 
-          def release(code, version, key):
+          def astro_release(code, version, key):
               db.execute(
                   """INSERT INTO android_app_releases
                   (package_name, version_name, version_code, storage_provider, object_key,
@@ -95,12 +97,49 @@ jobs:
                   ("in.smvastroservices.smvastro", version, code, key, "a" * 64, "b" * 64, 1024, "admin-test", 1700000000000),
               )
 
-          release(1001, "v1.1", "releases/1001/a.apk")
+          astro_release(1001, "v1.1", "smv-astro/android/releases/1001/a.apk")
+          db.executescript((migrations / "0002_multi_product_android_app_releases.sql").read_text())
+
+          assert db.execute("SELECT app_id, package_name, version_code FROM android_app_releases").fetchone() == (
+              "astro", "in.smvastroservices.smvastro", 1001
+          ), "Existing ASTRO release metadata must be retained."
+          assert db.execute("SELECT COUNT(*) FROM android_app_releases").fetchone()[0] == 1
+
+          def product_release(app, package, version, code):
+              db.execute(
+                  """INSERT INTO android_app_releases
+                  (app_id, package_name, version_name, version_code, storage_provider, object_key,
+                   external_download_url, sha256, certificate_sha256, size_bytes, uploaded_by, uploaded_at)
+                  VALUES (?, ?, ?, ?, 'r2', ?, NULL, ?, ?, ?, ?, ?)""",
+                  (app, package, version, code, f"smv-{app}/android/releases/{code}/a.apk",
+                   "b" * 64, "c" * 64, 2048, "admin-test", 1700000000001),
+              )
+
+          product_release("horoscope", "in.smvastroservices.horoscope", "v1.0", 1000)
+          product_release("calendar", "in.smvastroservices.calendar", "v1.0", 1000)
+          product_release("astro", "in.smvastroservices.smvastro", "v1.2", 1002)
+
+          for app, package in [
+              ("horoscope", "in.smvastroservices.horoscope"),
+              ("calendar", "in.smvastroservices.calendar"),
+              ("astro", "in.smvastroservices.smvastro"),
+          ]:
+              try:
+                  product_release(app, package, "duplicate", 1000 if app != "astro" else 1002)
+                  raise AssertionError(f"D1 allowed a duplicate/non-increasing version for {app}")
+              except sqlite3.IntegrityError as exc:
+                  assert "VERSION_CODE_NOT_INCREASING" in str(exc) or "UNIQUE constraint failed" in str(exc)
+
           try:
-              release(1001, "v1.1", "releases/1001/b.apk")
-              raise AssertionError("D1 allowed a duplicate/non-increasing versionCode")
+              product_release("calendar", "in.smvastroservices.horoscope", "v1.1", 1001)
+              raise AssertionError("D1 allowed a package ID to be stored under the wrong app.")
           except sqlite3.IntegrityError as exc:
-              assert "VERSION_CODE_NOT_INCREASING" in str(exc)
+              assert "APK_PACKAGE_DOES_NOT_MATCH_APP" in str(exc) or "CHECK constraint failed" in str(exc)
+
+          assert db.execute("SELECT COUNT(*) FROM android_app_releases WHERE version_code = 1000").fetchone()[0] == 2
+          assert db.execute("SELECT MAX(version_code) FROM android_app_releases WHERE app_id='astro'").fetchone()[0] == 1002
+          assert db.execute("SELECT MAX(version_code) FROM android_app_releases WHERE app_id='horoscope'").fetchone()[0] == 1000
+          assert db.execute("SELECT MAX(version_code) FROM android_app_releases WHERE app_id='calendar'").fetchone()[0] == 1000
 
           for index in range(5):
               db.execute("INSERT INTO android_apk_upload_attempts (uid, attempted_at) VALUES (?, ?)", ("admin-test", 2000000 + index))
@@ -110,8 +149,7 @@ jobs:
           except sqlite3.IntegrityError as exc:
               assert "APK_UPLOAD_RATE_LIMIT" in str(exc)
 
-          assert db.execute("SELECT MAX(version_code) FROM android_app_releases").fetchone()[0] == 1001
-          print("D1 APK migration, monotonic version trigger and hourly rate-limit trigger: PASS")
+          print("D1 multi-app migration, existing ASTRO history, package isolation, independent version sequences and upload rate limit: PASS")
           PY
 
       - name: Validate Wrangler Worker bundle without deploying
