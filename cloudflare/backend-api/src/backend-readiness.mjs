@@ -18,7 +18,7 @@ const REQUIRED_SCHEMA_QUERY = [
   "  (SELECT COUNT(*) FROM pragma_table_info('smv_domain_razorpay_webhook_events') WHERE name IN ('claim_token', 'lease_until_ms')) AS razorpay_claim_columns_count,",
   "  (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = 'live-booking-release-guard' LIMIT 1) AS live_booking_release_version,",
   "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_live_booking_release_pending_validate') AS live_booking_release_trigger_count"
-].join('\\n');
+].join('\n');
 
 const MIGRATION_KEYS = [
   '0002_shared_domain_repository',
