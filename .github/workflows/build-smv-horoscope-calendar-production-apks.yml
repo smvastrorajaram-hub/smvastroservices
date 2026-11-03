@@ -23,6 +23,8 @@ on:
       - "settings.gradle"
       - "prepare-icons.sh"
       - "prepare-smv-horoscope-calendar-production-icons.sh"
+      - "tools/SmvProductLauncherIconGenerator.java"
+      - "test/android-horoscope-calendar-launcher-icons.test.mjs"
       - "smvhoroscopeproduction/**"
       - "smvcalendarproduction/**"
       - "smvhoroscope/**"
@@ -35,6 +37,8 @@ on:
       - "settings.gradle"
       - "prepare-icons.sh"
       - "prepare-smv-horoscope-calendar-production-icons.sh"
+      - "tools/SmvProductLauncherIconGenerator.java"
+      - "test/android-horoscope-calendar-launcher-icons.test.mjs"
       - "smvhoroscopeproduction/**"
       - "smvcalendarproduction/**"
       - "smvhoroscope/**"
@@ -68,7 +72,7 @@ jobs:
           node-version: "22"
 
       - name: Verify independent production packages and test-module isolation
-        run: node --test test/android-horoscope-calendar-production.test.mjs test/android-permanent-release.test.mjs
+        run: node --test test/android-horoscope-calendar-production.test.mjs test/android-horoscope-calendar-launcher-icons.test.mjs test/android-permanent-release.test.mjs
 
       - name: Java 17
         uses: actions/setup-java@v4
@@ -97,11 +101,17 @@ jobs:
         run: |
           set -euo pipefail
           for module in smvhoroscopeproduction smvcalendarproduction; do
-            test -s "$module/src/main/res/drawable-nodpi/app_icon_foreground.png"
-            test -s "$module/src/main/res/mipmap-nodpi/ic_launcher.png"
-            test -s "$module/src/main/res/mipmap-nodpi/ic_launcher_round.png"
+            res="$module/src/main/res"
+            test -s "$res/drawable-nodpi/ic_launcher_foreground.png"
+            test -s "$res/mipmap-nodpi/ic_launcher.png"
+            test -s "$res/mipmap-nodpi/ic_launcher_round.png"
+            test -s "$res/mipmap-anydpi-v26/ic_launcher.xml"
+            test -s "$res/mipmap-anydpi-v26/ic_launcher_round.xml"
+            test -s "$res/values/colors.xml"
+            grep -Fq '<color name="smv_launcher_background">#FFFFFF</color>' "$res/values/colors.xml"
+            grep -Fq '@drawable/ic_launcher_foreground' "$res/mipmap-anydpi-v26/ic_launcher.xml"
           done
-          echo "PASS: Both production Android apps have square, round and adaptive foreground resources."
+          echo "PASS: Both production Android apps have SMV ASTRO-matching 58dp white-background square, round and adaptive launcher resources."
 
       - name: Build Horoscope and Calendar Debug APKs (test builds only)
         run: |
