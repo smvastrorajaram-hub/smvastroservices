@@ -57,7 +57,7 @@ jobs:
     env:
       SMV_HOROSCOPE_ANDROID_VERSION_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.horoscope_version_name || 'v1.0' }}
       SMV_CALENDAR_ANDROID_VERSION_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.calendar_version_name || 'v1.0' }}
-      SMV_SIGNED_RELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.build_signed_release }}
+      SMV_SIGNED_RELEASE: ${{ (github.event_name == 'workflow_dispatch' && inputs.build_signed_release) || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
