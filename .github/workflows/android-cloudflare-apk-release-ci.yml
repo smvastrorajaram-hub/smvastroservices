@@ -19,6 +19,7 @@ on:
       - 'test/android-permanent-release.test.mjs'
       - '.github/workflows/android-cloudflare-apk-release-ci.yml'
       - '.github/workflows/deploy-android-apk-release-worker.yml'
+      - '.github/workflows/audit-android-apk-release-worker.yml'
       - '.github/workflows/deploy-android-apk-release-staging-worker.yml'
   push:
     branches: [main]
@@ -39,6 +40,7 @@ on:
       - 'test/android-permanent-release.test.mjs'
       - '.github/workflows/android-cloudflare-apk-release-ci.yml'
       - '.github/workflows/deploy-android-apk-release-worker.yml'
+      - '.github/workflows/audit-android-apk-release-worker.yml'
       - '.github/workflows/deploy-android-apk-release-staging-worker.yml'
 
 permissions:
@@ -56,6 +58,7 @@ jobs:
         run: |
           ruby -e 'require "yaml"; YAML.parse_file(".github/workflows/deploy-android-apk-release-worker.yml")'
           ruby -e 'require "yaml"; YAML.parse_file(".github/workflows/deploy-android-apk-release-staging-worker.yml")'
+          ruby -e 'require "yaml"; YAML.parse_file(".github/workflows/audit-android-apk-release-worker.yml")'
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
