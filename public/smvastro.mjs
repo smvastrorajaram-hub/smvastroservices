@@ -2970,6 +2970,11 @@ async function loadAdminPanelData(background=false){
   if(!currentUser || currentUser.uid!==adminLoadUid || currentUser.uid!==auth?.currentUser?.uid) return;
   smvBindAdminWalletLedger();
   smvLiveBindAdminPricing();
+  if(!background){
+    loadAdminAndroidAppReleaseFor('astro').catch(error=>console.warn('SMV ASTRO APK manager unavailable:',error?.message||error));
+    loadAdminAndroidAppReleaseFor('horoscope').catch(error=>console.warn('SMV HOROSCOPE APK manager unavailable:',error?.message||error));
+    loadAdminAndroidAppReleaseFor('calendar').catch(error=>console.warn('SMV CALENDAR APK manager unavailable:',error?.message||error));
+  }
   smvRenderAdminWalletOffers().catch(error=>console.warn('Admin Wallet Offers unavailable:',error?.message||error));
   if(!background)smvLoadAdminWalletLedger().catch(e=>console.warn('Admin Wallet ledger unavailable:',e));
   smvWatchAdminEvents();
