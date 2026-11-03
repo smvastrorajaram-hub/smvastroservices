@@ -72,11 +72,11 @@ test('Production diagnostic probe Workers have separate names and cannot bind Pr
   assert.equal(express.durable_objects, undefined);
 });
 
-test('Production frontend keeps Cloudflare financial routing opt-in until Worker deployment has been verified', () => {
+test('Production frontend enables Cloudflare financial routing after Worker deployment is configured', () => {
   const html = fs.readFileSync(path.join(root, '..', '..', 'public', 'index.html'), 'utf8');
   const frontend = fs.readFileSync(path.join(root, '..', '..', 'public', 'smvastro.mjs'), 'utf8');
   const publicContent = fs.readFileSync(path.join(root, '..', '..', 'public', 'public-content.mjs'), 'utf8');
-  assert.match(html, /SMV_CLOUDFLARE_FINANCIAL_API_ENABLED\s*=\s*false/);
+  assert.match(html, /SMV_CLOUDFLARE_FINANCIAL_API_ENABLED\s*=\s*true/);
   assert.match(frontend, /SMV_CLOUDFLARE_FINANCIAL_API_ENABLED\s*===\s*true/);
   assert.match(frontend, /smvastroservices\.astroservices\.workers\.dev/);
   assert.match(frontend, /live\/push/);
