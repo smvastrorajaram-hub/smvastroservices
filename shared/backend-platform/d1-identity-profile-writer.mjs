@@ -94,7 +94,7 @@ export function createD1IdentityProfileWriter({ db, projectId, now = Date.now, c
         'INSERT INTO smv_domain_identity_users ' +
         '(firebase_project_id,uid,email,role,status,public_id,name,phone_e164,phone_hash,email_verified,profile_json,created_at_ms,updated_at_ms) ' +
         "VALUES (?,?,?,'customer','active',?,?,?,?,?,?,?,?) " +
-        'ON CONFLICT(firebase_project_id,uid) DO UPDATE SET email=excluded.email,role=\\'customer\\',status=\\'active\\',' +
+        'ON CONFLICT(firebase_project_id,uid) DO UPDATE SET email=excluded.email,role=excluded.role,status=excluded.status,' +
         'public_id=excluded.public_id,name=excluded.name,phone_e164=excluded.phone_e164,phone_hash=excluded.phone_hash,' +
         'email_verified=excluded.email_verified,profile_json=excluded.profile_json,' +
         'updated_at_ms=MAX(smv_domain_identity_users.updated_at_ms,excluded.updated_at_ms)'
@@ -133,7 +133,7 @@ export function createD1IdentityProfileWriter({ db, projectId, now = Date.now, c
         'INSERT INTO smv_domain_identity_users ' +
         '(firebase_project_id,uid,email,role,status,public_id,name,phone_e164,phone_hash,email_verified,profile_json,created_at_ms,updated_at_ms) ' +
         "VALUES (?,?,?,'astrologer',?,?,?,?,?,?,?,?,?) " +
-        'ON CONFLICT(firebase_project_id,uid) DO UPDATE SET email=excluded.email,role=\\'astrologer\\',' +
+        'ON CONFLICT(firebase_project_id,uid) DO UPDATE SET email=excluded.email,role=excluded.role,' +
         'status=excluded.status,public_id=excluded.public_id,name=excluded.name,phone_e164=excluded.phone_e164,' +
         'phone_hash=excluded.phone_hash,email_verified=excluded.email_verified,profile_json=excluded.profile_json,' +
         'updated_at_ms=MAX(smv_domain_identity_users.updated_at_ms,excluded.updated_at_ms)'
