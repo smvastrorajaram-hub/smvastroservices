@@ -327,7 +327,8 @@ public class MainActivity extends Activity {
     }
 
     private static String packageForHost(String host) {
-        // The SMV ASTRO production app must not redirect internal links to the standalone Test APKs.
+        if ("horoscope.smvastroservices.in".equals(host)) return "in.smvastroservices.horoscope";
+        if ("calendar.smvastroservices.in".equals(host)) return "in.smvastroservices.calendar";
         return null;
     }
 
