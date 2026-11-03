@@ -40,6 +40,17 @@ test('Production Worker enables D1 Wallet, Razorpay Live and Live/Booking routes
   assert.equal(config.routes, undefined);
 });
 
+test('Production deploy workflow provisions and validates Firebase Project 1 credentials without logging values', () => {
+  const workflow = fs.readFileSync(path.join(root, '..', '..', '.github', 'workflows', 'cloudflare-backend-api-production-deploy.yml'), 'utf8');
+  assert.match(workflow, /Sync Firebase Project 1 service account into Production Worker/);
+  assert.match(workflow, /FIREBASE_SERVICE_ACCOUNT_JSON:\s*\$\{\{ secrets\.FIREBASE_SERVICE_ACCOUNT_JSON \}\}/);
+  assert.match(workflow, /FIREBASE_PRODUCTION_SERVICE_ACCOUNT_JSON/);
+  assert.match(workflow, /FIREBASE_PROJECT_1_SERVICE_ACCOUNT_JSON/);
+  assert.match(workflow, /project_id !== 'smv-astro'/);
+  assert.match(workflow, /secret put FIREBASE_SERVICE_ACCOUNT_JSON/);
+  assert.match(workflow, /firebaseConnected!==true/);
+});
+
 test('Production diagnostic probe Workers have separate names and cannot bind Production D1', () => {
   const native = JSON.parse(fs.readFileSync(path.join(root, 'wrangler.native-probe.jsonc'), 'utf8'));
   const express = JSON.parse(fs.readFileSync(path.join(root, 'wrangler.express-probe.jsonc'), 'utf8'));
