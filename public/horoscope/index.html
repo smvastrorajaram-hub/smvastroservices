@@ -176,8 +176,6 @@ addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__s
     if(new URLSearchParams(location.search).get('source')==='horoscope-pwa')sessionStorage.setItem(ownKey,'1');
     if(sessionStorage.getItem(ownKey)!=='1')localStorage.removeItem('smv-horoscope-pwa-installed-v1');
   }catch(_){}
-  const area=document.getElementById('smvHoroscopeInstallArea');
-  if(area)area.hidden=true;
   // The original pwa.js exits early when any parent Pages PWA is standalone.
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'}).catch(()=>{});
