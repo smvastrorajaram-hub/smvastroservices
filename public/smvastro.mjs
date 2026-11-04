@@ -2912,6 +2912,7 @@ async function smvRenderAdminWalletOffers(){
      const row=button.closest('[data-wallet-offer-row]'),status=row?.querySelector('[data-wallet-offer-status]');
      if(status){status.textContent=offer.enabled?'ON':'OFF';status.className=offer.enabled?'success':'small';}
      button.textContent=offer.enabled?'TURN OFF':'TURN ON';
+     button.disabled=false;
      if(msg)msg.innerHTML='<span class="success">Offer '+escapeHtml(offer.name||'')+' saved as '+(offer.enabled?'ON':'OFF')+'.</span>';
     }catch(error){if(msg)msg.innerHTML='<span class="error">'+escapeHtml(error.message||String(error))+'</span>';button.disabled=false;}
    });
