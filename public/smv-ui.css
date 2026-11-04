@@ -41,6 +41,21 @@
   --smv207-h2:clamp(23px,1.8vw,31px);
   --smv207-h3:clamp(18px,1vw,22px);
   --smv207-h4:clamp(16px,.65vw,19px);
+  /* Shared dashboard typography scale: used by Customer, Astrologer and Admin. */
+  --smv-dashboard-title:clamp(25px,calc(2vw + 18px),30px);
+  --smv-dashboard-section:clamp(20px,calc(1vw + 18px),22px);
+  --smv-dashboard-subsection:clamp(17px,calc(.7vw + 15px),18px);
+  --smv-dashboard-emphasis:17px;
+  --smv-dashboard-body:15px;
+  --smv-dashboard-support:14px;
+  --smv-dashboard-label:13px;
+  --smv-dashboard-meta:12px;
+  --smv-dashboard-control:12px;
+  --smv-dashboard-metric:clamp(24px,calc(2.2vw + 16px),32px);
+  --smv-dashboard-heading-line:1.3;
+  --smv-dashboard-emphasis-line:1.5;
+  --smv-dashboard-body-line:1.6;
+  --smv-dashboard-meta-line:1.5;
 }
 
 html{scroll-behavior:smooth;text-size-adjust:100%;-webkit-text-size-adjust:100%}
@@ -54,7 +69,17 @@ body.smv-legal-page,
   text-rendering:optimizeLegibility;
   -webkit-font-smoothing:antialiased;
 }
-html[lang="ta"] body{font-family:"Noto Sans Tamil","Noto Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;line-height:1.68}
+html[lang="ta"] body{
+  font-family:"Noto Sans Tamil","Noto Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  line-height:1.78;
+  --smv-dashboard-body:16px;
+  --smv-dashboard-support:14px;
+  --smv-dashboard-meta:13px;
+  --smv-dashboard-heading-line:1.42;
+  --smv-dashboard-emphasis-line:1.65;
+  --smv-dashboard-body-line:1.78;
+  --smv-dashboard-meta-line:1.62;
+}
 body.smv-v12-theme{background:#fff8e7;}
 
 /* Content rhythm — intentionally excludes premium photographic header/hero typography. */
@@ -85,7 +110,7 @@ body.smv-v12-theme :where(.card,.registration-option,.admin-content-row,.admin-b
 body.smv-v12-theme :where(.card,.registration-option,.admin-content-row,.admin-blog-row,.astro-public-card) :where(p,li,.small){overflow-wrap:anywhere}
 body.smv-v12-theme .card::before{content:none!important;display:none!important}
 body.smv-v12-theme .stat{background:transparent!important;padding:18px 0!important;border:0!important;border-radius:0!important;box-shadow:none!important}
-body.smv-v12-theme .stat b{color:#6b4b1e!important;font-size:clamp(24px,2.8vw,34px)!important;line-height:1.1!important;letter-spacing:-.03em!important}
+body.smv-v12-theme .stat b{color:#6b4b1e!important;font-size:var(--smv-dashboard-metric)!important;line-height:1.1!important;letter-spacing:-.03em!important}
 
 /* Forms */
 body.smv-v12-theme :where(#smv-public-page,#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact,#private-consultation) label{color:var(--smv207-ink);font-weight:650;line-height:1.4}
@@ -230,12 +255,39 @@ body.smv-v12-theme .btn:disabled{opacity:.58;transform:none!important;box-shadow
 body.smv-v12-theme .action-row{gap:var(--smv207-space-2)!important;align-items:center;flex-wrap:wrap}
 
 /* Dashboard — preserve compact information hierarchy while making it consistent. */
-#dashboardTitle,.admin-dashboard-title{text-align:center!important;color:#6b4b1e!important;letter-spacing:.015em!important;font-family:Georgia,"Noto Sans Tamil",serif!important;font-weight:750!important}
+#dashboardTitle,.admin-dashboard-title{
+  text-align:center!important;color:#6b4b1e!important;letter-spacing:.015em!important;
+  font-family:Georgia,"Noto Sans Tamil",serif!important;font-size:var(--smv-dashboard-title)!important;
+  line-height:1.25!important;font-weight:750!important;
+}
 #dashboardContent :where(.card,.stat),#admin :where(.card,.stat,.admin-content-row){min-width:0}
-#dashboardContent :where(.small,label){font-size:14px!important;font-weight:600!important}
-#dashboardContent :where(.result,.meta,.timestamp,.status-text){font-size:12px!important;font-weight:400!important}
-#dashboardContent .smv-customer-question-text{font-size:19px!important;font-weight:600!important;line-height:1.48!important}
-#dashboardContent .smv-customer-answer-text{font-size:17px!important;font-weight:400!important;line-height:1.6!important}
+#dashboardContent :where(label),#admin :where(label){
+  font-size:var(--smv-dashboard-label)!important;font-weight:600!important;line-height:1.4!important;
+}
+#dashboardContent :where(.small),#admin :where(.small){
+  font-size:var(--smv-dashboard-support)!important;font-weight:400!important;
+  line-height:var(--smv-dashboard-body-line)!important;
+}
+#dashboardContent :where(.result,.meta,.timestamp,.status-text){
+  font-size:var(--smv-dashboard-meta)!important;font-weight:400!important;
+  line-height:var(--smv-dashboard-meta-line)!important;
+}
+#dashboardContent :where(.smv-customer-question-text,.smv-question-text,.smv-astro-question-text){
+  font-size:var(--smv-dashboard-emphasis)!important;font-weight:600!important;line-height:1.5!important;
+}
+#dashboardContent .smv-customer-answer-text{
+  font-size:var(--smv-dashboard-body)!important;font-weight:400!important;
+  line-height:var(--smv-dashboard-body-line)!important;
+}
+#dashboard :where(h2,h3),#admin :where(h2,h3){
+  font-size:var(--smv-dashboard-section)!important;line-height:var(--smv-dashboard-heading-line)!important;
+}
+#dashboard :where(h4),#admin :where(h4){
+  font-size:var(--smv-dashboard-subsection)!important;line-height:1.35!important;
+}
+#dashboardContent :where(.smv-dashboard-metric),#admin :where(.smv-dashboard-metric){
+  font-size:var(--smv-dashboard-metric)!important;line-height:1.15!important;font-weight:800!important;
+}
 #dashboardContent :where(.badge,[class*="status-"]),#admin :where(.badge,[class*="status-"]){border-radius:999px!important;font-weight:800!important;line-height:1.2!important}
 #admin > :where(.card,.admin-content-row){margin-block:10px}
 #adminSummary{margin-top:16px}
