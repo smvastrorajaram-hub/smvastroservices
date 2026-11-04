@@ -125,6 +125,15 @@ export function astrologerAvailabilityStatus(profile={},activeSessionCount=0) {
   return profile.liveCallEnabled===true||profile.liveChatEnabled===true?'online':'offline';
 }
 
+export function liveRequestCanStartNow(profile={},mode='',activeSessionCount=0,maxConcurrentSessions=1) {
+  const kind=String(mode||'').trim().toLowerCase();
+  const modeEnabled=kind==='call'?profile.liveCallEnabled===true:
+    kind==='chat'?profile.liveChatEnabled===true:false;
+  const active=Number(activeSessionCount),maximum=Number(maxConcurrentSessions);
+  return modeEnabled&&Number.isSafeInteger(active)&&active>=0&&
+    Number.isSafeInteger(maximum)&&maximum>=1&&maximum<=3&&active<maximum;
+}
+
 export function astrologerRatePaise(profile={},mode='') {
   const kind=String(mode).trim().toLowerCase();
   if(!['call','chat'].includes(kind)) return null;

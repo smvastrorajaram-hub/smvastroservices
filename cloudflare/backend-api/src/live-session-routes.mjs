@@ -396,7 +396,10 @@ export function registerD1LiveSessionRoutes({
       const user=await requireRole(req,['customer']);
       const result=await liveService.cancelBooking({bookingId:req.params.id,customerUid:user.uid});
       await cancel(req.params.id,'booking_expiry');
-      if(result.booking) await publish(result.booking.astrologerUid,'live.booking.updated',req.params.id,{booking:result.booking});
+      if(result.booking) await Promise.all([
+        publish(result.booking.customerUid,'live.booking.updated',req.params.id,{booking:result.booking}),
+        publish(result.booking.astrologerUid,'live.booking.updated',req.params.id,{booking:result.booking})
+      ]);
       return res.set('Cache-Control','no-store').json(result);
     } catch(error) { return replyError(res,error,'Unable to cancel the Live booking.'); }
   });

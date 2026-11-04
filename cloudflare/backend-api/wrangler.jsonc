@@ -28,7 +28,7 @@
     "SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED": "false",
     "FIREBASE_AUTH_PROJECT_IDS": "smv-astro-staging",
     "SMV_PUBLIC_BACKEND_URL": "https://smvastro-backend-api-staging.astroservices.workers.dev",
-    "ALLOWED_ORIGINS": "https://smv-astro-phase1-browser-staging.onrender.com,https://smv-astro-phase1-browser-staging-v2.onrender.com"
+    "ALLOWED_ORIGINS": "https://smv-astro-phase1-browser-staging.onrender.com,https://smv-astro-phase1-browser-staging-v2.onrender.com,https://fix-cloudflare-live-booking.smvastroservices.pages.dev"
   },
   "d1_databases": [
     {
