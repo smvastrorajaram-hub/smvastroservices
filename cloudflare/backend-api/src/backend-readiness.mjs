@@ -24,7 +24,11 @@ const REQUIRED_SCHEMA_QUERY = [
   "  (SELECT COUNT(*) FROM pragma_table_info('smv_domain_razorpay_orders') WHERE name IN ('wallet_recharge_id', 'idempotency_key')) AS razorpay_order_idempotency_columns_count,",
   "  (SELECT COUNT(*) FROM pragma_table_info('smv_domain_razorpay_webhook_events') WHERE name IN ('claim_token', 'lease_until_ms')) AS razorpay_claim_columns_count,",
   "  (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = 'live-booking-release-guard' LIMIT 1) AS live_booking_release_version,",
-  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_live_booking_release_pending_validate') AS live_booking_release_trigger_count"
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_live_booking_release_pending_validate') AS live_booking_release_trigger_count,",
+  "  (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = 'numeric-public-reference-ids' LIMIT 1) AS numeric_public_reference_ids_version,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'smv_domain_withdrawals_public_withdrawal_id_uq') AS public_withdrawal_id_index_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'smv_domain_withdrawals_admin_payment_id_uq') AS admin_payment_id_index_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'smv_domain_wallet_recharges_customer_payment_id_uq') AS customer_payment_id_index_count"
 ].join('\n');
 
 const MIGRATION_KEYS = [
@@ -37,7 +41,8 @@ const MIGRATION_KEYS = [
   '0008_identity_profile_backfill_audit',
   '0009_wallet_razorpay_payout_encryption',
   '0010_razorpay_webhook_claim_leases',
-  '0011_live_booking_release_claim'
+  '0011_live_booking_release_claim',
+  '0012_numeric_public_reference_ids'
 ];
 
 function countIs(value, expected) {
@@ -110,7 +115,12 @@ export async function inspectBackendSchema(db) {
         countIs(row.razorpay_claim_columns_count, 2),
       '0011_live_booking_release_claim':
         row.live_booking_release_version === '0011_live_booking_release_claim' &&
-        countIs(row.live_booking_release_trigger_count, 1)
+        countIs(row.live_booking_release_trigger_count, 1),
+      '0012_numeric_public_reference_ids':
+        row.numeric_public_reference_ids_version === '0012_numeric_public_reference_ids' &&
+        countIs(row.public_withdrawal_id_index_count, 1) &&
+        countIs(row.admin_payment_id_index_count, 1) &&
+        countIs(row.customer_payment_id_index_count, 1)
     };
     const allRequiredMigrations = Object.values(schemaMigrations).every(Boolean);
     const checks = {
