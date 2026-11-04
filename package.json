@@ -9,7 +9,7 @@
     "test:storage-and-sw": "node --test test/storage-and-safe-sw-updates.test.js",
     "start": "node server.js",
     "test:wallet": "node --test test/wallet-service.test.js",
-    "test:live-session": "node --test test/live-session-service.test.js test/live-push-notifications.test.js",
+    "test:live-session": "node --test test/live-session-service.test.js test/live-push-notifications.test.js cloudflare/backend-api/test/live-session-routes.test.mjs cloudflare/backend-api/test/legacy-route-parity-gap-routes.test.mjs",
     "validate:wallet-domain": "node scripts/validate-wallet-domain.js",
     "test:legacy-flow-removal": "node --test test/legacy-consultation-route-removal.test.cjs",
     "test:production-financial-routing": "node --test test/production-financial-routing.test.mjs",
