@@ -4079,7 +4079,7 @@ window.__smvNativeFcmTokenReady=token=>{
   void smvLiveRegisterNativePushToken(window.__smvNativeFcmToken).then(registered=>{
    if(!registered)return;
    const status=$('smvLivePushStatus'),enable=$('smvLivePushEnable'),test=$('smvLivePushTest');
-   if(status)status.textContent='Native Android incoming-call ringtone is registered. Ringing stops when the request is opened/handled or times out.';
+   if(status)status.textContent='Native Android call notifications are enabled. In the background, Android shows a system notification; tap it to open the Live request.';
    if(enable)enable.textContent='ANDROID CALL ALERTS ENABLED';
    if(test)test.disabled=false;
   });
@@ -4132,8 +4132,8 @@ function smvLiveBindPushControls(){
   void smvLiveRegisterNativePushToken().then(registered=>{
    if(test)test.disabled=!registered;
    if(status)status.textContent=registered
-    ?'Native Android incoming-call ringtone is registered on this SMV ASTRO app. Keep Android notifications and ringtone volume enabled.'
-    :'Native Android ringtone is not configured on this SMV ASTRO app. Firebase Android App ID setup is required; the ordinary browser Push setting is separate.';
+    ?'Native Android call notifications are enabled on this SMV ASTRO app. Keep Android notifications and notification sound enabled.'
+    :'Native Android call notifications are not configured on this SMV ASTRO app. Firebase Android App ID setup is required; the ordinary browser Push setting is separate.';
   });
  }
  if(enable&&!enable.dataset.bound){
@@ -4146,7 +4146,7 @@ function smvLiveBindPushControls(){
     const nativeMode=!!window.SMVNativeCalls?.isNativeApp?.();
     enable.textContent=nativeMode?'ANDROID CALL ALERTS ENABLED':'BACKGROUND ALERTS ENABLED';
     if(status)status.textContent=nativeMode
-      ?'Native Android incoming-call ringtone is registered. Ringing stops when the request is opened/handled or times out.'
+      ?'Native Android call notifications are enabled. In the background, Android shows a system notification; tap it to open the Live request.'
       :'This device is registered for Call, Chat and Booking Push Alerts. Keep Android notifications enabled.';
     if(test)test.disabled=false;
    }catch(error){if(status)status.textContent=error?.message||String(error);}

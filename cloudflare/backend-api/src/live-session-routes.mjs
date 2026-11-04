@@ -29,7 +29,7 @@ function deadline(type,atMs,id,generation=0) {
 }
 
 export function registerD1LiveSessionRoutes({
-  app,identityService,liveService,withdrawalService,env,isReady=async()=>false,
+  app,identityService,liveService,withdrawalService,env,firestore=null,fcmSender=null,isReady=async()=>false,
   routesEnabled=false,environment='unknown',sourceProjectId=''
 }={}) {
   if(!app||typeof app.get!=='function'||typeof app.post!=='function'||
@@ -120,6 +120,49 @@ export function registerD1LiveSessionRoutes({
       publish(session.customerUid,eventType,session.id,{session}),
       publish(session.astrologerUid,eventType,session.id,{session})
     ]);
+  }
+  async function notifyNativeAstrologer(uid,{
+    type='live_request',mode='call',sessionId='',bookingId='',title='',body='',tag=''
+  }={}) {
+    const recipient=String(uid||'').trim();
+    if(!recipient||typeof firestore?.runQuery!=='function'||typeof fcmSender?.send!=='function') return;
+    try {
+      const rows=await firestore.runQuery({
+        collectionPath:'smv_push_tokens',
+        filters:[{field:'uid',op:'==',value:recipient}],
+        limit:25
+      });
+      const safeMode=String(mode||'call').trim().toLowerCase()==='chat'?'chat':'call';
+      const safeType=type==='live_booking'?'live_booking':'live_request';
+      const safeTitle=String(title||'SMV ASTRO').slice(0,100);
+      const safeBody=String(body||'').slice(0,300);
+      const safeTag=String(tag||'').slice(0,100);
+      const seen=new Set(),tokens=[];
+      for(const row of Array.isArray(rows)?rows:[]) {
+        const data=row?.data||{};
+        const token=String(data.token||'').trim();
+        if(String(data.uid||'').trim()!==recipient||
+           String(data.platform||'').trim().toLowerCase()!=='native-android'||
+           token.length<30||token.length>8192||/\s/.test(token)||seen.has(token)) continue;
+        seen.add(token);
+        tokens.push(token);
+      }
+      await Promise.all(tokens.map(async token=>{
+        try {
+          await fcmSender.send(token,{
+            title:safeTitle,body:safeBody,
+            data:{
+              type:safeType,mode:safeMode,sessionId:String(sessionId||''),
+              bookingId:String(bookingId||''),title:safeTitle,body:safeBody,tag:safeTag
+            }
+          });
+        } catch(error) {
+          console.warn('[Live Session] Native Android notification send failed:',String(error?.code||'FCM_SEND_FAILED'));
+        }
+      }));
+    } catch(error) {
+      console.warn('[Live Session] Native Android notification lookup deferred:',String(error?.code||'FCM_LOOKUP_FAILED'));
+    }
   }
   async function schedulePreparation(session) {
     await cancel(session.id,'ring_timeout');
@@ -316,6 +359,13 @@ export function registerD1LiveSessionRoutes({
         }
         await publish(result.session.astrologerUid,'live.session.request',result.session.id,{session:result.session});
         await publish(result.session.customerUid,'live.session.updated',result.session.id,{session:result.session});
+        const sessionModeLabel=String(result.session.mode||'call').toLowerCase()==='chat'?'Chat':'Call';
+        await notifyNativeAstrologer(result.session.astrologerUid,{
+          type:'live_request',mode:result.session.mode,sessionId:result.session.id,
+          title:'Incoming Live '+sessionModeLabel,
+          body:'A Customer is requesting a Live '+sessionModeLabel+'. Tap the notification to open SMV ASTRO.',
+          tag:'smv-live-request-'+result.session.id
+        });
       } else if(result.kind==='booking'&&result.booking) {
         const expiresAt=Date.parse(result.booking.expiresAt||'')||Date.now()+LIVE_BOOKING_EXPIRY_MS;
         try {
@@ -329,6 +379,13 @@ export function registerD1LiveSessionRoutes({
         }
         await publish(result.booking.astrologerUid,'live.booking.updated',result.booking.id,{booking:result.booking});
         await publish(result.booking.customerUid,'live.booking.updated',result.booking.id,{booking:result.booking});
+        const bookingModeLabel=String(result.booking.mode||'call').toLowerCase()==='chat'?'Chat':'Call';
+        await notifyNativeAstrologer(result.booking.astrologerUid,{
+          type:'live_booking',mode:result.booking.mode,bookingId:result.booking.id,
+          title:'New Live '+bookingModeLabel+' Booking',
+          body:'A Customer sent a Live '+bookingModeLabel+' booking request. Tap the notification to review it in SMV ASTRO.',
+          tag:'smv-live-booking-'+result.booking.id
+        });
       }
       return res.set('Cache-Control','no-store').json(result);
     } catch(error) { return replyError(res,error,'Unable to create the Live Call / Chat request.'); }

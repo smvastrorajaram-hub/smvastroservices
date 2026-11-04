@@ -229,7 +229,7 @@ test('Live Chat uses canonical mode/state and native visibility instead of a cha
   assert.equal(frontend.includes('smv-live-chat-active'), false, 'no chat-only modal class should be toggled by JavaScript');
   assert.equal(css.includes('.smv-live-chat-active'), false, 'Chat must not depend on a special CSS override block');
   assert.ok(html.includes('smvastro.css?v=20261102-consult-route-cleanup-v1'));
-  assert.ok(html.includes('smvastro.mjs?v=20261104-wallet-single-flight-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261104-native-notification-intent-v1'));
 });
 
 test('Live Chat connected confirmation requires a rendered message pane and does not open a separate Chat window', () => {
@@ -292,7 +292,7 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('enabling recovery polling.'));
   assert.ok(!frontend.includes("smvLiveMessageTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollMessages(id).catch(()=>{});},600)"));
   assert.ok(!frontend.includes("smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions().catch(()=>{}),4500"));
-  assert.ok(html.includes('smvastro.mjs?v=20261104-wallet-single-flight-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261104-native-notification-intent-v1'));
 });
 
 test('Customer and Astrologer Dashboards mount the Live Call/Chat controls after rendering', () => {
@@ -323,7 +323,7 @@ test('Customer and Astrologer Dashboard open without Dashboard-wide loading or q
   assert.equal(frontend.includes('Loading your dashboard...'), false);
   assert.ok(!frontend.includes("because Firebase could not be read."));
   assert.ok(!frontend.includes("Dashboard is open. Astrologer profile and data"));
-  assert.ok(html.includes('smvastro.mjs?v=20261104-wallet-single-flight-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261104-native-notification-intent-v1'));
 });
 
 test('Explicit login keeps the fast role shell mounted and does not hide/reopen Dashboard', () => {
@@ -367,7 +367,7 @@ test('Astrologer Dashboard keeps one heading and parallelizes its first profile 
   assert.ok(dashboard.includes('const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null;'));
   assert.ok(dashboard.includes('astrologerProfileResult=profileResult;'));
   assert.ok(!dashboard.includes("const a=await withTimeout(\n     getDoc(doc(db,'smv_astrologers',currentUser.uid))"));
-  assert.ok(html.includes('smvastro.mjs?v=20261104-wallet-single-flight-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261104-native-notification-intent-v1'));
 });
 
 test('Astrologer Dashboard renders its main UI before earnings and withdrawal history resolve', () => {
@@ -387,7 +387,7 @@ test('Astrologer Dashboard renders its main UI before earnings and withdrawal hi
   assert.ok(dashboard.includes('id="smvAstroEarningsHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalStatus"'));
-  assert.ok(html.includes('smvastro.mjs?v=20261104-wallet-single-flight-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261104-native-notification-intent-v1'));
 });
 
 test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
@@ -1260,4 +1260,30 @@ test('Customer Wallet reuses the in-flight request and paints the current Dashbo
   assert.ok(load.includes('if(current.host){') && load.includes('current.host.innerHTML=transactions.length?'));
   assert.ok(frontend.includes("smvLoadCustomerWallet({force:true}).catch(error=>smvWalletSetMessage('Wallet refresh failed after a Call/Chat action: "));
   assert.ok(frontend.includes("refresh.onclick=()=>smvLoadCustomerWallet({force:true});"));
+});
+
+test('Cloudflare native Live notifications use Android tray payloads and open the existing Live dashboard route', () => {
+  const liveRoutes = read('cloudflare/backend-api/src/live-session-routes.mjs');
+  const fcmRoutes = read('cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs');
+  const index = read('cloudflare/backend-api/src/index.mjs');
+  const mainActivity = read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java');
+  const notifications = read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/NativeCallNotifications.java');
+  const frontend = read('public/smvastro.mjs');
+  assert.match(liveRoutes, /collectionPath:'smv_push_tokens'/);
+  assert.match(liveRoutes, /native-android/);
+  assert.ok(liveRoutes.includes("||/\\s/.test(token)||seen.has(token)"), 'token validation rejects whitespace');
+  assert.match(liveRoutes, /type:'live_request'/);
+  assert.match(liveRoutes, /type:'live_booking'/);
+  assert.match(fcmRoutes, /notification:\s*\{/);
+  assert.match(fcmRoutes, /data,/);
+  assert.match(fcmRoutes, /priority:\s*'HIGH'/);
+  assert.match(fcmRoutes, /channel_id:\s*'smv_native_background_alerts_v1'/);
+  assert.match(index, /firestore:\s*firestoreAdmin,\s*fcmSender,/);
+  assert.match(notifications, /CHANNEL_ALERTS\s*=\s*"smv_native_background_alerts_v1"/);
+  assert.match(mainActivity, /isIncomingLivePushIntent\(getIntent\(\)\)/);
+  assert.match(mainActivity, /appendQueryParameter\("smvLivePush", "1"\)/);
+  assert.match(mainActivity, /intentString\(intent, "sessionId"\)/);
+  assert.match(mainActivity, /intentString\(intent, "bookingId"\)/);
+  assert.match(frontend, /params\.get\('smvLivePush'\)==='1'/);
+  assert.match(frontend, /smvLiveHandlePushOpen\(payload\)/);
 });

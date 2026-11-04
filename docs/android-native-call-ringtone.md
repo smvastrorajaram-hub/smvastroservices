@@ -17,13 +17,13 @@ The phone launcher supplies the outside mask (Pebble, Round, Squircle, Material-
 
 Changing only `smvastroproduction/launcher/icon-512.png` triggers the Android workflow. The workflow automatically allocates the next vMAJOR.MINOR version and builds a signed Release APK using the existing permanent signing certificate. The Production Website, Horoscope PWA, Calendar, Firebase, Razorpay, Render and Cloudflare assets are not changed.
 
-## Native incoming-call ringtone
+## Native incoming-call notification and foreground ringtone
 
 - The Production Android app registers a native Firebase Cloud Messaging token and posts it to `POST /live/push/register` with `platform: native-android`. The server derives the owner from the verified Firebase ID token and refuses a token already owned by another account.
-- For `live_request` and `live_booking` data messages, Android runs a foreground media-playback service, loops the phone's configured ringtone, and shows an incoming request notification/full-screen screen where Android allows it.
-- The ringtone stops when the request is opened from the native request screen, when the backend sends a `stop_ringing` event after handling/ending a request, or after the two-minute ring timeout.
-- Scheduled-booking and test alerts use ordinary notification behavior, not the looping incoming-call ringtone.
-- Android notification/full-screen permissions, DND/silent settings, ring volume, battery management, FCM delivery, and force-stop restrictions remain controlled by Android and the device owner.
+- Cloudflare Live Call/Chat requests and Live bookings are sent only to registered `native-android` tokens owned by the target Astrologer UID. The FCM HTTP v1 message contains both a top-level `notification` and a `data` payload, uses high Android delivery priority, and targets the app's existing `smv_native_background_alerts_v1` notification channel.
+- When the Android app is in the background, Android/Firebase displays the notification in the system tray. For this notification-plus-data message, Android handles tray display and `NativePushMessagingService.onMessageReceived()` is not relied on to run. When the Astrologer taps the notification, Android passes message data extras (including `type`, `sessionId` or `bookingId`) to the launcher activity. `MainActivity` converts those values into the existing `smvLivePush` URL, and the signed-in Astrologer dashboard opens the matching Live request or booking.
+- Background system notifications use the Android notification channel's configured sound/vibration; they are not a continuous looping ringtone. When the app is foregrounded, the existing SSE event flow opens the incoming Live session and the website's in-app ringtone behavior remains active. The foreground-service ringtone remains available for compatible data-only native messages; this Cloudflare notification-plus-data path does not depend on that callback.
+- Notification channels, notification permission, DND/silent mode, notification sound level, battery management, FCM delivery and force-stop restrictions remain controlled by Android and the device owner. A muted notification channel or disabled notifications can suppress the visible alert or sound.
 
 ## Firebase Android configuration
 

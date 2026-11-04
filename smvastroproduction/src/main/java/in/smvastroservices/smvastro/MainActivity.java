@@ -53,6 +53,9 @@ public class MainActivity extends Activity {
             buildWebView();
             if (savedInstanceState != null) {
                 webView.restoreState(savedInstanceState);
+                if (isIncomingLivePushIntent(getIntent())) {
+                    webView.loadUrl(resolveStartUrl(getIntent()));
+                }
             } else {
                 webView.loadUrl(resolveStartUrl(getIntent()));
             }
@@ -310,7 +313,31 @@ public class MainActivity extends Activity {
                 if (("https".equals(scheme) || "http".equals(scheme)) && ownsHost(host)) return candidate;
             } catch (Exception ignored) {}
         }
+        if (isIncomingLivePushIntent(intent)) {
+            Uri.Builder target = Uri.parse(HOME_URL).buildUpon()
+                    .appendQueryParameter("smvLivePush", "1");
+            String sessionId = intentString(intent, "sessionId");
+            String bookingId = intentString(intent, "bookingId");
+            if (!sessionId.isEmpty()) target.appendQueryParameter("smvSessionId", sessionId);
+            if (!bookingId.isEmpty()) target.appendQueryParameter("smvBookingId", bookingId);
+            return target.build().toString();
+        }
         return HOME_URL;
+    }
+
+    private static boolean isIncomingLivePushIntent(Intent intent) {
+        String type = intentString(intent, "type");
+        return "live_request".equals(type) || "live_booking".equals(type);
+    }
+
+    private static String intentString(Intent intent, String key) {
+        if (intent == null || key == null) return "";
+        try {
+            String value = intent.getStringExtra(key);
+            return value == null ? "" : value.trim();
+        } catch (RuntimeException ignored) {
+            return "";
+        }
     }
 
     private boolean ownsHost(String host) {

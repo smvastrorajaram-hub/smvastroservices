@@ -249,15 +249,28 @@ export function createFcmSender({ projectId, tokenProvider, fetchImpl = globalTh
           method: 'POST',
           headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json', Accept: 'application/json' },
           body: JSON.stringify({
-            message: {
-              token: deviceToken,
-              notification: {
-                title: String(payload.title || 'SMV ASTRO').slice(0, 100),
-                body: String(payload.body || '').slice(0, 300)
-              },
-              data: Object.fromEntries(Object.entries(payload.data || {}).map(([key, value]) =>
-                [String(key).slice(0, 80), String(value).slice(0, 500)]))
-            }
+            message: (() => {
+              const data = Object.fromEntries(Object.entries(payload.data || {}).map(([key, value]) =>
+                [String(key).slice(0, 80), String(value).slice(0, 500)]));
+              const tag = String(data.tag || '').slice(0, 100);
+              return {
+                token: deviceToken,
+                notification: {
+                  title: String(payload.title || 'SMV ASTRO').slice(0, 100),
+                  body: String(payload.body || '').slice(0, 300)
+                },
+                data,
+                android: {
+                  priority: 'HIGH',
+                  ttl: '120s',
+                  notification: {
+                    channel_id: 'smv_native_background_alerts_v1',
+                    sound: 'default',
+                    ...(tag ? { tag } : {})
+                  }
+                }
+              };
+            })()
           }),
           signal: AbortSignal.timeout(12000)
         });
