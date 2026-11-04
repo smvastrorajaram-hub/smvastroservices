@@ -229,6 +229,10 @@ app.get('/api/auth/authorization', async (req, res) => {
 
 
 const walletReadRouteGateOpen = isWalletReadRouteGateOpen(env);
+const walletPayoutEncryptionConfigured = validatePayoutEncryptionConfiguration({
+  payoutEncryptionKey: String(env.SMV_WALLET_PAYOUT_ENCRYPTION_KEY || ''),
+  payoutKeyVersion: String(env.SMV_WALLET_PAYOUT_KEY_VERSION || 'v1')
+});
 const razorpayKeyId = String(env.RAZORPAY_KEY_ID || '').trim();
 const razorpayKeySecret = String(env.RAZORPAY_KEY_SECRET || '').trim();
 const razorpayWebhookSecret = String(env.RAZORPAY_WEBHOOK_SECRET || '');
