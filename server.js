@@ -2825,7 +2825,8 @@ registerGeoNamesRoutes(app);
 
 // Wallet routes must be registered before the final 404. All balance/ledger writes use Admin SDK transactions.
 const walletService = registerWalletRoutes({
-  app, db:walletDomainDb(), profileDb:db, FieldValue, crypto, razorpay,
+  app, db:walletDomainDb(), profileDb:db, FieldValue, crypto,
+  razorpay: razorpayRuntime.client,
   razorpayKeyId: RAZORPAY_KEY_ID, razorpayKeySecret: RAZORPAY_KEY_SECRET,
   adminUid: ADMIN_UID, requireUser, isAdminUser
 });
