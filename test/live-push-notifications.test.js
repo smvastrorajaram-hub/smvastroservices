@@ -1210,3 +1210,54 @@ test('Homepage removes its PWA install banner and presents the dedicated Android
   assert.equal(installer.includes('ghp_'), false);
 });
 
+
+
+test('Customer Wallet refresh joins duplicate reads and coalesces concurrent settlement invalidations', async () => {
+  const { createCoalescedRefresh } = await import('../public/coalesced-refresh.mjs');
+  const refresh = createCoalescedRefresh();
+  let calls = 0;
+  let releaseFirst;
+  const firstGate = new Promise(resolve => { releaseFirst = resolve; });
+  const read = async () => {
+    calls += 1;
+    const attempt = calls;
+    if (attempt === 1) await firstGate;
+    return 'wallet-read-' + attempt;
+  };
+  const initial = refresh('customer-1', read);
+  const duplicate = refresh('customer-1', read);
+  const invalidationOne = refresh('customer-1', read, { force: true });
+  const invalidationTwo = refresh('customer-1', read, { force: true });
+  releaseFirst();
+  const results = await Promise.all([initial, duplicate, invalidationOne, invalidationTwo]);
+  assert.equal(calls, 2, 'multiple reads and session-settlement events collapse into one active read plus one follow-up');
+  assert.deepEqual(results, ['wallet-read-2', 'wallet-read-2', 'wallet-read-2', 'wallet-read-2']);
+});
+
+test('Customer Wallet refresh keeps different signed-in users isolated', async () => {
+  const { createCoalescedRefresh } = await import('../public/coalesced-refresh.mjs');
+  const refresh = createCoalescedRefresh();
+  let releaseFirst;
+  const firstGate = new Promise(resolve => { releaseFirst = resolve; });
+  const first = refresh('customer-1', async () => { await firstGate; return 'customer-1'; });
+  const second = refresh('customer-2', async () => 'customer-2');
+  assert.equal(await second, 'customer-2');
+  releaseFirst();
+  assert.equal(await first, 'customer-1');
+});
+
+test('Customer Wallet reuses the in-flight request and paints the current Dashboard DOM after navigation', () => {
+  const frontend = read('public/smvastro.mjs');
+  assert.ok(frontend.includes("import { createCoalescedRefresh } from './coalesced-refresh.mjs?v=20261104-wallet-single-flight-v1';"));
+  assert.ok(frontend.includes('const smvCustomerWalletRefresh=createCoalescedRefresh();'));
+  assert.ok(frontend.includes('return smvCustomerWalletRefresh(uid,()=>smvLoadCustomerWalletOnce(uid),{force});'));
+  const loadStart = frontend.indexOf('async function smvLoadCustomerWalletOnce(uid){');
+  const bindStart = frontend.indexOf('function smvBindCustomerWallet({load=true}={}){', loadStart);
+  const load = frontend.slice(loadStart, bindStart);
+  assert.ok(load.includes('const applyWalletSnapshot=wallet=>'));
+  assert.ok(load.includes('const current=smvWalletCurrentElements();'));
+  assert.ok(load.includes('applyWalletSnapshot(wallet);'), 'resolved balance is applied to whichever Wallet card is currently mounted');
+  assert.ok(load.includes('if(current.host)current.host.innerHTML=transactions.length?'));
+  assert.ok(frontend.includes("smvLoadCustomerWallet({force:true}).catch(error=>smvWalletSetMessage('Wallet refresh failed after a Call/Chat action: "));
+  assert.ok(frontend.includes("refresh.onclick=()=>smvLoadCustomerWallet({force:true});"));
+});
