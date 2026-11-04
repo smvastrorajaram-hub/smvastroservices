@@ -142,7 +142,48 @@ test('GET /api/backend/readiness returns the live D1 result and keeps inactive f
   assert.equal(response.body.walletReadRoutesEnabled, false);
   assert.equal(response.body.walletRechargeRoutesEnabled, false);
   assert.equal(response.body.liveCallChatRoutesEnabled, false);
+  assert.equal(response.body.productionTrafficEnabled, false);
+  assert.equal(response.body.productionFinancialTrafficRoutingEnabled, false);
   assert.equal(Object.values(response.body.migrationStatus).every(value => value === true), true);
+});
+
+test('GET /api/backend/readiness derives selected Production financial routing from all live gates', async () => {
+  const handlers = new Map();
+  const app = { get(path, handler) { handlers.set('GET ' + path, handler); } };
+  const response = responseRecorder();
+
+  registerBackendReadinessRoute({
+    app,
+    db: dbWith(readyRow()),
+    firebaseConnectivityProbe: async () => true,
+    getRuntimeState: () => ({
+      environment: 'production',
+      backendActive: true,
+      walletReadRoutesRegistered: true,
+      walletRechargeRoutesRegistered: true,
+      walletOfferRoutesRegistered: true,
+      walletReadRouteGateOpen: true,
+      liveSessionRoutesRegistered: true,
+      liveSessionRoutesOpen: true,
+      walletRechargeMode: 'live',
+      identityProfileD1AuthorizationOpen: true,
+      razorpayPolicy: { enabled: true, mode: 'live', reason: 'production_live_mode_explicitly_enabled' },
+      razorpayKeyId: 'rzp_live_key',
+      razorpayKeySecret: 'configured',
+      razorpayWebhookSecret: 'configured'
+    }),
+    getIdentityGate: async () => ({ enabled: true, ready: true, reason: 'fresh_start_approved' }),
+    getRazorpayVerification: async () => ({ connected: true, connectionVerified: true, checkedAt: '2026-11-04T10:00:00.000Z' })
+  });
+
+  await handlers.get('GET /api/backend/readiness')({}, response);
+
+  assert.equal(response.body.productionTrafficEnabled, false);
+  assert.equal(response.body.productionFinancialTrafficRoutingEnabled, true);
+  assert.equal(response.body.walletReadRoutesEnabled, true);
+  assert.equal(response.body.walletRechargeRoutesEnabled, true);
+  assert.equal(response.body.walletOfferRoutesEnabled, true);
+  assert.equal(response.body.liveCallChatRoutesEnabled, true);
 });
 
 test('GET /api/backend/readiness returns 503 for incomplete Production schema', async () => {

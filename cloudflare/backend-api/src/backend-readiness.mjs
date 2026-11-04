@@ -1,5 +1,7 @@
 'use strict';
 
+import { isProductionFinancialTrafficRoutingEnabled } from './production-financial-traffic-readiness.mjs';
+
 const REQUIRED_SCHEMA_QUERY = [
   "SELECT",
   "  (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = 'shared-domain' LIMIT 1) AS shared_domain_version,",
@@ -178,6 +180,26 @@ export function registerBackendReadinessRoute({
       runtime.walletReadRouteGateOpen === true && schema.checks.walletRechargeSchema;
     const liveCallChatRoutesEnabled = runtime.liveSessionRoutesRegistered === true &&
       runtime.liveSessionRoutesOpen === true && schema.checks.liveSessionSchema;
+    const razorpayCredentialsConfigured = razorpayPolicy.enabled === true &&
+      !!runtime.razorpayKeyId && !!runtime.razorpayKeySecret && !!runtime.razorpayWebhookSecret;
+    const identityProfileD1AuthorizationEnabled = runtime.identityProfileD1AuthorizationOpen === true;
+    const identityProfileD1AuthorizationReady = identityGate.ready === true;
+    const productionFinancialTrafficRoutingEnabled = isProductionFinancialTrafficRoutingEnabled({
+      environment: runtime.environment,
+      backendActive: runtime.backendActive === true,
+      schemaReady: schema.ready,
+      firebaseConnected,
+      walletReadRoutesEnabled,
+      walletRechargeRoutesEnabled,
+      walletRechargeMode: String(runtime.walletRechargeMode || 'disabled'),
+      walletOfferRoutesEnabled,
+      liveCallChatRoutesEnabled,
+      identityProfileD1AuthorizationEnabled,
+      identityProfileD1AuthorizationReady,
+      razorpayMode: String(razorpayPolicy.mode || 'disabled'),
+      razorpayCredentialsConfigured,
+      razorpayProviderConnectionVerified: razorpayVerification.connectionVerified === true
+    });
 
     const body = {
       ok: schema.ready,
@@ -203,8 +225,7 @@ export function registerBackendReadinessRoute({
       firebaseConnected,
       firestoreConnected: firebaseConnected,
       razorpayConnected: razorpayVerification.connected === true,
-      razorpayCredentialsConfigured: razorpayPolicy.enabled === true &&
-        !!runtime.razorpayKeyId && !!runtime.razorpayKeySecret && !!runtime.razorpayWebhookSecret,
+      razorpayCredentialsConfigured,
       razorpayProviderConnectionVerified: razorpayVerification.connectionVerified === true,
       razorpayProviderConnectionCheckedAt: typeof razorpayVerification.checkedAt === 'string'
         ? razorpayVerification.checkedAt
@@ -226,7 +247,9 @@ export function registerBackendReadinessRoute({
       identityProfileD1AuthorizationReady: identityGate.ready === true,
       identityProfileD1AuthorizationReason: String(identityGate.reason || 'unknown'),
       walletBusinessRoutesEnabled: false,
-      liveCallChatRoutesEnabled
+      liveCallChatRoutesEnabled,
+      productionTrafficEnabled: false,
+      productionFinancialTrafficRoutingEnabled
     };
 
     return res.status(schema.ready ? 200 : 503)

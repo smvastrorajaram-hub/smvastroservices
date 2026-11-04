@@ -55,6 +55,7 @@ import { createFirebaseAuthAdminClient, createFcmSender, registerLegacyRoutePari
 import { createFirebaseConnectivityProbe } from './firebase-connectivity-probe.mjs';
 import { inspectBackendSchema, registerBackendReadinessRoute } from './backend-readiness.mjs';
 import { resolveConfiguredAdminUids } from './admin-identity-configuration.mjs';
+import { isProductionFinancialTrafficRoutingEnabled } from './production-financial-traffic-readiness.mjs';
 
 const app = express();
 const verifyFirebaseIdToken = createFirebaseIdTokenVerifier();
@@ -657,6 +658,28 @@ app.get('/healthz', async (_req, res) => {
     : { enabled: identityProfileD1AuthorizationOpen, ready: false,
         reason: identityProfileD1AuthorizationOpen ? 'identity_runtime_unavailable' : 'disabled' };
   d1IdentityAuthorizationReady = identityGate.ready === true;
+  const backendActive = String(env.SMV_BACKEND_CLOUDFLARE_ACTIVE || 'false') === 'true';
+  const walletReadRoutesEnabled = walletReadRoutesRegistered && walletReadRouteGateOpen && schema.checks.sharedDomainSchema;
+  const walletRechargeRoutesEnabled = walletRechargeRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
+  const walletOfferRoutesEnabled = walletOfferRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
+  const liveCallChatRoutesEnabled = liveSessionRoutesRegistered && liveSessionRoutesOpen && schema.checks.liveSessionSchema;
+  const razorpayCredentialsConfigured = razorpayPolicy.enabled && !!razorpayKeyId && !!razorpayKeySecret && !!razorpayWebhookSecret;
+  const productionFinancialTrafficRoutingEnabled = isProductionFinancialTrafficRoutingEnabled({
+    environment: String(env.SMV_ENVIRONMENT || 'unknown'),
+    backendActive,
+    schemaReady: schema.ready,
+    firebaseConnected,
+    walletReadRoutesEnabled,
+    walletRechargeRoutesEnabled,
+    walletRechargeMode,
+    walletOfferRoutesEnabled,
+    liveCallChatRoutesEnabled,
+    identityProfileD1AuthorizationEnabled: identityProfileD1AuthorizationOpen,
+    identityProfileD1AuthorizationReady: d1IdentityAuthorizationReady,
+    razorpayMode: razorpayPolicy.mode,
+    razorpayCredentialsConfigured,
+    razorpayProviderConnectionVerified: razorpayVerification.connectionVerified === true
+  });
   return res.set(JSON_HEADERS).json({
     ok: true,
     service: 'smvastro-backend-api',
@@ -664,24 +687,31 @@ app.get('/healthz', async (_req, res) => {
     environment: String(env.SMV_ENVIRONMENT || 'unknown'),
     schemaReady: schema.ready,
     schemaMigrations: schema.schemaMigrations,
-    backendActive: String(env.SMV_BACKEND_CLOUDFLARE_ACTIVE || 'false') === 'true',
+    backendActive,
     firebaseConnected,
     firestoreConnected: firebaseConnected,
     razorpayConnected: razorpayVerification.connected === true,
     razorpayProviderConnectionVerified: razorpayVerification.connectionVerified === true,
     razorpayProviderConnectionCheckedAt: razorpayVerification.checkedAt || null,
     walletReadRoutesRegistered,
+    walletReadRoutesEnabled,
     walletRechargeRoutesRegistered,
+    walletRechargeRoutesEnabled,
     walletRechargeMode,
     walletOfferRoutesRegistered,
+    walletOfferRoutesEnabled,
     liveSessionRoutesRegistered,
+    liveCallChatRoutesEnabled,
     liveSessionSchemaReady,
+    razorpayMode: razorpayPolicy.mode,
+    razorpayCredentialsConfigured,
     identityProfileBackfillRoutesRegistered,
     identityProfileBackfillToolsEnabled: identityProfileBackfillToolsOpen,
     identityProfileBackfillPreviewOnly,
     identityProfileD1AuthorizationEnabled: identityProfileD1AuthorizationOpen,
     identityProfileD1AuthorizationReady: d1IdentityAuthorizationReady,
-    productionTrafficEnabled: false
+    productionTrafficEnabled: false,
+    productionFinancialTrafficRoutingEnabled
   });
 });
 
@@ -691,6 +721,8 @@ registerBackendReadinessRoute({
   firebaseConnectivityProbe,
   getRazorpayVerification: () => getRazorpayProviderVerification(),
   getRuntimeState: () => ({
+    environment: String(env.SMV_ENVIRONMENT || 'unknown'),
+    backendActive: String(env.SMV_BACKEND_CLOUDFLARE_ACTIVE || 'false') === 'true',
     razorpayPolicy,
     razorpayKeyId,
     razorpayKeySecret,
@@ -727,6 +759,33 @@ app.get('/api/backend/migration-status', async (_req, res) => {
   liveSessionSchemaReady = schema.checks.liveSessionSchema;
   const firebaseConnected = await firebaseConnectivityProbe();
   const razorpayVerification = await getRazorpayProviderVerification();
+  const identityGate = d1IdentityAuthorizationService
+    ? await d1IdentityAuthorizationService.readiness()
+    : { enabled: identityProfileD1AuthorizationOpen, ready: false,
+        reason: identityProfileD1AuthorizationOpen ? 'identity_runtime_unavailable' : 'disabled' };
+  d1IdentityAuthorizationReady = identityGate.ready === true;
+  const backendActive = String(env.SMV_BACKEND_CLOUDFLARE_ACTIVE || 'false') === 'true';
+  const walletReadRoutesEnabled = walletReadRoutesRegistered && walletReadRouteGateOpen && schema.checks.sharedDomainSchema;
+  const walletRechargeRoutesEnabled = walletRechargeRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
+  const walletOfferRoutesEnabled = walletOfferRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
+  const liveSessionRoutesEnabled = liveSessionRoutesRegistered && liveSessionRoutesOpen && schema.checks.liveSessionSchema;
+  const razorpayCredentialsConfigured = razorpayPolicy.enabled && !!razorpayKeyId && !!razorpayKeySecret && !!razorpayWebhookSecret;
+  const productionFinancialTrafficRoutingEnabled = isProductionFinancialTrafficRoutingEnabled({
+    environment: String(env.SMV_ENVIRONMENT || 'unknown'),
+    backendActive,
+    schemaReady: schema.ready,
+    firebaseConnected,
+    walletReadRoutesEnabled,
+    walletRechargeRoutesEnabled,
+    walletRechargeMode,
+    walletOfferRoutesEnabled,
+    liveCallChatRoutesEnabled: liveSessionRoutesEnabled,
+    identityProfileD1AuthorizationEnabled: identityProfileD1AuthorizationOpen,
+    identityProfileD1AuthorizationReady: d1IdentityAuthorizationReady,
+    razorpayMode: razorpayPolicy.mode,
+    razorpayCredentialsConfigured,
+    razorpayProviderConnectionVerified: razorpayVerification.connectionVerified === true
+  });
   return res.set(JSON_HEADERS).json({
     ok: true,
     phase: 'cloudflare-runtime-foundation',
@@ -743,17 +802,17 @@ app.get('/api/backend/migration-status', async (_req, res) => {
     firebaseConnected,
     firestoreConnected: firebaseConnected,
     razorpayConnected: razorpayVerification.connected === true,
-    razorpayCredentialsConfigured: razorpayPolicy.enabled && !!razorpayKeyId && !!razorpayKeySecret && !!razorpayWebhookSecret,
+    razorpayCredentialsConfigured,
     razorpayProviderConnectionVerified: razorpayVerification.connectionVerified === true,
     razorpayProviderConnectionCheckedAt: razorpayVerification.checkedAt || null,
     razorpayMode: razorpayPolicy.mode,
     razorpayPolicyReason: razorpayPolicy.reason,
     legacyRazorpayRoutesRegistered,
     legacyPrivateConsultationRoutesEnabled: false,
-    walletReadRoutesEnabled: walletReadRoutesRegistered && walletReadRouteGateOpen && schema.checks.sharedDomainSchema,
-    walletRechargeRoutesEnabled: walletRechargeRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema,
+    walletReadRoutesEnabled,
+    walletRechargeRoutesEnabled,
     walletRechargeMode,
-    walletOfferRoutesEnabled: walletOfferRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema,
+    walletOfferRoutesEnabled,
     walletBackfillRoutesRegistered,
     walletBackfillToolsEnabled: walletBackfillToolsOpen,
     identityProfileBackfillRoutesRegistered,
@@ -762,10 +821,11 @@ app.get('/api/backend/migration-status', async (_req, res) => {
     identityProfileD1AuthorizationEnabled: identityProfileD1AuthorizationOpen,
     identityProfileD1AuthorizationReady: d1IdentityAuthorizationReady,
     walletBusinessRoutesEnabled: false,
-    callChatRoutesEnabled: liveSessionRoutesRegistered && liveSessionRoutesOpen && schema.checks.liveSessionSchema,
-    liveSessionRoutesEnabled: liveSessionRoutesRegistered && liveSessionRoutesOpen && schema.checks.liveSessionSchema,
+    callChatRoutesEnabled: liveSessionRoutesEnabled,
+    liveSessionRoutesEnabled,
     renderDependency: false,
     productionTrafficEnabled: false,
+    productionFinancialTrafficRoutingEnabled,
     nextGate: identityProfileBackfillRoutesRegistered ? 'identity-profile-staging-preview-and-reconciliation' : liveSessionRoutesRegistered ? 'live-call-chat-conformance-and-session-timer-tests' : walletBackfillRoutesRegistered ? 'enable-staging-live-session-routes' : 'enable-staging-wallet-backfill-tools'
   });
 });
