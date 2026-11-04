@@ -4949,6 +4949,20 @@ function smvLiveStartEventStream(){
   }
  })();
 }
+function smvLiveDashboardSessionStatusLabel(session){
+ const state=String(session?.state||session?.status||'');
+ if(state==='active'){
+  const start=Date.parse(session?.startedAt||'');
+  if(Number.isFinite(start)){
+   const end=start+Math.max(1,Number(session?.minutes||1))*60000;
+   const remaining=Math.max(0,Math.ceil((end-Date.now())/1000));
+   const clock=String(Math.floor(remaining/60))+':'+String(remaining%60).padStart(2,'0');
+   return 'LIVE SESSION · '+clock+' remaining';
+  }
+  return 'LIVE SESSION · In progress';
+ }
+ return smvLiveSessionStatusLabel(session);
+}
 function smvLiveUpdateDashboardSessionStatus(session){
  const id=String(session?.id||session?.sessionId||'');
  if(!id)return;
@@ -4971,7 +4985,7 @@ function smvLiveUpdateDashboardSessionStatus(session){
   const running=['preparing','connecting','active'].includes(String(current.state||''));
   const ended=String(current.state||'')==='ended';
   const windowClosed=ended||smvLiveDismissedSessionIds.has(id);
-  if(status)status.textContent=smvLiveSessionStatusLabel(current);
+  if(status)status.textContent=smvLiveDashboardSessionStatusLabel(current);
   if(liveDot)liveDot.hidden=!running;
   if(closedDot)closedDot.hidden=!windowClosed;
   if(windowStatus){windowStatus.hidden=!windowClosed;windowStatus.textContent=ended?'CLOSED SESSION':'WINDOW CLOSED';}
@@ -4986,18 +5000,18 @@ function smvLiveUpdateDashboardSessionStatus(session){
   }
  };
  updateRow();
- if(current.state==='preparing'&&!smvLiveDashboardStatusTimer){
+ if(['preparing','active'].includes(String(current.state||''))&&!smvLiveDashboardStatusTimer){
   smvLiveDashboardStatusTimer=setInterval(()=>{
-   let preparing=false;
+   let running=false;
    for(const row of smvLiveDashboardSessionsById.values()){
-    if(row.state!=='preparing')continue;
-    preparing=true;
+    if(!['preparing','active'].includes(String(row.state||'')))continue;
+    running=true;
     const host=$('smvLiveDashboardSessions');if(!host)continue;
     const openButton=Array.from(host.querySelectorAll('[data-live-open]')).find(button=>String(button.dataset.liveOpen||'')===String(row.id||''));
     const status=openButton?.closest('article')?.querySelector('[data-live-dashboard-status]');
-    if(status)status.textContent=smvLiveSessionStatusLabel(row);
+    if(status)status.textContent=smvLiveDashboardSessionStatusLabel(row);
    }
-   if(!preparing){clearInterval(smvLiveDashboardStatusTimer);smvLiveDashboardStatusTimer=null;}
+   if(!running){clearInterval(smvLiveDashboardStatusTimer);smvLiveDashboardStatusTimer=null;}
   },1000);
  }
 }
