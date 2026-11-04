@@ -100,7 +100,7 @@ export function registerLegacyBusinessRoutes({ app, firestore, identityService, 
         });
       }
 
-      if (String(user.role || '').toLowerCase() !== 'astrologer') {
+      if (!(await isAstrologerAccount(user, uid))) {
         return res.status(403).set('Cache-Control', 'no-store').json({
           success: false, error: 'Astrologer account required.'
         });
