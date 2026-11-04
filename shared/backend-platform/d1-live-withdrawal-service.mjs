@@ -253,7 +253,7 @@ export function createD1WithdrawalService({db,firestore,now=Date.now,cryptoImpl=
     const withdrawalId=await createUniqueNumericReference({
       prefix:'smvwt',cryptoImpl,
       exists:async candidate=>Boolean(await first(
-        "SELECT withdrawal_id FROM smv_domain_withdrawals WHERE json_extract(payload_json, '$.withdrawalId') = ? LIMIT 1",
+        "SELECT withdrawal_id FROM smv_domain_withdrawals WHERE json_extract(CASE WHEN json_valid(payload_json) THEN payload_json ELSE '{}' END, '$.withdrawalId') = ? LIMIT 1",
         [candidate]
       ))
     });
