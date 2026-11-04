@@ -124,7 +124,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
           `UPDATE smv_domain_wallet_recharges
            SET payload_json=?, updated_at_ms=?
            WHERE recharge_id=? AND customer_uid=? AND status<>'paid'
-             AND json_extract(payload_json, '$.customerPaymentId') IS NULL`,
+             AND json_extract(CASE WHEN json_valid(payload_json) THEN payload_json ELSE '{}' END, '$.customerPaymentId') IS NULL`,
           [JSON.stringify(nextPayload), Number(now()), rechargeId, ownerUid]
         ).run();
       } catch (error) {
