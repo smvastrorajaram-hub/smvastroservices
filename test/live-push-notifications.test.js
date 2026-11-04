@@ -1141,6 +1141,8 @@ test('Live Session End and Cancel are distinct from closing the session window',
   assert.ok(frontend.includes('data-live-presence-dot='), 'Running sessions expose a separate live indicator');
   assert.ok(frontend.includes('data-live-window-dot='), 'Closed windows expose a red closed indicator');
   assert.ok(frontend.includes('OPEN CLOSED SESSION / RECEIPT'), 'Ended sessions remain openable from dashboard history');
+  assert.ok(frontend.includes("return 'LIVE SESSION · '+clock+' remaining'"), 'A dismissed but active Call/Chat continues to show its server-based remaining time');
+  assert.ok(frontend.includes("['preparing','active'].includes(String(row.state||''))"), 'The dashboard timer refreshes both horoscope preparation and active session time');
   assert.ok(frontend.includes("openButton.style.background=ended?'#ff1744':'#00c853'"), 'Open and closed session actions use distinct bright colors');
 });
 
