@@ -19,7 +19,7 @@ function availabilityStatus(profile, activeSessionCount) {
 }
 
 /** Transactional Cloudflare implementations of low-risk legacy profile/review mutations. */
-export function registerLegacyBusinessRoutes({ app, firestore, identityService } = {}) {
+export function registerLegacyBusinessRoutes({ app, firestore, identityService, liveService = null } = {}) {
   if (!app || typeof app.post !== 'function' ||
       !firestore || typeof firestore.getDocument !== 'function' ||
       typeof firestore.updateDocument !== 'function' ||
@@ -32,6 +32,14 @@ export function registerLegacyBusinessRoutes({ app, firestore, identityService }
     return identityService.authenticateAuthorization(req.get('Authorization'));
   }
 
+  async function isAstrologerAccount(user, uid) {
+    if (String(user?.role || '').toLowerCase() === 'astrologer') return true;
+    if (liveService && typeof liveService.isApprovedAstrologer === 'function') {
+      return liveService.isApprovedAstrologer(uid);
+    }
+    return false;
+  }
+
   async function requireAdmin(req) {
     const user = await authenticate(req);
     if (user.isAdmin !== true && String(user.role || '').toLowerCase() !== 'admin') {
@@ -39,6 +47,39 @@ export function registerLegacyBusinessRoutes({ app, firestore, identityService }
     }
     return user;
   }
+
+  app.get('/astrologer/availability', async (req, res) => {
+    try {
+      const user = await authenticate(req);
+      const uid = safeUid(user);
+      if (!(await isAstrologerAccount(user, uid))) {
+        return res.status(403).set('Cache-Control', 'no-store').json({
+          success: false, error: 'Astrologer account required.'
+        });
+      }
+      if (liveService && typeof liveService.getAstrologerAvailability === 'function') {
+        const result = await liveService.getAstrologerAvailability({ astrologerUid: uid });
+        return res.set('Cache-Control', 'no-store').json({ success: true, ...result });
+      }
+      const snapshot = await firestore.getDocument('smv_astrologers/' + uid);
+      const astro = snapshot.data || {};
+      if (!snapshot.exists || (astro.uid && String(astro.uid) !== uid) ||
+          !['approved', 'active'].includes(String(astro.status || '').toLowerCase())) {
+        return res.status(403).set('Cache-Control', 'no-store').json({
+          success: false, error: 'Approved Astrologer profile required.'
+        });
+      }
+      return res.set('Cache-Control', 'no-store').json({
+        success: true,
+        availabilityStatus: String(astro.availabilityStatus || 'offline').toLowerCase(),
+        liveCallEnabled: astro.liveCallEnabled === true,
+        liveChatEnabled: astro.liveChatEnabled === true,
+        activeSessionCount: Number(astro.activeSessionCount || 0)
+      });
+    } catch (error) {
+      return sendError(res, error, 'Unable to load Astrologer availability.');
+    }
+  });
 
   app.post('/astrologer/availability', async (req, res) => {
     try {
@@ -57,6 +98,21 @@ export function registerLegacyBusinessRoutes({ app, firestore, identityService }
         return res.status(400).set('Cache-Control', 'no-store').json({
           success: false, error: 'Choose whether Live Call or Live Chat is enabled.'
         });
+      }
+
+      if (!(await isAstrologerAccount(user, uid))) {
+        return res.status(403).set('Cache-Control', 'no-store').json({
+          success: false, error: 'Astrologer account required.'
+        });
+      }
+      if (liveService && typeof liveService.updateAstrologerAvailability === 'function') {
+        const result = await liveService.updateAstrologerAvailability({
+          astrologerUid: uid,
+          availabilityStatus: inputStatus,
+          liveCallEnabled: req.body?.liveCallEnabled,
+          liveChatEnabled: req.body?.liveChatEnabled
+        });
+        return res.set('Cache-Control', 'no-store').json({ success: true, ...result });
       }
 
       const result = await firestore.runTransaction(async tx => {

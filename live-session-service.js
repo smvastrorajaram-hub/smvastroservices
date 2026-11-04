@@ -1764,8 +1764,11 @@ async function rejectOrCancel(sessionId, user, reason) {
     if (!auth) return;
     try {
       const tokens = await profileDb.collection('smv_push_tokens').where('uid', '==', auth.user.uid).limit(25).get();
+      const registeredPlatforms=[...new Set(tokens.docs.map(doc=>String(doc.data()?.platform||'web').toLowerCase()))];
       return res.set('Cache-Control', 'no-store').json({
-        success: true, supported: true, registeredDevices: tokens.size
+        success: true, supported: true, registeredDevices: tokens.size,
+        registeredPlatforms,
+        nativeRegistered: registeredPlatforms.includes('native-android')
       });
     } catch (error) { return replyError(res, error, 'Unable to check Background Alert status.'); }
   });
