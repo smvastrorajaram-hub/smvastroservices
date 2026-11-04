@@ -102,7 +102,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       prefix: 'smvpy',
       cryptoImpl,
       exists: async candidate => Boolean(await statement(
-        "SELECT recharge_id FROM smv_domain_wallet_recharges WHERE json_extract(payload_json, '$.customerPaymentId') = ? LIMIT 1",
+        "SELECT recharge_id FROM smv_domain_wallet_recharges WHERE json_extract(CASE WHEN json_valid(payload_json) THEN payload_json ELSE '{}' END, '$.customerPaymentId') = ? LIMIT 1",
         [candidate]
       ).first())
     });
