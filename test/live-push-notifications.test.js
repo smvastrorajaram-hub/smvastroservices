@@ -292,7 +292,10 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('enabling recovery polling.'));
   assert.ok(!frontend.includes("smvLiveMessageTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollMessages(id).catch(()=>{});},600)"));
   assert.ok(!frontend.includes("smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions().catch(()=>{}),4500"));
-  assert.ok(html.includes('smvastro.mjs?v=20261104-native-notification-intent-v1'));
+  assert.ok(frontend.includes('smvLiveStartCustomerPendingStatusPoll(s.id);'));
+  assert.ok(frontend.includes('setInterval(()=>void reconcile(),2500)'));
+  assert.ok(frontend.includes('Astrologer Generating Horoscope · '));
+  assert.ok(html.includes('smvastro.mjs?v=20261104-live-session-ui-standby-v1'));
 });
 
 test('Customer and Astrologer Dashboards mount the Live Call/Chat controls after rendering', () => {
@@ -1134,6 +1137,11 @@ test('Live Session End and Cancel are distinct from closing the session window',
   assert.ok(frontend.includes('end.onclick=async()=>'), 'End/Cancel invokes a server action');
   assert.ok(frontend.includes("'/end',{method:'POST',body:JSON.stringify({reason:'participant_ended'})}"), 'End/Cancel persists the terminal state on the server');
   assert.ok(frontend.includes('close.onclick=()=>{smvLiveDismissSessionUi(id);window.closeModal?.();}'), 'Close Window only dismisses the UI');
+  assert.ok(frontend.includes('smvLiveDismissedSessionIds.add(id)'), 'Closing the panel marks its window as closed without ending the server session');
+  assert.ok(frontend.includes('data-live-presence-dot='), 'Running sessions expose a separate live indicator');
+  assert.ok(frontend.includes('data-live-window-dot='), 'Closed windows expose a red closed indicator');
+  assert.ok(frontend.includes('OPEN CLOSED SESSION / RECEIPT'), 'Ended sessions remain openable from dashboard history');
+  assert.ok(frontend.includes("openButton.style.background=ended?'#ff1744':'#00c853'"), 'Open and closed session actions use distinct bright colors');
 });
 
 test('Live Session route authorization separates Astrologer decisions from participant actions', () => {
@@ -1294,4 +1302,18 @@ test('Cloudflare native Live notifications use Android tray payloads and open th
   assert.match(mainActivity, /intentString\(intent, "bookingId"\)/);
   assert.match(frontend, /params\.get\('smvLivePush'\)==='1'/);
   assert.match(frontend, /smvLiveHandlePushOpen\(payload\)/);
+});
+
+
+test('Android notification opens reuse one Recents task and root Back keeps SMV ASTRO in standby', () => {
+  const manifest = read('smvastroproduction/src/main/AndroidManifest.xml');
+  const activity = read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java');
+  const mainStart = manifest.indexOf('android:name=".MainActivity"');
+  const main = manifest.slice(mainStart - 100, manifest.indexOf('</activity>', mainStart));
+  assert.ok(main.includes('android:launchMode="singleTask"'), 'notification opens route into the existing launcher task');
+  assert.ok(main.includes('android:excludeFromRecents="false"'), 'SMV ASTRO remains visible in Android Recents');
+  const backStart = activity.indexOf('public void onBackPressed()');
+  const back = activity.slice(backStart, activity.indexOf('@Override', backStart + 10));
+  assert.ok(back.includes('moveTaskToBack(true)'), 'root Back backgrounds the task instead of finishing MainActivity');
+  assert.ok(activity.includes('webView.loadUrl(resolveStartUrl(intent))'), 'notification intent still routes the exact live session into the WebView');
 });
