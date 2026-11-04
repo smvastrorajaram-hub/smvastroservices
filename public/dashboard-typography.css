@@ -464,8 +464,8 @@ html body #dashboardContent .smv-astrologer-dashboard{padding:0!important;margin
   font-size:var(--smv-dashboard-body)!important;font-weight:900!important;
 }
 #dashboardContent #smvLiveDashboardCard .smv-live-session-open-button{
-  font-size:var(--smv-dashboard-body)!important;line-height:1.5!important;color:#ff1744!important;
-  -webkit-text-fill-color:#ff1744!important;text-decoration:none!important;
+  font-size:var(--smv-dashboard-body)!important;line-height:1.5!important;color:#00e676;
+  -webkit-text-fill-color:#00e676;text-decoration:none!important;
   border:0!important;background:transparent!important;box-shadow:none!important;
 }
 #dashboardContent #smvLiveDashboardCard .smv-live-session-open-button:focus,
