@@ -4653,7 +4653,7 @@ function smvLiveUpdatePreparationCountdown(session){
   const deadline=Number.isFinite(until)?until:(Number.isFinite(started)?started+135000:Date.now()+135000);
   const seconds=Math.max(0,Math.ceil((deadline-Date.now())/1000));
   const clock=String(Math.floor(seconds/60))+':'+String(seconds%60).padStart(2,'0');
-  const label=currentUid===String(current.customerUid||'')?'Please wait.... '+clock:'Generate Customer Horoscope · '+clock;
+  const label=currentUid===String(current.customerUid||'')?'Astrologer Generating Horoscope · '+clock:'Generate Customer Horoscope · '+clock;
   if($('smvLiveSessionStatus'))$('smvLiveSessionStatus').textContent=label;
    smvLiveUpdateDashboardSessionStatus(current);
    if(seconds===0)smvLiveReconcileExpiredPreparation(id);
