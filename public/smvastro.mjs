@@ -5005,8 +5005,8 @@ function smvLiveUpdateDashboardSessionStatus(session){
   if(openButton){
    openButton.textContent=ended?'OPEN CLOSED SESSION / RECEIPT':'OPEN SESSION';
    openButton.style.background='transparent';
-   openButton.style.color=ended?'#ff1744':'#00a844';
-   openButton.style.webkitTextFillColor=ended?'#ff1744':'#00a844';
+   openButton.style.color=ended?'#ff1744':'#00e676';
+   openButton.style.webkitTextFillColor=ended?'#ff1744':'#00e676';
    openButton.style.border='0';
    openButton.style.borderRadius='0';openButton.style.padding='0';openButton.style.fontWeight='900';
    openButton.style.boxShadow='none';openButton.style.textDecoration='none';
