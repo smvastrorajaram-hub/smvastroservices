@@ -120,6 +120,12 @@ export function registerD1LiveSessionRoutes({
       publish(session.customerUid,eventType,session.id,{session}),
       publish(session.astrologerUid,eventType,session.id,{session})
     ]);
+    if(session.state==='ended') {
+      await notifyNativeAstrologer(session.astrologerUid,{
+        type:'stop_ringing',sessionId:session.id,
+        tag:'smv-live-stop-'+session.id
+      });
+    }
   }
   async function notifyNativeAstrologer(uid,{
     type='live_request',mode='call',sessionId='',bookingId='',title='',body='',tag=''
@@ -133,7 +139,7 @@ export function registerD1LiveSessionRoutes({
         limit:25
       });
       const safeMode=String(mode||'call').trim().toLowerCase()==='chat'?'chat':'call';
-      const safeType=type==='live_booking'?'live_booking':'live_request';
+      const safeType=type==='stop_ringing'?'stop_ringing':type==='live_booking'?'live_booking':'live_request';
       const safeTitle=String(title||'SMV ASTRO').slice(0,100);
       const safeBody=String(body||'').slice(0,300);
       const safeTag=String(tag||'').slice(0,100);
@@ -150,7 +156,7 @@ export function registerD1LiveSessionRoutes({
       await Promise.all(tokens.map(async token=>{
         try {
           await fcmSender.send(token,{
-            title:safeTitle,body:safeBody,
+            title:safeTitle,body:safeBody,dataOnly:true,
             data:{
               type:safeType,mode:safeMode,sessionId:String(sessionId||''),
               bookingId:String(bookingId||''),title:safeTitle,body:safeBody,tag:safeTag
@@ -197,7 +203,16 @@ export function registerD1LiveSessionRoutes({
     const reader=response.body.getReader();
     const decoder=new TextDecoder();
     let closed=false;
-    req.on('close',()=>{closed=true;reader.cancel().catch(()=>{});});
+    const stop=()=>{
+      if(closed)return;
+      closed=true;
+      reader.cancel().catch(()=>{});
+    };
+    // IncomingMessage 'close' fires when the request body is complete; it
+    // must not be used to tear down a long-lived SSE response.
+    res.on('close',stop);
+    res.on('error',stop);
+    req.on('aborted',stop);
     try {
       while(!closed) {
         const chunk=await reader.read();
@@ -429,6 +444,10 @@ export function registerD1LiveSessionRoutes({
       await publishSession(result.session,'live.session.request');
       await publishSession(result.session,'live.session.updated');
       await publish(result.session.customerUid,'live.booking.updated',result.session.id,{booking:{id:result.session.id,status:'accepted',sessionId:result.session.id}});
+      await notifyNativeAstrologer(user.uid,{
+        type:'stop_ringing',bookingId:req.params.id,
+        tag:'smv-live-stop-booking-'+req.params.id
+      });
       return res.set('Cache-Control','no-store').json(result);
     } catch(error) { return replyError(res,error,'Unable to accept the Live booking.'); }
   });
@@ -442,6 +461,10 @@ export function registerD1LiveSessionRoutes({
       if(result.booking) {
         await publish(result.booking.customerUid,'live.booking.updated',req.params.id,{booking:result.booking});
         await publish(user.uid,'live.booking.updated',req.params.id,{booking:result.booking});
+        await notifyNativeAstrologer(user.uid,{
+          type:'stop_ringing',bookingId:req.params.id,
+          tag:'smv-live-stop-booking-'+req.params.id
+        });
       }
       return res.set('Cache-Control','no-store').json(result);
     } catch(error) { return replyError(res,error,'Unable to reject this Live booking.'); }
@@ -453,10 +476,16 @@ export function registerD1LiveSessionRoutes({
       const user=await requireRole(req,['customer']);
       const result=await liveService.cancelBooking({bookingId:req.params.id,customerUid:user.uid});
       await cancel(req.params.id,'booking_expiry');
-      if(result.booking) await Promise.all([
-        publish(result.booking.customerUid,'live.booking.updated',req.params.id,{booking:result.booking}),
-        publish(result.booking.astrologerUid,'live.booking.updated',req.params.id,{booking:result.booking})
-      ]);
+      if(result.booking) {
+        await Promise.all([
+          publish(result.booking.customerUid,'live.booking.updated',req.params.id,{booking:result.booking}),
+          publish(result.booking.astrologerUid,'live.booking.updated',req.params.id,{booking:result.booking})
+        ]);
+        await notifyNativeAstrologer(result.booking.astrologerUid,{
+          type:'stop_ringing',bookingId:req.params.id,
+          tag:'smv-live-stop-booking-'+req.params.id
+        });
+      }
       return res.set('Cache-Control','no-store').json(result);
     } catch(error) { return replyError(res,error,'Unable to cancel the Live booking.'); }
   });
@@ -470,6 +499,10 @@ export function registerD1LiveSessionRoutes({
         deadline('preparation_timeout',Date.parse(result.session.preparationUntil),'preparation:'+req.params.id)
       ]); } catch(error) { await failClosedTimer(req.params.id); throw error; }
       await publishSession(result.session);
+      await notifyNativeAstrologer(user.uid,{
+        type:'stop_ringing',sessionId:req.params.id,
+        tag:'smv-live-stop-'+req.params.id
+      });
       return res.set('Cache-Control','no-store').json(result);
     } catch(error) { return replyError(res,error,'Unable to accept the incoming Live request.'); }
   });
