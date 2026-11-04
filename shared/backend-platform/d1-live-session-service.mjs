@@ -206,19 +206,19 @@ export function createD1LiveSessionService({
     if(requestedStatus==='online'&&!callEnabled&&!chatEnabled) {
       throw liveError('LIVE_MODE_DISABLED','Enable Live Call or Live Chat before setting Online.',409);
     }
-    const availabilityStatus=current.activeSessionCount>0?'busy':requestedStatus;
+    const finalAvailabilityStatus=current.activeSessionCount>0?'busy':requestedStatus;
     await firestore.setDocument('smv_astrologers/'+uid,{
       liveCallEnabled:callEnabled,
       liveChatEnabled:chatEnabled,
       activeSessionCount:current.activeSessionCount,
-      availabilityStatus,
+      availabilityStatus:finalAvailabilityStatus,
       manualAvailabilityStatus:requestedStatus==='busy'?'busy':'',
       liveSessionBusyManaged:current.activeSessionCount>0,
       availabilityUpdatedAt:new Date(Number(now())),
       availabilityUpdatedBy:uid
     },{merge:true});
     return {
-      availabilityStatus,
+      availabilityStatus:finalAvailabilityStatus,
       liveCallEnabled:callEnabled,
       liveChatEnabled:chatEnabled,
       activeSessionCount:current.activeSessionCount
