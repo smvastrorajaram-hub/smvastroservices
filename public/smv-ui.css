@@ -53,6 +53,7 @@
   --smv-dashboard-control:12px;
   --smv-dashboard-metric:clamp(24px,calc(2.2vw + 16px),32px);
   --smv-dashboard-heading-line:1.3;
+  --smv-dashboard-emphasis-line:1.5;
   --smv-dashboard-body-line:1.6;
   --smv-dashboard-meta-line:1.5;
 }
@@ -75,6 +76,7 @@ html[lang="ta"] body{
   --smv-dashboard-support:14px;
   --smv-dashboard-meta:13px;
   --smv-dashboard-heading-line:1.42;
+  --smv-dashboard-emphasis-line:1.65;
   --smv-dashboard-body-line:1.78;
   --smv-dashboard-meta-line:1.62;
 }
@@ -108,7 +110,7 @@ body.smv-v12-theme :where(.card,.registration-option,.admin-content-row,.admin-b
 body.smv-v12-theme :where(.card,.registration-option,.admin-content-row,.admin-blog-row,.astro-public-card) :where(p,li,.small){overflow-wrap:anywhere}
 body.smv-v12-theme .card::before{content:none!important;display:none!important}
 body.smv-v12-theme .stat{background:transparent!important;padding:18px 0!important;border:0!important;border-radius:0!important;box-shadow:none!important}
-body.smv-v12-theme .stat b{color:#6b4b1e!important;font-size:clamp(24px,2.8vw,34px)!important;line-height:1.1!important;letter-spacing:-.03em!important}
+body.smv-v12-theme .stat b{color:#6b4b1e!important;font-size:var(--smv-dashboard-metric)!important;line-height:1.1!important;letter-spacing:-.03em!important}
 
 /* Forms */
 body.smv-v12-theme :where(#smv-public-page,#dashboard,#admin,#register-flow,#astro-register-form,#astro-flow,#ask-flow,#contact,#private-consultation) label{color:var(--smv207-ink);font-weight:650;line-height:1.4}
