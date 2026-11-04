@@ -1267,6 +1267,7 @@ test('Cloudflare native Live notifications use Android tray payloads and open th
   const fcmRoutes = read('cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs');
   const index = read('cloudflare/backend-api/src/index.mjs');
   const mainActivity = read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java');
+  const nativePush = read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/NativePushMessagingService.java');
   const notifications = read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/NativeCallNotifications.java');
   const frontend = read('public/smvastro.mjs');
   assert.match(liveRoutes, /collectionPath:'smv_push_tokens'/);
@@ -1274,12 +1275,19 @@ test('Cloudflare native Live notifications use Android tray payloads and open th
   assert.ok(liveRoutes.includes("||/\\s/.test(token)||seen.has(token)"), 'token validation rejects whitespace');
   assert.match(liveRoutes, /type:'live_request'/);
   assert.match(liveRoutes, /type:'live_booking'/);
-  assert.match(fcmRoutes, /notification:\s*\{/);
+  assert.match(liveRoutes, /type:'stop_ringing'/);
+  assert.match(liveRoutes, /dataOnly:true/);
+  assert.match(fcmRoutes, /payload\.dataOnly !== true/);
+  assert.match(fcmRoutes, /message\.notification\s*=\s*\{/);
   assert.match(fcmRoutes, /data,/);
   assert.match(fcmRoutes, /priority:\s*'HIGH'/);
   assert.match(fcmRoutes, /channel_id:\s*'smv_native_background_alerts_v1'/);
   assert.match(index, /firestore:\s*firestoreAdmin,\s*fcmSender,/);
   assert.match(notifications, /CHANNEL_ALERTS\s*=\s*"smv_native_background_alerts_v1"/);
+  assert.match(nativePush, /startForegroundService\(ring\)/);
+  assert.equal(nativePush.includes('MainActivity.isAppVisible()'),false,
+    'native call ringtone must start while the app is foregrounded as well as backgrounded');
+  assert.match(frontend, /window\.SMVNativeCalls&&typeof window\.SMVNativeCalls\.isNativeApp==='function'/);
   assert.match(mainActivity, /isIncomingLivePushIntent\(getIntent\(\)\)/);
   assert.match(mainActivity, /appendQueryParameter\("smvLivePush", "1"\)/);
   assert.match(mainActivity, /intentString\(intent, "sessionId"\)/);

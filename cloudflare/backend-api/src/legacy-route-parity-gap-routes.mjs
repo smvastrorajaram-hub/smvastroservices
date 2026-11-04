@@ -253,23 +253,30 @@ export function createFcmSender({ projectId, tokenProvider, fetchImpl = globalTh
               const data = Object.fromEntries(Object.entries(payload.data || {}).map(([key, value]) =>
                 [String(key).slice(0, 80), String(value).slice(0, 500)]));
               const tag = String(data.tag || '').slice(0, 100);
-              return {
+              const message = {
                 token: deviceToken,
-                notification: {
-                  title: String(payload.title || 'SMV ASTRO').slice(0, 100),
-                  body: String(payload.body || '').slice(0, 300)
-                },
                 data,
                 android: {
                   priority: 'HIGH',
-                  ttl: '120s',
-                  notification: {
-                    channel_id: 'smv_native_background_alerts_v1',
-                    sound: 'default',
-                    ...(tag ? { tag } : {})
-                  }
+                  ttl: '120s'
                 }
               };
+              // Native incoming-call messages must be data-only: Android then
+              // invokes NativePushMessagingService.onMessageReceived(), which
+              // starts the app's looping device-ringtone foreground service.
+              // Keep the ordinary notification envelope for non-call alerts.
+              if (payload.dataOnly !== true) {
+                message.notification = {
+                  title: String(payload.title || 'SMV ASTRO').slice(0, 100),
+                  body: String(payload.body || '').slice(0, 300)
+                };
+                message.android.notification = {
+                  channel_id: 'smv_native_background_alerts_v1',
+                  sound: 'default',
+                  ...(tag ? { tag } : {})
+                };
+              }
+              return message;
             })()
           }),
           signal: AbortSignal.timeout(12000)

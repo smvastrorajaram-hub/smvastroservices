@@ -4225,6 +4225,9 @@ function smvLivePlayRingtoneMelody(){
 }
 function smvLiveStartRingtone(sourceId=''){
  if(String(window.__smvCurrentRole||'').toLowerCase()!=='astrologer')return;
+ // Native Android plays the actual device ringtone from its FCM foreground
+ // service; do not layer the browser WebAudio melody over that call audio.
+ if(window.SMVNativeCalls&&typeof window.SMVNativeCalls.isNativeApp==='function'&&window.SMVNativeCalls.isNativeApp())return;
  const id=String(sourceId||smvLiveCurrentSession?.id||'');
  if(id&&smvLiveRingSuppressedIds.has(id)){if(smvLiveRingCurrentId===id)smvLiveStopRingtone();return;}
  if(id)smvLiveRingCurrentId=id;
