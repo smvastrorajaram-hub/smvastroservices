@@ -69,10 +69,10 @@ function fixture({now=Date.parse('2026-10-31T10:00:00Z'),payoutEncryptionKey=TES
         async first() {
           if(sql.includes('SUM(astrologer_amount_paise)')) return {amount:50000};
           if(sql.includes('FROM smv_domain_legacy_earning_snapshots')) return snapshots.get(String(values[0]))||null;
-          if(sql.includes("json_extract(payload_json, '$.withdrawalId')")) {
+          if(sql.includes("withdrawalId') = ?")) {
             return [...withdrawals.values()].find(row=>{try{return JSON.parse(row.payload_json).withdrawalId===String(values[0]);}catch{return false;}})||null;
           }
-          if(sql.includes("json_extract(payload_json, '$.adminPaymentId')")) {
+          if(sql.includes("adminPaymentId') = ?")) {
             return [...withdrawals.values()].find(row=>{try{return JSON.parse(row.payload_json).adminPaymentId===String(values[0]);}catch{return false;}})||null;
           }
           if(sql.includes('FROM smv_domain_withdrawals WHERE withdrawal_id')) return withdrawals.get(String(values[0]))||null;
