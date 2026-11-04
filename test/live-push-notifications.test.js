@@ -1305,6 +1305,16 @@ test('Cloudflare native Live notifications use Android tray payloads and open th
 });
 
 
+test('Public Astrologer list displays distinct Online, Busy and Offline presence indicators', () => {
+  const content = read('public/public-content.mjs');
+  assert.ok(content.includes('smv-astro-presence-dot--online'));
+  assert.ok(content.includes('smv-astro-presence-dot--busy'));
+  assert.ok(content.includes('smv-astro-presence-dot--offline'));
+  assert.ok(content.includes('smvAstroOnlinePulse 2.4s'));
+  assert.ok(content.includes('smvAstroBusyPulse .78s'));
+  assert.ok(content.includes('aria-label="${availabilityLabel}"'));
+});
+
 test('Android notification opens reuse one Recents task and root Back keeps SMV ASTRO in standby', () => {
   const manifest = read('smvastroproduction/src/main/AndroidManifest.xml');
   const activity = read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java');
