@@ -416,3 +416,46 @@ html body #dashboardContent .smv-astrologer-dashboard{padding:0!important;margin
 }
 
 
+
+
+/* Live dashboard typography: consistent with the Live Call / Live Chat heading. */
+#dashboardContent #smvLiveDashboardCard>h3{
+  font-size:22px!important;line-height:1.35!important;font-weight:800!important;
+  color:#6b4b1e!important;-webkit-text-fill-color:#6b4b1e!important;
+}
+#dashboardContent #smvLiveDashboardCard h4{
+  font-size:22px!important;line-height:1.35!important;font-weight:800!important;
+  color:#6b4b1e!important;-webkit-text-fill-color:#6b4b1e!important;
+}
+#dashboardContent #smvLiveDashboardCard .smv-live-booking-kind{
+  display:inline-block!important;color:#ff1493!important;-webkit-text-fill-color:#ff1493!important;
+  background:transparent!important;font-size:16px!important;line-height:1.35!important;
+  font-weight:900!important;padding:0!important;
+}
+#dashboardContent #smvLiveDashboardCard .smv-live-booking-id,
+#dashboardContent #smvLiveDashboardCard .smv-live-booking-detail{
+  font-size:15px!important;line-height:1.6!important;font-weight:600!important;
+  color:#111!important;-webkit-text-fill-color:#111!important;
+}
+#dashboardContent #smvLiveDashboardCard .smv-live-booking-detail b{
+  font-size:16px!important;font-weight:800!important;
+}
+#dashboardContent #smvLiveDashboardCard .smv-live-session-mode{
+  font-size:18px!important;line-height:1.4!important;font-weight:900!important;
+}
+#dashboardContent #smvLiveDashboardCard .smv-live-session-meta{
+  font-size:15px!important;line-height:1.6!important;font-weight:700!important;
+  color:#111!important;
+}
+#dashboardContent #smvLiveDashboardCard .smv-live-session-meta b{
+  font-size:16px!important;font-weight:900!important;
+}
+#dashboardContent #smvLiveDashboardCard .smv-live-session-open-button{
+  font-size:15px!important;line-height:1.5!important;color:#ff1744!important;
+  -webkit-text-fill-color:#ff1744!important;text-decoration:none!important;
+  border:0!important;background:transparent!important;box-shadow:none!important;
+}
+#dashboardContent #smvLiveDashboardCard .smv-live-session-open-button:focus,
+#dashboardContent #smvLiveDashboardCard .smv-live-session-open-button:hover{
+  text-decoration:none!important;
+}
