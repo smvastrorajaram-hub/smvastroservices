@@ -564,6 +564,8 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       identityService: walletIdentityService,
       liveService,
       withdrawalService,
+      firestore: firestoreAdmin,
+      fcmSender,
       env,
       routesEnabled: liveSessionRoutesOpen,
       environment: String(env.SMV_ENVIRONMENT || ''),

@@ -80,6 +80,8 @@ function fixture(overrides={}) {
   };
   registerD1LiveSessionRoutes({
     app,identityService,liveService,withdrawalService,
+    firestore:overrides.firestore || {async runQuery(){return[];}},
+    fcmSender:overrides.fcmSender || null,
     env:{
       LIVE_SESSION_COORDINATOR:namespace,
       LIVE_USER_EVENT_HUB:namespace,
@@ -248,4 +250,65 @@ test('Live accept route enforces Astrologer identity and books a preparation tim
   assert.ok(f.calls.some(x=>String(x.url||'').includes('/schedule')&&x.body.deadlines[0].type==='preparation_timeout'));
   const scheduled=f.calls.find(x=>String(x.url||'').includes('/schedule')&&x.body.deadlines[0].type==='preparation_timeout');
   assert.equal(scheduled.body.deadlines[0].atMs,Date.parse('2026-10-31T10:02:15Z'));
+});
+
+test('New Cloudflare Live requests notify only the owning Astrologer native Android token',async()=>{
+  const nativeToken='n'.repeat(64),webToken='w'.repeat(64),otherToken='x'.repeat(64);
+  const queries=[],sent=[];
+  const f=fixture({
+    firestore:{async runQuery(query){
+      queries.push(query);
+      return [
+        {data:{uid:'astro-1',platform:'native-android',token:nativeToken}},
+        {data:{uid:'astro-1',platform:'web',token:webToken}},
+        {data:{uid:'someone-else',platform:'native-android',token:otherToken}}
+      ];
+    }},
+    fcmSender:{async send(token,payload){sent.push({token,payload});return 'projects/smv-astro/messages/1';}}
+  });
+  const res=responseHarness();
+  await f.app.handlers.get('POST /live/requests')(req({
+    astrologerId:'astro-1',mode:'call',minutes:5,requestId:'request-native-0001',
+    customerName:'Customer',birthDetails:{}
+  }),res);
+  assert.equal(res.statusCode,200);
+  assert.equal(queries.length,1);
+  assert.deepEqual(queries[0],{
+    collectionPath:'smv_push_tokens',
+    filters:[{field:'uid',op:'==',value:'astro-1'}],
+    limit:25
+  });
+  assert.deepEqual(sent.map(item=>item.token),[nativeToken],
+    'web tokens and tokens owned by another UID must never receive native Android notifications');
+  assert.equal(sent[0].payload.data.type,'live_request');
+  assert.equal(sent[0].payload.data.sessionId,'session-1');
+  assert.equal(sent[0].payload.data.bookingId,'');
+  assert.equal(sent[0].payload.data.mode,'call');
+  assert.equal(sent[0].payload.title,'Incoming Live Call');
+  assert.match(sent[0].payload.body,/Tap the notification/);
+});
+
+test('New Cloudflare booking alerts use the booking ID and FCM failure cannot undo the booking',async()=>{
+  const token='a'.repeat(64),sent=[];
+  const f=fixture({
+    createResult:{success:true,kind:'booking',booking:{
+      id:'booking-native-1',customerUid:'customer-1',astrologerUid:'astro-1',
+      mode:'chat',status:'pending',expiresAt:'2026-11-07T10:00:00.000Z'
+    }},
+    firestore:{async runQuery(){return [{data:{uid:'astro-1',platform:'native-android',token}}];}},
+    fcmSender:{async send(deviceToken,payload){sent.push({deviceToken,payload});throw Object.assign(new Error('test provider failure'),{code:'FCM_SEND_FAILED'});}}
+  });
+  const res=responseHarness();
+  await f.app.handlers.get('POST /live/requests')(req({
+    astrologerId:'astro-1',mode:'chat',minutes:5,requestId:'request-booking-native-1',
+    customerName:'Customer',birthDetails:{}
+  }),res);
+  assert.equal(res.statusCode,200,'notification provider failure must not roll back the booked request or its Wallet reserve');
+  assert.equal(res.body.kind,'booking');
+  assert.equal(sent.length,1);
+  assert.equal(sent[0].payload.data.type,'live_booking');
+  assert.equal(sent[0].payload.data.bookingId,'booking-native-1');
+  assert.equal(sent[0].payload.data.sessionId,'');
+  assert.equal(sent[0].payload.data.mode,'chat');
+  assert.equal(sent[0].payload.title,'New Live Chat Booking');
 });

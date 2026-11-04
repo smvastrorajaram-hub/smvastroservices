@@ -665,3 +665,35 @@ test('Scheduled Call/Chat retry returns the existing session with the D1 Live ob
   assert.deepEqual(calls, [{ uid: 'astro-1', role: 'astrologer' }]);
   assert.equal(firestore.calls.writes.length, 0);
 });
+
+test('FCM HTTP v1 sends notification plus data on the SMV native Android alerts channel',async()=>{
+  let requestUrl='',requestBody=null;
+  const sender=createFcmSender({
+    projectId:'smv-astro',
+    tokenProvider:{async getAccessToken(){return 'test-access-token';}},
+    fetchImpl:async(url,options)=>{
+      requestUrl=String(url);
+      requestBody=JSON.parse(options.body);
+      return new Response(JSON.stringify({name:'projects/smv-astro/messages/1'}),{
+        status:200,headers:{'Content-Type':'application/json'}
+      });
+    }
+  });
+  const result=await sender.send('n'.repeat(64),{
+    title:'Incoming Live Call',
+    body:'A Customer is requesting a Live Call.',
+    data:{type:'live_request',mode:'call',sessionId:'session-1',bookingId:'',tag:'smv-live-request-session-1'}
+  });
+  assert.match(requestUrl,/projects\/smv-astro\/messages:send$/);
+  assert.equal(result,'projects/smv-astro/messages/1');
+  const message=requestBody.message;
+  assert.equal(message.notification.title,'Incoming Live Call');
+  assert.equal(message.notification.body,'A Customer is requesting a Live Call.');
+  assert.equal(message.data.type,'live_request');
+  assert.equal(message.data.sessionId,'session-1');
+  assert.equal(message.android.priority,'HIGH');
+  assert.equal(message.android.ttl,'120s');
+  assert.equal(message.android.notification.channel_id,'smv_native_background_alerts_v1');
+  assert.equal(message.android.notification.sound,'default');
+  assert.equal(message.android.notification.tag,'smv-live-request-session-1');
+});
