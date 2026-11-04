@@ -7,6 +7,7 @@ import { Worker } from 'node:worker_threads';
 import { webcrypto } from 'node:crypto';
 import { createD1WalletAdapter } from '../../../shared/backend-platform/d1-wallet-adapter.mjs';
 import { createD1LiveSessionService } from '../../../shared/backend-platform/d1-live-session-service.mjs';
+import { createD1WithdrawalService } from '../../../shared/backend-platform/d1-live-withdrawal-service.mjs';
 import { registerWalletRechargeRoutes } from '../src/wallet-recharge-routes.mjs';
 
 const RELEASE_GUARD = 'smv_domain_live_booking_release_pending_validate';
@@ -280,7 +281,8 @@ test('local D1 blocks stale booking cancellation/expiry release after accept tra
       sessionId:bookingId,reason:'participant_ended',system:true
     });
     assert.equal(settled.session.state,'ended');
-    assert.equal(settled.session.origin,'accepted_booking');
+    const settledRow=sqlite.prepare('SELECT payload_json FROM smv_domain_live_sessions WHERE session_id=?').get(bookingId);
+    assert.equal(JSON.parse(settledRow.payload_json).origin,'accepted_booking');
     assert.equal(settled.session.actualChargePaise,1000);
     assert.equal(settled.session.freeMinutesUsed,2);
 
