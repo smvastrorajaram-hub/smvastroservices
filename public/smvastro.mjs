@@ -5360,7 +5360,9 @@ async function smvLiveLoadDashboard(role){
     const sel=$('smvLiveAvailability');
     const callToggle=$('smvLiveCallEnabled'),chatToggle=$('smvLiveChatEnabled');
     if(sel&&!sel.dataset.initialized){
-     if(astro)sel.value=astro.availabilityStatus||'offline';
+     if(astro)sel.value=astro.manualAvailabilityStatus||
+      (String(astro.availabilityStatus||'').toLowerCase()==='busy'&&Number(astro.activeSessionCount||0)===0
+       ?'busy':(astro.liveCallEnabled===true||astro.liveChatEnabled===true?'online':'offline'));
      if(callToggle)callToggle.checked=astro?.liveCallEnabled===true;
      if(chatToggle)chatToggle.checked=astro?.liveChatEnabled===true;
      sel.dataset.initialized='1';
@@ -5409,10 +5411,11 @@ async function smvLiveLoadDashboard(role){
     liveCallEnabled:callToggle?.checked===true,
     liveChatEnabled:chatToggle?.checked===true
    })});
-   if(availabilitySelect)availabilitySelect.value=r.availabilityStatus||'offline';
+   if(availabilitySelect)availabilitySelect.value=r.manualAvailabilityStatus||
+    (r.liveCallEnabled===true||r.liveChatEnabled===true?'online':'offline');
    if(callToggle)callToggle.checked=r.liveCallEnabled===true;
    if(chatToggle)chatToggle.checked=r.liveChatEnabled===true;
-   if(availabilityMessage)availabilityMessage.textContent='Saved. '+modeNote(r.liveCallEnabled===true,r.liveChatEnabled===true,r.availabilityStatus||'offline');
+   if(availabilityMessage)availabilityMessage.textContent='Saved. '+modeNote(r.liveCallEnabled===true,r.liveChatEnabled===true,availabilitySelect?.value||'offline');
    await reload();
   }catch(e){if(availabilityMessage)availabilityMessage.textContent=e.message||String(e);}
   finally{
