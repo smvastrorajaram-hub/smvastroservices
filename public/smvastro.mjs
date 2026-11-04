@@ -3961,26 +3961,91 @@ let smvLiveRingSuppressedIds=new Set(),smvLiveRingCurrentId='',smvLiveRingtoneNo
 let smvLivePreparationTimer=null,smvLivePreparationSessionId='',smvLiveCustomerAppointmentsPollAt=0;
 let smvLiveForegroundMessagingBound = false, smvLivePendingPushOpen = null;
 let smvLiveNativePushTokenRegistered = '';
+let smvLiveNativePushRegistrationError = '';
+let smvLiveNativeTokenWaitPromise = null, smvLiveNativeTokenWaitResolver = null;
+let smvLiveNativePushRegistrationPromise = null, smvLiveNativePushRegistrationToken = '';
+function smvLiveWaitForNativePushToken(bridge,timeoutMs=15000){
+ const existing=String(window.__smvNativeFcmToken||'').trim();
+ if(existing)return Promise.resolve(existing);
+ if(smvLiveNativeTokenWaitPromise)return smvLiveNativeTokenWaitPromise;
+ let finish=()=>{};
+ const pending=new Promise(resolve=>{
+  let settled=false,timer=null;
+  finish=value=>{
+   if(settled)return;
+   settled=true;
+   if(timer!==null)clearTimeout(timer);
+   if(smvLiveNativeTokenWaitResolver===finish)smvLiveNativeTokenWaitResolver=null;
+   resolve(String(value||'').trim());
+  };
+  smvLiveNativeTokenWaitResolver=finish;
+  timer=setTimeout(()=>finish(''),timeoutMs);
+ });
+ const wrapped=pending.finally(()=>{
+  if(smvLiveNativeTokenWaitPromise===wrapped)smvLiveNativeTokenWaitPromise=null;
+ });
+ smvLiveNativeTokenWaitPromise=wrapped;
+ try{bridge.requestTokenRefresh?.();}catch(_){finish('');}
+ return wrapped;
+}
 async function smvLiveRegisterNativePushToken(tokenOverride=''){
  const bridge=window.SMVNativeCalls;
  if(!bridge||typeof bridge.isNativeApp!=='function'||!bridge.isNativeApp())return false;
- if(String(window.__smvCurrentRole||'').toLowerCase()!=='astrologer'||!auth?.currentUser)return false;
+ if(String(window.__smvCurrentRole||'').toLowerCase()!=='astrologer')return false;
+ if(!auth?.currentUser){
+  smvLiveNativePushRegistrationError='Sign in to the Astrologer account again, then enable Android Background Alerts.';
+  return false;
+ }
  let token=String(tokenOverride||window.__smvNativeFcmToken||'').trim();
  if(!token){try{token=String(bridge.getFcmToken?.()||'').trim();}catch(_){}}
- if(!token){try{bridge.requestTokenRefresh?.();}catch(_){}return false;}
- if(smvLiveNativePushTokenRegistered===token)return true;
- try{
-  const permissionCheck=typeof bridge.areNotificationsEnabled==='function'?bridge.areNotificationsEnabled():true;
-  if(!permissionCheck)throw new Error('Android notifications are disabled for SMV ASTRO. Enable them in Android App settings.');
-  await renderApi('/live/push/register',{method:'POST',body:JSON.stringify({token,platform:'native-android',userAgent:'SMV ASTRO Android'})});
-  smvLiveNativePushTokenRegistered=token;
+ if(!token)token=await smvLiveWaitForNativePushToken(bridge);
+ if(!token){
+  smvLiveNativePushRegistrationError='Android did not return a native Firebase Messaging token within 15 seconds. Check the phone internet connection and Google Play services, update SMV ASTRO to the latest signed APK, reopen the app and retry. The latest Release APK already embeds the smv-astro Firebase Android App ID; registering the Android app again is not required.';
+  return false;
+ }
+ if(smvLiveNativePushTokenRegistered===token){
+  smvLiveNativePushRegistrationError='';
   return true;
- }catch(error){console.warn('Native Android FCM registration failed:',error?.message||error);return false;}
+ }
+ if(smvLiveNativePushRegistrationPromise){
+  if(smvLiveNativePushRegistrationToken===token)return smvLiveNativePushRegistrationPromise;
+  await smvLiveNativePushRegistrationPromise;
+ }
+ if(smvLiveNativePushTokenRegistered===token)return true;
+ const pending=(async()=>{
+  try{
+   const permissionCheck=typeof bridge.areNotificationsEnabled==='function'?bridge.areNotificationsEnabled():true;
+   if(!permissionCheck)throw new Error('Android notifications are disabled for SMV ASTRO. Enable them in Android App settings.');
+   await renderApi('/live/push/register',{method:'POST',body:JSON.stringify({token,platform:'native-android',userAgent:'SMV ASTRO Android'})});
+   smvLiveNativePushTokenRegistered=token;
+   smvLiveNativePushRegistrationError='';
+   return true;
+  }catch(error){
+   smvLiveNativePushRegistrationError=String(error?.message||error||'Native Android FCM registration failed.');
+   console.warn('Native Android FCM registration failed:',smvLiveNativePushRegistrationError);
+   return false;
+  }
+ })().finally(()=>{
+  if(smvLiveNativePushRegistrationPromise===pending){
+   smvLiveNativePushRegistrationPromise=null;
+   smvLiveNativePushRegistrationToken='';
+  }
+ });
+ smvLiveNativePushRegistrationToken=token;
+ smvLiveNativePushRegistrationPromise=pending;
+ return pending;
 }
 window.__smvNativeFcmTokenReady=token=>{
  window.__smvNativeFcmToken=String(token||'').trim();
- if(String(window.__smvCurrentRole||'').toLowerCase()==='astrologer'){
-  void smvLiveRegisterNativePushToken(window.__smvNativeFcmToken);
+ if(smvLiveNativeTokenWaitResolver)smvLiveNativeTokenWaitResolver(window.__smvNativeFcmToken);
+ if(window.__smvNativeFcmToken&&String(window.__smvCurrentRole||'').toLowerCase()==='astrologer'){
+  void smvLiveRegisterNativePushToken(window.__smvNativeFcmToken).then(registered=>{
+   if(!registered)return;
+   const status=$('smvLivePushStatus'),enable=$('smvLivePushEnable'),test=$('smvLivePushTest');
+   if(status)status.textContent='Native Android incoming-call ringtone is registered. Ringing stops when the request is opened/handled or times out.';
+   if(enable)enable.textContent='ANDROID CALL ALERTS ENABLED';
+   if(test)test.disabled=false;
+  });
  }
 };
 async function smvLiveEnableBackgroundAlerts(){
@@ -3988,7 +4053,7 @@ async function smvLiveEnableBackgroundAlerts(){
  if(window.SMVNativeCalls?.isNativeApp?.()){
   const nativeRegistered=await smvLiveRegisterNativePushToken();
   if(nativeRegistered)return {registered:true,platform:'native-android'};
-  throw new Error('Native Call Ringtone is not configured on this SMV ASTRO app yet. Register the Android app in Firebase project smv-astro, set SMV_FIREBASE_ANDROID_APP_ID when building, then reopen SMV ASTRO.');
+  throw new Error(smvLiveNativePushRegistrationError||'Android did not provide a native Firebase Messaging token. Check internet and Google Play services, then reopen SMV ASTRO and retry.');
  }
  if(!window.isSecureContext||!('serviceWorker' in navigator)||!('Notification' in window))throw new Error('Background Alerts require HTTPS and a supported browser. Install SMV ASTRO as a PWA on mobile for the most reliable experience.');
  if(!navigator.serviceWorker?.register)throw new Error('This browser cannot register a background notification worker.');
