@@ -36,17 +36,17 @@ module.exports=function registerDashboardEvents(app,{db,requireUser,isAdminUser}
     // All successful backend mutations bump this single lightweight document.
     refs.push({ref:db.collection('smv_settings').doc('dashboardChange'),kind:'admin_signal'});
    }else if(role==='astrologer'){
-    // Keep the Astrologer's own profile live, but avoid a second profile read
-    // and all history/workflow listeners just to invalidate the Dashboard.
-    // Current session/booking changes arrive through the Live Session SSE stream.
+    // Retain the existing profile/global admin-signal listeners and add only
+    // this user's own lightweight scheduled-booking invalidation document.
     refs.push(
      {ref:db.collection('smv_astrologers').doc(user.uid),kind:'profile'},
-     {ref:db.collection('smv_settings').doc('dashboardChange'),kind:'dashboard_signal'}
+     {ref:db.collection('smv_settings').doc('dashboardChange'),kind:'dashboard_signal'},
+     {ref:db.collection('smv_settings').doc('dashboardChangeUser_'+user.uid),kind:'appointments_signal'}
     );
    }else{
-    // Customer Call/Chat and scheduled-booking state comes from the Live Session
-    // SSE stream; Wallet recharge refreshes its own trusted response. The retired
-    // question-payment notification history is no longer a dashboard dependency.
+    // Customer listens only to their own booking invalidation signal. Full data
+    // remains behind the existing authenticated /customer/appointments route.
+    refs.push({ref:db.collection('smv_settings').doc('dashboardChangeUser_'+user.uid),kind:'appointments_signal'});
    }
    let waiting=refs.length;
    refs.forEach((entry,index)=>{
@@ -71,6 +71,12 @@ module.exports=function registerDashboardEvents(app,{db,requireUser,isAdminUser}
       // Ignore writes from retired question workflows and unrelated site content.
       if(!['withdrawals_payouts','financial','astrologers','astrologer_settings','settings','reviews'].includes(category))return;
       send('change',{kinds:['dashboard_signal'],category});
+      return;
+     }
+     if((role==='customer'||role==='astrologer')&&kind==='appointments_signal'){
+      const signal=snap.data?.()||{};
+      if(String(signal.category||'')!=='appointments')return;
+      send('change',{kinds:['appointments'],category:'appointments',path:String(signal.path||'')});
       return;
      }
      changed(kind);
