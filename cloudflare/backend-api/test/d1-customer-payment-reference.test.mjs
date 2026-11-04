@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { webcrypto } from 'node:crypto';
 import { createD1WalletAdapter } from '../../../shared/backend-platform/d1-wallet-adapter.mjs';
+import { walletRechargeId } from '../../../shared/backend-platform/wallet-recharge-domain.mjs';
 
 class RechargeD1 {
   constructor() {
@@ -43,13 +44,14 @@ class RechargeD1 {
 
     if (sql.startsWith('INSERT OR IGNORE INTO smv_domain_wallet_recharges')) {
       const [id, uid, amount, payload, created, updated] = values;
-      if (!this.recharges.has(id)) this.recharges.set(id, {
+      const inserted = !this.recharges.has(id);
+      if (inserted) this.recharges.set(id, {
         recharge_id: id, customer_uid: uid, amount_paise: amount, currency: 'INR',
         status: 'order_creating', payload_json: payload, created_at_ms: created,
         updated_at_ms: updated, razorpay_order_id: null, razorpay_payment_id: null,
         paid_at_ms: null
       });
-      return { success: true, meta: { changes: 1 } };
+      return { success: true, meta: { changes: inserted ? 1 : 0 } };
     }
 
     if (sql.includes("json_extract(payload_json, '$.customerPaymentId') = ?")) {
@@ -135,4 +137,26 @@ test('D1 recharge reference allocation retries an already-used six-digit number'
     amountPaise: 5000, idempotencyKey: 'customer-reference-002'
   });
   assert.equal(result.customerPaymentId, 'smvpy-100001');
+});
+
+test('D1 rejects an idempotency amount conflict before assigning a new public reference', async () => {
+  const db = new RechargeD1();
+  const ownerUid = 'customer-id-test';
+  const idempotencyKey = 'customer-reference-003';
+  const rechargeId = await walletRechargeId(ownerUid, idempotencyKey, webcrypto);
+  db.recharges.set(rechargeId, {
+    recharge_id: rechargeId, customer_uid: ownerUid, amount_paise: 5000,
+    currency: 'INR', status: 'order_creating',
+    payload_json: JSON.stringify({ idempotencyKey }),
+    created_at_ms: 1, updated_at_ms: 1, razorpay_order_id: null,
+    razorpay_payment_id: null, paid_at_ms: null
+  });
+  const adapter = createD1WalletAdapter({ db, now: () => 1000, cryptoImpl: webcrypto });
+  await assert.rejects(
+    () => adapter.createRechargeIntent({
+      ownerUid, ownerRole: 'customer', amountPaise: 6000, idempotencyKey
+    }),
+    error => error.code === 'WALLET_IDEMPOTENCY_CONFLICT'
+  );
+  assert.equal(JSON.parse(db.recharges.get(rechargeId).payload_json).customerPaymentId, undefined);
 });
