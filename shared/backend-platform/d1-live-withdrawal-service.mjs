@@ -503,8 +503,8 @@ export function createD1WithdrawalService({db,firestore,now=Date.now,cryptoImpl=
     await statement(
       `UPDATE smv_domain_withdrawals SET status='paid',payload_json=?,updated_at_ms=?
        WHERE withdrawal_id=? AND status IN ('processing','paid')
-         AND (json_extract(payload_json, '$.adminPaymentId') IS NULL
-              OR json_extract(payload_json, '$.adminPaymentId')='')`,
+         AND (json_extract(CASE WHEN json_valid(payload_json) THEN payload_json ELSE '{}' END, '$.adminPaymentId') IS NULL
+              OR json_extract(CASE WHEN json_valid(payload_json) THEN payload_json ELSE '{}' END, '$.adminPaymentId')='')`,
       [JSON.stringify(updatedPayload),timestamp,id]
     ).run();
     const updated=await first('SELECT * FROM smv_domain_withdrawals WHERE withdrawal_id=?',[id]);
