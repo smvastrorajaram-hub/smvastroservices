@@ -6,7 +6,8 @@ function harness() {
   const handlers = new Map();
   return {
     handlers,
-    post(path, handler) { handlers.set('POST ' + path, handler); }
+    post(path, handler) { handlers.set('POST ' + path, handler); },
+    get(path, handler) { handlers.set('GET ' + path, handler); }
   };
 }
 function response() {
