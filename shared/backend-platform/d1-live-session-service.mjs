@@ -8,6 +8,7 @@ import {
   calculateLiveSettlement,
   reserveLiveWallet,
   astrologerRatePaise,
+  liveRequestCanStartNow,
   validateLiveBirthDetails,
   splitLiveCommission,
   commissionFromPayload,
@@ -262,11 +263,11 @@ export function createD1LiveSessionService({
       getCommission()
     ]);
     const reserve=reserveLiveWallet({wallet,minutes:length,ratePerMinutePaise:rate});
-    // Match the legacy rule: the Astrologer is considered Online only when the
-    // selected live mode is enabled and no other Live Session is active.
-    const profileAvailability=String(astro.availabilityStatus||astro.onlineStatus||'offline').trim().toLowerCase();
-    const availability=count>0?'busy':profileAvailability;
-    const canStartNow=availability==='online'&&count<pricing.maxConcurrentSessions;
+    // D1's active-session count is authoritative. availabilityStatus is a denormalized
+    // display field and may still say Offline after an Admin enables a Live mode.
+    // Never convert an enabled, capacity-available Live request into a scheduled
+    // booking merely because that cached Firestore status has not caught up yet.
+    const canStartNow=liveRequestCanStartNow(astro,kind,count,pricing.maxConcurrentSessions);
     const timestamp=Number(now());
     const common={
       sessionId:id,customerUid:uid,astrologerUid:astroUid,astrologerId:astroUid,
