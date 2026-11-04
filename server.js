@@ -306,12 +306,23 @@ function dashboardSignalCategory(path=''){
   if(p.includes('/astrologer-quiz/')||p.includes('/astrologer-auto-approval/'))return 'astrologer_settings';
   if(p.includes('/register-astrologer-profile')||p.includes('/google-form/astrologer-qualification')||p.includes('/approve-astrologer')||p.includes('/reject-astrologer')||p.includes('/astrologer-pricing'))return 'astrologers';
   if(p.includes('/wallet/recharge/')||p.includes('/razorpay/webhook')||p.includes('/horoscope-payment/'))return 'financial';
-  if(p.includes('/appointment-booking')||p.includes('/appointment-status'))return 'appointments';
+  if(p.includes('/appointment-booking')||p.includes('/appointment-status')||/^\/astrologer\/appointments\/[^/]+\/respond$/.test(p))return 'appointments';
   return 'unknown';
 }
 
+async function notifyDashboardUsers(uids,path){
+  if(dashboardSignalCategory(path)!=='appointments')return;
+  const unique=[...new Set((Array.isArray(uids)?uids:[uids])
+    .map(value=>String(value||'').trim())
+    .filter(uid=>uid&&uid.length<=128&&!uid.includes('/')))];
+  await Promise.all(unique.map(uid=>db.collection('smv_settings').doc('dashboardChangeUser_'+uid).set({
+    version:FieldValue.increment(1),updatedAt:FieldValue.serverTimestamp(),
+    path:String(path||''),category:'appointments'
+  },{merge:true})));
+}
+
 app.use((req,res,next)=>{
-  if(DASHBOARD_SIGNAL_PATHS.has(req.path)){
+  if(DASHBOARD_SIGNAL_PATHS.has(req.path)||(req.method==='POST'&&/^\/astrologer\/appointments\/[^/]+\/respond$/.test(req.path))){
     res.once('finish',()=>{
       if(res.statusCode>=200 && res.statusCode<300){
         invalidateAdminDataCache();
@@ -1112,18 +1123,23 @@ app.post("/astrologer/appointments/:id/respond", async (req,res)=>{
           missedReason:"astrologer_not_connected_within_grace",
           missedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()
         });
-        return {errorStatus:409,error:"The 2-minute window after the scheduled time has passed. This booking is marked as missed because the Astrologer did not accept/start it in time.",bookingStatus:"missed_by_astrologer"};
+        return {errorStatus:409,error:"The 2-minute window after the scheduled time has passed. This booking is marked as missed because the Astrologer did not accept/start it in time.",bookingStatus:"missed_by_astrologer",customerUid:String(a.customerUid||'')};
       }
-      if(current===target)return {success:true,alreadyProcessed:true,appointmentId:ref.id,bookingStatus:target};
+      if(current===target)return {success:true,alreadyProcessed:true,appointmentId:ref.id,bookingStatus:target,customerUid:String(a.customerUid||'')};
       if(current!=="requested")return {errorStatus:409,error:"This booking is already "+current.replaceAll("_"," ")+".",bookingStatus:current};
       tx.update(ref,{
         bookingStatus:target,status:target,respondedAt:FieldValue.serverTimestamp(),
         respondedBy:uid,updatedAt:FieldValue.serverTimestamp()
       });
-      return {success:true,alreadyProcessed:false,appointmentId:ref.id,bookingStatus:target};
+      return {success:true,alreadyProcessed:false,appointmentId:ref.id,bookingStatus:target,customerUid:String(a.customerUid||'')};
     });
-    if(outcome.errorStatus)return res.status(outcome.errorStatus).json({success:false,error:outcome.error});
-    return res.set("Cache-Control","no-store").json(outcome);
+    if(outcome.customerUid){
+      try{await notifyDashboardUsers([outcome.customerUid,uid],req.path);}
+      catch(signalError){console.warn('Scheduled booking response dashboard signal deferred:',signalError?.message||signalError);}
+    }
+    const {customerUid:_customerUid,...response}=outcome;
+    if(response.errorStatus)return res.status(response.errorStatus).json({success:false,error:response.error});
+    return res.set("Cache-Control","no-store").json(response);
   }catch(e){
     console.error("Astrologer scheduled booking response failed:",e?.stack||e);
     return res.status(500).json({success:false,error:"Unable to update this scheduled booking."});
@@ -1215,6 +1231,10 @@ app.post("/appointment-booking", express.json({ limit: "20kb" }), async (req, re
     const ref=db.collection("smv_appointments").doc();
     const data={bookingId,customerUid:user.uid,customerEmail:user.email||email,name,...(astrologerId?{}:{email,mobile}),type,...callBooking,preferredDate,preferredTime,scheduledMinutes:astrologerId?scheduledMinutes:null,notes,question:astrologerId&&type==="Chat Consultation"?question:"",status:"new",paymentStatus:astrologerId?"not_started":"not_required",bookingStatus:"requested",createdAt:FieldValue.serverTimestamp(),source:"website-appointment-form",updatedAt:FieldValue.serverTimestamp()};
     await ref.set(data);
+    if(astrologerId){
+      try{await notifyDashboardUsers([user.uid,callBooking.astrologerUid],req.path);}
+      catch(signalError){console.warn('Scheduled booking dashboard signal deferred:',signalError?.message||signalError);}
+    }
     if (multiProjectFirestore.walletDomainCutoverComplete) {
       await walletDomainDb().collection("smv_appointments").doc(ref.id).set(data, { merge: true })
         .catch(error => console.warn("Scheduled Call/Chat booking domain mirror deferred:", error?.message || error));
