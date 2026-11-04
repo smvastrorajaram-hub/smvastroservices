@@ -249,3 +249,17 @@ test('Live accept route enforces Astrologer identity and books a preparation tim
   const scheduled=f.calls.find(x=>String(x.url||'').includes('/schedule')&&x.body.deadlines[0].type==='preparation_timeout');
   assert.equal(scheduled.body.deadlines[0].atMs,Date.parse('2026-10-31T10:02:15Z'));
 });
+
+
+test('Live ready route schedules the D1 connection timeout before the session can become active',async()=>{
+  const f=fixture(),res=responseHarness();
+  await f.app.handlers.get('POST /live/sessions/:id/ready')(req({mediaConnected:false}),res);
+  assert.equal(res.statusCode,200);
+  assert.equal(res.body.started,false);
+  assert.ok(f.calls.some(x=>x.service==='readySession'&&x.input.mediaConnected===false));
+  const scheduled=f.calls.find(x=>String(x.url||'').includes('/schedule')&&
+    x.body.deadlines?.[0]?.type==='call_connect_timeout');
+  assert.ok(scheduled,'a connecting Call must have a durable call_connect_timeout');
+  assert.equal(scheduled.body.deadlines[0].atMs,Date.parse('2026-10-31T10:00:00Z')+45_000);
+  assert.ok(f.calls.some(x=>String(x.url||'').includes('/publish')&&x.body.type==='live.session.updated'));
+});
