@@ -120,8 +120,19 @@ export function commissionFromPayload(payload={}) {
   return candidate;
 }
 
+export function astrologerManualBusy(profile={},activeSessionCount=0) {
+  const active=Number(activeSessionCount);
+  if(Number.isFinite(active)&&active>0) return false;
+  const explicit=String(profile.manualAvailabilityStatus||'').trim().toLowerCase();
+  if(explicit) return explicit==='busy';
+  // Backward compatibility: older profiles recorded a manually selected Busy
+  // only in availabilityStatus. Do not confuse it with a session-managed Busy.
+  const stored=String(profile.availabilityStatus||profile.onlineStatus||'').trim().toLowerCase();
+  return stored==='busy'&&profile.liveSessionBusyManaged!==true;
+}
+
 export function astrologerAvailabilityStatus(profile={},activeSessionCount=0) {
-  if(Number(activeSessionCount)>0) return 'busy';
+  if(Number(activeSessionCount)>0||astrologerManualBusy(profile,activeSessionCount)) return 'busy';
   return profile.liveCallEnabled===true||profile.liveChatEnabled===true?'online':'offline';
 }
 
@@ -130,7 +141,7 @@ export function liveRequestCanStartNow(profile={},mode='',activeSessionCount=0,m
   const modeEnabled=kind==='call'?profile.liveCallEnabled===true:
     kind==='chat'?profile.liveChatEnabled===true:false;
   const active=Number(activeSessionCount),maximum=Number(maxConcurrentSessions);
-  return modeEnabled&&Number.isSafeInteger(active)&&active>=0&&
+  return modeEnabled&&!astrologerManualBusy(profile,active)&&Number.isSafeInteger(active)&&active>=0&&
     Number.isSafeInteger(maximum)&&maximum>=1&&maximum<=3&&active<maximum;
 }
 
