@@ -289,12 +289,26 @@ function isAstrologerLiveModeEnabled(astroProfile, mode) {
   return kind === 'call' ? callEnabled : kind === 'chat' ? chatEnabled : false;
 }
 
+function astrologerManualBusy(astroProfile, activeSessionCountOverride) {
+  const astro = astroProfile || {};
+  const activeSessionCount = activeSessionCountOverride == null
+    ? Number(astro.activeSessionCount || 0)
+    : Number(activeSessionCountOverride);
+  if (Number.isFinite(activeSessionCount) && activeSessionCount > 0) return false;
+  const explicit = String(astro.manualAvailabilityStatus || '').trim().toLowerCase();
+  if (explicit) return explicit === 'busy';
+  // Older profiles stored a manually chosen Busy only in availabilityStatus.
+  return String(astro.availabilityStatus || astro.onlineStatus || '').trim().toLowerCase() === 'busy' &&
+    astro.liveSessionBusyManaged !== true;
+}
+
 function astrologerAvailabilityStatus(astroProfile, activeSessionCountOverride) {
   const astro = astroProfile || {};
   const activeSessionCount = activeSessionCountOverride == null
     ? Number(astro.activeSessionCount || 0)
     : Number(activeSessionCountOverride);
-  if (Number.isFinite(activeSessionCount) && activeSessionCount > 0) return 'busy';
+  if ((Number.isFinite(activeSessionCount) && activeSessionCount > 0) ||
+      astrologerManualBusy(astro, activeSessionCount)) return 'busy';
   return astro.liveCallEnabled === true || astro.liveChatEnabled === true ? 'online' : 'offline';
 }
 
@@ -846,6 +860,9 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
         });
       }
       const liveCount = safePaise(astro.activeSessionCount);
+      if (astrologerManualBusy(astro, liveCount)) {
+        throw httpError(409, 'This Astrologer is in Busy mode and is not accepting new Live Call or Chat requests.', 'LIVE_ASTROLOGER_BUSY');
+      }
       const availability = astrologerAvailabilityStatus(astro, liveCount);
       const canStartNow = availability === 'online' && liveCount < pricing.maxConcurrentSessions;
       if (!canStartNow) {
