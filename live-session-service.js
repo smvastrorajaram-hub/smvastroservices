@@ -2325,6 +2325,7 @@ module.exports = {
   scheduledConnectionGraceRemainingMs,
   SCHEDULED_CONNECT_GRACE_MS,
   isAstrologerLiveModeEnabled,
+  astrologerManualBusy,
   astrologerAvailabilityStatus,
   MAX_SESSION_MINUTES,
   DEFAULT_RATE_PAISE,
