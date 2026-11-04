@@ -34,3 +34,11 @@ test('Live booking and session typography follows the requested dashboard scale'
  assert.match(css,/\.smv-live-session-meta b[\s\S]*font-size:16px/);
  assert.match(css,/\.smv-live-session-open-button[\s\S]*text-decoration:none/);
 });
+
+
+test('Production Worker shares the D1 Live service across legacy route registration blocks',()=>{
+ const index=read('cloudflare/backend-api/src/index.mjs');
+ assert.match(index,/let gapLiveService = null;[\\s\\S]*if \(requiresFirestoreAdmin\) \{[\\s\\S]*gapLiveService = env\\.DB && sharedWalletAdapter/);
+ assert.doesNotMatch(index,/const gapLiveService = env\\.DB && sharedWalletAdapter/);
+ assert.match(index,/liveService: gapLiveService/);
+});
