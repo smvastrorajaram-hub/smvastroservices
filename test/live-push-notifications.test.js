@@ -1271,7 +1271,7 @@ test('Cloudflare native Live notifications use Android tray payloads and open th
   const frontend = read('public/smvastro.mjs');
   assert.match(liveRoutes, /collectionPath:'smv_push_tokens'/);
   assert.match(liveRoutes, /native-android/);
-  assert.match(liveRoutes, /\\\\s\\/\.test\\(token\\)/, 'token validation rejects whitespace');
+  assert.ok(liveRoutes.includes("||/\\s/.test(token)||seen.has(token)"), 'token validation rejects whitespace');
   assert.match(liveRoutes, /type:'live_request'/);
   assert.match(liveRoutes, /type:'live_booking'/);
   assert.match(fcmRoutes, /notification:\s*\{/);
