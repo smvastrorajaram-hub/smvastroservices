@@ -1,4 +1,5 @@
 import { ensureRazorpayCheckout } from './razorpay-checkout-loader.mjs?v=20261026-payment-reliability-v1';
+import { createCoalescedRefresh } from './coalesced-refresh.mjs?v=20261104-wallet-single-flight-v1';
 import './chat-moderation.js?v=20261030-chat-moderation-v1';
 
 // SMV ASTRO merged frontend application module
@@ -1571,35 +1572,65 @@ function smvWalletSetMessage(message,kind='info'){
  el.className='small'+(kind==='error'?' error':kind==='success'?' success':'');
  el.textContent=String(message||'');
 }
-async function smvLoadCustomerWallet(){
- const card=$('smvCustomerWalletCard');
- if(!card)return;
- const refresh=$('smvWalletRefresh'),balance=$('smvWalletBalance'),reserved=$('smvWalletReserved'),bonus=$('smvWalletBonusMinutes'),bonusReserved=$('smvWalletBonusReserved'),host=$('smvWalletTransactions');
- if(refresh)refresh.disabled=true;
- if(balance)balance.textContent='Loading…';
- if(bonus)bonus.textContent='Loading…';
- if(bonusReserved)bonusReserved.textContent='Loading…';
- if(host)host.innerHTML='<div class="small">Loading transactions…</div>';
+const smvCustomerWalletRefresh=createCoalescedRefresh();
+function smvWalletCurrentElements(){
+ return {
+  card:$('smvCustomerWalletCard'),
+  refresh:$('smvWalletRefresh'),
+  balance:$('smvWalletBalance'),
+  reserved:$('smvWalletReserved'),
+  bonus:$('smvWalletBonusMinutes'),
+  bonusReserved:$('smvWalletBonusReserved'),
+  host:$('smvWalletTransactions')
+ };
+}
+function smvLoadCustomerWallet({force=false}={}){
+ const uid=String(auth?.currentUser?.uid||currentUser?.uid||'');
+ if(!uid||!$('smvCustomerWalletCard'))return Promise.resolve();
+ return smvCustomerWalletRefresh(uid,()=>smvLoadCustomerWalletOnce(uid),{force});
+}
+async function smvLoadCustomerWalletOnce(uid){
+ const isCurrentUser=()=>String(currentUser?.uid||'')===uid&&String(auth?.currentUser?.uid||'')===uid;
+ const initial=smvWalletCurrentElements();
+ if(!initial.card||!isCurrentUser())return;
+ if(initial.refresh)initial.refresh.disabled=true;
+ if(initial.balance)initial.balance.textContent='Loading…';
+ if(initial.bonus)initial.bonus.textContent='Loading…';
+ if(initial.bonusReserved)initial.bonusReserved.textContent='Loading…';
+ if(initial.host)initial.host.innerHTML='<div class="small">Loading transactions…</div>';
+ const applyWalletSnapshot=wallet=>{
+  if(!isCurrentUser())return false;
+  const current=smvWalletCurrentElements();
+  if(!current.card)return false;
+  const availablePaise=Number.isSafeInteger(Number(wallet.availableBalancePaise))?Number(wallet.availableBalancePaise):Math.round(Number(wallet.availableBalance||0)*100);
+  const reservedPaise=Number.isSafeInteger(Number(wallet.reservedBalancePaise))?Number(wallet.reservedBalancePaise):Math.round(Number(wallet.reservedBalance||0)*100);
+  if(current.balance)current.balance.textContent=smvWalletMoney(availablePaise);
+  if(current.reserved)current.reserved.textContent=smvWalletMoney(reservedPaise);
+  const bonusMinutes=Number.isSafeInteger(Number(wallet.bonusMinutesBalance))&&Number(wallet.bonusMinutesBalance)>=0?Number(wallet.bonusMinutesBalance):0;
+  const reservedBonusMinutes=Number.isSafeInteger(Number(wallet.reservedBonusMinutes))&&Number(wallet.reservedBonusMinutes)>=0?Number(wallet.reservedBonusMinutes):0;
+  if(current.bonus)current.bonus.textContent=bonusMinutes+' '+(bonusMinutes===1?'minute':'minutes');
+  if(current.bonusReserved)current.bonusReserved.textContent=reservedBonusMinutes+' '+(reservedBonusMinutes===1?'minute':'minutes');
+  return true;
+ };
  try{
-  // Load the actual balance first. A failed ledger query must never block it.
+  // Fetch the authoritative balance first; transaction history must never block it.
   const walletResult=await renderApi('/wallet',{method:'GET',timeoutMs:90000});
+  if(!isCurrentUser())return;
   const wallet=walletResult?.wallet||{};
   if(!walletResult?.success||!walletResult.wallet)throw new Error(walletResult?.error||'The backend did not return Wallet balance.');
   if(wallet.ownerRole&&String(wallet.ownerRole).toLowerCase()!=='customer')throw new Error('The signed-in account is not a Customer Wallet owner.');
-  const availablePaise=Number.isSafeInteger(Number(wallet.availableBalancePaise))?Number(wallet.availableBalancePaise):Math.round(Number(wallet.availableBalance||0)*100);
-  const reservedPaise=Number.isSafeInteger(Number(wallet.reservedBalancePaise))?Number(wallet.reservedBalancePaise):Math.round(Number(wallet.reservedBalance||0)*100);
-  if(balance)balance.textContent=smvWalletMoney(availablePaise);
-  if(reserved)reserved.textContent=smvWalletMoney(reservedPaise);
-  const bonusMinutes=Number.isSafeInteger(Number(wallet.bonusMinutesBalance))&&Number(wallet.bonusMinutesBalance)>=0?Number(wallet.bonusMinutesBalance):0;
-  const reservedBonusMinutes=Number.isSafeInteger(Number(wallet.reservedBonusMinutes))&&Number(wallet.reservedBonusMinutes)>=0?Number(wallet.reservedBonusMinutes):0;
-  if(bonus)bonus.textContent=bonusMinutes+' '+(bonusMinutes===1?'minute':'minutes');
-  if(bonusReserved)bonusReserved.textContent=reservedBonusMinutes+' '+(reservedBonusMinutes===1?'minute':'minutes');
+  applyWalletSnapshot(wallet);
   let transactionError=null;
   try{
    const transactionResult=await renderApi('/wallet/transactions?limit=10',{method:'GET'});
+   if(!isCurrentUser())return;
    const transactions=Array.isArray(transactionResult?.transactions)?transactionResult.transactions:[];
-   if(host){
-    host.innerHTML=transactions.length?transactions.map(t=>{
+   // Re-query DOM references after awaits. Dashboard navigation can replace the card
+   // while this request is in flight; never write the result only into detached nodes.
+   applyWalletSnapshot(wallet);
+   const current=smvWalletCurrentElements();
+   if(current.host){
+    current.host.innerHTML=transactions.length?transactions.map(t=>{
      const credit=String(t.direction||'').toLowerCase()==='credit';
      const amount=Number.isSafeInteger(Number(t.amountPaise))?Number(t.amountPaise):Math.round(Number(t.amount||0)*100);
      const label=String(t.type||'transaction').replace(/_/g,' ');
@@ -1612,26 +1643,32 @@ async function smvLoadCustomerWallet(){
   }catch(error){
    transactionError=error;
    console.warn('Customer Wallet balance loaded; transaction history unavailable:',error);
-   if(host)host.innerHTML='<div class="empty error">Wallet balance is available, but recent transactions could not be loaded. Use Refresh Wallet to retry.</div>';
+   const current=smvWalletCurrentElements();
+   if(current.host)current.host.innerHTML='<div class="empty error">Wallet balance is available, but recent transactions could not be loaded. Use Refresh Wallet to retry.</div>';
   }
-  if(transactionError)smvWalletSetMessage('Wallet balance loaded. Recent transaction history is temporarily unavailable.','info');
-  else smvWalletSetMessage('Wallet balance and transaction history updated.','success');
+  if(!isCurrentUser())return;
+  smvWalletSetMessage(transactionError?'Wallet balance loaded. Recent transaction history is temporarily unavailable.':'Wallet balance and transaction history updated.',transactionError?'info':'success');
  }catch(error){
+  if(!isCurrentUser())return;
   console.error('Customer Wallet load failed:',error);
-  if(balance)balance.textContent='Unavailable';
-  if(reserved)reserved.textContent='—';
-  if(bonus)bonus.textContent='—';
-  if(bonusReserved)bonusReserved.textContent='—';
-  if(host)host.innerHTML='<div class="small">Wallet transactions are temporarily unavailable. Refresh to retry.</div>';
+  const current=smvWalletCurrentElements();
+  if(current.balance)current.balance.textContent='Unavailable';
+  if(current.reserved)current.reserved.textContent='—';
+  if(current.bonus)current.bonus.textContent='—';
+  if(current.bonusReserved)current.bonusReserved.textContent='—';
+  if(current.host)current.host.innerHTML='<div class="small">Wallet transactions are temporarily unavailable. Refresh to retry.</div>';
   smvWalletSetMessage('Unable to load Wallet balance: '+(error?.message||String(error)),'error');
  }finally{
-  if(refresh&&document.contains(refresh))refresh.disabled=false;
+  if(isCurrentUser()){
+   const current=smvWalletCurrentElements();
+   if(current.refresh)current.refresh.disabled=false;
+  }
  }
 }
 function smvBindCustomerWallet({load=true}={}){
  if(!$('smvCustomerWalletCard'))return;
  const refresh=$('smvWalletRefresh');
- if(refresh)refresh.onclick=()=>smvLoadCustomerWallet();
+ if(refresh)refresh.onclick=()=>smvLoadCustomerWallet({force:true});
  const form=$('smvWalletRechargeForm');
  const submit=$('smvWalletRechargeButton');
  if(form){
@@ -1666,7 +1703,7 @@ function smvBindCustomerWallet({load=true}={}){
     if(order?.alreadyPaid){
      smvWalletSetMessage('This recharge was already paid. Refreshing the Wallet balance.','success');
      requestKey=smvWalletNewRequestKey();requestAmount='';
-     await smvLoadCustomerWallet();
+     await smvLoadCustomerWallet({force:true});
      smvWalletSetMessage('Wallet balance refreshed. No second payment is required.','success');
      releaseButton();return;
     }
@@ -1735,7 +1772,7 @@ function smvBindCustomerWallet({load=true}={}){
 }
 window.addEventListener('smv:wallet-updated',()=>{
  if(currentUser&&auth?.currentUser?.uid===currentUser.uid){
-  smvLoadCustomerWallet().catch(error=>smvWalletSetMessage('Wallet refresh failed after a Call/Chat action: '+(error?.message||String(error)),'error'));
+  smvLoadCustomerWallet({force:true}).catch(error=>smvWalletSetMessage('Wallet refresh failed after a Call/Chat action: '+(error?.message||String(error)),'error'));
  }
 });
 async function loadDashboard(expectedRole=null,force=false,background=false){
