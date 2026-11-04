@@ -36,7 +36,7 @@
     "SMV_NEW_QUESTION_PAYMENTS_ENABLED": "false",
     "SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED": "false",
     "SMV_PUBLIC_BACKEND_URL": "https://smvastroservices.astroservices.workers.dev",
-    "ALLOWED_ORIGINS": "https://smvastroservices.in"
+    "ALLOWED_ORIGINS": "https://smvastroservices.in,https://smvastroservices.pages.dev"
   },
   "d1_databases": [
     {

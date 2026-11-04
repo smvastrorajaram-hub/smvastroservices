@@ -13,7 +13,7 @@ test('Production Worker uses the exact requested Worker name, D1 ID, Firebase Pr
   assert.equal(config.vars.SMV_ENVIRONMENT, 'production');
   assert.equal(config.vars.FIREBASE_PROJECT_ID, 'smv-astro');
   assert.equal(config.vars.FIREBASE_AUTH_PROJECT_IDS, 'smv-astro');
-  assert.equal(config.vars.ALLOWED_ORIGINS, 'https://smvastroservices.in');
+  assert.equal(config.vars.ALLOWED_ORIGINS, 'https://smvastroservices.in,https://smvastroservices.pages.dev');
   assert.equal(config.observability.enabled, true);
   assert.equal(config.observability.logs.invocation_logs, true);
   assert.equal(config.observability.logs.head_sampling_rate, 1);
