@@ -1,6 +1,6 @@
 
 (function(){
-  const IS_SMV_PHASE1_STAGING=["smv-astro-phase1-browser-staging.onrender.com","smv-astro-phase1-browser-isolated.onrender.com"].includes(location.hostname);
+  const IS_SMV_PHASE1_STAGING=["smv-astro-phase1-browser-staging.onrender.com","smv-astro-phase1-browser-isolated.onrender.com","fix-cloudflare-live-booking.smvastroservices.pages.dev"].includes(location.hostname);
   const BACKEND=IS_SMV_PHASE1_STAGING?"https://smv-astro-phase1-staging.onrender.com":"https://smvastroservices.onrender.com";
   const CLOUDFLARE_FINANCIAL_BACKEND=IS_SMV_PHASE1_STAGING
     ?"https://smvastro-backend-api-staging.astroservices.workers.dev"
