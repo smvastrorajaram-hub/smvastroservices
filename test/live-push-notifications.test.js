@@ -859,6 +859,19 @@ test('Customer Live Session dashboard status follows the accepted-session SSE up
     'accepted/preparing SSE events must update the Dashboard card immediately');
   assert.ok(frontend.includes('smvLiveUpdateDashboardSessionStatus(current);'),
     'the 2:15 preparation countdown must keep the Dashboard status current');
+  const dashboardStart=frontend.indexOf('function smvLiveUpdateDashboardSessionStatus(session){');
+  const dashboardEnd=frontend.indexOf('async function smvLivePollSessions(){',dashboardStart);
+  const upsert=frontend.slice(dashboardStart,dashboardEnd);
+  assert.ok(upsert.includes('article=document.createElement(\'article\')'),
+    'a newly requested session must create its Dashboard row even when no history row exists');
+  assert.ok(upsert.includes('host.prepend(article)'),
+    'the newly requested session appears immediately without refreshing the Dashboard');
+  assert.ok(upsert.includes('smvLiveDismissedSessionIds.has(id)'),
+    'closing the waiting window preserves the session row and its closed-window state');
+  const openStart=frontend.indexOf('function smvLiveOpenSession(session,wallet,incoming){');
+  const openEnd=frontend.indexOf('window.__smvOpenLiveSession=',openStart);
+  assert.ok(frontend.slice(openStart,openEnd).includes('smvLiveUpdateDashboardSessionStatus({...session,id})'),
+    'opening a request from the public list upserts it into the Customer Dashboard immediately');
   assert.equal(frontend.split('started+135000:Date.now()+135000').length-1,2,
     'both Astrologer and Customer UI countdown fallbacks use the 2:15 deadline');
   assert.equal(frontend.includes('started+180000:Date.now()+180000'),false,
@@ -867,6 +880,19 @@ test('Customer Live Session dashboard status follows the accepted-session SSE up
   assert.ok(read('shared/backend-platform/live-session-domain.mjs').includes('export const LIVE_PREPARATION_DURATION_MS = 2 * 60_000 + 15_000;'));
 });
 
+
+test('Manual Busy blocks direct Live actions but leaves scheduled booking requests available',()=>{
+  const content=read('public/public-content.mjs');
+  const service=read('live-session-service.js');
+  const cloudflare=read('shared/backend-platform/d1-live-session-service.mjs');
+  assert.ok(content.includes("const manuallyBusy=String(a.manualAvailabilityStatus||'').trim().toLowerCase()==='busy';"));
+  assert.ok(content.includes("row.dataset.manuallyBusy=String(manuallyBusy);"));
+  assert.ok(content.includes('This Astrologer is in Busy mode and is not accepting new Live '));
+  assert.ok(content.includes("data-book-call ${liveCallEnabled?'':'disabled"));
+  assert.ok(content.includes("data-book-chat ${liveChatEnabled?'':'disabled"));
+  assert.ok(service.includes('if (astrologerManualBusy(astro, liveCount))'));
+  assert.ok(cloudflare.includes('if(astrologerManualBusy(astro,count))'));
+});
 
 test('Live Call transitions from preparation to a clear Customer connect action and replays missed WebRTC offers', () => {
   const frontend = read('public/smvastro.mjs');
