@@ -4182,7 +4182,7 @@ function smvLiveSessionStatusLabel(session){
  if(s==='preparing'){
   const until=Date.parse(session?.preparationUntil||'');
   const started=Date.parse(session?.preparationStartedAt||session?.acceptedAt||session?.createdAt||'');
-  const deadline=Number.isFinite(until)?until:(Number.isFinite(started)?started+180000:Date.now()+180000);
+  const deadline=Number.isFinite(until)?until:(Number.isFinite(started)?started+135000:Date.now()+135000);
   const remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));
   const clock=String(Math.floor(remaining/60))+':'+String(remaining%60).padStart(2,'0');
   if(String(session?.customerUid||'')===String(currentUser?.uid||''))return 'Please wait.... '+clock;
@@ -4518,7 +4518,7 @@ function smvLiveUpdatePreparationCountdown(session){
   const currentUid=String(currentUser?.uid||'');
   if(current.state!=='preparing'||![String(current.customerUid||''),String(current.astrologerUid||'')].includes(currentUid)){smvLiveStopPreparationCountdown();return;}
   const until=Date.parse(current.preparationUntil||''),started=Date.parse(current.preparationStartedAt||current.acceptedAt||current.createdAt||'');
-  const deadline=Number.isFinite(until)?until:(Number.isFinite(started)?started+180000:Date.now()+180000);
+  const deadline=Number.isFinite(until)?until:(Number.isFinite(started)?started+135000:Date.now()+135000);
   const seconds=Math.max(0,Math.ceil((deadline-Date.now())/1000));
   const clock=String(Math.floor(seconds/60))+':'+String(seconds%60).padStart(2,'0');
   const label=currentUid===String(current.customerUid||'')?'Please wait.... '+clock:'Generate Customer Horoscope · '+clock;

@@ -200,8 +200,8 @@ test('pending-booking reserve release fails closed on mismatched or unsafe balan
   }), null);
 });
 
-test('Live sessions require valid DOB/time/place before the three-minute horoscope preparation', () => {
-  assert.equal(PREPARATION_DURATION_MS, 180_000);
+test('Live sessions require valid DOB/time/place before the two-minute-fifteen-second horoscope preparation', () => {
+  assert.equal(PREPARATION_DURATION_MS, 135_000);
   assert.equal(CHAT_ACCEPT_TIMEOUT_MS, 300_000); // Chat remains available for acceptance; Call timeout is unchanged.
   assert.deepEqual(validateLiveBirthDetails({
     birthDate: '1990-05-21', birthTime: '14:35', birthPlace: 'Chennai',
@@ -233,11 +233,11 @@ test('Live Call and Chat commission splits follow the Admin percentage and defau
 });
 
 
-test('Accept starts the three-minute Horoscope preparation window at the acceptance timestamp', () => {
+test('Accept starts the two-minute-fifteen-second Horoscope preparation window at the acceptance timestamp', () => {
   const acceptedAt = new Date('2026-10-26T06:00:00.000Z');
   const window = preparationWindow(acceptedAt);
   assert.equal(window.preparationStartedAt.toISOString(), acceptedAt.toISOString());
-  assert.equal(window.preparationUntil.toISOString(), '2026-10-26T06:03:00.000Z');
+  assert.equal(window.preparationUntil.toISOString(), '2026-10-26T06:02:15.000Z');
   assert.equal(window.preparationUntil.getTime() - window.preparationStartedAt.getTime(), PREPARATION_DURATION_MS);
   assert.equal(preparationWindow('invalid timestamp'), null);
 });
@@ -300,7 +300,7 @@ test('persisted Live Session deadlines reconcile Preparing, Ringing, Connecting 
     acceptedAt: new Date(base),
     preparationStartedAt: new Date(base),
     preparationUntil: new Date(base + PREPARATION_DURATION_MS)
-  }, base + 179_000);
+  }, base + PREPARATION_DURATION_MS - 1_000);
   assert.deepEqual(preparing, {
     dueAt: base + PREPARATION_DURATION_MS,
     reason: 'preparation_complete',
