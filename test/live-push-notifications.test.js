@@ -140,6 +140,19 @@ test('Astrologer can register and test device-level Background Alerts', () => {
   assert.match(frontend, /renderApi\('\/live\/push\/register'/);
 });
 
+test('Native Android Background Alerts wait for an asynchronous FCM token before reporting failure', () => {
+  const frontend = read('public/smvastro.mjs');
+  const gradle = read('smvastroproduction/build.gradle');
+  const workflow = read('.github/workflows/build-smv-astro-production-apk.yml');
+  assert.match(frontend, /function smvLiveWaitForNativePushToken\\(bridge,timeoutMs=15000\\)/);
+  assert.match(frontend, /if\\(!token\\)token=await smvLiveWaitForNativePushToken\\(bridge\\)/);
+  assert.match(frontend, /smvLiveNativeTokenWaitResolver\\(window\\.__smvNativeFcmToken\\)/);
+  assert.match(frontend, /Android did not return a native Firebase Messaging token within 15 seconds/);
+  assert.doesNotMatch(frontend, /Native Call Ringtone is not configured on this SMV ASTRO app yet/);
+  assert.match(gradle, /1:299081899217:android:09e43164cfdd015ba539f0/);
+  assert.match(workflow, /SMV_FIREBASE_ANDROID_APP_ID:.*1:299081899217:android:09e43164cfdd015ba539f0/);
+});
+
 test('service worker displays background pushes, ignores ring-stop control messages, and focuses the app when clicked', () => {
   const worker = read('public/sw.js');
   assert.match(worker, /onBackgroundMessage/);
