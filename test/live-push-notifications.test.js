@@ -410,7 +410,7 @@ test('Cached Customer Dashboard rehydrates Wallet after navigation recreates the
   assert.ok(cachedPath.includes("dashboardReadyRole==='customer'"), 'Wallet rehydration is limited to Customer dashboards');
   assert.ok(cachedPath.includes("$('smvCustomerWalletCard')"), 'Rehydration requires the Wallet card to exist');
   assert.ok(cachedPath.includes("startsWith('loading')"), 'Only an unhydrated/loading Wallet triggers a new read');
-  assert.ok(cachedPath.includes('void smvLoadCustomerWallet();'), 'Wallet fetch runs before the cached return');
+  assert.ok(cachedPath.includes('void smvLoadCustomerWallet({force:true});'), 'Wallet fetch runs before the cached return');
 });
 
 test('Customer Wallet balance and bonus minutes load after the final Dashboard DOM is mounted', () => {
