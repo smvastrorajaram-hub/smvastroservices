@@ -510,6 +510,34 @@ test('FCM HTTP v1 sender uses the Firebase project endpoint and rejects invalid 
   assert.equal(calls[0].options.headers.Authorization,'Bearer access-token');
 });
 
+test('FCM HTTP v1 sends native incoming-call alerts as high-priority data-only messages',async()=>{
+  let requestBody=null;
+  const sender=createFcmSender({
+    projectId:'smv-astro',
+    tokenProvider:{async getAccessToken(){return 'test-access-token';}},
+    fetchImpl:async(_url,options)=>{
+      requestBody=JSON.parse(options.body);
+      return new Response(JSON.stringify({name:'projects/smv-astro/messages/2'}),{
+        status:200,headers:{'Content-Type':'application/json'}
+      });
+    }
+  });
+  await sender.send('d'.repeat(64),{
+    title:'Incoming Live Chat',
+    body:'A Customer is requesting a Live Chat.',
+    dataOnly:true,
+    data:{type:'live_request',mode:'chat',sessionId:'session-2',bookingId:'',tag:'smv-live-request-session-2'}
+  });
+  const message=requestBody.message;
+  assert.equal(message.data.type,'live_request');
+  assert.equal(message.data.mode,'chat');
+  assert.equal(message.data.sessionId,'session-2');
+  assert.equal(Object.hasOwn(message,'notification'),false,
+    'FCM must not let Android display the notification itself instead of invoking the native ringtone service');
+  assert.equal(Object.hasOwn(message.android,'notification'),false);
+  assert.equal(message.android.priority,'HIGH');
+  assert.equal(message.android.ttl,'120s');
+});
 
 test('Worker registers parity-gap routes at initialization, outside the authorization request handler', async () => {
   const source = await readFile(new URL('../src/index.mjs', import.meta.url), 'utf8');
@@ -666,7 +694,7 @@ test('Scheduled Call/Chat retry returns the existing session with the D1 Live ob
   assert.equal(firestore.calls.writes.length, 0);
 });
 
-test('FCM HTTP v1 sends notification plus data on the SMV native Android alerts channel',async()=>{
+test('FCM HTTP v1 keeps the standard notification envelope for ordinary alerts',async()=>{
   let requestUrl='',requestBody=null;
   const sender=createFcmSender({
     projectId:'smv-astro',
