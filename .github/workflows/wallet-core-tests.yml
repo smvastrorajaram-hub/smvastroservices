@@ -36,10 +36,8 @@ on:
       - 'public/smvastro.mjs'
       - 'public/razorpay-checkout-loader.mjs'
       - 'test/razorpay-checkout-loader.test.mjs'
-      - 'public/public-content.mjs'
       - 'public/main-location-search.js'
       - 'public/question-place-search.mjs'
-      - 'public/public-navigation.js'
       - 'package.json'
       - '.github/workflows/wallet-core-tests.yml'
   push:

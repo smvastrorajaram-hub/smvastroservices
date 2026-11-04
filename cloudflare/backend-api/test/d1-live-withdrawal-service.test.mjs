@@ -7,6 +7,11 @@ const TEST_PAYOUT_KEY=Buffer.from('01234567890123456789012345678901').toString('
 function fixture({now=Date.parse('2026-10-31T10:00:00Z'),payoutEncryptionKey=TEST_PAYOUT_KEY}={}) {
   const snapshots=new Map(),withdrawals=new Map(),payouts=new Map(),legacyPayouts=new Map();
   let idCounter=0;
+  const testCrypto={
+    randomUUID:()=>('uuid-'+(++idCounter)),
+    getRandomValues:webcrypto.getRandomValues.bind(webcrypto),
+    subtle:webcrypto.subtle
+  };
   const firestore={
     async runQuery(query) {
       if(query.collectionPath==='smv_questions') return [
@@ -124,7 +129,7 @@ function fixture({now=Date.parse('2026-10-31T10:00:00Z'),payoutEncryptionKey=TES
       return statements.map(()=>({success:true}));
     }
   };
-  return {service:createD1WithdrawalService({db,firestore,now:()=>now,cryptoImpl:webcrypto,payoutEncryptionKey, payoutKeyVersion:'v1',sourceProjectId:'smv-astro'}),snapshots,withdrawals,payouts,legacyPayouts,db,firestore};
+  return {service:createD1WithdrawalService({db,firestore,now:()=>now,cryptoImpl:testCrypto,payoutEncryptionKey, payoutKeyVersion:'v1',sourceProjectId:'smv-astro'}),snapshots,withdrawals,payouts,legacyPayouts,db,firestore};
 }
 
 test('withdrawal overview merges credited legacy earnings and D1 Live earnings',async()=>{
