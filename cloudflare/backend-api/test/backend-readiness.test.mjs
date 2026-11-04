@@ -312,3 +312,4 @@ test('Production Worker validates the payout encryption secret from the Cloudfla
   assert.ok(workerIndex.includes("payoutEncryptionKey: String(env.SMV_WALLET_PAYOUT_ENCRYPTION_KEY || '')"));
   assert.ok(workerIndex.includes("payoutKeyVersion: String(env.SMV_WALLET_PAYOUT_KEY_VERSION || 'v1')"));
   assert.ok(workerIndex.includes('walletPayoutEncryptionConfigured,'));
+});
