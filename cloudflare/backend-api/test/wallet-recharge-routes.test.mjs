@@ -24,13 +24,13 @@ function request(body, {headers={},authorization='Bearer user-token'}={}) {
 function baseDeps(overrides={}) {
   const calls=[];
   const walletAdapter={
-    async createRechargeIntent(input){calls.push(['intent',input]);return {success:true,acquired:true,rechargeId:'a'.repeat(64),amountPaise:5000};},
+    async createRechargeIntent(input){calls.push(['intent',input]);return {success:true,acquired:true,rechargeId:'a'.repeat(64),customerPaymentId:'smvpy-677288',amountPaise:5000};},
     async attachRechargeOrder(input){calls.push(['attach',input]);return {success:true};},
     async markRechargeOrderFailed(input){calls.push(['failed',input]);return {success:true};},
-    async getRechargeForOwner(input){calls.push(['getRecharge',input]);return {rechargeId:'a'.repeat(64),customerUid:'customer-1',amountPaise:5000,status:'order_created',orderId:'order_1'};},
+    async getRechargeForOwner(input){calls.push(['getRecharge',input]);return {rechargeId:'a'.repeat(64),customerUid:'customer-1',amountPaise:5000,status:'order_created',orderId:'order_1',customerPaymentId:'smvpy-677288'};},
     async getWallet(){return {availableBalancePaise:5000,bonusMinutesBalance:3};},
-    async finalizeRecharge(input){calls.push(['finalize',input]);return {success:true,alreadyProcessed:false,amountPaise:5000,availableBalancePaise:5000,bonusMinutesCredited:3,bonusMinutesBalance:3};},
-    async getRechargeByOrderId(input){calls.push(['byOrder',input]);return {rechargeId:'a'.repeat(64),customerUid:'customer-1',amountPaise:5000,status:'order_created',orderId:'order_1'};},
+    async finalizeRecharge(input){calls.push(['finalize',input]);return {success:true,alreadyProcessed:false,amountPaise:5000,availableBalancePaise:5000,bonusMinutesCredited:3,bonusMinutesBalance:3,customerPaymentId:'smvpy-677288'};},
+    async getRechargeByOrderId(input){calls.push(['byOrder',input]);return {rechargeId:'a'.repeat(64),customerUid:'customer-1',amountPaise:5000,status:'order_created',orderId:'order_1',customerPaymentId:'smvpy-677288'};},
     async recordWebhookEvent(input){calls.push(['recordWebhook',input]);return {success:true,alreadyProcessed:false,inProgress:false,claimToken:'claim-token-1'};},
     async completeWebhookEvent(eventKey,claimToken){calls.push(['completeWebhook',{eventKey,claimToken}]);return {success:true,changed:1};},
     async releaseWebhookEvent(eventKey,claimToken,reason){calls.push(['releaseWebhook',{eventKey,claimToken,reason}]);return {success:true,changed:1};},
@@ -76,6 +76,7 @@ test('create-order validates paise amount and reuses deterministic recharge inte
   assert.equal(response.body.orderId,'order_1');
   assert.equal(response.body.amount,5000);
   assert.equal(response.body.keyId,'rzp_test_key');
+  assert.equal(response.body.customerPaymentId,'smvpy-677288');
   assert.equal(state.calls[0][1].amountPaise,5000);
   assert.equal(state.calls.find(call=>call[0]==='attach')[1].orderId,'order_1');
 });
@@ -141,6 +142,7 @@ test('verify validates signature, captures authorized payment and finalizes cash
   assert.equal(response.body.verified,true);
   assert.equal(response.body.availableBalance,50);
   assert.equal(response.body.bonusMinutesCredited,3);
+  assert.equal(response.body.customerPaymentId,'smvpy-677288');
   assert.equal(state.calls.some(call=>call[0]==='capturePayment'),true);
   assert.equal(state.calls.some(call=>call[0]==='finalize'),true);
 });
