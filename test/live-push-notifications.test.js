@@ -144,9 +144,9 @@ test('Native Android Background Alerts wait for an asynchronous FCM token before
   const frontend = read('public/smvastro.mjs');
   const gradle = read('smvastroproduction/build.gradle');
   const workflow = read('.github/workflows/build-smv-astro-production-apk.yml');
-  assert.match(frontend, /function smvLiveWaitForNativePushToken\\(bridge,timeoutMs=15000\\)/);
-  assert.match(frontend, /if\\(!token\\)token=await smvLiveWaitForNativePushToken\\(bridge\\)/);
-  assert.match(frontend, /smvLiveNativeTokenWaitResolver\\(window\\.__smvNativeFcmToken\\)/);
+  assert.ok(frontend.includes('function smvLiveWaitForNativePushToken(bridge,timeoutMs=15000)'));
+  assert.ok(frontend.includes('if(!token)token=await smvLiveWaitForNativePushToken(bridge)'));
+  assert.ok(frontend.includes('if(smvLiveNativeTokenWaitResolver)smvLiveNativeTokenWaitResolver(window.__smvNativeFcmToken)'));
   assert.match(frontend, /Android did not return a native Firebase Messaging token within 15 seconds/);
   assert.doesNotMatch(frontend, /Native Call Ringtone is not configured on this SMV ASTRO app yet/);
   assert.match(gradle, /1:299081899217:android:09e43164cfdd015ba539f0/);
