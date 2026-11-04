@@ -151,6 +151,24 @@ jobs:
             exit 1
           fi
 
+      - name: Upload validated wallet payout encryption key to Production Worker
+        env:
+          SMV_WALLET_PAYOUT_ENCRYPTION_KEY: ${{ secrets.SMV_WALLET_PAYOUT_ENCRYPTION_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SMV_WALLET_PAYOUT_ENCRYPTION_KEY:-}" || { echo 'Missing SMV_WALLET_PAYOUT_ENCRYPTION_KEY in the GitHub production environment.'; exit 1; }
+          SMV_WALLET_PAYOUT_ENCRYPTION_KEY="$SMV_WALLET_PAYOUT_ENCRYPTION_KEY" node --input-type=module <<'NODE'
+          const value = String(process.env.SMV_WALLET_PAYOUT_ENCRYPTION_KEY || '').trim();
+          const decoded = Buffer.from(value, 'base64');
+          if (decoded.length !== 32 || decoded.toString('base64') !== value) {
+            console.error('SMV_WALLET_PAYOUT_ENCRYPTION_KEY must be canonical Base64 encoding of exactly 32 bytes.');
+            process.exit(1);
+          }
+          console.log('Validated the 32-byte wallet payout encryption key. Secret value remains hidden.');
+          NODE
+          printf '%s' "$SMV_WALLET_PAYOUT_ENCRYPTION_KEY" | npx --yes wrangler@4.156.0 secret put SMV_WALLET_PAYOUT_ENCRYPTION_KEY --config cloudflare/backend-api/wrangler.production.jsonc
+
       - name: Audit required Production Worker secret names (values stay hidden)
         shell: bash
         run: |
