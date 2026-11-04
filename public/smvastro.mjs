@@ -4512,6 +4512,7 @@ function smvLiveChatBoxIsVisible(){
 }
 function smvLiveOpenSession(session,wallet,incoming){
  if(!session)return;const id=String(session.id||session.sessionId||'');if(!id)return;
+ smvLiveUpdateDashboardSessionStatus({...session,id});
  const samePanelSession=smvLivePanelSessionId===id;
  if(!samePanelSession){smvLiveCloseMedia();smvLiveClearTransport();}
  const incomingSession={...session,id,mode:smvLiveCanonicalMode(session)||String(session.mode||'').toLowerCase()};
@@ -4989,13 +4990,31 @@ function smvLiveUpdateDashboardSessionStatus(session){
  }
  const updateRow=()=>{
   const host=$('smvLiveDashboardSessions');if(!host)return;
-  const openButton=Array.from(host.querySelectorAll('[data-live-open]')).find(button=>String(button.dataset.liveOpen||'')===id);
-  const article=openButton?.closest('article');
+  let openButton=Array.from(host.querySelectorAll('[data-live-open]')).find(button=>String(button.dataset.liveOpen||'')===id);
+  let article=openButton?.closest('article')||null;
+  if(!article){
+   // A fresh request can arrive before the initial Dashboard history read
+   // completes. Create its row so closing the session modal never hides it.
+   const emptyLabel=host.querySelector('p.small');
+   if(emptyLabel&&/No Live Sessions yet|Loading/i.test(emptyLabel.textContent||''))emptyLabel.remove();
+   article=document.createElement('article');
+   article.className='card smv-live-session-card';
+   article.style.margin='8px 0';
+   article.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><b class="smv-live-session-mode">'+escapeHtml(String(current.mode||'chat').toUpperCase())+' · '+Number(current.minutes||1)+' min</b><span style="display:inline-flex;align-items:center;gap:7px"><span data-live-presence-dot="'+escapeHtml(id)+'" class="smv-live-presence-dot smv-live-presence-dot--active" hidden aria-label="Live session running"></span><span data-live-window-dot="'+escapeHtml(id)+'" class="smv-live-presence-dot smv-live-presence-dot--closed" hidden aria-label="Window closed or session ended"></span></span></div><p class="small smv-live-session-meta"><b>Status:</b> <span data-live-dashboard-status="'+escapeHtml(id)+'"></span> · <b>Rate:</b> '+smvLiveMoney(current.ratePerMinutePaise)+'/min</p><p class="small smv-live-session-meta"><span data-live-window-status="'+escapeHtml(id)+'" class="smv-live-window-closed-label" hidden></span> <b>Charged:</b> '+smvLiveMoney(current.actualChargePaise)+' · <b>Released:</b> '+smvLiveMoney(current.releasedAmountPaise)+'</p><button type="button" class="smv-plain-text-action smv-live-session-open-button" data-live-open="'+escapeHtml(id)+'">OPEN SESSION</button>';
+   host.prepend(article);
+   openButton=article.querySelector('[data-live-open]');
+   if(openButton)openButton.onclick=()=>{
+    const latest=smvLiveDashboardSessionsById.get(id)||current;
+    smvLiveDismissedSessionIds.delete(id);
+    smvLiveUpdateDashboardSessionStatus(latest);
+    smvLiveOpenSession(latest,null,String(window.__smvCurrentRole||'').toLowerCase()==='astrologer'&&latest.astrologerUid===currentUser?.uid&&latest.state==='ringing');
+   };
+  }
   const status=article?.querySelector('[data-live-dashboard-status]');
   const liveDot=article?.querySelector('[data-live-presence-dot]');
   const closedDot=article?.querySelector('[data-live-window-dot]');
   const windowStatus=article?.querySelector('[data-live-window-status]');
-  const running=['preparing','connecting','active'].includes(String(current.state||''));
+  const running=['ringing','preparing','connecting','active'].includes(String(current.state||''));
   const ended=String(current.state||'')==='ended';
   const windowClosed=ended||smvLiveDismissedSessionIds.has(id);
   if(status)status.textContent=smvLiveDashboardSessionStatusLabel(current);
