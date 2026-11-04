@@ -32,6 +32,14 @@ export function registerLegacyBusinessRoutes({ app, firestore, identityService, 
     return identityService.authenticateAuthorization(req.get('Authorization'));
   }
 
+  async function isAstrologerAccount(user, uid) {
+    if (String(user?.role || '').toLowerCase() === 'astrologer') return true;
+    if (liveService && typeof liveService.isApprovedAstrologer === 'function') {
+      return liveService.isApprovedAstrologer(uid);
+    }
+    return false;
+  }
+
   async function requireAdmin(req) {
     const user = await authenticate(req);
     if (user.isAdmin !== true && String(user.role || '').toLowerCase() !== 'admin') {
@@ -44,7 +52,7 @@ export function registerLegacyBusinessRoutes({ app, firestore, identityService, 
     try {
       const user = await authenticate(req);
       const uid = safeUid(user);
-      if (String(user.role || '').toLowerCase() !== 'astrologer') {
+      if (!(await isAstrologerAccount(user, uid))) {
         return res.status(403).set('Cache-Control', 'no-store').json({
           success: false, error: 'Astrologer account required.'
         });
