@@ -5347,7 +5347,19 @@ async function smvLiveLoadDashboard(role){
  const host=$('smvLiveDashboardSessions'),msg=$('smvLiveDashboardMsg');if(!host)return;
  const reload=async()=>{
   try{
-   const list=await renderApi('/live/sessions',{method:'GET'}),rows=list.sessions||[];smvLiveDashboardSessionsById.clear();
+   const list=await renderApi('/live/sessions',{method:'GET'});
+   // Keep any request/event that arrived while the history read was in flight.
+   // A Customer may create the request from the public directory before this
+   // Dashboard is mounted; a stale initial response must not erase that event.
+   const rowsById=new Map();
+   for(const item of list.sessions||[]){
+    const id=String(item.id||item.sessionId||'');if(!id)continue;
+    rowsById.set(id,smvLiveMergeSessionState(smvLiveDashboardSessionsById.get(id)||{},{...item,id}));
+   }
+   for(const [id,item] of smvLiveDashboardSessionsById)if(!rowsById.has(id))rowsById.set(id,item);
+   const rows=Array.from(rowsById.values());
+   smvLiveDashboardSessionsById.clear();
+   rows.forEach(item=>smvLiveDashboardSessionsById.set(String(item.id||item.sessionId||''),item));
    host.innerHTML=rows.length?rows.map(s=>'<article class="card smv-live-session-card" style="margin:8px 0"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><b class="smv-live-session-mode">'+escapeHtml(String(s.mode||'chat').toUpperCase())+' · '+Number(s.minutes||1)+' min</b><span style="display:inline-flex;align-items:center;gap:7px"><span data-live-presence-dot="'+escapeHtml(s.id)+'" class="smv-live-presence-dot smv-live-presence-dot--active" hidden aria-label="Live session running"></span><span data-live-window-dot="'+escapeHtml(s.id)+'" class="smv-live-presence-dot smv-live-presence-dot--closed" hidden aria-label="Window closed or session ended"></span></span></div><p class="small smv-live-session-meta"><b>Status:</b> <span data-live-dashboard-status="'+escapeHtml(s.id)+'">'+escapeHtml(smvLiveSessionStatusLabel(s))+'</span> · <b>Rate:</b> '+smvLiveMoney(s.ratePerMinutePaise)+'/min</p><p class="small smv-live-session-meta"><span data-live-window-status="'+escapeHtml(s.id)+'" class="smv-live-window-closed-label" hidden></span> <b>Charged:</b> '+smvLiveMoney(s.actualChargePaise)+' · <b>Released:</b> '+smvLiveMoney(s.releasedAmountPaise)+'</p><button type="button" class="smv-plain-text-action smv-live-session-open-button" data-live-open="'+escapeHtml(s.id)+'">OPEN SESSION</button></article>').join(''):'<p class="small">No Live Sessions yet.</p>';
     rows.forEach(s=>smvLiveUpdateDashboardSessionStatus(s));
    host.querySelectorAll('[data-live-open]').forEach(btn=>btn.onclick=()=>{const s=rows.find(x=>x.id===btn.dataset.liveOpen);if(s){smvLiveDismissedSessionIds.delete(String(s.id||''));smvLiveUpdateDashboardSessionStatus(s);smvLiveOpenSession(s,null,String(window.__smvCurrentRole||'').toLowerCase()==='astrologer'&&s.astrologerUid===currentUser?.uid&&s.state==='ringing');}});
