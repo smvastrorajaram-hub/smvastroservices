@@ -1,6 +1,6 @@
 const {createCorsMiddleware,createRequestBodyParser,createRouteRateLimiter}=require('./api-security');
 const {registerWalletRoutes,walletLedgerDocId,WALLET_OFFER_THEMES,WALLET_RECHARGE_OFFER_TYPE,offerDateMilliseconds,parseRupeesToPaise}=require('./wallet-service');
-const {registerLiveSessionRoutes,astrologerAvailabilityStatus,scheduledAppointmentStartDeadlineMs}=require('./live-session-service');
+const {registerLiveSessionRoutes,astrologerManualBusy,astrologerAvailabilityStatus,scheduledAppointmentStartDeadlineMs}=require('./live-session-service');
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
 const {isConfiguredAdminIdentity}=require('./admin-auth');
 const {getStorage}=require('firebase-admin/storage');
