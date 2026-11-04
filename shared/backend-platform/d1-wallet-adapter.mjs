@@ -356,13 +356,19 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     if (!row || String(row.customer_uid || '') !== owner.ownerUid) {
       throw walletError('WALLET_RECHARGE_NOT_FOUND', 'Wallet recharge request was not found.', 404);
     }
+    let disposition = classifyRechargeIntent({
+      status: row.status, storedAmountPaise: row.amount_paise, requestedAmountPaise: amount
+    });
+    if (disposition === 'amount_conflict') {
+      throw walletError('WALLET_IDEMPOTENCY_CONFLICT', 'This recharge request key was already used for a different amount.', 409);
+    }
     const reference = await ensureRechargeCustomerPaymentReference(rechargeId, owner.ownerUid, row);
     row = reference.row;
     const customerPaymentId = reference.customerPaymentId || null;
     if (customerPaymentId) {
       payloadJson = JSON.stringify({ ...reference.payload, idempotencyKey: String(idempotencyKey) });
     }
-    const disposition = classifyRechargeIntent({
+    disposition = classifyRechargeIntent({
       status: row.status, storedAmountPaise: row.amount_paise, requestedAmountPaise: amount
     });
     if (disposition === 'amount_conflict') {
