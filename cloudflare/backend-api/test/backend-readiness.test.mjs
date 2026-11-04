@@ -308,8 +308,7 @@ test('GET /api/backend/readiness reports payout withdrawals unavailable when the
 
 test('Production Worker validates the payout encryption secret from the Cloudflare runtime env', async () => {
   const workerIndex = await readFile(new URL('../src/index.mjs', import.meta.url), 'utf8');
-  assert.match(workerIndex, /const walletPayoutEncryptionConfigured = validatePayoutEncryptionConfiguration\\(\\{/);
-  assert.match(workerIndex, /payoutEncryptionKey: String\\(env\\.SMV_WALLET_PAYOUT_ENCRYPTION_KEY \\|\\| ''\\)/);
-  assert.match(workerIndex, /payoutKeyVersion: String\\(env\\.SMV_WALLET_PAYOUT_KEY_VERSION \\|\\| 'v1'\\)/);
-  assert.match(workerIndex, /walletPayoutEncryptionConfigured,/);
-});
+  assert.ok(workerIndex.includes('const walletPayoutEncryptionConfigured = validatePayoutEncryptionConfiguration({'));
+  assert.ok(workerIndex.includes("payoutEncryptionKey: String(env.SMV_WALLET_PAYOUT_ENCRYPTION_KEY || '')"));
+  assert.ok(workerIndex.includes("payoutKeyVersion: String(env.SMV_WALLET_PAYOUT_KEY_VERSION || 'v1')"));
+  assert.ok(workerIndex.includes('walletPayoutEncryptionConfigured,'));
