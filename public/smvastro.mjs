@@ -91,12 +91,12 @@ const CLOUDFLARE_FINANCIAL_BACKEND_URL = IS_SMV_PHASE1_STAGING
   : "https://smvastroservices.astroservices.workers.dev";
 function smvApiBackend(path) {
   const pathname = String(path || '').split('?')[0].toLowerCase();
-  const financialRoute = /^\/(?:wallet(?:\/|$)|live\/(?:requests|sessions(?:\/|$)|bookings(?:\/|$)|pricing(?:\/|$)|ice-config(?:\/|$)|events(?:\/|$)|scheduled-appointments(?:\/|$))|appointment-booking(?:\/|$)|test-razorpay(?:\/|$)|astrologer\/(?:earnings|withdrawal-request)(?:\/|$)|admin\/(?:withdrawals-data|withdrawal-payout|withdrawal-mark-processing|withdrawal-reject|withdrawal-mark-paid|offers|live\/(?:pricing|commission))(?:\/|$))/.test(pathname);
+  const financialRoute = /^\/(?:wallet(?:\/|$)|live\/(?:requests|sessions(?:\/|$)|bookings(?:\/|$)|pricing(?:\/|$)|ice-config(?:\/|$)|events(?:\/|$)|scheduled-appointments(?:\/|$))|appointment-booking(?:\/|$)|test-razorpay(?:\/|$)|astrologer\/(?:availability|earnings|withdrawal-request)(?:\/|$)|admin\/(?:withdrawals-data|withdrawal-payout|withdrawal-mark-processing|withdrawal-reject|withdrawal-mark-paid|offers|live\/(?:pricing|commission))(?:\/|$))/.test(pathname);
   return window.SMV_CLOUDFLARE_FINANCIAL_API_ENABLED === true && financialRoute
     ? CLOUDFLARE_FINANCIAL_BACKEND_URL
     : RAZORPAY_BACKEND_URL;
 }
-// Legacy APIs, Horoscope/Calendar and FCM push registration/status stay on Render.
+// Availability uses the D1-backed Worker when financial routing is active; other legacy APIs and FCM push stay on Render.
 const BACKEND=RAZORPAY_BACKEND_URL; window.SMV_BACKEND_URL=RAZORPAY_BACKEND_URL;
 
 let smvHomeWalletOffersFetchedAt=0, smvHomeWalletOffersRequest=null;
@@ -4133,9 +4133,20 @@ function smvLiveBindPushControls(){
  if(nativeMode){
   void smvLiveRegisterNativePushToken().then(registered=>{
    if(test)test.disabled=!registered;
+   if(enable)enable.textContent=registered?'ANDROID CALL ALERTS ENABLED':'ENABLE BACKGROUND ALERTS';
    if(status)status.textContent=registered
     ?'Native Android call notifications are enabled on this SMV ASTRO app. Keep Android notifications and notification sound enabled.'
     :'Native Android call notifications are not configured on this SMV ASTRO app. Firebase Android App ID setup is required; the ordinary browser Push setting is separate.';
+  });
+ }else if(!nativeMode&&typeof Notification!=='undefined'&&Notification.permission==='granted'){
+  // Re-register the current browser's existing token silently, without a new permission prompt.
+  void smvLiveEnableBackgroundAlerts().then(()=>{
+   if(enable)enable.textContent='BACKGROUND ALERTS ENABLED';
+   if(test)test.disabled=false;
+   if(status)status.textContent='This device is registered for Call, Chat and Booking Push Alerts. Keep browser and Android notifications enabled.';
+  }).catch(error=>{
+   if(enable)enable.textContent='ENABLE BACKGROUND ALERTS';
+   if(status)status.textContent=error?.message||String(error);
   });
  }
  if(enable&&!enable.dataset.bound){
@@ -4167,6 +4178,7 @@ function smvLiveBindPushControls(){
   };
  }
  renderApi('/live/push/status',{method:'GET',timeoutMs:12000}).then(r=>{
+  if(nativeMode)return; // Native status is resolved from this Android app's FCM token above.
   if(status)status.textContent=Number(r.registeredDevices||0)
    ? 'Registered push device(s): '+Number(r.registeredDevices)+'. Enable alerts on every phone/browser that should ring.'
    : 'Background alerts are not enabled on this device yet. Tap ENABLE BACKGROUND ALERTS and allow notifications.';
@@ -4991,11 +5003,12 @@ function smvLiveUpdateDashboardSessionStatus(session){
   if(windowStatus){windowStatus.hidden=!windowClosed;windowStatus.textContent=ended?'CLOSED SESSION':'WINDOW CLOSED';}
   if(openButton){
    openButton.textContent=ended?'OPEN CLOSED SESSION / RECEIPT':'OPEN SESSION';
-   openButton.style.background=ended?'#ff1744':'#00c853';
-   openButton.style.color=ended?'#fff':'#062b12';
-   openButton.style.webkitTextFillColor=ended?'#fff':'#062b12';
-   openButton.style.border='1px solid '+(ended?'#d50000':'#00a844');
-   openButton.style.borderRadius='8px';openButton.style.padding='8px 14px';openButton.style.fontWeight='900';
+   openButton.style.background='transparent';
+   openButton.style.color=ended?'#ff1744':'#00a844';
+   openButton.style.webkitTextFillColor=ended?'#ff1744':'#00a844';
+   openButton.style.border='0';
+   openButton.style.borderRadius='0';openButton.style.padding='0';openButton.style.fontWeight='900';
+   openButton.style.boxShadow='none';openButton.style.textDecoration='none';
    openButton.setAttribute('aria-label',ended?'Open closed session receipt':'Open live session');
   }
  };
@@ -5317,7 +5330,12 @@ async function smvLiveLoadDashboard(role){
     rows.forEach(s=>smvLiveUpdateDashboardSessionStatus(s));
    host.querySelectorAll('[data-live-open]').forEach(btn=>btn.onclick=()=>{const s=rows.find(x=>x.id===btn.dataset.liveOpen);if(s){smvLiveDismissedSessionIds.delete(String(s.id||''));smvLiveUpdateDashboardSessionStatus(s);smvLiveOpenSession(s,null,String(window.__smvCurrentRole||'').toLowerCase()==='astrologer'&&s.astrologerUid===currentUser?.uid&&s.state==='ringing');}});
    if(role==='astrologer'){
-    const data=await renderApi('/public/astrologers',{method:'GET'}),astro=(data.astrologers||[]).find(a=>a.id===currentUser?.uid),sel=$('smvLiveAvailability');
+    const [data,ownAvailability]=await Promise.all([
+     renderApi('/public/astrologers',{method:'GET'}),
+     renderApi('/astrologer/availability',{method:'GET',timeoutMs:12000}).catch(()=>null)
+    ]);
+    const astro=ownAvailability||((data.astrologers||[]).find(a=>a.id===currentUser?.uid)||null);
+    const sel=$('smvLiveAvailability');
     const callToggle=$('smvLiveCallEnabled'),chatToggle=$('smvLiveChatEnabled');
     if(sel&&!sel.dataset.initialized){
      if(astro)sel.value=astro.availabilityStatus||'offline';
@@ -5351,9 +5369,9 @@ async function smvLiveLoadDashboard(role){
   if(status==='busy')note+=' A Live session is active, so the current status remains Busy.';
   return note;
  };
- const syncModes=()=>{
+ const syncModes=(deriveStatusFromModes=false)=>{
   const call=callToggle?.checked===true,chat=chatToggle?.checked===true;
-  if(availabilitySelect&&availabilitySelect.value!=='busy')availabilitySelect.value=(call||chat)?'online':'offline';
+  if(deriveStatusFromModes&&availabilitySelect)availabilitySelect.value=(call||chat)?'online':'offline';
   if(availabilityMessage)availabilityMessage.textContent=modeNote(call,chat,availabilitySelect?.value||'offline');
  };
  const saveModes=async()=>{
@@ -5382,10 +5400,14 @@ async function smvLiveLoadDashboard(role){
  for(const toggle of [callToggle,chatToggle])if(toggle&&!toggle.dataset.bound){
   toggle.dataset.bound='1';
   toggle.addEventListener('change',()=>{
-   syncModes();
+   syncModes(true);
    if(modeSaveTimer)clearTimeout(modeSaveTimer);
    modeSaveTimer=setTimeout(()=>{modeSaveTimer=null;saveModes();},250);
   });
+ }
+ if(availabilitySelect&&!availabilitySelect.dataset.bound){
+  availabilitySelect.dataset.bound='1';
+  availabilitySelect.addEventListener('change',()=>syncModes(false));
  }
  if(set&&!set.dataset.bound){set.dataset.bound='1';set.onclick=saveModes;}
  syncModes();
