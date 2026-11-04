@@ -25,7 +25,7 @@
   color:#000!important;
 }
 #dashboardContent .smv-consultation-item .smv-customer-meta-line>b{
-  font-size:var(--smv-dashboard-support)!important;
+  font-size:var(--smv-dashboard-label)!important;
   font-weight:600!important;
 }
 #dashboardContent .smv-consultation-item .smv-customer-meta-line>span{
@@ -96,7 +96,7 @@
 }
 /* Summary labels and values */
 #dashboardContent .smv-astrologer-dashboard .astro-dashboard-summary .smv-summary-label{
-  font-size:var(--smv-dashboard-support)!important;
+  font-size:var(--smv-dashboard-label)!important;
   font-weight:600!important;
   color:#111!important;
 }
@@ -129,7 +129,7 @@
 }
 /* Profile description */
 #dashboardContent .smv-astrologer-dashboard #astroProfileDescriptionCard .smv-profile-subheading{
-  font-size:var(--smv-dashboard-body)!important;
+  font-size:var(--smv-dashboard-subsection)!important;
   line-height:1.4!important;
   font-weight:600!important;
   color:#111!important;
@@ -204,7 +204,7 @@
   color:#000!important;
 }
 #admin :is(#adminPendingQuestions,#adminAnswers,#adminRefunds,#adminQuestions) .small>b{
-  font-size:var(--smv-dashboard-support)!important;
+  font-size:var(--smv-dashboard-label)!important;
   font-weight:600!important;
 }
 #admin :is(#adminPendingQuestions,#adminAnswers,#adminRefunds,#adminQuestions) p,
@@ -364,17 +364,8 @@
 #dashboardContent .smv-astrologer-dashboard .withdrawal-history-title,
 #dashboardContent .smv-astrologer-dashboard .smv-astro-main-heading,
 #dashboardContent #smvLiveDashboardCard>h3,
-#dashboardContent>.card>h3{
-  font-size:var(--smv-dashboard-section)!important;
-  line-height:var(--smv-dashboard-heading-line)!important;
-  font-weight:800!important;
-  color:#6b4b1e!important;
-  -webkit-text-fill-color:#6b4b1e!important;
-}
+#dashboardContent>.card>h3,
 #dashboardContent #smvLiveDashboardCard h4{
-  font-size:var(--smv-dashboard-subsection)!important;
-  line-height:1.35!important;
-  font-weight:750!important;
   color:#6b4b1e!important;
   -webkit-text-fill-color:#6b4b1e!important;
 }
@@ -393,12 +384,6 @@ html body #admin#admin :is(h2,h3){
   font-weight:800!important;
   margin:0 0 8px!important;
   padding-top:0!important;
-}
-html body #dashboard #dashboardContent h4,
-html body #admin#admin h4{
-  font-size:var(--smv-dashboard-subsection)!important;
-  line-height:1.35!important;
-  font-weight:750!important;
 }
 html body :is(#dashboard#dashboard,#admin#admin) .card::before,
 html body :is(#dashboard#dashboard,#admin#admin) :is(h2,h3,h4)::before,
@@ -443,27 +428,16 @@ html body #dashboardContent .smv-astrologer-dashboard{padding:0!important;margin
     padding-top:14px;
     scroll-margin-top:12px;
   }
-  #admin .admin-workgroup-title{
-    font-size:var(--smv-dashboard-section);
-    line-height:1.4;
-  }
-  #admin .admin-workgroup-description{
-    font-size:var(--smv-dashboard-support);
-    line-height:1.6;
-    margin-bottom:12px;
-  }
+  #admin .admin-workgroup-title{line-height:1.4;}
+  #admin .admin-workgroup-description{line-height:1.6;margin-bottom:12px;}
 }
 
 
 
 
 /* Live dashboard typography: consistent with the Live Call / Live Chat heading. */
-#dashboardContent #smvLiveDashboardCard>h3{
-  font-size:var(--smv-dashboard-section)!important;line-height:1.35!important;font-weight:800!important;
-  color:#6b4b1e!important;-webkit-text-fill-color:#6b4b1e!important;
-}
+#dashboardContent #smvLiveDashboardCard>h3,
 #dashboardContent #smvLiveDashboardCard h4{
-  font-size:var(--smv-dashboard-subsection)!important;line-height:1.35!important;font-weight:800!important;
   color:#6b4b1e!important;-webkit-text-fill-color:#6b4b1e!important;
 }
 #dashboardContent #smvLiveDashboardCard .smv-live-booking-kind{
