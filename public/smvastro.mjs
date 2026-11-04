@@ -5451,7 +5451,7 @@ function smvLiveBindDashboard(role){
    params.delete('smvLivePush');params.delete('smvSessionId');params.delete('smvBookingId');
    const cleanUrl=window.location.pathname+(params.toString()?'?'+params.toString():'')+window.location.hash;
    window.history.replaceState(window.history.state,'',cleanUrl);
-   setTimeout(()=>smvLiveHandlePushOpen(payload).catch(error=>smvLiveShowDashboardMessage(error?.message||String(error))),350);
+   setTimeout(()=>{if(!currentUser){smvLivePendingPushOpen=payload;return;}smvLiveHandlePushOpen(payload).catch(error=>smvLiveShowDashboardMessage(error?.message||String(error)));},350);
   }
  }
 }
