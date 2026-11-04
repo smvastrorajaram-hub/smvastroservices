@@ -347,7 +347,15 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     registerLegacyReadRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService, androidPackageName: String(env.SMV_ANDROID_PACKAGE || 'in.smvastroservices.smvastro') });
     registerLegacyDashboardReadRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerLegacyQuizReadRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
-    registerLegacyBusinessRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    const gapLiveService = env.DB && sharedWalletAdapter
+      ? createD1LiveSessionService({
+          db: env.DB,
+          walletAdapter: sharedWalletAdapter,
+          firestore: firestoreAdmin,
+          adminWalletUid: String(env.ADMIN_WALLET_UID || env.ADMIN_UID || '')
+        })
+      : null;
+    registerLegacyBusinessRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService, liveService: gapLiveService });
     registerAdminAstrologerProfileRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerLegacyQuizWriteRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerAstrologerAnswerEditRoute({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
@@ -467,14 +475,6 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     projectId,
     tokenProvider: firebaseAdminOAuth
   });
-  const gapLiveService = env.DB && sharedWalletAdapter
-    ? createD1LiveSessionService({
-        db: env.DB,
-        walletAdapter: sharedWalletAdapter,
-        firestore: firestoreAdmin,
-        adminWalletUid: String(env.ADMIN_WALLET_UID || env.ADMIN_UID || '')
-      })
-    : null;
   registerLegacyRouteParityGapRoutes({
     app,
     firestore: firestoreAdmin,
