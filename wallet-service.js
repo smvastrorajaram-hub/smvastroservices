@@ -470,6 +470,12 @@ function registerWalletRoutes({ app, db, profileDb = db, FieldValue, crypto, raz
     if (!user) return;
     try {
       if (!(await customerRoleOnly(user, res))) return;
+      if (!razorpay?.orders?.create) {
+        return res.status(503).json({
+          error: 'Wallet recharge is temporarily unavailable. Razorpay is not configured on this Render service.',
+          code: 'RAZORPAY_NOT_CONFIGURED'
+        });
+      }
       const amountPaise = parseRupeesToPaise(req.body?.amount);
       if (amountPaise === null || amountPaise < 100) return res.status(400).json({ error: 'Enter a recharge amount of at least ₹1.00.', code: 'WALLET_RECHARGE_AMOUNT_INVALID' });
       if (!razorpayKeyId || !razorpayKeySecret) return res.status(503).json({ error: 'Wallet recharge is temporarily unavailable. Payment configuration is missing.' });
@@ -535,6 +541,12 @@ function registerWalletRoutes({ app, db, profileDb = db, FieldValue, crypto, raz
     if (!user) return;
     try {
       if (!(await customerRoleOnly(user, res))) return;
+      if (!razorpay?.payments?.fetch || !razorpay?.payments?.capture) {
+        return res.status(503).json({
+          error: 'Wallet recharge verification is temporarily unavailable. Razorpay is not configured on this Render service.',
+          code: 'RAZORPAY_NOT_CONFIGURED'
+        });
+      }
       const rechargeId = String(req.body?.rechargeId || '').trim();
       const orderId = String(req.body?.razorpay_order_id || req.body?.orderId || '').trim();
       const paymentId = String(req.body?.razorpay_payment_id || req.body?.paymentId || '').trim();
