@@ -34,3 +34,13 @@ test('Live booking and session typography follows the requested dashboard scale'
  assert.match(css,/\.smv-live-session-meta b[\s\S]*font-size:16px/);
  assert.match(css,/\.smv-live-session-open-button[\s\S]*text-decoration:none/);
 });
+
+
+
+test('Production Worker shares the D1 Live service across legacy route registration blocks',()=>{
+ const index=read('cloudflare/backend-api/src/index.mjs');
+ assert.ok(index.includes('let gapLiveService = null;'));
+ assert.ok(index.includes('gapLiveService = env.DB && sharedWalletAdapter'));
+ assert.ok(!index.includes('const gapLiveService = env.DB && sharedWalletAdapter'));
+ assert.ok(index.includes('liveService: gapLiveService'));
+});

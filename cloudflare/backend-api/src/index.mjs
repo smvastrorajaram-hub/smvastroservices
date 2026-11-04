@@ -305,6 +305,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
   let projectId = String(env.FIREBASE_PROJECT_ID || '').trim();
   const configuredProjectIds = resolveFirebaseAuthProjectIds(env);
   let firestoreAdmin = null;
+  let gapLiveService = null;
 
   if (requiresFirestoreAdmin) {
     credentials = walletFirebaseServiceAccount();
@@ -347,7 +348,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     registerLegacyReadRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService, androidPackageName: String(env.SMV_ANDROID_PACKAGE || 'in.smvastroservices.smvastro') });
     registerLegacyDashboardReadRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerLegacyQuizReadRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
-    const gapLiveService = env.DB && sharedWalletAdapter
+    gapLiveService = env.DB && sharedWalletAdapter
       ? createD1LiveSessionService({
           db: env.DB,
           walletAdapter: sharedWalletAdapter,
