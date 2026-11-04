@@ -165,6 +165,69 @@ export function createD1LiveSessionService({
     return safePaise(row?.total);
   }
 
+  async function getAstrologerAvailability({astrologerUid}={}) {
+    const uid=checkUid(astrologerUid);
+    if(!uid) throw liveError('LIVE_ASTROLOGER_REQUIRED','Astrologer account is required.',400);
+    const profile=await firestore.getDocument('smv_astrologers/'+uid);
+    if(!profile?.exists) throw liveError('LIVE_ASTROLOGER_NOT_FOUND','Astrologer profile was not found.',404);
+    const astro=profile.data||{};
+    if((astro.uid&&String(astro.uid)!==uid)||
+       !['approved','active'].includes(String(astro.status||'').toLowerCase())) {
+      throw liveError('LIVE_ASTROLOGER_NOT_APPROVED','Only the approved profile owner can change availability.',403);
+    }
+    const count=await activeSessionCount(uid);
+    const availabilityStatus=count>0?'busy':
+      (astro.liveCallEnabled===true||astro.liveChatEnabled===true?'online':'offline');
+    return {
+      availabilityStatus,
+      liveCallEnabled:astro.liveCallEnabled===true,
+      liveChatEnabled:astro.liveChatEnabled===true,
+      activeSessionCount:count
+    };
+  }
+
+  async function updateAstrologerAvailability({
+    astrologerUid,availabilityStatus,liveCallEnabled,liveChatEnabled
+  }={}) {
+    const requestedStatus=String(availabilityStatus||'').trim().toLowerCase();
+    if(!['online','busy','offline'].includes(requestedStatus)) {
+      throw liveError('LIVE_AVAILABILITY_INVALID','Choose Online, Busy, or Offline.',400);
+    }
+    if(typeof liveCallEnabled!=='boolean'||typeof liveChatEnabled!=='boolean') {
+      throw liveError('LIVE_MODE_INVALID','Choose whether Live Call or Live Chat is enabled.',400);
+    }
+    const uid=checkUid(astrologerUid);
+    const current=await getAstrologerAvailability({astrologerUid:uid});
+    let callEnabled=liveCallEnabled,chatEnabled=liveChatEnabled;
+    if(requestedStatus==='offline') {
+      callEnabled=false;
+      chatEnabled=false;
+    }
+    if(requestedStatus==='online'&&!callEnabled&&!chatEnabled) {
+      throw liveError('LIVE_MODE_DISABLED','Enable Live Call or Live Chat before setting Online.',409);
+    }
+    if(requestedStatus==='busy'&&current.activeSessionCount===0) {
+      throw liveError('LIVE_BUSY_WITHOUT_SESSION','Busy is set automatically while a Live session is active.',409);
+    }
+    const availabilityStatus=current.activeSessionCount>0?'busy':
+      (callEnabled||chatEnabled?'online':'offline');
+    await firestore.setDocument('smv_astrologers/'+uid,{
+      liveCallEnabled:callEnabled,
+      liveChatEnabled:chatEnabled,
+      activeSessionCount:current.activeSessionCount,
+      availabilityStatus,
+      liveSessionBusyManaged:current.activeSessionCount>0,
+      availabilityUpdatedAt:new Date(Number(now())),
+      availabilityUpdatedBy:uid
+    },{merge:true});
+    return {
+      availabilityStatus,
+      liveCallEnabled:callEnabled,
+      liveChatEnabled:chatEnabled,
+      activeSessionCount:current.activeSessionCount
+    };
+  }
+
   async function syncAstrologerAvailability(astrologerUid) {
     const uid=checkUid(astrologerUid);
     if(!uid||typeof firestore.setDocument!=='function') return {skipped:true};
@@ -988,7 +1051,7 @@ export function createD1LiveSessionService({
     createRequest,acceptBooking,acceptSession,rejectSession,readySession,endSession,setConnection,isApprovedAstrologer,
     rejectBooking,cancelBooking,sendMessage,listMessages,signal,listSignals,
     listSessions,listBookings,listCustomerBookings,processDeadline,expireBooking,
-    getPricing,getCommission,saveSetting
+    getPricing,getCommission,saveSetting,getAstrologerAvailability,updateAstrologerAvailability
   });
 }
 
