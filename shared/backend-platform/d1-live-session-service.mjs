@@ -176,7 +176,7 @@ export function createD1LiveSessionService({
       throw liveError('LIVE_ASTROLOGER_NOT_APPROVED','Only the approved profile owner can change availability.',403);
     }
     const count=await activeSessionCount(uid);
-    const availabilityStatus=count>0?'busy':
+    const availabilityStatus=count>0||String(astro.manualAvailabilityStatus||'').toLowerCase()==='busy'?'busy':
       (astro.liveCallEnabled===true||astro.liveChatEnabled===true?'online':'offline');
     return {
       availabilityStatus,
@@ -206,16 +206,13 @@ export function createD1LiveSessionService({
     if(requestedStatus==='online'&&!callEnabled&&!chatEnabled) {
       throw liveError('LIVE_MODE_DISABLED','Enable Live Call or Live Chat before setting Online.',409);
     }
-    if(requestedStatus==='busy'&&current.activeSessionCount===0) {
-      throw liveError('LIVE_BUSY_WITHOUT_SESSION','Busy is set automatically while a Live session is active.',409);
-    }
-    const availabilityStatus=current.activeSessionCount>0?'busy':
-      (callEnabled||chatEnabled?'online':'offline');
+    const availabilityStatus=current.activeSessionCount>0?'busy':requestedStatus;
     await firestore.setDocument('smv_astrologers/'+uid,{
       liveCallEnabled:callEnabled,
       liveChatEnabled:chatEnabled,
       activeSessionCount:current.activeSessionCount,
       availabilityStatus,
+      manualAvailabilityStatus:current.activeSessionCount>0?'':(requestedStatus==='busy'?'busy':''),
       liveSessionBusyManaged:current.activeSessionCount>0,
       availabilityUpdatedAt:new Date(Number(now())),
       availabilityUpdatedBy:uid
@@ -235,7 +232,7 @@ export function createD1LiveSessionService({
     const profile=await firestore.getDocument('smv_astrologers/'+uid);
     if(!profile.exists) return {skipped:true};
     const astro=profile.data||{};
-    const availability=count>0?'busy':
+    const availability=count>0||String(astro.manualAvailabilityStatus||'').toLowerCase()==='busy'?'busy':
       (astro.liveCallEnabled===true||astro.liveChatEnabled===true?'online':'offline');
     await firestore.setDocument('smv_astrologers/'+uid,{
       activeSessionCount:count,
