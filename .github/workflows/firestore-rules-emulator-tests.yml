@@ -1,8 +1,9 @@
-name: Firestore Rules emulator tests
+name: Firestore Rules emulator tests and Production deploy
 
 on:
   pull_request:
     paths:
+      - 'firebase.json'
       - 'firestore.rules'
       - 'firestore.staging.rules'
       - 'firebase.staging.json'
@@ -12,18 +13,25 @@ on:
   push:
     branches: [main]
     paths:
+      - 'firebase.json'
       - 'firestore.rules'
       - 'firestore.staging.rules'
       - 'firebase.staging.json'
       - 'server.js'
       - 'test/firestore-rules.test.js'
       - '.github/workflows/firestore-rules-emulator-tests.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: firestore-rules-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   firestore-rules:
+    name: Firestore Rules emulator tests
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -53,3 +61,90 @@ jobs:
         run: |
           npx --yes firebase-tools@15.34.1 emulators:exec --only firestore --project demo-smvastro-rules \
             "NODE_PATH=$RULES_TEST_NODE_PATH FIRESTORE_RULES_PATH=firestore.rules node --test test/firestore-rules.test.js && NODE_PATH=$RULES_TEST_NODE_PATH FIRESTORE_RULES_PATH=firestore.staging.rules node --test test/firestore-rules.test.js"
+
+  deploy-production-firestore-rules:
+    name: Deploy Production Firestore Rules to Firebase Project 1
+    needs: firestore-rules
+    if: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Prepare existing Firebase Project 1 service-account credentials
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_PRODUCTION_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_PROJECT_1_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_PROJECT_1_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          FIREBASE_PRODUCTION_CLIENT_EMAIL: ${{ secrets.FIREBASE_PRODUCTION_CLIENT_EMAIL }}
+          FIREBASE_PRODUCTION_PRIVATE_KEY: ${{ secrets.FIREBASE_PRODUCTION_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          json="${FIREBASE_SERVICE_ACCOUNT_JSON:-${FIREBASE_PRODUCTION_SERVICE_ACCOUNT_JSON:-${FIREBASE_PROJECT_1_SERVICE_ACCOUNT_JSON:-}}}"
+          email="${FIREBASE_CLIENT_EMAIL:-${FIREBASE_PRODUCTION_CLIENT_EMAIL:-}}"
+          private_key="${FIREBASE_PRIVATE_KEY:-${FIREBASE_PRODUCTION_PRIVATE_KEY:-}}"
+
+          if [ -n "$json" ]; then
+            FIREBASE_CREDENTIAL_CANDIDATE="$json" node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const raw = process.env.FIREBASE_CREDENTIAL_CANDIDATE || '';
+          let credentials;
+          try { credentials = JSON.parse(raw); }
+          catch { console.error('Firebase Project 1 service-account secret is not valid JSON.'); process.exit(1); }
+          const email = String(credentials?.client_email || '').trim();
+          const privateKey = String(credentials?.private_key || '').replace(/\\n/g, '\n');
+          if (credentials?.project_id !== 'smv-astro' ||
+              !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+              !privateKey.includes('-----BEGIN PRIVATE KEY-----') ||
+              !privateKey.includes('-----END PRIVATE KEY-----')) {
+            console.error('The configured service-account JSON must be complete and belong to Firebase Project 1 (smv-astro).');
+            process.exit(1);
+          }
+          credentials.private_key = privateKey;
+          const file = process.env.RUNNER_TEMP + '/firebase-project-1-rules-deploy.json';
+          fs.writeFileSync(file, JSON.stringify(credentials), { mode: 0o600 });
+          fs.appendFileSync(process.env.GITHUB_ENV, 'GOOGLE_APPLICATION_CREDENTIALS=' + file + '\nGCLOUD_PROJECT=smv-astro\n');
+          console.log('Validated the existing Firebase Project 1 service-account JSON. Secret value remains hidden.');
+          NODE
+          elif [ -n "$email" ] && [ -n "$private_key" ]; then
+            FIREBASE_CREDENTIAL_EMAIL="$email" FIREBASE_CREDENTIAL_PRIVATE_KEY="$private_key" node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const email = String(process.env.FIREBASE_CREDENTIAL_EMAIL || '').trim();
+          const privateKey = String(process.env.FIREBASE_CREDENTIAL_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+              !privateKey.includes('-----BEGIN PRIVATE KEY-----') ||
+              !privateKey.includes('-----END PRIVATE KEY-----')) {
+            console.error('The Firebase Project 1 client email/private key secrets are incomplete.');
+            process.exit(1);
+          }
+          const credentials = {
+            type: 'service_account',
+            project_id: 'smv-astro',
+            client_email: email,
+            private_key: privateKey,
+            token_uri: 'https://oauth2.googleapis.com/token'
+          };
+          const file = process.env.RUNNER_TEMP + '/firebase-project-1-rules-deploy.json';
+          fs.writeFileSync(file, JSON.stringify(credentials), { mode: 0o600 });
+          fs.appendFileSync(process.env.GITHUB_ENV, 'GOOGLE_APPLICATION_CREDENTIALS=' + file + '\nGCLOUD_PROJECT=smv-astro\n');
+          console.log('Prepared the existing Firebase Project 1 service-account credentials. Secret value remains hidden.');
+          NODE
+          else
+            echo 'Missing Firebase Project 1 service-account credentials in the GitHub production environment.'
+            exit 1
+          fi
+
+      - name: Deploy only Production Firestore Rules to Project 1
+        run: npx --yes firebase-tools@15.34.1 deploy --only firestore:rules --project smv-astro --config firebase.json --non-interactive
