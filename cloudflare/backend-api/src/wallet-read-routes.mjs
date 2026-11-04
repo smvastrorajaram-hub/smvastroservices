@@ -54,6 +54,7 @@ function transactionView(row = {}) {
     note: String(row.note || ''),
     referenceType: String(row.referenceType || ''),
     referenceId: String(row.referenceId || ''),
+    customerPaymentId: String(row.customerPaymentId || row.metadata?.customerPaymentId || '') || null,
     createdAt: iso(row.createdAt)
   };
 }

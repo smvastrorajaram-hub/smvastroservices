@@ -1605,7 +1605,8 @@ async function smvLoadCustomerWallet(){
      const label=String(t.type||'transaction').replace(/_/g,' ');
      const when=t.createdAt?smvDateTime(t.createdAt):'Date unavailable';
      const status=String(t.status||'posted');
-     return '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(128,128,128,.22)"><div style="min-width:0"><b>'+escapeHtml(label)+'</b><div class="small">'+escapeHtml(when)+' · '+escapeHtml(status)+'</div>'+(t.note?'<div class="small">'+escapeHtml(t.note)+'</div>':'')+(t.balanceAfterPaise!=null?'<div class="small">Balance after: '+smvWalletMoney(t.balanceAfterPaise)+'</div>':'')+'</div><b class="smv-wallet-transaction-amount '+(credit?'success':'error')+'" style="white-space:nowrap">'+(credit?'+':'−')+smvWalletMoney(amount)+'</b></div>';
+     const customerPaymentId=String(t.customerPaymentId||'').trim();
+     return '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(128,128,128,.22)"><div style="min-width:0"><b>'+escapeHtml(label)+'</b><div class="small">'+escapeHtml(when)+' · '+escapeHtml(status)+'</div>'+(customerPaymentId?'<div class="small"><b>Customer Payment ID:</b> '+escapeHtml(customerPaymentId)+'</div>':'')+(t.note?'<div class="small">'+escapeHtml(t.note)+'</div>':'')+(t.balanceAfterPaise!=null?'<div class="small">Balance after: '+smvWalletMoney(t.balanceAfterPaise)+'</div>':'')+'</div><b class="smv-wallet-transaction-amount '+(credit?'success':'error')+'" style="white-space:nowrap">'+(credit?'+':'−')+smvWalletMoney(amount)+'</b></div>';
     }).join(''):'<div class="empty">No Wallet transactions yet.</div>';
    }
   }catch(error){
@@ -1704,7 +1705,8 @@ function smvBindCustomerWallet({load=true}={}){
        requestKey=smvWalletNewRequestKey();requestAmount='';
        await smvLoadCustomerWallet();
        const bonusMinutesCredited=Number.isSafeInteger(Number(verified.bonusMinutesCredited))&&Number(verified.bonusMinutesCredited)>0?Number(verified.bonusMinutesCredited):0;
-       smvWalletSetMessage('Payment Successful — recharge verified. Cash Wallet balance: '+smvWalletMoney(Math.round(Number(verified.availableBalance||0)*100))+'.'+(bonusMinutesCredited?' '+bonusMinutesCredited+' bonus free minute(s) added.':' No bonus-minute offer applied.'),'success');
+       const customerPaymentId=String(verified.customerPaymentId||'').trim();
+       smvWalletSetMessage('Payment Successful — recharge verified.'+(customerPaymentId?' Customer Payment ID: '+customerPaymentId+'.':'')+' Cash Wallet balance: '+smvWalletMoney(Math.round(Number(verified.availableBalance||0)*100))+'.'+(bonusMinutesCredited?' '+bonusMinutesCredited+' bonus free minute(s) added.':' No bonus-minute offer applied.'),'success');
       }catch(error){
        smvWalletSetMessage('Payment returned but server verification is not confirmed: '+(error?.message||String(error))+'. Do not pay again until this transaction is checked.','error');
       }finally{verificationInProgress=false;releaseButton();}

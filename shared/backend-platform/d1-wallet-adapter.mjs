@@ -19,6 +19,7 @@ import {
   walletRechargeId,
   walletRechargeError
 } from './wallet-recharge-domain.mjs';
+import { createUniqueNumericReference } from './public-reference-id.mjs';
 
 function mapLedger(row) {
   if (!row) return null;
@@ -94,6 +95,54 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
 
   function statement(sql, values = []) {
     return db.prepare(sql).bind(...values);
+  }
+
+  async function createCustomerPaymentReference() {
+    return createUniqueNumericReference({
+      prefix: 'smvpy',
+      cryptoImpl,
+      exists: async candidate => Boolean(await statement(
+        "SELECT recharge_id FROM smv_domain_wallet_recharges WHERE json_extract(CASE WHEN json_valid(payload_json) THEN payload_json ELSE '{}' END, '$.customerPaymentId') = ? LIMIT 1",
+        [candidate]
+      ).first())
+    });
+  }
+
+  async function ensureRechargeCustomerPaymentReference(rechargeId, ownerUid, initialRow) {
+    let row = initialRow;
+    let payload = {};
+    try { payload = JSON.parse(String(row?.payload_json || '{}')); } catch {}
+    let customerPaymentId = String(payload.customerPaymentId || '').trim();
+    if (customerPaymentId || String(row?.status || '') === 'paid') {
+      return { row, payload, customerPaymentId };
+    }
+    for (let attempt = 0; attempt < 32; attempt += 1) {
+      const candidate = await createCustomerPaymentReference();
+      const nextPayload = { ...payload, customerPaymentId: candidate };
+      try {
+        await statement(
+          `UPDATE smv_domain_wallet_recharges
+           SET payload_json=?, updated_at_ms=?
+           WHERE recharge_id=? AND customer_uid=? AND status<>'paid'
+             AND json_extract(CASE WHEN json_valid(payload_json) THEN payload_json ELSE '{}' END, '$.customerPaymentId') IS NULL`,
+          [JSON.stringify(nextPayload), Number(now()), rechargeId, ownerUid]
+        ).run();
+      } catch (error) {
+        if (/UNIQUE constraint|unique constraint/i.test(String(error?.message || error))) continue;
+        throw error;
+      }
+      row = await statement(
+        'SELECT * FROM smv_domain_wallet_recharges WHERE recharge_id=? AND customer_uid=? LIMIT 1',
+        [rechargeId, ownerUid]
+      ).first();
+      if (!row) throw walletError('WALLET_RECHARGE_NOT_FOUND', 'Wallet recharge request was not found.', 404);
+      try { payload = JSON.parse(String(row.payload_json || '{}')); } catch { payload = {}; }
+      customerPaymentId = String(payload.customerPaymentId || '').trim();
+      if (customerPaymentId || String(row.status || '') === 'paid') {
+        return { row, payload, customerPaymentId };
+      }
+    }
+    throw walletError('WALLET_PAYMENT_REFERENCE_UNAVAILABLE', 'A unique Customer Payment ID could not be allocated. Please retry.', 503);
   }
 
   async function ensureWallet(ownerUid, ownerRole) {
@@ -293,7 +342,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     await ensureWallet(owner.ownerUid, owner.ownerRole);
     const rechargeId = await walletRechargeId(owner.ownerUid, idempotencyKey, cryptoImpl);
     const timestamp = Number(now());
-    const payloadJson = JSON.stringify({ idempotencyKey: String(idempotencyKey) });
+    let payloadJson = JSON.stringify({ idempotencyKey: String(idempotencyKey) });
     const inserted = await statement(
       `INSERT OR IGNORE INTO smv_domain_wallet_recharges
        (recharge_id, customer_uid, amount_paise, currency, status, payload_json, created_at_ms, updated_at_ms)
@@ -307,20 +356,32 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     if (!row || String(row.customer_uid || '') !== owner.ownerUid) {
       throw walletError('WALLET_RECHARGE_NOT_FOUND', 'Wallet recharge request was not found.', 404);
     }
-    const disposition = classifyRechargeIntent({
+    let disposition = classifyRechargeIntent({
+      status: row.status, storedAmountPaise: row.amount_paise, requestedAmountPaise: amount
+    });
+    if (disposition === 'amount_conflict') {
+      throw walletError('WALLET_IDEMPOTENCY_CONFLICT', 'This recharge request key was already used for a different amount.', 409);
+    }
+    const reference = await ensureRechargeCustomerPaymentReference(rechargeId, owner.ownerUid, row);
+    row = reference.row;
+    const customerPaymentId = reference.customerPaymentId || null;
+    if (customerPaymentId) {
+      payloadJson = JSON.stringify({ ...reference.payload, idempotencyKey: String(idempotencyKey) });
+    }
+    disposition = classifyRechargeIntent({
       status: row.status, storedAmountPaise: row.amount_paise, requestedAmountPaise: amount
     });
     if (disposition === 'amount_conflict') {
       throw walletError('WALLET_IDEMPOTENCY_CONFLICT', 'This recharge request key was already used for a different amount.', 409);
     }
     if (disposition === 'already_paid') {
-      return { success: true, acquired: false, alreadyPaid: true, rechargeId, amountPaise: amount, orderId: row.razorpay_order_id || null };
+      return { success: true, acquired: false, alreadyPaid: true, rechargeId, customerPaymentId, amountPaise: amount, orderId: row.razorpay_order_id || null };
     }
     if (disposition === 'reuse_order') {
-      return { success: true, acquired: false, alreadyPaid: false, rechargeId, amountPaise: amount, orderId: row.razorpay_order_id };
+      return { success: true, acquired: false, alreadyPaid: false, rechargeId, customerPaymentId, amountPaise: amount, orderId: row.razorpay_order_id };
     }
     if (Number(inserted?.meta?.changes || 0) === 1) {
-      return { success: true, acquired: true, alreadyPaid: false, rechargeId, amountPaise: amount, orderId: null };
+      return { success: true, acquired: true, alreadyPaid: false, rechargeId, customerPaymentId, amountPaise: amount, orderId: null };
     }
     const currentState = String(row.status || '');
     const stale = currentState === 'order_creating' && timestamp - Number(row.updated_at_ms || 0) >= 60000;
@@ -332,17 +393,17 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
         [timestamp, payloadJson, rechargeId, currentState, Number(row.updated_at_ms || 0)]
       ).run();
       if (Number(updated?.meta?.changes || 0) === 1) {
-        return { success: true, acquired: true, alreadyPaid: false, rechargeId, amountPaise: amount, orderId: null, retrying: true };
+        return { success: true, acquired: true, alreadyPaid: false, rechargeId, customerPaymentId, amountPaise: amount, orderId: null, retrying: true };
       }
       row = await statement('SELECT * FROM smv_domain_wallet_recharges WHERE recharge_id = ? LIMIT 1',[rechargeId]).first();
     }
     if (String(row?.status || '') === 'paid') {
-      return { success: true, acquired: false, alreadyPaid: true, rechargeId, amountPaise: amount, orderId: row.razorpay_order_id || null };
+      return { success: true, acquired: false, alreadyPaid: true, rechargeId, customerPaymentId, amountPaise: amount, orderId: row.razorpay_order_id || null };
     }
     if (String(row?.status || '') === 'order_created' && row.razorpay_order_id) {
-      return { success: true, acquired: false, alreadyPaid: false, rechargeId, amountPaise: amount, orderId: row.razorpay_order_id };
+      return { success: true, acquired: false, alreadyPaid: false, rechargeId, customerPaymentId, amountPaise: amount, orderId: row.razorpay_order_id };
     }
-    return { success: true, acquired: false, inProgress: true, rechargeId, amountPaise: amount, orderId: row?.razorpay_order_id || null };
+    return { success: true, acquired: false, inProgress: true, rechargeId, customerPaymentId, amountPaise: amount, orderId: row?.razorpay_order_id || null };
   }
 
   async function attachRechargeOrder({ ownerUid, rechargeId, orderId, amountPaise, currency = 'INR', receipt = '' } = {}) {
@@ -386,9 +447,11 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     const timestamp = Number(now());
     await statement(
       `UPDATE smv_domain_wallet_recharges
-       SET status='failed', payload_json=?, updated_at_ms=?
+       SET status='failed',
+           payload_json=json_set(CASE WHEN json_valid(payload_json) THEN payload_json ELSE '{}' END,'$.failureReason',?),
+           updated_at_ms=?
        WHERE recharge_id=? AND customer_uid=? AND status='order_creating'`,
-      [JSON.stringify({ failureReason: String(reason).slice(0, 200) }), timestamp, rid, owner.ownerUid]
+      [String(reason).slice(0, 200), timestamp, rid, owner.ownerUid]
     ).run();
     return { success: true };
   }
@@ -531,6 +594,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       status: String(row.status || ''),
       orderId: row.razorpay_order_id || null,
       paymentId: row.razorpay_payment_id || null,
+      customerPaymentId: String(payload.customerPaymentId || '') || null,
       paidAt: Number(row.paid_at_ms || 0),
       bonusMinutesCredited: safeMinutes(payload.bonusMinutesCredited),
       offerId: payload.offerId || null,
@@ -553,23 +617,26 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       [rid, owner.ownerUid]
     ).first();
     if (!recharge) throw walletError('WALLET_RECHARGE_NOT_FOUND', 'Wallet recharge record was not found.', 404);
+    let rechargePayload = {};
+    try { rechargePayload = JSON.parse(String(recharge.payload_json || '{}')); } catch {}
     if (String(recharge.razorpay_order_id || '') !== oid) throw walletError('WALLET_ORDER_MISMATCH', 'Razorpay order does not match this Wallet recharge.', 409);
     if (safePaise(recharge.amount_paise) !== amount) throw walletError('WALLET_AMOUNT_MISMATCH', 'Razorpay amount does not match this Wallet recharge.', 409);
     if (String(recharge.status || '') === 'paid') {
       if (String(recharge.razorpay_payment_id || '') !== pid) throw walletError('WALLET_RECHARGE_ALREADY_PAID', 'This Wallet recharge was paid with another payment.', 409);
       const wallet = await getWallet(owner.ownerUid);
-      let payload = {};
-      try { payload = JSON.parse(String(recharge.payload_json || '{}')); } catch {}
       return {
-        success: true, alreadyProcessed: true, rechargeId: rid, paymentId: pid, amountPaise: amount,
+        success: true, alreadyProcessed: true, rechargeId: rid, paymentId: pid,
+        customerPaymentId: String(rechargePayload.customerPaymentId || '') || null, amountPaise: amount,
         availableBalancePaise: wallet.availableBalancePaise,
-        bonusMinutesCredited: safeMinutes(payload.bonusMinutesCredited),
+        bonusMinutesCredited: safeMinutes(rechargePayload.bonusMinutesCredited),
         bonusMinutesBalance: wallet.bonusMinutesBalance
       };
     }
     if (String(recharge.status || '') !== 'order_created') {
       throw walletError('WALLET_RECHARGE_NOT_READY', 'This Wallet recharge is not ready to be credited.', 409);
     }
+    let customerPaymentId = String(rechargePayload.customerPaymentId || '').trim();
+    if (!customerPaymentId) customerPaymentId = await createCustomerPaymentReference();
     const cashKey = 'recharge:' + pid;
     const bonusKey = 'recharge-bonus:' + pid;
     const [cashLedger, bonusLedger, wallet] = await Promise.all([
@@ -619,7 +686,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       owner, ...owner, type:'recharge', direction:'credit', amountPaise:amount,
       idempotencyKey:cashKey, ledgerId:await sha256Hex('recharge:' + owner.ownerUid + ':' + pid, cryptoImpl),
       availableDeltaPaise:amount, referenceType:'razorpay_payment', referenceId:pid,
-      note:'Wallet recharge successful', metadata:{rechargeId:rid,orderId:oid}, source
+      note:'Wallet recharge successful', metadata:{rechargeId:rid,orderId:oid,customerPaymentId}, source
     });
     const batchStatements = [insertStatement(cashRow)];
     if (selectedOffer && bonusMinutes > 0) {
@@ -640,6 +707,8 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       ));
     }
     const payload = {
+      ...rechargePayload,
+      customerPaymentId,
       bonusMinutesCredited: bonusMinutes,
       offerId: selectedOffer?.id || null,
       offerName: selectedOffer?.name || null,
@@ -665,12 +734,15 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       if (results.some(result => result?.success === false)) throw new Error('D1_WALLET_RECHARGE_BATCH_INCOMPLETE');
     } catch (error) {
       const fresh = await statement(
-        'SELECT status, razorpay_payment_id FROM smv_domain_wallet_recharges WHERE recharge_id=? AND customer_uid=? LIMIT 1',
+        'SELECT status, razorpay_payment_id, payload_json FROM smv_domain_wallet_recharges WHERE recharge_id=? AND customer_uid=? LIMIT 1',
         [rid, owner.ownerUid]
       ).first();
       if (fresh?.status === 'paid' && fresh.razorpay_payment_id === pid) {
         const current = await getWallet(owner.ownerUid);
-        return { success:true,alreadyProcessed:true,rechargeId:rid,paymentId:pid,amountPaise:amount,
+        let freshPayload = {};
+        try { freshPayload = JSON.parse(String(fresh.payload_json || '{}')); } catch {}
+        return { success:true,alreadyProcessed:true,rechargeId:rid,paymentId:pid,
+          customerPaymentId:String(freshPayload.customerPaymentId || '') || null,amountPaise:amount,
           availableBalancePaise:current.availableBalancePaise,bonusMinutesCredited:bonusMinutes,
           bonusMinutesBalance:current.bonusMinutesBalance,offerId:selectedOffer?.id||null,offerName:selectedOffer?.name||null };
       }
@@ -678,7 +750,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     }
     const current = await getWallet(owner.ownerUid);
     return {
-      success:true,alreadyProcessed:false,rechargeId:rid,paymentId:pid,amountPaise:amount,
+      success:true,alreadyProcessed:false,rechargeId:rid,paymentId:pid,customerPaymentId,amountPaise:amount,
       availableBalancePaise:current.availableBalancePaise,bonusMinutesCredited:bonusMinutes,
       bonusMinutesBalance:current.bonusMinutesBalance,offerId:selectedOffer?.id||null,offerName:selectedOffer?.name||null
     };
@@ -695,11 +767,15 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       [oid]
     ).first();
     if (!row) return null;
+    let payload = {};
+    try { payload = JSON.parse(String(row.payload_json || '{}')); } catch {}
     return {
       rechargeId:String(row.recharge_id), customerUid:String(row.customer_uid),
       amountPaise:safePaise(row.amount_paise), currency:String(row.currency || 'INR'),
       status:String(row.status || ''), orderId:String(row.razorpay_order_id || ''),
-      paymentId:row.razorpay_payment_id || null, paidAt:Number(row.paid_at_ms || 0)
+      paymentId:row.razorpay_payment_id || null,
+      customerPaymentId:String(payload.customerPaymentId || '') || null,
+      paidAt:Number(row.paid_at_ms || 0)
     };
   }
 

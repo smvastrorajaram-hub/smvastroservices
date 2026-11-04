@@ -28,7 +28,11 @@ function readyRow() {
     razorpay_order_idempotency_columns_count: 2,
     razorpay_claim_columns_count: 2,
     live_booking_release_version: '0011_live_booking_release_claim',
-    live_booking_release_trigger_count: 1
+    live_booking_release_trigger_count: 1,
+    numeric_public_reference_ids_version: '0012_numeric_public_reference_ids',
+    public_withdrawal_id_index_count: 1,
+    admin_payment_id_index_count: 1,
+    customer_payment_id_index_count: 1
   };
 }
 
@@ -59,7 +63,7 @@ function responseRecorder() {
   };
 }
 
-test('Production D1 schema readiness recognizes the current 0002-0011 migration contracts', async () => {
+test('Production D1 schema readiness recognizes the current 0002-0012 migration contracts', async () => {
   const db = dbWith(readyRow());
   const result = await inspectBackendSchema(db);
 
@@ -67,7 +71,7 @@ test('Production D1 schema readiness recognizes the current 0002-0011 migration 
   assert.equal(result.querySucceeded, true);
   assert.equal(result.ready, true);
   assert.equal(result.schemaVersion, '0002_shared_domain_repository');
-  assert.deepEqual(Object.values(result.schemaMigrations), Array(10).fill(true));
+  assert.deepEqual(Object.values(result.schemaMigrations), Array(11).fill(true));
   assert.equal(db.calls.length, 1);
   assert.match(db.calls[0], /smv_domain_schema_meta/);
   assert.doesNotMatch(db.calls[0], /smv_wallet_schema_meta|0001_wallet_live_domain/);
@@ -99,7 +103,11 @@ test('any missing or stale required marker or schema object fails readiness clos
     row => { row.razorpay_order_idempotency_index_count = 0; },
     row => { row.razorpay_order_idempotency_columns_count = 1; },
     row => { row.razorpay_claim_columns_count = 1; },
-    row => { row.live_booking_release_version = null; }
+    row => { row.live_booking_release_version = null; },
+    row => { row.numeric_public_reference_ids_version = null; },
+    row => { row.public_withdrawal_id_index_count = 0; },
+    row => { row.admin_payment_id_index_count = 0; },
+    row => { row.customer_payment_id_index_count = 0; }
   ]) {
     const row = readyRow();
     mutate(row);
@@ -201,6 +209,7 @@ test('GET /api/backend/readiness derives selected Production financial routing f
   assert.equal(response.body.liveCallChatRoutesEnabled, true);
   assert.equal(response.body.walletPayoutEncryptionConfigured, true);
   assert.equal(response.body.walletPayoutEncryptionReady, true);
+  assert.equal(response.body.checks.numericPublicReferenceIdsSchema, true);
 });
 
 test('GET /api/backend/readiness returns 503 for incomplete Production schema', async () => {

@@ -1,5 +1,6 @@
 import { safePaise, walletError } from './wallet-domain.mjs';
 import { encryptPayoutSnapshot, decryptPayoutSnapshot } from './payout-encryption.mjs';
+import { createUniqueNumericReference } from './public-reference-id.mjs';
 
 const SEVEN_DAYS_MS=7*24*60*60*1000;
 const MINIMUM_WITHDRAWAL_PAISE=30000;
@@ -249,7 +250,13 @@ export function createD1WithdrawalService({db,firestore,now=Date.now,cryptoImpl=
     }
     const timestamp=Number(now());
     const id=cryptoImpl.randomUUID();
-    const withdrawalId='SMV-WD-'+id;
+    const withdrawalId=await createUniqueNumericReference({
+      prefix:'smvwt',cryptoImpl,
+      exists:async candidate=>Boolean(await first(
+        "SELECT withdrawal_id FROM smv_domain_withdrawals WHERE json_extract(CASE WHEN json_valid(payload_json) THEN payload_json ELSE '{}' END, '$.withdrawalId') = ? LIMIT 1",
+        [candidate]
+      ))
+    });
     const name=safePersonName(astrologerName,profile.data?.name);
     const payload={
       withdrawalId,astrologerName:name,
@@ -477,22 +484,39 @@ export function createD1WithdrawalService({db,firestore,now=Date.now,cryptoImpl=
     const row=await first('SELECT * FROM smv_domain_withdrawals WHERE withdrawal_id=? LIMIT 1',[id]);
     if(!row) throw withdrawalError('WITHDRAWAL_NOT_FOUND','Withdrawal request was not found.',404);
     const payload=readJson(row.payload_json);
-    if(row.status==='paid'&&/^SMV-PMT-/i.test(String(payload.adminPaymentId||''))) {
-      return {success:true,alreadyProcessed:true,paymentId:payload.adminPaymentId,withdrawal:mapWithdrawal(row)};
+    const existingPaymentId=String(payload.adminPaymentId||payload.paymentId||'').trim();
+    if(row.status==='paid'&&/^(?:smvpt-|smv-pmt-)/i.test(existingPaymentId)) {
+      return {success:true,alreadyProcessed:true,paymentId:existingPaymentId,withdrawal:mapWithdrawal(row)};
     }
     if(!['processing','paid'].includes(String(row.status||''))) {
       throw withdrawalError('WITHDRAWAL_STATUS_INVALID','Only a processing withdrawal can be marked as paid.',409);
     }
-    const paymentId='SMV-PMT-'+id;
+    const paymentId=await createUniqueNumericReference({
+      prefix:'smvpt',cryptoImpl,
+      exists:async candidate=>Boolean(await first(
+        "SELECT withdrawal_id FROM smv_domain_withdrawals WHERE json_extract(CASE WHEN json_valid(payload_json) THEN payload_json ELSE '{}' END, '$.adminPaymentId') = ? LIMIT 1",
+        [candidate]
+      ))
+    });
     const timestamp=Number(now());
     const updatedPayload={...payload,adminPaymentId:paymentId,paymentId,paidAtMs:payload.paidAtMs||timestamp,updatedBy:actor};
     await statement(
       `UPDATE smv_domain_withdrawals SET status='paid',payload_json=?,updated_at_ms=?
-       WHERE withdrawal_id=? AND status IN ('processing','paid')`,
+       WHERE withdrawal_id=? AND status IN ('processing','paid')
+         AND (json_extract(CASE WHEN json_valid(payload_json) THEN payload_json ELSE '{}' END, '$.adminPaymentId') IS NULL
+              OR json_extract(CASE WHEN json_valid(payload_json) THEN payload_json ELSE '{}' END, '$.adminPaymentId')='')`,
       [JSON.stringify(updatedPayload),timestamp,id]
     ).run();
     const updated=await first('SELECT * FROM smv_domain_withdrawals WHERE withdrawal_id=?',[id]);
-    return {success:true,alreadyProcessed:false,paymentId,withdrawal:mapWithdrawal(updated)};
+    const finalPayload=readJson(updated?.payload_json);
+    const finalPaymentId=String(finalPayload.adminPaymentId||finalPayload.paymentId||'').trim();
+    if(!updated||updated.status!=='paid'||!/^smvpt-[0-9]{6}$/i.test(finalPaymentId)) {
+      throw withdrawalError('WITHDRAWAL_PAYMENT_REFERENCE_FAILED','The Admin Payment ID could not be confirmed safely.',503);
+    }
+    return {
+      success:true,alreadyProcessed:finalPaymentId!==paymentId,
+      paymentId:finalPaymentId,withdrawal:mapWithdrawal(updated)
+    };
   }
 
   return Object.freeze({overview,getEarningsDashboard,createRequest,listAdminWithdrawals,getPrivatePayout,markProcessing,rejectWithdrawal,markPaid});

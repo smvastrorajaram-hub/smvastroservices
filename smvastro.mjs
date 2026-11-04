@@ -3402,7 +3402,7 @@ async function loadAdminPanelData(background=false){
         let adminPaymentId = String(w.adminPaymentId || w.paymentId || '');
 
         // IMPORTANT: smvpt is created only when Admin actually marks the
-        // withdrawal as PAID. Withdrawal request itself remains smvwd.
+        // withdrawal as PAID. Withdrawal request itself now uses the six-digit smvwt public ID.
         if(newStatus === 'paid'){
           const paidResult = await withTimeout(
             renderApi('/admin/withdrawal-mark-paid', {

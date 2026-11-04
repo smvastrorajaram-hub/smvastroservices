@@ -584,6 +584,9 @@ function smvRandomCode(length = 16) {
 function newSmvId(prefix) {
   return `${String(prefix || "smv").toLowerCase()}-${smvRandomCode(16)}`;
 }
+function newSmvNumericReference(prefix) {
+  return `${String(prefix || "smv").toLowerCase()}-${crypto.randomInt(100000, 1000000)}`;
+}
 
 // Customer/Astrologer public IDs are intentionally compact numeric IDs.
 // Five digits keeps the requested 4–5 digit style while providing the larger
@@ -2482,7 +2485,7 @@ app.post("/astrologer/withdrawal-request", async (req, res) => {
       });
     }
 
-    const withdrawalId = newSmvId("smvwd");
+    const withdrawalId = newSmvNumericReference("smvwt");
 
     // The approved payout method is stored in smv_payouts/{astrologerUid}.
     // Read it at withdrawal time so Admin can pay to the exact approved method.
@@ -2573,7 +2576,7 @@ app.post("/admin/withdrawal-mark-paid", express.json({limit:"5kb"}), async (req,
         throw new Error("Only a processing withdrawal can be marked as paid.");
       }
 
-      const id = newSmvId("smvpt");
+      const id = newSmvNumericReference("smvpt");
       tx.update(withdrawalRef, {
         status:"paid",
         adminPaymentId:id,
