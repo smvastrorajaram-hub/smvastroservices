@@ -191,6 +191,14 @@ jobs:
           if (required.some(([, present]) => !present)) process.exit(1);
           NODE
 
+      - name: Display exact Production D1 migration state
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 migrations list smvastro-wallet-production --remote --config wrangler.production.jsonc
+
+      - name: Apply pending additive migrations to exact Production D1
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 migrations apply smvastro-wallet-production --remote --config wrangler.production.jsonc
+
       - name: Deploy the configured Production Worker
         run: npx --yes wrangler@4.156.0 deploy --config cloudflare/backend-api/wrangler.production.jsonc
 
