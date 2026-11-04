@@ -493,6 +493,18 @@ export function createD1LiveSessionService({
     const wallet=await walletAdapter.getWallet(session.customerUid);
     if(!wallet||wallet.reservedBalancePaise<settlement.reservedAmountPaise||
        wallet.reservedBonusMinutes<settlement.reservedBonusMinutes) {
+      // A competing endSession call may have committed the settlement after this
+      // request read the still-active session but before it read the Wallet. In
+      // that case the now-released reserve is expected. Re-read the session and
+      // treat only a committed terminal state as an idempotent replay; otherwise
+      // retain the fail-closed reserve mismatch.
+      const latest=await getSession(id);
+      if(latest?.state==='ended') {
+        return {
+          success:true,alreadyProcessed:true,session:sessionView(latest),
+          wallet:await walletAdapter.getWallet(session.customerUid)
+        };
+      }
       throw liveError('LIVE_WALLET_RESERVE_MISMATCH','Wallet cash or promotional reserve does not reconcile with this Live Session. It was not silently settled.',409);
     }
     const origin=String(session.origin||'direct');
