@@ -6,16 +6,7 @@ import './chat-moderation.js?v=20261030-chat-moderation-v1';
 // Consolidated: dashboard-live.mjs + admin-workflows.mjs + app.mjs
 
 
-// Unified dashboard typography stylesheet. Loaded after the legacy stylesheet so
-// Customer, Astrologer and Admin dashboards share one predictable hierarchy.
-(function loadDashboardTypography(){
-  if(document.querySelector('link[data-smv-dashboard-typography]')) return;
-  const link=document.createElement('link');
-  link.rel='stylesheet';
-  link.href='dashboard-typography.css?v=20261024-blog-cover-picker-center-v1';
-  link.dataset.smvDashboardTypography='true';
-  document.head.appendChild(link);
-})();
+// Dashboard typography is linked in the document head so it is ready before role-specific UI renders.
 
 // Coalesce updates, serialize requests and retain edits until a safe refresh.
 async function smvMapLimit(items,limit,worker){
@@ -1531,7 +1522,7 @@ function smvBindCustomerBookingChat(){
 function smvWalletDashboardCardHtml(){
  return '<section class="card smv-customer-wallet-card" id="smvCustomerWalletCard" style="margin-top:16px" aria-labelledby="smvWalletTitle">'+
  '<div class="grid" style="align-items:center;gap:14px"><div><span class="badge">CUSTOMER WALLET</span><h3 id="smvWalletTitle" style="margin:8px 0">My Wallet</h3><div class="small">Use your Wallet for Live Call, Live Chat and consultation charges.</div></div>'+
- '<div><div class="small">Available Balance</div><div id="smvWalletBalance" style="font-size:1.8rem;font-weight:800;margin:4px 0">Loading…</div><div class="small">Reserved: <b id="smvWalletReserved">₹0.00</b></div></div></div>'+
+ '<div><div class="small">Available Balance</div><div id="smvWalletBalance" class="smv-dashboard-metric" style="font-weight:800;margin:4px 0">Loading…</div><div class="small">Reserved: <b id="smvWalletReserved">₹0.00</b></div></div></div>'+
  '<div class="smv-wallet-bonus-summary" aria-live="polite"><div><span class="small">Bonus Free Minutes Available</span><strong id="smvWalletBonusMinutes">Loading…</strong></div><div><span class="small">Reserved for active / booked sessions</span><strong id="smvWalletBonusReserved">0 minutes</strong></div><p>These promotional minutes are used before paid minutes for eligible Live Call and Live Chat sessions.</p></div>'+
  '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px"><button class="btn" id="smvWalletRefresh" type="button">Refresh Wallet</button></div>'+
  '<form id="smvWalletRechargeForm" style="display:flex;flex-wrap:nowrap;align-items:stretch;gap:10px;margin-top:16px;width:100%;max-width:100%;box-sizing:border-box">'+
@@ -1980,7 +1971,7 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
         <div id="smvLiveDashboardMount" style="margin-top:12px"></div>
       </div>
     </div>
-    <div class="card"><h3>Total Earnings</h3><p style="font-size:28px"><span id="smvAstroTotalEarnings" class="smv-earnings-total">Loading…</span></p><p><span class="smv-summary-label">Total Withdrawal:</span> <span id="smvAstroTotalWithdrawal" class="smv-summary-value">Loading…</span></p><p><span class="smv-summary-label">Available to Withdraw:</span> <span id="smvAstroAvailableWithdrawal" class="smv-summary-value">Loading…</span></p><p><span class="smv-summary-label">Minimum withdrawal:</span> <span id="smvAstroMinimumWithdrawal" class="smv-summary-value">₹300.00</span></p><div id="smvAstroWithdrawalStatus" class="small" aria-live="polite">Checking withdrawal eligibility…</div><button class="btn smv-withdraw-btn is-red" id="withdrawBtn" type="button" disabled>WITHDRAW</button></div>
+    <div class="card"><h3>Total Earnings</h3><p><span id="smvAstroTotalEarnings" class="smv-earnings-total smv-dashboard-metric">Loading…</span></p><p><span class="smv-summary-label">Total Withdrawal:</span> <span id="smvAstroTotalWithdrawal" class="smv-summary-value">Loading…</span></p><p><span class="smv-summary-label">Available to Withdraw:</span> <span id="smvAstroAvailableWithdrawal" class="smv-summary-value">Loading…</span></p><p><span class="smv-summary-label">Minimum withdrawal:</span> <span id="smvAstroMinimumWithdrawal" class="smv-summary-value">₹300.00</span></p><div id="smvAstroWithdrawalStatus" class="small" aria-live="polite">Checking withdrawal eligibility…</div><button class="btn smv-withdraw-btn is-red" id="withdrawBtn" type="button" disabled>WITHDRAW</button></div>
    </div>
    <div class="card" id="astroProfileDescriptionCard" style="margin-top:16px">
      <h3>Profile Description</h3>
