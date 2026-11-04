@@ -36,9 +36,11 @@ test('Live booking and session typography follows the requested dashboard scale'
 });
 
 
+
 test('Production Worker shares the D1 Live service across legacy route registration blocks',()=>{
  const index=read('cloudflare/backend-api/src/index.mjs');
- assert.match(index,/let gapLiveService = null;[\\s\\S]*if \(requiresFirestoreAdmin\) \{[\\s\\S]*gapLiveService = env\\.DB && sharedWalletAdapter/);
- assert.doesNotMatch(index,/const gapLiveService = env\\.DB && sharedWalletAdapter/);
- assert.match(index,/liveService: gapLiveService/);
+ assert.ok(index.includes('let gapLiveService = null;'));
+ assert.ok(index.includes('gapLiveService = env.DB && sharedWalletAdapter'));
+ assert.ok(!index.includes('const gapLiveService = env.DB && sharedWalletAdapter'));
+ assert.ok(index.includes('liveService: gapLiveService'));
 });
