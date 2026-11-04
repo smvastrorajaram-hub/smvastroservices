@@ -54,13 +54,15 @@ test('Customer, Astrologer and Admin dashboards share one responsive typography 
  for(const token of ['--smv-dashboard-title','--smv-dashboard-section','--smv-dashboard-subsection','--smv-dashboard-emphasis','--smv-dashboard-body','--smv-dashboard-support','--smv-dashboard-label','--smv-dashboard-meta','--smv-dashboard-metric']){
   assert.ok(theme.includes(token),'shared type token exists: '+token);
  }
- assert.match(theme,/html\[lang="ta"\] body[\s\S]*--smv-dashboard-body:16px/,'Tamil typography gets a larger reading size and line height');
+ assert.match(theme,/html\[lang="ta"\] body[\s\S]*--smv-dashboard-body:16px[\s\S]*--smv-dashboard-emphasis-line:1.65/,'Tamil typography gets larger reading sizes and line heights');
+ assert.doesNotMatch(css,/font-size:\s*\d+(?:\.\d+)?(?:px|rem|em)/,'dashboard-specific font sizes must use shared tokens');
  assert.match(css,/#dashboardContent \.smv-consultation-item \.smv-question-text[\s\S]*var\(--smv-dashboard-emphasis\)/);
  assert.match(css,/html body #dashboard #dashboardContent :is\(h2,h3\)[\s\S]*var\(--smv-dashboard-section\)/,'shared section heading scale covers the Astrologer dashboard');
  assert.match(css,/#admin \.card:not\(:has\(\.smv-notification-row\)\)>h3[\s\S]*var\(--smv-dashboard-section\)/);
  assert.match(css,/#adminPrivateNotifications \.smv-notification-title[\s\S]*var\(--smv-dashboard-label\)/,'notification title remains separately styled');
  assert.match(css,/#adminPrivateNotifications \.smv-notification-content[\s\S]*var\(--smv-dashboard-meta\)/,'notification body remains separately styled');
  assert.ok(html.indexOf('smv-ui.css')<html.indexOf('dashboard-typography.css'),'shared tokens load before dashboard-specific typography');
+ assert.match(html,/smv-ui\.css\?v=20261105-dashboard-typography-hierarchy-v1/,'shared design token stylesheet cache is refreshed');
  assert.match(html,/smvastro\.mjs\?v=20261105-dashboard-typography-hierarchy-v1/,'frontend module cache is refreshed with source changes');
  assert.doesNotMatch(frontend,/loadDashboardTypography/,'dashboard CSS no longer arrives through a late JavaScript injection');
  assert.match(frontend,/id="smvWalletBalance" class="smv-dashboard-metric"/);
