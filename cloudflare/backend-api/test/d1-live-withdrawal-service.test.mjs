@@ -69,6 +69,12 @@ function fixture({now=Date.parse('2026-10-31T10:00:00Z'),payoutEncryptionKey=TES
         async first() {
           if(sql.includes('SUM(astrologer_amount_paise)')) return {amount:50000};
           if(sql.includes('FROM smv_domain_legacy_earning_snapshots')) return snapshots.get(String(values[0]))||null;
+          if(sql.includes("json_extract(payload_json, '$.withdrawalId')")) {
+            return [...withdrawals.values()].find(row=>{try{return JSON.parse(row.payload_json).withdrawalId===String(values[0]);}catch{return false;}})||null;
+          }
+          if(sql.includes("json_extract(payload_json, '$.adminPaymentId')")) {
+            return [...withdrawals.values()].find(row=>{try{return JSON.parse(row.payload_json).adminPaymentId===String(values[0]);}catch{return false;}})||null;
+          }
           if(sql.includes('FROM smv_domain_withdrawals WHERE withdrawal_id')) return withdrawals.get(String(values[0]))||null;
           if(sql.includes('FROM smv_domain_withdrawal_payouts_encrypted WHERE withdrawal_id')) return payouts.get(String(values[0]))||null;
           if(sql.includes('FROM smv_domain_withdrawal_payouts WHERE withdrawal_id')) return legacyPayouts.get(String(values[0]))||null;
@@ -149,6 +155,7 @@ test('withdrawal request preserves approved payout snapshot and exact ₹300 min
   const result=await f.service.createRequest({astrologerUid:'astro-1',astrologerName:'Test Astrologer',amountPaise:30000});
   assert.equal(result.success,true);
   assert.equal(result.amount,300);
+  assert.match(result.withdrawalId,/^smvwt-\\d{6}$/);
   assert.equal(result.availableAfter,500);
   assert.equal(f.withdrawals.size,1);
   const encrypted=f.payouts.get('uuid-1');
@@ -213,11 +220,12 @@ test('Admin can process, pay and safely retry a withdrawal; payout snapshot rema
   const processing=await f.service.markProcessing({withdrawalId:'uuid-1',adminUid:'admin-1'});
   assert.equal(processing.withdrawal.status,'processing');
   const paid=await f.service.markPaid({withdrawalId:'uuid-1',adminUid:'admin-1'});
-  assert.equal(paid.paymentId,'SMV-PMT-uuid-1');
+  assert.match(paid.paymentId,/^smvpt-\\d{6}$/);
   assert.equal(paid.withdrawal.status,'paid');
   const retry=await f.service.markPaid({withdrawalId:'uuid-1',adminUid:'admin-1'});
   assert.equal(retry.alreadyProcessed,true);
+  assert.equal(retry.paymentId,paid.paymentId);
   const details=await f.service.getPrivatePayout('uuid-1');
   assert.equal(details.payout.accountNumber,'123456789');
-  assert.equal(created.withdrawalId,'SMV-WD-uuid-1');
+  assert.match(created.withdrawalId,/^smvwt-\\d{6}$/);
 });
