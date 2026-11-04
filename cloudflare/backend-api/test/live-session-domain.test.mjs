@@ -8,6 +8,7 @@ import {
   splitLiveCommission,
   commissionFromPayload,
   astrologerRatePaise,
+  liveRequestCanStartNow,
   validateLiveBirthDetails,
   scheduledAppointmentStartAtMs,
   calculateLiveSettlement
@@ -74,6 +75,15 @@ test('Astrologer Call and Chat prices are read independently from profile fields
   assert.equal(astrologerRatePaise({callPricePerMinute:'10.00',chatPricePerMinute:'12.50'},'call'),1000);
   assert.equal(astrologerRatePaise({callPricePerMinute:'10.00',chatPricePerMinute:'12.50'},'chat'),1250);
   assert.equal(astrologerRatePaise({callPricePerMinute:'0.50'},'call'),null);
+});
+
+test('Live request start ignores stale availability text and uses enabled mode plus authoritative capacity',()=>{
+  assert.equal(liveRequestCanStartNow({availabilityStatus:'offline',liveCallEnabled:true},'call',0,1),true);
+  assert.equal(liveRequestCanStartNow({availabilityStatus:'offline',liveChatEnabled:true},'chat',0,1),true);
+  assert.equal(liveRequestCanStartNow({availabilityStatus:'online',liveCallEnabled:false,liveChatEnabled:true},'call',0,1),false);
+  assert.equal(liveRequestCanStartNow({liveCallEnabled:true},'call',1,1),false);
+  assert.equal(liveRequestCanStartNow({liveCallEnabled:true},'call',1,2),true);
+  assert.equal(liveRequestCanStartNow({liveCallEnabled:true},'video',0,1),false);
 });
 
 test('birth details validate Tamil-local customer date and coordinate boundaries',()=>{
