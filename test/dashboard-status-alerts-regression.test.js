@@ -27,6 +27,7 @@ test('Render availability persists manual Busy and keeps session-managed Busy di
  const server=read('server.js');
  assert.match(service,/function astrologerManualBusy\(/);
  assert.match(service,/astrologerManualBusy\(astro, liveCount\)/);
+ assert.match(service,/const canStartNow = liveCount < pricing\.maxConcurrentSessions/);
  assert.match(server,/const manualAvailabilityStatus=availabilityStatus==="busy"\?"busy":""/);
  assert.match(server,/manualAvailabilityStatus,/);
  assert.match(server,/app.get\("\/astrologer\/availability"/);
