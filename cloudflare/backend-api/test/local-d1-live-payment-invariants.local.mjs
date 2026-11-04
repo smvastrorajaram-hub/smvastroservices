@@ -7,6 +7,7 @@ import { Worker } from 'node:worker_threads';
 import { webcrypto } from 'node:crypto';
 import { createD1WalletAdapter } from '../../../shared/backend-platform/d1-wallet-adapter.mjs';
 import { createD1LiveSessionService } from '../../../shared/backend-platform/d1-live-session-service.mjs';
+import { createD1WithdrawalService } from '../../../shared/backend-platform/d1-live-withdrawal-service.mjs';
 import { registerWalletRechargeRoutes } from '../src/wallet-recharge-routes.mjs';
 
 const RELEASE_GUARD = 'smv_domain_live_booking_release_pending_validate';
@@ -187,7 +188,7 @@ test('local D1 enforces per-Astrologer Live capacity under independent concurren
 test('local D1 blocks stale booking cancellation/expiry release after accept transferred the reserve', async () => {
   const { sqlite } = await openMigratedLocalD1();
   const nowMs = Date.now(), customerUid = id('booking_customer');
-  const astrologerUid = id('booking_astro'), bookingId = id('booking');
+  const astrologerUid = id('booking_astro'), adminUid = id('booking_admin'), bookingId = id('booking');
   seedWallet(sqlite, customerUid, 'customer', 10000, 2, nowMs);
   try {
     sqlite.exec('BEGIN IMMEDIATE');
@@ -260,8 +261,56 @@ test('local D1 blocks stale booking cancellation/expiry release after accept tra
     assert.equal(Number(wallet.bonus_minutes_balance), 0);
     assert.equal(Number(wallet.reserved_bonus_minutes), 2);
     assert.equal(Number(releaseRows.total), 0);
+
+    // The accepted scheduled booking follows the same D1 settlement path as
+    // a direct Call Now / Chat Now session. Three connected started minutes
+    // consume two reserved bonus minutes and credit one paid minute (₹10 gross,
+    // 20% Astrologer commission, 80% Admin commission).
+    const activePayload = {
+      ...sessionPayload,state:'active',startedAtMs:nowMs,
+      astrologerCommissionPercent:20,adminCommissionPercent:80,
+      customerReady:true,astrologerReady:true
+    };
+    sqlite.prepare(
+      `UPDATE smv_domain_live_sessions
+       SET state='active',started_at_ms=?,payload_json=?,updated_at_ms=?
+       WHERE session_id=? AND state='preparing'`
+    ).run(nowMs,JSON.stringify(activePayload),nowMs,bookingId);
+    const liveService=makeService(sqlite,nowMs+180000,adminUid);
+    const settled=await liveService.endSession({
+      sessionId:bookingId,reason:'participant_ended',system:true
+    });
+    assert.equal(settled.session.state,'ended');
+    const settledRow=sqlite.prepare('SELECT payload_json FROM smv_domain_live_sessions WHERE session_id=?').get(bookingId);
+    assert.equal(JSON.parse(settledRow.payload_json).origin,'accepted_booking');
+    assert.equal(settled.session.actualChargePaise,1000);
+    assert.equal(settled.session.freeMinutesUsed,2);
+
+    const earning=sqlite.prepare(
+      'SELECT gross_amount_paise,astrologer_amount_paise,admin_amount_paise,status FROM smv_domain_earnings WHERE reference_id=?'
+    ).get(bookingId);
+    assert.equal(Number(earning.gross_amount_paise),1000);
+    assert.equal(Number(earning.astrologer_amount_paise),200);
+    assert.equal(Number(earning.admin_amount_paise),800);
+    assert.equal(earning.status,'credited');
+
+    const earningsService=createD1WithdrawalService({
+      db:makeD1Binding(sqlite),
+      firestore:{
+        async runQuery(){return [];},
+        async getDocument(){return {exists:false,data:null};}
+      },
+      now:()=>nowMs+180001,cryptoImpl:webcrypto,
+      payoutEncryptionKey:Buffer.from('01234567890123456789012345678901').toString('base64'),
+      payoutKeyVersion:'v1',sourceProjectId:'smv-astro'
+    });
+    const dashboard=await earningsService.getEarningsDashboard(astrologerUid);
+    assert.equal(dashboard.totalEarnings,2);
+    assert.equal(dashboard.ledger.length,1);
+    assert.equal(dashboard.ledger[0].id,bookingId);
+    assert.equal(dashboard.ledger[0].commission,2);
   } finally {
-    cleanupFixture(sqlite, { uids: [customerUid], sessions: [bookingId], bookings: [bookingId], references: [bookingId] });
+    cleanupFixture(sqlite, { uids: [customerUid, astrologerUid, adminUid], sessions: [bookingId], bookings: [bookingId], references: [bookingId] });
     sqlite.close();
   }
 });
@@ -342,6 +391,23 @@ test('local D1 rolls back failed Live settlement and serializes two competing se
     assert.equal(Number(astroWallet.available_balance_paise), 200);
     assert.equal(Number(adminWallet.available_balance_paise), 800);
     assert.equal(Number(sqlite.prepare('SELECT COUNT(*) AS total FROM smv_domain_earnings WHERE reference_id=?').get(sessionId).total), 1);
+
+    const earningsReader=createD1WithdrawalService({
+      db:makeD1Binding(sqlite),
+      firestore:{
+        async runQuery(){return [];},
+        async getDocument(){return {exists:false,data:null};}
+      },
+      now:()=>nowMs+1,cryptoImpl:webcrypto,
+      payoutEncryptionKey:Buffer.from('01234567890123456789012345678901').toString('base64'),
+      payoutKeyVersion:'v1',sourceProjectId:'smv-astro'
+    });
+    const earnings=await earningsReader.getEarningsDashboard(astrologerUid);
+    assert.equal(earnings.totalEarnings,2);
+    assert.equal(earnings.ledger.length,1);
+    assert.equal(earnings.ledger[0].id,sessionId);
+    assert.equal(earnings.ledger[0].commission,2);
+
     for (const type of ['live_session_usage','live_session_unused_release','live_session_earning','live_session_admin_commission']) {
       assert.equal(Number(sqlite.prepare('SELECT COUNT(*) AS total FROM smv_domain_wallet_ledger WHERE reference_id=? AND type=?').get(sessionId,type).total), 1);
     }

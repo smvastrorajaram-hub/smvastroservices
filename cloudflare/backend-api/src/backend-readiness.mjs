@@ -16,7 +16,12 @@ const REQUIRED_SCHEMA_QUERY = [
   "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'smv_domain_identity_users') AS identity_users_table_count,",
   "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'smv_domain_identity_migration_meta') AS identity_migration_meta_table_count,",
   "  (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = 'identity-profiles' LIMIT 1) AS identity_profiles_version,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'smv_domain_identity_import_audit') AS identity_import_audit_table_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'idx_smv_domain_identity_import_audit_project_collection') AS identity_import_audit_index_count,",
   "  (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = 'wallet-security' LIMIT 1) AS wallet_security_version,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'smv_domain_withdrawal_payouts_encrypted') AS encrypted_payout_table_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'idx_smv_domain_razorpay_orders_idempotency') AS razorpay_order_idempotency_index_count,",
+  "  (SELECT COUNT(*) FROM pragma_table_info('smv_domain_razorpay_orders') WHERE name IN ('wallet_recharge_id', 'idempotency_key')) AS razorpay_order_idempotency_columns_count,",
   "  (SELECT COUNT(*) FROM pragma_table_info('smv_domain_razorpay_webhook_events') WHERE name IN ('claim_token', 'lease_until_ms')) AS razorpay_claim_columns_count,",
   "  (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = 'live-booking-release-guard' LIMIT 1) AS live_booking_release_version,",
   "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_live_booking_release_pending_validate') AS live_booking_release_trigger_count"
@@ -93,9 +98,14 @@ export async function inspectBackendSchema(db) {
         countIs(row.identity_users_table_count, 1) &&
         countIs(row.identity_migration_meta_table_count, 1),
       '0008_identity_profile_backfill_audit':
-        row.identity_profiles_version === '0008_identity_profile_backfill_audit',
+        row.identity_profiles_version === '0008_identity_profile_backfill_audit' &&
+        countIs(row.identity_import_audit_table_count, 1) &&
+        countIs(row.identity_import_audit_index_count, 1),
       '0009_wallet_razorpay_payout_encryption':
-        row.wallet_security_version === '0009_wallet_razorpay_payout_encryption',
+        row.wallet_security_version === '0009_wallet_razorpay_payout_encryption' &&
+        countIs(row.encrypted_payout_table_count, 1) &&
+        countIs(row.razorpay_order_idempotency_index_count, 1) &&
+        countIs(row.razorpay_order_idempotency_columns_count, 2),
       '0010_razorpay_webhook_claim_leases':
         countIs(row.razorpay_claim_columns_count, 2),
       '0011_live_booking_release_claim':
@@ -179,9 +189,12 @@ export function registerBackendReadinessRoute({
     const walletOfferRoutesEnabled = runtime.walletOfferRoutesRegistered === true &&
       runtime.walletReadRouteGateOpen === true && schema.checks.walletRechargeSchema;
     const liveCallChatRoutesEnabled = runtime.liveSessionRoutesRegistered === true &&
-      runtime.liveSessionRoutesOpen === true && schema.checks.liveSessionSchema;
+      runtime.liveSessionRoutesOpen === true && schema.checks.liveSessionSchema &&
+      schema.checks.walletSecuritySchema;
     const razorpayCredentialsConfigured = razorpayPolicy.enabled === true &&
       !!runtime.razorpayKeyId && !!runtime.razorpayKeySecret && !!runtime.razorpayWebhookSecret;
+    const walletPayoutEncryptionReady = runtime.walletPayoutEncryptionConfigured === true &&
+      schema.checks.walletSecuritySchema === true;
     const identityProfileD1AuthorizationEnabled = runtime.identityProfileD1AuthorizationOpen === true;
     const identityProfileD1AuthorizationReady = identityGate.ready === true;
     const productionFinancialTrafficRoutingEnabled = isProductionFinancialTrafficRoutingEnabled({
@@ -232,6 +245,8 @@ export function registerBackendReadinessRoute({
         : null,
       razorpayMode: String(razorpayPolicy.mode || 'disabled'),
       razorpayPolicyReason: String(razorpayPolicy.reason || 'disabled'),
+      walletPayoutEncryptionConfigured: runtime.walletPayoutEncryptionConfigured === true,
+      walletPayoutEncryptionReady,
       legacyRazorpayRoutesRegistered: runtime.legacyRazorpayRoutesRegistered === true,
       legacyPrivateConsultationRoutesEnabled: false,
       walletReadRoutesEnabled,

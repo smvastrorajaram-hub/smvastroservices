@@ -2162,19 +2162,10 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
      epRemote=null;
      console.warn('Astrologer earnings hydration deferred:',e?.message||e);
     }
-    let withdrawalItems=Array.isArray(epRemote?.withdrawals)?epRemote.withdrawals:[];
-    let withdrawalHistoryAvailable=!!epRemote;
-    if(!epRemote){
-     try{
-      const ws=await getDocs(query(collection(db,'smv_withdrawals'),where('astrologerId','==',currentUser.uid)));
-      if(!active())return;
-      withdrawalItems=ws.docs.map(d=>({id:d.id,...(d.data()||{})}));
-      withdrawalHistoryAvailable=true;
-     }catch(fallbackErr){
-      console.warn('Astrologer withdrawals fallback unavailable:',fallbackErr?.message||fallbackErr);
-      withdrawalHistoryAvailable=false;
-     }
-    }
+    // Earnings and withdrawals share the D1 financial source after cutover.
+    // Do not silently fall back to a stale Firebase collection when this API fails.
+    const withdrawalItems=Array.isArray(epRemote?.withdrawals)?epRemote.withdrawals:[];
+    const withdrawalHistoryAvailable=!!epRemote;
     withdrawalSnap={docs:withdrawalItems.map(w=>({id:String(w.id||''),data:()=>w}))};
     totalEarnings=Number(epRemote?.totalEarnings||0);
     ledger=smvSortDashboardDesc(Array.isArray(epRemote?.ledger)?epRemote.ledger:[]);
@@ -3329,43 +3320,29 @@ async function loadAdminPanelData(background=false){
 
       try {
 
-        const withdrawalRef = doc(db,'smv_withdrawals',withdrawalId);
         const w = withdrawalDocs.find(x=>String(x.id||'')===String(withdrawalId||''))||{};
         if(!w.id)throw new Error('Withdrawal request not found in the current Admin list. Please refresh and try again.');
 
         let adminPaymentId = String(w.adminPaymentId || w.paymentId || '');
 
-        // IMPORTANT: smvpt is created only when Admin actually marks the
-        // withdrawal as PAID. Withdrawal request itself remains smvwd.
+        // Withdrawal rows are authoritative in Cloudflare D1 after financial cutover.
+        // Never update the old Firebase smv_withdrawals collection from this screen.
+        const withdrawalRoute = newStatus === 'paid'
+          ? '/admin/withdrawal-mark-paid'
+          : newStatus === 'processing'
+            ? '/admin/withdrawal-mark-processing'
+            : '/admin/withdrawal-reject';
+        const updatedWithdrawal = await withTimeout(
+          renderApi(withdrawalRoute, {
+            method:'POST',
+            body:JSON.stringify({withdrawalDocId: withdrawalId})
+          }),
+          20000
+        );
+        if(updatedWithdrawal?.ok!==true)throw new Error(updatedWithdrawal?.error||'Withdrawal status update was not confirmed by Cloudflare D1.');
         if(newStatus === 'paid'){
-          const paidResult = await withTimeout(
-            renderApi('/admin/withdrawal-mark-paid', {
-              method:'POST',
-              body:JSON.stringify({withdrawalDocId: withdrawalId})
-            }),
-            20000
-          );
-          adminPaymentId = String(paidResult.paymentId || '');
+          adminPaymentId = String(updatedWithdrawal.paymentId || '');
           if(!adminPaymentId) throw new Error('Admin Payment ID was not returned.');
-        } else {
-          const updateData = {
-            status: newStatus,
-            updatedAt: serverTimestamp(),
-            updatedBy: currentUser.uid
-          };
-
-          if(newStatus === 'processing'){
-            updateData.processingAt = serverTimestamp();
-          }
-
-          if(newStatus === 'rejected'){
-            updateData.rejectedAt = serverTimestamp();
-          }
-
-          await withTimeout(
-            updateDoc(withdrawalRef, updateData),
-            15000
-          );
         }
 
         if(w.astrologerId){

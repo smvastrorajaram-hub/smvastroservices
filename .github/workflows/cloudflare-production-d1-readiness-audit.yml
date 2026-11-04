@@ -61,13 +61,13 @@ jobs:
         working-directory: cloudflare/backend-api
         run: |
           set -euo pipefail
-          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "SELECT name, type FROM sqlite_master WHERE name IN ('smv_wallet_schema_meta','smv_domain_schema_meta','smv_domain_wallets','smv_domain_live_sessions','smv_domain_live_bookings','smv_domain_razorpay_webhook_events','smv_domain_notification_inbox','smv_domain_offer_redemptions','smv_domain_identity_users') ORDER BY type, name; SELECT schema_key, schema_version FROM smv_domain_schema_meta ORDER BY schema_key; SELECT name FROM pragma_table_info('smv_domain_razorpay_webhook_events') WHERE name IN ('claim_token','lease_until_ms') ORDER BY name; SELECT name, type FROM sqlite_master WHERE type='trigger' AND name IN ('smv_domain_offer_redemption_validate','smv_domain_offer_redemption_apply','smv_domain_live_booking_release_pending_validate') ORDER BY name;"
+          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "SELECT name, type FROM sqlite_master WHERE name IN ('smv_wallet_schema_meta','smv_domain_schema_meta','smv_domain_wallets','smv_domain_live_sessions','smv_domain_live_bookings','smv_domain_withdrawal_payouts_encrypted','smv_domain_razorpay_webhook_events','smv_domain_notification_inbox','smv_domain_offer_redemptions','smv_domain_identity_users') ORDER BY type, name; SELECT schema_key, schema_version FROM smv_domain_schema_meta ORDER BY schema_key; SELECT name FROM pragma_table_info('smv_domain_razorpay_webhook_events') WHERE name IN ('claim_token','lease_until_ms') ORDER BY name; SELECT name, type FROM sqlite_master WHERE type='trigger' AND name IN ('smv_domain_offer_redemption_validate','smv_domain_offer_redemption_apply','smv_domain_live_booking_release_pending_validate') ORDER BY name;"
 
       - name: Count Production Wallet and Live domain rows only (no record values)
         working-directory: cloudflare/backend-api
         run: |
           set -euo pipefail
-          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "SELECT 'wallets' AS domain, COUNT(*) AS row_count FROM smv_domain_wallets; SELECT 'wallet_ledger' AS domain, COUNT(*) AS row_count FROM smv_domain_wallet_ledger; SELECT 'wallet_recharges' AS domain, COUNT(*) AS row_count FROM smv_domain_wallet_recharges; SELECT 'legacy_wallet_documents' AS domain, COUNT(*) AS row_count FROM smv_domain_legacy_documents; SELECT 'legacy_wallet_transactions' AS domain, COUNT(*) AS row_count FROM smv_domain_legacy_wallet_transactions; SELECT 'legacy_wallet_recharges' AS domain, COUNT(*) AS row_count FROM smv_domain_legacy_wallet_recharges; SELECT 'live_sessions' AS domain, COUNT(*) AS row_count FROM smv_domain_live_sessions; SELECT 'live_bookings' AS domain, COUNT(*) AS row_count FROM smv_domain_live_bookings; SELECT 'live_messages' AS domain, COUNT(*) AS row_count FROM smv_domain_live_messages; SELECT 'live_signals' AS domain, COUNT(*) AS row_count FROM smv_domain_live_signals; SELECT 'earnings' AS domain, COUNT(*) AS row_count FROM smv_domain_earnings; SELECT 'withdrawals' AS domain, COUNT(*) AS row_count FROM smv_domain_withdrawals;"
+          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "SELECT 'wallets' AS domain, COUNT(*) AS row_count FROM smv_domain_wallets; SELECT 'wallet_ledger' AS domain, COUNT(*) AS row_count FROM smv_domain_wallet_ledger; SELECT 'wallet_recharges' AS domain, COUNT(*) AS row_count FROM smv_domain_wallet_recharges; SELECT 'legacy_wallet_documents' AS domain, COUNT(*) AS row_count FROM smv_domain_legacy_documents; SELECT 'legacy_wallet_transactions' AS domain, COUNT(*) AS row_count FROM smv_domain_legacy_wallet_transactions; SELECT 'legacy_wallet_recharges' AS domain, COUNT(*) AS row_count FROM smv_domain_legacy_wallet_recharges; SELECT 'live_sessions' AS domain, COUNT(*) AS row_count FROM smv_domain_live_sessions; SELECT 'live_bookings' AS domain, COUNT(*) AS row_count FROM smv_domain_live_bookings; SELECT 'live_messages' AS domain, COUNT(*) AS row_count FROM smv_domain_live_messages; SELECT 'live_signals' AS domain, COUNT(*) AS row_count FROM smv_domain_live_signals; SELECT 'earnings' AS domain, COUNT(*) AS row_count FROM smv_domain_earnings; SELECT 'withdrawals' AS domain, COUNT(*) AS row_count FROM smv_domain_withdrawals; SELECT 'withdrawal_payouts_encrypted' AS domain, COUNT(*) AS row_count FROM smv_domain_withdrawal_payouts_encrypted; SELECT 'withdrawal_payouts_legacy_plaintext' AS domain, COUNT(*) AS row_count FROM smv_domain_withdrawal_payouts;"
 
       - name: Verify live Production Worker health and selected financial routing gates
         shell: bash
@@ -103,6 +103,7 @@ jobs:
           ];
           const failed = [];
           if (health.ok !== true || health.environment !== 'production') failed.push('Production Worker health/environment');
+          if (health.walletPayoutEncryptionConfigured !== true) failed.push('Wallet payout AES-256-GCM encryption key is not configured');
           for (const [name, value] of Object.entries({
             backendActive: health.backendActive,
             walletReadRoutesRegistered: health.walletReadRoutesRegistered,
@@ -130,6 +131,8 @@ jobs:
           }
           for (const [name, value] of Object.entries({
             firebaseConnected: readiness.firebaseConnected,
+            walletPayoutEncryptionConfigured: readiness.walletPayoutEncryptionConfigured,
+            walletPayoutEncryptionReady: readiness.walletPayoutEncryptionReady,
             walletReadRoutesEnabled: readiness.walletReadRoutesEnabled,
             walletRechargeRoutesEnabled: readiness.walletRechargeRoutesEnabled,
             walletOfferRoutesEnabled: readiness.walletOfferRoutesEnabled,
@@ -152,6 +155,7 @@ jobs:
             liveSessionRoutesEnabled: migration.liveSessionRoutesEnabled,
             productionFinancialTrafficRoutingEnabled: migration.productionFinancialTrafficRoutingEnabled
           })) if (value !== true) failed.push('selected financial migration-status gate: ' + name);
+          if (migration.walletPayoutEncryptionConfigured !== true) failed.push('migration-status payout encryption key is not configured');
           if (migration.productionTrafficEnabled !== false) failed.push('whole-backend productionTrafficEnabled must remain false');
           if (migration.walletBusinessRoutesEnabled !== false) failed.push('walletBusinessRoutesEnabled must remain false');
           if (migration.identityProfileD1AuthorizationReady !== true) failed.push('identity profile D1 authorization must be ready');

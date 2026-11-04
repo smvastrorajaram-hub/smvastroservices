@@ -24,6 +24,7 @@ import { createIdentityProfileBackfillService } from '../../../shared/backend-pl
 import { registerIdentityProfileBackfillRoutes } from './identity-profile-backfill-routes.mjs';
 import { createD1LiveSessionService } from '../../../shared/backend-platform/d1-live-session-service.mjs';
 import { createD1WithdrawalService } from '../../../shared/backend-platform/d1-live-withdrawal-service.mjs';
+import { validatePayoutEncryptionConfiguration } from '../../../shared/backend-platform/payout-encryption.mjs';
 import { registerD1LiveSessionRoutes } from './live-session-routes.mjs';
 import { createRazorpayRestClient } from '../../../shared/backend-platform/razorpay-rest-adapter.mjs';
 import { isLegacyBackendPath, LEGACY_BACKEND_ROUTE_INVENTORY } from '../../../shared/backend-platform/legacy-backend-route-inventory.mjs';
@@ -426,10 +427,19 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
   const checkLiveSessionSchemaReady = async () => {
     if (!(await walletSchemaReady())) return false;
     try {
-      const row = await env.DB.prepare(
-        'SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = ? LIMIT 1'
-      ).bind('live-sessions').first();
-      liveSessionSchemaReady = row?.schema_version === '0006_d1_live_wallet_settlement';
+      const [sessionSchema,payoutSecuritySchema] = await Promise.all([
+        env.DB.prepare(
+          'SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = ? LIMIT 1'
+        ).bind('live-sessions').first(),
+        env.DB.prepare(
+          'SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = ? LIMIT 1'
+        ).bind('wallet-security').first()
+      ]);
+      // Live/Booking/Withdrawal share this route group. Do not register it
+      // until the encrypted payout snapshot table's migration is present.
+      liveSessionSchemaReady =
+        sessionSchema?.schema_version === '0006_d1_live_wallet_settlement' &&
+        payoutSecuritySchema?.schema_version === '0009_wallet_razorpay_payout_encryption';
       return liveSessionSchemaReady;
     } catch {
       liveSessionSchemaReady = false;
@@ -540,7 +550,10 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     });
     const withdrawalService = createD1WithdrawalService({
       db: env.DB,
-      firestore: firestoreAdmin
+      firestore: firestoreAdmin,
+      payoutEncryptionKey: String(env.SMV_WALLET_PAYOUT_ENCRYPTION_KEY || ''),
+      payoutKeyVersion: String(env.SMV_WALLET_PAYOUT_KEY_VERSION || 'v1'),
+      sourceProjectId: projectId
     });
     registerD1LiveSessionRoutes({
       app,
@@ -650,7 +663,7 @@ app.get('/healthz', async (_req, res) => {
   const schema = await inspectBackendSchema(env.DB);
   walletDomainSchemaReady = schema.checks.sharedDomainSchema;
   walletRechargeSchemaReady = schema.checks.walletRechargeSchema;
-  liveSessionSchemaReady = schema.checks.liveSessionSchema;
+  liveSessionSchemaReady = schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;
   const firebaseConnected = await firebaseConnectivityProbe();
   const razorpayVerification = await getRazorpayProviderVerification();
   const identityGate = d1IdentityAuthorizationService
@@ -662,7 +675,7 @@ app.get('/healthz', async (_req, res) => {
   const walletReadRoutesEnabled = walletReadRoutesRegistered && walletReadRouteGateOpen && schema.checks.sharedDomainSchema;
   const walletRechargeRoutesEnabled = walletRechargeRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
   const walletOfferRoutesEnabled = walletOfferRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
-  const liveCallChatRoutesEnabled = liveSessionRoutesRegistered && liveSessionRoutesOpen && schema.checks.liveSessionSchema;
+  const liveCallChatRoutesEnabled = liveSessionRoutesRegistered && liveSessionRoutesOpen && schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;
   const razorpayCredentialsConfigured = razorpayPolicy.enabled && !!razorpayKeyId && !!razorpayKeySecret && !!razorpayWebhookSecret;
   const productionFinancialTrafficRoutingEnabled = isProductionFinancialTrafficRoutingEnabled({
     environment: String(env.SMV_ENVIRONMENT || 'unknown'),
@@ -703,6 +716,7 @@ app.get('/healthz', async (_req, res) => {
     liveSessionRoutesRegistered,
     liveCallChatRoutesEnabled,
     liveSessionSchemaReady,
+    walletPayoutEncryptionConfigured,
     razorpayMode: razorpayPolicy.mode,
     razorpayCredentialsConfigured,
     identityProfileBackfillRoutesRegistered,
@@ -740,7 +754,8 @@ registerBackendReadinessRoute({
     identityProfileD1AuthorizationOpen,
     walletReadRouteGateOpen,
     liveSessionRoutesRegistered,
-    liveSessionRoutesOpen
+    liveSessionRoutesOpen,
+    walletPayoutEncryptionConfigured
   }),
   getIdentityGate: async () => {
     const identityGate = d1IdentityAuthorizationService
@@ -756,7 +771,7 @@ app.get('/api/backend/migration-status', async (_req, res) => {
   const schema = await inspectBackendSchema(env.DB);
   walletDomainSchemaReady = schema.checks.sharedDomainSchema;
   walletRechargeSchemaReady = schema.checks.walletRechargeSchema;
-  liveSessionSchemaReady = schema.checks.liveSessionSchema;
+  liveSessionSchemaReady = schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;
   const firebaseConnected = await firebaseConnectivityProbe();
   const razorpayVerification = await getRazorpayProviderVerification();
   const identityGate = d1IdentityAuthorizationService
@@ -768,7 +783,7 @@ app.get('/api/backend/migration-status', async (_req, res) => {
   const walletReadRoutesEnabled = walletReadRoutesRegistered && walletReadRouteGateOpen && schema.checks.sharedDomainSchema;
   const walletRechargeRoutesEnabled = walletRechargeRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
   const walletOfferRoutesEnabled = walletOfferRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
-  const liveSessionRoutesEnabled = liveSessionRoutesRegistered && liveSessionRoutesOpen && schema.checks.liveSessionSchema;
+  const liveSessionRoutesEnabled = liveSessionRoutesRegistered && liveSessionRoutesOpen && schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;
   const razorpayCredentialsConfigured = razorpayPolicy.enabled && !!razorpayKeyId && !!razorpayKeySecret && !!razorpayWebhookSecret;
   const productionFinancialTrafficRoutingEnabled = isProductionFinancialTrafficRoutingEnabled({
     environment: String(env.SMV_ENVIRONMENT || 'unknown'),
@@ -823,6 +838,7 @@ app.get('/api/backend/migration-status', async (_req, res) => {
     walletBusinessRoutesEnabled: false,
     callChatRoutesEnabled: liveSessionRoutesEnabled,
     liveSessionRoutesEnabled,
+    walletPayoutEncryptionConfigured,
     renderDependency: false,
     productionTrafficEnabled: false,
     productionFinancialTrafficRoutingEnabled,

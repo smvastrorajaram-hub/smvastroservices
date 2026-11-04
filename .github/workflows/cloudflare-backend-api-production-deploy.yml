@@ -151,6 +151,24 @@ jobs:
             exit 1
           fi
 
+      - name: Upload validated wallet payout encryption key to Production Worker
+        env:
+          SMV_WALLET_PAYOUT_ENCRYPTION_KEY: ${{ secrets.SMV_WALLET_PAYOUT_ENCRYPTION_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SMV_WALLET_PAYOUT_ENCRYPTION_KEY:-}" || { echo 'Missing SMV_WALLET_PAYOUT_ENCRYPTION_KEY in the GitHub production environment.'; exit 1; }
+          SMV_WALLET_PAYOUT_ENCRYPTION_KEY="$SMV_WALLET_PAYOUT_ENCRYPTION_KEY" node --input-type=module <<'NODE'
+          const value = String(process.env.SMV_WALLET_PAYOUT_ENCRYPTION_KEY || '').trim();
+          const decoded = Buffer.from(value, 'base64');
+          if (decoded.length !== 32 || decoded.toString('base64') !== value) {
+            console.error('SMV_WALLET_PAYOUT_ENCRYPTION_KEY must be canonical Base64 encoding of exactly 32 bytes.');
+            process.exit(1);
+          }
+          console.log('Validated the 32-byte wallet payout encryption key. Secret value remains hidden.');
+          NODE
+          printf '%s' "$SMV_WALLET_PAYOUT_ENCRYPTION_KEY" | npx --yes wrangler@4.156.0 secret put SMV_WALLET_PAYOUT_ENCRYPTION_KEY --config cloudflare/backend-api/wrangler.production.jsonc
+
       - name: Audit required Production Worker secret names (values stay hidden)
         shell: bash
         run: |
@@ -166,11 +184,20 @@ jobs:
             ['Firebase Project 1 service account', firebaseReady],
             ['Razorpay Live key ID', names.has('RAZORPAY_KEY_ID')],
             ['Razorpay Live key secret', names.has('RAZORPAY_KEY_SECRET')],
-            ['Razorpay webhook secret', names.has('RAZORPAY_WEBHOOK_SECRET')]
+            ['Razorpay webhook secret', names.has('RAZORPAY_WEBHOOK_SECRET')],
+            ['Wallet payout AES-256-GCM encryption key', names.has('SMV_WALLET_PAYOUT_ENCRYPTION_KEY')]
           ];
           for (const [label, present] of required) console.log((present ? 'PRESENT: ' : 'MISSING: ') + label);
           if (required.some(([, present]) => !present)) process.exit(1);
           NODE
+
+      - name: Display exact Production D1 migration state
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 migrations list smvastro-wallet-production --remote --config wrangler.production.jsonc
+
+      - name: Apply pending additive migrations to exact Production D1
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 migrations apply smvastro-wallet-production --remote --config wrangler.production.jsonc
 
       - name: Deploy the configured Production Worker
         run: npx --yes wrangler@4.156.0 deploy --config cloudflare/backend-api/wrangler.production.jsonc
@@ -188,7 +215,7 @@ jobs:
             echo "Production Worker health attempt $attempt returned HTTP $status."
             if [ "$status" = "200" ]; then
               cat /tmp/smv-worker-health.json
-              if node --input-type=module -e "import fs from 'node:fs'; const d=JSON.parse(fs.readFileSync('/tmp/smv-worker-health.json','utf8')); if(d.environment!=='production'||d.schemaReady!==true||d.backendActive!==true||d.firebaseConnected!==true||d.walletReadRoutesRegistered!==true||d.walletRechargeRoutesRegistered!==true||d.walletOfferRoutesRegistered!==true||d.liveSessionRoutesRegistered!==true||d.walletRechargeMode!=='live'||d.identityProfileD1AuthorizationEnabled!==true||d.identityProfileD1AuthorizationReady!==true||d.productionFinancialTrafficRoutingEnabled!==true) process.exit(1);"; then
+              if node --input-type=module -e "import fs from 'node:fs'; const d=JSON.parse(fs.readFileSync('/tmp/smv-worker-health.json','utf8')); if(d.environment!=='production'||d.schemaReady!==true||d.backendActive!==true||d.firebaseConnected!==true||d.walletPayoutEncryptionConfigured!==true||d.walletReadRoutesRegistered!==true||d.walletRechargeRoutesRegistered!==true||d.walletOfferRoutesRegistered!==true||d.liveSessionRoutesRegistered!==true||d.walletRechargeMode!=='live'||d.identityProfileD1AuthorizationEnabled!==true||d.identityProfileD1AuthorizationReady!==true||d.productionFinancialTrafficRoutingEnabled!==true) process.exit(1);"; then
                 ready='true'
                 break
               fi
@@ -214,7 +241,7 @@ jobs:
           for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
             status="$(curl --silent --show-error --connect-timeout 10 --max-time 20 --output /tmp/smv-worker-readiness.json --write-out '%{http_code}' "$ROOT/api/backend/readiness" || true)"
             echo "Production financial readiness attempt $attempt returned HTTP $status."
-            if [ "$status" = '200' ] && node --input-type=module -e "import fs from 'node:fs'; const d=JSON.parse(fs.readFileSync('/tmp/smv-worker-readiness.json','utf8')); if(d.ok!==true||d.ready!==true||d.firebaseConnected!==true||d.razorpayMode!=='live'||d.razorpayCredentialsConfigured!==true||d.walletReadRoutesEnabled!==true||d.walletRechargeRoutesEnabled!==true||d.walletRechargeMode!=='live'||d.walletOfferRoutesEnabled!==true||d.liveCallChatRoutesEnabled!==true||d.identityProfileD1AuthorizationEnabled!==true||d.identityProfileD1AuthorizationReady!==true||d.identityProfileD1AuthorizationReason!=='fresh_start_approved'||d.productionFinancialTrafficRoutingEnabled!==true) process.exit(1);"; then
+            if [ "$status" = '200' ] && node --input-type=module -e "import fs from 'node:fs'; const d=JSON.parse(fs.readFileSync('/tmp/smv-worker-readiness.json','utf8')); if(d.ok!==true||d.ready!==true||d.firebaseConnected!==true||d.walletPayoutEncryptionConfigured!==true||d.walletPayoutEncryptionReady!==true||d.razorpayMode!=='live'||d.razorpayCredentialsConfigured!==true||d.walletReadRoutesEnabled!==true||d.walletRechargeRoutesEnabled!==true||d.walletRechargeMode!=='live'||d.walletOfferRoutesEnabled!==true||d.liveCallChatRoutesEnabled!==true||d.identityProfileD1AuthorizationEnabled!==true||d.identityProfileD1AuthorizationReady!==true||d.identityProfileD1AuthorizationReason!=='fresh_start_approved'||d.productionFinancialTrafficRoutingEnabled!==true) process.exit(1);"; then
               cat /tmp/smv-worker-readiness.json
               ready='true'
               break

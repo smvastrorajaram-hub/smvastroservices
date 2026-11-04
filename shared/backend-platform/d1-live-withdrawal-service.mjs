@@ -1,4 +1,5 @@
 import { safePaise, walletError } from './wallet-domain.mjs';
+import { encryptPayoutSnapshot, decryptPayoutSnapshot } from './payout-encryption.mjs';
 
 const SEVEN_DAYS_MS=7*24*60*60*1000;
 const MINIMUM_WITHDRAWAL_PAISE=30000;
@@ -39,7 +40,7 @@ function mapWithdrawal(row) {
   };
 }
 
-export function createD1WithdrawalService({db,firestore,now=Date.now,cryptoImpl=globalThis.crypto}={}) {
+export function createD1WithdrawalService({db,firestore,now=Date.now,cryptoImpl=globalThis.crypto,payoutEncryptionKey='',payoutKeyVersion='v1',sourceProjectId='smv-astro-staging'}={}) {
   if(!db||typeof db.prepare!=='function'||typeof db.batch!=='function'||
      !firestore||typeof firestore.getDocument!=='function'||
      typeof firestore.runQuery!=='function'||!cryptoImpl?.randomUUID) {
@@ -48,6 +49,55 @@ export function createD1WithdrawalService({db,firestore,now=Date.now,cryptoImpl=
   function statement(sql,values=[]) { return db.prepare(sql).bind(...values); }
   async function first(sql,values=[]) { return statement(sql,values).first(); }
   async function all(sql,values=[]) { return statement(sql,values).all(); }
+  const payoutKey=String(payoutEncryptionKey||'').trim();
+  const payoutVersion=String(payoutKeyVersion||'v1').trim()||'v1';
+  const payoutProject=String(sourceProjectId||'smv-astro-staging').trim();
+
+  async function readEncryptedPayout(row) {
+    if(!row||!row.payout_encrypted_withdrawal_id) return null;
+    try {
+      return await decryptPayoutSnapshot({
+        record:{
+          withdrawal_id:row.payout_encrypted_withdrawal_id,
+          algorithm:row.payout_algorithm,
+          key_version:row.payout_key_version,
+          nonce_hex:row.payout_nonce_hex,
+          ciphertext_hex:row.payout_ciphertext_hex,
+          auth_tag_hex:row.payout_auth_tag_hex,
+          source_payload_sha256:row.payout_source_payload_sha256
+        },
+        payoutEncryptionKey:payoutKey,
+        sourceProjectId:payoutProject,
+        cryptoImpl
+      });
+    } catch {
+      throw withdrawalError(
+        'WITHDRAWAL_PAYOUT_DECRYPT_FAILED',
+        'The saved withdrawal payout snapshot could not be decrypted. Admin payout details are unavailable; do not use current bank details as a substitute.',
+        503
+      );
+    }
+  }
+
+  function readLegacyPayout(row) {
+    const raw=row?.legacy_private_payout_json;
+    if(!raw) return null;
+    const value=readJson(raw);
+    return Object.keys(value).length?value:null;
+  }
+
+  function safePayoutView(value) {
+    const payload=value&&typeof value==='object'?value:{};
+    const payout={
+      bankName:String(payload.bankName||'').trim(),
+      accountName:String(payload.accountName||'').trim(),
+      accountNumber:String(payload.accountNumber||'').trim(),
+      ifsc:String(payload.ifsc||'').trim().toUpperCase(),
+      upi:String(payload.upi||'').trim()
+    };
+    payout.available=!!(payout.bankName||payout.accountName||payout.accountNumber||payout.ifsc||payout.upi);
+    return payout;
+  }
 
   async function queryLegacyEarnings(uid) {
     const [questions,privateConsultations]=await Promise.all([
@@ -159,6 +209,13 @@ export function createD1WithdrawalService({db,firestore,now=Date.now,cryptoImpl=
     if(!Number.isSafeInteger(amount)||amount<MINIMUM_WITHDRAWAL_PAISE) {
       throw withdrawalError('WITHDRAWAL_MINIMUM_NOT_MET','Minimum withdrawal is ₹300.',400);
     }
+    if(!payoutKey) {
+      throw withdrawalError(
+        'WITHDRAWAL_PAYOUT_ENCRYPTION_NOT_CONFIGURED',
+        'Secure payout encryption is not configured. The withdrawal request was not created. Please contact Admin.',
+        503
+      );
+    }
     const [profile,astroProfile,summary]=await Promise.all([
       firestore.getDocument('smv_users/'+uid),
       firestore.getDocument('smv_astrologers/'+uid),
@@ -208,6 +265,24 @@ export function createD1WithdrawalService({db,firestore,now=Date.now,cryptoImpl=
       upi:String(payout.upi||'').trim(),
       payoutStatus,createdAtMs:timestamp
     };
+    let encryptedPayout;
+    try {
+      encryptedPayout=await encryptPayoutSnapshot({
+        payload:privatePayout,
+        withdrawalId:id,
+        payoutEncryptionKey:payoutKey,
+        payoutKeyVersion:payoutVersion,
+        sourceProjectId:payoutProject,
+        nowMs:timestamp,
+        cryptoImpl
+      });
+    } catch {
+      throw withdrawalError(
+        'WITHDRAWAL_PAYOUT_ENCRYPTION_FAILED',
+        'The payout snapshot could not be securely encrypted. The withdrawal request was not created.',
+        503
+      );
+    }
     const results=await db.batch([
       statement(
         `INSERT INTO smv_domain_withdrawals
@@ -216,10 +291,15 @@ export function createD1WithdrawalService({db,firestore,now=Date.now,cryptoImpl=
         [id,uid,amount,JSON.stringify(payload),timestamp,timestamp]
       ),
       statement(
-        `INSERT INTO smv_domain_withdrawal_payouts
-         (withdrawal_id,private_payout_json,created_at_ms,updated_at_ms)
-         VALUES (?,?,?,?)`,
-        [id,JSON.stringify(privatePayout),timestamp,timestamp]
+        `INSERT INTO smv_domain_withdrawal_payouts_encrypted
+         (withdrawal_id,algorithm,key_version,nonce_hex,ciphertext_hex,auth_tag_hex,
+          source_payload_sha256,created_at_ms,updated_at_ms)
+         VALUES (?,?,?,?,?,?,?,?,?)`,
+        [
+          encryptedPayout.withdrawalId,encryptedPayout.algorithm,encryptedPayout.keyVersion,
+          encryptedPayout.nonceHex,encryptedPayout.ciphertextHex,encryptedPayout.authTagHex,
+          encryptedPayout.sourcePayloadSha256,encryptedPayout.createdAtMs,encryptedPayout.updatedAtMs
+        ]
       )
     ]);
     if(!Array.isArray(results)||results.length!==2||results.some(row=>row?.success===false)) {
@@ -286,26 +366,30 @@ export function createD1WithdrawalService({db,firestore,now=Date.now,cryptoImpl=
     const valid=['pending','processing','paid','rejected'];
     if(where&&!valid.includes(where)) throw withdrawalError('WITHDRAWAL_STATUS_INVALID','Unsupported withdrawal status.',400);
     const result=await all(
-      `SELECT w.*,p.private_payout_json
+      `SELECT w.*,
+        e.withdrawal_id AS payout_encrypted_withdrawal_id,
+        e.algorithm AS payout_algorithm,
+        e.key_version AS payout_key_version,
+        e.nonce_hex AS payout_nonce_hex,
+        e.ciphertext_hex AS payout_ciphertext_hex,
+        e.auth_tag_hex AS payout_auth_tag_hex,
+        e.source_payload_sha256 AS payout_source_payload_sha256,
+        p.private_payout_json AS legacy_private_payout_json
        FROM smv_domain_withdrawals w
+       LEFT JOIN smv_domain_withdrawal_payouts_encrypted e ON e.withdrawal_id=w.withdrawal_id
        LEFT JOIN smv_domain_withdrawal_payouts p ON p.withdrawal_id=w.withdrawal_id
        ${where?'WHERE w.status=?':''}
        ORDER BY w.created_at_ms DESC LIMIT 50`,
       where?[where]:[]
     );
-    return (result.results||[]).map(row=>{
+    const output=[];
+    for(const row of result.results||[]) {
       const item=mapWithdrawal(row);
-      const payload=readJson(row.private_payout_json);
-      const payout={
-        bankName:String(payload.bankName||'').trim(),
-        accountName:String(payload.accountName||'').trim(),
-        accountNumber:String(payload.accountNumber||'').trim(),
-        ifsc:String(payload.ifsc||'').trim().toUpperCase(),
-        upi:String(payload.upi||'').trim()
-      };
-      payout.available=!!(payout.bankName||payout.accountName||payout.accountNumber||payout.ifsc||payout.upi);
+      const encrypted=await readEncryptedPayout(row);
+      const legacy=encrypted?null:readLegacyPayout(row);
+      const payout=safePayoutView(encrypted||legacy);
       const data=readJson(row.payload_json);
-      return {
+      output.push({
         id:item.id,withdrawalId:item.withdrawalId,
         astrologerId:item.astrologerUid,astrologerUid:item.astrologerUid,
         astrologerName:item.astrologerName,amount:item.amount,status:item.status,
@@ -314,8 +398,9 @@ export function createD1WithdrawalService({db,firestore,now=Date.now,cryptoImpl=
         requestedAt:new Date(item.createdAtMs).toISOString(),
         paidAt:data.paidAtMs?new Date(Number(data.paidAtMs)).toISOString():null,
         payout
-      };
-    });
+      });
+    }
+    return output;
   }
 
   async function getPrivatePayout(withdrawalId) {
@@ -324,17 +409,33 @@ export function createD1WithdrawalService({db,firestore,now=Date.now,cryptoImpl=
       'SELECT * FROM smv_domain_withdrawals WHERE withdrawal_id=? LIMIT 1',[id]
     );
     if(!row) throw withdrawalError('WITHDRAWAL_NOT_FOUND','Withdrawal request was not found.',404);
-    const snapshot=await first(
+    const encrypted=await first(
+      'SELECT * FROM smv_domain_withdrawal_payouts_encrypted WHERE withdrawal_id=? LIMIT 1',[id]
+    );
+    if(encrypted) {
+      const payout=await decryptPayoutSnapshot({
+        record:encrypted,payoutEncryptionKey:payoutKey,
+        sourceProjectId:payoutProject,cryptoImpl
+      }).catch(()=>{throw withdrawalError(
+        'WITHDRAWAL_PAYOUT_DECRYPT_FAILED',
+        'The saved withdrawal payout snapshot could not be decrypted. Do not substitute the current bank details.',
+        503
+      );});
+      return {withdrawal:mapWithdrawal(row),payout,source:'withdrawal_snapshot_encrypted'};
+    }
+    const legacy=await first(
       'SELECT private_payout_json FROM smv_domain_withdrawal_payouts WHERE withdrawal_id=? LIMIT 1',[id]
     );
-    let payout=snapshot?readJson(snapshot.private_payout_json):null;
-    let source='withdrawal_snapshot';
-    if(!payout) {
-      const current=await firestore.getDocument('smv_payouts/'+String(row.astrologer_uid));
-      payout=current.exists?(current.data||{}):{};
-      source='current_payout_method';
+    if(legacy) {
+      return {
+        withdrawal:mapWithdrawal(row),
+        payout:readJson(legacy.private_payout_json),
+        source:'withdrawal_snapshot_legacy'
+      };
     }
-    return {withdrawal:mapWithdrawal(row),payout,source};
+    const current=await firestore.getDocument('smv_payouts/'+String(row.astrologer_uid));
+    const payout=current.exists?(current.data||{}):{};
+    return {withdrawal:mapWithdrawal(row),payout,source:'current_payout_method'};
   }
 
   async function markProcessing({withdrawalId,adminUid}={}) {

@@ -11,7 +11,9 @@
     "test:wallet": "node --test test/wallet-service.test.js",
     "test:live-session": "node --test test/live-session-service.test.js test/live-push-notifications.test.js",
     "validate:wallet-domain": "node scripts/validate-wallet-domain.js",
-    "test:legacy-flow-removal": "node --test test/legacy-consultation-route-removal.test.cjs"
+    "test:legacy-flow-removal": "node --test test/legacy-consultation-route-removal.test.cjs",
+    "test:production-financial-routing": "node --test test/production-financial-routing.test.mjs",
+    "test:razorpay-runtime": "node --test test/razorpay-runtime.test.js"
   },
   "engines": {
     "node": ">=20 <27"
