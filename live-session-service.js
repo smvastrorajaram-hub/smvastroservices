@@ -864,7 +864,10 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
         throw httpError(409, 'This Astrologer is in Busy mode and is not accepting new Live Call or Chat requests.', 'LIVE_ASTROLOGER_BUSY');
       }
       const availability = astrologerAvailabilityStatus(astro, liveCount);
-      const canStartNow = availability === 'online' && liveCount < pricing.maxConcurrentSessions;
+      // Busy can be session-managed: allow another direct request while the
+      // configured concurrent-session capacity still has room. Manual Busy
+      // was rejected above and is never queued or reserved.
+      const canStartNow = liveCount < pricing.maxConcurrentSessions;
       if (!canStartNow) {
         const reserve = await reserveInTransaction(tx, {
           uid, mode: kind, minutes: length, rate, walletSnapshot: walletSnap, sessionId: id, reservationType: 'live_booking'
