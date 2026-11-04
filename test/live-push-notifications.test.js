@@ -229,7 +229,7 @@ test('Live Chat uses canonical mode/state and native visibility instead of a cha
   assert.equal(frontend.includes('smv-live-chat-active'), false, 'no chat-only modal class should be toggled by JavaScript');
   assert.equal(css.includes('.smv-live-chat-active'), false, 'Chat must not depend on a special CSS override block');
   assert.ok(html.includes('smvastro.css?v=20261102-consult-route-cleanup-v1'));
-  assert.ok(html.includes('smvastro.mjs?v=20261104-native-notification-intent-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261104-live-session-ui-standby-v1'));
 });
 
 test('Live Chat connected confirmation requires a rendered message pane and does not open a separate Chat window', () => {
@@ -292,7 +292,10 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('enabling recovery polling.'));
   assert.ok(!frontend.includes("smvLiveMessageTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollMessages(id).catch(()=>{});},600)"));
   assert.ok(!frontend.includes("smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions().catch(()=>{}),4500"));
-  assert.ok(html.includes('smvastro.mjs?v=20261104-native-notification-intent-v1'));
+  assert.ok(frontend.includes('smvLiveStartCustomerPendingStatusPoll(s.id);'));
+  assert.ok(frontend.includes('setInterval(()=>void reconcile(),2500)'));
+  assert.ok(frontend.includes('Astrologer Generating Horoscope · '));
+  assert.ok(html.includes('smvastro.mjs?v=20261104-live-session-ui-standby-v1'));
 });
 
 test('Customer and Astrologer Dashboards mount the Live Call/Chat controls after rendering', () => {
@@ -323,7 +326,7 @@ test('Customer and Astrologer Dashboard open without Dashboard-wide loading or q
   assert.equal(frontend.includes('Loading your dashboard...'), false);
   assert.ok(!frontend.includes("because Firebase could not be read."));
   assert.ok(!frontend.includes("Dashboard is open. Astrologer profile and data"));
-  assert.ok(html.includes('smvastro.mjs?v=20261104-native-notification-intent-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261104-live-session-ui-standby-v1'));
 });
 
 test('Explicit login keeps the fast role shell mounted and does not hide/reopen Dashboard', () => {
@@ -367,7 +370,7 @@ test('Astrologer Dashboard keeps one heading and parallelizes its first profile 
   assert.ok(dashboard.includes('const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null;'));
   assert.ok(dashboard.includes('astrologerProfileResult=profileResult;'));
   assert.ok(!dashboard.includes("const a=await withTimeout(\n     getDoc(doc(db,'smv_astrologers',currentUser.uid))"));
-  assert.ok(html.includes('smvastro.mjs?v=20261104-native-notification-intent-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261104-live-session-ui-standby-v1'));
 });
 
 test('Astrologer Dashboard renders its main UI before earnings and withdrawal history resolve', () => {
@@ -387,7 +390,7 @@ test('Astrologer Dashboard renders its main UI before earnings and withdrawal hi
   assert.ok(dashboard.includes('id="smvAstroEarningsHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalStatus"'));
-  assert.ok(html.includes('smvastro.mjs?v=20261104-native-notification-intent-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261104-live-session-ui-standby-v1'));
 });
 
 test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
@@ -1134,6 +1137,13 @@ test('Live Session End and Cancel are distinct from closing the session window',
   assert.ok(frontend.includes('end.onclick=async()=>'), 'End/Cancel invokes a server action');
   assert.ok(frontend.includes("'/end',{method:'POST',body:JSON.stringify({reason:'participant_ended'})}"), 'End/Cancel persists the terminal state on the server');
   assert.ok(frontend.includes('close.onclick=()=>{smvLiveDismissSessionUi(id);window.closeModal?.();}'), 'Close Window only dismisses the UI');
+  assert.ok(frontend.includes('smvLiveDismissedSessionIds.add(id)'), 'Closing the panel marks its window as closed without ending the server session');
+  assert.ok(frontend.includes('data-live-presence-dot='), 'Running sessions expose a separate live indicator');
+  assert.ok(frontend.includes('data-live-window-dot='), 'Closed windows expose a red closed indicator');
+  assert.ok(frontend.includes('OPEN CLOSED SESSION / RECEIPT'), 'Ended sessions remain openable from dashboard history');
+  assert.ok(frontend.includes("return 'LIVE SESSION · '+clock+' remaining'"), 'A dismissed but active Call/Chat continues to show its server-based remaining time');
+  assert.ok(frontend.includes("['preparing','active'].includes(String(row.state||''))"), 'The dashboard timer refreshes both horoscope preparation and active session time');
+  assert.ok(frontend.includes("openButton.style.background=ended?'#ff1744':'#00c853'"), 'Open and closed session actions use distinct bright colors');
 });
 
 test('Live Session route authorization separates Astrologer decisions from participant actions', () => {
@@ -1294,4 +1304,35 @@ test('Cloudflare native Live notifications use Android tray payloads and open th
   assert.match(mainActivity, /intentString\(intent, "bookingId"\)/);
   assert.match(frontend, /params\.get\('smvLivePush'\)==='1'/);
   assert.match(frontend, /smvLiveHandlePushOpen\(payload\)/);
+});
+
+
+test('Public Astrologer list displays distinct Online, Busy and Offline presence indicators', () => {
+  const content = read('public/public-content.mjs');
+  assert.ok(content.includes('smv-astro-presence-dot--online'));
+  assert.ok(content.includes('smv-astro-presence-dot--busy'));
+  assert.ok(content.includes('smv-astro-presence-dot--offline'));
+  assert.ok(content.includes('smvAstroOnlinePulse 2.4s'));
+  assert.ok(content.includes('smvAstroBusyPulse .78s'));
+  assert.ok(content.includes('aria-label="${availabilityLabel}"'));
+});
+
+test('Android push deep-link waits for restored Firebase user before opening the requested session', () => {
+  const frontend = read('public/smvastro.mjs');
+  assert.ok(frontend.includes('if(!currentUser){smvLivePendingPushOpen=payload;return;}'));
+  assert.ok(frontend.includes('if(smvLivePendingPushOpen){'));
+  assert.ok(frontend.includes('smvLiveHandlePushOpen(payload).catch'));
+});
+
+test('Android notification opens reuse one Recents task and root Back keeps SMV ASTRO in standby', () => {
+  const manifest = read('smvastroproduction/src/main/AndroidManifest.xml');
+  const activity = read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java');
+  const mainStart = manifest.indexOf('android:name=".MainActivity"');
+  const main = manifest.slice(mainStart - 100, manifest.indexOf('</activity>', mainStart));
+  assert.ok(main.includes('android:launchMode="singleTask"'), 'notification opens route into the existing launcher task');
+  assert.ok(main.includes('android:excludeFromRecents="false"'), 'SMV ASTRO remains visible in Android Recents');
+  const backStart = activity.indexOf('public void onBackPressed()');
+  const back = activity.slice(backStart, activity.indexOf('@Override', backStart + 10));
+  assert.ok(back.includes('moveTaskToBack(true)'), 'root Back backgrounds the task instead of finishing MainActivity');
+  assert.ok(activity.includes('webView.loadUrl(resolveStartUrl(intent))'), 'notification intent still routes the exact live session into the WebView');
 });
