@@ -209,6 +209,7 @@ test('GET /api/backend/readiness derives selected Production financial routing f
   assert.equal(response.body.liveCallChatRoutesEnabled, true);
   assert.equal(response.body.walletPayoutEncryptionConfigured, true);
   assert.equal(response.body.walletPayoutEncryptionReady, true);
+  assert.equal(response.body.checks.numericPublicReferenceIdsSchema, true);
 });
 
 test('GET /api/backend/readiness returns 503 for incomplete Production schema', async () => {
