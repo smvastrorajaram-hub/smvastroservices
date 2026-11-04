@@ -2868,9 +2868,9 @@ async function smvRenderAdminWalletOffers(){
   $('smvWalletOfferName').focus();card.scrollIntoView({behavior:'smooth',block:'start'});
  };
  let offerRows=[];
- const reloadOffers=async()=>{
+ const reloadOffers=async(showLoading=true)=>{
   const list=$('smvWalletOfferList'),msg=$('smvWalletOfferMsg');
-  if(list)list.innerHTML='<div class="empty">Loading Wallet Offers…</div>';
+  if(list&&showLoading)list.innerHTML='<div class="empty">Loading Wallet Offers…</div>';
   try{
    const result=await renderApi('/admin/offers',{method:'GET'});
    if(!result?.success||!Array.isArray(result.offers))throw new Error(result?.error||'The server did not confirm Wallet Offers.');
@@ -2879,16 +2879,18 @@ async function smvRenderAdminWalletOffers(){
    list.innerHTML=offerRows.length?offerRows.map(offer=>{
     const minimum=(Number(offer.minimumRechargeAmountPaise||0)/100).toFixed(2);
     const limit=Number(offer.totalUsageLimit||0)>0?String(offer.usedCount||0)+' / '+String(offer.totalUsageLimit):String(offer.usedCount||0)+' / unlimited';
-    const status=offer.enabled?'<span class="success">ON</span>':'<span class="small">OFF</span>';
+    const status=offer.enabled?'<span class="success" data-wallet-offer-status>ON</span>':'<span class="small" data-wallet-offer-status>OFF</span>';
     const theme=themes.find(row=>row[0]===offer.bannerTheme)?.[1]||'Festival';
-    return '<article class="card" style="margin-top:10px"><b>'+escapeHtml(offer.name||'Wallet Offer')+'</b> · '+status+
+    const hasRedemptions=Number(offer.usedCount||0)>0||Number(offer.successfulRedemptions||0)>0;
+    return '<article class="card" data-wallet-offer-row="'+escapeHtml(offer.id)+'" style="margin-top:10px"><b>'+escapeHtml(offer.name||'Wallet Offer')+'</b> · '+status+
      '<p class="small">'+escapeHtml(theme)+' · ₹'+minimum+' minimum recharge · '+Number(offer.bonusMinutes||0)+' free Live minute(s)</p>'+
      '<p class="small">Redemptions: '+escapeHtml(limit)+' · Per Customer: '+(Number(offer.perCustomerLimit||0)===0?'unlimited':Number(offer.perCustomerLimit||0))+
      ' · Total bonus minutes: '+Number(offer.totalBonusMinutesAwarded||0)+'</p>'+
      (offer.startAt||offer.endAt?'<p class="small">Start: '+escapeHtml(offer.startAt||'Now')+' · End: '+escapeHtml(offer.endAt||'No end date')+'</p>':'')+
      '<div class="action-row"><button class="btn" type="button" data-wallet-offer-edit="'+escapeHtml(offer.id)+'">EDIT</button>'+
      '<button class="btn gray" type="button" data-wallet-offer-toggle="'+escapeHtml(offer.id)+'">'+(offer.enabled?'TURN OFF':'TURN ON')+'</button>'+
-     '<button class="btn gray" type="button" data-wallet-offer-delete="'+escapeHtml(offer.id)+'">DELETE</button></div></article>';
+     '<button class="btn gray" type="button" data-wallet-offer-delete="'+escapeHtml(offer.id)+'"'+(hasRedemptions?' disabled title="This Offer has redemption history. Turn it OFF to preserve the financial audit."':'')+'>'+(hasRedemptions?'DELETE UNAVAILABLE':'DELETE')+'</button></div>'+
+     (hasRedemptions?'<p class="small">This Offer has redemption history and cannot be deleted. Use TURN OFF to stop future awards while keeping its audit history.</p>':'')+'</article>';
    }).join(''):'<div class="empty">No Wallet recharge bonus offers created yet.</div>';
    list.querySelectorAll('[data-wallet-offer-edit]').forEach(button=>button.onclick=()=>{
     const offer=offerRows.find(row=>row.id===button.dataset.walletOfferEdit);if(offer)editOffer(offer);
@@ -2897,25 +2899,37 @@ async function smvRenderAdminWalletOffers(){
     const offer=offerRows.find(row=>row.id===button.dataset.walletOfferToggle);if(!offer)return;
     button.disabled=true;
     try{
-     await renderApi('/admin/offers/save',{method:'POST',body:JSON.stringify({
+     const expectedEnabled=!offer.enabled;
+     const saved=await renderApi('/admin/offers/save',{method:'POST',body:JSON.stringify({
       id:offer.id,name:offer.name,bannerTheme:offer.bannerTheme,
       minimumRechargeAmount:(Number(offer.minimumRechargeAmountPaise||0)/100),
       bonusMinutes:Number(offer.bonusMinutes),perCustomerLimit:Number(offer.perCustomerLimit||0),
       totalUsageLimit:Number(offer.totalUsageLimit||0),priority:Number(offer.priority||0),
-      startAt:offer.startAt||null,endAt:offer.endAt||null,enabled:!offer.enabled
+      startAt:offer.startAt||null,endAt:offer.endAt||null,enabled:expectedEnabled
      })});
-     if(msg)msg.innerHTML='<span class="success">Offer '+escapeHtml(offer.name||'')+' saved as '+(!offer.enabled?'ON':'OFF')+'.</span>';
-     await reloadOffers();
+     if(saved?.success!==true||saved?.offer?.enabled!==expectedEnabled)throw new Error(saved?.error||'The server did not confirm the requested Offer status.');
+     Object.assign(offer,saved.offer);
+     const row=button.closest('[data-wallet-offer-row]'),status=row?.querySelector('[data-wallet-offer-status]');
+     if(status){status.textContent=offer.enabled?'ON':'OFF';status.className=offer.enabled?'success':'small';}
+     button.textContent=offer.enabled?'TURN OFF':'TURN ON';
+     if(msg)msg.innerHTML='<span class="success">Offer '+escapeHtml(offer.name||'')+' saved as '+(offer.enabled?'ON':'OFF')+'.</span>';
     }catch(error){if(msg)msg.innerHTML='<span class="error">'+escapeHtml(error.message||String(error))+'</span>';button.disabled=false;}
    });
    list.querySelectorAll('[data-wallet-offer-delete]').forEach(button=>button.onclick=async()=>{
     const offer=offerRows.find(row=>row.id===button.dataset.walletOfferDelete);if(!offer)return;
-    if(!window.confirm('Delete Wallet Offer "'+String(offer.name||'Offer')+'"? Offers with redemption history must be turned OFF instead.'))return;
+    if(Number(offer.usedCount||0)>0||Number(offer.successfulRedemptions||0)>0){
+     if(msg)msg.innerHTML='<span class="error">This Offer already has redemption history. It cannot be deleted; use TURN OFF to stop future awards safely.</span>';
+     return;
+    }
+    if(!window.confirm('Delete Wallet Offer "'+String(offer.name||'Offer')+'"?'))return;
     button.disabled=true;
     try{
-     await renderApi('/admin/offers/delete',{method:'POST',body:JSON.stringify({id:offer.id})});
-     if(msg)msg.innerHTML='<span class="success">Wallet Offer deleted.</span>';
-     await reloadOffers();
+     const deleted=await renderApi('/admin/offers/delete',{method:'POST',body:JSON.stringify({id:offer.id})});
+     if(deleted?.success!==true||deleted.id!==offer.id)throw new Error(deleted?.error||'The server did not confirm Wallet Offer deletion.');
+     offerRows=offerRows.filter(row=>row.id!==offer.id);
+     const row=button.closest('[data-wallet-offer-row]');row?.remove();
+     if(!offerRows.length){const list=$('smvWalletOfferList');if(list)list.innerHTML='<div class="empty">No Wallet recharge bonus offers created yet.</div>';}
+     if(msg)msg.innerHTML='<span class="success">Wallet Offer deleted and confirmed.</span>';
     }catch(error){if(msg)msg.innerHTML='<span class="error">'+escapeHtml(error.message||String(error))+'</span>';button.disabled=false;}
    });
   }catch(error){
@@ -2942,7 +2956,7 @@ async function smvRenderAdminWalletOffers(){
   try{
    const saved=await renderApi('/admin/offers/save',{method:'POST',body:JSON.stringify(payload)});
    if(!saved?.success||!saved?.id)throw new Error(saved?.error||'The server did not confirm this Offer.');
-   await reloadOffers();
+   await reloadOffers(false);
    const verified=offerRows.find(row=>row.id===saved.id);
    if(!verified||verified.name!==payload.name||Number(verified.bonusMinutes)!==payload.bonusMinutes||
       Number(verified.minimumRechargeAmountPaise)!==Math.round(Number(payload.minimumRechargeAmount)*100)||
@@ -2953,7 +2967,7 @@ async function smvRenderAdminWalletOffers(){
   finally{save.disabled=false;save.textContent='SAVE OFFER';}
  };
  $('clearSmvWalletOfferBtn').onclick=clearForm;
- $('refreshSmvWalletOffersBtn').onclick=()=>reloadOffers().catch(()=>{});
+ $('refreshSmvWalletOffersBtn').onclick=()=>reloadOffers(false).catch(()=>{});
  clearForm();
  await reloadOffers();
 }
@@ -3939,7 +3953,7 @@ let smvLivePeer=null,smvLiveLocalStream=null,smvLiveRemoteStream=null,smvLiveSig
 let smvLiveEventStreamConnected=false,smvLiveTransportPrimedSessionId='';
 let smvLiveDashboardStatusTimer=null;
 const smvLiveDashboardSessionsById=new Map();
-let smvLivePollBusy=false,smvLiveSignalSeen=new Set(),smvLiveMessageSeen=new Set(),smvLiveQueuedIce=[],smvLiveReadySentKey='',smvLiveOfferStartedKey='',smvLiveSignalSinceMs=0,smvLiveMessageSinceMs=0;
+let smvLivePollBusy=false,smvLivePollRefreshRequested=false,smvLiveSignalSeen=new Set(),smvLiveMessageSeen=new Set(),smvLiveQueuedIce=[],smvLiveReadySentKey='',smvLiveOfferStartedKey='',smvLiveSignalSinceMs=0,smvLiveMessageSinceMs=0;
 let smvLiveAudioContext=null,smvLiveRingTimer=null,smvLiveRingActive=false,smvLiveRingMuted=false,smvLiveRingUnlocked=false,smvLiveScheduledPollAt=0;
 let smvLiveScheduledRefreshTimer=null,smvLiveScheduledAppointmentsCache=[];
 let smvLiveRingSuppressedIds=new Set(),smvLiveRingCurrentId='',smvLiveRingtoneNodes=new Set();
@@ -4830,8 +4844,10 @@ function smvLiveUpdateDashboardSessionStatus(session){
  }
 }
 async function smvLivePollSessions(){
- if(smvLivePollBusy||!currentUser||!auth?.currentUser||currentUser.uid!==auth.currentUser.uid)return;
- const role=String(window.__smvCurrentRole||'').toLowerCase();if(!['customer','astrologer'].includes(role))return;smvLivePollBusy=true;
+ if(!currentUser||!auth?.currentUser||currentUser.uid!==auth.currentUser.uid)return;
+ const role=String(window.__smvCurrentRole||'').toLowerCase();if(!['customer','astrologer'].includes(role))return;
+ if(smvLivePollBusy){smvLivePollRefreshRequested=true;return;}
+ smvLivePollBusy=true;
  try{
   const list=await renderApi('/live/sessions',{method:'GET',timeoutMs:12000});
   for(const session of list.sessions||[]){smvLiveUpdateDashboardSessionStatus(session);
@@ -4856,7 +4872,13 @@ async function smvLivePollSessions(){
    }
   }
  }catch(e){if(!/403|role/i.test(String(e?.message||e)))console.warn('Live session polling skipped:',e?.message||e);}
- finally{smvLivePollBusy=false;}
+ finally{
+  smvLivePollBusy=false;
+  if(smvLivePollRefreshRequested){
+   smvLivePollRefreshRequested=false;
+   setTimeout(()=>{void smvLivePollSessions().catch(error=>console.warn('Queued Live dashboard refresh skipped:',error?.message||error));},0);
+  }
+ }
 }
 function smvLiveScheduledBookingEpoch(a){
  const date=String(a?.preferredDate||''),time=String(a?.preferredTime||'');
