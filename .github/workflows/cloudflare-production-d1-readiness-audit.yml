@@ -7,6 +7,10 @@ on:
     types: [completed]
     branches: [main]
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/cloudflare-production-d1-readiness-audit.yml'
 
 permissions:
   contents: read
@@ -17,7 +21,7 @@ concurrency:
 
 jobs:
   audit-production-d1:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production
@@ -65,7 +69,7 @@ jobs:
           set -euo pipefail
           npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "SELECT 'wallets' AS domain, COUNT(*) AS row_count FROM smv_domain_wallets; SELECT 'wallet_ledger' AS domain, COUNT(*) AS row_count FROM smv_domain_wallet_ledger; SELECT 'wallet_recharges' AS domain, COUNT(*) AS row_count FROM smv_domain_wallet_recharges; SELECT 'legacy_wallet_documents' AS domain, COUNT(*) AS row_count FROM smv_domain_legacy_documents; SELECT 'legacy_wallet_transactions' AS domain, COUNT(*) AS row_count FROM smv_domain_legacy_wallet_transactions; SELECT 'legacy_wallet_recharges' AS domain, COUNT(*) AS row_count FROM smv_domain_legacy_wallet_recharges; SELECT 'live_sessions' AS domain, COUNT(*) AS row_count FROM smv_domain_live_sessions; SELECT 'live_bookings' AS domain, COUNT(*) AS row_count FROM smv_domain_live_bookings; SELECT 'live_messages' AS domain, COUNT(*) AS row_count FROM smv_domain_live_messages; SELECT 'live_signals' AS domain, COUNT(*) AS row_count FROM smv_domain_live_signals; SELECT 'earnings' AS domain, COUNT(*) AS row_count FROM smv_domain_earnings; SELECT 'withdrawals' AS domain, COUNT(*) AS row_count FROM smv_domain_withdrawals;"
 
-      - name: Verify live Production Worker health, schema readiness and inactive cutover gates
+      - name: Verify live Production Worker health and selected financial routing gates
         shell: bash
         run: |
           set -euo pipefail
@@ -102,32 +106,63 @@ jobs:
           for (const [name, value] of Object.entries({
             backendActive: health.backendActive,
             walletReadRoutesRegistered: health.walletReadRoutesRegistered,
+            walletReadRoutesEnabled: health.walletReadRoutesEnabled,
             walletRechargeRoutesRegistered: health.walletRechargeRoutesRegistered,
+            walletRechargeRoutesEnabled: health.walletRechargeRoutesEnabled,
             walletOfferRoutesRegistered: health.walletOfferRoutesRegistered,
+            walletOfferRoutesEnabled: health.walletOfferRoutesEnabled,
             liveSessionRoutesRegistered: health.liveSessionRoutesRegistered,
-            identityProfileD1AuthorizationEnabled: health.identityProfileD1AuthorizationEnabled
-          })) if (value !== false) failed.push('inactive gate: ' + name);
-          if (health.walletRechargeMode !== 'disabled') failed.push('walletRechargeMode must be disabled');
+            liveCallChatRoutesEnabled: health.liveCallChatRoutesEnabled,
+            identityProfileD1AuthorizationEnabled: health.identityProfileD1AuthorizationEnabled,
+            identityProfileD1AuthorizationReady: health.identityProfileD1AuthorizationReady,
+            productionFinancialTrafficRoutingEnabled: health.productionFinancialTrafficRoutingEnabled
+          })) if (value !== true) failed.push('selected Production financial gate: ' + name);
+          if (health.walletRechargeMode !== 'live') failed.push('walletRechargeMode must be live');
+          if (health.razorpayMode !== 'live' || health.razorpayCredentialsConfigured !== true ||
+              health.razorpayProviderConnectionVerified !== true) failed.push('Razorpay Live provider verification');
+          if (health.productionTrafficEnabled !== false) failed.push('whole-backend productionTrafficEnabled must remain false');
+
           if (readiness.ok !== true || readiness.ready !== true) failed.push('/api/backend/readiness must PASS');
           if (readiness.checks?.d1Binding !== true || readiness.checks?.allRequiredMigrations !== true) failed.push('D1 binding/migration checks');
           for (const name of required) {
             if (readiness.migrationStatus?.[name] !== true) failed.push('readiness migration: ' + name);
             if (migration.migrationStatus?.[name] !== true) failed.push('migration-status migration: ' + name);
           }
+          for (const [name, value] of Object.entries({
+            firebaseConnected: readiness.firebaseConnected,
+            walletReadRoutesEnabled: readiness.walletReadRoutesEnabled,
+            walletRechargeRoutesEnabled: readiness.walletRechargeRoutesEnabled,
+            walletOfferRoutesEnabled: readiness.walletOfferRoutesEnabled,
+            liveCallChatRoutesEnabled: readiness.liveCallChatRoutesEnabled,
+            identityProfileD1AuthorizationEnabled: readiness.identityProfileD1AuthorizationEnabled,
+            identityProfileD1AuthorizationReady: readiness.identityProfileD1AuthorizationReady,
+            razorpayCredentialsConfigured: readiness.razorpayCredentialsConfigured,
+            razorpayProviderConnectionVerified: readiness.razorpayProviderConnectionVerified,
+            productionFinancialTrafficRoutingEnabled: readiness.productionFinancialTrafficRoutingEnabled
+          })) if (value !== true) failed.push('readiness gate: ' + name);
+          if (readiness.walletRechargeMode !== 'live' || readiness.razorpayMode !== 'live') {
+            failed.push('readiness must report Wallet Recharge and Razorpay Live');
+          }
+
           if (migration.ok !== true || migration.schemaReady !== true) failed.push('/api/backend/migration-status schemaReady');
           for (const [name, value] of Object.entries({
             walletReadRoutesEnabled: migration.walletReadRoutesEnabled,
             walletRechargeRoutesEnabled: migration.walletRechargeRoutesEnabled,
             walletOfferRoutesEnabled: migration.walletOfferRoutesEnabled,
             liveSessionRoutesEnabled: migration.liveSessionRoutesEnabled,
-            productionTrafficEnabled: migration.productionTrafficEnabled
-          })) if (value !== false) failed.push('migration-status gate: ' + name);
-          if (migration.razorpayMode !== 'disabled') failed.push('Razorpay must remain disabled');
+            productionFinancialTrafficRoutingEnabled: migration.productionFinancialTrafficRoutingEnabled
+          })) if (value !== true) failed.push('selected financial migration-status gate: ' + name);
+          if (migration.productionTrafficEnabled !== false) failed.push('whole-backend productionTrafficEnabled must remain false');
+          if (migration.walletBusinessRoutesEnabled !== false) failed.push('walletBusinessRoutesEnabled must remain false');
+          if (migration.identityProfileD1AuthorizationReady !== true) failed.push('identity profile D1 authorization must be ready');
+          if (migration.razorpayMode !== 'live') failed.push('migration-status Razorpay mode must remain live');
+
           if (failed.length) {
             console.error('Production readiness audit FAILED:', failed.join('; '));
             process.exit(1);
           }
           console.log('PASS: all 10 Production D1 migration contracts are present.');
-          console.log('PASS: /api/backend/readiness and /api/backend/migration-status return HTTP 200 with schema readiness true.');
-          console.log('PASS: Worker, Wallet, Live Session, Identity/Profile authorization and Razorpay remain disabled.');
+          console.log('PASS: Worker, D1, Firebase Project 1 identity and Razorpay Live readiness checks passed.');
+          console.log('PASS: selected Cloudflare Wallet, Recharge, Offers and Live/Booking financial routes are enabled.');
+          console.log('PASS: productionFinancialTrafficRoutingEnabled=true; whole-backend productionTrafficEnabled=false.');
           NODE
