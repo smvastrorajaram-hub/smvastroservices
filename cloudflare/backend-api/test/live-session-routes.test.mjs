@@ -54,6 +54,7 @@ function fixture(overrides={}) {
         state:'ringing',createdAt:'2026-10-31T10:00:00.000Z',minutes:5
       }
     };},
+    async cancelBooking(input){calls.push({service:'cancelBooking',input});return {success:true,booking:{id:input.bookingId,customerUid:input.customerUid,astrologerUid:'astro-1',status:'cancelled'}};},
     async listSessions(){return overrides.sessions||[];},
     async setConnection(input){calls.push({service:'setConnection',input});return {
       success:true,sessionId:input.sessionId,uid:input.uid,connected:input.connected,
@@ -149,6 +150,17 @@ test('Offline booking response schedules its seven-day expiry instead of a ringi
   assert.equal(res.statusCode,200);
   assert.ok(f.calls.some(x=>String(x.url||'').includes('/schedule')&&x.body.deadlines[0].type==='booking_expiry'));
   assert.ok(!f.calls.some(x=>String(x.url||'').includes('/schedule')&&x.body.deadlines[0].type==='ring_timeout'));
+});
+
+test('Customer Live-booking cancellation publishes the updated state to both participants',async()=>{
+  const f=fixture(),res=responseHarness();
+  await f.app.handlers.get('POST /live/bookings/:id/cancel')(req({},'customer','booking-cancel-1'),res);
+  assert.equal(res.statusCode,200);
+  assert.equal(res.body.booking.status,'cancelled');
+  assert.ok(f.calls.some(x=>x.service==='cancelBooking'&&x.input.bookingId==='booking-cancel-1'));
+  const recipients=f.calls.filter(x=>String(x.url||'').includes('/publish')).map(x=>x.body.targetUid).sort();
+  assert.deepEqual(recipients,['astro-1','customer-1']);
+  assert.ok(f.calls.filter(x=>String(x.url||'').includes('/publish')).every(x=>x.body.type==='live.booking.updated'));
 });
 
 test('Live disconnect status persists a generation-scoped grace deadline',async()=>{
