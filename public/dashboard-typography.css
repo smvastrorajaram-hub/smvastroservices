@@ -5,14 +5,14 @@
 #dashboardContent .smv-consultation-item .smv-question-text,
 #dashboardContent .smv-astrologer-dashboard .smv-astro-question-text{
   font-size:var(--smv-dashboard-emphasis)!important;
-  line-height:1.45!important;
+  line-height:var(--smv-dashboard-emphasis-line)!important;
   font-weight:600!important;
   color:#111!important;
 }
 #dashboardContent .smv-consultation-item .smv-customer-answer-text,
 #dashboardContent .smv-astrologer-dashboard .smv-astro-answer-text{
   font-size:var(--smv-dashboard-body)!important;
-  line-height:1.5!important;
+  line-height:var(--smv-dashboard-body-line)!important;
   font-weight:400!important;
   color:#000!important;
 }
@@ -20,7 +20,7 @@
 /* ---------- Customer Dashboard ---------- */
 #dashboardContent .smv-consultation-item .smv-customer-meta-line{
   font-size:var(--smv-dashboard-meta)!important;
-  line-height:1.55!important;
+  line-height:var(--smv-dashboard-meta-line)!important;
   font-weight:400!important;
   color:#000!important;
 }
@@ -116,14 +116,14 @@
 #dashboardContent .smv-astrologer-dashboard .smv-history-detail,
 #dashboardContent .smv-astrologer-dashboard .smv-withdrawal-row>.small{
   font-size:var(--smv-dashboard-meta)!important;
-  line-height:1.55!important;
+  line-height:var(--smv-dashboard-meta-line)!important;
   font-weight:400!important;
   color:#000!important;
 }
 #dashboardContent .smv-astrologer-dashboard :is(.smv-astro-open-question,.astro-question-item,.astro-answer-item)>.small>b,
 #dashboardContent .smv-astrologer-dashboard .smv-history-detail>b,
 #dashboardContent .smv-astrologer-dashboard .smv-withdrawal-row>.small>b{
-  font-size:var(--smv-dashboard-support)!important;
+  font-size:var(--smv-dashboard-label)!important;
   font-weight:600!important;
   color:#111!important;
 }
@@ -143,13 +143,13 @@
 }
 #dashboardContent .smv-astrologer-dashboard .smv-history-content{
   font-size:var(--smv-dashboard-support)!important;
-  line-height:1.5!important;
+  line-height:var(--smv-dashboard-body-line)!important;
   font-weight:400!important;
   color:#000!important;
 }
 #dashboardContent .smv-astrologer-dashboard .smv-history-amount{
   font-size:var(--smv-dashboard-support)!important;
-  line-height:1.5!important;
+  line-height:var(--smv-dashboard-body-line)!important;
   font-weight:400!important;
 }
 #dashboardContent .smv-astrologer-dashboard .smv-history-amount>b,
@@ -447,7 +447,7 @@ html body #dashboardContent .smv-astrologer-dashboard{padding:0!important;margin
 }
 #dashboardContent #smvLiveDashboardCard .smv-live-booking-id,
 #dashboardContent #smvLiveDashboardCard .smv-live-booking-detail{
-  font-size:var(--smv-dashboard-body)!important;line-height:1.6!important;font-weight:600!important;
+  font-size:var(--smv-dashboard-body)!important;line-height:var(--smv-dashboard-body-line)!important;font-weight:600!important;
   color:#111!important;-webkit-text-fill-color:#111!important;
 }
 #dashboardContent #smvLiveDashboardCard .smv-live-booking-detail b{
@@ -457,7 +457,7 @@ html body #dashboardContent .smv-astrologer-dashboard{padding:0!important;margin
   font-size:var(--smv-dashboard-emphasis)!important;line-height:1.4!important;font-weight:900!important;
 }
 #dashboardContent #smvLiveDashboardCard .smv-live-session-meta{
-  font-size:var(--smv-dashboard-body)!important;line-height:1.6!important;font-weight:700!important;
+  font-size:var(--smv-dashboard-body)!important;line-height:var(--smv-dashboard-body-line)!important;font-weight:700!important;
   color:#111!important;
 }
 #dashboardContent #smvLiveDashboardCard .smv-live-session-meta b{
