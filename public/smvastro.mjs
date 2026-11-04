@@ -1740,7 +1740,7 @@ function smvBindCustomerWallet({load=true}={}){
        }
        if(!verified?.verified)throw lastVerificationError||new Error('The backend has not confirmed this payment as verified. Do not pay again; refresh Wallet or contact support.');
        requestKey=smvWalletNewRequestKey();requestAmount='';
-       await smvLoadCustomerWallet();
+       await smvLoadCustomerWallet({force:true});
        const bonusMinutesCredited=Number.isSafeInteger(Number(verified.bonusMinutesCredited))&&Number(verified.bonusMinutesCredited)>0?Number(verified.bonusMinutesCredited):0;
        const customerPaymentId=String(verified.customerPaymentId||'').trim();
        smvWalletSetMessage('Payment Successful — recharge verified.'+(customerPaymentId?' Customer Payment ID: '+customerPaymentId+'.':'')+' Cash Wallet balance: '+smvWalletMoney(Math.round(Number(verified.availableBalance||0)*100))+'.'+(bonusMinutesCredited?' '+bonusMinutesCredited+' bonus free minute(s) added.':' No bonus-minute offer applied.'),'success');
