@@ -1787,7 +1787,7 @@ async function loadDashboard(expectedRole=null,force=false,background=false){
    // before returning through this cache path, otherwise it stays at "Loading…".
    const walletBalance=$('smvWalletBalance');
    if(dashboardReadyRole==='customer' && $('smvCustomerWalletCard') && String(walletBalance?.textContent||'').trim().toLowerCase().startsWith('loading')){
-     void smvLoadCustomerWallet();
+     void smvLoadCustomerWallet({force:true});
    }
    show('dashboard');
    touchSession();
