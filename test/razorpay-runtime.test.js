@@ -53,7 +53,7 @@ test('Production Render startup passes the optional Razorpay client explicitly t
   assert.ok(start >= 0 && end > start, 'Wallet route registration exists');
   const registration = server.slice(start, end);
   assert.ok(registration.includes('razorpay: razorpayRuntime.client'));
-  assert.ok(!/\\bcrypto,\\s*razorpay,/.test(registration), 'removed Razorpay shorthand must not be referenced');
+  assert.ok(!registration.includes('crypto, razorpay'), 'removed Razorpay shorthand must not be referenced');
 });
 
 test('Render Wallet recharge create/verify routes fail closed before using a missing Razorpay client', () => {
