@@ -189,7 +189,7 @@ test('Live Chat uses canonical mode/state and native visibility instead of a cha
   assert.equal(frontend.includes('smv-live-chat-active'), false, 'no chat-only modal class should be toggled by JavaScript');
   assert.equal(css.includes('.smv-live-chat-active'), false, 'Chat must not depend on a special CSS override block');
   assert.ok(html.includes('smvastro.css?v=20261102-consult-route-cleanup-v1'));
-  assert.ok(html.includes('smvastro.mjs?v=20261104-cloudflare-admin-live-commission-d1-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261104-cloudflare-admin-live-commission-d1-v2'));
 });
 
 test('Live Chat connected confirmation requires a rendered message pane and does not open a separate Chat window', () => {
@@ -252,7 +252,7 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('enabling recovery polling.'));
   assert.ok(!frontend.includes("smvLiveMessageTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollMessages(id).catch(()=>{});},600)"));
   assert.ok(!frontend.includes("smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions().catch(()=>{}),4500"));
-  assert.ok(html.includes('smvastro.mjs?v=20261104-cloudflare-admin-live-commission-d1-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261104-cloudflare-admin-live-commission-d1-v2'));
 });
 
 test('Customer and Astrologer Dashboards mount the Live Call/Chat controls after rendering', () => {
@@ -283,7 +283,7 @@ test('Customer and Astrologer Dashboard open without Dashboard-wide loading or q
   assert.equal(frontend.includes('Loading your dashboard...'), false);
   assert.ok(!frontend.includes("because Firebase could not be read."));
   assert.ok(!frontend.includes("Dashboard is open. Astrologer profile and data"));
-  assert.ok(html.includes('smvastro.mjs?v=20261104-cloudflare-admin-live-commission-d1-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261104-cloudflare-admin-live-commission-d1-v2'));
 });
 
 test('Explicit login keeps the fast role shell mounted and does not hide/reopen Dashboard', () => {
@@ -327,7 +327,7 @@ test('Astrologer Dashboard keeps one heading and parallelizes its first profile 
   assert.ok(dashboard.includes('const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null;'));
   assert.ok(dashboard.includes('astrologerProfileResult=profileResult;'));
   assert.ok(!dashboard.includes("const a=await withTimeout(\n     getDoc(doc(db,'smv_astrologers',currentUser.uid))"));
-  assert.ok(html.includes('smvastro.mjs?v=20261104-cloudflare-admin-live-commission-d1-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261104-cloudflare-admin-live-commission-d1-v2'));
 });
 
 test('Astrologer Dashboard renders its main UI before earnings and withdrawal history resolve', () => {
@@ -347,7 +347,7 @@ test('Astrologer Dashboard renders its main UI before earnings and withdrawal hi
   assert.ok(dashboard.includes('id="smvAstroEarningsHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalStatus"'));
-  assert.ok(html.includes('smvastro.mjs?v=20261104-cloudflare-admin-live-commission-d1-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261104-cloudflare-admin-live-commission-d1-v2'));
 });
 
 test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
@@ -463,12 +463,19 @@ test('Admin home avoids eagerly reading the unused private-consultation history 
   assert.equal(server.includes('app.get("/admin/private-consultations-data"'), false);
 });
 
-test('Admin dashboard reads Live commission from Cloudflare D1 without a Firestore fallback', () => {
+test('Admin dashboard loads Live commission from Cloudflare D1 before non-essential Admin hydration', () => {
   const frontend = read('public/smvastro.mjs');
+  const html = read('public/index.html');
+  const adminStart = frontend.indexOf('async function loadAdminPanelData');
+  const earlyCommissionLoad = frontend.indexOf('await smvLoadAdminLiveCommissionSettings();', adminStart);
+  const adminDataLoad = frontend.indexOf("renderApi('/admin-data',{method:'GET'})", adminStart);
   assert.ok(frontend.includes("renderApi('/admin/live/commission',{method:'GET'})"));
   assert.ok(frontend.includes("renderApi('/admin/live/commission',{method:'POST'"));
   assert.ok(frontend.includes("admin\\/(?:withdrawals-data|withdrawal-payout|withdrawal-mark-processing|withdrawal-reject|withdrawal-mark-paid|offers|live\\/(?:pricing|commission))"));
-  assert.ok(frontend.includes("Loaded from Cloudflare Production D1."));
+  assert.ok(earlyCommissionLoad > adminStart && earlyCommissionLoad < adminDataLoad);
+  assert.ok(frontend.includes('Could not load commission from Cloudflare Production D1'));
+  assert.ok(html.includes('id="refreshCommissionSettings"'));
+  assert.ok(html.includes('id="commissionMsg" role="status" aria-live="polite"'));
   assert.ok(!frontend.includes("adminData?.settings?.commission||{astroPercent:20,adminPercent:80}"));
   assert.ok(!frontend.includes("getDoc(doc(db,'smv_settings','commission'))"));
   assert.ok(!frontend.includes("getDoc(doc(db,'smv_settings','answer'))"));
