@@ -1,5 +1,6 @@
 import { FirestoreFieldValue } from '../../../shared/backend-platform/firestore-admin-rest.mjs';
 import { createD1IdentityProfileWriter } from '../../../shared/backend-platform/d1-identity-profile-writer.mjs';
+import { LIVE_PREPARATION_DURATION_MS } from '../../../shared/backend-platform/live-session-domain.mjs';
 
 const IDENTITY_TOOLKIT_ROOT = 'https://identitytoolkit.googleapis.com/v1';
 const FCM_ROOT = 'https://fcm.googleapis.com/v1/projects/';
@@ -1219,7 +1220,7 @@ export function registerLegacyRouteParityGapRoutes({
         session = accepted.session;
         finalResult = { ...result, session };
         const until = timestampMillis(session.preparationUntil || session.preparationUntilMs) ||
-          Date.now() + 3 * 60 * 1000;
+          Date.now() + LIVE_PREPARATION_DURATION_MS;
         const stub = env.LIVE_SESSION_COORDINATOR.get(env.LIVE_SESSION_COORDINATOR.idFromName(createdSessionId));
         const timerResponse = await stub.fetch('https://live-session.internal/schedule', {
           method: 'POST',

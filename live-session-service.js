@@ -18,7 +18,7 @@ const RING_TIMEOUT_MS = 2 * 60_000;
 const CALL_CONNECT_TIMEOUT_MS = 45_000;
 // Give an Astrologer enough time to establish the live Chat after accepting the request.
 const CHAT_ACCEPT_TIMEOUT_MS = 5 * 60_000;
-const PREPARATION_DURATION_MS = 3 * 60_000;
+const PREPARATION_DURATION_MS = 2 * 60_000 + 15_000;
 const DISCONNECT_GRACE_MS = 20_000;
 const SCHEDULED_CONNECT_GRACE_MS = 2 * 60_000;
 const MAX_MESSAGE_CHARS = 4000;

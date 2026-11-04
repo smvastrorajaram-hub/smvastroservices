@@ -61,7 +61,7 @@ function fixture(overrides={}) {
     };},
     async endSession(input){calls.push({service:'endSession',input});return {success:true,session:{id:'session-1',customerUid:'customer-1',astrologerUid:'astro-1',state:'ended'}};},
     async rejectSession(input){calls.push({service:'rejectSession',input});return {success:true,session:{id:input.sessionId,customerUid:'customer-1',astrologerUid:input.astrologerUid,state:'ended'}};},
-    async acceptSession(input){calls.push({service:'acceptSession',input});return {success:true,session:{id:input.sessionId,customerUid:'customer-1',astrologerUid:input.astrologerUid,state:'preparing',preparationUntil:'2026-10-31T10:03:00Z'}};},
+    async acceptSession(input){calls.push({service:'acceptSession',input});return {success:true,session:{id:input.sessionId,customerUid:'customer-1',astrologerUid:input.astrologerUid,state:'preparing',preparationUntil:'2026-10-31T10:02:15Z'}};},
     async readySession(input){calls.push({service:'readySession',input});return {success:true,started:false,session:{id:input.sessionId,customerUid:'customer-1',astrologerUid:'astro-1',state:'connecting',mode:'call',connectingAt:'2026-10-31T10:00:00Z',minutes:5}};},
     async sendMessage(input){return {success:true,message:{id:'msg-1',sessionId:input.sessionId,senderUid:input.senderUid,text:input.text,createdAt:'2026-10-31T10:00:00Z'},recipientUid:'astro-1'};},
     async signal(input){return {success:true,signalId:'sig-1',recipientUid:'astro-1'};},
@@ -234,4 +234,6 @@ test('Live accept route enforces Astrologer identity and books a preparation tim
   await f.app.handlers.get('POST /live/sessions/:id/accept')(req({},'astrologer'),res);
   assert.equal(res.statusCode,200);
   assert.ok(f.calls.some(x=>String(x.url||'').includes('/schedule')&&x.body.deadlines[0].type==='preparation_timeout'));
+  const scheduled=f.calls.find(x=>String(x.url||'').includes('/schedule')&&x.body.deadlines[0].type==='preparation_timeout');
+  assert.equal(scheduled.body.deadlines[0].atMs,Date.parse('2026-10-31T10:02:15Z'));
 });
