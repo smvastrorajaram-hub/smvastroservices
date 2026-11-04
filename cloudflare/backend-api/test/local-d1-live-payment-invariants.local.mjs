@@ -9,6 +9,7 @@ import { createD1WalletAdapter } from '../../../shared/backend-platform/d1-walle
 import { createD1LiveSessionService } from '../../../shared/backend-platform/d1-live-session-service.mjs';
 import { createD1WithdrawalService } from '../../../shared/backend-platform/d1-live-withdrawal-service.mjs';
 import { registerWalletRechargeRoutes } from '../src/wallet-recharge-routes.mjs';
+import { LiveSessionCoordinator } from '../src/live-session-coordinator.mjs';
 
 const RELEASE_GUARD = 'smv_domain_live_booking_release_pending_validate';
 
@@ -569,6 +570,375 @@ test('local D1 rejects payment signature/order/amount/currency mismatches and cr
     assert.equal((await walletAdapter.getWallet(ownerUid)).availableBalancePaise,amountPaise);
   } finally {
     cleanupFixture(sqlite,{uids:[ownerUid],orders:[orderId],recharges:[rechargeId],eventKeys:[eventKey]});
+    sqlite.close();
+  }
+});
+
+
+class LocalDeadlineStorage {
+  constructor() { this.values = new Map(); this.alarmAt = null; }
+  async get(key) { return this.values.get(key); }
+  async put(key, value) { this.values.set(key, structuredClone(value)); }
+  async setAlarm(timestamp) { this.alarmAt = timestamp; }
+  async deleteAlarm() { this.alarmAt = null; }
+  async getAlarm() { return this.alarmAt; }
+}
+
+function makeLocalD1DeadlineCoordinator(sqlite, adminUid) {
+  const storage = new LocalDeadlineStorage();
+  const published = [];
+  const userHub = {
+    idFromName(uid) { return String(uid); },
+    get(uid) {
+      return {
+        async fetch(_url, options = {}) {
+          const body = JSON.parse(String(options.body || '{}'));
+          published.push({ uid: String(uid), ...body });
+          return new Response(JSON.stringify({ ok: true }), {
+            status: 200, headers: { 'Content-Type': 'application/json' }
+          });
+        }
+      };
+    }
+  };
+  const ctx = { storage, getWebSockets() { return []; } };
+  const env = {
+    DB: makeD1Binding(sqlite),
+    ADMIN_WALLET_UID: adminUid,
+    LIVE_USER_EVENT_HUB: userHub
+  };
+  return {
+    coordinator: new LiveSessionCoordinator(ctx, env),
+    storage,
+    published
+  };
+}
+
+function seedLocalTimerSession(sqlite, options) {
+  const {
+    sessionId, customerUid, astrologerUid, mode = 'call', state = 'ringing',
+    createdAtMs = Date.now(), updatedAtMs = createdAtMs,
+    startedAtMs = null, connectingAtMs = null, preparationUntilMs = null,
+    minutes = 5, reservedAmountPaise = 5000
+  } = options;
+  seedWallet(sqlite, customerUid, 'customer', 10000, 0, createdAtMs);
+  const payload = {
+    id: sessionId, sessionId, origin: 'direct', customerUid, astrologerUid,
+    mode, state, minutes, ratePerMinutePaise: 1000, reservedAmountPaise,
+    reservedBonusMinutes: 0, walletReservationState: 'reserved',
+    createdAtMs, updatedAtMs, startedAtMs, connectingAtMs, preparationUntilMs,
+    astrologerCommissionPercent: 20, adminCommissionPercent: 80,
+    customerReady: state === 'active', astrologerReady: state === 'active'
+  };
+  sqlite.exec('BEGIN IMMEDIATE');
+  try {
+    insertLedger(sqlite, {
+      ledgerId: id('timer_reserve'), ownerUid: customerUid, ownerRole: 'customer',
+      type: 'live_session_reserve', direction: 'reserve',
+      amountPaise: reservedAmountPaise, availableDeltaPaise: -reservedAmountPaise,
+      reservedDeltaPaise: reservedAmountPaise,
+      idempotencyKey: 'live-session:' + sessionId,
+      referenceType: 'live_session', referenceId: sessionId, createdAtMs
+    });
+    sqlite.prepare(
+      `INSERT INTO smv_domain_live_sessions
+       (session_id,customer_uid,astrologer_uid,mode,state,appointment_id,
+        reserved_amount_paise,reserved_bonus_minutes,actual_charge_paise,
+        started_at_ms,ended_at_ms,settlement_operation_id,payload_json,created_at_ms,updated_at_ms)
+       VALUES (?,?,?,?,?,NULL,?,?,0,?,NULL,NULL,?,?,?)`
+    ).run(
+      sessionId, customerUid, astrologerUid, mode, state, reservedAmountPaise, 0,
+      startedAtMs, JSON.stringify(payload), createdAtMs, updatedAtMs
+    );
+    sqlite.exec('COMMIT');
+  } catch (error) {
+    sqlite.exec('ROLLBACK');
+    throw error;
+  }
+  return payload;
+}
+
+function seedLocalTimerBooking(sqlite, options) {
+  const { bookingId, customerUid, astrologerUid, createdAtMs, expiresAtMs,
+    reservedAmountPaise = 3000, reservedBonusMinutes = 2 } = options;
+  seedWallet(sqlite, customerUid, 'customer', 10000, reservedBonusMinutes, createdAtMs);
+  const payload = {
+    id: bookingId, customerUid, astrologerUid, mode: 'chat', status: 'pending',
+    minutes: 5, ratePerMinutePaise: 600, reservedAmountPaise,
+    reservedBonusMinutes, walletReservationState: 'reserved', origin: 'offline_queue',
+    createdAtMs, expiresAtMs, updatedAtMs: createdAtMs
+  };
+  sqlite.exec('BEGIN IMMEDIATE');
+  try {
+    insertLedger(sqlite, {
+      ledgerId: id('timer_booking_reserve'), ownerUid: customerUid, ownerRole: 'customer',
+      type: 'live_booking_reserve', direction: 'reserve',
+      amountPaise: reservedAmountPaise, availableDeltaPaise: -reservedAmountPaise,
+      reservedDeltaPaise: reservedAmountPaise,
+      bonusMinutesDelta: -reservedBonusMinutes,
+      reservedBonusMinutesDelta: reservedBonusMinutes,
+      idempotencyKey: 'live-booking:' + bookingId,
+      referenceType: 'live_booking', referenceId: bookingId, createdAtMs
+    });
+    sqlite.prepare(
+      `INSERT INTO smv_domain_live_bookings
+       (booking_id,customer_uid,astrologer_uid,mode,status,wallet_reservation_state,
+        reserved_amount_paise,reserved_bonus_minutes,expires_at_ms,payload_json,created_at_ms,updated_at_ms)
+       VALUES (?,?,?,'chat','pending','reserved',?,?,?,?,?,?)`
+    ).run(
+      bookingId, customerUid, astrologerUid, reservedAmountPaise,
+      reservedBonusMinutes, expiresAtMs, JSON.stringify(payload), createdAtMs, createdAtMs
+    );
+    sqlite.exec('COMMIT');
+  } catch (error) {
+    sqlite.exec('ROLLBACK');
+    throw error;
+  }
+  return payload;
+}
+
+async function fireLocalD1Deadline(harness, sessionId, state, deadline) {
+  const response = await harness.coordinator.fetch(new Request('https://live-session.internal/schedule', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId, state, deadlines: [deadline] })
+  }));
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).ok, true);
+  await harness.coordinator.alarm();
+}
+
+test('Production D1-backed coordinator settles an expired Live session once and publishes to both participants', async () => {
+  const { sqlite } = await openMigratedLocalD1();
+  const nowMs = Date.now(), customerUid = id('timer_customer');
+  const astrologerUid = id('timer_astro'), adminUid = id('timer_admin');
+  const sessionId = id('timer_duration_session');
+  const startedAtMs = nowMs - 6 * 60_000;
+  try {
+    seedLocalTimerSession(sqlite, {
+      sessionId, customerUid, astrologerUid, mode: 'chat', state: 'active',
+      createdAtMs: startedAtMs - 60_000, updatedAtMs: nowMs,
+      startedAtMs, minutes: 5, reservedAmountPaise: 5000
+    });
+    const harness = makeLocalD1DeadlineCoordinator(sqlite, adminUid);
+    await fireLocalD1Deadline(harness, sessionId, 'active', {
+      type: 'session_duration', atMs: startedAtMs + 5 * 60_000,
+      deadlineId: 'duration:' + sessionId, generation: 0
+    });
+
+    const session = sqlite.prepare('SELECT state,actual_charge_paise,payload_json FROM smv_domain_live_sessions WHERE session_id=?').get(sessionId);
+    assert.equal(session.state, 'ended');
+    assert.equal(Number(session.actual_charge_paise), 5000);
+    assert.equal(JSON.parse(session.payload_json).endReason, 'duration_complete');
+    const customer = sqlite.prepare('SELECT available_balance_paise,reserved_balance_paise FROM smv_domain_wallets WHERE owner_uid=?').get(customerUid);
+    const astrologer = sqlite.prepare('SELECT available_balance_paise FROM smv_domain_wallets WHERE owner_uid=?').get(astrologerUid);
+    const admin = sqlite.prepare('SELECT available_balance_paise FROM smv_domain_wallets WHERE owner_uid=?').get(adminUid);
+    assert.equal(Number(customer.available_balance_paise), 5000);
+    assert.equal(Number(customer.reserved_balance_paise), 0);
+    assert.equal(Number(astrologer.available_balance_paise), 1000);
+    assert.equal(Number(admin.available_balance_paise), 4000);
+    assert.equal(Number(sqlite.prepare("SELECT COUNT(*) AS total FROM smv_domain_earnings WHERE reference_id=? AND status='credited'").get(sessionId).total), 1);
+    assert.equal(Number(sqlite.prepare("SELECT COUNT(*) AS total FROM smv_domain_wallet_ledger WHERE reference_id=? AND type='live_session_usage'").get(sessionId).total), 1);
+    assert.deepEqual(harness.published.map(item => item.uid).sort(), [astrologerUid, customerUid].sort());
+    assert.ok(harness.published.every(item => item.type === 'live.session.ended' && item.data?.session?.state === 'ended'));
+
+    await harness.coordinator.alarm();
+    assert.equal(Number(sqlite.prepare("SELECT COUNT(*) AS total FROM smv_domain_earnings WHERE reference_id=?").get(sessionId).total), 1);
+    assert.equal(Number(sqlite.prepare("SELECT COUNT(*) AS total FROM smv_domain_wallet_ledger WHERE reference_id=? AND type='live_session_usage'").get(sessionId).total), 1);
+    assert.equal(harness.published.length, 2, 'a repeated alarm must not duplicate settlement or participant events');
+  } finally {
+    cleanupFixture(sqlite, { uids: [customerUid, astrologerUid, adminUid], sessions: [sessionId], references: [sessionId] });
+    sqlite.close();
+  }
+});
+
+test('Production D1-backed coordinator ends a missed Live request and releases its full reserve', async () => {
+  const { sqlite } = await openMigratedLocalD1();
+  const nowMs = Date.now(), customerUid = id('timer_missed_customer');
+  const astrologerUid = id('timer_missed_astro'), adminUid = id('timer_missed_admin');
+  const sessionId = id('timer_missed_session');
+  const createdAtMs = nowMs - 4 * 60_000;
+  try {
+    seedLocalTimerSession(sqlite, {
+      sessionId, customerUid, astrologerUid, mode: 'call', state: 'ringing',
+      createdAtMs, updatedAtMs: nowMs, startedAtMs: null,
+      minutes: 5, reservedAmountPaise: 5000
+    });
+    const harness = makeLocalD1DeadlineCoordinator(sqlite, adminUid);
+    await fireLocalD1Deadline(harness, sessionId, 'ringing', {
+      type: 'ring_timeout', atMs: createdAtMs + 3 * 60_000,
+      deadlineId: 'ring:' + sessionId, generation: 0
+    });
+
+    const session = sqlite.prepare('SELECT state,actual_charge_paise,payload_json FROM smv_domain_live_sessions WHERE session_id=?').get(sessionId);
+    assert.equal(session.state, 'ended');
+    assert.equal(Number(session.actual_charge_paise), 0);
+    assert.equal(JSON.parse(session.payload_json).endReason, 'no_answer');
+    const customer = sqlite.prepare('SELECT available_balance_paise,reserved_balance_paise FROM smv_domain_wallets WHERE owner_uid=?').get(customerUid);
+    assert.equal(Number(customer.available_balance_paise), 10000);
+    assert.equal(Number(customer.reserved_balance_paise), 0);
+    assert.equal(Number(sqlite.prepare("SELECT COUNT(*) AS total FROM smv_domain_wallet_ledger WHERE reference_id=? AND type='live_session_unused_release'").get(sessionId).total), 1);
+    assert.equal(Number(sqlite.prepare('SELECT COUNT(*) AS total FROM smv_domain_earnings WHERE reference_id=?').get(sessionId).total), 0);
+    assert.equal(harness.published.length, 2);
+    assert.ok(harness.published.every(item => item.type === 'live.session.ended'));
+    await harness.coordinator.alarm();
+    assert.equal(Number(sqlite.prepare("SELECT COUNT(*) AS total FROM smv_domain_wallet_ledger WHERE reference_id=? AND type='live_session_unused_release'").get(sessionId).total), 1);
+  } finally {
+    cleanupFixture(sqlite, { uids: [customerUid, astrologerUid, adminUid], sessions: [sessionId], references: [sessionId] });
+    sqlite.close();
+  }
+});
+
+test('Production D1-backed coordinator advances an expired preparation window to the connection timer', async () => {
+  const { sqlite } = await openMigratedLocalD1();
+  const nowMs = Date.now(), customerUid = id('timer_prepare_customer');
+  const astrologerUid = id('timer_prepare_astro'), adminUid = id('timer_prepare_admin');
+  const sessionId = id('timer_prepare_session');
+  const preparationUntilMs = nowMs - 1000;
+  try {
+    seedLocalTimerSession(sqlite, {
+      sessionId, customerUid, astrologerUid, mode: 'call', state: 'preparing',
+      createdAtMs: nowMs - 3 * 60_000, updatedAtMs: nowMs - 10_000,
+      startedAtMs: null, connectingAtMs: null, preparationUntilMs,
+      minutes: 5, reservedAmountPaise: 5000
+    });
+    const harness = makeLocalD1DeadlineCoordinator(sqlite, adminUid);
+    await fireLocalD1Deadline(harness, sessionId, 'preparing', {
+      type: 'preparation_timeout', atMs: preparationUntilMs,
+      deadlineId: 'preparation:' + sessionId, generation: 0
+    });
+
+    const session = sqlite.prepare('SELECT state,payload_json FROM smv_domain_live_sessions WHERE session_id=?').get(sessionId);
+    assert.equal(session.state, 'connecting');
+    const payload = JSON.parse(session.payload_json);
+    assert.ok(Number(payload.connectingAtMs) >= nowMs);
+    const record = await harness.storage.get('live-session-record');
+    assert.equal(record.deadlines.length, 1);
+    assert.equal(record.deadlines[0].type, 'call_connect_timeout');
+    assert.equal(record.deadlines[0].generation, 1);
+    assert.ok(record.deadlines[0].atMs > Date.now());
+    assert.equal(record.pendingEvents.length, 0);
+    assert.equal(harness.published.length, 2);
+    assert.ok(harness.published.every(item => item.type === 'live.session.updated' && item.data?.session?.state === 'connecting'));
+  } finally {
+    cleanupFixture(sqlite, { uids: [customerUid, astrologerUid, adminUid], sessions: [sessionId], references: [sessionId] });
+    sqlite.close();
+  }
+});
+
+test('Production D1-backed coordinator applies Call and Chat connection timeouts with full reserve release', async () => {
+  const { sqlite } = await openMigratedLocalD1();
+  const adminUid = id('timer_connect_admin');
+  const allUids = [adminUid], sessions = [], references = [];
+  try {
+    for (const mode of ['call', 'chat']) {
+      const nowMs = Date.now(), customerUid = id('timer_connect_customer');
+      const astrologerUid = id('timer_connect_astro'), sessionId = id('timer_connect_' + mode);
+      const timeoutMs = mode === 'chat' ? 5 * 60_000 : 45_000;
+      const connectingAtMs = nowMs - timeoutMs - 30_000;
+      const createdAtMs = connectingAtMs - 60_000;
+      seedLocalTimerSession(sqlite, {
+        sessionId, customerUid, astrologerUid, mode, state: 'connecting',
+        createdAtMs, updatedAtMs: nowMs, startedAtMs: null, connectingAtMs,
+        minutes: 5, reservedAmountPaise: 5000
+      });
+      const harness = makeLocalD1DeadlineCoordinator(sqlite, adminUid);
+      await fireLocalD1Deadline(harness, sessionId, 'connecting', {
+        type: mode === 'chat' ? 'chat_accept_timeout' : 'call_connect_timeout',
+        atMs: connectingAtMs + timeoutMs,
+        deadlineId: mode + '-connect:' + sessionId, generation: 0
+      });
+      const session = sqlite.prepare('SELECT state,payload_json FROM smv_domain_live_sessions WHERE session_id=?').get(sessionId);
+      assert.equal(session.state, 'ended', mode);
+      assert.equal(JSON.parse(session.payload_json).endReason, 'connection_failed', mode);
+      const wallet = sqlite.prepare('SELECT available_balance_paise,reserved_balance_paise FROM smv_domain_wallets WHERE owner_uid=?').get(customerUid);
+      assert.equal(Number(wallet.available_balance_paise), 10000, mode);
+      assert.equal(Number(wallet.reserved_balance_paise), 0, mode);
+      assert.equal(harness.published.length, 2, mode);
+      allUids.push(customerUid, astrologerUid);
+      sessions.push(sessionId);
+      references.push(sessionId);
+    }
+  } finally {
+    cleanupFixture(sqlite, { uids: allUids, sessions, references });
+    sqlite.close();
+  }
+});
+
+test('Production D1-backed coordinator expires a pending booking and releases cash plus bonus reserve once', async () => {
+  const { sqlite } = await openMigratedLocalD1();
+  const nowMs = Date.now(), customerUid = id('timer_booking_customer');
+  const astrologerUid = id('timer_booking_astro'), bookingId = id('timer_booking');
+  const createdAtMs = nowMs - 8 * 24 * 60 * 60 * 1000;
+  const expiresAtMs = createdAtMs + 7 * 24 * 60 * 60 * 1000;
+  try {
+    seedLocalTimerBooking(sqlite, { bookingId, customerUid, astrologerUid, createdAtMs, expiresAtMs });
+    const harness = makeLocalD1DeadlineCoordinator(sqlite, id('timer_booking_admin'));
+    await fireLocalD1Deadline(harness, bookingId, 'booking_pending', {
+      type: 'booking_expiry', atMs: expiresAtMs,
+      deadlineId: 'booking:' + bookingId, generation: 0
+    });
+
+    const booking = sqlite.prepare('SELECT status,wallet_reservation_state,payload_json FROM smv_domain_live_bookings WHERE booking_id=?').get(bookingId);
+    assert.equal(booking.status, 'expired');
+    assert.equal(booking.wallet_reservation_state, 'released');
+    assert.equal(JSON.parse(booking.payload_json).endReason, 'booking_expired');
+    const wallet = sqlite.prepare('SELECT available_balance_paise,reserved_balance_paise,bonus_minutes_balance,reserved_bonus_minutes FROM smv_domain_wallets WHERE owner_uid=?').get(customerUid);
+    assert.equal(Number(wallet.available_balance_paise), 10000);
+    assert.equal(Number(wallet.reserved_balance_paise), 0);
+    assert.equal(Number(wallet.bonus_minutes_balance), 2);
+    assert.equal(Number(wallet.reserved_bonus_minutes), 0);
+    assert.equal(Number(sqlite.prepare("SELECT COUNT(*) AS total FROM smv_domain_wallet_ledger WHERE reference_id=? AND type='live_booking_unused_release'").get(bookingId).total), 1);
+    assert.equal(Number(sqlite.prepare("SELECT COUNT(*) AS total FROM smv_domain_wallet_ledger WHERE reference_id=? AND type='live_booking_bonus_release'").get(bookingId).total), 1);
+    assert.deepEqual(harness.published.map(item => item.uid).sort(), [astrologerUid, customerUid].sort());
+    assert.ok(harness.published.every(item => item.type === 'live.booking.updated'));
+    await harness.coordinator.alarm();
+    assert.equal(Number(sqlite.prepare("SELECT COUNT(*) AS total FROM smv_domain_wallet_ledger WHERE reference_id=? AND type='live_booking_unused_release'").get(bookingId).total), 1);
+  } finally {
+    cleanupFixture(sqlite, { uids: [customerUid, astrologerUid], bookings: [bookingId], references: [bookingId] });
+    sqlite.close();
+  }
+});
+
+test('Production D1-backed coordinator rejects stale disconnect generations and accepts the current grace deadline', async () => {
+  const { sqlite } = await openMigratedLocalD1();
+  const nowMs = Date.now(), customerUid = id('timer_disconnect_customer');
+  const astrologerUid = id('timer_disconnect_astro'), adminUid = id('timer_disconnect_admin');
+  const sessionId = id('timer_disconnect_session'), deadlineAtMs = nowMs - 1000;
+  try {
+    seedLocalTimerSession(sqlite, {
+      sessionId, customerUid, astrologerUid, mode: 'call', state: 'active',
+      createdAtMs: nowMs - 3 * 60_000, updatedAtMs: nowMs,
+      startedAtMs: nowMs - 90_000, minutes: 5, reservedAmountPaise: 5000
+    });
+    sqlite.prepare(
+      `INSERT INTO smv_domain_live_connections
+       (session_id,uid,connected,generation,deadline_at_ms,updated_at_ms)
+       VALUES (?, ?, 0, 2, ?, ?)`
+    ).run(sessionId, customerUid, deadlineAtMs, nowMs - 20_000);
+
+    const harness = makeLocalD1DeadlineCoordinator(sqlite, adminUid);
+    await fireLocalD1Deadline(harness, sessionId, 'active', {
+      type: 'disconnect_grace', atMs: deadlineAtMs,
+      deadlineId: 'disconnect:stale:' + sessionId, generation: 1,
+      participantUid: customerUid
+    });
+    let session = sqlite.prepare('SELECT state FROM smv_domain_live_sessions WHERE session_id=?').get(sessionId);
+    assert.equal(session.state, 'active');
+    assert.equal(harness.published.length, 0, 'a stale disconnect generation must not end or publish the session');
+
+    await fireLocalD1Deadline(harness, sessionId, 'active', {
+      type: 'disconnect_grace', atMs: deadlineAtMs,
+      deadlineId: 'disconnect:current:' + sessionId, generation: 2,
+      participantUid: customerUid
+    });
+    session = sqlite.prepare('SELECT state,payload_json FROM smv_domain_live_sessions WHERE session_id=?').get(sessionId);
+    assert.equal(session.state, 'ended');
+    assert.equal(JSON.parse(session.payload_json).endReason, 'network_disconnect');
+    assert.equal(harness.published.length, 2);
+    assert.ok(harness.published.every(item => item.type === 'live.session.ended'));
+  } finally {
+    cleanupFixture(sqlite, { uids: [customerUid, astrologerUid, adminUid], sessions: [sessionId], references: [sessionId] });
     sqlite.close();
   }
 });
