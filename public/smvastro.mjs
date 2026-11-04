@@ -4082,7 +4082,7 @@ window.__smvNativeFcmTokenReady=token=>{
    if(!registered)return;
    const status=$('smvLivePushStatus'),enable=$('smvLivePushEnable'),test=$('smvLivePushTest');
    if(status)status.textContent='Native Android call notifications are enabled. In the background, Android shows a system notification; tap it to open the Live request.';
-   if(enable)enable.textContent='ANDROID CALL ALERTS ENABLED';
+   if(enable){enable.textContent='ANDROID CALL ALERTS ENABLED';enable.dataset.registered='true';}
    if(test)test.disabled=false;
   });
  }
@@ -4133,7 +4133,7 @@ function smvLiveBindPushControls(){
  if(nativeMode){
   void smvLiveRegisterNativePushToken().then(registered=>{
    if(test)test.disabled=!registered;
-   if(enable)enable.textContent=registered?'ANDROID CALL ALERTS ENABLED':'ENABLE BACKGROUND ALERTS';
+   if(enable){enable.textContent=registered?'ANDROID CALL ALERTS ENABLED':'ENABLE BACKGROUND ALERTS';enable.dataset.registered=registered?'true':'false';}
    if(status)status.textContent=registered
     ?'Native Android call notifications are enabled on this SMV ASTRO app. Keep Android notifications and notification sound enabled.'
     :'Native Android call notifications are not configured on this SMV ASTRO app. Firebase Android App ID setup is required; the ordinary browser Push setting is separate.';
@@ -4141,7 +4141,7 @@ function smvLiveBindPushControls(){
  }else if(!nativeMode&&typeof Notification!=='undefined'&&Notification.permission==='granted'){
   // Re-register the current browser's existing token silently, without a new permission prompt.
   void smvLiveEnableBackgroundAlerts().then(()=>{
-   if(enable)enable.textContent='BACKGROUND ALERTS ENABLED';
+   if(enable){enable.textContent='BACKGROUND ALERTS ENABLED';enable.dataset.registered='true';}
    if(test)test.disabled=false;
    if(status)status.textContent='This device is registered for Call, Chat and Booking Push Alerts. Keep browser and Android notifications enabled.';
   }).catch(error=>{
@@ -4158,6 +4158,7 @@ function smvLiveBindPushControls(){
     await smvLiveEnableBackgroundAlerts();
     const nativeMode=!!window.SMVNativeCalls?.isNativeApp?.();
     enable.textContent=nativeMode?'ANDROID CALL ALERTS ENABLED':'BACKGROUND ALERTS ENABLED';
+    enable.dataset.registered='true';
     if(status)status.textContent=nativeMode
       ?'Native Android call notifications are enabled. In the background, Android shows a system notification; tap it to open the Live request.'
       :'This device is registered for Call, Chat and Booking Push Alerts. Keep Android notifications enabled.';
@@ -4179,9 +4180,19 @@ function smvLiveBindPushControls(){
  }
  renderApi('/live/push/status',{method:'GET',timeoutMs:12000}).then(r=>{
   if(nativeMode)return; // Native status is resolved from this Android app's FCM token above.
+  if(nativeMode){
+   const nativeRegistered=r.nativeRegistered===true;
+   if(enable){enable.textContent=nativeRegistered?'ANDROID CALL ALERTS ENABLED':'ENABLE BACKGROUND ALERTS';enable.dataset.registered=nativeRegistered?'true':'false';}
+   if(test)test.disabled=!nativeRegistered;
+   if(status)status.textContent=nativeRegistered
+    ?'Native Android call notifications are registered for this Astrologer account.'
+    :'Android Background Alerts are not registered yet on this account. Tap ENABLE BACKGROUND ALERTS and allow notifications.';
+   return;
+  }
   if(status)status.textContent=Number(r.registeredDevices||0)
    ? 'Registered push device(s): '+Number(r.registeredDevices)+'. Enable alerts on every phone/browser that should ring.'
    : 'Background alerts are not enabled on this device yet. Tap ENABLE BACKGROUND ALERTS and allow notifications.';
+  if(enable&&Number(r.registeredDevices||0)>0){enable.textContent='BACKGROUND ALERTS ENABLED';enable.dataset.registered='true';}
  }).catch(()=>{});
 }
 function smvLiveMoney(paise){const n=Number(paise);return '₹'+((Number.isSafeInteger(n)&&n>=0?n:0)/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -5009,6 +5020,8 @@ function smvLiveUpdateDashboardSessionStatus(session){
    openButton.style.border='0';
    openButton.style.borderRadius='0';openButton.style.padding='0';openButton.style.fontWeight='900';
    openButton.style.boxShadow='none';openButton.style.textDecoration='none';
+   openButton.style.fontSize='15px';openButton.style.lineHeight='1.5';
+   openButton.style.borderBottom='0';openButton.style.textUnderlineOffset='0';
    openButton.setAttribute('aria-label',ended?'Open closed session receipt':'Open live session');
   }
  };
@@ -5161,7 +5174,7 @@ function smvLiveRenderScheduledBookings(appointments){
   }else if(status==='waiting_for_online'){
    buttons='<p class="small" style="margin-top:8px">This appointment was moved to the Live queue because the session could not start immediately. Check Pending Bookings above and accept the queued request after going Online.</p>';
   }
-  return '<article class="card" style="margin:8px 0;min-width:0;overflow-wrap:anywhere"><div class="badge smv-live-booking-kind">'+modeLabel+'</div><h4 class="smv-live-booking-id" style="margin:6px 0">'+escapeHtml(a.bookingId||'Booking')+'</h4><p class="small smv-live-booking-detail"><b>Customer:</b> '+escapeHtml(a.name||'Customer')+'</p><p class="small smv-live-booking-detail"><b>Preferred date/time (IST):</b> '+escapeHtml(String(a.preferredDate||'')+' '+String(a.preferredTime||''))+'</p><p class="small smv-live-booking-detail"><b>Duration:</b> '+Number(a.scheduledMinutes||5)+' minute(s) · <b>Status:</b> '+escapeHtml(stateText(a))+'</p>'+(isChat&&a.question?'<div class="small" style="white-space:pre-wrap;overflow-wrap:anywhere"><b>Previous Chat Question:</b> '+escapeHtml(a.question)+'</div>':'')+(birth.birthDate||birth.birthTime||birth.birthPlace?'<p class="small smv-live-booking-detail"><b>Birth details:</b> '+escapeHtml([birth.birthDate,birth.birthTime,birth.birthPlace].filter(Boolean).join(' · '))+'</p>':'')+(a.notes?'<p class="small smv-live-booking-detail" style="white-space:pre-wrap;overflow-wrap:anywhere"><b>Notes:</b> '+escapeHtml(a.notes)+'</p>':'')+buttons+'</article>';
+  return '<article class="card" style="margin:8px 0;min-width:0;overflow-wrap:anywhere"><div class="smv-live-booking-kind">'+modeLabel+'</div><h4 class="smv-live-booking-id" style="margin:6px 0">'+escapeHtml(a.bookingId||'Booking')+'</h4><p class="small smv-live-booking-detail"><b>Customer:</b> '+escapeHtml(a.name||'Customer')+'</p><p class="small smv-live-booking-detail"><b>Preferred date/time (IST):</b> '+escapeHtml(String(a.preferredDate||'')+' '+String(a.preferredTime||''))+'</p><p class="small smv-live-booking-detail"><b>Duration:</b> '+Number(a.scheduledMinutes||5)+' minute(s) · <b>Status:</b> '+escapeHtml(stateText(a))+'</p>'+(isChat&&a.question?'<div class="small" style="white-space:pre-wrap;overflow-wrap:anywhere"><b>Previous Chat Question:</b> '+escapeHtml(a.question)+'</div>':'')+(birth.birthDate||birth.birthTime||birth.birthPlace?'<p class="small smv-live-booking-detail"><b>Birth details:</b> '+escapeHtml([birth.birthDate,birth.birthTime,birth.birthPlace].filter(Boolean).join(' · '))+'</p>':'')+(a.notes?'<p class="small smv-live-booking-detail" style="white-space:pre-wrap;overflow-wrap:anywhere"><b>Notes:</b> '+escapeHtml(a.notes)+'</p>':'')+buttons+'</article>';
  }).join('');
  smvLiveScheduleBookingTransitionRefresh(appointments,'astrologer');
  host.querySelectorAll('[data-scheduled-respond]').forEach(btn=>btn.onclick=async()=>{
@@ -5366,12 +5379,14 @@ async function smvLiveLoadDashboard(role){
     : chat
      ? 'Live Chat is enabled; Live Call is disabled. Status automatically changes to Online to receive Chats.'
      : 'Live Call and Live Chat are both disabled. Status automatically changes to Offline.';
-  if(status==='busy')note+=' A Live session is active, so the current status remains Busy.';
+  if(status==='busy')note+=' Busy status is saved until you change it; an active Live session also keeps the status Busy.';
   return note;
  };
  const syncModes=(deriveStatusFromModes=false)=>{
   const call=callToggle?.checked===true,chat=chatToggle?.checked===true;
-  if(deriveStatusFromModes&&availabilitySelect)availabilitySelect.value=(call||chat)?'online':'offline';
+  if(deriveStatusFromModes&&availabilitySelect&&availabilitySelect.value!=='busy'){
+   availabilitySelect.value=(call||chat)?'online':'offline';
+  }
   if(availabilityMessage)availabilityMessage.textContent=modeNote(call,chat,availabilitySelect?.value||'offline');
  };
  const saveModes=async()=>{
