@@ -56,7 +56,7 @@ test('Customer, Astrologer and Admin dashboards share one responsive typography 
  }
  assert.match(theme,/html\[lang="ta"\] body[\s\S]*--smv-dashboard-body:16px/,'Tamil typography gets a larger reading size and line height');
  assert.match(css,/#dashboardContent \.smv-consultation-item \.smv-question-text[\s\S]*var\(--smv-dashboard-emphasis\)/);
- assert.match(css,/#dashboardContent \.smv-astrologer-dashboard[\s\S]*var\(--smv-dashboard-section\)/);
+ assert.match(css,/html body #dashboard #dashboardContent :is\(h2,h3\)[\s\S]*var\(--smv-dashboard-section\)/,'shared section heading scale covers the Astrologer dashboard');
  assert.match(css,/#admin \.card:not\(:has\(\.smv-notification-row\)\)>h3[\s\S]*var\(--smv-dashboard-section\)/);
  assert.match(css,/#adminPrivateNotifications \.smv-notification-title[\s\S]*var\(--smv-dashboard-label\)/,'notification title remains separately styled');
  assert.match(css,/#adminPrivateNotifications \.smv-notification-content[\s\S]*var\(--smv-dashboard-meta\)/,'notification body remains separately styled');
