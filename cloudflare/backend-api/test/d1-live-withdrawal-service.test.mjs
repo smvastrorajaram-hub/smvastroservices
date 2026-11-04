@@ -155,7 +155,7 @@ test('withdrawal request preserves approved payout snapshot and exact ₹300 min
   const result=await f.service.createRequest({astrologerUid:'astro-1',astrologerName:'Test Astrologer',amountPaise:30000});
   assert.equal(result.success,true);
   assert.equal(result.amount,300);
-  assert.match(result.withdrawalId,/^smvwt-\\d{6}$/);
+  assert.match(result.withdrawalId,/^smvwt-[0-9]{6}$/);
   assert.equal(result.availableAfter,500);
   assert.equal(f.withdrawals.size,1);
   const encrypted=f.payouts.get('uuid-1');
@@ -220,12 +220,12 @@ test('Admin can process, pay and safely retry a withdrawal; payout snapshot rema
   const processing=await f.service.markProcessing({withdrawalId:'uuid-1',adminUid:'admin-1'});
   assert.equal(processing.withdrawal.status,'processing');
   const paid=await f.service.markPaid({withdrawalId:'uuid-1',adminUid:'admin-1'});
-  assert.match(paid.paymentId,/^smvpt-\\d{6}$/);
+  assert.match(paid.paymentId,/^smvpt-[0-9]{6}$/);
   assert.equal(paid.withdrawal.status,'paid');
   const retry=await f.service.markPaid({withdrawalId:'uuid-1',adminUid:'admin-1'});
   assert.equal(retry.alreadyProcessed,true);
   assert.equal(retry.paymentId,paid.paymentId);
   const details=await f.service.getPrivatePayout('uuid-1');
   assert.equal(details.payout.accountNumber,'123456789');
-  assert.match(created.withdrawalId,/^smvwt-\\d{6}$/);
+  assert.match(created.withdrawalId,/^smvwt-[0-9]{6}$/);
 });
