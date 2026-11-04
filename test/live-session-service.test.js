@@ -300,7 +300,7 @@ test('persisted Live Session deadlines reconcile Preparing, Ringing, Connecting 
     acceptedAt: new Date(base),
     preparationStartedAt: new Date(base),
     preparationUntil: new Date(base + PREPARATION_DURATION_MS)
-  }, base + 179_000);
+  }, base + PREPARATION_DURATION_MS - 1_000);
   assert.deepEqual(preparing, {
     dueAt: base + PREPARATION_DURATION_MS,
     reason: 'preparation_complete',
