@@ -1317,6 +1317,13 @@ test('Public Astrologer list displays distinct Online, Busy and Offline presence
   assert.ok(content.includes('aria-label="${availabilityLabel}"'));
 });
 
+test('Android push deep-link waits for restored Firebase user before opening the requested session', () => {
+  const frontend = read('public/smvastro.mjs');
+  assert.ok(frontend.includes('if(!currentUser){smvLivePendingPushOpen=payload;return;}'));
+  assert.ok(frontend.includes('if(smvLivePendingPushOpen){'));
+  assert.ok(frontend.includes('smvLiveHandlePushOpen(payload).catch'));
+});
+
 test('Android notification opens reuse one Recents task and root Back keeps SMV ASTRO in standby', () => {
   const manifest = read('smvastroproduction/src/main/AndroidManifest.xml');
   const activity = read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java');
