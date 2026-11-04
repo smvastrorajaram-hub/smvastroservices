@@ -1248,7 +1248,7 @@ test('Customer Wallet refresh keeps different signed-in users isolated', async (
 
 test('Customer Wallet reuses the in-flight request and paints the current Dashboard DOM after navigation', () => {
   const frontend = read('public/smvastro.mjs');
-  assert.ok(frontend.includes("import { createCoalescedRefresh } from './coalesced-refresh.mjs?v=20261104-native-notification-intent-v1';"));
+  assert.ok(frontend.includes("import { createCoalescedRefresh } from './coalesced-refresh.mjs?v=20261104-wallet-single-flight-v1';"));
   assert.ok(frontend.includes('const smvCustomerWalletRefresh=createCoalescedRefresh();'));
   assert.ok(frontend.includes('return smvCustomerWalletRefresh(uid,()=>smvLoadCustomerWalletOnce(uid),{force});'));
   const loadStart = frontend.indexOf('async function smvLoadCustomerWalletOnce(uid){');
@@ -1271,6 +1271,7 @@ test('Cloudflare native Live notifications use Android tray payloads and open th
   const frontend = read('public/smvastro.mjs');
   assert.match(liveRoutes, /collectionPath:'smv_push_tokens'/);
   assert.match(liveRoutes, /native-android/);
+  assert.match(liveRoutes, /\\\\s\\/\.test\\(token\\)/, 'token validation rejects whitespace');
   assert.match(liveRoutes, /type:'live_request'/);
   assert.match(liveRoutes, /type:'live_booking'/);
   assert.match(fcmRoutes, /notification:\s*\{/);

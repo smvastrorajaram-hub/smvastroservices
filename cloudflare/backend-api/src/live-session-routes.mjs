@@ -143,7 +143,7 @@ export function registerD1LiveSessionRoutes({
         const token=String(data.token||'').trim();
         if(String(data.uid||'').trim()!==recipient||
            String(data.platform||'').trim().toLowerCase()!=='native-android'||
-           token.length<30||token.length>8192||/\\s/.test(token)||seen.has(token)) continue;
+           token.length<30||token.length>8192||/\s/.test(token)||seen.has(token)) continue;
         seen.add(token);
         tokens.push(token);
       }
