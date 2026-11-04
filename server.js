@@ -11,6 +11,7 @@ const express = require("express");
 const crypto = require("crypto");
 const PredictionSynthesis = require("./prediction-synthesis");
 const Razorpay = require("razorpay");
+const {createOptionalRazorpayRuntime}=require("./razorpay-runtime");
 const admin = require("firebase-admin");
 
 
@@ -254,10 +255,13 @@ async function sendAdminTransactionEmail({ eventType, paymentId, orderId, amount
   ].join("\n");
   await sendSystemEmail({ to: [ADMIN_EMAIL], subject, text, replyTo: customerEmail || ADMIN_EMAIL });
 }
-if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
-  console.error("Razorpay credentials are missing. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Render.");
+const razorpayRuntime=createOptionalRazorpayRuntime({
+  Razorpay,keyId:RAZORPAY_KEY_ID,keySecret:RAZORPAY_KEY_SECRET
+});
+const requireRazorpay=razorpayRuntime.requireClient;
+if(!razorpayRuntime.configured){
+  console.warn("[Razorpay] Render-local Razorpay client is not configured. Cloudflare financial routing remains independent; legacy Render payment routes will return HTTP 503.");
 }
-const razorpay = new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KEY_SECRET });
 
 // Render terminates TLS and forwards one client-facing proxy hop. This lets rate
 // limits distinguish clients without trusting arbitrary X-Forwarded-For entries.
@@ -864,14 +868,14 @@ app.get("/test-razorpay", async (req, res) => {
   if (!user) return;
   if (!(await isAdminUser(user))) return res.status(403).json({ error: "Admin access required." });
   try {
-    if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) return res.status(500).json({ ok: false, error: "Razorpay credentials are missing in Render." });
+    if (!razorpayRuntime.configured) return res.status(503).json({ ok: false, code: "RAZORPAY_NOT_CONFIGURED", error: "Razorpay is not configured on this Render service." });
     const mode = RAZORPAY_KEY_ID.startsWith("rzp_test_") ? "test" : (RAZORPAY_KEY_ID.startsWith("rzp_live_") ? "live" : "unknown");
     if (IS_STAGING_DEPLOYMENT) {
       if (mode !== 'test') return res.status(503).json({ok:false,mode,error:'Staging accepts Razorpay Test Mode credentials only.'});
     } else if (mode !== 'live') {
       return res.status(503).json({ok:false,mode,error:'This deployed backend is using '+mode+' credentials. Live credentials are required.'});
     }
-    await razorpay.orders.all({ count: 1 });
+    await requireRazorpay().orders.all({ count: 1 });
     return res.json({ ok: true, mode, keyPrefix: RAZORPAY_KEY_ID.slice(0, 9), message: `Razorpay ${mode} credentials accepted by Render.` });
   } catch (e) {
     console.error("Razorpay connection test failed:", e);
@@ -2769,24 +2773,26 @@ app.post("/admin/horoscope-feature-settings",async(req,res)=>{
   await db.collection("smv_settings").doc("horoscopePayment").set(data,{merge:true});return res.json({success:true,settings:data});
 });
 app.post("/horoscope-payment/create-order",async(req,res)=>{
+   if(!razorpayRuntime.configured)return res.status(503).json({error:'Razorpay is not configured on this Render service.',code:'RAZORPAY_NOT_CONFIGURED'});
   const user=await requireUser(req,res);if(!user)return;if(!(await requireCustomerOnly(user,res)))return;
   const feature=String(req.body?.feature||""),reportKey=cleanReportKey(req.body?.reportKey);if(!HOROSCOPE_FEATURES.has(feature)||!reportKey)return res.status(400).json({error:"Invalid Horoscope payment request."});
   const cfg=await getHoroscopePaymentSettings(),f=horoscopeFeaturePrice(cfg,feature);
   if(!f.enabled||!Number.isFinite(f.price)||Number(f.price)<1)return res.status(409).json({error:"Payment is OFF for this feature. Customer Login unlocks the full report free."});
   const eid=horoscopeEntitlementId(user.uid,feature,reportKey),eref=db.collection("smv_horoscope_entitlements").doc(eid),es=await eref.get();
   if(es.exists&&es.data()?.paymentStatus==="paid")return res.json({success:true,entitled:true,feature,reportKey});
-  const amount=Math.round(f.price*100),order=await razorpay.orders.create({amount,currency:"INR",receipt:`SMV_H_${feature==='advanced_analysis'?'A':'M'}_${Date.now()}`,notes:{uid:user.uid,feature,reportKey}});
+  const amount=Math.round(f.price*100),order=await requireRazorpay().orders.create({amount,currency:"INR",receipt:`SMV_H_${feature==='advanced_analysis'?'A':'M'}_${Date.now()}`,notes:{uid:user.uid,feature,reportKey}});
   await eref.set({uid:user.uid,feature,reportKey,price:f.price,amount,currency:"INR",razorpayOrderId:order.id,paymentStatus:"created",createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
   return res.json({success:true,entitled:false,feature,reportKey,orderId:order.id,keyId:RAZORPAY_KEY_ID,amount:order.amount,currency:order.currency,price:f.price});
 });
 app.post("/horoscope-payment/verify",async(req,res)=>{
+   if(!razorpayRuntime.configured)return res.status(503).json({error:'Razorpay is not configured on this Render service.',code:'RAZORPAY_NOT_CONFIGURED'});
   const user=await requireUser(req,res);if(!user)return;if(!(await requireCustomerOnly(user,res)))return;
   const feature=String(req.body?.feature||""),reportKey=cleanReportKey(req.body?.reportKey),orderId=String(req.body?.razorpay_order_id||""),paymentId=String(req.body?.razorpay_payment_id||""),signature=String(req.body?.razorpay_signature||"");
   if(!HOROSCOPE_FEATURES.has(feature)||!reportKey||!orderId||!paymentId||!signature)return res.status(400).json({error:"Incomplete payment verification data."});
   const expected=crypto.createHmac("sha256",RAZORPAY_KEY_SECRET).update(`${orderId}|${paymentId}`).digest("hex");if(!signatureEqual(expected,signature))return res.status(400).json({error:"Razorpay signature verification failed."});
   const eid=horoscopeEntitlementId(user.uid,feature,reportKey),eref=db.collection("smv_horoscope_entitlements").doc(eid),es=await eref.get();if(!es.exists)return res.status(404).json({error:"Payment order record was not found."});const stored=es.data()||{};
   if(stored.razorpayOrderId!==orderId)return res.status(409).json({error:"Razorpay order mismatch."});
-  const payment=await razorpay.payments.fetch(paymentId);if(String(payment.order_id||"")!==orderId||Number(payment.amount)!==Number(stored.amount)||String(payment.currency||"")!==String(stored.currency||"INR"))return res.status(409).json({error:"Razorpay payment details do not match this report."});
+  const payment=await requireRazorpay().payments.fetch(paymentId);if(String(payment.order_id||"")!==orderId||Number(payment.amount)!==Number(stored.amount)||String(payment.currency||"")!==String(stored.currency||"INR"))return res.status(409).json({error:"Razorpay payment details do not match this report."});
   if(!["captured","authorized"].includes(String(payment.status||"")))return res.status(409).json({error:"Razorpay payment is not successful yet."});
   await eref.set({paymentStatus:"paid",razorpayPaymentId:paymentId,razorpaySignature:signature,paidAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
   return res.json({success:true,verified:true,entitled:true,feature,reportKey});

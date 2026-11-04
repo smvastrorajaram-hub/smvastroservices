@@ -27,6 +27,9 @@ on:
       - 'scripts/validate-wallet-domain.js'
       - 'docs/project5-wallet-domain-cutover.md'
       - 'server.js'
+      - 'test/production-financial-routing.test.mjs'
+      - 'test/razorpay-runtime.test.js'
+      - 'razorpay-runtime.js'
       - 'dashboard-events.js'
       - 'firestore.indexes.json'
       - 'public/index.html'
@@ -52,7 +55,6 @@ on:
       - 'scripts/backfill-wallet-domain.js'
       - 'scripts/validate-wallet-domain.js'
       - 'docs/project5-wallet-domain-cutover.md'
-      - 'server.js'
       - 'dashboard-events.js'
       - 'firestore.indexes.json'
       - 'public/index.html'
@@ -63,9 +65,13 @@ on:
       - 'public/main-location-search.js'
       - 'public/question-place-search.mjs'
       - 'public/public-navigation.js'
-      - 'package.json'
       - '.github/workflows/wallet-core-tests.yml'
 
+      - 'server.js'
+      - 'package.json'
+      - 'test/production-financial-routing.test.mjs'
+      - 'test/razorpay-runtime.test.js'
+      - 'razorpay-runtime.js'
 permissions:
   contents: read
 
@@ -112,6 +118,12 @@ jobs:
           node --check public/main-location-search.js
           node --check public/question-place-search.mjs
           node --check public/public-navigation.js
+      - name: Check changed Render runtime syntax
+        run: node --check server.js && node --check razorpay-runtime.js
+      - name: Run optional Render Razorpay runtime tests
+        run: npm run test:razorpay-runtime
+      - name: Run production financial routing contract tests
+        run: npm run test:production-financial-routing
       - name: Run trusted Admin authorization tests
         run: node --test test/admin-auth.test.js
       - name: Run Razorpay Checkout reliability tests

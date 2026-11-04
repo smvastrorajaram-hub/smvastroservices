@@ -19,7 +19,12 @@ function readyRow() {
     identity_users_table_count: 1,
     identity_migration_meta_table_count: 1,
     identity_profiles_version: '0008_identity_profile_backfill_audit',
+    identity_import_audit_table_count: 1,
+    identity_import_audit_index_count: 1,
     wallet_security_version: '0009_wallet_razorpay_payout_encryption',
+    encrypted_payout_table_count: 1,
+    razorpay_order_idempotency_index_count: 1,
+    razorpay_order_idempotency_columns_count: 2,
     razorpay_claim_columns_count: 2,
     live_booking_release_version: '0011_live_booking_release_claim',
     live_booking_release_trigger_count: 1
@@ -86,7 +91,12 @@ test('any missing or stale required marker or schema object fails readiness clos
     row => { row.wallet_recharges_version = null; },
     row => { row.live_sessions_version = '0005_legacy_wallet_backfill'; },
     row => { row.identity_profiles_version = null; },
+    row => { row.identity_import_audit_table_count = 0; },
+    row => { row.identity_import_audit_index_count = 0; },
     row => { row.wallet_security_version = null; },
+    row => { row.encrypted_payout_table_count = 0; },
+    row => { row.razorpay_order_idempotency_index_count = 0; },
+    row => { row.razorpay_order_idempotency_columns_count = 1; },
     row => { row.razorpay_claim_columns_count = 1; },
     row => { row.live_booking_release_version = null; }
   ]) {
@@ -127,6 +137,7 @@ test('GET /api/backend/readiness returns the live D1 result and keeps inactive f
       walletReadRouteGateOpen: false,
       liveSessionRoutesRegistered: false,
       liveSessionRoutesOpen: false,
+      walletPayoutEncryptionConfigured: false,
       walletRechargeMode: 'disabled',
       razorpayPolicy: { enabled: false, mode: 'disabled', reason: 'disabled' }
     })
@@ -142,6 +153,8 @@ test('GET /api/backend/readiness returns the live D1 result and keeps inactive f
   assert.equal(response.body.walletReadRoutesEnabled, false);
   assert.equal(response.body.walletRechargeRoutesEnabled, false);
   assert.equal(response.body.liveCallChatRoutesEnabled, false);
+  assert.equal(response.body.walletPayoutEncryptionConfigured, false);
+  assert.equal(response.body.walletPayoutEncryptionReady, false);
   assert.equal(response.body.productionTrafficEnabled, false);
   assert.equal(response.body.productionFinancialTrafficRoutingEnabled, false);
   assert.equal(Object.values(response.body.migrationStatus).every(value => value === true), true);
@@ -165,6 +178,7 @@ test('GET /api/backend/readiness derives selected Production financial routing f
       walletReadRouteGateOpen: true,
       liveSessionRoutesRegistered: true,
       liveSessionRoutesOpen: true,
+      walletPayoutEncryptionConfigured: true,
       walletRechargeMode: 'live',
       identityProfileD1AuthorizationOpen: true,
       razorpayPolicy: { enabled: true, mode: 'live', reason: 'production_live_mode_explicitly_enabled' },
@@ -184,6 +198,8 @@ test('GET /api/backend/readiness derives selected Production financial routing f
   assert.equal(response.body.walletRechargeRoutesEnabled, true);
   assert.equal(response.body.walletOfferRoutesEnabled, true);
   assert.equal(response.body.liveCallChatRoutesEnabled, true);
+  assert.equal(response.body.walletPayoutEncryptionConfigured, true);
+  assert.equal(response.body.walletPayoutEncryptionReady, true);
 });
 
 test('GET /api/backend/readiness returns 503 for incomplete Production schema', async () => {
@@ -248,4 +264,42 @@ test('GET /api/backend/readiness fails closed when the Razorpay provider probe t
   assert.equal(response.body.razorpayConnected, false);
   assert.equal(response.body.razorpayProviderConnectionVerified, false);
   assert.equal(response.body.razorpayProviderConnectionCheckedAt, null);
+});
+
+test('GET /api/backend/readiness reports payout withdrawals unavailable when the encryption key is missing or malformed', async () => {
+  const handlers = new Map();
+  const app = { get(path, handler) { handlers.set('GET ' + path, handler); } };
+  const response = responseRecorder();
+
+  registerBackendReadinessRoute({
+    app,
+    db: dbWith(readyRow()),
+    firebaseConnectivityProbe: async () => true,
+    getRuntimeState: () => ({
+      environment: 'production',
+      backendActive: true,
+      walletReadRoutesRegistered: true,
+      walletRechargeRoutesRegistered: true,
+      walletOfferRoutesRegistered: true,
+      walletReadRouteGateOpen: true,
+      liveSessionRoutesRegistered: true,
+      liveSessionRoutesOpen: true,
+      walletPayoutEncryptionConfigured: false,
+      walletRechargeMode: 'live',
+      razorpayPolicy: { enabled: true, mode: 'live' },
+      razorpayKeyId: 'rzp_live_key',
+      razorpayKeySecret: 'configured',
+      razorpayWebhookSecret: 'configured'
+    }),
+    getIdentityGate: async () => ({ enabled: true, ready: true, reason: 'fresh_start_approved' }),
+    getRazorpayVerification: async () => ({ connected: true, connectionVerified: true })
+  });
+
+  await handlers.get('GET /api/backend/readiness')({}, response);
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.body.checks.walletSecuritySchema, true);
+  assert.equal(response.body.walletPayoutEncryptionConfigured, false);
+  assert.equal(response.body.walletPayoutEncryptionReady, false);
+  assert.equal(response.body.liveCallChatRoutesEnabled, true);
 });

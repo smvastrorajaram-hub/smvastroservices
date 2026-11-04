@@ -1,4 +1,5 @@
 import { WALLET_OFFER_THEMES } from './wallet-recharge-domain.mjs';
+import { encryptPayoutSnapshot } from './payout-encryption.mjs';
 
 export const WALLET_DOMAIN_BACKFILL_COLLECTIONS = Object.freeze({
   wallets: Object.freeze({ path: 'smv_wallets' }),
@@ -559,22 +560,6 @@ function createLegacyArchiveStatement(collectionKey, document, parentId = '', no
   };
 }
 
-function hex(bytes) {
-  return Array.from(bytes, value => value.toString(16).padStart(2, '0')).join('');
-}
-
-function decodeAes256Key(encoded) {
-  const source = string(encoded);
-  if (!source) return null;
-  const normalized = source.replace(/-/g, '+').replace(/_/g, '/');
-  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(normalized)) throw new TypeError('PAYOUT_ENCRYPTION_KEY_INVALID');
-  const padded = normalized + '='.repeat((4 - normalized.length % 4) % 4);
-  const binary = atob(padded);
-  const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
-  if (bytes.length !== 32) throw new TypeError('PAYOUT_ENCRYPTION_KEY_INVALID');
-  return bytes;
-}
-
 /** Encrypts the private source payload; only ciphertext and a redacted archive enter D1. */
 export async function mapLegacyWalletDomainDocumentWithPayoutEncryption(
   collectionKey, document,
@@ -588,47 +573,40 @@ export async function mapLegacyWalletDomainDocumentWithPayoutEncryption(
   const id = string(document?.id);
   const data = document?.data && typeof document.data === 'object' ? document.data : {};
   const withdrawalId = string(data.withdrawalId) || id;
-  const version = string(payoutKeyVersion) || 'v1';
   if (!id || !withdrawalId) return { statements: [], mapped: false, warning: 'PAYOUT_WITHDRAWAL_ID_INVALID' };
   if (!string(payoutEncryptionKey)) return { statements: [], mapped: false, warning: 'PAYOUT_ENCRYPTION_KEY_MISSING' };
-  if (!/^[A-Za-z0-9._-]{1,32}$/.test(version)) return { statements: [], mapped: false, warning: 'PAYOUT_ENCRYPTION_KEY_VERSION_INVALID' };
-  if (!cryptoImpl?.subtle?.importKey || !cryptoImpl?.subtle?.encrypt || !cryptoImpl?.subtle?.digest ||
-      typeof cryptoImpl.getRandomValues !== 'function') {
-    return { statements: [], mapped: false, warning: 'PAYOUT_ENCRYPTION_UNAVAILABLE' };
-  }
   try {
-    const rawKey = decodeAes256Key(payoutEncryptionKey);
-    const key = await cryptoImpl.subtle.importKey('raw', rawKey, { name: 'AES-GCM' }, false, ['encrypt']);
-    const nonce = cryptoImpl.getRandomValues(new Uint8Array(12));
-    const additionalData = new TextEncoder().encode(
-      'smv-astro-wallet-payout:v1:' + sourceProjectId + ':' + withdrawalId + ':' + version
-    );
-    const plaintext = new TextEncoder().encode(JSON.stringify(data));
-    const encrypted = new Uint8Array(await cryptoImpl.subtle.encrypt(
-      { name: 'AES-GCM', iv: nonce, additionalData, tagLength: 128 }, key, plaintext
-    ));
-    if (encrypted.length <= 16) throw new Error('PAYOUT_ENCRYPTION_FAILED');
-    const ciphertext = encrypted.slice(0, -16);
-    const tag = encrypted.slice(-16);
-    const digest = new Uint8Array(await cryptoImpl.subtle.digest('SHA-256', plaintext));
-    const createdAt = dateField(data, 'createdAt') ?? 0;
-    const updatedAt = dateField(data, 'updatedAt') ?? createdAt;
+    const encrypted = await encryptPayoutSnapshot({
+      payload: data, withdrawalId, payoutEncryptionKey, payoutKeyVersion,
+      sourceProjectId, nowMs, cryptoImpl
+    });
     const encryptedStatement = {
       kind: 'encrypted_withdrawal_payout',
       sql: `INSERT OR IGNORE INTO smv_domain_withdrawal_payouts_encrypted
         (withdrawal_id,algorithm,key_version,nonce_hex,ciphertext_hex,auth_tag_hex,
          source_payload_sha256,created_at_ms,updated_at_ms)
         VALUES (?,?,?,?,?,?,?,?,?)`,
-      values: [withdrawalId, 'AES-256-GCM', version, hex(nonce), hex(ciphertext), hex(tag),
-        string(document.payloadSha256) || hex(digest), createdAt, updatedAt]
+      values: [
+        encrypted.withdrawalId, encrypted.algorithm, encrypted.keyVersion,
+        encrypted.nonceHex, encrypted.ciphertextHex, encrypted.authTagHex,
+        string(document.payloadSha256) || encrypted.sourcePayloadSha256,
+        dateField(data, 'createdAt') ?? encrypted.createdAtMs,
+        dateField(data, 'updatedAt') ?? encrypted.updatedAtMs
+      ]
     };
     const archiveStatement = createLegacyArchiveStatement(collectionKey, document, '', nowMs, {
       encryptedPrivatePayload: true,
       encryptionAlgorithm: 'AES-256-GCM',
-      keyVersion: version
+      keyVersion: encrypted.keyVersion
     });
     return { statements: [encryptedStatement, archiveStatement], mapped: true, warning: '' };
-  } catch {
-    return { statements: [], mapped: false, warning: 'PAYOUT_ENCRYPTION_FAILED' };
+  } catch (error) {
+    const code = String(error?.message || '');
+    const warning = code === 'PAYOUT_ENCRYPTION_KEY_MISSING'
+      ? 'PAYOUT_ENCRYPTION_KEY_MISSING'
+      : code === 'PAYOUT_ENCRYPTION_KEY_VERSION_INVALID'
+        ? 'PAYOUT_ENCRYPTION_KEY_VERSION_INVALID'
+        : 'PAYOUT_ENCRYPTION_FAILED';
+    return { statements: [], mapped: false, warning };
   }
 }
