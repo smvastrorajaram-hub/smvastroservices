@@ -212,7 +212,7 @@ export function createD1LiveSessionService({
       liveChatEnabled:chatEnabled,
       activeSessionCount:current.activeSessionCount,
       availabilityStatus,
-      manualAvailabilityStatus:current.activeSessionCount>0?'':(requestedStatus==='busy'?'busy':''),
+      manualAvailabilityStatus:requestedStatus==='busy'?'busy':'',
       liveSessionBusyManaged:current.activeSessionCount>0,
       availabilityUpdatedAt:new Date(Number(now())),
       availabilityUpdatedBy:uid
