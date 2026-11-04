@@ -90,7 +90,7 @@ const CLOUDFLARE_FINANCIAL_BACKEND_URL = IS_SMV_PHASE1_STAGING
   : "https://smvastroservices.astroservices.workers.dev";
 function smvApiBackend(path) {
   const pathname = String(path || '').split('?')[0].toLowerCase();
-  const financialRoute = /^\/(?:wallet(?:\/|$)|live\/(?:requests|sessions(?:\/|$)|bookings(?:\/|$)|pricing(?:\/|$)|ice-config(?:\/|$)|events(?:\/|$)|scheduled-appointments(?:\/|$))|appointment-booking(?:\/|$)|test-razorpay(?:\/|$)|astrologer\/(?:earnings|withdrawal-request)(?:\/|$)|admin\/(?:withdrawals-data|withdrawal-payout|withdrawal-mark-processing|withdrawal-reject|withdrawal-mark-paid|offers)(?:\/|$))/.test(pathname);
+  const financialRoute = /^\/(?:wallet(?:\/|$)|live\/(?:requests|sessions(?:\/|$)|bookings(?:\/|$)|pricing(?:\/|$)|ice-config(?:\/|$)|events(?:\/|$)|scheduled-appointments(?:\/|$))|appointment-booking(?:\/|$)|test-razorpay(?:\/|$)|astrologer\/(?:earnings|withdrawal-request)(?:\/|$)|admin\/(?:withdrawals-data|withdrawal-payout|withdrawal-mark-processing|withdrawal-reject|withdrawal-mark-paid|offers|live\/(?:pricing|commission))(?:\/|$))/.test(pathname);
   return window.SMV_CLOUDFLARE_FINANCIAL_API_ENABLED === true && financialRoute
     ? CLOUDFLARE_FINANCIAL_BACKEND_URL
     : RAZORPAY_BACKEND_URL;
@@ -3051,16 +3051,26 @@ async function loadAdminPanelData(background=false){
   renderQuizManager();
 
 
-  // /admin-data already includes the same commission settings document.
-  // Reuse that payload instead of issuing a second Firestore read.
-  let settings=adminData?.settings?.commission||{astroPercent:20,adminPercent:80};
+  // Live settlement reads commission from Cloudflare D1. Read that exact source
+  // instead of displaying a stale Render/Firestore copy or an implicit 20/80.
+  let settings=null;
+  try {
+    settings=await renderApi('/admin/live/commission',{method:'GET'});
+    if(!settings?.success)throw new Error(settings?.error||'Cloudflare D1 commission settings are unavailable.');
+    $('commissionMsg') && ($('commissionMsg').textContent='Loaded from Cloudflare Production D1.');
+  } catch(error) {
+    $('astroCommission').value='';
+    $('adminCommission').value='';
+    $('commissionMsg') && ($('commissionMsg').textContent='Cloudflare D1 commission is not configured or unavailable. Enter the approved split and save it here. '+(error?.message||String(error)));
+  }
   const hp=adminData.settings?.horoscopePayment||{advancedAnalysisEnabled:false,advancedAnalysisPrice:51,marriageMatchingEnabled:false,marriageMatchingPrice:51};
   if($('advancedAnalysisPaymentEnabled'))$('advancedAnalysisPaymentEnabled').value=String(hp.advancedAnalysisEnabled===true);
   if($('advancedAnalysisPrice'))$('advancedAnalysisPrice').value=Number(hp.advancedAnalysisPrice??51);
   if($('marriageMatchingPaymentEnabled'))$('marriageMatchingPaymentEnabled').value=String(hp.marriageMatchingEnabled===true);
   if($('marriageMatchingPrice'))$('marriageMatchingPrice').value=Number(hp.marriageMatchingPrice??51);
   if($('saveHoroscopePaymentSettings'))$('saveHoroscopePaymentSettings').onclick=async()=>{const b=$('saveHoroscopePaymentSettings'),msg=$('horoscopePaymentSettingsMsg');b.disabled=true;try{const payload={advancedAnalysisEnabled:$('advancedAnalysisPaymentEnabled').value==='true',advancedAnalysisPrice:Number($('advancedAnalysisPrice').value),marriageMatchingEnabled:$('marriageMatchingPaymentEnabled').value==='true',marriageMatchingPrice:Number($('marriageMatchingPrice').value)},r=await renderApi('/admin/horoscope-feature-settings',{method:'POST',body:JSON.stringify(payload)}),a={enabled:r.settings.advancedAnalysisEnabled===true,price:Number(r.settings.advancedAnalysisPrice??0)},m={enabled:r.settings.marriageMatchingEnabled===true,price:Number(r.settings.marriageMatchingPrice??0)};try{localStorage.setItem('smv-horoscope-feature-config',JSON.stringify({advanced_analysis:a,marriage_matching:m}));}catch(_){}msg.innerHTML='<span class="success">Horoscope settings saved. Advanced: '+(a.enabled?'ON':'OFF')+' ₹'+a.price.toFixed(2)+' · Marriage: '+(m.enabled?'ON':'OFF')+' ₹'+m.price.toFixed(2)+'</span>';}catch(e){msg.innerHTML='<span class="error">'+escapeHtml(e.message||String(e))+'</span>';}finally{b.disabled=false;}};
-  $('astroCommission').value=settings.astroPercent??20;$('adminCommission').value=settings.adminPercent??80;
+  if(settings){ $('astroCommission').value=settings.astroPercent; $('adminCommission').value=settings.adminPercent; }
+  else { $('astroCommission').value=''; $('adminCommission').value=''; }
   $('saveCommission').onclick=async()=>{
    const btn=$('saveCommission'),msg=$('commissionMsg');
    const a=Number($('astroCommission').value),ad=Number($('adminCommission').value);

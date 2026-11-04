@@ -579,6 +579,15 @@ export function registerD1LiveSessionRoutes({
     } catch(error) { return replyError(res,error,'Unable to save Live Call / Chat prices.'); }
   });
 
+  app.get('/admin/live/commission',async(req,res)=>{
+    try {
+      await assertReady();
+      await requireRole(req,['admin']);
+      const commission=await liveService.getCommission();
+      return res.set('Cache-Control','no-store').json({success:true,...commission});
+    } catch(error) { return replyError(res,error,'Unable to load Live / Booking commission settings.'); }
+  });
+
   app.post('/admin/live/commission',async(req,res)=>{
     try {
       await assertReady();
@@ -602,6 +611,6 @@ export function registerD1LiveSessionRoutes({
     'POST /live/sessions/:id/accept','POST /live/sessions/:id/reject','POST /live/sessions/:id/end',
     'POST /live/sessions/:id/ready','POST /live/sessions/:id/connection','POST /live/sessions/:id/messages','GET /live/sessions/:id/messages',
     'POST /live/sessions/:id/signal','GET /live/sessions/:id/signals',
-    'POST /admin/live/pricing','POST /admin/live/commission'
+    'POST /admin/live/pricing','GET /admin/live/commission','POST /admin/live/commission'
   ])});
 }
