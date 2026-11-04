@@ -94,6 +94,22 @@ test('Scheduled bookings explain patience and gate Call/Chat start until the sel
   assert.ok(frontend.includes("chat&&active?'':'hidden'"));
 });
 
+test('Cloudflare branch preview uses staging services rather than Production services', () => {
+  const frontend = read('public/smvastro.mjs');
+  const content = read('public/public-content.mjs');
+  const page = read('public/index.html');
+  const worker = read('public/sw.js');
+  const places = read('public/question-place-search.mjs');
+  const mainPlaces = read('public/main-location-search.js');
+  const wrangler = read('cloudflare/backend-api/wrangler.jsonc');
+  const preview = 'fix-cloudflare-live-booking.smvastroservices.pages.dev';
+  for (const source of [frontend,content,page,worker,places,mainPlaces]) assert.ok(source.includes(preview));
+  assert.ok(wrangler.includes('https://'+preview));
+  assert.ok(frontend.includes('smv-astro-staging.firebaseapp.com'));
+  assert.ok(content.includes('smv-astro-staging.firebaseapp.com'));
+  assert.ok(content.includes('smvastro-backend-api-staging.astroservices.workers.dev'));
+});
+
 test('Scheduled Call and Chat bookings also trigger an Astrologer push', () => {test('Scheduled bookings emit private dashboard invalidations for both participants', () => {
   const server = read('server.js');
   const events = read('dashboard-events.js');
