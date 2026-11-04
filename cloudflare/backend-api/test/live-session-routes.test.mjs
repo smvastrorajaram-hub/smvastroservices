@@ -65,8 +65,8 @@ function fixture(overrides={}) {
     async readySession(input){calls.push({service:'readySession',input});return {success:true,started:false,session:{id:input.sessionId,customerUid:'customer-1',astrologerUid:'astro-1',state:'connecting',mode:'call',connectingAt:'2026-10-31T10:00:00Z',minutes:5}};},
     async sendMessage(input){return {success:true,message:{id:'msg-1',sessionId:input.sessionId,senderUid:input.senderUid,text:input.text,createdAt:'2026-10-31T10:00:00Z'},recipientUid:'astro-1'};},
     async signal(input){return {success:true,signalId:'sig-1',recipientUid:'astro-1'};},
-    async getCommission(){return {astroPercent:20,adminPercent:80};},
-    async saveSetting(){return {astroPercent:20,adminPercent:80,callRatePaise:1000,chatRatePaise:1200,maxConcurrentSessions:1};}
+    async getCommission(){return overrides.commission||{astroPercent:20,adminPercent:80};},
+    async saveSetting(id,payload,uid){calls.push({service:'saveSetting',id,payload,uid});return {...payload,updatedBy:uid,updatedAtMs:123};}
   };
   const withdrawalService={
     async getEarningsDashboard(uid){return {success:true,totalEarnings:500,ledger:[],withdrawals:[]};},
@@ -181,6 +181,39 @@ test('Admin withdrawal actions are routed through the D1 withdrawal service',asy
     assert.equal(res.statusCode,200,path);
     assert.ok(f.calls.some(x=>x.service===method),method);
   }
+});
+
+test('Admin commission GET requires the Admin role and reads the D1 commission setting',async()=>{
+  const denied=fixture(),deniedResponse=responseHarness();
+  await denied.app.handlers.get('GET /admin/live/commission')(req(),deniedResponse);
+  assert.equal(deniedResponse.statusCode,403);
+
+  const f=fixture({
+    role:'admin',
+    user:{uid:'admin-commission-1',role:'admin',isAdmin:true},
+    commission:{astroPercent:25,adminPercent:75}
+  });
+  const res=responseHarness();
+  await f.app.handlers.get('GET /admin/live/commission')(req({},'admin'),res);
+  assert.equal(res.statusCode,200);
+  assert.equal(res.headers['Cache-Control'],'no-store');
+  assert.deepEqual(res.body,{success:true,astroPercent:25,adminPercent:75});
+});
+
+test('Admin commission POST validates percentages and writes the D1 domain setting',async()=>{
+  const f=fixture({role:'admin',user:{uid:'admin-commission-1',role:'admin',isAdmin:true}});
+  const valid=responseHarness();
+  await f.app.handlers.get('POST /admin/live/commission')(req({astroPercent:30,adminPercent:70},'admin'),valid);
+  assert.equal(valid.statusCode,200);
+  assert.equal(valid.body.success,true);
+  assert.deepEqual(f.calls.find(x=>x.service==='saveSetting'),{
+    service:'saveSetting',id:'commission',payload:{astroPercent:30,adminPercent:70},uid:'admin-commission-1'
+  });
+
+  const invalid=responseHarness();
+  await f.app.handlers.get('POST /admin/live/commission')(req({astroPercent:30,adminPercent:60},'admin'),invalid);
+  assert.equal(invalid.statusCode,400);
+  assert.equal(f.calls.filter(x=>x.service==='saveSetting').length,1);
 });
 
 test('Astrologer earnings and withdrawal requests require the Astrologer role',async()=>{
