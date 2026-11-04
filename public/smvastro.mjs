@@ -4179,7 +4179,6 @@ function smvLiveBindPushControls(){
   };
  }
  renderApi('/live/push/status',{method:'GET',timeoutMs:12000}).then(r=>{
-  if(nativeMode)return; // Native status is resolved from this Android app's FCM token above.
   if(nativeMode){
    const nativeRegistered=r.nativeRegistered===true;
    if(enable){enable.textContent=nativeRegistered?'ANDROID CALL ALERTS ENABLED':'ENABLE BACKGROUND ALERTS';enable.dataset.registered=nativeRegistered?'true':'false';}
