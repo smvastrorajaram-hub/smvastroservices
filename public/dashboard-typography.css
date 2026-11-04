@@ -459,3 +459,23 @@ html body #dashboardContent .smv-astrologer-dashboard{padding:0!important;margin
 #dashboardContent #smvLiveDashboardCard .smv-live-session-open-button:hover{
   text-decoration:none!important;
 }
+
+
+/* Match the Live Call / Live Chat heading scale across dashboard sections.
+   The Astrologer name remains on its original dedicated profile-name styling. */
+#dashboardContent .smv-astrologer-dashboard .astro-dashboard-summary>.card>h3,
+#dashboardContent .smv-astrologer-dashboard>.card>h3,
+#dashboardContent .smv-astrologer-dashboard #astroQuestionQueue>h3,
+#dashboardContent .smv-astrologer-dashboard #astroAnsweredBox>h3,
+#dashboardContent .smv-astrologer-dashboard #astroProfileDescriptionCard>h3,
+#dashboardContent .smv-astrologer-dashboard .withdrawal-history-title,
+#dashboardContent .smv-astrologer-dashboard .smv-astro-main-heading,
+#dashboardContent #smvLiveDashboardCard h4,
+#dashboardContent>.card>h3,
+#dashboardContent>.card>h4{
+  font-size:22px!important;
+  line-height:1.35!important;
+  font-weight:800!important;
+  color:#6b4b1e!important;
+  -webkit-text-fill-color:#6b4b1e!important;
+}
