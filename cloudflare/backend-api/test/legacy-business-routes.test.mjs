@@ -161,3 +161,32 @@ test('Astrologer availability POST passes the selected status and mode switches 
  assert.equal(res.body.availabilityStatus,'busy');
  assert.equal(firestore.writes.length,0,'D1 source owns the write; do not duplicate a Firestore transaction');
 });
+
+
+test('Astrologer availability POST accepts an approved profile when the token role is stale', async()=>{
+ const app=harness(),firestore=transactionalFirestore(),calls=[];
+ const liveService={
+  async isApprovedAstrologer(uid){
+   assert.equal(uid,'astro-legacy');
+   return true;
+  },
+  async updateAstrologerAvailability(input){
+   calls.push(input);
+   return {availabilityStatus:input.availabilityStatus,liveCallEnabled:input.liveCallEnabled,liveChatEnabled:input.liveChatEnabled,activeSessionCount:0};
+  }
+ };
+ registerLegacyBusinessRoutes({
+  app,firestore,liveService,
+  identityService:{async authenticateAuthorization(){return {uid:'astro-legacy',role:'user'};}}
+ });
+ const res=response();
+ await app.handlers.get('POST /astrologer/availability')(request({
+  availabilityStatus:'online',liveCallEnabled:true,liveChatEnabled:false
+ }),res);
+ assert.equal(res.statusCode,200);
+ assert.equal(res.body.availabilityStatus,'online');
+ assert.deepEqual(calls,[{
+  astrologerUid:'astro-legacy',availabilityStatus:'online',liveCallEnabled:true,liveChatEnabled:false
+ }]);
+ assert.equal(firestore.writes.length,0,'The approved profile fallback must use the D1 service path');
+});
