@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { registerD1LiveSessionRoutes } from '../src/live-session-routes.mjs';
 
 function appHarness() {
@@ -55,6 +56,8 @@ function fixture(overrides={}) {
       }
     };},
     async cancelBooking(input){calls.push({service:'cancelBooking',input});return {success:true,booking:{id:input.bookingId,customerUid:input.customerUid,astrologerUid:'astro-1',status:'cancelled'}};},
+    async rejectBooking(input){calls.push({service:'rejectBooking',input});return {success:true,booking:{id:input.bookingId,customerUid:'customer-1',astrologerUid:input.astrologerUid,status:'rejected'}};},
+    async acceptBooking(input){calls.push({service:'acceptBooking',input});return {success:true,session:{id:input.bookingId,customerUid:'customer-1',astrologerUid:input.astrologerUid,mode:'chat',state:'preparing',preparationUntil:'2026-10-31T10:02:15Z'}};},
     async listSessions(){return overrides.sessions||[];},
     async setConnection(input){calls.push({service:'setConnection',input});return {
       success:true,sessionId:input.sessionId,uid:input.uid,connected:input.connected,
@@ -173,6 +176,75 @@ test('Live disconnect status persists a generation-scoped grace deadline',async(
   assert.ok(f.calls.some(x=>String(x.url||'').includes('/connection')&&x.body.generation===2));
 });
 
+
+test('Astrologer rejection publishes terminal status to both participants and stops Android ringing',async()=>{
+  const token='r'.repeat(64),sent=[];
+  const f=fixture({
+    user:{uid:'astro-1',role:'astrologer'},
+    firestore:{async runQuery(){return [{data:{uid:'astro-1',platform:'native-android',token}}];}},
+    fcmSender:{async send(_token,payload){sent.push(payload);return 'projects/smv-astro/messages/stop-1';}}
+  });
+  const res=responseHarness();
+  await f.app.handlers.get('POST /live/sessions/:id/reject')(req({},'astrologer','session-1'),res);
+  assert.equal(res.statusCode,200);
+  const events=f.calls.filter(x=>String(x.url||'').includes('/publish'));
+  assert.deepEqual(events.map(x=>x.body.targetUid).sort(),['astro-1','customer-1']);
+  assert.ok(events.every(x=>x.body.type==='live.session.ended'));
+  assert.equal(sent.length,1);
+  assert.equal(sent[0].data.type,'stop_ringing');
+  assert.equal(sent[0].data.sessionId,'session-1');
+  assert.equal(sent[0].dataOnly,true);
+});
+
+test('Either participant ending a Live session broadcasts the terminal state to both sides',async()=>{
+  for(const user of [{uid:'customer-1',role:'customer'},{uid:'astro-1',role:'astrologer'}]){
+    const token='s'.repeat(64),sent=[];
+    const f=fixture({
+      user,
+      firestore:{async runQuery(){return [{data:{uid:'astro-1',platform:'native-android',token}}];}},
+      fcmSender:{async send(_token,payload){sent.push(payload);return 'projects/smv-astro/messages/stop-2';}}
+    });
+    const res=responseHarness();
+    await f.app.handlers.get('POST /live/sessions/:id/end')(req({reason:'participant_ended'},user.role,'session-1'),res);
+    assert.equal(res.statusCode,200,user.role);
+    const events=f.calls.filter(x=>String(x.url||'').includes('/publish'));
+    assert.deepEqual(events.map(x=>x.body.targetUid).sort(),['astro-1','customer-1']);
+    assert.ok(events.every(x=>x.body.type==='live.session.ended'));
+    assert.equal(sent.length,1);
+    assert.equal(sent[0].data.type,'stop_ringing');
+  }
+});
+
+test('Astrologer accepting or rejecting a booking stops its matching Android ringtone',async()=>{
+  for(const action of ['accept','reject']){
+    const token='b'.repeat(64),sent=[];
+    const f=fixture({
+      user:{uid:'astro-1',role:'astrologer'},
+      firestore:{async runQuery(){return [{data:{uid:'astro-1',platform:'native-android',token}}];}},
+      fcmSender:{async send(_token,payload){sent.push(payload);return 'projects/smv-astro/messages/stop-booking';}}
+    });
+    const res=responseHarness();
+    await f.app.handlers.get('POST /live/bookings/:id/'+action)(req({},'astrologer','booking-1'),res);
+    assert.equal(res.statusCode,200,action);
+    assert.equal(sent.length,1,action);
+    assert.equal(sent[0].data.type,'stop_ringing',action);
+    assert.equal(sent[0].data.bookingId,'booking-1',action);
+    assert.equal(sent[0].dataOnly,true,action);
+  }
+});
+
+test('Live SSE remains open after the HTTP request body completes and closes with the response',async()=>{
+  const source=await readFile(new URL('../src/live-session-routes.mjs',import.meta.url),'utf8');
+  const start=source.indexOf('async function streamUserEvents(req,res,user)');
+  const end=source.indexOf("\n  app.get('/astrologer/earnings'",start);
+  assert.ok(start>=0&&end>start,'Live SSE stream implementation exists');
+  const handler=source.slice(start,end);
+  assert.ok(handler.includes("res.on('close',stop);"),'SSE cleanup follows the response lifecycle');
+  assert.ok(handler.includes("res.on('error',stop);"),'response errors cancel the event reader');
+  assert.ok(handler.includes("req.on('aborted',stop);"),'aborted requests cancel the event reader');
+  assert.equal(handler.includes("req.on('close'"),false,'normal request completion must not terminate the long-lived SSE stream');
+});
+
 test('Customer cannot read Admin withdrawals or private payout snapshots',async()=>{
   const f=fixture();
   for(const path of ['GET /admin/withdrawals-data','GET /admin/withdrawal-payout/:withdrawalDocId']) {
@@ -284,6 +356,7 @@ test('New Cloudflare Live requests notify only the owning Astrologer native Andr
   assert.equal(sent[0].payload.data.sessionId,'session-1');
   assert.equal(sent[0].payload.data.bookingId,'');
   assert.equal(sent[0].payload.data.mode,'call');
+  assert.equal(sent[0].payload.dataOnly,true,'native Android incoming calls must use a data-only FCM message');
   assert.equal(sent[0].payload.title,'Incoming Live Call');
   assert.match(sent[0].payload.body,/Tap the notification/);
 });
@@ -310,5 +383,6 @@ test('New Cloudflare booking alerts use the booking ID and FCM failure cannot un
   assert.equal(sent[0].payload.data.bookingId,'booking-native-1');
   assert.equal(sent[0].payload.data.sessionId,'');
   assert.equal(sent[0].payload.data.mode,'chat');
+  assert.equal(sent[0].payload.dataOnly,true,'native Android bookings must use a data-only FCM message');
   assert.equal(sent[0].payload.title,'New Live Chat Booking');
 });
