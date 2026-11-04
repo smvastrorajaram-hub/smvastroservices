@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import {
   inspectBackendSchema,
   registerBackendReadinessRoute
@@ -302,4 +303,13 @@ test('GET /api/backend/readiness reports payout withdrawals unavailable when the
   assert.equal(response.body.walletPayoutEncryptionConfigured, false);
   assert.equal(response.body.walletPayoutEncryptionReady, false);
   assert.equal(response.body.liveCallChatRoutesEnabled, true);
+});
+
+
+test('Production Worker validates the payout encryption secret from the Cloudflare runtime env', async () => {
+  const workerIndex = await readFile(new URL('../src/index.mjs', import.meta.url), 'utf8');
+  assert.ok(workerIndex.includes('const walletPayoutEncryptionConfigured = validatePayoutEncryptionConfiguration({'));
+  assert.ok(workerIndex.includes("payoutEncryptionKey: String(env.SMV_WALLET_PAYOUT_ENCRYPTION_KEY || '')"));
+  assert.ok(workerIndex.includes("payoutKeyVersion: String(env.SMV_WALLET_PAYOUT_KEY_VERSION || 'v1')"));
+  assert.ok(workerIndex.includes('walletPayoutEncryptionConfigured,'));
 });
