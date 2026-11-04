@@ -94,7 +94,18 @@ test('Scheduled bookings explain patience and gate Call/Chat start until the sel
   assert.ok(frontend.includes("chat&&active?'':'hidden'"));
 });
 
-test('Scheduled Call and Chat bookings also trigger an Astrologer push', () => {
+test('Scheduled Call and Chat bookings also trigger an Astrologer push', () => {test('Scheduled bookings emit private dashboard invalidations for both participants', () => {
+  const server = read('server.js');
+  const events = read('dashboard-events.js');
+  assert.ok(server.includes("notifyDashboardUsers([user.uid,callBooking.astrologerUid],req.path)"));
+  assert.ok(server.includes("notifyDashboardUsers([outcome.customerUid,uid],req.path)"));
+  assert.ok(server.includes("dashboardChangeUser_"));
+  assert.ok(events.includes("kind:'appointments_signal'"));
+  assert.ok(events.includes("kinds:['appointments']"));
+  assert.ok(events.includes("dashboardChangeUser_'+user.uid"));
+});
+
+
   const server = read('server.js');
   assert.match(server, /const liveSessionSettlementDb=walletDomainDb\(\)/);
   assert.match(server, /registerLiveSessionRoutes\(\{app,db:liveSessionSettlementDb,profileDb:db,FieldValue,crypto,requireUser,isAdminUser,admin,multiProjectFirestore\}\)/);
