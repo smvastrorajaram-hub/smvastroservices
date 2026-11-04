@@ -10,7 +10,7 @@ test('D1 availability uses the active Live-session table and preserves an explic
  assert.match(service,/FROM \$\{SESSION_TABLE\}[\s\S]*state IN \('ringing','preparing','connecting','active'\)/);
  assert.match(service,/manualAvailabilityStatus\|\|''\)\.toLowerCase\(\)==='busy'/);
  assert.match(service,/manualAvailabilityStatus:requestedStatus==='busy'\?'busy':''/);
- assert.match(service,/const availabilityStatus=current\.activeSessionCount>0\?'busy':requestedStatus/);
+ assert.match(service,/const finalAvailabilityStatus=current\.activeSessionCount>0\?'busy':requestedStatus/);
 });
 
 test('Astrologer dashboard does not overwrite Busy when Live Call or Chat toggles change',()=>{
