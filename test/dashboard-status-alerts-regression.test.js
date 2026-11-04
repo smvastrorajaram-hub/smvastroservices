@@ -9,7 +9,7 @@ test('D1 availability uses the active Live-session table and preserves an explic
  const service=read('shared/backend-platform/d1-live-session-service.mjs');
  assert.match(service,/FROM \$\{SESSION_TABLE\}[\s\S]*state IN \('ringing','preparing','connecting','active'\)/);
  assert.match(service,/manualAvailabilityStatus\|\|''\)\.toLowerCase\(\)==='busy'/);
- assert.match(service,/manualAvailabilityStatus:current\.activeSessionCount>0\?'':\(requestedStatus==='busy'\?'busy':''\)/);
+ assert.match(service,/manualAvailabilityStatus:requestedStatus==='busy'\?'busy':''/);
  assert.match(service,/const availabilityStatus=current\.activeSessionCount>0\?'busy':requestedStatus/);
 });
 
