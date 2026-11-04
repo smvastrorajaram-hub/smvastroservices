@@ -117,3 +117,47 @@ test('Admin appointment status is restricted and validates status before updatin
  assert.deepEqual(res.body,{ok:true});
  assert.equal(firestore.updates[0].path,'smv_appointments/booking-1');
 });
+
+test('Astrologer availability GET reads the D1-backed live-session status source', async()=>{
+ const app=harness(),firestore=transactionalFirestore();
+ const liveService={
+  async getAstrologerAvailability({astrologerUid}){
+   assert.equal(astrologerUid,'astro-1');
+   return {availabilityStatus:'offline',liveCallEnabled:false,liveChatEnabled:false,activeSessionCount:0};
+  }
+ };
+ registerLegacyBusinessRoutes({
+  app,firestore,liveService,
+  identityService:{async authenticateAuthorization(){return {uid:'astro-1',role:'astrologer'};}}
+ });
+ const res=response();
+ await app.handlers.get('GET /astrologer/availability')(request(undefined),res);
+ assert.equal(res.statusCode,200);
+ assert.equal(res.body.availabilityStatus,'offline');
+ assert.equal(res.body.activeSessionCount,0);
+ assert.equal(res.headers['Cache-Control'],'no-store');
+});
+
+test('Astrologer availability POST passes the selected status and mode switches to the D1 service', async()=>{
+ const app=harness(),firestore=transactionalFirestore(),calls=[];
+ const liveService={
+  async updateAstrologerAvailability(input){
+   calls.push(input);
+   return {availabilityStatus:input.availabilityStatus,liveCallEnabled:input.liveCallEnabled,liveChatEnabled:input.liveChatEnabled,activeSessionCount:0};
+  }
+ };
+ registerLegacyBusinessRoutes({
+  app,firestore,liveService,
+  identityService:{async authenticateAuthorization(){return {uid:'astro-1',role:'astrologer'};}}
+ });
+ const res=response();
+ await app.handlers.get('POST /astrologer/availability')(request({
+  availabilityStatus:'busy',liveCallEnabled:true,liveChatEnabled:false
+ }),res);
+ assert.equal(res.statusCode,200);
+ assert.deepEqual(calls,[{
+  astrologerUid:'astro-1',availabilityStatus:'busy',liveCallEnabled:true,liveChatEnabled:false
+ }]);
+ assert.equal(res.body.availabilityStatus,'busy');
+ assert.equal(firestore.writes.length,0,'D1 source owns the write; do not duplicate a Firestore transaction');
+});
