@@ -5,18 +5,32 @@ const fs = require('node:fs');
 const path = require('node:path');
 const read = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
 
-test('D1 availability uses the active Live-session table and preserves an explicit Busy choice',()=>{
+test('D1 availability uses active Live sessions and persists a separate manual Busy mode',()=>{
  const service=read('shared/backend-platform/d1-live-session-service.mjs');
+ const domain=read('shared/backend-platform/live-session-domain.mjs');
  assert.match(service,/FROM \$\{SESSION_TABLE\}[\s\S]*state IN \('ringing','preparing','connecting','active'\)/);
- assert.match(service,/manualAvailabilityStatus\|\|''\)\.toLowerCase\(\)==='busy'/);
- assert.match(service,/manualAvailabilityStatus:requestedStatus==='busy'\?'busy':''/);
+ assert.match(service,/astrologerManualBusy\(astro,count\)/);
+ assert.match(service,/const manualAvailabilityStatus=requestedStatus==='busy'\?'busy':''/);
  assert.match(service,/const finalAvailabilityStatus=current\.activeSessionCount>0\?'busy':requestedStatus/);
+ assert.match(domain,/export function astrologerManualBusy\(/);
+ assert.match(domain,/!astrologerManualBusy\(profile,active\)/);
 });
 
 test('Astrologer dashboard does not overwrite Busy when Live Call or Chat toggles change',()=>{
  const frontend=read('public/smvastro.mjs');
  assert.match(frontend,/deriveStatusFromModes&&availabilitySelect&&availabilitySelect\.value!=='busy'/);
  assert.match(frontend,/availabilityStatus:availabilitySelect\?\.value\|\|'offline'/);
+});
+
+test('Render availability persists manual Busy and keeps session-managed Busy distinct',()=>{
+ const service=read('live-session-service.js');
+ const server=read('server.js');
+ assert.match(service,/function astrologerManualBusy\(/);
+ assert.match(service,/astrologerManualBusy\(astro, liveCount\)/);
+ assert.match(server,/const manualAvailabilityStatus=availabilityStatus==="busy"\?"busy":""/);
+ assert.match(server,/manualAvailabilityStatus,/);
+ assert.match(server,/app.get\("\/astrologer\/availability"/);
+ assert.match(server,/availabilityStatus:astrologerAvailabilityStatus\(\{\.\.\.astro,manualAvailabilityStatus\},activeCount\)/);
 });
 
 test('Native Android Background Alert state is restored from the persisted registration status',()=>{
