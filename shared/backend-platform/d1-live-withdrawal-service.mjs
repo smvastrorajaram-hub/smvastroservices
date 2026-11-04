@@ -502,11 +502,21 @@ export function createD1WithdrawalService({db,firestore,now=Date.now,cryptoImpl=
     const updatedPayload={...payload,adminPaymentId:paymentId,paymentId,paidAtMs:payload.paidAtMs||timestamp,updatedBy:actor};
     await statement(
       `UPDATE smv_domain_withdrawals SET status='paid',payload_json=?,updated_at_ms=?
-       WHERE withdrawal_id=? AND status IN ('processing','paid')`,
+       WHERE withdrawal_id=? AND status IN ('processing','paid')
+         AND (json_extract(payload_json, '$.adminPaymentId') IS NULL
+              OR json_extract(payload_json, '$.adminPaymentId')='')`,
       [JSON.stringify(updatedPayload),timestamp,id]
     ).run();
     const updated=await first('SELECT * FROM smv_domain_withdrawals WHERE withdrawal_id=?',[id]);
-    return {success:true,alreadyProcessed:false,paymentId,withdrawal:mapWithdrawal(updated)};
+    const finalPayload=readJson(updated?.payload_json);
+    const finalPaymentId=String(finalPayload.adminPaymentId||finalPayload.paymentId||'').trim();
+    if(!updated||updated.status!=='paid'||!/^smvpt-[0-9]{6}$/i.test(finalPaymentId)) {
+      throw withdrawalError('WITHDRAWAL_PAYMENT_REFERENCE_FAILED','The Admin Payment ID could not be confirmed safely.',503);
+    }
+    return {
+      success:true,alreadyProcessed:finalPaymentId!==paymentId,
+      paymentId:finalPaymentId,withdrawal:mapWithdrawal(updated)
+    };
   }
 
   return Object.freeze({overview,getEarningsDashboard,createRequest,listAdminWithdrawals,getPrivatePayout,markProcessing,rejectWithdrawal,markPaid});
