@@ -1278,7 +1278,7 @@ test('Cloudflare native Live notifications use Android tray payloads and open th
   assert.match(liveRoutes, /type:'stop_ringing'/);
   assert.match(liveRoutes, /dataOnly:true/);
   assert.match(fcmRoutes, /payload\.dataOnly !== true/);
-  assert.match(fcmRoutes, /notification:\s*\{/);
+  assert.match(fcmRoutes, /message\.notification\s*=\s*\{/);
   assert.match(fcmRoutes, /data,/);
   assert.match(fcmRoutes, /priority:\s*'HIGH'/);
   assert.match(fcmRoutes, /channel_id:\s*'smv_native_background_alerts_v1'/);
