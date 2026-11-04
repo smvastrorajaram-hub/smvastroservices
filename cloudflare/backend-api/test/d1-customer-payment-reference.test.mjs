@@ -54,7 +54,7 @@ class RechargeD1 {
       return { success: true, meta: { changes: inserted ? 1 : 0 } };
     }
 
-    if (sql.includes("json_extract(payload_json, '$.customerPaymentId') = ?")) {
+    if (sql.includes("customerPaymentId') = ?")) {
       const row = [...this.recharges.values()].find(item => {
         try { return JSON.parse(item.payload_json).customerPaymentId === values[0]; }
         catch { return false; }
@@ -64,7 +64,7 @@ class RechargeD1 {
     }
 
     if (sql.startsWith('UPDATE smv_domain_wallet_recharges') &&
-        sql.includes("json_extract(payload_json, '$.customerPaymentId') IS NULL")) {
+        sql.includes("customerPaymentId') IS NULL")) {
       const [payload, updatedAt, rechargeId, ownerUid] = values;
       const row = this.recharges.get(rechargeId);
       if (row && row.customer_uid === ownerUid && row.status !== 'paid') {
