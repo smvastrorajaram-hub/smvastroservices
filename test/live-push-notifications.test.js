@@ -1143,7 +1143,9 @@ test('Live Session End and Cancel are distinct from closing the session window',
   assert.ok(frontend.includes('OPEN CLOSED SESSION / RECEIPT'), 'Ended sessions remain openable from dashboard history');
   assert.ok(frontend.includes("return 'LIVE SESSION · '+clock+' remaining'"), 'A dismissed but active Call/Chat continues to show its server-based remaining time');
   assert.ok(frontend.includes("['preparing','active'].includes(String(row.state||''))"), 'The dashboard timer refreshes both horoscope preparation and active session time');
-  assert.ok(frontend.includes("openButton.style.background=ended?'#ff1744':'#00c853'"), 'Open and closed session actions use distinct bright colors');
+  assert.ok(frontend.includes("openButton.style.color=ended?'#ff1744':'#00a844'"), 'Open and closed session actions use distinct bright text colors');
+  assert.ok(frontend.includes("openButton.style.background='transparent'"), 'Closed receipt action has no button box');
+  assert.ok(frontend.includes("openButton.style.textDecoration='none'"), 'Closed receipt action has no underline');
 });
 
 test('Live Session route authorization separates Astrologer decisions from participant actions', () => {
