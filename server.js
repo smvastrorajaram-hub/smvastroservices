@@ -255,6 +255,9 @@ async function sendAdminTransactionEmail({ eventType, paymentId, orderId, amount
   ].join("\n");
   await sendSystemEmail({ to: [ADMIN_EMAIL], subject, text, replyTo: customerEmail || ADMIN_EMAIL });
 }
+if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
+  console.warn("[Razorpay] Render-local credentials are not configured; Cloudflare financial routes are independent.");
+}
 const razorpayRuntime=createOptionalRazorpayRuntime({
   Razorpay,keyId:RAZORPAY_KEY_ID,keySecret:RAZORPAY_KEY_SECRET
 });
