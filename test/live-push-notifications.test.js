@@ -866,6 +866,13 @@ test('Customer Live Session dashboard status follows the accepted-session SSE up
     'a newly requested session must create its Dashboard row even when no history row exists');
   assert.ok(upsert.includes('host.prepend(article)'),
     'the newly requested session appears immediately without refreshing the Dashboard');
+  const hydrationStart=frontend.indexOf('async function smvLiveLoadDashboard(role){');
+  const hydrationEnd=frontend.indexOf('async function smvLiveHandlePushOpen(',hydrationStart);
+  const hydration=frontend.slice(hydrationStart,hydrationEnd);
+  assert.ok(hydration.includes('rowsById.set(id,smvLiveMergeSessionState(smvLiveDashboardSessionsById.get(id)||{},{...item,id}))'),
+    'initial server history merges with the latest session event instead of overwriting it');
+  assert.ok(hydration.includes('for(const [id,item] of smvLiveDashboardSessionsById)if(!rowsById.has(id))rowsById.set(id,item)'),
+    'a session received before Dashboard mount remains visible after history hydration');
   assert.ok(upsert.includes('smvLiveDismissedSessionIds.has(id)'),
     'closing the waiting window preserves the session row and its closed-window state');
   const openStart=frontend.indexOf('function smvLiveOpenSession(session,wallet,incoming){');
