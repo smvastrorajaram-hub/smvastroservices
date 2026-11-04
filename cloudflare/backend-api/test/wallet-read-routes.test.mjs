@@ -100,7 +100,7 @@ test('Wallet transaction reads cap limit and return safe ledger view fields', as
     async ensureWallet() { return { availableBalancePaise:5000,reservedBalancePaise:0,bonusMinutesBalance:1,reservedBonusMinutes:0 }; },
     async listTransactions(uid, limit) {
       assert.equal(uid, 'customer-2'); limitSeen=limit;
-      return [{ id:'ledger-1',type:'recharge',direction:'credit',status:'posted',amountPaise:5000,balanceAfterPaise:5000,reservedBalanceAfterPaise:0,bonusMinutesBalanceAfter:1,createdAt:1000 }];
+      return [{ id:'ledger-1',type:'recharge',direction:'credit',status:'posted',amountPaise:5000,balanceAfterPaise:5000,reservedBalanceAfterPaise:0,bonusMinutesBalanceAfter:1,customerPaymentId:'smvpy-677288',createdAt:1000 }];
     }
   };
   registerWalletReadRoutes({ app, identityService, walletAdapter });
@@ -108,6 +108,7 @@ test('Wallet transaction reads cap limit and return safe ledger view fields', as
   await app.handlers.get('/wallet/transactions')(request('Bearer token',{limit:'999'}),res);
   assert.equal(limitSeen,100);
   assert.equal(res.body.transactions[0].amount,50);
+  assert.equal(res.body.transactions[0].customerPaymentId,'smvpy-677288');
   assert.equal(res.body.transactions[0].createdAt,'1970-01-01T00:00:01.000Z');
 });
 
