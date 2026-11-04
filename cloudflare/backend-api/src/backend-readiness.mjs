@@ -68,6 +68,7 @@ function unavailableSchema(d1Binding, querySucceeded = false) {
       walletSecuritySchema: false,
       razorpayWebhookClaimSchema: false,
       liveBookingReleaseSchema: false,
+      numericPublicReferenceIdsSchema: false,
       allRequiredMigrations: false
     }
   };
@@ -135,6 +136,7 @@ export async function inspectBackendSchema(db) {
       walletSecuritySchema: schemaMigrations['0009_wallet_razorpay_payout_encryption'],
       razorpayWebhookClaimSchema: schemaMigrations['0010_razorpay_webhook_claim_leases'],
       liveBookingReleaseSchema: schemaMigrations['0011_live_booking_release_claim'],
+      numericPublicReferenceIdsSchema: schemaMigrations['0012_numeric_public_reference_ids'],
       allRequiredMigrations
     };
 
@@ -243,6 +245,7 @@ export function registerBackendReadinessRoute({
         walletSecuritySchema: schema.checks.walletSecuritySchema,
         razorpayWebhookClaimSchema: schema.checks.razorpayWebhookClaimSchema,
         liveBookingReleaseSchema: schema.checks.liveBookingReleaseSchema,
+        numericPublicReferenceIdsSchema: schema.checks.numericPublicReferenceIdsSchema,
         allRequiredMigrations: schema.checks.allRequiredMigrations
       },
       firebaseConnected,
