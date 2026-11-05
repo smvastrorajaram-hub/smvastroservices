@@ -64,8 +64,29 @@ try {
   }
   assert.ok(ready, 'Calendar source did not become ready: ' + (lastError?.message || 'unknown error'));
 
-  const calendarHeaderBackground = await page.$eval('.calendar-topbar', el => getComputedStyle(el).backgroundColor);
-  assert.equal(calendarHeaderBackground, 'rgb(15, 81, 76)', 'Calendar header must use the same dark green as the Calendar website theme.');
+  const calendarHeader = await page.evaluate(() => {
+    const header = document.querySelector('.calendar-topbar');
+    const logo = document.querySelector('.calendar-brand-header img');
+    const title = document.querySelector('.calendar-brand-title');
+    const controls = [...document.querySelectorAll('.calendar-header-actions .calendar-product-nav a, .calendar-header-actions .calendar-language-switch button')];
+    return {
+      background: header ? getComputedStyle(header).backgroundColor : '',
+      title: title?.textContent?.trim() || '',
+      logoLoaded: Boolean(logo?.complete && logo.naturalWidth > 0),
+      logoSrc: logo?.getAttribute('src') || '',
+      controls: controls.map(el => {
+        const rect = el.getBoundingClientRect();
+        return { width: rect.width, height: rect.height };
+      })
+    };
+  });
+  assert.equal(calendarHeader.background, 'rgb(15, 81, 76)', 'Calendar header must use the established site green.');
+  assert.equal(calendarHeader.title, 'SMV CALENDAR', 'Calendar header must show the product name.');
+  assert.equal(calendarHeader.logoLoaded, true, 'Calendar header must load its dedicated product logo.');
+  assert.match(calendarHeader.logoSrc, /smv-calendar-website\\.webp/);
+  assert.equal(calendarHeader.controls.length, 4, 'Calendar header must show two product links and two language controls.');
+  assert.ok(Math.max(...calendarHeader.controls.map(x => x.width)) - Math.min(...calendarHeader.controls.map(x => x.width)) < 1, 'All four Calendar header controls must have equal width.');
+  assert.ok(calendarHeader.controls.every(x => Math.abs(x.height - 42) < 1), 'All four Calendar header controls must have the same 42px height.');
 
   await page.waitForFunction(() => {
     const status = document.querySelector('#calStatus')?.textContent || '';
@@ -231,8 +252,7 @@ try {
   }, { timeout: 120000 });
   assert.equal(runtimeErrors.length, 0, 'Calendar browser runtime errors: ' + runtimeErrors.join(' | '));
   
-  // The Horoscope page now reuses the main SMV ASTRO SERVICES brand mark/title.
-  // Verify the brand and compact app controls while keeping the removed legacy chrome absent.
+  // Verify the dedicated Horoscope product logo/title and equal-sized header controls while keeping legacy chrome absent.
   await page.setCacheEnabled(false);
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
   await page.goto(new URL('/horoscope/', previewUrl).href, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -245,12 +265,21 @@ try {
     return {
       text: title?.textContent?.trim() || '',
       logoLoaded: Boolean(logo?.complete && logo.naturalWidth > 0),
+      logoSrc: logo?.getAttribute('src') || '',
       color: style?.color || '',
-      fontFamily: style?.fontFamily || ''
+      fontFamily: style?.fontFamily || '',
+      controls: [...document.querySelectorAll('#languageTamil,#languageEnglish,#smvHoroscopeAuth [data-login],#smvHoroscopeAuth [data-register],#smvHoroscopeAuth [data-logout]')].map(el => {
+        const rect = el.getBoundingClientRect();
+        return { width: rect.width, height: rect.height };
+      })
     };
   });
-  assert.equal(horoscopeBrand.text, 'SMV ASTRO SERVICES', 'Horoscope header must show the shared SMV ASTRO SERVICES brand title.');
-  assert.equal(horoscopeBrand.logoLoaded, true, 'Horoscope header must load its SMV brand mark.');
+  assert.equal(horoscopeBrand.text, 'SMV HOROSCOPE', 'Horoscope header must show the red SMV HOROSCOPE product title.');
+  assert.equal(horoscopeBrand.logoLoaded, true, 'Horoscope header must load its dedicated product logo.');
+  assert.match(horoscopeBrand.logoSrc, /smv-horoscope-website\\.webp/);
+  assert.equal(horoscopeBrand.controls.length, 5, 'Horoscope header must show two language and three account actions.');
+  assert.ok(Math.max(...horoscopeBrand.controls.map(x => x.width)) - Math.min(...horoscopeBrand.controls.map(x => x.width)) <= 1.5, 'All five Horoscope header controls must have equal width.');
+  assert.ok(horoscopeBrand.controls.every(x => Math.abs(x.height - 42) < 1), 'All five Horoscope header controls must have the same 42px height.');
   assert.equal(horoscopeBrand.color, 'rgb(255, 0, 0)', "Horoscope brand title must use the main site red.");
   assert.match(horoscopeBrand.fontFamily, /Georgia/i, "Horoscope brand title must use the main site serif brand font.");
   await page.waitForFunction(() =>
