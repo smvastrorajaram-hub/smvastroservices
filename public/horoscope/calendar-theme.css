@@ -35,3 +35,14 @@
 
 /* The APK shortcut keeps its original PWA-safe anchor target; only the decorative hero badge is hidden. */
 #smvDailyCalendar .cal-header .cal-download-app-link .cal-app-badge{display:none}
+
+
+/* Keep the Calendar site header on the same green as its daily-calendar hero. */
+html body.calendar-only>header.calendar-topbar{
+  background:#0f514c!important;
+  background-color:#0f514c!important;
+  background-image:none!important;
+}
+html body.calendar-only>header.calendar-topbar::after{
+  background:#0a3e3a!important;
+}
