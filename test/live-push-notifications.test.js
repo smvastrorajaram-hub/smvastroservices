@@ -289,6 +289,13 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('if(smvLiveEventStreamConnected||!currentUser'));
   assert.ok(frontend.includes('smvLiveEventStreamConnected=true;'));
   assert.ok(frontend.includes('smvLiveStopFallbackPolling();'));
+  assert.ok(frontend.includes('smvLivePollSessions(true).catch(()=>{}),2500'));
+  assert.ok(frontend.includes('async function smvLivePollSessions(statusOnly=false)'));
+  assert.ok(frontend.includes('if(statusOnly)return;'), 'Fallback status reconciliation avoids unnecessary booking reads');
+  assert.ok(frontend.includes("'/live/events?after='+encodeURIComponent(String(after))"));
+  assert.ok(frontend.includes("'smv-live-event-cursor:'+owner"));
+  assert.ok(frontend.includes('ev.replayed!==true'), 'Replayed history does not reopen stale session modals');
+  assert.ok(frontend.includes('smvLiveReconcileAfterEventStreamConnect().catch(()=>{})'));
   assert.ok(frontend.includes('enabling recovery polling.'));
   assert.ok(!frontend.includes("smvLiveMessageTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollMessages(id).catch(()=>{});},600)"));
   assert.ok(!frontend.includes("smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions().catch(()=>{}),4500"));
@@ -1136,6 +1143,15 @@ test('Live Session SSE cleanup is tied to the response lifecycle, not normal req
   assert.ok(route.includes('if (stopped) return;'), 'Cleanup is idempotent');
   assert.ok(route.includes('if (heartbeat) clearInterval(heartbeat);'), 'Cleanup clears the heartbeat timer');
   assert.ok(route.includes('set.delete(res);'), 'Cleanup removes the exact response');
+});
+
+test('Live Session and Customer Chat state is recovered from replay before current session reconciliation', () => {
+  const frontend = read('public/smvastro.mjs');
+  assert.ok(frontend.includes('function smvLiveReadEventCursor(uid){'));
+  assert.ok(frontend.includes('function smvLiveSaveEventCursor(uid,value,reset=false){'));
+  assert.ok(frontend.includes('smvLivePollSessions(true).catch(()=>{}),2500'));
+  assert.ok(frontend.includes("if(chatArea)chatArea.hidden=!smvLiveChatIsActive(s);"));
+  assert.ok(frontend.includes("smvLiveUpdateDashboardSessionStatus(s);"));
 });
 
 test('Live Session SSE reconnects when an HTTP 200 stream becomes silent', () => {
