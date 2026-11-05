@@ -229,7 +229,7 @@ test('Live Chat uses canonical mode/state and native visibility instead of a cha
   assert.equal(frontend.includes('smv-live-chat-active'), false, 'no chat-only modal class should be toggled by JavaScript');
   assert.equal(css.includes('.smv-live-chat-active'), false, 'Chat must not depend on a special CSS override block');
   assert.ok(html.includes('smvastro.css?v=20261102-consult-route-cleanup-v1'));
-  assert.ok(html.includes('smvastro.mjs?v=20261105-live-dashboard-realtime-busy-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261105-session-state-labels-v1'));
 });
 
 test('Live Chat connected confirmation requires a rendered message pane and does not open a separate Chat window', () => {
@@ -295,7 +295,7 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('smvLiveStartCustomerPendingStatusPoll(s.id);'));
   assert.ok(frontend.includes('setInterval(()=>void reconcile(),2500)'));
   assert.ok(frontend.includes('Astrologer Generating Horoscope · '));
-  assert.ok(html.includes('smvastro.mjs?v=20261105-live-dashboard-realtime-busy-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261105-session-state-labels-v1'));
 });
 
 test('Customer and Astrologer Dashboards mount the Live Call/Chat controls after rendering', () => {
@@ -326,7 +326,7 @@ test('Customer and Astrologer Dashboard open without Dashboard-wide loading or q
   assert.equal(frontend.includes('Loading your dashboard...'), false);
   assert.ok(!frontend.includes("because Firebase could not be read."));
   assert.ok(!frontend.includes("Dashboard is open. Astrologer profile and data"));
-  assert.ok(html.includes('smvastro.mjs?v=20261105-live-dashboard-realtime-busy-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261105-session-state-labels-v1'));
 });
 
 test('Explicit login keeps the fast role shell mounted and does not hide/reopen Dashboard', () => {
@@ -370,7 +370,7 @@ test('Astrologer Dashboard keeps one heading and parallelizes its first profile 
   assert.ok(dashboard.includes('const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null;'));
   assert.ok(dashboard.includes('astrologerProfileResult=profileResult;'));
   assert.ok(!dashboard.includes("const a=await withTimeout(\n     getDoc(doc(db,'smv_astrologers',currentUser.uid))"));
-  assert.ok(html.includes('smvastro.mjs?v=20261105-live-dashboard-realtime-busy-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261105-session-state-labels-v1'));
 });
 
 test('Astrologer Dashboard renders its main UI before earnings and withdrawal history resolve', () => {
@@ -390,7 +390,7 @@ test('Astrologer Dashboard renders its main UI before earnings and withdrawal hi
   assert.ok(dashboard.includes('id="smvAstroEarningsHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalStatus"'));
-  assert.ok(html.includes('smvastro.mjs?v=20261105-live-dashboard-realtime-busy-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261105-session-state-labels-v1'));
 });
 
 test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
@@ -1173,13 +1173,18 @@ test('Live Session End and Cancel are distinct from closing the session window',
   assert.ok(frontend.includes('smvLiveDismissedSessionIds.add(id)'), 'Closing the panel marks its window as closed without ending the server session');
   assert.ok(frontend.includes('data-live-presence-dot='), 'Running sessions expose a separate live indicator');
   assert.ok(frontend.includes('data-live-window-dot='), 'Closed windows expose a red closed indicator');
-  assert.ok(frontend.includes('OPEN CLOSED SESSION / RECEIPT'), 'Ended sessions remain openable from dashboard history');
+  assert.ok(frontend.includes("openButton.textContent=ended?'Closed Session Receipt':'Open Session'"), 'Open and receipt labels use the requested title case');
+  assert.ok(frontend.includes("windowStatus.textContent=ended?'Closed Session':'Window Closed'"), 'Ended sessions expose the separate Closed Session state label');
   assert.ok(frontend.includes("return 'LIVE SESSION · '+clock+' remaining'"), 'A dismissed but active Call/Chat continues to show its server-based remaining time');
   assert.ok(frontend.includes("['preparing','active'].includes(String(row.state||''))"), 'The dashboard timer refreshes both horoscope preparation and active session time');
-  assert.ok(frontend.includes("openButton.style.color=ended?'#ff1744':'#00e676'"), 'Active Open Session stays bright green and ended receipt stays red');
-  assert.ok(frontend.includes("openButton.style.webkitTextFillColor=ended?'#ff1744':'#00e676'"), 'Android WebView text fill follows the live-session state');
+  assert.ok(frontend.includes("openButton.style.color=ended?'#000':'#00e676'"), 'Open Session is green and Closed Session Receipt is black');
+  assert.ok(frontend.includes("openButton.style.webkitTextFillColor=ended?'#000':'#00e676'"), 'Android WebView text fill follows the live-session state');
   assert.ok(frontend.includes("openButton.style.background='transparent'"), 'Closed receipt action has no button box');
   assert.ok(frontend.includes("openButton.style.textDecoration='none'"), 'Closed receipt action has no underline');
+  const dashboardCss = read('public/dashboard-typography.css');
+  assert.ok(dashboardCss.includes('animation:smvLiveSessionGreenPulse .42s steps(2,end) infinite'), 'The active green indicator pulses quickly');
+  assert.ok(dashboardCss.includes('.smv-live-presence-dot--closed{') && dashboardCss.includes('background:#ff1744'), 'The closed-session indicator remains red');
+  assert.ok(dashboardCss.includes('.smv-live-window-closed-label:not([hidden])') && dashboardCss.includes('font-weight:900!important;color:#ff1744!important'), 'Closed Session status is bold red');
 });
 
 test('Live Session route authorization separates Astrologer decisions from participant actions', () => {
