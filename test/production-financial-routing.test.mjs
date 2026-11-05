@@ -11,7 +11,7 @@ test('Production financial API resolver routes all Wallet, Live, Astrologer earn
   const end=frontend.indexOf('const BACKEND=',start);
   assert.ok(start>=0&&end>start,'financial API resolver exists');
   const resolver=frontend.slice(start,end);
-  assert.ok(resolver.includes('astrologer\\/(?:availability|earnings|withdrawal-request)'));
+  assert.ok(resolver.includes('astrologer\\/(?:appointments|availability|change-payout|earnings|open-questions|qualification-config|sync-approval|withdrawal-request|edit-answer|claim-question)'));
   assert.ok(resolver.includes('withdrawal-mark-processing|withdrawal-reject|withdrawal-mark-paid'));
   assert.ok(frontend.includes('const apiBackend=smvApiBackend(path)'));
   assert.ok(frontend.includes('fetch(apiBackend+path'));
