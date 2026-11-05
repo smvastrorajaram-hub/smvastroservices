@@ -7,7 +7,12 @@ on:
       - 'public/index.html'
       - 'public/sw.js'
       - 'public/horoscope/sw.js'
+      - 'public/horoscope/calendar/sw.js'
+      - 'smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java'
+      - 'smvhoroscopeproduction/src/main/java/in/smvastroservices/horoscope/MainActivity.java'
+      - 'smvcalendarproduction/src/main/java/in/smvastroservices/calendar/MainActivity.java'
       - 'test/storage-and-safe-sw-updates.test.js'
+      - 'test/android-horoscope-calendar-production.test.mjs'
       - '.github/workflows/storage-and-safe-sw-updates.yml'
   push:
     branches: [main]
@@ -35,5 +40,6 @@ jobs:
         run: |
           node --check public/sw.js
           node --check public/horoscope/sw.js
-      - name: Preserve browser state and prevent forced reload regressions
-        run: node --test test/storage-and-safe-sw-updates.test.js
+          node --check public/horoscope/calendar/sw.js
+      - name: Preserve browser state and verify synchronized three-app cache bumps
+        run: node --test test/storage-and-safe-sw-updates.test.js test/android-horoscope-calendar-production.test.mjs
