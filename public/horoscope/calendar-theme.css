@@ -46,3 +46,111 @@ html body.calendar-only>header.calendar-topbar{
 html body.calendar-only>header.calendar-topbar::after{
   background:#0a3e3a!important;
 }
+
+/* Canonical Calendar product header: brand row and four equal navigation actions. */
+html body.calendar-only>header.calendar-topbar{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  align-items:stretch!important;
+  justify-content:normal!important;
+  gap:10px!important;
+  background:#0f514c!important;
+  background-color:#0f514c!important;
+  background-image:none!important;
+}
+.calendar-brand-header{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+.calendar-brand-header img{
+  display:block;
+  flex:0 0 52px;
+  width:52px;
+  height:52px;
+  object-fit:contain;
+  border-radius:10px;
+  background:#fffdf8;
+}
+.calendar-brand-title{
+  display:block;
+  min-width:0;
+  color:#fffaf0;
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:clamp(20px,3.8vw,30px);
+  font-weight:900;
+  line-height:1.12;
+  letter-spacing:.8px;
+  text-align:center;
+  overflow-wrap:anywhere;
+}
+.calendar-header-actions{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  align-items:stretch;
+  gap:8px;
+  width:100%;
+  min-width:0;
+}
+.calendar-header-actions .calendar-product-nav,
+.calendar-header-actions .calendar-language-switch{
+  display:contents!important;
+}
+.calendar-header-actions .calendar-product-nav a,
+.calendar-header-actions .calendar-language-switch button{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  box-sizing:border-box!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+  height:42px!important;
+  min-height:42px!important;
+  margin:0!important;
+  padding:7px 5px!important;
+  border:1px solid #e3d3a7!important;
+  border-radius:10px!important;
+  background:#fffaf0!important;
+  color:#0f514c!important;
+  font-family:Arial,"Noto Sans Tamil",sans-serif!important;
+  font-size:12px!important;
+  font-weight:800!important;
+  line-height:1.1!important;
+  text-align:center!important;
+  text-decoration:none!important;
+  white-space:nowrap!important;
+  box-shadow:none!important;
+}
+.calendar-header-actions .calendar-product-nav a:hover,
+.calendar-header-actions .calendar-language-switch button:hover{
+  background:#f3ead4!important;
+  border-color:#c79b45!important;
+}
+@media(max-width:680px){
+  html body.calendar-only>header.calendar-topbar{
+    padding:10px 8px!important;
+    gap:8px!important;
+  }
+  .calendar-brand-header{gap:8px}
+  .calendar-brand-header img{flex-basis:44px;width:44px;height:44px}
+  .calendar-brand-title{font-size:clamp(18px,5vw,23px);letter-spacing:.45px}
+  .calendar-header-actions{gap:5px}
+  .calendar-header-actions .calendar-product-nav a,
+  .calendar-header-actions .calendar-language-switch button{
+    height:40px!important;
+    min-height:40px!important;
+    padding:6px 3px!important;
+    font-size:11px!important;
+    border-radius:8px!important;
+  }
+}
+@media(max-width:360px){
+  .calendar-header-actions{gap:4px}
+  .calendar-header-actions .calendar-product-nav a,
+  .calendar-header-actions .calendar-language-switch button{font-size:10px!important}
+}
