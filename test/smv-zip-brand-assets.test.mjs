@@ -17,7 +17,6 @@ function pngDimensions(file) {
 test('PWA manifests and image assets retain their pre-existing icon mappings', () => {
   const astro = JSON.parse(read('public/manifest.webmanifest'));
   assert.deepEqual(astro.icons.map(icon => [icon.src, icon.sizes, icon.purpose]), [
-    ['/assets/icon-512-transparent.svg', 'any', 'any'],
     ['/assets/icon-192.png', '192x192', 'any'],
     ['/assets/icon-512.png', '512x512', 'any']
   ]);
@@ -53,7 +52,7 @@ test('PWA manifests and image assets retain their pre-existing icon mappings', (
   ]) assert.deepEqual(pngDimensions(file),[size,size],file+' PWA artwork dimensions');
 });
 
-test('The supplied three-part favicon strip is used for browser tabs only', () => {
+test('Each website uses its matching original SMV WEBSITE artwork as its browser favicon', () => {
   const pages = [
     ['public/index.html','favicon-astro'],
     ['public/horoscope/index.html','favicon-horoscope'],
@@ -65,37 +64,61 @@ test('The supplied three-part favicon strip is used for browser tabs only', () =
     for (const size of [16,32,64]) {
       const file=folder+'/'+prefix+'-'+size+'.png';
       assert.deepEqual(pngDimensions(file),[size,size],file+' favicon dimensions');
-      assert.ok(html.includes(prefix+'-'+size+'.png?v=20261105-brand-header-v1'),page+' must reference its own tab icon');
+      assert.ok(html.includes(prefix+'-'+size+'.png?v=20261106-india-place-manifest-count-v1'),page+' must reference its own tab icon');
     }
     const ico=folder+'/'+prefix+'.ico';
     assert.ok(exists(ico),ico+' ICO must exist');
     assert.ok(fs.readFileSync(path.join(root,ico)).subarray(0,4).equals(Buffer.from([0,0,1,0])),ico+' must be an ICO file');
-    assert.ok(html.includes(prefix+'.ico?v=20261105-brand-header-v1'),page+' must reference its own ICO');
+    assert.ok(html.includes(prefix+'.ico?v=20261106-india-place-manifest-count-v1'),page+' must reference its own ICO');
   }
-  assert.ok(read('public/index.html').includes('href="./manifest.webmanifest?v=20261105-brand-header-v1" rel="manifest"'));
+  assert.ok(read('public/index.html').includes('href="./manifest.webmanifest?v=20261106-india-place-manifest-count-v1" rel="manifest"'));
 });
 
-test('SMV ASTRO retains its previous website logo; Horoscope and Calendar stack logo above centered brand name', () => {
+test('Horoscope and Calendar logo headers are removed while Horoscope controls remain in one row', () => {
   const astro=read('public/index.html');
   const horoscope=read('public/horoscope/index.html');
   const calendar=read('public/horoscope/calendar/index.html');
+  const css=read('public/horoscope/horoscope.css');
   assert.ok(exists('public/assets/smv-home-logo.webp'));
   assert.ok(astro.includes('src="./assets/smv-home-logo.webp?v=20261105-brand-header-v1"'));
-  assert.ok(horoscope.includes('assets/smv-horoscope-website.webp?v=20261105-brand-header-v1'));
-  assert.ok(calendar.includes('../assets/smv-calendar-website.webp?v=20261105-brand-header-v1'));
-  assert.match(horoscope,/class="smv-horoscope-brandbar"[^>]*flex-direction:column[^>]*>[\s\S]*?<img[\s\S]*?<strong[^>]*text-align:center[^>]*>SMV HOROSCOPE<\/strong>/);
-  assert.match(calendar,/class="smv-calendar-brandbar"[^>]*flex-direction:column[^>]*>[\s\S]*?<img[\s\S]*?<strong[^>]*text-align:center[^>]*>SMV CALENDAR<\/strong>/);
-  assert.ok(!calendar.includes('calendar-current-brand'));
+  assert.ok(!horoscope.includes('smv-horoscope-brandbar'));
+  assert.ok(!horoscope.includes('alt="SMV HOROSCOPE logo"'));
+  assert.ok(!calendar.includes('smv-calendar-brandbar'));
+  assert.ok(!calendar.includes('alt="SMV CALENDAR logo"'));
+  assert.ok(horoscope.includes('id="languageTamil"')&&horoscope.includes('id="languageEnglish"'));
+  assert.ok(horoscope.includes('data-login')&&horoscope.includes('data-register')&&horoscope.includes('data-logout'));
+  assert.ok(css.includes('flex-wrap:nowrap'));
+  assert.ok(css.includes('grid-template-columns:repeat(2,minmax(0,1fr))'));
+  assert.ok(calendar.includes('calendar-language-switch'));
+  assert.ok(calendar.includes('calendar-topbar'));
 });
 
 test('All three independent Service Workers share one new cache release and cache the intended website artwork', () => {
   const workers=[read('public/sw.js'),read('public/horoscope/sw.js'),read('public/horoscope/calendar/sw.js')];
   const versions=workers.map(source=>/const SMV_CACHE_RELEASE='([^']+)'/.exec(source)?.[1]);
-  assert.deepEqual(versions,['20261105-brand-header-v1','20261105-brand-header-v1','20261105-brand-header-v1']);
+  assert.deepEqual(versions,['20261106-india-place-manifest-count-v1','20261106-india-place-manifest-count-v1','20261106-india-place-manifest-count-v1']);
   assert.ok(workers[0].includes("'./assets/favicon-astro.ico'"));
   assert.ok(workers[0].includes("'./assets/smv-home-logo.webp'"));
   assert.ok(workers[1].includes("'./assets/favicon-horoscope.ico'"));
   assert.ok(workers[1].includes("'./assets/smv-horoscope-website.webp'"));
   assert.ok(workers[2].includes("'../assets/favicon-calendar.ico'"));
   assert.ok(workers[2].includes("'../assets/smv-calendar-website.webp'"));
+});
+
+test('All three Service Workers validate the India total from the manifest, not the sum of shard metadata', () => {
+  const manifest = JSON.parse(read('public/horoscope/offline/places/india-manifest.json'));
+  assert.equal(manifest.records, 557995, 'The manifest declares the canonical total number of India places.');
+  assert.equal(Object.keys(manifest.shards || {}).length, 28, 'The complete offline pack contains all 28 shards.');
+
+  const workers = [
+    'public/sw.js',
+    'public/horoscope/sw.js',
+    'public/horoscope/calendar/sw.js'
+  ];
+  for (const file of workers) {
+    const source = read(file);
+    assert.ok(source.includes('const records=Number(manifest?.records);'), file + ' must read the canonical total from manifest.records.');
+    assert.ok(source.includes('if(!Number.isSafeInteger(records)||records!==557995)'), file + ' must validate the manifest total.');
+    assert.ok(!source.includes('entries.reduce((sum,[,item])=>sum+(Number(item?.records)||0),0)'), file + ' must not treat the sum of shard metadata as the global place count.');
+  }
 });

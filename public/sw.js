@@ -2,7 +2,7 @@
    HTML/CSS/JS presentation is network-first and retained for offline reopening.
    Authentication, account data, APIs, payments and consultation operations stay network-only.
    Location search keeps its existing independent online/offline cache. */
-const SMV_CACHE_RELEASE='20261105-brand-header-v1';
+const SMV_CACHE_RELEASE='20261106-india-place-manifest-count-v1';
 const SMV_LOCATION_CACHE='smv-shared-india-places';
 const APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE;
 const APP_SHELL_FILES=[
@@ -14,7 +14,7 @@ const APP_SHELL_FILES=[
   './android-app-install.js','./public-navigation.js',
   './main-location-search.js','./question-place-search.mjs',
   './horoscope/offline/places/place-search.mjs','./horoscope/offline/places/india-manifest.json','./horoscope/offline/places/place-display.mjs',
-  './assets/icon-192.png',
+  './assets/icon-192.png','./assets/icon-512.png',
   './assets/favicon-astro-16.png','./assets/favicon-astro-32.png','./assets/favicon-astro-64.png','./assets/favicon-astro.ico',
   './assets/smv-home-logo.webp'
 ];
@@ -25,7 +25,9 @@ const REQUIRED_APP_SHELL=new Set([
   './dashboard-window.js','./public-content-loader.js','./interface.js',
   './android-app-install.js','./public-navigation.js',
   './coalesced-refresh.mjs','./razorpay-checkout-loader.mjs','./chat-moderation.js',
-  './question-place-search.mjs'
+  './assets/icon-192.png','./assets/icon-512.png',
+  './assets/favicon-astro-16.png','./assets/favicon-astro-32.png','./assets/favicon-astro-64.png','./assets/favicon-astro.ico',
+  './assets/smv-home-logo.webp','./question-place-search.mjs'
 ]);
 const ONLINE_ONLY_ROOTS=new Set([
   'api','auth','wallet','payment','payments','razorpay','session','sessions',
@@ -93,8 +95,8 @@ async function prefetchIndiaPlaceShards(target,manifestPath,shardDirectory){
   }
   await Promise.all([worker(),worker()]);
   if(failures.length)throw new Error('India offline location pack incomplete: '+failures.length+' shards failed: '+failures.slice(0,8).join(', '));
-  const records=entries.reduce((sum,[,item])=>sum+(Number(item?.records)||0),0);
-  if(records!==557995)throw new Error('Unexpected India place count: '+records);
+  const records=Number(manifest?.records);
+  if(!Number.isSafeInteger(records)||records!==557995)throw new Error('Unexpected India place count in manifest: '+records);
   console.info('SMV India offline place pack verified:',records,'records,',entries.length,'shards.');
 }
 

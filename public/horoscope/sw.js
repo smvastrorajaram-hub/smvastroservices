@@ -3,7 +3,7 @@
    Authentication, published Firestore refresh, account data and online services stay network-only.
    Location lookup keeps its existing GeoNames + India-offline behavior.
 */
-const SMV_CACHE_RELEASE='20261105-brand-header-v1';
+const SMV_CACHE_RELEASE='20261106-india-place-manifest-count-v1';
 const OFFLINE_CACHE='smv-horoscope-offline';
 const LOCATION_CACHE='smv-shared-india-places';
 const SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE;
@@ -15,6 +15,7 @@ const CORE=[
   './horoscope-readings.css','./smv-ui.css',
   './v358-result-layout.css','./v359-symmetric-gutters.css',
   './manifest-en.webmanifest','./manifest-ta.webmanifest',
+  './assets/icon-192.png','./assets/icon-512.png','./assets/icon-512-maskable.png',
   './assets/favicon-horoscope-16.png','./assets/favicon-horoscope-32.png','./assets/favicon-horoscope-64.png','./assets/favicon-horoscope.ico',
   './assets/smv-horoscope-website.webp',
   './report-identity.js','./boot.mjs','./horoscope-auth.mjs','./report-store.mjs',
@@ -53,6 +54,9 @@ const CORE=[
 
 const REQUIRED_CORE=new Set([
   './index.html','./horoscope.css','./boot.mjs','./horoscope.js',
+  './assets/icon-192.png','./assets/icon-512.png','./assets/icon-512-maskable.png',
+  './assets/favicon-horoscope-16.png','./assets/favicon-horoscope-32.png','./assets/favicon-horoscope-64.png','./assets/favicon-horoscope.ico',
+  './assets/smv-horoscope-website.webp',
   './marriage-matching.js','./marriage-basic-report.mjs','./matching-timeline.mjs',
   './d1-15-year-reading.mjs',
   './offline/offline-engine.mjs','./offline/server-wrapper.browser.mjs',
@@ -144,8 +148,8 @@ async function prefetchIndiaPlaceShards(target,manifestPath,shardDirectory){
   }
   await Promise.all([worker(),worker()]);
   if(failures.length)throw new Error('India offline location pack incomplete: '+failures.length+' shards failed: '+failures.slice(0,8).join(', '));
-  const records=entries.reduce((sum,[,item])=>sum+(Number(item?.records)||0),0);
-  if(records!==557995)throw new Error('Unexpected India place count: '+records);
+  const records=Number(manifest?.records);
+  if(!Number.isSafeInteger(records)||records!==557995)throw new Error('Unexpected India place count in manifest: '+records);
   console.info('SMV India offline place pack verified:',records,'records,',entries.length,'shards.');
 }
 

@@ -229,7 +229,7 @@ test('Live Chat uses canonical mode/state and native visibility instead of a cha
   assert.equal(frontend.includes('smv-live-chat-active'), false, 'no chat-only modal class should be toggled by JavaScript');
   assert.equal(css.includes('.smv-live-chat-active'), false, 'Chat must not depend on a special CSS override block');
   assert.ok(html.includes('smvastro.css?v=20261102-consult-route-cleanup-v1'));
-  assert.ok(html.includes('smvastro.mjs?v=20261105-cf-live-replay-api-routing-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261106-india-place-manifest-count-v1'));
 });
 
 test('Live Chat connected confirmation requires a rendered message pane and does not open a separate Chat window', () => {
@@ -302,7 +302,7 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('smvLiveStartCustomerPendingStatusPoll(s.id);'));
   assert.ok(frontend.includes('setInterval(()=>void reconcile(),2500)'));
   assert.ok(frontend.includes('Astrologer Generating Horoscope · '));
-  assert.ok(html.includes('smvastro.mjs?v=20261105-cf-live-replay-api-routing-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261106-india-place-manifest-count-v1'));
 });
 
 test('Customer and Astrologer Dashboards mount the Live Call/Chat controls after rendering', () => {
@@ -333,7 +333,7 @@ test('Customer and Astrologer Dashboard open without Dashboard-wide loading or q
   assert.equal(frontend.includes('Loading your dashboard...'), false);
   assert.ok(!frontend.includes("because Firebase could not be read."));
   assert.ok(!frontend.includes("Dashboard is open. Astrologer profile and data"));
-  assert.ok(html.includes('smvastro.mjs?v=20261105-cf-live-replay-api-routing-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261106-india-place-manifest-count-v1'));
 });
 
 test('Explicit login keeps the fast role shell mounted and does not hide/reopen Dashboard', () => {
@@ -377,7 +377,7 @@ test('Astrologer Dashboard keeps one heading and parallelizes its first profile 
   assert.ok(dashboard.includes('const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null;'));
   assert.ok(dashboard.includes('astrologerProfileResult=profileResult;'));
   assert.ok(!dashboard.includes("const a=await withTimeout(\n     getDoc(doc(db,'smv_astrologers',currentUser.uid))"));
-  assert.ok(html.includes('smvastro.mjs?v=20261105-cf-live-replay-api-routing-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261106-india-place-manifest-count-v1'));
 });
 
 test('Astrologer Dashboard renders its main UI before earnings and withdrawal history resolve', () => {
@@ -397,7 +397,7 @@ test('Astrologer Dashboard renders its main UI before earnings and withdrawal hi
   assert.ok(dashboard.includes('id="smvAstroEarningsHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalStatus"'));
-  assert.ok(html.includes('smvastro.mjs?v=20261105-cf-live-replay-api-routing-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261106-india-place-manifest-count-v1'));
 });
 
 test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
@@ -895,17 +895,20 @@ test('Customer Live Session dashboard status follows the accepted-session SSE up
 });
 
 
-test('Manual Busy blocks direct Live actions but leaves scheduled booking requests available',()=>{
+test('Cloudflare Busy presence follows started sessions and preserves the yellow pulse',()=>{
   const content=read('public/public-content.mjs');
-  const service=read('live-session-service.js');
+  const domain=read('shared/backend-platform/live-session-domain.mjs');
   const cloudflare=read('shared/backend-platform/d1-live-session-service.mjs');
-  assert.ok(content.includes("const manuallyBusy=String(a.manualAvailabilityStatus||'').trim().toLowerCase()==='busy';"));
-  assert.ok(content.includes("row.dataset.manuallyBusy=String(manuallyBusy);"));
-  assert.ok(content.includes('This Astrologer is in Busy mode and is not accepting new Live '));
+  assert.ok(content.includes('smv-astro-presence-dot--busy{background:#ffea00'));
+  assert.ok(content.includes('animation:smvAstroBusyPulse .78s ease-in-out infinite'));
+  assert.ok(content.includes('const callAllowed=liveCallEnabled,chatAllowed=liveChatEnabled;'));
   assert.ok(content.includes("data-book-call ${liveCallEnabled?'':'disabled"));
   assert.ok(content.includes("data-book-chat ${liveChatEnabled?'':'disabled"));
-  assert.ok(service.includes('if (astrologerManualBusy(astro, liveCount))'));
-  assert.ok(cloudflare.includes('if(astrologerManualBusy(astro,count))'));
+  assert.ok(!content.includes('manuallyBusy'));
+  assert.ok(!content.includes('dataset.manuallyBusy'));
+  assert.ok(cloudflare.includes("WHERE astrologer_uid=? AND state='active'"));
+  assert.ok(cloudflare.includes("state IN ('ringing','preparing','connecting','active')"));
+  assert.ok(!domain.includes('astrologerManualBusy'));
 });
 
 test('Live Call transitions from preparation to a clear Customer connect action and replays missed WebRTC offers', () => {

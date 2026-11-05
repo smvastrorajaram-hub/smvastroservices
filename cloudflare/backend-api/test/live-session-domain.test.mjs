@@ -8,7 +8,7 @@ import {
   splitLiveCommission,
   commissionFromPayload,
   astrologerRatePaise,
-  astrologerManualBusy,
+  astrologerAvailabilityStatus,
   liveRequestCanStartNow,
   validateLiveBirthDetails,
   scheduledAppointmentStartAtMs,
@@ -87,9 +87,10 @@ test('Live request start ignores stale availability text and uses enabled mode p
   assert.equal(liveRequestCanStartNow({liveCallEnabled:true},'video',0,1),false);
 });
 
-test('Manual Busy blocks new D1 Live requests while session-managed Busy still respects capacity',()=>{
-  assert.equal(astrologerManualBusy({manualAvailabilityStatus:'busy',liveCallEnabled:true},0),true);
-  assert.equal(liveRequestCanStartNow({manualAvailabilityStatus:'busy',liveCallEnabled:true},'call',0,2),false);
+test('Busy display uses started sessions only while request admission retains capacity limits',()=>{
+  assert.equal(astrologerAvailabilityStatus({manualAvailabilityStatus:'busy',liveCallEnabled:true},0),'online');
+  assert.equal(astrologerAvailabilityStatus({liveCallEnabled:true},1),'busy');
+  assert.equal(liveRequestCanStartNow({manualAvailabilityStatus:'busy',liveCallEnabled:true},'call',0,2),true);
   assert.equal(liveRequestCanStartNow({availabilityStatus:'busy',liveSessionBusyManaged:true,liveCallEnabled:true},'call',1,2),true);
   assert.equal(liveRequestCanStartNow({availabilityStatus:'busy',liveSessionBusyManaged:true,liveCallEnabled:true},'call',2,2),false);
 });

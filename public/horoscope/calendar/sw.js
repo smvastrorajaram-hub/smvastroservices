@@ -1,4 +1,4 @@
-const SMV_CACHE_RELEASE='20261105-brand-header-v1';
+const SMV_CACHE_RELEASE='20261106-india-place-manifest-count-v1';
 const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE;
 const LOCATION_CACHE='smv-shared-india-places';
 const CORE=[
@@ -14,6 +14,9 @@ const CORE=[
 function fixed(url,r){const h=new Headers(r.headers),p=new URL(url,self.location.origin).pathname.toLowerCase();if(/\.m?js$/.test(p))h.set('Content-Type','text/javascript; charset=utf-8');if(/\.webmanifest$/.test(p))h.set('Content-Type','application/manifest+json; charset=utf-8');if(/\.json$/.test(p))h.set('Content-Type','application/json; charset=utf-8');if(/\.wasm$/.test(p))h.set('Content-Type','application/wasm');if(/\.data$/.test(p))h.set('Content-Type','application/octet-stream');return new Response(r.clone().body,{status:r.status,statusText:r.statusText,headers:h});}
 const REQUIRED_CORE = new Set([
  './index.html','./admin.html','./calendar-pwa.mjs',
+ '../assets/calendar-192.png','../assets/calendar-512.png','../assets/calendar-maskable.png',
+ '../assets/favicon-calendar-16.png','../assets/favicon-calendar-32.png','../assets/favicon-calendar-64.png','../assets/favicon-calendar.ico',
+ '../assets/smv-calendar-website.webp',
  './rasi-palan-periods.mjs','../daily-calendar.mjs','../calendar-rasi-palan.mjs',
  '../calendar-rasi-palan.css','../calendar-rasi-palan-rules.mjs','../daily-calendar.css',
  '../calendar-data.mjs','../calendar-worker.mjs','../offline/wasm-provider.mjs','../offline/places/timezone.mjs','../offline/places/tz-boundary-lookup.mjs',
@@ -77,8 +80,8 @@ async function prefetchIndiaPlaceShards(target,manifestPath,shardDirectory){
   }
   await Promise.all([worker(),worker()]);
   if(failures.length)throw new Error('India offline location pack incomplete: '+failures.length+' shards failed: '+failures.slice(0,8).join(', '));
-  const records=entries.reduce((sum,[,item])=>sum+(Number(item?.records)||0),0);
-  if(records!==557995)throw new Error('Unexpected India place count: '+records);
+  const records=Number(manifest?.records);
+  if(!Number.isSafeInteger(records)||records!==557995)throw new Error('Unexpected India place count in manifest: '+records);
   console.info('SMV India offline place pack verified:',records,'records,',entries.length,'shards.');
 }
 

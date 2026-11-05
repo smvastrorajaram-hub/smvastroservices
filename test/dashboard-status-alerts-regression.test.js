@@ -5,21 +5,25 @@ const fs = require('node:fs');
 const path = require('node:path');
 const read = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
 
-test('D1 availability uses active Live sessions and persists a separate manual Busy mode',()=>{
+test('Cloudflare presence is Busy only for started sessions while capacity retains every in-flight state',()=>{
  const service=read('shared/backend-platform/d1-live-session-service.mjs');
  const domain=read('shared/backend-platform/live-session-domain.mjs');
- assert.match(service,/FROM \$\{SESSION_TABLE\}[\s\S]*state IN \('ringing','preparing','connecting','active'\)/);
- assert.match(service,/astrologerManualBusy\(astro,count\)/);
- assert.match(service,/const manualAvailabilityStatus=requestedStatus==='busy'\?'busy':''/);
- assert.match(service,/const finalAvailabilityStatus=current\.activeSessionCount>0\?'busy':requestedStatus/);
- assert.match(domain,/export function astrologerManualBusy\(/);
- assert.match(domain,/!astrologerManualBusy\(profile,active\)/);
+ assert.match(service,/state IN \('ringing','preparing','connecting','active'\)/);
+ assert.match(service,/WHERE astrologer_uid=\? AND state='active'/);
+ assert.match(service,/const availabilityStatus=startedCount>0\?'busy'/);
+ assert.match(service,/const finalAvailabilityStatus=current\.startedSessionCount>0\?'busy':requestedStatus/);
+ assert.match(service,/startedSessionCount:startedCount/);
+ assert.doesNotMatch(service,/astrologerManualBusy/);
+ assert.doesNotMatch(domain,/astrologerManualBusy/);
+ assert.match(domain,/return modeEnabled&&Number\.isSafeInteger\(active\)/);
 });
 
-test('Astrologer dashboard does not overwrite Busy when Live Call or Chat toggles change',()=>{
+test('Astrologer dashboard exposes only Online and Offline manual availability states',()=>{
  const frontend=read('public/smvastro.mjs');
- assert.match(frontend,/deriveStatusFromModes&&availabilitySelect&&availabilitySelect\.value!=='busy'/);
- assert.match(frontend,/availabilityStatus:availabilitySelect\?\.value\|\|'offline'/);
+ assert.match(frontend,/<option value="offline">Offline<\/option><option value="online">Online<\/option>/);
+ assert.doesNotMatch(frontend,/<option value="busy">Busy<\/option>/);
+ assert.match(frontend,/if\(deriveStatusFromModes&&availabilitySelect\)/);
+ assert.doesNotMatch(frontend,/manualAvailabilityStatus/);
 });
 
 test('Render availability persists manual Busy and keeps session-managed Busy distinct',()=>{
