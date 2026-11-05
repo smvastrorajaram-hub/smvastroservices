@@ -1,4 +1,4 @@
-const CACHE='smv-calendar-forecast-assets-v7';
+const CACHE='smv-calendar-forecast-assets-v8';
 const CORE=[
  './','./index.html','./admin.html','./rasi-palan-periods.mjs','./calendar-pwa.mjs','./manifest-en.webmanifest','./manifest-ta.webmanifest',
  '../daily-calendar.mjs','../daily-calendar.css','../calendar-rasi-palan.mjs','../calendar-rasi-palan.css','../calendar-rasi-palan-rules.mjs','../calendar-theme.css','../calendar-data.mjs','../calendar-worker.mjs','../horoscope.js','../horoscope.css','../location-search-online-offline.js',
@@ -16,6 +16,23 @@ const REQUIRED_CORE = new Set([
  '../offline/vendor/wasm/swisseph.js','../offline/vendor/wasm/swisseph.wasm','../offline/vendor/wasm/swisseph.data'
 ]);
 const cacheURL = path => new URL(path, self.registration.scope).href;
+const ONLINE_ONLY_ROOTS=new Set([
+ 'api','auth','wallet','payment','payments','razorpay','session','sessions',
+ 'booking','bookings','consultation','consultations','notification','notifications',
+ 'email','account','profile','firebase','firestore','functions'
+]);
+function isOnlineOnlyRequest(url){
+ const scopePath=new URL(self.registration.scope).pathname;
+ const relative=url.pathname.startsWith(scopePath)?url.pathname.slice(scopePath.length):url.pathname;
+ const first=relative.toLowerCase().split('/').filter(Boolean)[0]||'';
+ if(ONLINE_ONLY_ROOTS.has(first))return true;
+ return [...url.searchParams.keys()].some(key=>/^(?:token|access_token|id_token|auth|uid|userid|sessionid|bookingid|paymentid|orderid|customerid|wallet|email|phone)$/i.test(key));
+}
+function isStaticPresentationRequest(req,url){
+ if(url.origin!==self.location.origin||isOnlineOnlyRequest(url))return false;
+ if(req.mode==='navigate')return true;
+ return /\\.(?:html?|css|js|mjs|json|webmanifest|png|jpe?g|webp|gif|svg|ico|avif|woff2?|ttf|otf|wasm|data)$/.test(url.pathname.toLowerCase());
+}
 async function cacheCore(concurrency=6){
  const c=await caches.open(CACHE);let i=0;const failures=[];
  const job=async()=>{while(i<CORE.length){
@@ -52,13 +69,17 @@ self.addEventListener('activate',e=>e.waitUntil((async()=>{
  await self.clients.claim();
 })()));
 self.addEventListener('fetch',e=>{
- if(e.request.method!=='GET')return;const u=new URL(e.request.url);if(u.origin!==self.location.origin)return;
+ if(e.request.method!=='GET')return;
+ const u=new URL(e.request.url);
+ if(u.origin!==self.location.origin)return;
+ // Keep authenticated/admin data, payments, booking and consultation APIs online-only.
+ if(!isStaticPresentationRequest(e.request,u))return;
  if(e.request.mode==='navigate'){
   const scopePath=new URL(self.registration.scope).pathname;
   if(!u.pathname.startsWith(scopePath))return;
-  const requestedPath=u.pathname.slice(scopePath.length).replace(/^\/+/, '');
-  // Cloudflare Pages may normalize /admin.html to /admin. Both URLs must
-  // resolve to the same independently cached Admin document.
+  const requestedPath=u.pathname.slice(scopePath.length).replace(/^\\/+/, '');
+  // Cloudflare Pages may normalize /admin.html to /admin. Both URLs resolve
+  // to the same independently cached static Calendar Admin redirect document.
   const relativePath=!requestedPath?'index.html':
    (requestedPath==='admin'||requestedPath==='admin/'?'admin.html':
     (requestedPath==='index'||requestedPath==='index/'?'index.html':requestedPath));
@@ -73,5 +94,24 @@ self.addEventListener('fetch',e=>{
    return hit?fixed(u.href,hit):new Response(relativePath==='admin.html'?'SMV CALENDAR Admin page is not cached. Reconnect once to update Calendar offline files.':'SMV CALENDAR offline page is not cached.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});
   })());return;
  }
- e.respondWith((async()=>{const c=await caches.open(CACHE);const critical=/\/(?:calendar-pwa\.mjs|rasi-palan-periods\.mjs|calendar-rasi-palan\.mjs|calendar-rasi-palan\.css|calendar-rasi-palan-rules\.mjs|daily-calendar\.mjs|daily-calendar\.css|calendar-theme\.css|location-search-online-offline\.js|manifest-(?:en|ta)\.webmanifest)$/.test(u.pathname);if(critical){try{const r=await fetch(e.request,{cache:'no-store'});if(r?.ok){await c.put(e.request,r.clone());return fixed(u.href,r);}}catch(_){}}const hit=await c.match(e.request,{ignoreSearch:true})||await caches.match(e.request,{ignoreSearch:true});if(hit){if(!/\/offline\/places\/india\//.test(u.pathname))e.waitUntil(fetch(e.request,{cache:'no-cache'}).then(async r=>{if(r?.ok)await c.put(e.request,r.clone())}).catch(()=>{}));return fixed(u.href,hit);}try{const r=await fetch(e.request,{cache:'no-store'});if(r?.ok){await c.put(e.request,r.clone());return fixed(u.href,r);}}catch(_){}return new Response('SMV CALENDAR offline asset is not cached.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});})());
+ e.respondWith((async()=>{
+  const c=await caches.open(CACHE);
+  const critical=/\\/(?:calendar-pwa\\.mjs|rasi-palan-periods\\.mjs|calendar-rasi-palan\\.mjs|calendar-rasi-palan\\.css|calendar-rasi-palan-rules\\.mjs|daily-calendar\\.mjs|daily-calendar\\.css|calendar-theme\\.css|location-search-online-offline\\.js|manifest-(?:en|ta)\\.webmanifest)$/.test(u.pathname);
+  if(critical){
+   try{
+    const r=await fetch(e.request,{cache:'no-store'});
+    if(r?.ok){await c.put(e.request,r.clone());return fixed(u.href,r);}
+   }catch(_){}
+  }
+  const hit=await c.match(e.request,{ignoreSearch:true})||await caches.match(e.request,{ignoreSearch:true});
+  if(hit){
+   if(!/\\/offline\\/places\\/india\\//.test(u.pathname))e.waitUntil(fetch(e.request,{cache:'no-cache'}).then(async r=>{if(r?.ok)await c.put(e.request,r.clone())}).catch(()=>{}));
+   return fixed(u.href,hit);
+  }
+  try{
+   const r=await fetch(e.request,{cache:'no-store'});
+   if(r?.ok){await c.put(e.request,r.clone());return fixed(u.href,r);}
+  }catch(_){}
+  return new Response('SMV CALENDAR offline asset is not cached.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});
+ })());
 });
