@@ -2915,11 +2915,10 @@ details>*{display:block!important}
 .smv-horoscope-controls-row #smvHoroscopeAuth .header-account .action-row>.btn:hover{background:#fff3d8!important;border-color:#c79b45!important;}
 @media(max-width:420px){.smv-horoscope-controls-row .smv-language-buttons button,.smv-horoscope-controls-row #smvHoroscopeAuth .header-account .action-row>.btn{height:40px;min-height:40px;font-size:11px!important;padding-inline:3px!important}}
 
-/* Use literal equal grid tracks for every language/account action. Flex proportions
-   can drift by fractions of a pixel between the two nested button groups. */
+/* Use equal grid tracks for currently visible language/account actions. */
 .smv-horoscope-controls-row{
   display:grid!important;
-  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
   align-items:center!important;
   justify-content:stretch!important;
   gap:8px!important;
@@ -2930,6 +2929,7 @@ details>*{display:block!important}
 .smv-horoscope-controls-row #smvHoroscopeAuth .header-account .action-row{
   display:contents!important;
 }
+.smv-horoscope-controls-row:has(#smvHoroscopeAuth.is-logged-in){grid-template-columns:repeat(3,minmax(0,1fr))!important}
 .smv-horoscope-controls-row #smvHoroscopeAuth .header-account [data-auth-status],
 .smv-horoscope-controls-row #smvHoroscopeAuth .header-account [data-auth-form]{
   grid-column:1/-1;
