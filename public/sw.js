@@ -11,7 +11,9 @@ const APP_SHELL_FILES=[
   './android-app-install.css','./payment-timing.js','./smvastro.mjs',
   './coalesced-refresh.mjs','./razorpay-checkout-loader.mjs','./chat-moderation.js',
   './dashboard-window.js','./public-content-loader.js','./interface.js',
-  './android-app-install.js','./public-navigation.js',
+  './android-app-install.js','./public-navigation.js','./main-location-search.js',
+  './horoscope/offline/places/india-manifest.json','./horoscope/offline/places/place-display.mjs','./main-location-search.js',
+  './horoscope/offline/places/india-manifest.json','./horoscope/offline/places/place-display.mjs',
   './assets/icon-192.png','./assets/favicon-64.png'
 ];
 const REQUIRED_APP_SHELL=new Set([
@@ -56,8 +58,10 @@ async function cacheAppShell(){
     const request=new Request(new URL(path,self.registration.scope).href,{cache:'reload'});
     try{
       const response=await fetch(request,{cache:'no-store'});
-      if(response&&response.ok)await cache.put(request,response.clone());
-      else if(REQUIRED_APP_SHELL.has(path))failures.push(path+' (HTTP '+(response?.status||'unknown')+')');
+      if(response&&response.ok){
+        const target=isOfflinePlaceAsset(new URL(request.url))?await caches.open(OFFLINE_PLACE_CACHE):cache;
+        await target.put(request,response.clone());
+      }else if(REQUIRED_APP_SHELL.has(path))failures.push(path+' (HTTP '+(response?.status||'unknown')+')');
     }catch(error){
       if(REQUIRED_APP_SHELL.has(path))failures.push(path+' ('+String(error?.message||error)+')');
     }
