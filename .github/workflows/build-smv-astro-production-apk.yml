@@ -43,6 +43,8 @@ on:
       - "test/android-launcher-icon.test.mjs"
       - "public/smvastro.mjs"
       - "test/android-google-native-signin.test.mjs"
+      - "scripts/next-android-release-version.mjs"
+      - "test/android-release-version-resolution.test.mjs"
       - "docs/android-native-call-ringtone.md"
 
 permissions:
