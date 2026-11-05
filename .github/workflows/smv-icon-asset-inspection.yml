@@ -1,0 +1,82 @@
+name: SMV Icon Asset Inspection
+
+on:
+  push:
+    branches:
+      - feat/smv-pwa-website-assets-20261105
+    paths:
+      - .github/workflows/smv-icon-asset-inspection.yml
+      - ICON/SMV.zip
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Inspect ZIP images and build preview
+        run: |
+          python -m pip install --disable-pip-version-check pillow
+          python - <<'PY'
+          import base64, json, zipfile
+          from pathlib import Path
+          from PIL import Image, ImageOps, ImageDraw
+          archive = Path("ICON/SMV.zip")
+          out = Path("asset-inspection")
+          out.mkdir(exist_ok=True)
+          records = []
+          previews = []
+          with zipfile.ZipFile(archive) as zf:
+              for info in zf.infolist():
+                  if info.is_dir():
+                      continue
+                  suffix = Path(info.filename).suffix.lower()
+                  rec = {"name": info.filename, "bytes": info.file_size}
+                  if suffix in {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".tif", ".tiff"}:
+                      try:
+                          with zf.open(info) as stream:
+                              im = Image.open(stream)
+                              im.load()
+                          rec.update({"format": im.format, "width": im.width, "height": im.height,
+                                      "mode": im.mode, "has_alpha": "A" in im.getbands()})
+                          thumb = ImageOps.contain(im.convert("RGBA"), (220, 190))
+                          tile = Image.new("RGB", (250, 235), "white")
+                          tile.paste(thumb, ((250-thumb.width)//2, 8), thumb)
+                          draw = ImageDraw.Draw(tile)
+                          name = info.filename.replace("\\", "/").split("/")[-1]
+                          draw.text((8, 204), name[:36], fill="black")
+                          draw.text((8, 218), f'{im.width}x{im.height} · {im.format}', fill="black")
+                          previews.append(tile)
+                      except Exception as exc:
+                          rec["image_error"] = str(exc)
+                  records.append(rec)
+          (out / "asset-inventory.json").write_text(json.dumps(records, indent=2), encoding="utf-8")
+          if previews:
+              cols = 3
+              rows = (len(previews)+cols-1)//cols
+              sheet = Image.new("RGB", (cols*250, rows*235), "#dddddd")
+              for i, tile in enumerate(previews):
+                  sheet.paste(tile, ((i%cols)*250, (i//cols)*235))
+              sheet.save(out / "contact-sheet.jpg", quality=82, optimize=True)
+              encoded = base64.b64encode((out / "contact-sheet.jpg").read_bytes()).decode()
+              print("ASSET_SHEET_BASE64_BEGIN")
+              print(encoded)
+              print("ASSET_SHEET_BASE64_END")
+          print("ASSET_INVENTORY_BEGIN")
+          print((out / "asset-inventory.json").read_text())
+          print("ASSET_INVENTORY_END")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smv-icon-asset-inspection
+          path: asset-inspection/
+          if-no-files-found: error
+          retention-days: 2
