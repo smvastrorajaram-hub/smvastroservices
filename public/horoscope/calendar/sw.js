@@ -31,7 +31,7 @@ function isOnlineOnlyRequest(url){
 function isStaticPresentationRequest(req,url){
  if(url.origin!==self.location.origin||isOnlineOnlyRequest(url))return false;
  if(req.mode==='navigate')return true;
- return /\\.(?:html?|css|js|mjs|json|webmanifest|png|jpe?g|webp|gif|svg|ico|avif|woff2?|ttf|otf|wasm|data)$/.test(url.pathname.toLowerCase());
+ return /\.(?:html?|css|js|mjs|json|webmanifest|png|jpe?g|webp|gif|svg|ico|avif|woff2?|ttf|otf|wasm|data)$/.test(url.pathname.toLowerCase());
 }
 async function cacheCore(concurrency=6){
  const c=await caches.open(CACHE);let i=0;const failures=[];
@@ -77,7 +77,7 @@ self.addEventListener('fetch',e=>{
  if(e.request.mode==='navigate'){
   const scopePath=new URL(self.registration.scope).pathname;
   if(!u.pathname.startsWith(scopePath))return;
-  const requestedPath=u.pathname.slice(scopePath.length).replace(/^\\/+/, '');
+  const requestedPath=u.pathname.slice(scopePath.length).replace(/^\/+/, '');
   // Cloudflare Pages may normalize /admin.html to /admin. Both URLs resolve
   // to the same independently cached static Calendar Admin redirect document.
   const relativePath=!requestedPath?'index.html':
@@ -96,7 +96,7 @@ self.addEventListener('fetch',e=>{
  }
  e.respondWith((async()=>{
   const c=await caches.open(CACHE);
-  const critical=/\\/(?:calendar-pwa\\.mjs|rasi-palan-periods\\.mjs|calendar-rasi-palan\\.mjs|calendar-rasi-palan\\.css|calendar-rasi-palan-rules\\.mjs|daily-calendar\\.mjs|daily-calendar\\.css|calendar-theme\\.css|location-search-online-offline\\.js|manifest-(?:en|ta)\\.webmanifest)$/.test(u.pathname);
+  const critical=/\/(?:calendar-pwa\.mjs|rasi-palan-periods\.mjs|calendar-rasi-palan\.mjs|calendar-rasi-palan\.css|calendar-rasi-palan-rules\.mjs|daily-calendar\.mjs|daily-calendar\.css|calendar-theme\.css|location-search-online-offline\.js|manifest-(?:en|ta)\.webmanifest)$/.test(u.pathname);
   if(critical){
    try{
     const r=await fetch(e.request,{cache:'no-store'});
@@ -105,7 +105,7 @@ self.addEventListener('fetch',e=>{
   }
   const hit=await c.match(e.request,{ignoreSearch:true})||await caches.match(e.request,{ignoreSearch:true});
   if(hit){
-   if(!/\\/offline\\/places\\/india\\//.test(u.pathname))e.waitUntil(fetch(e.request,{cache:'no-cache'}).then(async r=>{if(r?.ok)await c.put(e.request,r.clone())}).catch(()=>{}));
+   if(!/\/offline\/places\/india\//.test(u.pathname))e.waitUntil(fetch(e.request,{cache:'no-cache'}).then(async r=>{if(r?.ok)await c.put(e.request,r.clone())}).catch(()=>{}));
    return fixed(u.href,hit);
   }
   try{
