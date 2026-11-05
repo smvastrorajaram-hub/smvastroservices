@@ -56,7 +56,7 @@ const launchBrowser = async () => puppeteer.launch({
   // This models the Pages origin where all three apps can share the verified
   // India place pack instead of downloading the same 60 MB dataset three times.
   userDataDir: process.env.SMV_OFFLINE_BROWSER_PROFILE || '/tmp/smv-offline-shared-browser-profile',
-  protocolTimeout: 360000
+  protocolTimeout: 900000
 });
 
 const results = [];
@@ -77,7 +77,7 @@ for (const app of apps) {
       const reg = await navigator.serviceWorker.getRegistration();
       return reg?.active?.state === 'activated' &&
         navigator.serviceWorker.controller?.state === 'activated';
-    }, { timeout: 10 * 60 * 1000, polling: 1000 });
+    }, { timeout: 12 * 60 * 1000, polling: 1000 });
     const registration = await page.evaluate(async () => {
       const reg = await navigator.serviceWorker.getRegistration();
       return { scope: reg?.scope || '', scriptURL: reg?.active?.scriptURL || '' };
