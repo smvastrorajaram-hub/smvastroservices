@@ -12,6 +12,8 @@ import android.webkit.CookieManager;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
+import android.webkit.ServiceWorkerController;
+import android.webkit.ServiceWorkerWebSettings;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -65,6 +67,14 @@ public class MainActivity extends Activity {
         setContentView(root);
 
         WebSettings settings = webView.getSettings();
+        // Keep the WebView HTTP cache in normal online-first mode. The website's
+        // scoped Service Workers own versioned UI/offline caches and refresh them
+        // from the network; never clear WebView or origin storage on app launch.
+        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        ServiceWorkerWebSettings serviceWorkerSettings =
+                ServiceWorkerController.getInstance().getServiceWorkerWebSettings();
+        serviceWorkerSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        serviceWorkerSettings.setBlockNetworkLoads(false);
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
