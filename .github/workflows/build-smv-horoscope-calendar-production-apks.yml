@@ -34,9 +34,11 @@ on:
       - "test/android-horoscope-calendar-production.test.mjs"
       - "scripts/next-android-release-version.mjs"
       - "test/android-release-version-resolution.test.mjs"
+      - "test/android-cache-release-build-triggers.test.mjs"
       - "public/horoscope/sw.js"
       - "public/horoscope/calendar/sw.js"
       - "public/horoscope/location-search-online-offline.js"
+      - "test/android-cache-release-build-triggers.test.mjs"
   push:
     paths:
       - "settings.gradle"
@@ -82,7 +84,7 @@ jobs:
           node-version: "22"
 
       - name: Verify independent production packages and test-module isolation
-        run: node --test test/android-horoscope-calendar-production.test.mjs test/android-horoscope-calendar-launcher-icons.test.mjs test/android-permanent-release.test.mjs test/android-release-version-resolution.test.mjs
+        run: node --test test/android-horoscope-calendar-production.test.mjs test/android-horoscope-calendar-launcher-icons.test.mjs test/android-permanent-release.test.mjs test/android-release-version-resolution.test.mjs test/android-cache-release-build-triggers.test.mjs
 
       - name: Java 17
         uses: actions/setup-java@v4
