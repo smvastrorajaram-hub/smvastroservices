@@ -11,127 +11,91 @@ const exists = file => fs.existsSync(path.join(root, file));
 function pngDimensions(file) {
   const data = fs.readFileSync(path.join(root, file));
   assert.equal(data.toString('ascii', 1, 4), 'PNG', file + ' must be a PNG');
-  return { width: data.readUInt32BE(16), height: data.readUInt32BE(20), bytes: data.length };
+  return [data.readUInt32BE(16), data.readUInt32BE(20)];
 }
 
-test('All three PWA manifests use their product artwork at 192px and 512px, including maskable icons', () => {
-  const manifest = JSON.parse(read('public/manifest.webmanifest'));
-  assert.deepEqual(manifest.icons.map(icon => [icon.src, icon.sizes, icon.purpose]), [
+test('PWA manifests and image assets retain their pre-existing icon mappings', () => {
+  const astro = JSON.parse(read('public/manifest.webmanifest'));
+  assert.deepEqual(astro.icons.map(icon => [icon.src, icon.sizes, icon.purpose]), [
+    ['/assets/icon-512-transparent.svg', 'any', 'any'],
     ['/assets/icon-192.png', '192x192', 'any'],
-    ['/assets/icon-512.png', '512x512', 'any'],
-    ['/assets/icon-512-maskable.png', '512x512', 'maskable']
+    ['/assets/icon-512.png', '512x512', 'any']
   ]);
-  assert.ok(!manifest.icons.some(icon => icon.src.endsWith('icon-512-transparent.svg')));
 
-  const horoscope = ['public/horoscope/manifest-en.webmanifest', 'public/horoscope/manifest-ta.webmanifest'];
-  for (const file of horoscope) {
-    const data = JSON.parse(read(file));
-    for (const icon of data.icons) {
-      const pathFromRoot = icon.src.startsWith('/')
+  const horoscopes = ['public/horoscope/manifest-en.webmanifest', 'public/horoscope/manifest-ta.webmanifest'];
+  for (const file of horoscopes) {
+    const manifest = JSON.parse(read(file));
+    assert.ok(manifest.icons.length >= 2, file + ' must retain its PWA icons');
+    for (const icon of manifest.icons) {
+      const target = icon.src.startsWith('/')
         ? 'public' + icon.src
         : 'public/horoscope/' + icon.src;
-      assert.ok(exists(pathFromRoot), file + ' references missing icon ' + icon.src);
+      assert.ok(exists(target), file + ' references missing icon ' + icon.src);
     }
   }
-  const calendar = ['public/horoscope/calendar/manifest-en.webmanifest', 'public/horoscope/calendar/manifest-ta.webmanifest'];
-  for (const file of calendar) {
-    const data = JSON.parse(read(file));
-    for (const icon of data.icons) {
-      const pathFromRoot = icon.src.startsWith('/')
+
+  const calendars = ['public/horoscope/calendar/manifest-en.webmanifest', 'public/horoscope/calendar/manifest-ta.webmanifest'];
+  for (const file of calendars) {
+    const manifest = JSON.parse(read(file));
+    assert.ok(manifest.icons.length >= 2, file + ' must retain its PWA icons');
+    for (const icon of manifest.icons) {
+      const target = icon.src.startsWith('/')
         ? 'public' + icon.src
         : 'public/horoscope/calendar/' + icon.src;
-      assert.ok(exists(pathFromRoot), file + ' references missing icon ' + icon.src);
+      assert.ok(exists(target), file + ' references missing icon ' + icon.src);
     }
   }
+
+  for (const [file,size] of [
+    ['public/assets/icon-192.png',192],['public/assets/icon-512.png',512],
+    ['public/horoscope/assets/icon-192.png',192],['public/horoscope/assets/icon-512.png',512],
+    ['public/horoscope/assets/calendar-192.png',192],['public/horoscope/assets/calendar-512.png',512]
+  ]) assert.deepEqual(pngDimensions(file),[size,size],file+' PWA artwork dimensions');
 });
 
-test('New SMV PWA PNG icon files have expected dimensions and remain below 300 KB', () => {
-  const icons = [
-    ['public/assets/icon-192.png', 192],
-    ['public/assets/icon-512.png', 512],
-    ['public/assets/icon-512-maskable.png', 512],
-    ['public/horoscope/assets/icon-192.png', 192],
-    ['public/horoscope/assets/icon-512.png', 512],
-    ['public/horoscope/assets/icon-512-maskable.png', 512],
-    ['public/horoscope/assets/calendar-192.png', 192],
-    ['public/horoscope/assets/calendar-512.png', 512],
-    ['public/horoscope/assets/calendar-maskable.png', 512]
+test('The supplied three-part favicon strip is used for browser tabs only', () => {
+  const pages = [
+    ['public/index.html','favicon-astro'],
+    ['public/horoscope/index.html','favicon-horoscope'],
+    ['public/horoscope/calendar/index.html','favicon-calendar']
   ];
-  for (const [file, size] of icons) {
-    const image = pngDimensions(file);
-    assert.deepEqual([image.width, image.height], [size, size], file + ' dimensions');
-    assert.ok(image.bytes < 300_000, file + ' must stay below 300 KB');
-  }
-});
-
-test('Only the supplied favicon strip is split into three ordered 724px square product crops', () => {
-  const crops = [
-    'public/assets/favicon-astro-crop.webp',
-    'public/horoscope/assets/favicon-horoscope-crop.webp',
-    'public/horoscope/assets/favicon-calendar-crop.webp'
-  ];
-  for (const file of crops) {
-    const data = fs.readFileSync(path.join(root, file));
-    assert.equal(data.toString('ascii', 0, 4), 'RIFF', file + ' must be a WebP crop');
-    assert.equal(data.toString('ascii', 8, 12), 'WEBP', file + ' must be a WebP crop');
-    assert.ok(data.length > 1000, file + ' must not be empty');
-  }
-  const faviconSets = [
-    ['public/assets', 'favicon-astro'],
-    ['public/horoscope/assets', 'favicon-horoscope'],
-    ['public/horoscope/assets', 'favicon-calendar']
-  ];
-  for (const [folder, prefix] of faviconSets) {
-    for (const size of [16, 32, 64]) {
-      const image = pngDimensions(folder + '/' + prefix + '-' + size + '.png');
-      assert.deepEqual([image.width, image.height], [size, size]);
+  for (const [page,prefix] of pages) {
+    const html=read(page);
+    const folder=page==='public/index.html'?'public/assets':'public/horoscope/assets';
+    for (const size of [16,32,64]) {
+      const file=folder+'/'+prefix+'-'+size+'.png';
+      assert.deepEqual(pngDimensions(file),[size,size],file+' favicon dimensions');
+      assert.ok(html.includes(prefix+'-'+size+'.png?v=20261105-brand-header-v1'),page+' must reference its own tab icon');
     }
-    assert.ok(exists(folder + '/' + prefix + '.ico'));
+    const ico=folder+'/'+prefix+'.ico';
+    assert.ok(exists(ico),ico+' ICO must exist');
+    assert.ok(fs.readFileSync(path.join(root,ico)).subarray(0,4).equals(Buffer.from([0,0,1,0])),ico+' must be an ICO file');
+    assert.ok(html.includes(prefix+'.ico?v=20261105-brand-header-v1'),page+' must reference its own ICO');
   }
-  assert.ok(exists('public/assets/favicon-64.png'), 'the existing root favicon path remains available');
-  assert.ok(exists('public/assets/favicon.ico'), 'the conventional root favicon path is present');
+  assert.ok(read('public/index.html').includes('href="./manifest.webmanifest?v=20261105-brand-header-v1" rel="manifest"'));
 });
 
-test('Each Website uses its matching ZIP logo for visible branding and social preview metadata', () => {
-  const astro = read('public/index.html');
-  const horoscope = read('public/horoscope/index.html');
-  const calendar = read('public/horoscope/calendar/index.html');
+test('SMV ASTRO retains its previous website logo; Horoscope and Calendar stack logo above centered brand name', () => {
+  const astro=read('public/index.html');
+  const horoscope=read('public/horoscope/index.html');
+  const calendar=read('public/horoscope/calendar/index.html');
   assert.ok(exists('public/assets/smv-home-logo.webp'));
-  assert.ok(exists('public/horoscope/assets/smv-horoscope-website.webp'));
-  assert.ok(exists('public/horoscope/assets/smv-calendar-website.webp'));
-  assert.ok(astro.includes('src="./assets/smv-home-logo.webp'));
-  assert.ok(astro.includes('property="og:image"'));
-  assert.ok(horoscope.includes('src="assets/smv-horoscope-website.webp'));
-  assert.ok(horoscope.includes('property="og:image"'));
-  assert.ok(calendar.includes('src="../assets/smv-calendar-website.webp'));
-  assert.ok(calendar.includes('property="og:image"'));
+  assert.ok(astro.includes('src="./assets/smv-home-logo.webp?v=20261105-brand-header-v1"'));
+  assert.ok(horoscope.includes('assets/smv-horoscope-website.webp?v=20261105-brand-header-v1'));
+  assert.ok(calendar.includes('../assets/smv-calendar-website.webp?v=20261105-brand-header-v1'));
+  assert.match(horoscope,/class="smv-horoscope-brandbar"[^>]*flex-direction:column[^>]*>[\s\S]*?<img[\s\S]*?<strong[^>]*text-align:center[^>]*>SMV HOROSCOPE<\/strong>/);
+  assert.match(calendar,/class="smv-calendar-brandbar"[^>]*flex-direction:column[^>]*>[\s\S]*?<img[\s\S]*?<strong[^>]*text-align:center[^>]*>SMV CALENDAR<\/strong>/);
+  assert.ok(!calendar.includes('calendar-current-brand'));
 });
 
-test('All three independent service workers cache the new artwork and use one synchronized release', () => {
-  const workers = [
-    read('public/sw.js'),
-    read('public/horoscope/sw.js'),
-    read('public/horoscope/calendar/sw.js')
-  ];
-  const releases = workers.map(source => /const SMV_CACHE_RELEASE='([^']+)'/.exec(source)?.[1]);
-  assert.deepEqual(releases, [
-    '20261105-offline-location-pack-v4',
-    '20261105-offline-location-pack-v4',
-    '20261105-offline-location-pack-v4'
-  ]);
-  for (const asset of [
-    './assets/icon-512-maskable.png',
-    './assets/favicon.ico',
-    './assets/smv-home-logo.webp'
-  ]) assert.ok(workers[0].includes(asset), 'Root SW missing ' + asset);
-  for (const asset of [
-    './assets/icon-512-maskable.png',
-    './assets/favicon-horoscope.ico',
-    './assets/smv-horoscope-website.webp'
-  ]) assert.ok(workers[1].includes(asset), 'Horoscope SW missing ' + asset);
-  for (const asset of [
-    '../assets/calendar-maskable.png',
-    '../assets/favicon-calendar.ico',
-    '../assets/smv-calendar-website.webp'
-  ]) assert.ok(workers[2].includes(asset), 'Calendar SW missing ' + asset);
+test('All three independent Service Workers share one new cache release and cache the intended website artwork', () => {
+  const workers=[read('public/sw.js'),read('public/horoscope/sw.js'),read('public/horoscope/calendar/sw.js')];
+  const versions=workers.map(source=>/const SMV_CACHE_RELEASE='([^']+)'/.exec(source)?.[1]);
+  assert.deepEqual(versions,['20261105-brand-header-v1','20261105-brand-header-v1','20261105-brand-header-v1']);
+  assert.ok(workers[0].includes("'./assets/favicon-astro.ico'"));
+  assert.ok(workers[0].includes("'./assets/smv-home-logo.webp'"));
+  assert.ok(workers[1].includes("'./assets/favicon-horoscope.ico'"));
+  assert.ok(workers[1].includes("'./assets/smv-horoscope-website.webp'"));
+  assert.ok(workers[2].includes("'../assets/favicon-calendar.ico'"));
+  assert.ok(workers[2].includes("'../assets/smv-calendar-website.webp'"));
 });

@@ -10,7 +10,7 @@ This is not an offline conversion of backend services. It is a static UI and det
 
 ## Current synchronized cache release
 
-All three app workers use `SMV_CACHE_RELEASE=20261105-offline-location-pack-v4`. Their cache namespaces remain independent, but the release marker is shared. The CI guard requires every future change under `public/` to update all three service workers and change this common marker; a missing or unsynchronized bump fails the pull request.
+All three app workers use `SMV_CACHE_RELEASE=20261105-brand-header-v1`. Their cache namespaces remain independent, but the release marker is shared. The CI guard requires every future change under `public/` to update all three service workers and change this common marker; a missing or unsynchronized bump fails the pull request.
 
 The production Android apps are remote-site WebViews, not bundled offline HTML packages. All three native WebViews now explicitly use `WebSettings.LOAD_DEFAULT` and configure Android's Service Worker runtime with `LOAD_DEFAULT` and network loads enabled. The hosted Service Worker then refreshes static UI files on successful online requests and serves the last cached UI/calculation assets offline. A web-only UI change is therefore delivered to the installed Android apps through their respective origin's updated Service Worker; an APK rebuild is needed when native Android code itself changes.
 

@@ -1,4 +1,4 @@
-const SMV_CACHE_RELEASE='20261105-offline-location-pack-v4';
+const SMV_CACHE_RELEASE='20261105-brand-header-v1';
 const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE;
 const LOCATION_CACHE='smv-shared-india-places';
 const CORE=[
