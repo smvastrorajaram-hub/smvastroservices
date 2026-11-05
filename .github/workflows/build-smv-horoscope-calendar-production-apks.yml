@@ -34,6 +34,10 @@ on:
       - "test/android-horoscope-calendar-production.test.mjs"
       - "scripts/next-android-release-version.mjs"
       - "test/android-release-version-resolution.test.mjs"
+      - "test/android-cache-release-build-triggers.test.mjs"
+      - "public/horoscope/sw.js"
+      - "public/horoscope/calendar/sw.js"
+      - "public/horoscope/location-search-online-offline.js"
   push:
     paths:
       - "settings.gradle"
@@ -50,6 +54,10 @@ on:
       - "test/android-horoscope-calendar-production.test.mjs"
       - "scripts/next-android-release-version.mjs"
       - "test/android-release-version-resolution.test.mjs"
+      - "test/android-cache-release-build-triggers.test.mjs"
+      - "public/horoscope/sw.js"
+      - "public/horoscope/calendar/sw.js"
+      - "public/horoscope/location-search-online-offline.js"
 
 permissions:
   contents: read
@@ -60,6 +68,8 @@ concurrency:
 
 jobs:
   build:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
@@ -76,7 +86,7 @@ jobs:
           node-version: "22"
 
       - name: Verify independent production packages and test-module isolation
-        run: node --test test/android-horoscope-calendar-production.test.mjs test/android-horoscope-calendar-launcher-icons.test.mjs test/android-permanent-release.test.mjs test/android-release-version-resolution.test.mjs
+        run: node --test test/android-horoscope-calendar-production.test.mjs test/android-horoscope-calendar-launcher-icons.test.mjs test/android-permanent-release.test.mjs test/android-release-version-resolution.test.mjs test/android-cache-release-build-triggers.test.mjs
 
       - name: Java 17
         uses: actions/setup-java@v4
@@ -257,6 +267,30 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+
+      - name: Prepare versioned signed HOROSCOPE and CALENDAR APK release assets
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          horoscope="smvhoroscopeproduction/build/outputs/apk/release/smvhoroscopeproduction-release.apk"
+          calendar="smvcalendarproduction/build/outputs/apk/release/smvcalendarproduction-release.apk"
+          test -s "$horoscope"
+          test -s "$calendar"
+          cp "$horoscope" "$RUNNER_TEMP/SMV-HOROSCOPE-$SMV_HOROSCOPE_ANDROID_VERSION_NAME.apk"
+          cp "$calendar" "$RUNNER_TEMP/SMV-CALENDAR-$SMV_CALENDAR_ANDROID_VERSION_NAME.apk"
+
+      - name: Publish raw signed HOROSCOPE and CALENDAR APK direct-download release assets
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: smv-horoscope-calendar-apks-${{ env.SMV_HOROSCOPE_ANDROID_VERSION_NAME }}-${{ env.SMV_CALENDAR_ANDROID_VERSION_NAME }}-run-${{ github.run_number }}
+          name: SMV HOROSCOPE ${{ env.SMV_HOROSCOPE_ANDROID_VERSION_NAME }} + SMV CALENDAR ${{ env.SMV_CALENDAR_ANDROID_VERSION_NAME }} signed APKs
+          files: |
+            ${{ runner.temp }}/SMV-HOROSCOPE-${{ env.SMV_HOROSCOPE_ANDROID_VERSION_NAME }}.apk
+            ${{ runner.temp }}/SMV-CALENDAR-${{ env.SMV_CALENDAR_ANDROID_VERSION_NAME }}.apk
+          draft: false
+          prerelease: false
 
       - name: Remove temporary signing keystore
         if: ${{ always() && env.SMV_SIGNED_RELEASE == 'true' }}
