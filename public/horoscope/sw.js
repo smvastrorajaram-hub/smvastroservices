@@ -3,7 +3,7 @@
    Authentication, published Firestore refresh, account data and online services stay network-only.
    Location lookup keeps its existing GeoNames + India-offline behavior.
 */
-const SMV_CACHE_RELEASE='20261105-offline-ui-v3';
+const SMV_CACHE_RELEASE='20261105-smv-zip-assets-v1';
 const OFFLINE_CACHE='smv-horoscope-offline';
 const SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE;
 const RUNTIME_REVISION='v261-offline-first-shell-20261105';
@@ -14,6 +14,9 @@ const CORE=[
   './horoscope-readings.css','./smv-ui.css',
   './v358-result-layout.css','./v359-symmetric-gutters.css',
   './manifest-en.webmanifest','./manifest-ta.webmanifest',
+  './assets/icon-192.png','./assets/icon-512.png','./assets/icon-512-maskable.png',
+  './assets/favicon-horoscope-16.png','./assets/favicon-horoscope-32.png','./assets/favicon-horoscope-64.png','./assets/favicon-horoscope.ico',
+  './assets/smv-horoscope-website.webp',
   './report-identity.js','./boot.mjs','./horoscope-auth.mjs','./report-store.mjs',
   './chart-style.js','./config.js','./d9-reading.js','./marriage-matching.js',
   './marriage-basic-report.mjs','./matching-timeline.mjs','./d1-15-year-reading.mjs',

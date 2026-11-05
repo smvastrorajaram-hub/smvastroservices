@@ -10,6 +10,7 @@ on:
       - 'smvcalendarproduction/src/main/java/in/smvastroservices/calendar/MainActivity.java'
       - 'test/storage-and-safe-sw-updates.test.js'
       - 'test/android-horoscope-calendar-production.test.mjs'
+      - 'test/smv-zip-brand-assets.test.mjs'
       - '.github/workflows/storage-and-safe-sw-updates.yml'
   push:
     branches: [main]
@@ -20,6 +21,7 @@ on:
       - 'smvcalendarproduction/src/main/java/in/smvastroservices/calendar/MainActivity.java'
       - 'test/storage-and-safe-sw-updates.test.js'
       - 'test/android-horoscope-calendar-production.test.mjs'
+      - 'test/smv-zip-brand-assets.test.mjs'
       - '.github/workflows/storage-and-safe-sw-updates.yml'
   workflow_dispatch:
 
@@ -42,5 +44,6 @@ jobs:
           node --check public/horoscope/calendar/sw.js
           node --check test/storage-and-safe-sw-updates.test.js
           node --check test/android-horoscope-calendar-production.test.mjs
+          node --check test/smv-zip-brand-assets.test.mjs
       - name: Preserve browser state and verify synchronized three-app cache bumps
-        run: node --test test/storage-and-safe-sw-updates.test.js test/android-horoscope-calendar-production.test.mjs
+        run: node --test test/storage-and-safe-sw-updates.test.js test/android-horoscope-calendar-production.test.mjs test/smv-zip-brand-assets.test.mjs

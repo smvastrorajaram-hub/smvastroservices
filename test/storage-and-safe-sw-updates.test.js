@@ -37,7 +37,7 @@ test('Horoscope Service Worker does not force-reload open report/form tabs and p
 test('main SMV ASTRO caches only the offline UI shell while leaving online-only routes and Horoscope scope isolated', () => {
   const sw = read('public/sw.js');
   assert.ok(sw.includes("APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE"));
-  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261105-offline-ui-v3'"));
+  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261105-smv-zip-assets-v1'"));
   assert.ok(sw.includes('APP_SHELL_FILES'));
   assert.ok(sw.includes("'./main-location-search.js'"));
   assert.ok(sw.includes("'./horoscope/offline/places/india-manifest.json'"));
@@ -53,7 +53,7 @@ test('main SMV ASTRO caches only the offline UI shell while leaving online-only 
 test('Horoscope precaches its UI and required local calculation/WASM assets without caching online services', () => {
   const sw = read('public/horoscope/sw.js');
   assert.ok(sw.includes("SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE"));
-  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261105-offline-ui-v3'"));
+  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261105-smv-zip-assets-v1'"));
   assert.ok(sw.includes("OFFLINE_CACHE='smv-horoscope-offline'"));
   for (const asset of [
     './index.html','./boot.mjs','./horoscope.js','./marriage-matching.js',
@@ -76,7 +76,7 @@ test('Horoscope precaches its UI and required local calculation/WASM assets with
 test('Calendar keeps its offline UI/WASM precache and India shard migration while bypassing online-only API routes', () => {
   const sw = read('public/horoscope/calendar/sw.js');
   assert.ok(sw.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"));
-  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261105-offline-ui-v3'"));
+  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261105-smv-zip-assets-v1'"));
   assert.ok(sw.includes('const REQUIRED_CORE = new Set(['));
   assert.ok(sw.includes('await preserveCachedIndiaPlaces(target)'));
   assert.ok(sw.includes("'../offline/places/timezone.mjs'"));
@@ -106,7 +106,7 @@ test('All three app workers share the same release bump while preserving indepen
     assert.ok(match, 'Every app worker must declare SMV_CACHE_RELEASE');
     return match[1];
   });
-  assert.deepEqual(releases, ['20261105-offline-ui-v3','20261105-offline-ui-v3','20261105-offline-ui-v3']);
+  assert.deepEqual(releases, ['20261105-smv-zip-assets-v1','20261105-smv-zip-assets-v1','20261105-smv-zip-assets-v1']);
   assert.ok(workers[0].includes("APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE"));
   assert.ok(workers[1].includes("SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE"));
   assert.ok(workers[2].includes("CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"));

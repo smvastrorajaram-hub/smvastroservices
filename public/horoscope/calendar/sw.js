@@ -1,7 +1,9 @@
-const SMV_CACHE_RELEASE='20261105-offline-ui-v3';
+const SMV_CACHE_RELEASE='20261105-smv-zip-assets-v1';
 const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE;
 const CORE=[
  './','./index.html','./admin.html','./rasi-palan-periods.mjs','./calendar-pwa.mjs','./manifest-en.webmanifest','./manifest-ta.webmanifest',
+ '../assets/favicon-calendar-16.png','../assets/favicon-calendar-32.png','../assets/favicon-calendar-64.png','../assets/favicon-calendar.ico',
+ '../assets/smv-calendar-website.webp',
  '../daily-calendar.mjs','../daily-calendar.css','../calendar-rasi-palan.mjs','../calendar-rasi-palan.css','../calendar-rasi-palan-rules.mjs','../calendar-theme.css','../calendar-data.mjs','../calendar-worker.mjs','../horoscope.js','../horoscope.css','../location-search-online-offline.js',
  '../assets/calendar-192.png','../assets/calendar-512.png','../assets/calendar-maskable.png',
  '../offline/wasm-provider.mjs','../offline/swiss_vedic.browser.mjs','../offline/transit_panchang.browser.mjs',
