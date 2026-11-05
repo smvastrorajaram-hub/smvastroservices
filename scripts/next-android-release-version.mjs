@@ -58,7 +58,7 @@ export async function appendAndroidReleaseVersionToEnv(appId, next, envPath = pr
   const app = ANDROID_RELEASE_APPS[appId];
   if (!app) throw new Error('Unsupported Android app ID: ' + appId);
   if (!envPath) throw new Error('GITHUB_ENV is not available; this step must run inside GitHub Actions.');
-  if (next?.appId !== appId || !/^v[1-9][0-9]*\\.[0-9]{1,3}$/.test(String(next.versionName || ''))) {
+  if (next?.appId !== appId || !/^v[1-9][0-9]*\.[0-9]{1,3}$/.test(String(next.versionName || ''))) {
     throw new Error('Refusing to write an invalid Android release version for ' + appId + '.');
   }
   await appendFile(envPath, app.envName + '=' + next.versionName + '\n', { encoding: 'utf8' });
