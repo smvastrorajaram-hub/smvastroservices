@@ -31,3 +31,48 @@ test('Horoscope Service Worker does not force-reload open report/form tabs and p
   assert.match(sw, /k!==OFFLINE_CACHE/);
   assert.match(sw, /await self\.clients\.claim\(\)/);
 });
+
+
+test('main SMV ASTRO caches only the offline UI shell while leaving online-only routes and Horoscope scope isolated', () => {
+  const sw = read('public/sw.js');
+  assert.ok(sw.includes("APP_SHELL_CACHE='smv-astro-shell-v1'"));
+  assert.ok(sw.includes('APP_SHELL_FILES'));
+  assert.ok(sw.includes('isOnlineOnlyRequest'));
+  assert.ok(sw.includes('if(!isStaticPresentationRequest(req,url))return;'));
+  assert.ok(sw.includes("if(p==='/horoscope'||p.startsWith('/horoscope/'))return false"));
+  assert.ok(sw.includes('k!==OFFLINE_PLACE_CACHE&&k!==APP_SHELL_CACHE'));
+  assert.ok(sw.includes("if(isOfflinePlaceAsset(url))"));
+  assert.ok(sw.includes("if(req.mode==='navigate')"));
+});
+
+test('Horoscope precaches its UI and required local calculation/WASM assets without caching online services', () => {
+  const sw = read('public/horoscope/sw.js');
+  assert.ok(sw.includes("SHELL_CACHE='smv-horoscope-shell-v1'"));
+  assert.ok(sw.includes("OFFLINE_CACHE='smv-horoscope-offline'"));
+  for (const asset of [
+    './index.html','./boot.mjs','./offline/offline-engine.mjs',
+    './offline/server-wrapper.browser.mjs','./offline/swiss_vedic.browser.mjs',
+    './offline/wasm-provider.mjs','./offline/vendor/smv-swisseph-local.mjs',
+    './offline/vendor/wasm/swisseph.wasm','./offline/vendor/wasm/swisseph.data'
+  ]) assert.ok(sw.includes(asset), 'Missing offline core asset: '+asset);
+  assert.ok(sw.includes('const retained=new Set([OFFLINE_CACHE,SHELL_CACHE])'));
+  assert.ok(sw.includes('isOnlineOnlyRequest'));
+  assert.ok(sw.includes('if(!isStaticPresentationRequest(req,url))return;'));
+});
+
+test('Calendar keeps its offline UI/WASM precache and India shard migration while bypassing online-only API routes', () => {
+  const sw = read('public/horoscope/calendar/sw.js');
+  assert.ok(sw.includes("const CACHE='smv-calendar-forecast-assets-v8'"));
+  assert.ok(sw.includes('const REQUIRED_CORE = new Set(['));
+  assert.ok(sw.includes('await preserveCachedIndiaPlaces(target)'));
+  assert.ok(sw.includes('isOnlineOnlyRequest'));
+  assert.ok(sw.includes('if(!isStaticPresentationRequest(e.request,u))return;'));
+});
+
+test('Horoscope place search retains online GeoNames lookup and offline India fallback', () => {
+  const location = read('public/horoscope/location-search-online-offline.js');
+  assert.ok(location.includes("if(navigator.onLine!==false)"));
+  assert.ok(location.includes("'/api/locations/search'"));
+  assert.ok(location.includes('const module=await offline()'));
+  assert.ok(location.includes("'/api/locations/timezone'"));
+});
