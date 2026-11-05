@@ -88,6 +88,16 @@ test('Production Worker registers a server-side GeoNames proxy for all three pub
   assert.ok(workflow.includes('Validated GeoNames username secret. Value remains hidden.'));
   assert.ok(!config.vars.GEONAMES_USERNAME, 'GeoNames username must not be stored as a plain Wrangler variable.');
 
+  assert.ok(workflow.includes('Detect GeoNames-only Production Worker deployment scope'));
+  assert.ok(workflow.includes('id: deployment_scope'));
+  assert.ok(workflow.includes('fetch-depth: 0'));
+  assert.ok(workflow.includes("steps.deployment_scope.outputs.geonames_only != 'true'"));
+  assert.ok(workflow.includes("steps.deployment_scope.outputs.geonames_only != 'true' || steps.deployment_scope.outputs.migrations_changed == 'true'"));
+  assert.ok(workflow.includes('cloudflare/backend-api/migrations/*.sql'));
+  assert.ok(workflow.includes('cloudflare/backend-api/wrangler.production.jsonc'));
+  assert.ok(workflow.includes('secret put GEONAMES_USERNAME'));
+  assert.ok(workflow.includes('Apply pending additive migrations to exact Production D1'));
+
   assert.ok(mainLocation.includes('https://smvastroservices.astroservices.workers.dev'));
   assert.ok(sharedLocation.includes("const defaultBackend='https://smvastroservices.astroservices.workers.dev'"));
 });
