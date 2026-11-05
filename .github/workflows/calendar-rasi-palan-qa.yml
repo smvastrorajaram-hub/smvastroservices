@@ -160,7 +160,7 @@ jobs:
             }
 
             console.log(resolvedOrigin);
-            NODE
+          NODE
             )"
             echo "Using Cloudflare-reported PR Preview origin: $origin"
             ready=0
