@@ -182,6 +182,8 @@ for (const app of apps) {
         };
       });
       const response = await fetch(probeAsset, { cache: 'no-store' });
+      const placeModule = await import('/horoscope/offline/places/place-search.mjs');
+      const places = await placeModule.searchPlaces('Chennai', 5);
       return {
         online: navigator.onLine,
         title: document.title,
@@ -189,7 +191,8 @@ for (const app of apps) {
         local: localStorage.getItem('smv-offline-preserve-local'),
         session: sessionStorage.getItem('smv-offline-preserve-session'),
         indexed,
-        probe: { ok: response.ok, status: response.status }
+        probe: { ok: response.ok, status: response.status },
+        offlineLocations: places.map(place => place.place)
       };
     }, app.probeAsset);
     assert.equal(offlineState.online, false, app.name + ' must be tested with the browser genuinely offline.');
@@ -198,6 +201,7 @@ for (const app of apps) {
     assert.equal(offlineState.session, 'keep-session', app.name + ' sessionStorage must be preserved.');
     assert.equal(offlineState.indexed, 'keep-indexeddb', app.name + ' IndexedDB data must be preserved.');
     assert.equal(offlineState.probe.ok, true, app.name + ' local calculation/UI asset must load offline: ' + app.probeAsset);
+    assert.ok(offlineState.offlineLocations.some(place => /chennai/i.test(place)), app.name + ' must return a real Chennai India location result with the browser offline.');
 
     results.push({
       app: app.name,
