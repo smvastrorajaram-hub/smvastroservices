@@ -11,7 +11,7 @@ const apps = [
     url: origin + '/',
     cacheName: 'smv-astro-shell-' + release,
     placeCacheName: 'smv-shared-india-places',
-    requiredAssets: ['/smvastro.mjs','/assets/icon-192.png','/assets/icon-512.png',,'/assets/smv-home-logo.webp','/assets/favicon-astro.ico'],
+    requiredAssets: ['/smvastro.mjs','/assets/icon-192.png','/assets/icon-512.png','/assets/smv-home-logo.webp','/assets/favicon-astro.ico'],
     probeAsset: '/smvastro.mjs',
     locationMode: 'question'
   },
@@ -19,6 +19,7 @@ const apps = [
     name: 'SMV HOROSCOPE',
     url: origin + '/horoscope/',
     cacheName: 'smv-horoscope-shell-' + release,
+    placeCacheName: 'smv-shared-india-places',
     offlineCacheName: 'smv-horoscope-offline',
     requiredAssets: ['/horoscope/marriage-matching.js','/horoscope/assets/icon-192.png','/horoscope/assets/icon-512.png','/horoscope/assets/icon-512-maskable.png','/horoscope/assets/smv-horoscope-website.webp','/horoscope/assets/favicon-horoscope.ico'],
     offlineAssets: [
@@ -33,6 +34,7 @@ const apps = [
     name: 'SMV CALENDAR',
     url: origin + '/horoscope/calendar/',
     cacheName: 'smv-calendar-forecast-assets-' + release,
+    placeCacheName: 'smv-shared-india-places',
     requiredAssets: [
       '/horoscope/calendar-rasi-palan.mjs',
       '/horoscope/offline/vendor/wasm/swisseph.wasm',
@@ -56,10 +58,18 @@ const launchBrowser = async () => puppeteer.launch({
   // This models the Pages origin where all three apps can share the verified
   // India place pack instead of downloading the same 60 MB dataset three times.
   userDataDir: process.env.SMV_OFFLINE_BROWSER_PROFILE || '/tmp/smv-offline-shared-browser-profile',
-  protocolTimeout: 360000
+  // Long install waits are polled by Node; each Runtime.evaluate is short.
+  protocolTimeout: 120000
 });
 
 const results = [];
+const sharedOrigin = new URL(apps[0].url).origin;
+assert.ok(apps.every(app => new URL(app.url).origin === sharedOrigin),
+  'All three apps must use one exact browser origin for the shared offline place cache.');
+assert.ok(apps.every(app => app.placeCacheName === 'smv-shared-india-places'),
+  'All three app scopes must use the same India location Cache Storage name.');
+process.stdout.write('INFO: All three app paths share one origin and the smv-shared-india-places cache: ' + sharedOrigin + '\\n');
+
 const browser = await launchBrowser();
 try {
 for (const app of apps) {
@@ -70,18 +80,38 @@ for (const app of apps) {
     page.setDefaultTimeout(120000);
 
     await page.goto(app.url, { waitUntil: 'domcontentloaded', timeout: 90000 });
-    // Keep the polling predicate synchronous. Awaiting getRegistration() inside
-    // waitForFunction can leave one Runtime.callFunctionOn promise open while the
-    // Service Worker is downloading the 62 MiB India place pack; Puppeteer then
-    // hits its shorter protocolTimeout before this 10-minute install timeout.
-    await page.waitForFunction(() => {
-      const controller = navigator.serviceWorker?.controller;
-      return controller?.state === 'activated';
-    }, { timeout: 10 * 60 * 1000, polling: 1000 });
-    const registration = await page.evaluate(async () => {
-      const reg = await navigator.serviceWorker.getRegistration();
-      return { scope: reg?.scope || '', scriptURL: reg?.active?.scriptURL || '' };
-    });
+    // Do not hold a single CDP Runtime.callFunctionOn open while the worker
+    // downloads/verifies the 557,995-record India place pack. Poll short snapshots.
+    const activationDeadline = Date.now() + 12 * 60 * 1000;
+    let activationState = null;
+    let lastActivationLog = 0;
+    while (Date.now() < activationDeadline) {
+      activationState = await page.evaluate(async () => {
+        const registration = await navigator.serviceWorker?.getRegistration();
+        const controller = navigator.serviceWorker?.controller;
+        return {
+          scope: registration?.scope || '',
+          scriptURL: registration?.active?.scriptURL || '',
+          activeState: registration?.active?.state || '',
+          installingState: registration?.installing?.state || '',
+          waitingState: registration?.waiting?.state || '',
+          controllerState: controller?.state || '',
+          controllerScriptURL: controller?.scriptURL || ''
+        };
+      });
+      if (activationState.controllerState === 'activated') break;
+      if (Date.now() - lastActivationLog >= 20000) {
+        process.stdout.write('WAIT: ' + app.name + ' Service Worker install state ' + JSON.stringify(activationState) + '\\n');
+        lastActivationLog = Date.now();
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    assert.equal(activationState?.controllerState, 'activated',
+      app.name + ' Service Worker did not activate/control the page within 12 minutes: ' + JSON.stringify(activationState));
+    const registration = {
+      scope: activationState.scope,
+      scriptURL: activationState.scriptURL
+    };
     assert.ok(registration.scriptURL.endsWith('/sw.js'), app.name + ' must run its own scoped Service Worker: ' + registration.scriptURL);
 
     const cacheState = await page.evaluate(async (cacheName, requiredAssets, placeCacheName, offlineCacheName, offlineAssets) => {
