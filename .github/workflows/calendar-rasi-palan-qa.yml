@@ -84,7 +84,7 @@ jobs:
           node-version: '22'
       - name: Install existing Chromium and Puppeteer dependencies
         run: npm install --no-save --package-lock=false --no-audit --no-fund
-      - name: Resolve and verify the pull-request Cloudflare Pages preview origin
+      - name: Resolve the Cloudflare commit-specific preview and start the runner-local browser origin
         id: preview-origin
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -93,9 +93,10 @@ jobs:
         run: |
           set -euo pipefail
           if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-            # Read Cloudflare's own deployment comment. Do not derive an alias
-            # from the branch name: Pages may shorten or otherwise normalize it.
-            origin="$(node --input-type=module <<'NODE'
+            # The Pages preview is protected by Cloudflare Access. Resolve and
+            # publish its exact commit URL for signed-in human review, but do
+            # not use it for anonymous CI requests.
+            cloudflare_preview="$(node --input-type=module <<'NODE'
             import { setTimeout as sleep } from 'node:timers/promises';
 
             const token = process.env.GH_TOKEN;
@@ -114,9 +115,9 @@ jobs:
               Authorization: `Bearer ${token}`,
               'X-GitHub-Api-Version': '2022-11-28'
             };
-            const shortShaPattern = /Latest commit:\s*<\/strong>\s*<\/td>\s*<td>\s*<code>([a-f0-9]{7,40})<\/code>/i;
-            const previewUrlPattern = /Preview URL:\s*<\/strong>\s*<\/td>\s*<td>\s*<a\s+href=['"]([^'"]+)['"]/i;
-            let resolvedOrigin = '';
+            const shortShaPattern = /Latest commit:\\s*<\\/strong>\\s*<\\/td>\\s*<td>\\s*<code>([a-f0-9]{7,40})<\\/code>/i;
+            const previewUrlPattern = /Preview URL:\\s*<\\/strong>\\s*<\\/td>\\s*<td>\\s*<a\\s+href=['"]([^'"]+)['"]/i;
+            let resolvedPreview = '';
 
             for (let attempt = 1; attempt <= 60; attempt++) {
               const response = await fetch(
@@ -125,7 +126,7 @@ jobs:
               );
               if (!response.ok) {
                 const detail = await response.text();
-                if (response.status === 401 || response.status === 403 || response.status === 404) {
+                if ([401, 403, 404].includes(response.status)) {
                   throw new Error(`Cannot read PR deployment comments (HTTP ${response.status}): ${detail.slice(0, 500)}`);
                 }
                 console.error(`GitHub comments API returned HTTP ${response.status}; retry ${attempt}/60.`);
@@ -145,73 +146,55 @@ jobs:
                   if (candidate.protocol !== 'https:' || !candidate.hostname.endsWith('.smvastroservices.pages.dev')) {
                     throw new Error(`Cloudflare returned an unexpected preview host: ${candidate.origin}`);
                   }
-                  resolvedOrigin = candidate.origin;
-                  console.error(`Cloudflare commit-specific deployment URL matches PR head ${item.sha}: ${resolvedOrigin}`);
+                  resolvedPreview = candidate.origin;
+                  console.error(`Cloudflare preview for PR head ${item.sha}: ${resolvedPreview}`);
                   break;
                 }
               }
 
-              if (resolvedOrigin) break;
-              console.error(`Waiting for Cloudflare's deployment comment for commit ${expectedSha.slice(0, 7)} (${attempt}/60)...`);
+              if (resolvedPreview) break;
+              console.error(`Waiting for Cloudflare's successful preview comment for ${expectedSha.slice(0, 7)} (${attempt}/60)...`);
               await sleep(10000);
             }
 
-            if (!resolvedOrigin) {
-              throw new Error('No Cloudflare Branch Preview URL was found for the current PR head commit after 10 minutes.');
+            if (!resolvedPreview) {
+              throw new Error('No successful Cloudflare Preview URL was found for the current PR head commit after 10 minutes.');
             }
 
-            console.log(resolvedOrigin);
-          NODE
+            console.log(resolvedPreview);
+            NODE
             )"
-            echo "Using Cloudflare commit-specific PR Preview origin: $origin"
-            ready=0
-            for attempt in $(seq 1 120); do
-              curl --fail --silent --connect-timeout 5 --max-time 15 -H 'Cache-Control: no-cache' "$origin/" -o /dev/null 2>/dev/null &
-              root_pid=$!
-              curl --fail --silent --connect-timeout 5 --max-time 15 -H 'Cache-Control: no-cache' "$origin/sw.js?smv_preview_verify=$GITHUB_SHA" -o "$RUNNER_TEMP/smv-astro-preview-sw.js" 2>/dev/null &
-              astro_pid=$!
-              curl --fail --silent --connect-timeout 5 --max-time 15 -H 'Cache-Control: no-cache' "$origin/horoscope/sw.js?smv_preview_verify=$GITHUB_SHA" -o "$RUNNER_TEMP/smv-horoscope-preview-sw.js" 2>/dev/null &
-              horoscope_pid=$!
-              curl --fail --silent --connect-timeout 5 --max-time 15 -H 'Cache-Control: no-cache' "$origin/horoscope/calendar/sw.js?smv_preview_verify=$GITHUB_SHA" -o "$RUNNER_TEMP/smv-calendar-preview-sw.js" 2>/dev/null &
-              calendar_pid=$!
-              if wait "$root_pid" && wait "$astro_pid" && wait "$horoscope_pid" && wait "$calendar_pid"; then
-                release="20261106-active-only-auto-busy-icons-v2"
-                if grep -Fq "const SMV_CACHE_RELEASE='$release'" "$RUNNER_TEMP/smv-astro-preview-sw.js" &&
-                   grep -Fq "const SMV_CACHE_RELEASE='$release'" "$RUNNER_TEMP/smv-horoscope-preview-sw.js" &&
-                   grep -Fq "const SMV_CACHE_RELEASE='$release'" "$RUNNER_TEMP/smv-calendar-preview-sw.js"; then
-                  ready=1
-                  break
-                fi
-              fi
-              echo "Waiting for Cloudflare's current three-app preview and cache release ($attempt/120)..."
-              sleep 5
-            done
-            if [ "$ready" -ne 1 ]; then
-              echo "::error::Cloudflare Preview exists, but its homepage or all three current Service Worker releases are not ready: $origin"
-              exit 1
-            fi
-          else
-            # Loopback is runner-local only for push/manual checks. It is never
-            # emitted as a shareable Preview origin and is not used for PR runs.
-            node tests/serve-public.mjs > /tmp/smv-calendar-preview-server.log 2>&1 &
-            echo $! > /tmp/smv-calendar-preview-server.pid
-            ready=0
-            for attempt in $(seq 1 40); do
-              if curl --fail --silent http://127.0.0.1:4173/horoscope/calendar/ > /dev/null; then
-                ready=1
-                break
-              fi
-              sleep 1
-            done
-            if [ "$ready" -ne 1 ]; then
-              cat /tmp/smv-calendar-preview-server.log
-              echo "::error::Local source server failed to start for a non-PR run" >&2
-              exit 1
-            fi
-            origin="http://127.0.0.1:4173"
+            echo "Cloudflare human-review Preview URL (Cloudflare Access sign-in required): $cloudflare_preview"
+            echo "cloudflare_preview=$cloudflare_preview" >> "$GITHUB_OUTPUT"
+            {
+              echo "### Cloudflare Pages Preview"
+              echo ""
+              echo "[$cloudflare_preview]($cloudflare_preview) — Cloudflare Access sign-in required."
+              echo ""
+              echo "Automated Chromium/offline tests run against the exact PR checkout on this GitHub runner's localhost. The localhost address is internal to the runner and is not a shareable link."
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
+
+          # Run browser/service-worker smoke against the exact PR checkout on
+          # the same Actions runner. localhost is a secure context for SW APIs.
+          node tests/serve-public.mjs > /tmp/smv-calendar-preview-server.log 2>&1 &
+          echo $! > /tmp/smv-calendar-preview-server.pid
+          ready=0
+          for attempt in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:4173/horoscope/calendar/ > /dev/null; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            cat /tmp/smv-calendar-preview-server.log
+            echo "::error::Runner-local source server failed to start for browser smoke" >&2
+            exit 1
+          fi
+          origin="http://127.0.0.1:4173"
           echo "origin=$origin" >> "$GITHUB_OUTPUT"
-          echo "Verified browser preview origin: $origin"
+          echo "Verified runner-local browser origin: $origin"
       - name: Run Chromium browser smoke against the current preview source
         env:
           SMV_CALENDAR_PREVIEW_URL: ${{ steps.preview-origin.outputs.origin }}/horoscope/calendar/
