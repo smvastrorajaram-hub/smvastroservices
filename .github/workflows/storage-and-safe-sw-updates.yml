@@ -4,10 +4,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'public/index.html'
-      - 'public/sw.js'
-      - 'public/horoscope/sw.js'
-      - 'public/horoscope/calendar/sw.js'
+      - 'public/**'
       - 'smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java'
       - 'smvhoroscopeproduction/src/main/java/in/smvastroservices/horoscope/MainActivity.java'
       - 'smvcalendarproduction/src/main/java/in/smvastroservices/calendar/MainActivity.java'
@@ -17,10 +14,12 @@ on:
   push:
     branches: [main]
     paths:
-      - 'public/index.html'
-      - 'public/sw.js'
-      - 'public/horoscope/sw.js'
+      - 'public/**'
+      - 'smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java'
+      - 'smvhoroscopeproduction/src/main/java/in/smvastroservices/horoscope/MainActivity.java'
+      - 'smvcalendarproduction/src/main/java/in/smvastroservices/calendar/MainActivity.java'
       - 'test/storage-and-safe-sw-updates.test.js'
+      - 'test/android-horoscope-calendar-production.test.mjs'
       - '.github/workflows/storage-and-safe-sw-updates.yml'
   workflow_dispatch:
 
@@ -30,7 +29,7 @@ permissions:
 jobs:
   storage-and-sw:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,5 +40,7 @@ jobs:
           node --check public/sw.js
           node --check public/horoscope/sw.js
           node --check public/horoscope/calendar/sw.js
+          node --check test/storage-and-safe-sw-updates.test.js
+          node --check test/android-horoscope-calendar-production.test.mjs
       - name: Preserve browser state and verify synchronized three-app cache bumps
         run: node --test test/storage-and-safe-sw-updates.test.js test/android-horoscope-calendar-production.test.mjs
