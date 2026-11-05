@@ -74,31 +74,39 @@ test('Each website uses its matching original SMV WEBSITE artwork as its browser
   assert.ok(read('public/index.html').includes('href="./manifest.webmanifest?v=20261106-product-pwa-header-v2" rel="manifest"'));
 });
 
-test('Horoscope restores the shared SMV ASTRO SERVICES brand header while Calendar keeps its green site header', () => {
+test('Horoscope and Calendar show their own product logos, titles and consistent headers', () => {
   const astro=read('public/index.html');
   const horoscope=read('public/horoscope/index.html');
   const calendar=read('public/horoscope/calendar/index.html');
   const css=read('public/horoscope/horoscope.css');
+  const calendarTheme=read('public/horoscope/calendar-theme.css');
   assert.ok(exists('public/assets/smv-home-logo.webp'));
   assert.ok(astro.includes('src="./assets/smv-home-logo.webp?v=20261105-brand-header-v1"'));
-  assert.ok(exists('public/horoscope/assets/smv-brand-logo.png'), 'Horoscope must use the existing original SMV brand mark asset.');
+  assert.ok(exists('public/horoscope/assets/smv-horoscope-website.webp'), 'Horoscope must use its dedicated product logo.');
   assert.ok(horoscope.includes('class="smv-horoscope-brand-header"'));
-  assert.ok(horoscope.includes('src="./assets/smv-brand-logo.png"'));
-  assert.ok(horoscope.includes('SMV ASTRO SERVICES'));
+  assert.ok(horoscope.includes('src="./assets/smv-horoscope-website.webp"'));
+  assert.ok(horoscope.includes('alt="SMV HOROSCOPE logo"'));
+  assert.ok(horoscope.includes('SMV HOROSCOPE'));
+  assert.ok(!horoscope.includes('SMV ASTRO SERVICES</span>'));
   assert.ok(css.includes('.smv-horoscope-brand-title'));
   assert.ok(css.includes('font-family:Georgia,"Times New Roman",serif'));
-  assert.ok(css.includes('rgb(255,0,0)'), 'Horoscope title must use the same red brand color as the main website.');
-  assert.ok(!calendar.includes('smv-calendar-brandbar'));
-  const calendarTheme=read('public/horoscope/calendar-theme.css');
+  assert.ok(css.includes('rgb(255,0,0)'), 'Horoscope product title must be red.');
+  assert.ok(css.includes('height:42px;min-height:42px'));
+  assert.ok(css.includes('#smvHoroscopeAuth .header-account .action-row>.btn'));
+  assert.ok(exists('public/horoscope/assets/smv-calendar-website.webp'), 'Calendar must use its dedicated product logo.');
+  assert.ok(calendar.includes('src="../assets/smv-calendar-website.webp"'));
+  assert.ok(calendar.includes('alt="SMV CALENDAR logo"'));
+  assert.ok(calendar.includes('SMV CALENDAR'));
+  assert.ok(calendar.includes('class="calendar-header-actions"'));
+  assert.ok(calendar.includes('calendar-language-switch'));
   assert.ok(calendar.includes('calendar-topbar'));
   assert.ok(calendarTheme.includes('html body.calendar-only>header.calendar-topbar'));
   assert.ok(calendarTheme.includes('background:#0f514c!important'), "Calendar header must retain the established site green.");
+  assert.ok(calendarTheme.includes('grid-template-columns:repeat(4,minmax(0,1fr))'));
+  assert.ok(calendarTheme.includes('.calendar-brand-title'));
+  assert.ok(calendarTheme.includes('height:42px!important'));
   assert.ok(horoscope.includes('id="languageTamil"')&&horoscope.includes('id="languageEnglish"'));
   assert.ok(horoscope.includes('data-login')&&horoscope.includes('data-register')&&horoscope.includes('data-logout'));
-  assert.ok(css.includes('flex-wrap:nowrap'));
-  assert.ok(css.includes('grid-template-columns:repeat(2,minmax(0,1fr))'));
-  assert.ok(calendar.includes('calendar-language-switch'));
-  assert.ok(calendar.includes('calendar-topbar'));
 });
 
 test('All three independent Service Workers share one new cache release and cache the intended website artwork', () => {
