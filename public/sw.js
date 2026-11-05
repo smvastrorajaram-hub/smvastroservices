@@ -11,9 +11,9 @@ const APP_SHELL_FILES=[
   './android-app-install.css','./payment-timing.js','./smvastro.mjs',
   './coalesced-refresh.mjs','./razorpay-checkout-loader.mjs','./chat-moderation.js',
   './dashboard-window.js','./public-content-loader.js','./interface.js',
-  './android-app-install.js','./public-navigation.js','./horoscope/offline/places/place-search.mjs','./horoscope/offline/places/india-manifest.json','./horoscope/offline/places/place-display.mjs','./main-location-search.js','./horoscope/offline/places/place-search.mjs',
-  './horoscope/offline/places/india-manifest.json','./horoscope/offline/places/place-display.mjs','./main-location-search.js',
-  './horoscope/offline/places/india-manifest.json','./horoscope/offline/places/place-display.mjs',
+  './android-app-install.js','./public-navigation.js',
+  './main-location-search.js','./question-place-search.mjs',
+  './horoscope/offline/places/place-search.mjs','./horoscope/offline/places/india-manifest.json','./horoscope/offline/places/place-display.mjs',
   './assets/icon-192.png','./assets/icon-512.png','./assets/icon-512-maskable.png',
   './assets/favicon-astro-16.png','./assets/favicon-astro-32.png','./assets/favicon-64.png','./assets/favicon.ico',
   './assets/smv-home-logo.webp'
@@ -25,7 +25,8 @@ const REQUIRED_APP_SHELL=new Set([
   './dashboard-window.js','./public-content-loader.js','./interface.js',
   './android-app-install.js','./public-navigation.js',
   './coalesced-refresh.mjs','./razorpay-checkout-loader.mjs','./chat-moderation.js'
-]);
+
+  './question-place-search.mjs',]);
 const ONLINE_ONLY_ROOTS=new Set([
   'api','auth','wallet','payment','payments','razorpay','session','sessions',
   'booking','bookings','consultation','consultations','notification','notifications',

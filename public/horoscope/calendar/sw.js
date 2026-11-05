@@ -18,6 +18,7 @@ const REQUIRED_CORE = new Set([
  '../calendar-rasi-palan.css','../calendar-rasi-palan-rules.mjs','../daily-calendar.css',
  '../calendar-data.mjs','../calendar-worker.mjs','../offline/wasm-provider.mjs','../offline/places/timezone.mjs','../offline/places/tz-boundary-lookup.mjs',
  '../offline/places/place-search.mjs','../offline/places/place-display.mjs','../offline/places/india-manifest.json',
+ '../location-search-online-offline.js',
  '../offline/vendor/wasm/swisseph.js','../offline/vendor/wasm/swisseph.wasm','../offline/vendor/wasm/swisseph.data'
 ]);
 const cacheURL = path => new URL(path, self.registration.scope).href;

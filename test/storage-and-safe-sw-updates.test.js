@@ -88,6 +88,7 @@ test('Calendar keeps its offline UI/WASM precache and India shard migration whil
   assert.ok(sw.includes("'../offline/places/timezone.mjs'"));
   assert.ok(sw.includes("'../offline/places/tz-boundary-lookup.mjs'"));
   assert.ok(sw.includes("'../offline/places/place-display.mjs'"));
+  assert.ok(sw.includes("'../location-search-online-offline.js'"));
   assert.ok(sw.includes('isOnlineOnlyRequest'));
   assert.ok(sw.includes('if(!isStaticPresentationRequest(e.request,u))return;'));
 });

@@ -12,7 +12,8 @@ const apps = [
     cacheName: 'smv-astro-shell-' + release,
     placeCacheName: 'smv-shared-india-places',
     requiredAssets: ['/smvastro.mjs','/assets/icon-192.png','/assets/icon-512.png','/assets/icon-512-maskable.png','/assets/smv-home-logo.webp','/assets/favicon.ico'],
-    probeAsset: '/smvastro.mjs'
+    probeAsset: '/smvastro.mjs',
+    locationMode: 'question'
   },
   {
     name: 'SMV HOROSCOPE',
@@ -25,7 +26,8 @@ const apps = [
       '/horoscope/offline/vendor/wasm/swisseph.wasm',
       '/horoscope/offline/places/india-manifest.json'
     ],
-    probeAsset: '/horoscope/offline/offline-engine.mjs'
+    probeAsset: '/horoscope/offline/offline-engine.mjs',
+    locationMode: 'shared'
   },
   {
     name: 'SMV CALENDAR',
@@ -41,7 +43,8 @@ const apps = [
       '/horoscope/assets/smv-calendar-website.webp',
       '/horoscope/assets/favicon-calendar.ico'
     ],
-    probeAsset: '/horoscope/calendar-rasi-palan.mjs'
+    probeAsset: '/horoscope/calendar-rasi-palan.mjs',
+    locationMode: 'shared'
   }
 ];
 
@@ -167,7 +170,7 @@ for (const app of apps) {
     await page.setOfflineMode(true);
     const offlineResponse = await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
     assert.ok(offlineResponse && offlineResponse.status() === 200, app.name + ' navigation must reload from the Service Worker cache while offline.');
-    const offlineState = await page.evaluate(async probeAsset => {
+    const offlineState = await page.evaluate(async (probeAsset, locationMode) => {
       let indexed = '';
       await new Promise((resolve, reject) => {
         const request = indexedDB.open('smv-offline-preservation-test', 1);
@@ -182,8 +185,25 @@ for (const app of apps) {
         };
       });
       const response = await fetch(probeAsset, { cache: 'no-store' });
-      const placeModule = await import('/horoscope/offline/places/place-search.mjs');
-      const places = await placeModule.searchPlaces('Chennai', 5);
+      let offlineLocations = [];
+      if (locationMode === 'question') {
+        const module = await import('/question-place-search.mjs');
+        const wrapper = document.createElement('div');
+        const input = document.createElement('input');
+        wrapper.appendChild(input);
+        document.body.appendChild(wrapper);
+        module.bindQuestionPlaceSearch(input);
+        input.value = 'Chennai';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        await new Promise(resolve => setTimeout(resolve, 900));
+        offlineLocations = [...wrapper.querySelectorAll('[role="option"]')].map(option => option.textContent || '');
+      } else {
+        if (typeof window.__smvSearchPlacesOnlineOffline !== 'function') {
+          throw new Error('Shared GeoNames/India offline location loader was not cached in ' + locationMode + '.');
+        }
+        const places = await window.__smvSearchPlacesOnlineOffline('Chennai', 5);
+        offlineLocations = places.map(place => place.place || '');
+      }
       return {
         online: navigator.onLine,
         title: document.title,
@@ -192,9 +212,9 @@ for (const app of apps) {
         session: sessionStorage.getItem('smv-offline-preserve-session'),
         indexed,
         probe: { ok: response.ok, status: response.status },
-        offlineLocations: places.map(place => place.place)
+        offlineLocations
       };
-    }, app.probeAsset);
+    }, app.probeAsset, app.locationMode);
     assert.equal(offlineState.online, false, app.name + ' must be tested with the browser genuinely offline.');
     assert.ok(offlineState.title && offlineState.bodyTextLength > 0, app.name + ' static UI must remain visible offline.');
     assert.equal(offlineState.local, 'keep-local', app.name + ' localStorage must be preserved.');
