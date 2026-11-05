@@ -3,8 +3,8 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
 const baseRef = process.argv[2] || 'origin/main';
-const changed = new Set(execFileSync('git', ['diff', '--name-only', `${baseRef}...HEAD`], { encoding: 'utf8' })
-  .split(/\\r?\\n/).filter(Boolean));
+const changedText = execFileSync('git', ['diff', '--name-only', baseRef + '...HEAD'], { encoding: 'utf8' });
+const changed = new Set(changedText.split(/\r?\n/).filter(Boolean));
 
 const workers = [
   'public/sw.js',
@@ -27,7 +27,7 @@ function currentRelease(path) {
   return match[1];
 }
 function baseRelease(path) {
-  const source = execFileSync('git', ['show', `${baseRef}:${path}`], { encoding: 'utf8' });
+  const source = execFileSync('git', ['show', baseRef + ':' + path], { encoding: 'utf8' });
   const match = /const SMV_CACHE_RELEASE='([^']+)'/.exec(source);
   return match ? match[1] : '';
 }
