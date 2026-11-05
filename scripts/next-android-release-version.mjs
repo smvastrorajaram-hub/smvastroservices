@@ -54,6 +54,16 @@ export function nextAndroidReleaseVersion(release, appId) {
   return { appId, versionName: nextVersionName, versionCode: nextVersionCode };
 }
 
+export async function appendAndroidReleaseVersionToEnv(appId, next, envPath = process.env.GITHUB_ENV) {
+  const app = ANDROID_RELEASE_APPS[appId];
+  if (!app) throw new Error('Unsupported Android app ID: ' + appId);
+  if (!envPath) throw new Error('GITHUB_ENV is not available; this step must run inside GitHub Actions.');
+  if (next?.appId !== appId || !/^v[1-9][0-9]*\.[0-9]{1,3}$/.test(String(next.versionName || ''))) {
+    throw new Error('Refusing to write an invalid Android release version for ' + appId + '.');
+  }
+  await appendFile(envPath, app.envName + '=' + next.versionName + '\n', { encoding: 'utf8' });
+}
+
 export async function resolveNextAndroidReleaseVersion(appId, fetchImpl = fetch) {
   const app = ANDROID_RELEASE_APPS[appId];
   if (!app) throw new Error('Unsupported Android app ID: ' + appId);
@@ -77,8 +87,7 @@ async function main() {
   if (!process.env.GITHUB_ENV) throw new Error('GITHUB_ENV is not available; this script must run inside GitHub Actions.');
   for (const appId of appIds) {
     const next = await resolveNextAndroidReleaseVersion(appId);
-    const envName = ANDROID_RELEASE_APPS[appId].envName;
-    await appendFile(process.env.GITHUB_ENV, envName + '=' + next.versionName + '\\n', { encoding: 'utf8' });
+    await appendAndroidReleaseVersionToEnv(appId, next);
     process.stdout.write('Allocated ' + appId + ' next version ' + next.versionName + ' (versionCode ' + next.versionCode + ') from the current Cloudflare release.\\n');
   }
 }
@@ -86,7 +95,7 @@ async function main() {
 const entry = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : '';
 if (entry === import.meta.url) {
   main().catch(error => {
-    process.stderr.write('Android release version allocation failed: ' + (error?.message || String(error)) + '\\n');
+    process.stderr.write('Android release version allocation failed: ' + (error?.message || String(error)) + '\n');
     process.exitCode = 1;
   });
 }
