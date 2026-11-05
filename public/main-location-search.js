@@ -1,7 +1,7 @@
 /* SMV ASTRO V221 — Ask Now + Private Consultation local place search + header Calendar link.
    Uses the existing bundled India place database. No Firebase/API polling and no MutationObserver. */
 const SMV_BACKEND_BASE = ["smv-astro-phase1-browser-staging.onrender.com","smv-astro-phase1-browser-isolated.onrender.com","fix-cloudflare-live-booking.smvastroservices.pages.dev"].includes(location.hostname)
-  ? "https://smv-astro-phase1-staging.onrender.com" : "https://smvastroservices.onrender.com";
+  ? "https://smv-astro-phase1-staging.onrender.com" : "https://smvastroservices.astroservices.workers.dev";
 (function(){
   'use strict';
   if(window.__SMV_MAIN_LOCATION_SEARCH_V187__) return;
@@ -25,7 +25,7 @@ const SMV_BACKEND_BASE = ["smv-astro-phase1-browser-staging.onrender.com","smv-a
   async function offlineSearchPlaces(q,limit){const n=norm(q);if(n.length<2)return[];const key=keyFor(n),rows=await getShard(key),prior=searchState.get(key),source=prior&&n.startsWith(prior.query)&&n.length>prior.query.length?prior.rows:rows,out=[];for(const x of source){let best=99;for(const a of aliasesFor(x)){if(a===n){best=0;break}if(a.startsWith(n))best=Math.min(best,1);else if(a.includes(' '+n))best=Math.min(best,2);else if(a.includes(n))best=Math.min(best,3)}if(best<99)out.push({x,score:best})}searchState.set(key,{query:n,rows:out.map(v=>v.x)});out.sort((a,b)=>a.score-b.score||(Number(b.x[7])||0)-(Number(a.x[7])||0)||String(a.x[1]||'').localeCompare(String(b.x[1]||'')));const {formatOfflineIndiaPlace}=await formatter();const language=/^ta(?:-|$)/i.test(document.documentElement.lang||'')?'ta':'en';return out.slice(0,Math.max(1,Math.min(70,Number(limit)||70))).map(({x})=>({place:formatOfflineIndiaPlace(x,language).place,lat:x[4],lon:x[5],timezone:x[6]||'Asia/Kolkata'}));}
 
 
-  // GeoNames worldwide search through the existing Render proxy. India records
+  // GeoNames worldwide search through the Cloudflare Worker proxy. India records
   // stay available as a fallback when offline or the provider is unavailable.
   async function searchWorldwide(q,limit){
     if(navigator.onLine===false)return [];
