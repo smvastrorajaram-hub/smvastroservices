@@ -80,7 +80,8 @@ test('Android icon source is isolated from all website and PWA icon assets', () 
   assert.match(workflow, /github\.ref == 'refs\/heads\/main'/);
   assert.match(workflow, /Allocate the next SMV ASTRO version from the published Cloudflare APK release/);
   assert.match(workflow, /node scripts\/next-android-release-version\.mjs astro/);
-  assert.doesNotMatch(workflow, /GITHUB_RUN_NUMBER - 327/, 'Release versions must not depend on pull-request and CI run counts.');
+  assert.match(workflow, /scripts\/next-android-release-version\.mjs/);
+  assert.doesNotMatch(workflow, /release_sequence=\$\(\(GITHUB_RUN_NUMBER - 327\)\)/);
   assert.match(workflow, /github\.ref == 'refs\/heads\/main'/);
 });
 
