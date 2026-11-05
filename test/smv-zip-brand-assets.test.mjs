@@ -75,23 +75,29 @@ test('The supplied three-part favicon strip is used for browser tabs only', () =
   assert.ok(read('public/index.html').includes('href="./manifest.webmanifest?v=20261105-brand-header-v1" rel="manifest"'));
 });
 
-test('SMV ASTRO retains its previous website logo; Horoscope and Calendar stack logo above centered brand name', () => {
+test('Horoscope and Calendar logo headers are removed while Horoscope controls remain in one row', () => {
   const astro=read('public/index.html');
   const horoscope=read('public/horoscope/index.html');
   const calendar=read('public/horoscope/calendar/index.html');
+  const css=read('public/horoscope/horoscope.css');
   assert.ok(exists('public/assets/smv-home-logo.webp'));
   assert.ok(astro.includes('src="./assets/smv-home-logo.webp?v=20261105-brand-header-v1"'));
-  assert.ok(horoscope.includes('assets/smv-horoscope-website.webp?v=20261105-brand-header-v1'));
-  assert.ok(calendar.includes('../assets/smv-calendar-website.webp?v=20261105-brand-header-v1'));
-  assert.match(horoscope,/class="smv-horoscope-brandbar"[^>]*flex-direction:column[^>]*>[\s\S]*?<img[\s\S]*?<strong[^>]*text-align:center[^>]*>SMV HOROSCOPE<\/strong>/);
-  assert.match(calendar,/class="smv-calendar-brandbar"[^>]*flex-direction:column[^>]*>[\s\S]*?<img[\s\S]*?<strong[^>]*text-align:center[^>]*>SMV CALENDAR<\/strong>/);
-  assert.ok(!calendar.includes('calendar-current-brand'));
+  assert.ok(!horoscope.includes('smv-horoscope-brandbar'));
+  assert.ok(!horoscope.includes('smv-horoscope-website.webp'));
+  assert.ok(!calendar.includes('smv-calendar-brandbar'));
+  assert.ok(!calendar.includes('smv-calendar-website.webp'));
+  assert.ok(horoscope.includes('id="languageTamil"')&&horoscope.includes('id="languageEnglish"'));
+  assert.ok(horoscope.includes('data-login')&&horoscope.includes('data-register')&&horoscope.includes('data-logout'));
+  assert.ok(css.includes('flex-wrap:nowrap'));
+  assert.ok(css.includes('grid-template-columns:repeat(2,minmax(0,1fr))'));
+  assert.ok(calendar.includes('calendar-language-switch'));
+  assert.ok(calendar.includes('calendar-topbar'));
 });
 
 test('All three independent Service Workers share one new cache release and cache the intended website artwork', () => {
   const workers=[read('public/sw.js'),read('public/horoscope/sw.js'),read('public/horoscope/calendar/sw.js')];
   const versions=workers.map(source=>/const SMV_CACHE_RELEASE='([^']+)'/.exec(source)?.[1]);
-  assert.deepEqual(versions,['20261105-brand-header-v1','20261105-brand-header-v1','20261105-brand-header-v1']);
+  assert.deepEqual(versions,['20261105-active-only-auto-busy-v1','20261105-active-only-auto-busy-v1','20261105-active-only-auto-busy-v1']);
   assert.ok(workers[0].includes("'./assets/favicon-astro.ico'"));
   assert.ok(workers[0].includes("'./assets/smv-home-logo.webp'"));
   assert.ok(workers[1].includes("'./assets/favicon-horoscope.ico'"));

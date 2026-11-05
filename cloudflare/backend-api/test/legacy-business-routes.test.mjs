@@ -44,22 +44,38 @@ function transactionalFirestore({docs={}}={}) {
   };
 }
 
-test('Astrologer availability validates input and updates only an approved owned profile', async()=>{
+test('Cloudflare availability retains pre-start capacity without displaying Busy',async()=>{
  const app=harness(),firestore=transactionalFirestore({docs:{
-   'smv_users/astro-1':{exists:true,data:{role:'astrologer'}},
-   'smv_astrologers/astro-1':{exists:true,data:{uid:'astro-1',status:'approved',activeSessionCount:1}},
-   'smv_settings/liveSessionPricing':{exists:true,data:{maxConcurrentSessions:2}}
+  'smv_users/astro-1':{exists:true,data:{role:'astrologer'}},
+  'smv_astrologers/astro-1':{exists:true,data:{uid:'astro-1',status:'approved',activeSessionCount:1,startedSessionCount:0,liveCallEnabled:true}},
+  'smv_settings/liveSessionPricing':{exists:true,data:{maxConcurrentSessions:2}}
  }});
  registerLegacyBusinessRoutes({app,firestore,identityService:{async authenticateAuthorization(){return {uid:'astro-1',role:'astrologer'};}}});
  const res=response();
- await app.handlers.get?.('POST /astrologer/availability')?.(request({availabilityStatus:'online',liveCallEnabled:true,liveChatEnabled:false}),res);
+ await app.handlers.get('POST /astrologer/availability')(request({availabilityStatus:'online',liveCallEnabled:true,liveChatEnabled:false}),res);
  assert.equal(res.statusCode,200);
- assert.equal(res.body.availabilityStatus,'busy');
+ assert.equal(res.body.availabilityStatus,'online');
+ assert.equal(res.body.activeSessionCount,1);
+ assert.equal(res.body.startedSessionCount,0);
  assert.equal(res.body.maxConcurrentSessions,2);
- assert.equal(firestore.writes[0].data.liveSessionBusyManaged,true);
+ assert.equal(firestore.writes[0].data.liveSessionBusyManaged,false);
 });
 
-test('Astrologer-selected Busy is persisted separately from a session-managed Busy state',async()=>{
+test('Cloudflare availability GET shows Busy only after an actual session start',async()=>{
+ const app=harness(),firestore=transactionalFirestore({docs:{
+  'smv_users/astro-1':{exists:true,data:{role:'astrologer'}},
+  'smv_astrologers/astro-1':{exists:true,data:{uid:'astro-1',status:'approved',activeSessionCount:2,startedSessionCount:1,liveCallEnabled:true}}
+ }});
+ registerLegacyBusinessRoutes({app,firestore,identityService:{async authenticateAuthorization(){return {uid:'astro-1',role:'astrologer'};}}});
+ const res=response();
+ await app.handlers.get('GET /astrologer/availability')(request({}),res);
+ assert.equal(res.statusCode,200);
+ assert.equal(res.body.availabilityStatus,'busy');
+ assert.equal(res.body.activeSessionCount,2);
+ assert.equal(res.body.startedSessionCount,1);
+});
+
+test('Manual Busy is rejected by Cloudflare and cannot be persisted',async()=>{
  const app=harness(),firestore=transactionalFirestore({docs:{
   'smv_users/astro-1':{exists:true,data:{role:'astrologer'}},
   'smv_astrologers/astro-1':{exists:true,data:{uid:'astro-1',status:'approved',activeSessionCount:0,liveCallEnabled:true}}
@@ -69,11 +85,8 @@ test('Astrologer-selected Busy is persisted separately from a session-managed Bu
  await app.handlers.get('POST /astrologer/availability')(request({
   availabilityStatus:'busy',liveCallEnabled:true,liveChatEnabled:true
  }),res);
- assert.equal(res.statusCode,200);
- assert.equal(res.body.availabilityStatus,'busy');
- assert.equal(res.body.manualAvailabilityStatus,'busy');
- assert.equal(firestore.writes[0].data.manualAvailabilityStatus,'busy');
- assert.equal(firestore.writes[0].data.liveSessionBusyManaged,false);
+ assert.equal(res.statusCode,400);
+ assert.equal(firestore.writes.length,0);
 });
 
 test('Astrologer availability rejects non-approved profiles and malformed switches', async()=>{

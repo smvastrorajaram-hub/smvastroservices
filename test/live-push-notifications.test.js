@@ -895,17 +895,20 @@ test('Customer Live Session dashboard status follows the accepted-session SSE up
 });
 
 
-test('Manual Busy blocks direct Live actions but leaves scheduled booking requests available',()=>{
+test('Cloudflare Busy presence follows started sessions and preserves the yellow pulse',()=>{
   const content=read('public/public-content.mjs');
-  const service=read('live-session-service.js');
+  const domain=read('shared/backend-platform/live-session-domain.mjs');
   const cloudflare=read('shared/backend-platform/d1-live-session-service.mjs');
-  assert.ok(content.includes("const manuallyBusy=String(a.manualAvailabilityStatus||'').trim().toLowerCase()==='busy';"));
-  assert.ok(content.includes("row.dataset.manuallyBusy=String(manuallyBusy);"));
-  assert.ok(content.includes('This Astrologer is in Busy mode and is not accepting new Live '));
+  assert.ok(content.includes('smv-astro-presence-dot--busy{background:#ffea00'));
+  assert.ok(content.includes('animation:smvAstroBusyPulse .78s ease-in-out infinite'));
+  assert.ok(content.includes('const callAllowed=liveCallEnabled,chatAllowed=liveChatEnabled;'));
   assert.ok(content.includes("data-book-call ${liveCallEnabled?'':'disabled"));
   assert.ok(content.includes("data-book-chat ${liveChatEnabled?'':'disabled"));
-  assert.ok(service.includes('if (astrologerManualBusy(astro, liveCount))'));
-  assert.ok(cloudflare.includes('if(astrologerManualBusy(astro,count))'));
+  assert.ok(!content.includes('manuallyBusy'));
+  assert.ok(!content.includes('dataset.manuallyBusy'));
+  assert.ok(cloudflare.includes("WHERE astrologer_uid=? AND state='active'"));
+  assert.ok(cloudflare.includes("state IN ('ringing','preparing','connecting','active')"));
+  assert.ok(!domain.includes('astrologerManualBusy'));
 });
 
 test('Live Call transitions from preparation to a clear Customer connect action and replays missed WebRTC offers', () => {
