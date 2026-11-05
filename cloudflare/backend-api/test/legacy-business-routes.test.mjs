@@ -44,7 +44,7 @@ function transactionalFirestore({docs={}}={}) {
   };
 }
 
-test('Cloudflare availability keeps pre-start capacity but does not display Busy',async()=>{
+test('Cloudflare availability retains pre-start capacity without displaying Busy',async()=>{
  const app=harness(),firestore=transactionalFirestore({docs:{
   'smv_users/astro-1':{exists:true,data:{role:'astrologer'}},
   'smv_astrologers/astro-1':{exists:true,data:{uid:'astro-1',status:'approved',activeSessionCount:1,startedSessionCount:0,liveCallEnabled:true}},
@@ -61,7 +61,7 @@ test('Cloudflare availability keeps pre-start capacity but does not display Busy
  assert.equal(firestore.writes[0].data.liveSessionBusyManaged,false);
 });
 
-test('Cloudflare GET displays Busy only after an actual session start',async()=>{
+test('Cloudflare availability GET shows Busy only after an actual session start',async()=>{
  const app=harness(),firestore=transactionalFirestore({docs:{
   'smv_users/astro-1':{exists:true,data:{role:'astrologer'}},
   'smv_astrologers/astro-1':{exists:true,data:{uid:'astro-1',status:'approved',activeSessionCount:2,startedSessionCount:1,liveCallEnabled:true}}
