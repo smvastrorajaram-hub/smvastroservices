@@ -67,7 +67,7 @@ function isOnlineOnlyRequest(url){
 function isStaticPresentationRequest(req,url){
   if(url.origin!==self.location.origin||isOnlineOnlyRequest(url))return false;
   if(req.mode==='navigate')return true;
-  return /\\.(?:html?|css|js|mjs|json|webmanifest|png|jpe?g|webp|gif|svg|ico|avif|woff2?|ttf|otf|wasm|data)$/.test(url.pathname.toLowerCase());
+  return /\.(?:html?|css|js|mjs|json|webmanifest|png|jpe?g|webp|gif|svg|ico|avif|woff2?|ttf|otf|wasm|data)$/.test(url.pathname.toLowerCase());
 }
 
 const cacheURL=path=>new URL(path,self.registration.scope).href;
