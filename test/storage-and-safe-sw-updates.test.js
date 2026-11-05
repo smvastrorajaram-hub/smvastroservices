@@ -28,7 +28,8 @@ test('Horoscope Service Worker does not force-reload open report/form tabs and p
   const sw = read('public/horoscope/sw.js');
   assert.doesNotMatch(sw, /client\.navigate\s*\(\s*client\.url\s*\)/);
   assert.match(sw, /OFFLINE_CACHE='smv-horoscope-offline'/);
-  assert.match(sw, /k!==OFFLINE_CACHE/);
+  assert.match(sw, /const retained=new Set\(\[OFFLINE_CACHE,SHELL_CACHE\]\)/);
+  assert.match(sw, /name\.startsWith\('smv-horoscope-'\)&&!retained\.has\(name\)/);
   assert.match(sw, /await self\.clients\.claim\(\)/);
 });
 
