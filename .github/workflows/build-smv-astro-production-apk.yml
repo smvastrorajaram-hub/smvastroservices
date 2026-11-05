@@ -37,6 +37,9 @@ on:
       - "docs/android-native-call-ringtone.md"
       - "public/sw.js"
       - "public/main-location-search.js"
+      - "public/question-place-search.mjs"
+      - "public/horoscope/offline/places/place-search.mjs"
+      - "public/horoscope/offline/places/india-manifest.json"
   push:
     paths:
       - "ICON/SMV ASTRO.jpg"
@@ -56,6 +59,9 @@ on:
       - "docs/android-native-call-ringtone.md"
       - "public/sw.js"
       - "public/main-location-search.js"
+      - "public/question-place-search.mjs"
+      - "public/horoscope/offline/places/place-search.mjs"
+      - "public/horoscope/offline/places/india-manifest.json"
 
 permissions:
   contents: read

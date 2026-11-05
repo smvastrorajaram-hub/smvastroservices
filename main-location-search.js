@@ -18,9 +18,8 @@
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   async function getJson(url){
-    const r=await fetch(url,{cache:'default'});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    return r.json();
+    try{const r=await fetch(url,{cache:'default'});if(r.ok)return await r.json();throw new Error('HTTP '+r.status);}
+    catch(error){if(typeof caches!=='undefined'){try{const hit=await caches.match(url instanceof URL?url.href:String(url));if(hit?.ok)return await hit.json();}catch(_){}}throw error;}
   }
   async function getManifest(){
     if(manifest) return manifest;
@@ -41,7 +40,9 @@
       const m=await getManifest();
       const meta=m?.shards?.[k];
       if(!meta) return [];
-      const rows=await getJson(BASE+'india/'+encodeURIComponent(meta.file)+'?v=187');
+      const url=new URL(BASE+'india/'+encodeURIComponent(meta.file),document.baseURI);
+      url.searchParams.set('v',String(m.version||1));
+      const rows=await getJson(url);
       shardCache.set(k,rows);
       return rows;
     })();

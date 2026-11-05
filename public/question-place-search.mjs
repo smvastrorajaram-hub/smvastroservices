@@ -1,9 +1,9 @@
 /* SMV shared online/offline place search for question forms.
-   Online: existing Render GeoNames world-wide search proxy.
-   Offline/failure: bundled India place-search database.
+   Online: Cloudflare Worker GeoNames world-wide search proxy.
+   Offline/failure: the pre-cached 557,995-record India place-search database.
    This module performs no Firestore reads. */
 const SMV_QUESTION_BACKEND = ["smv-astro-phase1-browser-staging.onrender.com","smv-astro-phase1-browser-isolated.onrender.com","fix-cloudflare-live-booking.smvastroservices.pages.dev"].includes(location.hostname)
-  ? "https://smv-astro-phase1-staging.onrender.com" : "https://smvastroservices.onrender.com";
+  ? "https://smv-astro-phase1-staging.onrender.com" : "https://smvastroservices.astroservices.workers.dev";
 let offlineSearchPromise=null;
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 async function offlineSearch(q,limit){

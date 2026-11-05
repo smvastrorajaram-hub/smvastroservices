@@ -10,9 +10,13 @@ const prefixCandidates=new Map();
 const aliasCache=new WeakMap();
 function aliases(row){let a=aliasCache.get(row);if(!a){a=(row[8]||[]).map(norm).filter(Boolean);aliasCache.set(row,a);}return a;}
 const norm=s=>String(s||'').normalize('NFKD').toLowerCase().replace(/\p{M}/gu,'').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
-async function mf(){if(manifest)return manifest;if(manifestFlight)return manifestFlight;manifestFlight=(async()=>{const r=await fetch(new URL('./india-manifest.json',import.meta.url));if(!r.ok)throw new Error('Offline India place database unavailable');return manifest=await r.json();})();try{return await manifestFlight;}finally{manifestFlight=null;}}
+async function cachedPlaceJson(url,label){
+ try{const r=await fetch(url);if(r.ok)return await r.json();throw new Error(label+' HTTP '+r.status);}
+ catch(error){if(typeof caches!=='undefined'){try{const hit=await caches.match(url.href);if(hit?.ok)return await hit.json();}catch(_){}}throw error;}
+}
+async function mf(){if(manifest)return manifest;if(manifestFlight)return manifestFlight;manifestFlight=(async()=>manifest=await cachedPlaceJson(new URL('./india-manifest.json',import.meta.url),'Offline India manifest'))();try{return await manifestFlight;}finally{manifestFlight=null;}}
 function keyFor(n){const c=n[0]||'';if(c>='a'&&c<='z')return c;if(/[\u0B80-\u0BFF]/u.test(c))return'ta';return'other';}
-async function shard(k){if(cache.has(k))return cache.get(k);if(shardFlights.has(k))return shardFlights.get(k);const flight=(async()=>{const m=await mf(),x=m.shards[k];if(!x)return[];const r=await fetch(new URL('./india/'+x.file,import.meta.url));if(!r.ok)throw new Error('Offline India place shard unavailable');const rows=await r.json();cache.set(k,rows);return rows;})();shardFlights.set(k,flight);try{return await flight;}finally{shardFlights.delete(k);}}
+async function shard(k){if(cache.has(k))return cache.get(k);if(shardFlights.has(k))return shardFlights.get(k);const flight=(async()=>{const m=await mf(),x=m.shards[k];if(!x)return[];const url=new URL('./india/'+x.file,import.meta.url);url.searchParams.set('v',String(m.version||1));const rows=await cachedPlaceJson(url,'Offline India shard '+x.file);cache.set(k,rows);return rows;})();shardFlights.set(k,flight);try{return await flight;}finally{shardFlights.delete(k);}}
 export async function searchPlaces(q,limit=12){
  const n=norm(q);if(n.length<2)return[];
  const max=Math.max(1,Math.min(70,Number(limit)||12));

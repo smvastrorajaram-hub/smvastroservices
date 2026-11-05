@@ -23,6 +23,9 @@ test('SMV ASTRO production APK rebuilds when its root UI cache or location searc
       'tools/SmvProductLauncherIconGenerator.java',
       'public/sw.js',
       'public/main-location-search.js',
+      'public/question-place-search.mjs',
+      'public/horoscope/offline/places/place-search.mjs',
+      'public/horoscope/offline/places/india-manifest.json',
       'scripts/next-android-release-version.mjs',
       'test/android-release-version-resolution.test.mjs',
       'test/android-cache-release-build-triggers.test.mjs'
@@ -42,6 +45,9 @@ test('SMV HOROSCOPE and SMV CALENDAR production APKs rebuild when either scoped 
       'public/horoscope/sw.js',
       'public/horoscope/calendar/sw.js',
       'public/horoscope/location-search-online-offline.js',
+      'public/question-place-search.mjs',
+      'public/horoscope/offline/places/place-search.mjs',
+      'public/horoscope/offline/places/india-manifest.json',
       'scripts/next-android-release-version.mjs',
       'test/android-release-version-resolution.test.mjs',
       'test/android-cache-release-build-triggers.test.mjs'

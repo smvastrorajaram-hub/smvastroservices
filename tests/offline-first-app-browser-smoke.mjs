@@ -4,13 +4,13 @@ import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 
 const origin = process.env.SMV_OFFLINE_PREVIEW_ORIGIN || 'http://127.0.0.1:4173';
-const release = '20261105-smv-zip-assets-v1';
+const release = '20261105-offline-location-pack-v4';
 const apps = [
   {
     name: 'SMV ASTRO',
     url: origin + '/',
     cacheName: 'smv-astro-shell-' + release,
-    placeCacheName: 'smv-astro-offline-places',
+    placeCacheName: 'smv-shared-india-places',
     requiredAssets: ['/smvastro.mjs','/assets/icon-192.png','/assets/icon-512.png','/assets/icon-512-maskable.png','/assets/smv-home-logo.webp','/assets/favicon.ico'],
     probeAsset: '/smvastro.mjs'
   },
@@ -104,13 +104,25 @@ for (const app of apps) {
           offlineFound.push({ path, ok: Boolean(response?.ok), status: response?.status || 0 });
         }
       }
-      let placeManifest = null;
+      let placeManifest = null, placeShards = null;
       if (placeCacheName) {
         const places = await caches.open(placeCacheName);
-        const response = await places.match(new URL('/horoscope/offline/places/india-manifest.json', location.origin).href);
+        const manifestUrl = new URL('/horoscope/offline/places/india-manifest.json', location.origin).href;
+        const response = await places.match(manifestUrl);
         placeManifest = { ok: Boolean(response?.ok), status: response?.status || 0 };
+        if (response?.ok) {
+          const manifest = await response.clone().json();
+          const entries = Object.values(manifest.shards || {});
+          const missing = [];
+          for (const metadata of entries) {
+            const url = new URL('india/' + metadata.file, new URL('/horoscope/offline/places/', location.origin));
+            url.searchParams.set('v', String(manifest.version || 1));
+            if (!(await places.match(url.href))?.ok) missing.push(metadata.file);
+          }
+          placeShards = { expected: entries.length, found: entries.length - missing.length, missing, records: manifest.records };
+        }
       }
-      return { exists, found, offlineFound, onlineOnlyCached, placeManifest, cacheNames: names };
+      return { exists, found, offlineFound, onlineOnlyCached, placeManifest, placeShards, cacheNames: names };
     }, app.cacheName, app.requiredAssets, app.placeCacheName || null, app.offlineCacheName || null, app.offlineAssets || []);
     assert.ok(cacheState.exists, app.name + ' release cache must exist: ' + app.cacheName);
     for (const asset of cacheState.found) {
@@ -120,7 +132,12 @@ for (const app of apps) {
       assert.equal(asset.ok, true, app.name + ' required calculation asset must be cached in its separate offline cache: ' + asset.path + ' (HTTP ' + asset.status + ')');
     }
     assert.deepEqual(cacheState.onlineOnlyCached, [], app.name + ' must not cache online account or financial API routes.');
-    if (app.placeCacheName) assert.equal(cacheState.placeManifest?.ok, true, app.name + ' India place manifest must be preserved in its independent place cache (HTTP ' + (cacheState.placeManifest?.status || 0) + ').');
+    if (app.placeCacheName) {
+      assert.equal(cacheState.placeManifest?.ok, true, app.name + ' India place manifest must exist in the shared offline cache.');
+      assert.equal(cacheState.placeShards?.expected, 28, app.name + ' must cache all 28 India place shards.');
+      assert.equal(cacheState.placeShards?.found, 28, app.name + ' must find all versioned place shards: ' + (cacheState.placeShards?.missing || []).join(', '));
+      assert.equal(cacheState.placeShards?.records, 557995, app.name + ' must contain exactly 557,995 India place records.');
+    }
     process.stdout.write('PASS: ' + app.name + ' release cache and ' + cacheState.found.length + ' core asset checks\\n');
 
     await page.evaluate(async () => {

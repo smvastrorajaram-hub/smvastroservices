@@ -40,6 +40,9 @@ on:
       - "public/horoscope/sw.js"
       - "public/horoscope/calendar/sw.js"
       - "public/horoscope/location-search-online-offline.js"
+      - "public/question-place-search.mjs"
+      - "public/horoscope/offline/places/place-search.mjs"
+      - "public/horoscope/offline/places/india-manifest.json"
   push:
     paths:
       - "ICON/SMV HOROSCOPE.jpg"
@@ -62,6 +65,9 @@ on:
       - "public/horoscope/sw.js"
       - "public/horoscope/calendar/sw.js"
       - "public/horoscope/location-search-online-offline.js"
+      - "public/question-place-search.mjs"
+      - "public/horoscope/offline/places/place-search.mjs"
+      - "public/horoscope/offline/places/india-manifest.json"
 
 permissions:
   contents: read
