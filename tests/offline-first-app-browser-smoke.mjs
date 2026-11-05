@@ -10,7 +10,8 @@ const apps = [
     name: 'SMV ASTRO',
     url: origin + '/',
     cacheName: 'smv-astro-shell-' + release,
-    requiredAssets: ['/smvastro.mjs', '/horoscope/offline/places/india-manifest.json'],
+    placeCacheName: 'smv-astro-offline-places',
+    requiredAssets: ['/smvastro.mjs'],
     probeAsset: '/smvastro.mjs'
   },
   {
@@ -71,7 +72,7 @@ for (const app of apps) {
         navigator.serviceWorker.controller?.state === 'activated';
     }, { timeout: 60000 });
 
-    const cacheState = await page.evaluate(async (cacheName, requiredAssets) => {
+    const cacheState = await page.evaluate(async (cacheName, requiredAssets, placeCacheName) => {
       const names = await caches.keys();
       const exists = names.includes(cacheName);
       const cache = exists ? await caches.open(cacheName) : null;
@@ -89,13 +90,20 @@ for (const app of apps) {
       }
       const onlineOnlyRoots = new Set(['api','auth','wallet','payment','payments','razorpay','session','sessions','booking','bookings','consultation','consultations','account','profile','firebase','firestore','functions']);
       const onlineOnlyCached = cachedUrls.filter(path => onlineOnlyRoots.has(path.split('/')[1] || ''));
-      return { exists, found, onlineOnlyCached, cacheNames: names };
-    }, app.cacheName, app.requiredAssets);
+      let placeManifest = null;
+      if (placeCacheName) {
+        const places = await caches.open(placeCacheName);
+        const response = await places.match(new URL('/horoscope/offline/places/india-manifest.json', location.origin).href);
+        placeManifest = { ok: Boolean(response?.ok), status: response?.status || 0 };
+      }
+      return { exists, found, onlineOnlyCached, placeManifest, cacheNames: names };
+    }, app.cacheName, app.requiredAssets, app.placeCacheName || null);
     assert.ok(cacheState.exists, app.name + ' release cache must exist: ' + app.cacheName);
     for (const asset of cacheState.found) {
       assert.equal(asset.ok, true, app.name + ' required offline asset must be cached: ' + asset.path + ' (HTTP ' + asset.status + ')');
     }
     assert.deepEqual(cacheState.onlineOnlyCached, [], app.name + ' must not cache online account or financial API routes.');
+    if (app.placeCacheName) assert.equal(cacheState.placeManifest?.ok, true, app.name + ' India place manifest must be preserved in its independent place cache (HTTP ' + (cacheState.placeManifest?.status || 0) + ').');
     process.stdout.write('PASS: ' + app.name + ' release cache and ' + cacheState.found.length + ' core asset checks\\n');
 
     await page.evaluate(async () => {
