@@ -22,7 +22,16 @@ test('Implemented non-Auth SMV ASTRO dashboard APIs share the Cloudflare Worker 
   const end=frontend.indexOf('const BACKEND=',start);
   const resolver=frontend.slice(start,end);
   assert.ok(resolver.includes('const cloudflareRoute'));
-  for(const route of ['admin\\/appointments','admin\\/astrologers-data','admin\\/settings-data','admin\\/astrologer-quiz','astrologer\\/appointments','customer\\/appointments','public\\/astrologers','live\\/push','google-form\\/astrologer-quiz-config','webhooks\\/google-form']) {
+  for(const route of [
+    'admin\\/(?:appointments|astrologers-data|settings-data',
+    'admin\\/astrologer-quiz\\/(?:questions',
+    'astrologer\\/(?:appointments|availability',
+    'customer\\/(?:appointments|reviews',
+    'public\\/(?:astrologers',
+    'live\\/(?:requests|sessions|bookings|pricing|ice-config|events|scheduled-appointments|push',
+    'google-form\\/astrologer-quiz-config',
+    'webhooks\\/google-form'
+  ]) {
     assert.ok(resolver.includes(route),'Cloudflare API allowlist includes '+route);
   }
   assert.ok(!resolver.includes('account\\/role'));
