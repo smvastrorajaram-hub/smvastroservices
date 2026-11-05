@@ -25,7 +25,6 @@ const apps = [
     offlineAssets: [
       '/horoscope/offline/offline-engine.mjs',
       '/horoscope/offline/vendor/wasm/swisseph.wasm',
-      '/horoscope/offline/places/india-manifest.json'
     ],
     probeAsset: '/horoscope/offline/offline-engine.mjs',
     locationMode: 'shared'
@@ -38,7 +37,6 @@ const apps = [
     requiredAssets: [
       '/horoscope/calendar-rasi-palan.mjs',
       '/horoscope/offline/vendor/wasm/swisseph.wasm',
-      '/horoscope/offline/places/india-manifest.json',
       '/horoscope/assets/calendar-192.png',
       '/horoscope/assets/calendar-512.png',
       '/horoscope/assets/calendar-maskable.png',
