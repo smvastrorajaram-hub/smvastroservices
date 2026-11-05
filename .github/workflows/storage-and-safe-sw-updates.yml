@@ -11,6 +11,7 @@ on:
       - 'test/storage-and-safe-sw-updates.test.js'
       - 'test/android-horoscope-calendar-production.test.mjs'
       - 'test/smv-zip-brand-assets.test.mjs'
+      - '.github/scripts/generate-brand-favicons-from-archive.py'
       - '.github/workflows/storage-and-safe-sw-updates.yml'
   push:
     branches: [main]
@@ -22,6 +23,7 @@ on:
       - 'test/storage-and-safe-sw-updates.test.js'
       - 'test/android-horoscope-calendar-production.test.mjs'
       - 'test/smv-zip-brand-assets.test.mjs'
+      - '.github/scripts/generate-brand-favicons-from-archive.py'
       - '.github/workflows/storage-and-safe-sw-updates.yml'
   workflow_dispatch:
 
@@ -45,6 +47,7 @@ jobs:
           node --check test/storage-and-safe-sw-updates.test.js
           node --check test/android-horoscope-calendar-production.test.mjs
           node --check test/smv-zip-brand-assets.test.mjs
+          python3 -m py_compile .github/scripts/generate-brand-favicons-from-archive.py
       - name: Generate official app and website icon variants from original SMV.zip
         if: github.event_name == 'pull_request'
         run: |
