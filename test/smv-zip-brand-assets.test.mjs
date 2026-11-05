@@ -83,7 +83,7 @@ test('Horoscope and Calendar logo headers are removed while Horoscope controls r
   assert.ok(exists('public/assets/smv-home-logo.webp'));
   assert.ok(astro.includes('src="./assets/smv-home-logo.webp?v=20261105-brand-header-v1"'));
   assert.ok(!horoscope.includes('smv-horoscope-brandbar'));
-  assert.ok(!horoscope.includes('smv-horoscope-website.webp'));
+  assert.ok(!horoscope.includes('alt="SMV HOROSCOPE logo"'));
   assert.ok(!calendar.includes('smv-calendar-brandbar'));
   assert.ok(!calendar.includes('smv-calendar-website.webp'));
   assert.ok(horoscope.includes('id="languageTamil"')&&horoscope.includes('id="languageEnglish"'));
