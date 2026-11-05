@@ -78,7 +78,7 @@ async function main() {
   for (const appId of appIds) {
     const next = await resolveNextAndroidReleaseVersion(appId);
     const envName = ANDROID_RELEASE_APPS[appId].envName;
-    await appendFile(process.env.GITHUB_ENV, envName + '=' + next.versionName + '\\n', { encoding: 'utf8' });
+    await appendFile(process.env.GITHUB_ENV, envName + '=' + next.versionName + '\n', { encoding: 'utf8' });
     process.stdout.write('Allocated ' + appId + ' next version ' + next.versionName + ' (versionCode ' + next.versionCode + ') from the current Cloudflare release.\\n');
   }
 }
@@ -86,7 +86,7 @@ async function main() {
 const entry = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : '';
 if (entry === import.meta.url) {
   main().catch(error => {
-    process.stderr.write('Android release version allocation failed: ' + (error?.message || String(error)) + '\\n');
+    process.stderr.write('Android release version allocation failed: ' + (error?.message || String(error)) + '\n');
     process.exitCode = 1;
   });
 }
