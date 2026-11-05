@@ -41,7 +41,7 @@ for (let i = 0; i < workers.length; i++) {
 const expectedCacheNames = [
   "APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE",
   "SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE",
-  "CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE'
+  "CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"
 ];
 for (let i = 0; i < workers.length; i++) {
   const source = readFileSync(workers[i], 'utf8');
