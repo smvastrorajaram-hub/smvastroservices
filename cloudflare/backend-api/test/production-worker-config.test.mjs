@@ -70,21 +70,28 @@ test('Production Worker registers a server-side GeoNames proxy for all three pub
   const entry = fs.readFileSync(path.join(root, 'src', 'index.mjs'), 'utf8');
   const routes = fs.readFileSync(path.join(root, 'src', 'geonames-location-routes.mjs'), 'utf8');
   const workflow = fs.readFileSync(path.join(root, '..', '..', '.github', 'workflows', 'cloudflare-backend-api-production-deploy.yml'), 'utf8');
-  assert.match(entry, /registerGeoNamesRoutes\\(\\{\\s*app,\\s*env\\s*\\}\\)/);
-  assert.match(routes, /env\\.GEONAMES_USERNAME/);
-  assert.match(routes, /https:\\/\\/secure\\.geonames\\.org\\//);
-  assert.match(routes, /'/);
-  assert.match(routes, /'\\/api\\/locations\\/status'/);
-  assert.match(routes, /'\\/api\\/locations\\/search'/);
-  assert.match(routes, /'\\/api\\/locations\\/timezone'/);
-  assert.match(workflow, /Sync GeoNames service username into Production Worker/);
-  assert.match(workflow, /GEONAMES_USERNAME:\\s*\\$\\{\\{\\s*secrets\\.GEONAMES_USERNAME\\s*\\}\\}/);
-  assert.match(workflow, /secret put GEONAMES_USERNAME/);
-  assert.match(workflow, /GeoNames service username.*names\\.has\\('GEONAMES_USERNAME'\\)/);
-  assert.match(workflow, /Verify Production GeoNames search and timezone routes/);
-  assert.match(workflow, /GEONAMES_USERNAME.*remains hidden/);
-});
+  const mainLocation = fs.readFileSync(path.join(root, '..', '..', 'public', 'main-location-search.js'), 'utf8');
+  const sharedLocation = fs.readFileSync(path.join(root, '..', '..', 'public', 'horoscope', 'location-search-online-offline.js'), 'utf8');
 
+  assert.ok(entry.includes('registerGeoNamesRoutes({ app, env });'));
+  assert.ok(routes.includes('env.GEONAMES_USERNAME'));
+  assert.ok(routes.includes("new URL('https://secure.geonames.org/' + endpoint)"));
+  for (const route of ['/api/locations/status', '/api/locations/search', '/api/locations/timezone']) {
+    assert.ok(routes.includes("'" + route + "'"), 'Missing GeoNames route: ' + route);
+  }
+
+  assert.ok(workflow.includes('Sync GeoNames service username into Production Worker'));
+  assert.ok(workflow.includes('GEONAMES_USERNAME: ${{ secrets.GEONAMES_USERNAME }}'));
+  assert.ok(workflow.includes('secret put GEONAMES_USERNAME'));
+  assert.ok(workflow.includes("['GeoNames service username', names.has('GEONAMES_USERNAME')]"));
+  assert.ok(workflow.includes('Verify Production GeoNames search and timezone routes'));
+  assert.ok(workflow.includes('Validated GeoNames username secret. Value remains hidden.'));
+  assert.ok(!config.vars.GEONAMES_USERNAME, 'GeoNames username must not be stored as a plain Wrangler variable.');
+
+  assert.ok(mainLocation.includes('https://smvastroservices.astroservices.workers.dev'));
+  assert.ok(sharedLocation.includes("const defaultBackend='https://smvastroservices.astroservices.workers.dev'"));
+});
+ 
 test('Production diagnostic probe Workers have separate names and cannot bind Production D1', () => {
   const native = JSON.parse(fs.readFileSync(path.join(root, 'wrangler.native-probe.jsonc'), 'utf8'));
   const express = JSON.parse(fs.readFileSync(path.join(root, 'wrangler.express-probe.jsonc'), 'utf8'));
