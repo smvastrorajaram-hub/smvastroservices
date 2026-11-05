@@ -63,6 +63,20 @@ Firestore Admin's `preferRest` option can use HTTP/1.1 REST for supported operat
 
 The main application uses native Swiss Ephemeris/ephemeris assets and a separate Horoscope server. Those files and the separate SMV HOROSCOPE/CALENDAR runtime are outside this PR and must not be bundled into or changed by this migration.
 
+## GeoNames location and timezone routes
+
+The Production Worker registers these public, read-only routes through the same Express entry point:
+
+- `GET /api/locations/status` — reports whether the server-side GeoNames account is configured. It never returns the username.
+- `GET /api/locations/search?q=...&limit=...&lang=en|ta` — bounded place search, returning validated coordinates and display names.
+- `GET /api/locations/timezone?lat=...&lng=...` — resolves an IANA `timezoneId` from GeoNames `timezoneJSON`.
+
+The provider calls use GeoNames' secure HTTPS endpoint. The required `username` parameter is added inside the Worker; it is not sent by the browser and is not stored in `wrangler.production.jsonc`. GitHub's Production deployment workflow reads the repository/environment secret named `GEONAMES_USERNAME`, provisions it with `wrangler secret put`, verifies only that the secret name exists, then checks the live status, place-search and timezone endpoints after deployment. Secret values are never printed.
+
+Production browser clients on `smvastroservices.in`, `horoscope.smvastroservices.in` and `calendar.smvastroservices.in` use the Cloudflare Worker for online place lookup and IANA timezone resolution. The existing offline India place database and offline timezone fallback remain in place. A failed/unavailable online request therefore continues to fall back to the existing India offline search; no browser cache stores the GeoNames username.
+
+The post-deploy smoke check uses a small London search and a London timezone lookup and expects `Europe/London`. GeoNames documents JSON web services and requires the registered username on each request; see [GeoNames Web Service documentation](https://www.geonames.org/export/web-services.html).
+
 ## Safety contract
 
 - `/healthz` proves only that the Express-to-Workers runtime responds.
