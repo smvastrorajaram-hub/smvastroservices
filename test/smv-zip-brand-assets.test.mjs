@@ -64,14 +64,14 @@ test('Each website uses its matching original SMV WEBSITE artwork as its browser
     for (const size of [16,32,64]) {
       const file=folder+'/'+prefix+'-'+size+'.png';
       assert.deepEqual(pngDimensions(file),[size,size],file+' favicon dimensions');
-      assert.ok(html.includes(prefix+'-'+size+'.png?v=20261106-active-only-auto-busy-icons-v2'),page+' must reference its own tab icon');
+      assert.ok(html.includes(prefix+'-'+size+'.png?v=20261106-india-place-manifest-count-v1'),page+' must reference its own tab icon');
     }
     const ico=folder+'/'+prefix+'.ico';
     assert.ok(exists(ico),ico+' ICO must exist');
     assert.ok(fs.readFileSync(path.join(root,ico)).subarray(0,4).equals(Buffer.from([0,0,1,0])),ico+' must be an ICO file');
-    assert.ok(html.includes(prefix+'.ico?v=20261106-active-only-auto-busy-icons-v2'),page+' must reference its own ICO');
+    assert.ok(html.includes(prefix+'.ico?v=20261106-india-place-manifest-count-v1'),page+' must reference its own ICO');
   }
-  assert.ok(read('public/index.html').includes('href="./manifest.webmanifest?v=20261106-active-only-auto-busy-icons-v2" rel="manifest"'));
+  assert.ok(read('public/index.html').includes('href="./manifest.webmanifest?v=20261106-india-place-manifest-count-v1" rel="manifest"'));
 });
 
 test('Horoscope and Calendar logo headers are removed while Horoscope controls remain in one row', () => {
@@ -96,11 +96,29 @@ test('Horoscope and Calendar logo headers are removed while Horoscope controls r
 test('All three independent Service Workers share one new cache release and cache the intended website artwork', () => {
   const workers=[read('public/sw.js'),read('public/horoscope/sw.js'),read('public/horoscope/calendar/sw.js')];
   const versions=workers.map(source=>/const SMV_CACHE_RELEASE='([^']+)'/.exec(source)?.[1]);
-  assert.deepEqual(versions,['20261106-active-only-auto-busy-icons-v2','20261106-active-only-auto-busy-icons-v2','20261106-active-only-auto-busy-icons-v2']);
+  assert.deepEqual(versions,['20261106-india-place-manifest-count-v1','20261106-india-place-manifest-count-v1','20261106-india-place-manifest-count-v1']);
   assert.ok(workers[0].includes("'./assets/favicon-astro.ico'"));
   assert.ok(workers[0].includes("'./assets/smv-home-logo.webp'"));
   assert.ok(workers[1].includes("'./assets/favicon-horoscope.ico'"));
   assert.ok(workers[1].includes("'./assets/smv-horoscope-website.webp'"));
   assert.ok(workers[2].includes("'../assets/favicon-calendar.ico'"));
   assert.ok(workers[2].includes("'../assets/smv-calendar-website.webp'"));
+});
+
+test('All three Service Workers validate the India total from the manifest, not the sum of shard metadata', () => {
+  const manifest = JSON.parse(read('public/horoscope/offline/places/india-manifest.json'));
+  assert.equal(manifest.records, 557995, 'The manifest declares the canonical total number of India places.');
+  assert.equal(Object.keys(manifest.shards || {}).length, 28, 'The complete offline pack contains all 28 shards.');
+
+  const workers = [
+    'public/sw.js',
+    'public/horoscope/sw.js',
+    'public/horoscope/calendar/sw.js'
+  ];
+  for (const file of workers) {
+    const source = read(file);
+    assert.ok(source.includes('const records=Number(manifest?.records);'), file + ' must read the canonical total from manifest.records.');
+    assert.ok(source.includes('if(!Number.isSafeInteger(records)||records!==557995)'), file + ' must validate the manifest total.');
+    assert.ok(!source.includes('entries.reduce((sum,[,item])=>sum+(Number(item?.records)||0),0)'), file + ' must not treat the sum of shard metadata as the global place count.');
+  }
 });
