@@ -8,6 +8,12 @@ The first successful online visit downloads the app shell and the required local
 
 This is not an offline conversion of backend services. It is a static UI and deterministic-calculation cache policy.
 
+## Current synchronized cache release
+
+All three app workers use `SMV_CACHE_RELEASE=20261105-offline-ui-v2`. Their cache namespaces remain independent, but the release marker is shared. The CI guard requires every future change under `public/` to update all three service workers and change this common marker; a missing or unsynchronized bump fails the pull request.
+
+The production Android apps are remote-site WebViews, not bundled offline HTML packages. All three native WebViews now explicitly use `WebSettings.LOAD_DEFAULT` and configure Android's Service Worker runtime with `LOAD_DEFAULT` and network loads enabled. The hosted Service Worker then refreshes static UI files on successful online requests and serves the last cached UI/calculation assets offline. A web-only UI change is therefore delivered to the installed Android apps through their respective origin's updated Service Worker; an APK rebuild is needed when native Android code itself changes.
+
 ## App boundaries
 
 - **SMV ASTRO:** cache the root page, static CSS/JavaScript, manifest and essential visual assets. Keep the existing India/place-search cache independent. The root worker does not intercept the nested Horoscope/Calendar scope.
@@ -31,5 +37,7 @@ A user must open the app online at least once after the new worker is deployed s
 - Use separate cache namespaces for ASTRO, HOROSCOPE, CALENDAR and place data.
 - Do not clear origin-wide localStorage, sessionStorage, IndexedDB or Cache API storage.
 - Do not force-reload an open form/report/session during worker activation.
+- Never call Android `WebView.clearCache()`, `localStorage.clear()`, `sessionStorage.clear()` or origin-wide Cache API deletion to force an update.
+- On every future public website/PWA source change, bump all three `SMV_CACHE_RELEASE` markers together; the required CI guard enforces this rule before merge.
 - Keep every non-GET request outside the cache path.
 - Bypass same-origin online-only API/account/financial routes even when they use GET.
