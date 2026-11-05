@@ -206,3 +206,23 @@ test('Public APK download controller accepts only signed metadata from the dedic
   assert.match(controller, /window\.SMV_APK_RELEASE_API_URL/);
   assert.match(controller, /AbortSignal\.timeout/);
 });
+
+
+test('All three production Android WebViews use network-first Service Worker cache mode without clearing user data', () => {
+  const products = [
+    'smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java',
+    'smvhoroscopeproduction/src/main/java/in/smvastroservices/horoscope/MainActivity.java',
+    'smvcalendarproduction/src/main/java/in/smvastroservices/calendar/MainActivity.java'
+  ];
+  for (const path of products) {
+    const activity = read(path);
+    assert.ok(activity.includes('import android.webkit.ServiceWorkerController;'), path + ' must enable the platform Service Worker controller');
+    assert.ok(activity.includes('import android.webkit.ServiceWorkerWebSettings;'), path + ' must configure Service Worker cache policy');
+    assert.ok(activity.includes('settings.setCacheMode(WebSettings.LOAD_DEFAULT);'), path + ' must retain normal online-first WebView HTTP cache');
+    assert.ok(activity.includes('ServiceWorkerController.getInstance().getServiceWorkerWebSettings()'), path + ' must configure the Service Worker runtime');
+    assert.ok(activity.includes('serviceWorkerSettings.setCacheMode(WebSettings.LOAD_DEFAULT);'), path + ' must keep Service Worker requests online-first');
+    assert.ok(activity.includes('serviceWorkerSettings.setBlockNetworkLoads(false);'), path + ' must allow online refresh');
+    assert.doesNotMatch(activity, /(?:webView|WebView)\.clearCache\s*\(/, path + ' must not clear WebView storage on launch');
+    assert.doesNotMatch(activity, /localStorage\.clear|sessionStorage\.clear|caches\.delete/, path + ' must not clear web app or customer data');
+  }
+});

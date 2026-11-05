@@ -1,0 +1,46 @@
+name: Require Three-App Offline Cache Bumps
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/**'
+      - 'scripts/verify-offline-cache-bump.mjs'
+      - '.github/workflows/require-offline-cache-bump.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'public/**'
+      - 'scripts/verify-offline-cache-bump.mjs'
+      - '.github/workflows/require-offline-cache-bump.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synchronized-cache-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify all three cache namespaces are bumped together
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "push" && -n "$EVENT_BEFORE" && "$EVENT_BEFORE" != "0000000000000000000000000000000000000000" ]]; then
+            git fetch origin "$EVENT_BEFORE" --depth=1
+            base_ref="$EVENT_BEFORE"
+          else
+            git fetch origin main --depth=1
+            base_ref="origin/main"
+          fi
+          node scripts/verify-offline-cache-bump.mjs "$base_ref"

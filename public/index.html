@@ -1085,7 +1085,11 @@ else initFAQ();
 (function(){
   if('serviceWorker' in navigator){
     window.addEventListener('load',function(){
-      navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'}).catch(function(err){
+      navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'}).then(function(reg){
+        // Check the hosted worker on each app entry so the latest synchronized
+        // cache release reaches website and Android WebView sessions promptly.
+        reg.update().catch(function(){});
+      }).catch(function(err){
         console.warn('SMV ASTRO PWA service worker registration failed:',err);
       });
     });

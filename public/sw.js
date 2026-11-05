@@ -1,7 +1,40 @@
-/* SMV ASTRO main-site service worker — ONLINE AUTHORITY.
-   Activating a new worker must not force-reload open forms, checkout or live sessions.
-   Frontend/Admin/UI use the deployed network source; offline place-search data has one stable cache. */
+/* SMV ASTRO main-site service worker — offline-capable static UI shell.
+   HTML/CSS/JS presentation is network-first and retained for offline reopening.
+   Authentication, account data, APIs, payments and consultation operations stay network-only.
+   Location search keeps its existing independent online/offline cache. */
+const SMV_CACHE_RELEASE='20261105-offline-ui-v2';
 const OFFLINE_PLACE_CACHE='smv-astro-offline-places';
+const APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE;
+const APP_SHELL_FILES=[
+  './','./index.html','./manifest.webmanifest',
+  './smvastro.css','./smv-ui.css','./dashboard-typography.css',
+  './android-app-install.css','./payment-timing.js','./smvastro.mjs',
+  './coalesced-refresh.mjs','./razorpay-checkout-loader.mjs','./chat-moderation.js',
+  './dashboard-window.js','./public-content-loader.js','./interface.js',
+  './android-app-install.js','./public-navigation.js','./main-location-search.js',
+  './horoscope/offline/places/india-manifest.json','./horoscope/offline/places/place-display.mjs','./main-location-search.js',
+  './horoscope/offline/places/india-manifest.json','./horoscope/offline/places/place-display.mjs',
+  './assets/icon-192.png','./assets/favicon-64.png'
+];
+const REQUIRED_APP_SHELL=new Set([
+  './','./index.html','./manifest.webmanifest',
+  './smvastro.css','./smv-ui.css','./dashboard-typography.css',
+  './android-app-install.css','./payment-timing.js','./smvastro.mjs',
+  './dashboard-window.js','./public-content-loader.js','./interface.js',
+  './android-app-install.js','./public-navigation.js',
+  './coalesced-refresh.mjs','./razorpay-checkout-loader.mjs','./chat-moderation.js'
+]);
+const ONLINE_ONLY_ROOTS=new Set([
+  'api','auth','wallet','payment','payments','razorpay','session','sessions',
+  'booking','bookings','consultation','consultations','notification','notifications',
+  'email','account','profile','firebase','firestore','functions'
+]);
+
+function isOnlineOnlyRequest(url){
+  const first=url.pathname.toLowerCase().split('/').filter(Boolean)[0]||'';
+  if(ONLINE_ONLY_ROOTS.has(first))return true;
+  return [...url.searchParams.keys()].some(key=>/^(?:token|access_token|id_token|auth|uid|userid|sessionid|bookingid|paymentid|orderid|customerid|wallet|email|phone)$/i.test(key));
+}
 
 function isOfflinePlaceAsset(url){
   if(url.origin!==self.location.origin)return false;
@@ -9,14 +42,44 @@ function isOfflinePlaceAsset(url){
   return p.endsWith('/main-location-search.js')||p.includes('/horoscope/offline/places/');
 }
 
+function isStaticPresentationRequest(req,url){
+  if(url.origin!==self.location.origin||isOnlineOnlyRequest(url))return false;
+  const p=url.pathname.toLowerCase();
+  // HOROSCOPE and CALENDAR own narrower service-worker scopes and caches.
+  if(p==='/horoscope'||p.startsWith('/horoscope/'))return false;
+  if(req.mode==='navigate')return true;
+  return /\.(?:html?|css|js|mjs|json|webmanifest|png|jpe?g|webp|gif|svg|ico|avif|woff2?|ttf|otf|wasm|data)$/.test(p);
+}
+
+async function cacheAppShell(){
+  const cache=await caches.open(APP_SHELL_CACHE);
+  const failures=[];
+  await Promise.all(APP_SHELL_FILES.map(async path=>{
+    const request=new Request(new URL(path,self.registration.scope).href,{cache:'reload'});
+    try{
+      const response=await fetch(request,{cache:'no-store'});
+      if(response&&response.ok){
+        const target=isOfflinePlaceAsset(new URL(request.url))?await caches.open(OFFLINE_PLACE_CACHE):cache;
+        await target.put(request,response.clone());
+      }else if(REQUIRED_APP_SHELL.has(path))failures.push(path+' (HTTP '+(response?.status||'unknown')+')');
+    }catch(error){
+      if(REQUIRED_APP_SHELL.has(path))failures.push(path+' ('+String(error?.message||error)+')');
+    }
+  }));
+  if(failures.length)throw new Error('Required SMV ASTRO offline UI files failed to cache: '+failures.join(', '));
+}
+
 self.addEventListener('install',event=>{
-  event.waitUntil(self.skipWaiting());
+  event.waitUntil((async()=>{
+    await cacheAppShell();
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate',event=>{
   event.waitUntil((async()=>{
     const keys=await caches.keys();
-    await Promise.all(keys.filter(k=>k!==OFFLINE_PLACE_CACHE&&(k.startsWith('smv-astro-')||k.startsWith('smvastro-'))).map(k=>caches.delete(k)));
+    await Promise.all(keys.filter(k=>k!==OFFLINE_PLACE_CACHE&&k!==APP_SHELL_CACHE&&(k.startsWith('smv-astro-')||k.startsWith('smvastro-'))).map(k=>caches.delete(k)));
     await self.clients.claim();
     // Do not force-reload open customer/admin/live-session windows during activation.
     // The online-authoritative fetch handler serves current assets on their next request.
@@ -114,6 +177,7 @@ self.addEventListener('fetch',event=>{
   const url=new URL(req.url);
   if(url.origin!==self.location.origin)return;
 
+  // Keep the established online + offline India place-search behavior isolated.
   if(isOfflinePlaceAsset(url)){
     event.respondWith((async()=>{
       const cache=await caches.open(OFFLINE_PLACE_CACHE);
@@ -130,9 +194,26 @@ self.addEventListener('fetch',event=>{
     return;
   }
 
-  // HTML, JS, CSS, images, Admin UI and all other main-site presentation are online-only.
-  event.respondWith(fetch(req,{cache:'no-store'}).catch(()=>new Response(
-    'Connect to the internet to load the current SMV ASTRO site.',
-    {status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}}
-  )));
+  // Only static presentation resources are eligible. API/account/financial and
+  // other online-only requests are left entirely to the browser/network stack.
+  if(!isStaticPresentationRequest(req,url))return;
+  event.respondWith((async()=>{
+    const cache=await caches.open(APP_SHELL_CACHE);
+    try{
+      const network=await fetch(req,{cache:'no-store'});
+      if(network&&network.ok)await cache.put(req,network.clone());
+      return network;
+    }catch(_){
+      const saved=await cache.match(req,{ignoreSearch:true})||
+        await cache.match(new URL(url.pathname,self.location.origin).href,{ignoreSearch:true});
+      if(saved)return saved;
+      if(req.mode==='navigate'){
+        const shell=await cache.match(new URL('./index.html',self.registration.scope).href);
+        if(shell)return shell;
+      }
+      return new Response('SMV ASTRO offline UI asset is not cached. Reconnect once to load it.',{
+        status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}
+      });
+    }
+  })());
 });
