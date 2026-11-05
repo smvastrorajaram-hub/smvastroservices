@@ -82,6 +82,8 @@ for (const app of apps) {
     await page.goto(app.url, { waitUntil: 'domcontentloaded', timeout: 90000 });
     // Do not hold a single CDP Runtime.callFunctionOn open while the worker
     // downloads/verifies the 557,995-record India place pack. Poll short snapshots.
+    const expectedScope = new URL('./', app.url).href;
+    const expectedScriptURL = new URL('sw.js', expectedScope).href;
     const activationDeadline = Date.now() + 12 * 60 * 1000;
     let activationState = null;
     let lastActivationLog = 0;
@@ -99,20 +101,33 @@ for (const app of apps) {
           controllerScriptURL: controller?.scriptURL || ''
         };
       });
-      if (activationState.controllerState === 'activated') break;
+      // A broader-scope worker (for example, SMV ASTRO's root worker) can
+      // control this page while the app-specific worker is still installing.
+      // Do not inspect that app's cache until its exact scoped worker claims it.
+      if (activationState.scope === expectedScope &&
+          activationState.scriptURL === expectedScriptURL &&
+          activationState.activeState === 'activated' &&
+          activationState.controllerState === 'activated' &&
+          activationState.controllerScriptURL === expectedScriptURL) break;
       if (Date.now() - lastActivationLog >= 20000) {
-        process.stdout.write('WAIT: ' + app.name + ' Service Worker install state ' + JSON.stringify(activationState) + '\\n');
+        process.stdout.write('WAIT: ' + app.name + ' expected worker ' + expectedScriptURL +
+          ' install state ' + JSON.stringify(activationState) + '\\n');
         lastActivationLog = Date.now();
       }
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
-    assert.equal(activationState?.controllerState, 'activated',
-      app.name + ' Service Worker did not activate/control the page within 12 minutes: ' + JSON.stringify(activationState));
+    assert.equal(activationState?.scope, expectedScope,
+      app.name + ' must register its own Service Worker scope: ' + JSON.stringify(activationState));
+    assert.equal(activationState?.scriptURL, expectedScriptURL,
+      app.name + ' must activate its own Service Worker script: ' + JSON.stringify(activationState));
+    assert.equal(activationState?.activeState, 'activated',
+      app.name + ' own Service Worker must be activated: ' + JSON.stringify(activationState));
+    assert.equal(activationState?.controllerScriptURL, expectedScriptURL,
+      app.name + ' page must be controlled by its own scoped Service Worker, not a broader app worker: ' + JSON.stringify(activationState));
     const registration = {
       scope: activationState.scope,
       scriptURL: activationState.scriptURL
     };
-    assert.ok(registration.scriptURL.endsWith('/sw.js'), app.name + ' must run its own scoped Service Worker: ' + registration.scriptURL);
 
     const cacheState = await page.evaluate(async (cacheName, requiredAssets, placeCacheName, offlineCacheName, offlineAssets) => {
       const names = await caches.keys();
