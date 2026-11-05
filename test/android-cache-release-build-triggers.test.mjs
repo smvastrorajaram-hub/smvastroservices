@@ -9,7 +9,7 @@ const horoscopeCalendar = read('.github/workflows/build-smv-horoscope-calendar-p
 function section(source, name) {
   const start = source.indexOf('  ' + name + ':');
   assert.notEqual(start, -1, 'Missing workflow trigger section: ' + name);
-  const endMarker = name === 'pull_request' ? '\\n  push:' : '\\npermissions:';
+  const endMarker = name === 'pull_request' ? '\n  push:' : '\npermissions:';
   const end = source.indexOf(endMarker, start + 1);
   assert.notEqual(end, -1, 'Missing end of workflow trigger section: ' + name);
   return source.slice(start, end);
