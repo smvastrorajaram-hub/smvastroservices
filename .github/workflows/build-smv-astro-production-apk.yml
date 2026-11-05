@@ -35,7 +35,6 @@ on:
       - "docs/android-native-call-ringtone.md"
       - "public/sw.js"
       - "public/main-location-search.js"
-      - "test/android-cache-release-build-triggers.test.mjs"
   push:
     paths:
       - "smvastroproduction/**"
@@ -49,6 +48,7 @@ on:
       - "test/android-google-native-signin.test.mjs"
       - "scripts/next-android-release-version.mjs"
       - "test/android-release-version-resolution.test.mjs"
+      - "test/android-cache-release-build-triggers.test.mjs"
       - "docs/android-native-call-ringtone.md"
       - "public/sw.js"
       - "public/main-location-search.js"
