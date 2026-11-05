@@ -161,6 +161,8 @@ jobs:
         run: rm -rf "$RUNNER_TEMP/smv-astro-release-keystore"
 
   build:
+    permissions:
+      contents: write
     if: ${{ github.event_name != 'workflow_dispatch' || !inputs.generate_release_keystore }}
     runs-on: ubuntu-latest
     env:
@@ -345,6 +347,25 @@ jobs:
           name: SMV-ASTRO-PERMANENT-RELEASE-APK
           path: smvastroproduction/build/outputs/apk/release/smvastroproduction-release.apk
           retention-days: 30
+
+      - name: Prepare versioned signed SMV ASTRO APK release asset
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="smvastroproduction/build/outputs/apk/release/smvastroproduction-release.apk"
+          test -s "$apk"
+          cp "$apk" "$RUNNER_TEMP/SMV-ASTRO-$SMV_ANDROID_VERSION_NAME.apk"
+
+      - name: Publish raw signed SMV ASTRO APK direct-download release asset
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: smv-astro-apk-${{ env.SMV_ANDROID_VERSION_NAME }}-run-${{ github.run_number }}
+          name: SMV ASTRO ${{ env.SMV_ANDROID_VERSION_NAME }} signed Android APK
+          files: ${{ runner.temp }}/SMV-ASTRO-${{ env.SMV_ANDROID_VERSION_NAME }}.apk
+          draft: false
+          prerelease: false
 
       - name: Remove signing keystore from the runner
         if: ${{ always() && env.SMV_SIGNED_RELEASE == 'true' }}
