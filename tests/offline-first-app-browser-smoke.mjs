@@ -4,14 +4,14 @@ import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 
 const origin = process.env.SMV_OFFLINE_PREVIEW_ORIGIN || 'http://127.0.0.1:4173';
-const release = '20261105-offline-location-pack-v4';
+const release = '20261105-active-only-auto-busy-v1';
 const apps = [
   {
     name: 'SMV ASTRO',
     url: origin + '/',
     cacheName: 'smv-astro-shell-' + release,
     placeCacheName: 'smv-shared-india-places',
-    requiredAssets: ['/smvastro.mjs','/assets/icon-192.png','/assets/icon-512.png','/assets/icon-512-maskable.png','/assets/smv-home-logo.webp','/assets/favicon.ico'],
+    requiredAssets: ['/smvastro.mjs','/assets/icon-192.png','/assets/icon-512.png','/assets/icon-512-maskable.png','/assets/smv-home-logo.webp','/assets/favicon-astro.ico'],
     probeAsset: '/smvastro.mjs',
     locationMode: 'question'
   },
