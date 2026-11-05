@@ -2899,3 +2899,10 @@ details>*{display:block!important}
   .smv-android-apk-copy>p:not(.smv-android-apk-eyebrow){font-size:12px}
   .smv-android-apk-actions{grid-column:1/-1;min-width:0;width:100%}
 }
+
+
+/* SMV ASTRO SERVICES identity shared with the main website header. */
+.smv-horoscope-brand-header{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-width:0;margin:0 auto 8px;padding:4px 8px;box-sizing:border-box}
+.smv-horoscope-brand-header img{display:block;flex:0 0 48px;width:48px;height:48px;object-fit:contain;border-radius:50%;background:#fffaf0}
+.smv-horoscope-brand-title{display:block;min-width:0;color:rgb(255,0,0)!important;-webkit-text-fill-color:rgb(255,0,0)!important;font-family:Georgia,"Times New Roman",serif!important;font-size:clamp(20px,4vw,32px)!important;font-weight:900!important;line-height:1.12!important;letter-spacing:1px!important;text-align:center;overflow-wrap:anywhere}
+@media(max-width:420px){.smv-horoscope-brand-header{gap:8px;padding-inline:2px}.smv-horoscope-brand-header img{flex-basis:40px;width:40px;height:40px}.smv-horoscope-brand-title{font-size:clamp(17px,5vw,22px)!important;letter-spacing:.45px!important}}

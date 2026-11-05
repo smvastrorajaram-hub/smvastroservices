@@ -5,7 +5,7 @@
  */
 (function(){
   'use strict';
-  const MODULE_URL='./public-content.mjs?v=20261106-india-place-manifest-count-v1';
+  const MODULE_URL='./public-content.mjs?v=20261106-livechat-brand-header-v1';
   let pending=null;
   function isConsultVisible(){
     const target=document.getElementById('consult');

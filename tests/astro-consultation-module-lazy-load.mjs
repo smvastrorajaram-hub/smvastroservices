@@ -8,7 +8,7 @@ const read = file => readFile(new URL(file, root), 'utf8');
 test('SMV ASTRO home does not eagerly import the consultation/profile module', async () => {
   const html = await read('index.html');
   assert.equal(html.includes('src="./public-content.mjs'), false);
-  assert.match(html, /public-content-loader\.js\?v=20261106-india-place-manifest-count-v1/);
+  assert.match(html, /public-content-loader\.js\?v=20261106-livechat-brand-header-v1/);
 });
 
 test('consultation loader lazy-imports once and recovers a direct consultation link', async () => {
