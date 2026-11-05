@@ -2,8 +2,9 @@
    HTML/CSS/JS presentation is network-first and retained for offline reopening.
    Authentication, account data, APIs, payments and consultation operations stay network-only.
    Location search keeps its existing independent online/offline cache. */
+const SMV_CACHE_RELEASE='20261105-offline-ui-v2';
 const OFFLINE_PLACE_CACHE='smv-astro-offline-places';
-const APP_SHELL_CACHE='smv-astro-shell-v1';
+const APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE;
 const APP_SHELL_FILES=[
   './','./index.html','./manifest.webmanifest',
   './smvastro.css','./smv-ui.css','./dashboard-typography.css',
