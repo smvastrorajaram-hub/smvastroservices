@@ -251,7 +251,7 @@ try {
   });
   assert.equal(horoscopeBrand.text, 'SMV ASTRO SERVICES', 'Horoscope header must show the shared SMV ASTRO SERVICES brand title.');
   assert.equal(horoscopeBrand.logoLoaded, true, 'Horoscope header must load its SMV brand mark.');
-  assert.equal(horoscopeBrand.color, 'rgb(255, 0, 0)', 'Horoscope brand title must use the main site's red.');
+  assert.equal(horoscopeBrand.color, 'rgb(255, 0, 0)', "Horoscope brand title must use the main site red.");
   assert.match(horoscopeBrand.fontFamily, /Georgia/i, 'Horoscope brand title must use the main site's serif brand font.');
   await page.waitForFunction(() =>
     Boolean(document.querySelector('#smvHoroscopeAuth [data-login]')) &&
