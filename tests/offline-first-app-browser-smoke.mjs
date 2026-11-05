@@ -70,13 +70,13 @@ for (const app of apps) {
     page.setDefaultTimeout(120000);
 
     await page.goto(app.url, { waitUntil: 'domcontentloaded', timeout: 90000 });
-    // Do not hold a single Runtime.evaluate open while the worker downloads
-    // the full India pack. Poll the short registration state instead; this
-    // avoids a Puppeteer protocol timeout during a legitimate first install.
-    await page.waitForFunction(async () => {
-      const reg = await navigator.serviceWorker.getRegistration();
-      return reg?.active?.state === 'activated' &&
-        navigator.serviceWorker.controller?.state === 'activated';
+    // Keep the polling predicate synchronous. Awaiting getRegistration() inside
+    // waitForFunction can leave one Runtime.callFunctionOn promise open while the
+    // Service Worker is downloading the 62 MiB India place pack; Puppeteer then
+    // hits its shorter protocolTimeout before this 10-minute install timeout.
+    await page.waitForFunction(() => {
+      const controller = navigator.serviceWorker?.controller;
+      return controller?.state === 'activated';
     }, { timeout: 10 * 60 * 1000, polling: 1000 });
     const registration = await page.evaluate(async () => {
       const reg = await navigator.serviceWorker.getRegistration();
