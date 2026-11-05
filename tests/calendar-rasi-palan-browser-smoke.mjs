@@ -64,6 +64,9 @@ try {
   }
   assert.ok(ready, 'Calendar source did not become ready: ' + (lastError?.message || 'unknown error'));
 
+  const calendarHeaderBackground = await page.$eval('.calendar-topbar', el => getComputedStyle(el).backgroundColor);
+  assert.equal(calendarHeaderBackground, 'rgb(15, 81, 76)', 'Calendar header must use the same dark green as the Calendar website theme.');
+
   await page.waitForFunction(() => {
     const status = document.querySelector('#calStatus')?.textContent || '';
     return status && (/Unable to calculate|கணக்கிட முடியவில்லை/.test(status) || (!/Calculating Panchang|பஞ்சாங்கம், ஹோரை/.test(status) && !/Loading monthly calendar|மாத நாட்காட்டி தயாராகிறது/.test(document.querySelector('#calMonth')?.textContent||'')));
@@ -228,12 +231,28 @@ try {
   }, { timeout: 120000 });
   assert.equal(runtimeErrors.length, 0, 'Calendar browser runtime errors: ' + runtimeErrors.join(' | '));
   
-  // The Horoscope site header, hero, and footer are intentionally removed.
-  // Verify the compact app controls still provide language selection and customer login.
+  // The Horoscope page now reuses the main SMV ASTRO SERVICES brand mark/title.
+  // Verify the brand and compact app controls while keeping the removed legacy chrome absent.
   await page.setCacheEnabled(false);
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
   await page.goto(new URL('/horoscope/', previewUrl).href, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.waitForSelector('#smvHoroscopeControls #languageTamil', { timeout: 20000 });
+  await page.waitForSelector('.smv-horoscope-brand-header .smv-horoscope-brand-title', { timeout: 20000 });
+  const horoscopeBrand = await page.evaluate(() => {
+    const logo = document.querySelector('.smv-horoscope-brand-header img');
+    const title = document.querySelector('.smv-horoscope-brand-title');
+    const style = title ? getComputedStyle(title) : null;
+    return {
+      text: title?.textContent?.trim() || '',
+      logoLoaded: Boolean(logo?.complete && logo.naturalWidth > 0),
+      color: style?.color || '',
+      fontFamily: style?.fontFamily || ''
+    };
+  });
+  assert.equal(horoscopeBrand.text, 'SMV ASTRO SERVICES', 'Horoscope header must show the shared SMV ASTRO SERVICES brand title.');
+  assert.equal(horoscopeBrand.logoLoaded, true, 'Horoscope header must load its SMV brand mark.');
+  assert.equal(horoscopeBrand.color, 'rgb(255, 0, 0)', 'Horoscope brand title must use the main site's red.');
+  assert.match(horoscopeBrand.fontFamily, /Georgia/i, 'Horoscope brand title must use the main site's serif brand font.');
   await page.waitForFunction(() =>
     Boolean(document.querySelector('#smvHoroscopeAuth [data-login]')) &&
     !document.querySelector('#templeHeader') &&
