@@ -18,9 +18,10 @@ const apps = [
     name: 'SMV HOROSCOPE',
     url: origin + '/horoscope/',
     cacheName: 'smv-horoscope-shell-' + release,
-    requiredAssets: [
+    offlineCacheName: 'smv-horoscope-offline',
+    requiredAssets: ['/horoscope/marriage-matching.js'],
+    offlineAssets: [
       '/horoscope/offline/offline-engine.mjs',
-      '/horoscope/marriage-matching.js',
       '/horoscope/offline/vendor/wasm/swisseph.wasm',
       '/horoscope/offline/places/india-manifest.json'
     ],
@@ -72,7 +73,7 @@ for (const app of apps) {
         navigator.serviceWorker.controller?.state === 'activated';
     }, { timeout: 60000 });
 
-    const cacheState = await page.evaluate(async (cacheName, requiredAssets, placeCacheName) => {
+    const cacheState = await page.evaluate(async (cacheName, requiredAssets, placeCacheName, offlineCacheName, offlineAssets) => {
       const names = await caches.keys();
       const exists = names.includes(cacheName);
       const cache = exists ? await caches.open(cacheName) : null;
@@ -90,17 +91,28 @@ for (const app of apps) {
       }
       const onlineOnlyRoots = new Set(['api','auth','wallet','payment','payments','razorpay','session','sessions','booking','bookings','consultation','consultations','account','profile','firebase','firestore','functions']);
       const onlineOnlyCached = cachedUrls.filter(path => onlineOnlyRoots.has(path.split('/')[1] || ''));
+      let offlineFound = [];
+      if (offlineCacheName) {
+        const offline = await caches.open(offlineCacheName);
+        for (const path of offlineAssets || []) {
+          const response = await offline.match(new URL(path, location.origin).href);
+          offlineFound.push({ path, ok: Boolean(response?.ok), status: response?.status || 0 });
+        }
+      }
       let placeManifest = null;
       if (placeCacheName) {
         const places = await caches.open(placeCacheName);
         const response = await places.match(new URL('/horoscope/offline/places/india-manifest.json', location.origin).href);
         placeManifest = { ok: Boolean(response?.ok), status: response?.status || 0 };
       }
-      return { exists, found, onlineOnlyCached, placeManifest, cacheNames: names };
-    }, app.cacheName, app.requiredAssets, app.placeCacheName || null);
+      return { exists, found, offlineFound, onlineOnlyCached, placeManifest, cacheNames: names };
+    }, app.cacheName, app.requiredAssets, app.placeCacheName || null, app.offlineCacheName || null, app.offlineAssets || []);
     assert.ok(cacheState.exists, app.name + ' release cache must exist: ' + app.cacheName);
     for (const asset of cacheState.found) {
-      assert.equal(asset.ok, true, app.name + ' required offline asset must be cached: ' + asset.path + ' (HTTP ' + asset.status + ')');
+      assert.equal(asset.ok, true, app.name + ' required UI asset must be cached: ' + asset.path + ' (HTTP ' + asset.status + ')');
+    }
+    for (const asset of cacheState.offlineFound) {
+      assert.equal(asset.ok, true, app.name + ' required calculation asset must be cached in its separate offline cache: ' + asset.path + ' (HTTP ' + asset.status + ')');
     }
     assert.deepEqual(cacheState.onlineOnlyCached, [], app.name + ' must not cache online account or financial API routes.');
     if (app.placeCacheName) assert.equal(cacheState.placeManifest?.ok, true, app.name + ' India place manifest must be preserved in its independent place cache (HTTP ' + (cacheState.placeManifest?.status || 0) + ').');
