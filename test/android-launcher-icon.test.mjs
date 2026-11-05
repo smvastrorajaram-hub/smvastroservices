@@ -32,7 +32,7 @@ function jpegDimensions(data,file){
 test('SMV ASTRO Android launcher source is the exact user-uploaded ICON file and stays separate from PWA assets',()=>{
   const sourcePath='ICON/SMV ASTRO.jpg';
   const source=bytes(sourcePath);
-  assert.deepEqual(jpegDimensions(source,sourcePath),{width:1024,height:1024});
+  assert.deepEqual(jpegDimensions(source,sourcePath),{width:2048,height:2048});
   const script=read('prepare-smv-astro-production-icon.sh');
   assert.ok(script.includes('source_icon="ICON/SMV ASTRO.jpg"'));
   assert.ok(script.includes('SmvProductLauncherIconGenerator'));

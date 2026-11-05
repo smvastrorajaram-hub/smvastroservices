@@ -2,27 +2,15 @@
 
 The Production Android app lives in `smvastroproduction/`, has launcher name **SMV ASTRO**, and uses package `in.smvastroservices.smvastro`. The modules `smvastro/`, `smvhoroscope/`, and `smvcalendar/` remain separate Test APKs. The existing `.github/workflows/build-test-apks.yml` workflow is not changed.
 
-## Android launcher icon: centered white tile inside the system mask
+## Android launcher icons: three independent assets from the root ICON folder
+The three production APKs use the exact product-specific images uploaded to the repository's root `ICON/` folder:
+- `ICON/SMV ASTRO.jpg` → SMV ASTRO
+- `ICON/SMV HOROSCOPE.jpg` → SMV HOROSCOPE
+- `ICON/SMV CALENDAR.jpg` → SMV CALENDAR
 
-The Production APK uses the Android-only source artwork at `smvastroproduction/launcher/icon-512.png`, separate from `public/assets/icon-512.png` and all Website/PWA files. The Android build removes only the near-white canvas connected to the outside of this source image; the original logo, lettering and gold frame remain the artwork.
+Each source image is 2048×2048. The Android build generates 512×512 square/round launcher images and a 432×432 adaptive foreground JPEG, with the same centered white-background tile treatment for all three products. The shared generator reduces JPEG quality only as necessary and fails closed unless every generated launcher image is at most 300,000 bytes. The adaptive icon keeps a separate pure-white background resource.
 
-The launcher appearance is intentionally a white-background tile with the complete SMV ASTRO artwork centered at a smaller size:
-- Android adaptive foreground: a 66dp rounded-square artwork tile inside the 108dp canvas, with a separate white adaptive background.
-- Android safe zone: the complete artwork occupies no more than the central 66×66dp mask-safe area, so its lettering remains protected under the OEM circle/squircle masks.
-- Legacy square and round icons: the same centered 66dp tile on a solid white background; the round fallback has only the area outside its white circle transparent.
-
-The previous 58dp artwork tile left more white margin than desired. It is enlarged to the Android-recommended 66dp maximum. A 75dp critical-artwork tile would exceed the documented mask-safe region and could reintroduce clipping on Round/Pebble-style launchers, so the production design intentionally stops at 66dp.
-
-The phone launcher supplies the outside mask (Pebble, Round, Squircle, Material-style or Square); the complete SMV ASTRO tile stays centered with a visible white margin. No new logo artwork is created.
-
-Changing only `smvastroproduction/launcher/icon-512.png` triggers the Android workflow. The workflow automatically allocates the next vMAJOR.MINOR version and builds a signed Release APK using the existing permanent signing certificate. The Production Website, Horoscope PWA, Calendar, Firebase, Razorpay, Render and Cloudflare assets are not changed.
-
-## Native incoming-call notification and foreground ringtone
-
-- The Production Android app registers a native Firebase Cloud Messaging token and posts it to `POST /live/push/register` with `platform: native-android`. The server derives the owner from the verified Firebase ID token and refuses a token already owned by another account.
-- Cloudflare Live Call, Live Chat and both booked Call/Chat requests are sent only to registered `native-android` tokens owned by the target Astrologer UID. These native incoming-call messages are **high-priority FCM data-only messages**. They deliberately omit the top-level `notification` object so Android invokes `NativePushMessagingService.onMessageReceived()` instead of displaying a notification-only alert.
-- The native FCM handler starts `IncomingCallRingtoneService` whether the SMV ASTRO app is visible or in the background. The service uses `RingtoneManager.TYPE_RINGTONE` to play the phone's configured mobile ringtone in a loop, displays an ongoing incoming-call/full-screen notification, and has a 120-second safety timeout. The website's generated WebAudio melody is suppressed inside the native app to avoid two ringtones playing together.
-- Cloudflare sends a data-only `stop_ringing` command when an incoming Live request is accepted, rejected, or ended, and when a booking is accepted, rejected, or cancelled. The native service matches the session/booking ID before stopping, so an unrelated incoming alert is not silenced.
+Changing one source image triggers only its corresponding Android build workflow. The Website, Horoscope PWA, Calendar PWA, Firebase, Razorpay, Render and Cloudflare assets are not changed by this launcher-only update.
 - When the Astrologer taps the full-screen notification, Android passes the data extras (including `type`, `sessionId` or `bookingId`) to the launcher activity. `MainActivity` converts those values into the existing `smvLivePush` URL, and the signed-in Astrologer dashboard opens the matching Live request or booking.
 - A swiped-away or process-killed app can be started by Android for a delivered high-priority FCM data message. Android does not deliver FCM while the user has force-stopped the app from system App Info; the user must launch it again. Notification permission, DND/silent mode, ringtone volume, battery management, OEM background limits and network/FCM delivery remain controlled by Android and the device owner.
 - Browser notifications are separate from the native Android service. A browser tab that remains open can play its in-page alert sound, but web notifications cannot reliably force the phone's selected ringtone while the browser/tab is closed; the browser's system notification behavior is therefore left unchanged.
