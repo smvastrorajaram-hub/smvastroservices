@@ -36,7 +36,7 @@ jobs:
           node-version: '22'
 
       - name: Detect GeoNames-only Production Worker deployment scope
-        id: deployment-scope
+        id: deployment_scope
         shell: bash
         env:
           EVENT_BEFORE: ${{ github.event.before }}
@@ -103,11 +103,11 @@ jobs:
         run: npm install --prefix cloudflare/backend-api --no-package-lock --ignore-scripts --no-audit --no-fund
 
       - name: Deploy isolated native Worker runtime probe
-        if: ${{ steps.deployment-scope.outputs.geonames_only != 'true' }}
+        if: ${{ steps.deployment_scope.outputs.geonames_only != 'true' }}
         run: npx --yes wrangler@4.156.0 deploy --config cloudflare/backend-api/wrangler.native-probe.jsonc
 
       - name: Verify native Worker runtime probe
-        if: ${{ steps.deployment-scope.outputs.geonames_only != 'true' }}
+        if: ${{ steps.deployment_scope.outputs.geonames_only != 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -128,11 +128,11 @@ jobs:
           exit 1
 
       - name: Deploy isolated Express Node HTTP bridge probe
-        if: ${{ steps.deployment-scope.outputs.geonames_only != 'true' }}
+        if: ${{ steps.deployment_scope.outputs.geonames_only != 'true' }}
         run: npx --yes wrangler@4.156.0 deploy --config cloudflare/backend-api/wrangler.express-probe.jsonc
 
       - name: Verify Express Node HTTP bridge probe
-        if: ${{ steps.deployment-scope.outputs.geonames_only != 'true' }}
+        if: ${{ steps.deployment_scope.outputs.geonames_only != 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -153,7 +153,7 @@ jobs:
           exit 1
 
       - name: Sync Firebase Project 1 service account into Production Worker
-        if: ${{ steps.deployment-scope.outputs.geonames_only != 'true' }}
+        if: ${{ steps.deployment_scope.outputs.geonames_only != 'true' }}
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
           FIREBASE_PRODUCTION_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_PRODUCTION_SERVICE_ACCOUNT_JSON }}
@@ -202,7 +202,7 @@ jobs:
           fi
 
       - name: Upload validated wallet payout encryption key to Production Worker
-        if: ${{ steps.deployment-scope.outputs.geonames_only != 'true' }}
+        if: ${{ steps.deployment_scope.outputs.geonames_only != 'true' }}
         env:
           SMV_WALLET_PAYOUT_ENCRYPTION_KEY: ${{ secrets.SMV_WALLET_PAYOUT_ENCRYPTION_KEY }}
         shell: bash
@@ -266,7 +266,7 @@ jobs:
         run: npx --yes wrangler@4.156.0 d1 migrations list smvastro-wallet-production --remote --config wrangler.production.jsonc
 
       - name: Apply pending additive migrations to exact Production D1
-        if: ${{ steps.deployment-scope.outputs.geonames_only != 'true' || steps.deployment-scope.outputs.migrations_changed == 'true' }}
+        if: ${{ steps.deployment_scope.outputs.geonames_only != 'true' || steps.deployment_scope.outputs.migrations_changed == 'true' }}
         working-directory: cloudflare/backend-api
         run: npx --yes wrangler@4.156.0 d1 migrations apply smvastro-wallet-production --remote --config wrangler.production.jsonc
 
