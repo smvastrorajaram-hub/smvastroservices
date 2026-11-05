@@ -86,19 +86,30 @@ for (const app of apps) {
     let activationState = null;
     let lastActivationLog = 0;
     while (Date.now() < activationDeadline) {
-      activationState = await page.evaluate(async () => {
-        const registration = await navigator.serviceWorker?.getRegistration();
-        const controller = navigator.serviceWorker?.controller;
-        return {
-          scope: registration?.scope || '',
-          scriptURL: registration?.active?.scriptURL || '',
-          activeState: registration?.active?.state || '',
-          installingState: registration?.installing?.state || '',
-          waitingState: registration?.waiting?.state || '',
-          controllerState: controller?.state || '',
-          controllerScriptURL: controller?.scriptURL || ''
-        };
-      });
+      try {
+        activationState = await page.evaluate(async () => {
+          const registration = await navigator.serviceWorker?.getRegistration();
+          const controller = navigator.serviceWorker?.controller;
+          return {
+            scope: registration?.scope || '',
+            scriptURL: registration?.active?.scriptURL || '',
+            activeState: registration?.active?.state || '',
+            installingState: registration?.installing?.state || '',
+            waitingState: registration?.waiting?.state || '',
+            controllerState: controller?.state || '',
+            controllerScriptURL: controller?.scriptURL || ''
+          };
+        });
+      } catch (error) {
+        // The Calendar app intentionally reloads once when its own Service Worker
+        // claims the first-load page. That navigation can destroy a short CDP
+        // evaluation; retry the snapshot after the navigation instead of failing
+        // the offline smoke because of the expected controllerchange reload.
+        const message = String(error?.message || error);
+        if (!/Execution context was destroyed|Cannot find context with specified id/i.test(message)) throw error;
+        await new Promise(resolve => setTimeout(resolve, 250));
+        continue;
+      }
       // A broader-scope worker (for example, SMV ASTRO's root worker) can
       // control this page while the app-specific worker is still installing.
       // Do not inspect that app's cache until its exact scoped worker claims it.
