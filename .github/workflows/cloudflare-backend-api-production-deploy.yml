@@ -169,6 +169,24 @@ jobs:
           NODE
           printf '%s' "$SMV_WALLET_PAYOUT_ENCRYPTION_KEY" | npx --yes wrangler@4.156.0 secret put SMV_WALLET_PAYOUT_ENCRYPTION_KEY --config cloudflare/backend-api/wrangler.production.jsonc
 
+      - name: Sync GeoNames service username into Production Worker
+        env:
+          GEONAMES_USERNAME: ${{ secrets.GEONAMES_USERNAME }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          GEONAMES_USERNAME="${GEONAMES_USERNAME:-}" node --input-type=module <<'NODE'
+          const username = String(process.env.GEONAMES_USERNAME || '');
+          if (!username.trim() || username.length > 128 || /[\\u0000-\\u001f\\u007f]/.test(username)) {
+            console.error('GEONAMES_USERNAME GitHub secret is missing or invalid; value remains hidden.');
+            process.exit(1);
+          }
+          console.log('Validated GeoNames username secret. Value remains hidden.');
+          NODE
+          printf '%s' "$GEONAMES_USERNAME" | npx --yes wrangler@4.156.0 secret put GEONAMES_USERNAME --config cloudflare/backend-api/wrangler.production.jsonc
+          unset GEONAMES_USERNAME
+          echo 'Synced GEONAMES_USERNAME to the Cloudflare Production Worker without printing its value.'
+
       - name: Audit required Production Worker secret names (values stay hidden)
         shell: bash
         run: |
@@ -185,7 +203,8 @@ jobs:
             ['Razorpay Live key ID', names.has('RAZORPAY_KEY_ID')],
             ['Razorpay Live key secret', names.has('RAZORPAY_KEY_SECRET')],
             ['Razorpay webhook secret', names.has('RAZORPAY_WEBHOOK_SECRET')],
-            ['Wallet payout AES-256-GCM encryption key', names.has('SMV_WALLET_PAYOUT_ENCRYPTION_KEY')]
+            ['Wallet payout AES-256-GCM encryption key', names.has('SMV_WALLET_PAYOUT_ENCRYPTION_KEY')],
+            ['GeoNames service username', names.has('GEONAMES_USERNAME')]
           ];
           for (const [label, present] of required) console.log((present ? 'PRESENT: ' : 'MISSING: ') + label);
           if (required.some(([, present]) => !present)) process.exit(1);
@@ -231,6 +250,59 @@ jobs:
           test -f /tmp/smv-worker-health.headers && grep -iE '^(HTTP/|cf-error-type:|cf-error-origin:|cf-ray:)' /tmp/smv-worker-health.headers || true
           test -f /tmp/smv-worker-health.json && cat /tmp/smv-worker-health.json || true
           exit 1
+
+      - name: Verify Production GeoNames search and timezone routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT='https://smvastroservices.astroservices.workers.dev'
+          status="$(curl --silent --show-error --connect-timeout 10 --max-time 20 --output /tmp/smv-geonames-status.json --write-out '%{http_code}' "$ROOT/api/locations/status" || true)"
+          if [ "$status" != '200' ]; then
+            echo "::error::GeoNames status route returned HTTP $status."
+            exit 1
+          fi
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const status = JSON.parse(fs.readFileSync('/tmp/smv-geonames-status.json', 'utf8'));
+          if (status.ok !== true || status.configured !== true || status.provider !== 'GeoNames') {
+            console.error('Production GeoNames secret is not configured or status route is unhealthy.');
+            process.exit(1);
+          }
+          console.log('PASS: Production GeoNames status is configured; username remains undisclosed.');
+          NODE
+
+          search_status="$(curl --silent --show-error --connect-timeout 10 --max-time 30 --output /tmp/smv-geonames-search.json --write-out '%{http_code}' "$ROOT/api/locations/search?q=London&limit=5&lang=en" || true)"
+          if [ "$search_status" != '200' ]; then
+            echo "::error::GeoNames search route returned HTTP $search_status."
+            exit 1
+          fi
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const result = JSON.parse(fs.readFileSync('/tmp/smv-geonames-search.json', 'utf8'));
+          const rows = Array.isArray(result.rows) ? result.rows : [];
+          if (result.ok !== true || result.provider !== 'GeoNames' || !rows.length ||
+              !rows.every(row => Number.isFinite(row.latitude) && Number.isFinite(row.longitude))) {
+            console.error('Production GeoNames search did not return valid place coordinates.');
+            process.exit(1);
+          }
+          console.log('PASS: Production GeoNames search returned ' + rows.length + ' valid place result(s).');
+          NODE
+
+          zone_status="$(curl --silent --show-error --connect-timeout 10 --max-time 30 --output /tmp/smv-geonames-timezone.json --write-out '%{http_code}' "$ROOT/api/locations/timezone?lat=51.5074&lng=-0.1278" || true)"
+          if [ "$zone_status" != '200' ]; then
+            echo "::error::GeoNames timezone route returned HTTP $zone_status."
+            exit 1
+          fi
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const result = JSON.parse(fs.readFileSync('/tmp/smv-geonames-timezone.json', 'utf8'));
+          if (result.ok !== true || result.timezoneId !== 'Europe/London' ||
+              result.timezoneSource !== 'geonames-timezoneJSON') {
+            console.error('Production GeoNames timezone route returned an unexpected IANA timezoneId.');
+            process.exit(1);
+          }
+          console.log('PASS: Production GeoNames timezone returned Europe/London.');
+          NODE
 
       - name: Verify Production financial readiness and Razorpay Live mode
         shell: bash
