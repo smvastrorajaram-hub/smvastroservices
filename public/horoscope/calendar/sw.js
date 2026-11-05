@@ -1,4 +1,4 @@
-const SMV_CACHE_RELEASE='20261106-livechat-brand-header-v1';
+const SMV_CACHE_RELEASE='20261106-product-pwa-header-v2';
 const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE;
 const LOCATION_CACHE='smv-shared-india-places';
 const CORE=[
