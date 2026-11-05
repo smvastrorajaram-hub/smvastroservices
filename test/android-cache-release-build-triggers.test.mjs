@@ -6,16 +6,18 @@ const read = file => fs.readFileSync(file, 'utf8');
 const astro = read('.github/workflows/build-smv-astro-production-apk.yml');
 const horoscopeCalendar = read('.github/workflows/build-smv-horoscope-calendar-production-apks.yml');
 
-function section(source, name, next) {
+function section(source, name) {
   const start = source.indexOf('  ' + name + ':');
   assert.notEqual(start, -1, 'Missing workflow trigger section: ' + name);
-  const end = next ? source.indexOf('  ' + next + ':', start + 1) : source.length;
-  return source.slice(start, end < 0 ? source.length : end);
+  const endMarker = name === 'pull_request' ? '\\n  push:' : '\\npermissions:';
+  const end = source.indexOf(endMarker, start + 1);
+  assert.notEqual(end, -1, 'Missing end of workflow trigger section: ' + name);
+  return source.slice(start, end);
 }
 
 test('SMV ASTRO production APK rebuilds when its root UI cache or location search changes', () => {
   for (const trigger of ['pull_request', 'push']) {
-    const block = section(astro, trigger, trigger === 'pull_request' ? 'push' : 'permissions');
+    const block = section(astro, trigger);
     for (const file of [
       'public/sw.js',
       'public/main-location-search.js',
@@ -30,7 +32,7 @@ test('SMV ASTRO production APK rebuilds when its root UI cache or location searc
 
 test('SMV HOROSCOPE and SMV CALENDAR production APKs rebuild when either scoped UI cache or GeoNames loader changes', () => {
   for (const trigger of ['pull_request', 'push']) {
-    const block = section(horoscopeCalendar, trigger, trigger === 'pull_request' ? 'push' : 'permissions');
+    const block = section(horoscopeCalendar, trigger);
     for (const file of [
       'public/horoscope/sw.js',
       'public/horoscope/calendar/sw.js',
