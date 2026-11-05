@@ -48,7 +48,12 @@ const apps = [
 const launchBrowser = async () => puppeteer.launch({
   args: chromium.args,
   executablePath: await chromium.executablePath(),
-  headless: true
+  headless: true,
+  // Reuse one persistent origin profile across the three scoped app workers.
+  // This models the Pages origin where all three apps can share the verified
+  // India place pack instead of downloading the same 60 MB dataset three times.
+  userDataDir: process.env.SMV_OFFLINE_BROWSER_PROFILE || '/tmp/smv-offline-shared-browser-profile',
+  protocolTimeout: 360000
 });
 
 const results = [];
