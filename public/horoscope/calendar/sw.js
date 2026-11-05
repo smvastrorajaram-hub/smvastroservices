@@ -1,4 +1,4 @@
-const SMV_CACHE_RELEASE='20261105-brand-header-manual-busy-removal-v1';
+const SMV_CACHE_RELEASE='20261105-active-only-auto-busy-v1';
 const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE;
 const LOCATION_CACHE='smv-shared-india-places';
 const CORE=[
