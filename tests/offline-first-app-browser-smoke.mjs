@@ -11,7 +11,7 @@ const apps = [
     url: origin + '/',
     cacheName: 'smv-astro-shell-' + release,
     placeCacheName: 'smv-astro-offline-places',
-    requiredAssets: ['/smvastro.mjs'],
+    requiredAssets: ['/smvastro.mjs','/assets/icon-192.png','/assets/icon-512.png','/assets/icon-512-maskable.png','/assets/smv-home-logo.webp','/assets/favicon.ico'],
     probeAsset: '/smvastro.mjs'
   },
   {
@@ -19,7 +19,7 @@ const apps = [
     url: origin + '/horoscope/',
     cacheName: 'smv-horoscope-shell-' + release,
     offlineCacheName: 'smv-horoscope-offline',
-    requiredAssets: ['/horoscope/marriage-matching.js'],
+    requiredAssets: ['/horoscope/marriage-matching.js','/horoscope/assets/icon-192.png','/horoscope/assets/icon-512.png','/horoscope/assets/icon-512-maskable.png','/horoscope/assets/smv-horoscope-website.webp','/horoscope/assets/favicon-horoscope.ico'],
     offlineAssets: [
       '/horoscope/offline/offline-engine.mjs',
       '/horoscope/offline/vendor/wasm/swisseph.wasm',
@@ -34,7 +34,12 @@ const apps = [
     requiredAssets: [
       '/horoscope/calendar-rasi-palan.mjs',
       '/horoscope/offline/vendor/wasm/swisseph.wasm',
-      '/horoscope/offline/places/india-manifest.json'
+      '/horoscope/offline/places/india-manifest.json',
+      '/horoscope/assets/calendar-192.png',
+      '/horoscope/assets/calendar-512.png',
+      '/horoscope/assets/calendar-maskable.png',
+      '/horoscope/assets/smv-calendar-website.webp',
+      '/horoscope/assets/favicon-calendar.ico'
     ],
     probeAsset: '/horoscope/calendar-rasi-palan.mjs'
   }
