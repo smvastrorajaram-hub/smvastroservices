@@ -20,6 +20,8 @@ on:
         default: true
   pull_request:
     paths:
+      - "ICON/SMV ASTRO.jpg"
+      - "tools/SmvProductLauncherIconGenerator.java"
       - "smvastroproduction/**"
       - "smvastroproduction/launcher/icon-512.png"
       - "settings.gradle"
@@ -37,6 +39,8 @@ on:
       - "public/main-location-search.js"
   push:
     paths:
+      - "ICON/SMV ASTRO.jpg"
+      - "tools/SmvProductLauncherIconGenerator.java"
       - "smvastroproduction/**"
       - "smvastroproduction/launcher/icon-512.png"
       - "settings.gradle"
@@ -211,9 +215,9 @@ jobs:
         with:
           name: SMV-ASTRO-ANDROID-LAUNCHER-ICON-PREVIEW
           path: |
-            smvastroproduction/src/main/res/mipmap-nodpi/ic_launcher.png
-            smvastroproduction/src/main/res/mipmap-nodpi/ic_launcher_round.png
-            smvastroproduction/src/main/res/drawable-nodpi/ic_launcher_foreground.png
+            smvastroproduction/src/main/res/mipmap-nodpi/ic_launcher.jpg
+            smvastroproduction/src/main/res/mipmap-nodpi/ic_launcher_round.jpg
+            smvastroproduction/src/main/res/drawable-nodpi/ic_launcher_foreground.jpg
           if-no-files-found: error
           retention-days: 7
 

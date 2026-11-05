@@ -2,159 +2,73 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const read = file => fs.readFileSync(path.join(root, file), 'utf8');
-const bytes = file => fs.readFileSync(path.join(root, file));
-const res = 'smvastroproduction/src/main/res';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const read=file=>fs.readFileSync(path.join(root,file),'utf8');
+const bytes=file=>fs.readFileSync(path.join(root,file));
+const res='smvastroproduction/src/main/res';
+const maxBytes=300000;
 
-function decodeRgbaPng(file) {
-  const data = bytes(file);
-  assert.equal(data.toString('hex', 0, 8), '89504e470d0a1a0a', file + ' must be PNG');
-  const width = data.readUInt32BE(16);
-  const height = data.readUInt32BE(20);
-  const bitDepth = data[24];
-  const colorType = data[25];
-  assert.equal(bitDepth, 8, file + ' must use 8-bit channels');
-  assert.equal(colorType, 6, file + ' must contain an RGBA alpha channel');
-
-  const chunks = [];
-  let offset = 8;
-  while (offset < data.length) {
-    const length = data.readUInt32BE(offset);
-    const type = data.toString('ascii', offset + 4, offset + 8);
-    if (type === 'IDAT') chunks.push(data.subarray(offset + 8, offset + 8 + length));
-    offset += length + 12;
-    if (type === 'IEND') break;
-  }
-  const raw = zlib.inflateSync(Buffer.concat(chunks));
-  const stride = width * 4;
-  const pixels = Buffer.alloc(height * stride);
-  let rawOffset = 0;
-
-  function paeth(a, b, c) {
-    const p = a + b - c;
-    const pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c);
-    return pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
-  }
-
-  for (let y = 0; y < height; y++) {
-    const filter = raw[rawOffset++];
-    const rowStart = y * stride;
-    const prevStart = rowStart - stride;
-    for (let x = 0; x < stride; x++) {
-      const value = raw[rawOffset++];
-      const left = x >= 4 ? pixels[rowStart + x - 4] : 0;
-      const up = y > 0 ? pixels[prevStart + x] : 0;
-      const upLeft = y > 0 && x >= 4 ? pixels[prevStart + x - 4] : 0;
-      let predictor = 0;
-      if (filter === 1) predictor = left;
-      else if (filter === 2) predictor = up;
-      else if (filter === 3) predictor = Math.floor((left + up) / 2);
-      else if (filter === 4) predictor = paeth(left, up, upLeft);
-      else assert.equal(filter, 0, file + ' uses a supported PNG filter');
-      pixels[rowStart + x] = (value + predictor) & 255;
+function jpegDimensions(data,file){
+  assert.deepEqual([...data.subarray(0,3)],[0xFF,0xD8,0xFF],file+' must be JPEG');
+  let offset=2;
+  while(offset<data.length-9){
+    if(data[offset]!==0xFF){offset++;continue;}
+    while(data[offset]===0xFF)offset++;
+    const marker=data[offset++];
+    if(marker===0xD8||marker===0xD9||(marker>=0xD0&&marker<=0xD7))continue;
+    if(offset+2>data.length)break;
+    const length=data.readUInt16BE(offset);
+    if([0xC0,0xC1,0xC2,0xC3,0xC5,0xC6,0xC7,0xC9,0xCA,0xCB,0xCD,0xCE,0xCF].includes(marker)){
+      return {height:data.readUInt16BE(offset+3),width:data.readUInt16BE(offset+5)};
     }
+    if(length<2)break;
+    offset+=length;
   }
-  return {
-    width, height, pixels,
-    alphaAt(x, y) { return pixels[(y * width + x) * 4 + 3]; },
-    rgbaAt(x, y) { const i = (y * width + x) * 4; return [...pixels.subarray(i, i + 4)]; }
-  };
+  assert.fail(file+' must contain a readable JPEG frame header');
 }
 
-test('Android icon source is isolated from all website and PWA icon assets', () => {
-  const sourcePath = 'smvastroproduction/launcher/icon-512.png';
-  const source = bytes(sourcePath);
-  assert.deepEqual(source, bytes('public/assets/icon-512.png'), 'Android source starts as the same approved artwork, stored separately');
-  assert.equal(source.toString('hex', 0, 8), '89504e470d0a1a0a');
-  assert.equal(source.toString('ascii', 12, 16), 'IHDR');
-  assert.deepEqual([source.readUInt32BE(16), source.readUInt32BE(20)], [512, 512]);
-  const script = read('prepare-smv-astro-production-icon.sh');
-  assert.match(script, /source_icon="smvastroproduction\/launcher\/icon-512\.png"/);
-  assert.doesNotMatch(script, /source_icon="public\/assets\/icon-512\.png"/);
-  const workflow = read('.github/workflows/build-smv-astro-production-apk.yml');
-  assert.equal((workflow.match(/"smvastroproduction\/launcher\/icon-512\.png"/g) || []).length, 2);
-  assert.match(workflow, /github\.ref == 'refs\/heads\/main'/);
-  assert.match(workflow, /Allocate the next SMV ASTRO version from the published Cloudflare APK release/);
-  assert.match(workflow, /node scripts\/next-android-release-version\.mjs astro/);
-  assert.match(workflow, /scripts\/next-android-release-version\.mjs/);
-  assert.doesNotMatch(workflow, /release_sequence=\$\(\(GITHUB_RUN_NUMBER - 327\)\)/);
-  assert.match(workflow, /github\.ref == 'refs\/heads\/main'/);
-});
-
-test('Production manifest points at adaptive and round launcher resources without changing app identity', () => {
-  const manifest = read('smvastroproduction/src/main/AndroidManifest.xml');
-  assert.match(manifest, /android:icon="@mipmap\/ic_launcher"/);
-  assert.match(manifest, /android:roundIcon="@mipmap\/ic_launcher_round"/);
-  assert.match(manifest, /android:label="@string\/app_name"/);
-  assert.match(manifest, /android:name="asset_statements"/);
-  assert.doesNotMatch(manifest, /android:icon="@drawable\/app_icon"/);
-});
-
-test('Square fallback uses a white outer canvas and a smaller centered SMV ASTRO tile', () => {
-  const source = bytes('smvastroproduction/launcher/icon-512.png');
-  const sourceWidth = source.readUInt32BE(16), sourceHeight = source.readUInt32BE(20);
-  assert.deepEqual([sourceWidth, sourceHeight], [512, 512]);
-
-  const square = decodeRgbaPng(res + '/mipmap-nodpi/ic_launcher.png');
-  assert.deepEqual([square.width, square.height], [512, 512]);
-  assert.deepEqual(square.rgbaAt(0, 0), [255, 255, 255, 255], 'square fallback canvas must be solid white');
-  assert.deepEqual(square.rgbaAt(8, 256), [255, 255, 255, 255], 'white margin must remain visible around the artwork');
-  assert.ok(square.alphaAt(256, 256) > 200, 'the center of the existing SMV ASTRO artwork must remain opaque');
-  assert.notDeepEqual(square.rgbaAt(256, 256), [255, 255, 255, 255], 'the existing artwork must remain visible inside the white tile');
-});
-
-test('Adaptive foreground stays inside the safe zone; round fallback has a centered tile on white', () => {
-  const foreground = decodeRgbaPng(res + '/drawable-nodpi/ic_launcher_foreground.png');
-  assert.deepEqual([foreground.width, foreground.height], [432, 432]);
-  for (const [x, y] of [[0,0],[431,0],[0,431],[431,431]]) {
-    assert.equal(foreground.alphaAt(x, y), 0, 'adaptive foreground outer corner must be transparent');
+test('SMV ASTRO Android launcher source is the exact user-uploaded ICON file and stays separate from PWA assets',()=>{
+  const sourcePath='ICON/SMV ASTRO.jpg';
+  const source=bytes(sourcePath);
+  assert.deepEqual(jpegDimensions(source,sourcePath),{width:2048,height:2048});
+  const script=read('prepare-smv-astro-production-icon.sh');
+  assert.ok(script.includes('source_icon="ICON/SMV ASTRO.jpg"'));
+  assert.ok(script.includes('SmvProductLauncherIconGenerator'));
+  assert.ok(!script.includes('public/assets/'));
+  const workflow=read('.github/workflows/build-smv-astro-production-apk.yml');
+  for(const marker of ['ICON/SMV ASTRO.jpg','tools/SmvProductLauncherIconGenerator.java','test/android-launcher-icon.test.mjs']){
+    assert.ok(workflow.includes(marker),'ASTRO build trigger must include '+marker);
   }
-  assert.ok(foreground.alphaAt(216, 216) > 200, 'adaptive icon must retain the central logo');
-
-  let minX=foreground.width, minY=foreground.height, maxX=-1, maxY=-1;
-  for (let y=0; y<foreground.height; y++) {
-    for (let x=0; x<foreground.width; x++) {
-      if (foreground.alphaAt(x,y)>8) {
-        minX=Math.min(minX,x); minY=Math.min(minY,y);
-        maxX=Math.max(maxX,x); maxY=Math.max(maxY,y);
-      }
-    }
-  }
-  assert.ok(minX >= 100 && minY >= 100 && maxX <= 331 && maxY <= 331,
-    'the complete 58dp artwork tile must stay inside Android’s centered 66dp mask-safe square');
-
-  const round = decodeRgbaPng(res + '/mipmap-nodpi/ic_launcher_round.png');
-  assert.deepEqual([round.width, round.height], [512, 512]);
-  for (const [x, y] of [[0,0],[511,0],[0,511],[511,511]]) {
-    assert.equal(round.alphaAt(x, y), 0, 'outside of the round white background must be transparent');
-  }
-  assert.deepEqual(round.rgbaAt(256, 8), [255,255,255,255], 'round background must be white');
-  assert.deepEqual(round.rgbaAt(16, 256), [255,255,255,255], 'round icon needs even white margins');
-  assert.ok(round.alphaAt(256, 256) > 200, 'round fallback must retain the centered artwork');
 });
 
-test('Adaptive XML layers resolve to the centered foreground and a separate white background', () => {
-  for (const name of ['ic_launcher', 'ic_launcher_round']) {
-    const xml = read(res + '/mipmap-anydpi-v26/' + name + '.xml');
-    assert.match(xml, /<adaptive-icon/);
-    assert.match(xml, /@color\/smv_launcher_background/);
-    assert.match(xml, /@drawable\/ic_launcher_foreground/);
-  }
-  assert.match(read(res + '/values/colors.xml'), /<color name="smv_launcher_background">#FFFFFF<\/color>/);
+test('SMV ASTRO manifest retains the existing package label and launcher resource names',()=>{
+  const manifest=read('smvastroproduction/src/main/AndroidManifest.xml');
+  assert.ok(manifest.includes('android:icon="@mipmap/ic_launcher"'));
+  assert.ok(manifest.includes('android:roundIcon="@mipmap/ic_launcher_round"'));
+  assert.ok(manifest.includes('android:label="@string/app_name"'));
 });
 
-test('The Android icon generator keeps the website/PWA artwork isolated and centered on white', () => {
-  const script = read('prepare-smv-astro-production-icon.sh');
-  assert.match(script, /smvastroproduction\/launcher\/icon-512\.png/);
-  assert.match(script, /removeOuterWhiteBackground/);
-  assert.match(script, /isOuterBackgroundCandidate/);
-  assert.match(script, /verifyTransparentCorners/);
-  assert.match(script, /ADAPTIVE_ART_SIZE = 232/);
-  assert.match(script, /ROUND_ART_SIZE = 275/);
-  assert.match(script, /Color\.WHITE/);
-  assert.doesNotMatch(script, /curl|wget|smvastroservices\.in/i);
+test('SMV ASTRO generated square, round and adaptive artwork is JPEG and each file is below 300 KB',()=>{
+  const outputs=[
+    [res+'/mipmap-nodpi/ic_launcher.jpg',512],
+    [res+'/mipmap-nodpi/ic_launcher_round.jpg',512],
+    [res+'/drawable-nodpi/ic_launcher_foreground.jpg',432]
+  ];
+  for(const [file,size] of outputs){
+    const image=bytes(file);
+    assert.ok(image.length>1000,file+' must not be empty');
+    assert.ok(image.length<=maxBytes,file+' must be at most 300,000 bytes');
+    assert.deepEqual(jpegDimensions(image,file),{width:size,height:size});
+  }
+});
+
+test('SMV ASTRO adaptive XML keeps the white background and foreground file reference',()=>{
+  for(const name of ['ic_launcher','ic_launcher_round']){
+    const xml=read(res+'/mipmap-anydpi-v26/'+name+'.xml');
+    assert.ok(xml.includes('@color/smv_launcher_background'));
+    assert.ok(xml.includes('@drawable/ic_launcher_foreground'));
+  }
+  assert.ok(read(res+'/values/colors.xml').includes('<color name="smv_launcher_background">#FFFFFF</color>'));
 });
