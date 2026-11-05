@@ -5366,7 +5366,7 @@ function smvLiveShowDashboardMessage(message){
 }
 function smvLiveDashboardHtml(role){
  return '<style id="smvLiveSessionIndicatorStyles">@keyframes smvLiveGreenPulse{0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 0 0 rgba(0,230,118,.52)}50%{opacity:.62;transform:scale(.86);box-shadow:0 0 0 5px rgba(0,230,118,0)}}.smv-live-presence-dot{display:inline-block;width:10px;height:10px;min-width:10px;border-radius:50%;vertical-align:middle}.smv-live-presence-dot--active{background:#00e676;box-shadow:0 0 9px #00e676;animation:smvLiveGreenPulse 2.2s ease-in-out infinite}.smv-live-presence-dot--closed{background:#ff1744;box-shadow:0 0 7px rgba(255,23,68,.75)}.smv-live-window-closed-label{color:#ff1744;font-weight:900}@media(prefers-reduced-motion:reduce){.smv-live-presence-dot--active{animation:none}}</style><section class="card" id="smvLiveDashboardCard" style="margin-top:16px"><h3>Live Call / Live Chat</h3><p class="small">Voice and real-time messages use the built-in SMV ASTRO session service. Rates are charged per started minute from the Customer Wallet.</p>'+
- (role==='astrologer'?'<div class="action-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><button class="btn" id="smvLivePushEnable" type="button">ENABLE BACKGROUND ALERTS</button><button class="btn gray" id="smvLivePushTest" type="button">SEND TEST ALERT</button></div><p id="smvLivePushStatus" class="small" role="status" aria-live="polite">Enable Push Alerts once on each mobile device that should receive incoming requests.</p><div class="action-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><label>Availability <select id="smvLiveAvailability"><option value="offline">Offline</option><option value="online">Online</option><option value="busy">Busy</option></select></label><button class="btn" id="smvLiveSetAvailability" type="button">SAVE STATUS</button><button class="btn gray" id="smvLiveRingToggle" type="button" aria-pressed="false">ENABLE RING SOUND</button></div><div class="action-row" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px"><label><input id="smvLiveCallEnabled" type="checkbox"> Live Call ON</label><label><input id="smvLiveChatEnabled" type="checkbox"> Live Chat ON</label></div><p class="small" id="smvLiveAvailabilityMsg">Choose Live Call and/or Live Chat. Any enabled mode automatically sets Online; both OFF sets Offline. An active live session sets Busy. Enable ring sound once on this browser for incoming requests.</p><h4>Pending Bookings</h4><div id="smvLiveBookings"><p class="small">Loading…</p></div>':'<h4>My Scheduled Call / Chat Bookings</h4><div id="smvLiveCustomerScheduledBookings"><p class="small">Loading scheduled bookings…</p></div><h4>My Live Bookings</h4><div id="smvLiveCustomerBookings"><p class="small">Loading your bookings…</p></div>')+
+ (role==='astrologer'?'<div class="action-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><button class="btn" id="smvLivePushEnable" type="button">ENABLE BACKGROUND ALERTS</button><button class="btn gray" id="smvLivePushTest" type="button">SEND TEST ALERT</button></div><p id="smvLivePushStatus" class="small" role="status" aria-live="polite">Enable Push Alerts once on each mobile device that should receive incoming requests.</p><div class="action-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><label>Availability <select id="smvLiveAvailability"><option value="offline">Offline</option><option value="online">Online</option></select></label><button class="btn" id="smvLiveSetAvailability" type="button">SAVE STATUS</button><button class="btn gray" id="smvLiveRingToggle" type="button" aria-pressed="false">ENABLE RING SOUND</button></div><div class="action-row" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px"><label><input id="smvLiveCallEnabled" type="checkbox"> Live Call ON</label><label><input id="smvLiveChatEnabled" type="checkbox"> Live Chat ON</label></div><p class="small" id="smvLiveAvailabilityMsg">Choose Live Call and/or Live Chat. Any enabled mode automatically sets Online; both OFF sets Offline. An active live session sets Busy. Enable ring sound once on this browser for incoming requests.</p><h4>Pending Bookings</h4><div id="smvLiveBookings"><p class="small">Loading…</p></div>':'<h4>My Scheduled Call / Chat Bookings</h4><div id="smvLiveCustomerScheduledBookings"><p class="small">Loading scheduled bookings…</p></div><h4>My Live Bookings</h4><div id="smvLiveCustomerBookings"><p class="small">Loading your bookings…</p></div>')+
  (role==='astrologer'?'<h4>Scheduled Call / Chat Bookings</h4><div id="smvScheduledBookings"><p class="small">Loading scheduled bookings…</p></div>':'')+'<h4>My Live Sessions</h4><div id="smvLiveDashboardSessions"><p class="small">Loading…</p></div><button type="button" class="btn gray" id="smvLiveRefreshDashboard">REFRESH LIVE SESSIONS / BOOKINGS</button><p id="smvLiveDashboardMsg" class="small" role="status"></p></section>';
 }
 async function smvLiveLoadDashboard(role){
@@ -5398,9 +5398,7 @@ async function smvLiveLoadDashboard(role){
     const sel=$('smvLiveAvailability');
     const callToggle=$('smvLiveCallEnabled'),chatToggle=$('smvLiveChatEnabled');
     if(sel&&!sel.dataset.initialized){
-     if(astro)sel.value=astro.manualAvailabilityStatus||
-      (String(astro.availabilityStatus||'').toLowerCase()==='busy'&&Number(astro.activeSessionCount||0)===0
-       ?'busy':(astro.liveCallEnabled===true||astro.liveChatEnabled===true?'online':'offline'));
+     if(astro)sel.value=(astro.liveCallEnabled===true||astro.liveChatEnabled===true)?'online':'offline';
      if(callToggle)callToggle.checked=astro?.liveCallEnabled===true;
      if(chatToggle)chatToggle.checked=astro?.liveChatEnabled===true;
      sel.dataset.initialized='1';
@@ -5420,23 +5418,16 @@ async function smvLiveLoadDashboard(role){
  const refresh=$('smvLiveRefreshDashboard');if(refresh&&!refresh.dataset.bound){refresh.dataset.bound='1';refresh.onclick=reload;}
  const callToggle=$('smvLiveCallEnabled'),chatToggle=$('smvLiveChatEnabled'),availabilitySelect=$('smvLiveAvailability'),availabilityMessage=$('smvLiveAvailabilityMsg'),set=$('smvLiveSetAvailability');
  let modeSaveTimer=null;
- const modeNote=(call,chat,status)=>{
-  let note=call&&chat
-   ? 'Live Call and Live Chat are enabled. Status automatically changes to Online to receive Calls and Chats.'
-   : call
-    ? 'Live Call is enabled; Live Chat is disabled. Status automatically changes to Online to receive Calls.'
-    : chat
-     ? 'Live Chat is enabled; Live Call is disabled. Status automatically changes to Online to receive Chats.'
-     : 'Live Call and Live Chat are both disabled. Status automatically changes to Offline.';
-  if(status==='busy')note+=' Busy status is saved until you change it; an active Live session also keeps the status Busy.';
-  return note;
+ const modeNote=(call,chat)=>{
+  if(call&&chat)return 'Live Call and Live Chat are enabled. Status automatically changes to Online to receive Calls and Chats. An active session is shown as Busy to Customers.';
+  if(call)return 'Live Call is enabled; Live Chat is disabled. Status automatically changes to Online to receive Calls. An active session is shown as Busy to Customers.';
+  if(chat)return 'Live Chat is enabled; Live Call is disabled. Status automatically changes to Online to receive Chats. An active session is shown as Busy to Customers.';
+  return 'Live Call and Live Chat are both disabled. Status automatically changes to Offline. An active session remains Busy until it ends.';
  };
  const syncModes=(deriveStatusFromModes=false)=>{
   const call=callToggle?.checked===true,chat=chatToggle?.checked===true;
-  if(deriveStatusFromModes&&availabilitySelect&&availabilitySelect.value!=='busy'){
-   availabilitySelect.value=(call||chat)?'online':'offline';
-  }
-  if(availabilityMessage)availabilityMessage.textContent=modeNote(call,chat,availabilitySelect?.value||'offline');
+  if(deriveStatusFromModes&&availabilitySelect)availabilitySelect.value=(call||chat)?'online':'offline';
+  if(availabilityMessage)availabilityMessage.textContent=modeNote(call,chat);
  };
  const saveModes=async()=>{
   if(!set||set.disabled)return;
@@ -5449,11 +5440,10 @@ async function smvLiveLoadDashboard(role){
     liveCallEnabled:callToggle?.checked===true,
     liveChatEnabled:chatToggle?.checked===true
    })});
-   if(availabilitySelect)availabilitySelect.value=r.manualAvailabilityStatus||
-    (r.liveCallEnabled===true||r.liveChatEnabled===true?'online':'offline');
+   if(availabilitySelect)availabilitySelect.value=(r.liveCallEnabled===true||r.liveChatEnabled===true)?'online':'offline';
    if(callToggle)callToggle.checked=r.liveCallEnabled===true;
    if(chatToggle)chatToggle.checked=r.liveChatEnabled===true;
-   if(availabilityMessage)availabilityMessage.textContent='Saved. '+modeNote(r.liveCallEnabled===true,r.liveChatEnabled===true,availabilitySelect?.value||'offline');
+   if(availabilityMessage)availabilityMessage.textContent='Saved. '+modeNote(r.liveCallEnabled===true,r.liveChatEnabled===true);
    await reload();
   }catch(e){if(availabilityMessage)availabilityMessage.textContent=e.message||String(e);}
   finally{
