@@ -105,6 +105,10 @@ test('The production release workflow compiles both apps, signs with the existin
   assert.match(workflow, /:smvhoroscopeproduction:assembleRelease/);
   assert.match(workflow, /:smvcalendarproduction:assembleRelease/);
   assert.match(workflow, /SMV_ANDROID_KEYSTORE_BASE64/);
+  const signedBuildStep = workflow.split('- name: Build both permanently signed Release APKs')[1].split('- name: Verify v2 signature and permanent certificate on both APKs')[0];
+  assert.ok(signedBuildStep.includes('SMV_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.SMV_ANDROID_KEYSTORE_PASSWORD }}'));
+  assert.ok(signedBuildStep.includes('SMV_ANDROID_KEY_ALIAS: ${{ secrets.SMV_ANDROID_KEY_ALIAS }}'));
+  assert.ok(signedBuildStep.includes('SMV_ANDROID_KEY_PASSWORD: ${{ secrets.SMV_ANDROID_KEY_PASSWORD }}'));
   assert.match(workflow, /smvastro-release/);
   assert.ok(workflow.includes("github.ref == 'refs/heads/main'"));
   assert.match(workflow, /SMV_HOROSCOPE_ANDROID_VERSION_NAME/);
