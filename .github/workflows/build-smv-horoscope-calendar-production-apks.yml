@@ -32,6 +32,8 @@ on:
       - "smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java"
       - ".github/workflows/build-smv-horoscope-calendar-production-apks.yml"
       - "test/android-horoscope-calendar-production.test.mjs"
+      - "scripts/next-android-release-version.mjs"
+      - "test/android-release-version-resolution.test.mjs"
   push:
     paths:
       - "settings.gradle"
@@ -46,6 +48,8 @@ on:
       - "smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java"
       - ".github/workflows/build-smv-horoscope-calendar-production-apks.yml"
       - "test/android-horoscope-calendar-production.test.mjs"
+      - "scripts/next-android-release-version.mjs"
+      - "test/android-release-version-resolution.test.mjs"
 
 permissions:
   contents: read
@@ -72,7 +76,7 @@ jobs:
           node-version: "22"
 
       - name: Verify independent production packages and test-module isolation
-        run: node --test test/android-horoscope-calendar-production.test.mjs test/android-horoscope-calendar-launcher-icons.test.mjs test/android-permanent-release.test.mjs
+        run: node --test test/android-horoscope-calendar-production.test.mjs test/android-horoscope-calendar-launcher-icons.test.mjs test/android-permanent-release.test.mjs test/android-release-version-resolution.test.mjs
 
       - name: Java 17
         uses: actions/setup-java@v4
@@ -92,6 +96,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "9.6.0"
+
+      - name: Allocate HOROSCOPE and CALENDAR versions from their published Cloudflare APK releases
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: node scripts/next-android-release-version.mjs horoscope calendar
 
       - name: Prepare production Horoscope and Calendar icons
         run: bash prepare-smv-horoscope-calendar-production-icons.sh
