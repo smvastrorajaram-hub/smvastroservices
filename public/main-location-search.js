@@ -1,7 +1,7 @@
 /* SMV ASTRO V221 — Ask Now + Private Consultation local place search + header Calendar link.
    Uses the existing bundled India place database. No Firebase/API polling and no MutationObserver. */
 const SMV_BACKEND_BASE = ["smv-astro-phase1-browser-staging.onrender.com","smv-astro-phase1-browser-isolated.onrender.com","fix-cloudflare-live-booking.smvastroservices.pages.dev"].includes(location.hostname)
-  ? "https://smv-astro-phase1-staging.onrender.com" : "https://smvastroservices.onrender.com";
+  ? "https://smv-astro-phase1-staging.onrender.com" : "https://smvastroservices.astroservices.workers.dev";
 (function(){
   'use strict';
   if(window.__SMV_MAIN_LOCATION_SEARCH_V187__) return;
