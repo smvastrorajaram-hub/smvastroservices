@@ -74,17 +74,24 @@ test('Each website uses its matching original SMV WEBSITE artwork as its browser
   assert.ok(read('public/index.html').includes('href="./manifest.webmanifest?v=20261106-india-place-manifest-count-v1" rel="manifest"'));
 });
 
-test('Horoscope and Calendar logo headers are removed while Horoscope controls remain in one row', () => {
+test('Horoscope restores the shared SMV ASTRO SERVICES brand header while Calendar keeps its green site header', () => {
   const astro=read('public/index.html');
   const horoscope=read('public/horoscope/index.html');
   const calendar=read('public/horoscope/calendar/index.html');
   const css=read('public/horoscope/horoscope.css');
   assert.ok(exists('public/assets/smv-home-logo.webp'));
   assert.ok(astro.includes('src="./assets/smv-home-logo.webp?v=20261105-brand-header-v1"'));
-  assert.ok(!horoscope.includes('smv-horoscope-brandbar'));
-  assert.ok(!horoscope.includes('alt="SMV HOROSCOPE logo"'));
+  assert.ok(horoscope.includes('class="smv-horoscope-brand-header"'));
+  assert.ok(horoscope.includes('src="./assets/smv-brand-logo.png"'));
+  assert.ok(horoscope.includes('SMV ASTRO SERVICES'));
+  assert.ok(css.includes('.smv-horoscope-brand-title'));
+  assert.ok(css.includes('font-family:Georgia,"Times New Roman",serif'));
+  assert.ok(css.includes('rgb(255,0,0)'), 'Horoscope title must use the same red brand color as the main website.');
   assert.ok(!calendar.includes('smv-calendar-brandbar'));
-  assert.ok(!calendar.includes('alt="SMV CALENDAR logo"'));
+  const calendarTheme=read('public/horoscope/calendar-theme.css');
+  assert.ok(calendar.includes('calendar-topbar'));
+  assert.ok(calendarTheme.includes('html body.calendar-only>header.calendar-topbar'));
+  assert.ok(calendarTheme.includes('background:#0f514c!important'), 'Calendar header must retain the site's established dark green.');
   assert.ok(horoscope.includes('id="languageTamil"')&&horoscope.includes('id="languageEnglish"'));
   assert.ok(horoscope.includes('data-login')&&horoscope.includes('data-register')&&horoscope.includes('data-logout'));
   assert.ok(css.includes('flex-wrap:nowrap'));
