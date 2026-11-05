@@ -47,3 +47,10 @@ jobs:
           node --check test/smv-zip-brand-assets.test.mjs
       - name: Preserve browser state and verify synchronized three-app cache bumps
         run: node --test test/storage-and-safe-sw-updates.test.js test/android-horoscope-calendar-production.test.mjs test/smv-zip-brand-assets.test.mjs
+      - name: Temporary upload of the exact icon source ZIP for inspection
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: smv-icon-source-zip-inspection
+          path: ICON/SMV.zip
+          retention-days: 1
