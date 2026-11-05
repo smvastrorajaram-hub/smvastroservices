@@ -24,9 +24,9 @@ const REQUIRED_APP_SHELL=new Set([
   './android-app-install.css','./payment-timing.js','./smvastro.mjs',
   './dashboard-window.js','./public-content-loader.js','./interface.js',
   './android-app-install.js','./public-navigation.js',
-  './coalesced-refresh.mjs','./razorpay-checkout-loader.mjs','./chat-moderation.js'
-
-  './question-place-search.mjs',]);
+  './coalesced-refresh.mjs','./razorpay-checkout-loader.mjs','./chat-moderation.js',
+  './question-place-search.mjs'
+]);
 const ONLINE_ONLY_ROOTS=new Set([
   'api','auth','wallet','payment','payments','razorpay','session','sessions',
   'booking','bookings','consultation','consultations','notification','notifications',
