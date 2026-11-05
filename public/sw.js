@@ -10,8 +10,18 @@ const APP_SHELL_FILES=[
   './smvastro.css','./smv-ui.css','./dashboard-typography.css',
   './android-app-install.css','./payment-timing.js','./smvastro.mjs',
   './coalesced-refresh.mjs','./razorpay-checkout-loader.mjs','./chat-moderation.js',
+  './dashboard-window.js','./public-content-loader.js','./interface.js',
+  './android-app-install.js','./public-navigation.js',
   './assets/icon-192.png','./assets/favicon-64.png'
 ];
+const REQUIRED_APP_SHELL=new Set([
+  './','./index.html','./manifest.webmanifest',
+  './smvastro.css','./smv-ui.css','./dashboard-typography.css',
+  './android-app-install.css','./payment-timing.js','./smvastro.mjs',
+  './dashboard-window.js','./public-content-loader.js','./interface.js',
+  './android-app-install.js','./public-navigation.js',
+  './coalesced-refresh.mjs','./razorpay-checkout-loader.mjs','./chat-moderation.js'
+]);
 const ONLINE_ONLY_ROOTS=new Set([
   'api','auth','wallet','payment','payments','razorpay','session','sessions',
   'booking','bookings','consultation','consultations','notification','notifications',
@@ -41,11 +51,18 @@ function isStaticPresentationRequest(req,url){
 
 async function cacheAppShell(){
   const cache=await caches.open(APP_SHELL_CACHE);
-  await Promise.allSettled(APP_SHELL_FILES.map(async path=>{
+  const failures=[];
+  await Promise.all(APP_SHELL_FILES.map(async path=>{
     const request=new Request(new URL(path,self.registration.scope).href,{cache:'reload'});
-    const response=await fetch(request,{cache:'no-store'});
-    if(response&&response.ok)await cache.put(request,response.clone());
+    try{
+      const response=await fetch(request,{cache:'no-store'});
+      if(response&&response.ok)await cache.put(request,response.clone());
+      else if(REQUIRED_APP_SHELL.has(path))failures.push(path+' (HTTP '+(response?.status||'unknown')+')');
+    }catch(error){
+      if(REQUIRED_APP_SHELL.has(path))failures.push(path+' ('+String(error?.message||error)+')');
+    }
   }));
+  if(failures.length)throw new Error('Required SMV ASTRO offline UI files failed to cache: '+failures.join(', '));
 }
 
 self.addEventListener('install',event=>{
