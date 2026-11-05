@@ -51,7 +51,7 @@ jobs:
           fi
 
           changed="$(git diff --name-only "$EVENT_BEFORE" "$GITHUB_SHA")"
-          printf '%s\\n' "$changed"
+          printf '%s\n' "$changed"
           geonames_only=true
           migrations_changed=false
           while IFS= read -r file; do
