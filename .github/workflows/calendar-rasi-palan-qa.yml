@@ -114,8 +114,8 @@ jobs:
               Authorization: `Bearer ${token}`,
               'X-GitHub-Api-Version': '2022-11-28'
             };
-            const shortShaPattern = /Latest commit:\\s*<\\/strong>\\s*<\\/td>\\s*<td>\\s*<code>([a-f0-9]{7,40})<\\/code>/i;
-            const branchUrlPattern = /Branch Preview URL:\\s*<\\/strong>\\s*<\\/td>\\s*<td>\\s*<a\\s+href=['"]([^'"]+)['"]/i;
+            const shortShaPattern = /Latest commit:\s*<\/strong>\s*<\/td>\s*<td>\s*<code>([a-f0-9]{7,40})<\/code>/i;
+            const branchUrlPattern = /Branch Preview URL:\s*<\/strong>\s*<\/td>\s*<td>\s*<a\s+href=['"]([^'"]+)['"]/i;
             let resolvedOrigin = '';
 
             for (let attempt = 1; attempt <= 60; attempt++) {
