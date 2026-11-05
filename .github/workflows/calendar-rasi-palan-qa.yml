@@ -17,6 +17,7 @@ on:
       - 'public/horoscope/offline/transit_panchang.browser.mjs'
       - 'tests/calendar-rasi-palan-regression.mjs'
       - 'tests/calendar-rasi-palan-browser-smoke.mjs'
+      - 'tests/offline-first-app-browser-smoke.mjs'
       - 'tests/serve-public.mjs'
       - '.github/workflows/calendar-rasi-palan-qa.yml'
   pull_request:
@@ -36,6 +37,7 @@ on:
       - 'public/horoscope/offline/transit_panchang.browser.mjs'
       - 'tests/calendar-rasi-palan-regression.mjs'
       - 'tests/calendar-rasi-palan-browser-smoke.mjs'
+      - 'tests/offline-first-app-browser-smoke.mjs'
       - 'tests/serve-public.mjs'
       - '.github/workflows/calendar-rasi-palan-qa.yml'
   workflow_dispatch:
@@ -66,6 +68,7 @@ jobs:
           node --check public/horoscope/calendar/calendar-admin.mjs
           node --check tests/calendar-rasi-palan-regression.mjs
           node --check tests/calendar-rasi-palan-browser-smoke.mjs
+          node --check tests/offline-first-app-browser-smoke.mjs
           node --check tests/serve-public.mjs
       - name: Run scoped Calendar Rasi Palan regression
         run: node tests/calendar-rasi-palan-regression.mjs
@@ -97,6 +100,10 @@ jobs:
         env:
           SMV_CALENDAR_PREVIEW_URL: http://127.0.0.1:4173/horoscope/calendar/
         run: node tests/calendar-rasi-palan-browser-smoke.mjs
+      - name: Run three-app first-load and offline browser smoke
+        env:
+          SMV_OFFLINE_PREVIEW_ORIGIN: http://127.0.0.1:4173
+        run: node tests/offline-first-app-browser-smoke.mjs
       - name: Preserve Calendar preview screenshots
         if: always()
         uses: actions/upload-artifact@v4
