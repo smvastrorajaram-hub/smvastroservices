@@ -2901,7 +2901,7 @@ details>*{display:block!important}
 }
 
 
-/* SMV ASTRO SERVICES identity shared with the main website header. */
+/* SMV HOROSCOPE product identity: dedicated product logo and red serif title. */
 .smv-horoscope-brand-header{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-width:0;margin:0 auto 8px;padding:4px 8px;box-sizing:border-box}
 .smv-horoscope-brand-header img{display:block;flex:0 0 52px;width:52px;height:52px;object-fit:contain;border-radius:10px;background:#fffaf0}
 .smv-horoscope-brand-title{display:block;min-width:0;color:rgb(255,0,0)!important;-webkit-text-fill-color:rgb(255,0,0)!important;font-family:Georgia,"Times New Roman",serif!important;font-size:clamp(20px,4vw,32px)!important;font-weight:900!important;line-height:1.12!important;letter-spacing:1px!important;text-align:center;overflow-wrap:anywhere}
