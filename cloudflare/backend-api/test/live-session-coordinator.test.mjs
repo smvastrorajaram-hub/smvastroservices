@@ -195,7 +195,7 @@ test('per-user event hub reports a replay gap when the requested cursor predates
   const response = await hub.fetch(request('/events?uid=customer_1&after=1', undefined, { 'x-smv-internal-uid': 'customer_1' }));
   const reader = response.body.getReader();
   let output = '';
-  for (let index = 0; index < 4; index += 1) {
+  for (let index = 0; index < 210; index += 1) {
     const item = await reader.read();
     if (item.done) break;
     output += new TextDecoder().decode(item.value);
