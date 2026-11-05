@@ -31,7 +31,16 @@ jobs:
           node-version: '22'
       - name: Verify all three cache namespaces are bumped together
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_BEFORE: ${{ github.event.before }}
         run: |
           set -euo pipefail
-          git fetch origin main --depth=1
-          node scripts/verify-offline-cache-bump.mjs origin/main
+          if [[ "$EVENT_NAME" == "push" && -n "$EVENT_BEFORE" && "$EVENT_BEFORE" != "0000000000000000000000000000000000000000" ]]; then
+            git fetch origin "$EVENT_BEFORE" --depth=1
+            base_ref="$EVENT_BEFORE"
+          else
+            git fetch origin main --depth=1
+            base_ref="origin/main"
+          fi
+          node scripts/verify-offline-cache-bump.mjs "$base_ref"
