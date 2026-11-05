@@ -20,6 +20,8 @@ on:
         default: true
   pull_request:
     paths:
+      - "ICON/SMV HOROSCOPE.jpg"
+      - "ICON/SMV CALENDAR.jpg"
       - "settings.gradle"
       - "prepare-icons.sh"
       - "prepare-smv-horoscope-calendar-production-icons.sh"
@@ -40,6 +42,8 @@ on:
       - "public/horoscope/location-search-online-offline.js"
   push:
     paths:
+      - "ICON/SMV HOROSCOPE.jpg"
+      - "ICON/SMV CALENDAR.jpg"
       - "settings.gradle"
       - "prepare-icons.sh"
       - "prepare-smv-horoscope-calendar-production-icons.sh"
@@ -114,22 +118,27 @@ jobs:
       - name: Prepare production Horoscope and Calendar icons
         run: bash prepare-smv-horoscope-calendar-production-icons.sh
 
-      - name: Validate production launcher resources
+      - name: Validate production launcher resources and 300 KB asset limits
         shell: bash
         run: |
           set -euo pipefail
           for module in smvhoroscopeproduction smvcalendarproduction; do
             res="$module/src/main/res"
-            test -s "$res/drawable-nodpi/ic_launcher_foreground.png"
-            test -s "$res/mipmap-nodpi/ic_launcher.png"
-            test -s "$res/mipmap-nodpi/ic_launcher_round.png"
+            for asset in "$res/drawable-nodpi/ic_launcher_foreground.jpg" "$res/mipmap-nodpi/ic_launcher.jpg" "$res/mipmap-nodpi/ic_launcher_round.jpg"; do
+              test -s "$asset"
+              size="$(stat -c%s "$asset")"
+              if (( size > 300000 )); then
+                echo "::error::Android launcher asset exceeds 300 KB: $asset ($size bytes)"
+                exit 1
+              fi
+            done
             test -s "$res/mipmap-anydpi-v26/ic_launcher.xml"
             test -s "$res/mipmap-anydpi-v26/ic_launcher_round.xml"
             test -s "$res/values/colors.xml"
             grep -Fq '<color name="smv_launcher_background">#FFFFFF</color>' "$res/values/colors.xml"
             grep -Fq '@drawable/ic_launcher_foreground' "$res/mipmap-anydpi-v26/ic_launcher.xml"
           done
-          echo "PASS: Both production Android apps have SMV ASTRO-matching 58dp white-background square, round and adaptive launcher resources."
+          echo "PASS: HOROSCOPE and CALENDAR production launcher JPEGs are below 300,000 bytes each."
 
       - name: Build Horoscope and Calendar Debug APKs (test builds only)
         run: |

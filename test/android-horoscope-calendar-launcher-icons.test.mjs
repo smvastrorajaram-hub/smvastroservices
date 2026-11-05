@@ -4,72 +4,48 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const read = file => fs.readFileSync(path.join(root, file), 'utf8');
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const read=file=>fs.readFileSync(path.join(root,file),'utf8');
+const bytes=file=>fs.readFileSync(path.join(root,file));
+const maxBytes=300000;
 
-test('HOROSCOPE and CALENDAR production icons use the same 58dp white-background geometry as SMV ASTRO', () => {
-  const generator = read('tools/SmvProductLauncherIconGenerator.java');
-  const astroGenerator = read('prepare-smv-astro-production-icon.sh');
-  const buildScript = read('prepare-smv-horoscope-calendar-production-icons.sh');
+function assertJpeg(file){
+ const data=bytes(file);
+ assert.deepEqual([...data.subarray(0,3)],[0xFF,0xD8,0xFF],file+' must be a valid JPEG');
+ assert.ok(data.length>1000,file+' must contain real image data');
+}
 
-  // Match the existing ASTRO launcher geometry exactly: 58dp tile, 16dp radius,
-  // adaptive 108dp canvas and the equivalent 512px legacy/round fallbacks.
-  for (const [pattern, label] of [
-    [/ADAPTIVE_CANVAS = 432/, '108dp adaptive canvas'],
-    [/ADAPTIVE_ART_SIZE = 232/, '58dp adaptive artwork tile'],
-    [/ADAPTIVE_CORNER_RADIUS = 64/, '16dp adaptive corner radius'],
-    [/LEGACY_CANVAS = 512/, '512px legacy canvas'],
-    [/LEGACY_ART_SIZE = 275/, '58dp legacy artwork tile'],
-    [/LEGACY_CORNER_RADIUS = 76/, '16dp legacy corner radius'],
-    [/smv_launcher_background/, 'launcher background resource name'],
-    [/#FFFFFF/, 'pure white launcher background']
-  ]) {
-    assert.match(generator, pattern, 'missing ' + label);
-  }
-
-  for (const [pattern, label] of [
-    [/ADAPTIVE_CANVAS = 432/, 'ASTRO adaptive canvas'],
-    [/ADAPTIVE_ART_SIZE = 232/, 'ASTRO 58dp artwork tile'],
-    [/ADAPTIVE_ART_CORNER_RADIUS = 64/, 'ASTRO 16dp adaptive radius'],
-    [/ROUND_CANVAS = 512/, 'ASTRO legacy canvas'],
-    [/ROUND_ART_SIZE = 275/, 'ASTRO legacy 58dp tile'],
-    [/ROUND_ART_CORNER_RADIUS = 76/, 'ASTRO legacy 16dp radius'],
-    [/LAUNCHER_BACKGROUND = 0xFFFFFF/, 'ASTRO white background']
-  ]) {
-    assert.match(astroGenerator, pattern, 'the product icon style must match ' + label);
-  }
-
-  assert.match(buildScript, /bash prepare-icons\.sh/);
-  assert.match(buildScript, /copy_product_icon smvhoroscope smvhoroscopeproduction/);
-  assert.match(buildScript, /copy_product_icon smvcalendar smvcalendarproduction/);
-  assert.match(buildScript, /SmvProductLauncherIconGenerator/);
-  assert.match(buildScript, /drawable-nodpi\/ic_launcher_foreground\.png/);
-  assert.match(buildScript, /mipmap-nodpi\/ic_launcher\.png/);
-  assert.match(buildScript, /mipmap-nodpi\/ic_launcher_round\.png/);
-  assert.match(buildScript, /mipmap-anydpi-v26\/ic_launcher\.xml/);
-  assert.match(buildScript, /values\/colors\.xml/);
-  assert.doesNotMatch(buildScript, /public\/(horoscope|assets)\/.*(write|rm|delete)/i);
+test('HOROSCOPE and CALENDAR production launchers use their individual uploaded ICON assets',()=>{
+ assertJpeg('ICON/SMV HOROSCOPE.jpg');
+ assertJpeg('ICON/SMV CALENDAR.jpg');
+ const script=read('prepare-smv-horoscope-calendar-production-icons.sh');
+ assert.ok(script.includes('ICON/SMV HOROSCOPE.jpg'));
+ assert.ok(script.includes('ICON/SMV CALENDAR.jpg'));
+ assert.ok(script.includes('copy_product_icon "ICON/SMV HOROSCOPE.jpg" smvhoroscopeproduction'));
+ assert.ok(script.includes('copy_product_icon "ICON/SMV CALENDAR.jpg" smvcalendarproduction'));
+ assert.ok(script.includes('SmvProductLauncherIconGenerator'));
+ assert.ok(!script.includes('public/horoscope/'));
+ assert.match(script,/size > 300000/);
 });
 
-test('The generated adaptive resources preserve the white background and the independent artwork', () => {
-  const generator = read('tools/SmvProductLauncherIconGenerator.java');
-  const buildScript = read('prepare-smv-horoscope-calendar-production-icons.sh');
-  const workflow = read('.github/workflows/build-smv-horoscope-calendar-production-apks.yml');
+test('All three apps use the shared 512px/432px launcher generator and strict 300 KB output cap',()=>{
+ const generator=read('tools/SmvProductLauncherIconGenerator.java');
+ for(const marker of ['ADAPTIVE_CANVAS = 432','ADAPTIVE_ART_SIZE = 232','LEGACY_CANVAS = 512','LEGACY_ART_SIZE = 275','MAX_ASSET_BYTES = 300000','writeJpegUnderLimit','#FFFFFF']){
+  assert.ok(generator.includes(marker),'shared generator must contain '+marker);
+ }
+ assert.ok(generator.includes('ic_launcher_foreground.jpg'));
+ assert.ok(generator.includes('ic_launcher_round.jpg'));
+ assert.ok(generator.includes('300,000 bytes'));
+ const workflow=read('.github/workflows/build-smv-horoscope-calendar-production-apks.yml');
+ for(const marker of ['ICON/SMV HOROSCOPE.jpg','ICON/SMV CALENDAR.jpg','tools/SmvProductLauncherIconGenerator.java']){
+  assert.ok(workflow.includes(marker),'H/C workflow trigger must include '+marker);
+ }
+});
 
-  assert.match(generator, /@color\/smv_launcher_background/);
-  assert.match(generator, /@drawable\/ic_launcher_foreground/);
-  assert.match(generator, /removeOuterWhiteBackground/);
-  assert.match(generator, /drawAdaptiveForeground/);
-  assert.match(generator, /drawLegacyIcon/);
-  assert.match(generator, /verifyTransparentCorners/);
-  assert.match(generator, /verifyWhiteBackground/);
-  assert.match(generator, /Generated 58dp centered launcher artwork/);
-
-  for (const module of ['smvhoroscopeproduction', 'smvcalendarproduction']) {
-    assert.ok(buildScript.includes('copy_product_icon ' + (module.startsWith('smvhoroscope') ? 'smvhoroscope' : 'smvcalendar') + ' ' + module));
-    assert.ok(workflow.includes(module));
-  }
-  assert.match(workflow, /tools\/SmvProductLauncherIconGenerator\.java/);
-  assert.match(workflow, /test\/android-horoscope-calendar-launcher-icons\.test\.mjs/);
-  assert.match(workflow, /#FFFFFF/);
+test('Production manifests preserve the existing icon resource names',()=>{
+ for(const module of ['smvhoroscopeproduction','smvcalendarproduction']){
+  const manifest=read(module+'/src/main/AndroidManifest.xml');
+  assert.ok(manifest.includes('android:icon="@mipmap/ic_launcher"'));
+  assert.ok(manifest.includes('android:roundIcon="@mipmap/ic_launcher_round"'));
+ }
 });
