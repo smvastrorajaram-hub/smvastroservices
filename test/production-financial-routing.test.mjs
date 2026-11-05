@@ -24,6 +24,7 @@ test('Implemented non-Auth SMV ASTRO dashboard APIs share the Cloudflare Worker 
   assert.ok(resolver.includes('const cloudflareRoute'));
   for(const route of [
     'admin\\/(?:appointments|astrologers-data|settings-data',
+    'admin-data(?:\\/|$)',
     'astrologer-quiz\\/(?:questions',
     'astrologer\\/(?:appointments|availability',
     'customer\\/(?:appointments|reviews',
