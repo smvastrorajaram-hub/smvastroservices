@@ -17,6 +17,20 @@ test('Production financial API resolver routes all Wallet, Live, Astrologer earn
   assert.ok(frontend.includes('fetch(apiBackend+path'));
 });
 
+test('Implemented non-Auth SMV ASTRO dashboard APIs share the Cloudflare Worker origin',()=>{
+  const start=frontend.indexOf('function smvApiBackend(');
+  const end=frontend.indexOf('const BACKEND=',start);
+  const resolver=frontend.slice(start,end);
+  assert.ok(resolver.includes('const cloudflareRoute'));
+  for(const route of ['account\\/role','admin\\/appointments','admin\\/astrologers-data','admin\\/settings-data','admin\\/astrologer-quiz','astrologer\\/appointments','customer\\/appointments','public\\/astrologers','live\\/push','google-form\\/astrologer-quiz-config','webhooks\\/google-form']) {
+    assert.ok(resolver.includes(route),'Cloudflare API allowlist includes '+route);
+  }
+  assert.ok(!resolver.includes('lookup-id-login'));
+  assert.ok(!resolver.includes('register-customer-profile'));
+  assert.ok(!resolver.includes('horoscope-feature-settings'));
+  assert.ok(!resolver.includes('api\\/locations'));
+});
+
 test('Admin Processing, Reject and Paid operations all use D1 withdrawal mutation endpoints only',()=>{
   const start=frontend.indexOf("const withdrawalPayload=await renderApi('/admin/withdrawals-data'");
   const end=frontend.indexOf('/* Active Admin earnings history',start);
