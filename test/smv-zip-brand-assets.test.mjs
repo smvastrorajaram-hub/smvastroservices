@@ -92,7 +92,7 @@ test('Horoscope restores the shared SMV ASTRO SERVICES brand header while Calend
   const calendarTheme=read('public/horoscope/calendar-theme.css');
   assert.ok(calendar.includes('calendar-topbar'));
   assert.ok(calendarTheme.includes('html body.calendar-only>header.calendar-topbar'));
-  assert.ok(calendarTheme.includes('background:#0f514c!important'), 'Calendar header must retain the site's established dark green.');
+  assert.ok(calendarTheme.includes('background:#0f514c!important'), "Calendar header must retain the established site green.");
   assert.ok(horoscope.includes('id="languageTamil"')&&horoscope.includes('id="languageEnglish"'));
   assert.ok(horoscope.includes('data-login')&&horoscope.includes('data-register')&&horoscope.includes('data-logout'));
   assert.ok(css.includes('flex-wrap:nowrap'));
