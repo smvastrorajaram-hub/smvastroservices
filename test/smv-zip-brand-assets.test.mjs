@@ -81,6 +81,7 @@ test('Horoscope restores the shared SMV ASTRO SERVICES brand header while Calend
   const css=read('public/horoscope/horoscope.css');
   assert.ok(exists('public/assets/smv-home-logo.webp'));
   assert.ok(astro.includes('src="./assets/smv-home-logo.webp?v=20261105-brand-header-v1"'));
+  assert.ok(exists('public/horoscope/assets/smv-brand-logo.png'), 'Horoscope must use the existing original SMV brand mark asset.');
   assert.ok(horoscope.includes('class="smv-horoscope-brand-header"'));
   assert.ok(horoscope.includes('src="./assets/smv-brand-logo.png"'));
   assert.ok(horoscope.includes('SMV ASTRO SERVICES'));
