@@ -32,7 +32,7 @@ export function nextAndroidReleaseVersion(release, appId) {
     throw new Error('Cloudflare APK release identity mismatch for ' + appId + '.');
   }
 
-  const match = /^v([1-9][0-9]*)\\.([0-9]{1,3})$/.exec(String(release.versionName || ''));
+  const match = /^v([1-9][0-9]*)\.([0-9]{1,3})$/.exec(String(release.versionName || ''));
   if (!match) throw new Error('Cloudflare APK release has an invalid versionName for ' + appId + '.');
   const major = Number(match[1]);
   const minor = Number(match[2]);
