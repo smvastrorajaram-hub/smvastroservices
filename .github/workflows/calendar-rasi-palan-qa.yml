@@ -43,6 +43,8 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  issues: read
+  pull-requests: read
 concurrency:
   group: calendar-rasi-palan-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -85,24 +87,91 @@ jobs:
       - name: Resolve and verify the pull-request Cloudflare Pages preview origin
         id: preview-origin
         env:
-          PR_HEAD_REF: ${{ github.head_ref }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
           if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-            # Cloudflare Pages branch aliases lowercase the branch name and
-            # replace each non-alphanumeric character with a hyphen.
-            preview_branch="$(printf '%s' "$PR_HEAD_REF" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]/-/g')"
-            origin="https://$preview_branch.smvastroservices.pages.dev"
-            echo "Using PR-isolated Cloudflare Pages preview: $origin"
+            # Read Cloudflare's own deployment comment. Do not derive an alias
+            # from the branch name: Pages may shorten or otherwise normalize it.
+            origin="$(node --input-type=module <<'NODE'
+            import { setTimeout as sleep } from 'node:timers/promises';
+
+            const token = process.env.GH_TOKEN;
+            const expectedSha = String(process.env.PR_HEAD_SHA || '').toLowerCase();
+            const repo = process.env.GITHUB_REPOSITORY;
+            const api = process.env.GITHUB_API_URL || 'https://api.github.com';
+            const prNumber = process.env.PR_NUMBER;
+            const botLogin = 'cloudflare-workers-and-pages[bot]';
+
+            if (!token || !expectedSha || !repo || !prNumber) {
+              throw new Error('Missing GitHub token, PR head SHA, repository, or PR number.');
+            }
+
+            const headers = {
+              Accept: 'application/vnd.github+json',
+              Authorization: `Bearer ${token}`,
+              'X-GitHub-Api-Version': '2022-11-28'
+            };
+            const shortShaPattern = /Latest commit:\\s*<\\/strong>\\s*<\\/td>\\s*<td>\\s*<code>([a-f0-9]{7,40})<\\/code>/i;
+            const branchUrlPattern = /Branch Preview URL:\\s*<\\/strong>\\s*<\\/td>\\s*<td>\\s*<a\\s+href=['"]([^'"]+)['"]/i;
+            let resolvedOrigin = '';
+
+            for (let attempt = 1; attempt <= 60; attempt++) {
+              const response = await fetch(
+                `${api}/repos/${repo}/issues/${prNumber}/comments?per_page=100`,
+                { headers, cache: 'no-store' }
+              );
+              if (!response.ok) {
+                const detail = await response.text();
+                if (response.status === 401 || response.status === 403 || response.status === 404) {
+                  throw new Error(`Cannot read PR deployment comments (HTTP ${response.status}): ${detail.slice(0, 500)}`);
+                }
+                console.error(`GitHub comments API returned HTTP ${response.status}; retry ${attempt}/60.`);
+              } else {
+                const comments = await response.json();
+                const matches = comments
+                  .filter(comment => comment.user?.login === botLogin && typeof comment.body === 'string')
+                  .map(comment => ({ comment, sha: comment.body.match(shortShaPattern)?.[1]?.toLowerCase() || '' }))
+                  .filter(item => item.sha && expectedSha.startsWith(item.sha))
+                  .sort((a, b) => String(b.comment.updated_at || b.comment.created_at).localeCompare(String(a.comment.updated_at || a.comment.created_at)));
+
+                for (const item of matches) {
+                  const match = item.comment.body.match(branchUrlPattern);
+                  if (!match) continue;
+                  const candidate = new URL(match[1]);
+                  if (candidate.protocol !== 'https:' || !candidate.hostname.endsWith('.smvastroservices.pages.dev')) {
+                    throw new Error(`Cloudflare returned an unexpected preview host: ${candidate.origin}`);
+                  }
+                  resolvedOrigin = candidate.origin;
+                  console.error(`Cloudflare deployment comment matches PR head ${item.sha}: ${resolvedOrigin}`);
+                  break;
+                }
+              }
+
+              if (resolvedOrigin) break;
+              console.error(`Waiting for Cloudflare's deployment comment for commit ${expectedSha.slice(0, 7)} (${attempt}/60)...`);
+              await sleep(10000);
+            }
+
+            if (!resolvedOrigin) {
+              throw new Error('No Cloudflare Branch Preview URL was found for the current PR head commit after 10 minutes.');
+            }
+
+            console.log(resolvedOrigin);
+            NODE
+            )"
+            echo "Using Cloudflare-reported PR Preview origin: $origin"
             ready=0
             for attempt in $(seq 1 120); do
-              curl --fail --silent --connect-timeout 3 --max-time 8 "$origin/" -o /dev/null 2>/dev/null &
+              curl --fail --silent --connect-timeout 5 --max-time 15 -H 'Cache-Control: no-cache' "$origin/" -o /dev/null 2>/dev/null &
               root_pid=$!
-              curl --fail --silent --connect-timeout 3 --max-time 8 "$origin/sw.js" -o "$RUNNER_TEMP/smv-astro-preview-sw.js" 2>/dev/null &
+              curl --fail --silent --connect-timeout 5 --max-time 15 -H 'Cache-Control: no-cache' "$origin/sw.js?smv_preview_verify=$GITHUB_SHA" -o "$RUNNER_TEMP/smv-astro-preview-sw.js" 2>/dev/null &
               astro_pid=$!
-              curl --fail --silent --connect-timeout 3 --max-time 8 "$origin/horoscope/sw.js" -o "$RUNNER_TEMP/smv-horoscope-preview-sw.js" 2>/dev/null &
+              curl --fail --silent --connect-timeout 5 --max-time 15 -H 'Cache-Control: no-cache' "$origin/horoscope/sw.js?smv_preview_verify=$GITHUB_SHA" -o "$RUNNER_TEMP/smv-horoscope-preview-sw.js" 2>/dev/null &
               horoscope_pid=$!
-              curl --fail --silent --connect-timeout 3 --max-time 8 "$origin/horoscope/calendar/sw.js" -o "$RUNNER_TEMP/smv-calendar-preview-sw.js" 2>/dev/null &
+              curl --fail --silent --connect-timeout 5 --max-time 15 -H 'Cache-Control: no-cache' "$origin/horoscope/calendar/sw.js?smv_preview_verify=$GITHUB_SHA" -o "$RUNNER_TEMP/smv-calendar-preview-sw.js" 2>/dev/null &
               calendar_pid=$!
               if wait "$root_pid" && wait "$astro_pid" && wait "$horoscope_pid" && wait "$calendar_pid"; then
                 release="20261106-active-only-auto-busy-icons-v2"
@@ -113,16 +182,16 @@ jobs:
                   break
                 fi
               fi
-              echo "Waiting for this PR's three-app Pages preview and cache release ($attempt/120)..."
+              echo "Waiting for Cloudflare's current three-app preview and cache release ($attempt/120)..."
               sleep 5
             done
             if [ "$ready" -ne 1 ]; then
-              echo "::error::The isolated Cloudflare Pages branch preview did not become ready with all three expected Service Worker cache releases: $origin"
+              echo "::error::Cloudflare Preview exists, but its homepage or all three current Service Worker releases are not ready: $origin"
               exit 1
             fi
           else
-            # Push/manual runs exercise the exact checkout on the Actions runner.
-            # This loopback URL is runner-internal and is never used for PR previews.
+            # Loopback is runner-local only for push/manual checks. It is never
+            # emitted as a shareable Preview origin and is not used for PR runs.
             node tests/serve-public.mjs > /tmp/smv-calendar-preview-server.log 2>&1 &
             echo $! > /tmp/smv-calendar-preview-server.pid
             ready=0
