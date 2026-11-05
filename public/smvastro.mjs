@@ -5022,7 +5022,7 @@ function smvLiveUpdateDashboardSessionStatus(session){
   if(closedDot)closedDot.hidden=!windowClosed;
   if(windowStatus){windowStatus.hidden=!windowClosed||ended;windowStatus.textContent='Window Closed';}
   if(openButton){
-   openButton.textContent=ended?'Closed Session Receipt':'Open Session';
+   openButton.textContent=ended?'Download Receipt':'Open Session';
    openButton.style.background='transparent';
    openButton.style.color=ended?'#000':'#00e676';
    openButton.style.webkitTextFillColor=ended?'#000':'#00e676';
@@ -5031,7 +5031,7 @@ function smvLiveUpdateDashboardSessionStatus(session){
    openButton.style.boxShadow='none';openButton.style.textDecoration='none';
    openButton.style.fontSize='15px';openButton.style.lineHeight='1.5';
    openButton.style.borderBottom='0';openButton.style.textUnderlineOffset='0';
-   openButton.setAttribute('aria-label',ended?'Open closed session receipt':'Open live session');
+   openButton.setAttribute('aria-label',ended?'Download receipt':'Open live session');
   }
  };
  updateRow();
