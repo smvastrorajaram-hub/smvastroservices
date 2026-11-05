@@ -13,6 +13,7 @@ import { createD1LiveSessionService } from '../../../shared/backend-platform/d1-
 
 const MAX_DEADLINES = 16;
 const MAX_RECENT_IDS = 256;
+const MAX_USER_EVENT_REPLAY = 200;
 const RETRY_BASE_MS = 5000;
 const RETRY_MAX_MS = 60000;
 
@@ -477,49 +478,133 @@ export class LiveUserEventHub {
     if (!targetUid || !/^[A-Za-z0-9:_-]{1,240}$/.test(eventId) || !/^[a-zA-Z0-9._-]{1,100}$/.test(type)) {
       return json({ ok: false, code: 'EVENT_INVALID' }, 400);
     }
-    const recent = await this.ctx.storage.get('recent-event-ids') || [];
-    if (recent.includes(eventId)) return json({ ok: true, duplicate: true, eventId });
     const data = body.data && typeof body.data === 'object' && !Array.isArray(body.data) ? body.data : {};
-    // Preserve the legacy Live SSE payload shape (session/message/signal/booking
-    // fields at the top level) while retaining an explicit data envelope.
-    const event = { ...data, eventId, targetUid, type, data: body.data ?? null, createdAtMs: Date.now() };
-    const frame = JSON.stringify(event);
-    for (const controller of [...this.sseClients]) {
-      try { controller.enqueue(new TextEncoder().encode('event: ' + type + '\ndata: ' + frame + '\n\n')); }
-      catch { this.sseClients.delete(controller); }
-    }
-    for (const socket of this.ctx.getWebSockets?.() || []) {
-      try { socket.send(frame); } catch { try { socket.close(1011, 'send failed'); } catch {} }
-    }
-    await this.ctx.storage.put('recent-event-ids', remember(recent, eventId));
-    return json({ ok: true, duplicate: false, eventId });
+    const commit = async storage => {
+      const recent = await storage.get('recent-event-ids') || [];
+      if (recent.includes(eventId)) return { duplicate: true };
+      const record = await storage.get('user-event-log') || { sequence: 0, events: [] };
+      const sequence = Math.max(0, Math.trunc(Number(record.sequence) || 0)) + 1;
+      const event = {
+        ...data, eventId, targetUid, type, data: body.data ?? null,
+        createdAtMs: Date.now(), sequence
+      };
+      const prior = Array.isArray(record.events) ? record.events : [];
+      await storage.put('user-event-log', {
+        sequence,
+        events: [...prior, event].slice(-MAX_USER_EVENT_REPLAY)
+      });
+      await storage.put('recent-event-ids', remember(recent, eventId));
+      return { duplicate: false, event };
+    };
+    const outcome = typeof this.ctx.storage.transaction === 'function'
+      ? await this.ctx.storage.transaction(commit)
+      : await commit(this.ctx.storage);
+    if (outcome.duplicate) return json({ ok: true, duplicate: true, eventId });
+    this.broadcast(outcome.event);
+    return json({ ok: true, duplicate: false, eventId, sequence: outcome.event.sequence });
   }
 
-  openSse(request) {
-    const uid = validUid(new URL(request.url).searchParams.get('uid'));
+  writeSseEvent(client, event) {
+    const sequence = Math.max(0, Math.trunc(Number(event?.sequence) || 0));
+    const frame = 'id: ' + sequence + '\nevent: ' + event.type + '\ndata: ' + JSON.stringify(event) + '\n\n';
+    client.controller.enqueue(new TextEncoder().encode(frame));
+  }
+
+  broadcast(event) {
+    for (const client of [...this.sseClients]) {
+      if (client.replaying) {
+        client.queued.push(event);
+        continue;
+      }
+      try { this.writeSseEvent(client, event); }
+      catch {
+        this.sseClients.delete(client);
+        if (client.heartbeat) clearInterval(client.heartbeat);
+      }
+    }
+    for (const socket of this.ctx.getWebSockets?.() || []) {
+      try { socket.send(JSON.stringify(event)); } catch { try { socket.close(1011, 'send failed'); } catch {} }
+    }
+  }
+
+  async openSse(request) {
+    const url = new URL(request.url);
+    const uid = validUid(url.searchParams.get('uid'));
     const internalUid = validUid(request.headers.get('x-smv-internal-uid'));
     if (!uid || uid !== internalUid) return json({ ok: false, code: 'AUTH_REQUIRED' }, 401);
-    let controllerRef, heartbeat;
+    const rawCursor = url.searchParams.get('after') ?? request.headers.get('last-event-id') ?? '0';
+    const requestedCursor = Math.max(0, Math.trunc(Number(rawCursor) || 0));
+    let clientRef = null;
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       start: controller => {
-        controllerRef = controller;
-        this.sseClients.add(controller);
-        controller.enqueue(encoder.encode('retry: 3000\n\nevent: live.ready\ndata: ' + JSON.stringify({ uid }) + '\n\n'));
-        heartbeat = setInterval(() => {
+        clientRef = { controller, replaying: true, queued: [], heartbeat: null };
+        this.sseClients.add(clientRef);
+        clientRef.heartbeat = setInterval(() => {
           try { controller.enqueue(encoder.encode(': heartbeat\n\n')); }
-          catch { clearInterval(heartbeat); this.sseClients.delete(controller); }
+          catch {
+            if (clientRef.heartbeat) clearInterval(clientRef.heartbeat);
+            this.sseClients.delete(clientRef);
+          }
         }, 20000);
       },
       cancel: () => {
-        if (heartbeat) clearInterval(heartbeat);
-        if (controllerRef) this.sseClients.delete(controllerRef);
+        if (!clientRef) return;
+        if (clientRef.heartbeat) clearInterval(clientRef.heartbeat);
+        this.sseClients.delete(clientRef);
       }
     });
-    return new Response(stream, {
+    const response = new Response(stream, {
       status: 200,
-      headers: { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache, no-transform', 'Connection': 'keep-alive' }
+      headers: {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no'
+      }
     });
+    try {
+      const record = await this.ctx.storage.get('user-event-log') || { sequence: 0, events: [] };
+      const latestSequence = Math.max(0, Math.trunc(Number(record.sequence) || 0));
+      const resetCursor = requestedCursor > latestSequence;
+      const after = resetCursor ? 0 : requestedCursor;
+      const stored = Array.isArray(record.events) ? record.events : [];
+      const firstSequence = Number(stored[0]?.sequence) || (latestSequence + 1);
+      const replayGap = after > 0 && after < firstSequence - 1;
+      for (const event of stored) {
+        if (Number(event.sequence) <= after) continue;
+        this.writeSseEvent(clientRef, { ...event, replayed: true });
+      }
+      // Events published while the replay snapshot was being read are queued.
+      // The durable snapshot already includes events up to latestSequence.
+      const queued = clientRef.queued.splice(0).sort((a, b) => Number(a.sequence) - Number(b.sequence));
+      clientRef.replaying = false;
+      let highestSent = latestSequence;
+      for (const event of queued) {
+        const sequence = Number(event.sequence) || 0;
+        if (sequence <= latestSequence || sequence <= highestSent) continue;
+        this.writeSseEvent(clientRef, event);
+        highestSent = Math.max(highestSent, sequence);
+      }
+      const ready = {
+        uid, cursor: highestSent, replayGap, resetCursor,
+        replayedEvents: stored.filter(event => Number(event.sequence) > after).length
+      };
+      clientRef.controller.enqueue(encoder.encode(
+        'id: ' + highestSent + '\nevent: live.ready\ndata: ' + JSON.stringify({ type: 'live.ready', ...ready }) + '\n\n'
+      ));
+    } catch (error) {
+      console.warn('[Live Event Hub] Replay snapshot unavailable:', error?.message || error);
+      if (clientRef) {
+        const queued = clientRef.queued.splice(0).sort((a, b) => Number(a.sequence) - Number(b.sequence));
+        clientRef.replaying = false;
+        for (const event of queued) {
+          try { this.writeSseEvent(clientRef, event); } catch { this.sseClients.delete(clientRef); break; }
+        }
+        try { clientRef.controller.enqueue(encoder.encode('event: live.ready\ndata: ' + JSON.stringify({ type: 'live.ready', uid, replayGap: true }) + '\n\n')); } catch {}
+      }
+    }
+    return response;
   }
 
   openWebSocket(request) {

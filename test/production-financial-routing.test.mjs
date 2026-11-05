@@ -11,10 +11,36 @@ test('Production financial API resolver routes all Wallet, Live, Astrologer earn
   const end=frontend.indexOf('const BACKEND=',start);
   assert.ok(start>=0&&end>start,'financial API resolver exists');
   const resolver=frontend.slice(start,end);
-  assert.ok(resolver.includes('astrologer\\/(?:availability|earnings|withdrawal-request)'));
+  assert.ok(resolver.includes('astrologer\\/(?:appointments|availability|change-payout|earnings|open-questions|qualification-config|sync-approval|withdrawal-request|edit-answer|claim-question)'));
   assert.ok(resolver.includes('withdrawal-mark-processing|withdrawal-reject|withdrawal-mark-paid'));
   assert.ok(frontend.includes('const apiBackend=smvApiBackend(path)'));
   assert.ok(frontend.includes('fetch(apiBackend+path'));
+});
+
+test('Implemented non-Auth SMV ASTRO dashboard APIs share the Cloudflare Worker origin',()=>{
+  const start=frontend.indexOf('function smvApiBackend(');
+  const end=frontend.indexOf('const BACKEND=',start);
+  const resolver=frontend.slice(start,end);
+  assert.ok(resolver.includes('const cloudflareRoute'));
+  for(const route of [
+    'admin\\/(?:appointments|astrologers-data|settings-data',
+    'admin-data(?:\\/|$)',
+    'astrologer-quiz\\/(?:questions',
+    'astrologer\\/(?:appointments|availability',
+    'customer\\/(?:appointments|reviews',
+    'public\\/(?:astrologers',
+    'live\\/(?:requests|sessions|bookings|pricing|ice-config|events|scheduled-appointments|push',
+    'google-form\\/astrologer-quiz-config',
+    'webhooks\\/google-form'
+  ]) {
+    assert.ok(resolver.includes(route),'Cloudflare API allowlist includes '+route);
+  }
+  assert.ok(!resolver.includes('account\\/role'));
+  assert.ok(!resolver.includes('admin\\/(?:access'));
+  assert.ok(!resolver.includes('lookup-id-login'));
+  assert.ok(!resolver.includes('register-customer-profile'));
+  assert.ok(!resolver.includes('horoscope-feature-settings'));
+  assert.ok(!resolver.includes('api\\/locations'));
 });
 
 test('Admin Processing, Reject and Paid operations all use D1 withdrawal mutation endpoints only',()=>{

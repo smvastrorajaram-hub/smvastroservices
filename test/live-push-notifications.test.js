@@ -229,7 +229,7 @@ test('Live Chat uses canonical mode/state and native visibility instead of a cha
   assert.equal(frontend.includes('smv-live-chat-active'), false, 'no chat-only modal class should be toggled by JavaScript');
   assert.equal(css.includes('.smv-live-chat-active'), false, 'Chat must not depend on a special CSS override block');
   assert.ok(html.includes('smvastro.css?v=20261102-consult-route-cleanup-v1'));
-  assert.ok(html.includes('smvastro.mjs?v=20261105-session-state-labels-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261105-cf-live-replay-api-routing-v1'));
 });
 
 test('Live Chat connected confirmation requires a rendered message pane and does not open a separate Chat window', () => {
@@ -289,13 +289,20 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('if(smvLiveEventStreamConnected||!currentUser'));
   assert.ok(frontend.includes('smvLiveEventStreamConnected=true;'));
   assert.ok(frontend.includes('smvLiveStopFallbackPolling();'));
+  assert.ok(frontend.includes('smvLivePollSessions(true).catch(()=>{}),2500'));
+  assert.ok(frontend.includes('async function smvLivePollSessions(statusOnly=false)'));
+  assert.ok(frontend.includes('if(statusOnly)return;'), 'Fallback status reconciliation avoids unnecessary booking reads');
+  assert.ok(frontend.includes("'/live/events?after='+encodeURIComponent(String(after))"));
+  assert.ok(frontend.includes("'smv-live-event-cursor:'+owner"));
+  assert.ok(frontend.includes('ev.replayed!==true'), 'Replayed history does not reopen stale session modals');
+  assert.ok(frontend.includes('smvLiveReconcileAfterEventStreamConnect().catch(()=>{})'));
   assert.ok(frontend.includes('enabling recovery polling.'));
   assert.ok(!frontend.includes("smvLiveMessageTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollMessages(id).catch(()=>{});},600)"));
   assert.ok(!frontend.includes("smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions().catch(()=>{}),4500"));
   assert.ok(frontend.includes('smvLiveStartCustomerPendingStatusPoll(s.id);'));
   assert.ok(frontend.includes('setInterval(()=>void reconcile(),2500)'));
   assert.ok(frontend.includes('Astrologer Generating Horoscope · '));
-  assert.ok(html.includes('smvastro.mjs?v=20261105-session-state-labels-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261105-cf-live-replay-api-routing-v1'));
 });
 
 test('Customer and Astrologer Dashboards mount the Live Call/Chat controls after rendering', () => {
@@ -326,7 +333,7 @@ test('Customer and Astrologer Dashboard open without Dashboard-wide loading or q
   assert.equal(frontend.includes('Loading your dashboard...'), false);
   assert.ok(!frontend.includes("because Firebase could not be read."));
   assert.ok(!frontend.includes("Dashboard is open. Astrologer profile and data"));
-  assert.ok(html.includes('smvastro.mjs?v=20261105-session-state-labels-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261105-cf-live-replay-api-routing-v1'));
 });
 
 test('Explicit login keeps the fast role shell mounted and does not hide/reopen Dashboard', () => {
@@ -370,7 +377,7 @@ test('Astrologer Dashboard keeps one heading and parallelizes its first profile 
   assert.ok(dashboard.includes('const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null;'));
   assert.ok(dashboard.includes('astrologerProfileResult=profileResult;'));
   assert.ok(!dashboard.includes("const a=await withTimeout(\n     getDoc(doc(db,'smv_astrologers',currentUser.uid))"));
-  assert.ok(html.includes('smvastro.mjs?v=20261105-session-state-labels-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261105-cf-live-replay-api-routing-v1'));
 });
 
 test('Astrologer Dashboard renders its main UI before earnings and withdrawal history resolve', () => {
@@ -390,7 +397,7 @@ test('Astrologer Dashboard renders its main UI before earnings and withdrawal hi
   assert.ok(dashboard.includes('id="smvAstroEarningsHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalStatus"'));
-  assert.ok(html.includes('smvastro.mjs?v=20261105-session-state-labels-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261105-cf-live-replay-api-routing-v1'));
 });
 
 test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
@@ -514,7 +521,7 @@ test('Admin dashboard loads Live commission from Cloudflare D1 before non-essent
   const adminDataLoad = frontend.indexOf("renderApi('/admin-data',{method:'GET'})", adminStart);
   assert.ok(frontend.includes("renderApi('/admin/live/commission',{method:'GET'})"));
   assert.ok(frontend.includes("renderApi('/admin/live/commission',{method:'POST'"));
-  assert.ok(frontend.includes("admin\\/(?:withdrawals-data|withdrawal-payout|withdrawal-mark-processing|withdrawal-reject|withdrawal-mark-paid|offers|live\\/(?:pricing|commission))"));
+  assert.ok(frontend.includes("admin\\/(?:appointments|astrologers-data|settings-data|questions-data|reviews-data|dashboard-touch|wallet\\/transactions|withdrawals-data|withdrawal-payout|withdrawal-mark-processing|withdrawal-reject|withdrawal-mark-paid|offers|content|android-app|approve-astrologer|reject-astrologer|payout-change-status|appointment-status|set-open-workflow|approve-question|reallocate-question|edit-question|takeover-answer|astrologer-languages|astrologer-pricing|astrologer-profile-permission|astrologer-profile-description|astrologer-auto-approval\\/settings|astrologer-quiz\\/(?:questions(?:\\/delete)?|load-defaults|sync-google-form)|live\\/(?:pricing|commission))"));
   assert.ok(earlyCommissionLoad > adminStart && earlyCommissionLoad < adminDataLoad);
   assert.ok(frontend.includes('Could not load commission from Cloudflare Production D1'));
   assert.ok(html.includes('id="refreshCommissionSettings"'));
@@ -845,7 +852,7 @@ test('Wallet recharge offer endpoints use the selected Wallet financial domain',
 
 test('Customer Live Session dashboard status follows the accepted-session SSE update without a manual refresh', () => {
   const frontend = read('public/smvastro.mjs');
-  const pollStart = frontend.indexOf('async function smvLivePollSessions(){');
+  const pollStart = frontend.indexOf('async function smvLivePollSessions(statusOnly=false){');
   const pollEnd = frontend.indexOf('function smvLiveRenderScheduledBookings(', pollStart);
   const poll = frontend.slice(pollStart, pollEnd);
   const eventsStart = frontend.indexOf('function smvLiveHandleEvent(ev){');
@@ -860,7 +867,7 @@ test('Customer Live Session dashboard status follows the accepted-session SSE up
   assert.ok(frontend.includes('smvLiveUpdateDashboardSessionStatus(current);'),
     'the 2:15 preparation countdown must keep the Dashboard status current');
   const dashboardStart=frontend.indexOf('function smvLiveUpdateDashboardSessionStatus(session){');
-  const dashboardEnd=frontend.indexOf('async function smvLivePollSessions(){',dashboardStart);
+  const dashboardEnd=frontend.indexOf('async function smvLivePollSessions(statusOnly=false){',dashboardStart);
   const upsert=frontend.slice(dashboardStart,dashboardEnd);
   assert.ok(upsert.includes('article=document.createElement(\'article\')'),
     'a newly requested session must create its Dashboard row even when no history row exists');
@@ -947,7 +954,7 @@ test('Live Chat state stays active across delayed events and the Connect action 
   const apply = frontend.slice(applyStart, applyEnd);
   assert.ok(apply.includes('smvLiveMergeSessionState(smvLiveCurrentSession,{...session,id:smvLivePanelSessionId})'));
   const dashboardStart = frontend.indexOf('function smvLiveUpdateDashboardSessionStatus(session){');
-  const dashboardEnd = frontend.indexOf('async function smvLivePollSessions(){', dashboardStart);
+  const dashboardEnd = frontend.indexOf('async function smvLivePollSessions(statusOnly=false){', dashboardStart);
   assert.ok(frontend.slice(dashboardStart, dashboardEnd).includes('smvLiveMergeSessionState(previous,{...session,id})'));
   const connectStart = frontend.indexOf("const connectChat=$('smvLiveConnectChat');");
   const connectEnd = frontend.indexOf("const connectMic=$('smvLiveConnectMic');", connectStart);
@@ -1094,7 +1101,7 @@ test('Session-ended event and end API never send Customer wallet balance to the 
   assert.ok(frontend.includes('function smvLiveSessionEndedMessage(session,wallet){'));
   assert.ok(frontend.includes("return 'Session ended. Your Astrologer earnings summary has been refreshed.';"));
   const statusStart = frontend.indexOf('function smvLiveUpdateDashboardSessionStatus(session){');
-  const statusEnd = frontend.indexOf('async function smvLivePollSessions(){', statusStart);
+  const statusEnd = frontend.indexOf('async function smvLivePollSessions(statusOnly=false){', statusStart);
   assert.ok(statusStart >= 0 && statusEnd > statusStart);
   const statusUpdater = frontend.slice(statusStart, statusEnd);
   assert.ok(statusUpdater.includes("current.state==='ended'"));
@@ -1138,6 +1145,15 @@ test('Live Session SSE cleanup is tied to the response lifecycle, not normal req
   assert.ok(route.includes('set.delete(res);'), 'Cleanup removes the exact response');
 });
 
+test('Live Session and Customer Chat state is recovered from replay before current session reconciliation', () => {
+  const frontend = read('public/smvastro.mjs');
+  assert.ok(frontend.includes('function smvLiveReadEventCursor(uid){'));
+  assert.ok(frontend.includes('function smvLiveSaveEventCursor(uid,value,reset=false){'));
+  assert.ok(frontend.includes('smvLivePollSessions(true).catch(()=>{}),2500'));
+  assert.ok(frontend.includes("if(chatArea)chatArea.hidden=!smvLiveChatIsActive(s);"));
+  assert.ok(frontend.includes("smvLiveUpdateDashboardSessionStatus(s);"));
+});
+
 test('Live Session SSE reconnects when an HTTP 200 stream becomes silent', () => {
   const frontend = read('public/smvastro.mjs');
   const start = frontend.indexOf('function smvLiveStartEventStream(){');
@@ -1154,7 +1170,7 @@ test('Live Session SSE reconnects when an HTTP 200 stream becomes silent', () =>
 test('A terminal session state refreshes the Customer Wallet even when the modal is closed', () => {
   const frontend = read('public/smvastro.mjs');
   const start = frontend.indexOf('function smvLiveUpdateDashboardSessionStatus(session){');
-  const end = frontend.indexOf('async function smvLivePollSessions(){', start);
+  const end = frontend.indexOf('async function smvLivePollSessions(statusOnly=false){', start);
   assert.ok(start >= 0 && end > start, 'Dashboard session status updater exists');
   const updater = frontend.slice(start, end);
   assert.ok(updater.includes("current.state==='ended'"), 'Refresh is triggered by the terminal state');

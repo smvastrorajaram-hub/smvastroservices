@@ -6,6 +6,9 @@ class FakeStorage {
   constructor() { this.values = new Map(); this.alarmAt = null; }
   async get(key) { return this.values.get(key); }
   async put(key, value) { this.values.set(key, structuredClone(value)); }
+  async transaction(callback) {
+    return callback({ get: key => this.get(key), put: (key, value) => this.put(key, value) });
+  }
   async setAlarm(timestamp) { this.alarmAt = timestamp; }
   async deleteAlarm() { this.alarmAt = null; }
   async getAlarm() { return this.alarmAt; }
@@ -150,6 +153,57 @@ test('per-user event hub deduplicates event IDs before broadcasting', async () =
   const duplicate = await hub.fetch(request('/publish', payload, headers));
   assert.equal(duplicate.status, 200);
   assert.equal((await duplicate.json()).duplicate, true);
+});
+
+test('per-user event hub replays missed events by sequence after an SSE reconnect', async () => {
+  const state = fakeState();
+  const hub = new LiveUserEventHub(state.ctx, state.env);
+  const headers = { 'x-smv-internal-caller': 'smv-backend' };
+  const payload = { targetUid: 'customer_1', eventId: 'event:replay:1', type: 'live.session.updated', data: { session: { id: 'session-1', state: 'preparing' } } };
+  const published = await hub.fetch(request('/publish', payload, headers));
+  assert.equal(published.status, 200);
+  assert.equal((await published.json()).sequence, 1);
+
+  const streamResponse = await hub.fetch(request('/events?uid=customer_1&after=0', undefined, { 'x-smv-internal-uid': 'customer_1' }));
+  assert.equal(streamResponse.status, 200);
+  const reader = streamResponse.body.getReader();
+  const first = await reader.read();
+  const frame = new TextDecoder().decode(first.value);
+  assert.match(frame, /id: 1\nevent: live\.session\.updated\ndata:/);
+  assert.match(frame, /"replayed":true/);
+  await reader.cancel();
+
+  const resumed = await hub.fetch(request('/events?uid=customer_1&after=1', undefined, { 'x-smv-internal-uid': 'customer_1' }));
+  const resumedReader = resumed.body.getReader();
+  const ready = await resumedReader.read();
+  const readyFrame = new TextDecoder().decode(ready.value);
+  assert.match(readyFrame, /event: live\.ready/);
+  assert.doesNotMatch(readyFrame, /live\.session\.updated/);
+  await resumedReader.cancel();
+});
+
+test('per-user event hub reports a replay gap when the requested cursor predates its bounded event log', async () => {
+  const state = fakeState();
+  const hub = new LiveUserEventHub(state.ctx, state.env);
+  const headers = { 'x-smv-internal-caller': 'smv-backend' };
+  for (let index = 1; index <= 205; index += 1) {
+    await hub.fetch(request('/publish', {
+      targetUid: 'customer_1', eventId: 'event:gap:' + index,
+      type: 'live.session.updated', data: { index }
+    }, headers));
+  }
+  const response = await hub.fetch(request('/events?uid=customer_1&after=1', undefined, { 'x-smv-internal-uid': 'customer_1' }));
+  const reader = response.body.getReader();
+  let output = '';
+  for (let index = 0; index < 210; index += 1) {
+    const item = await reader.read();
+    if (item.done) break;
+    output += new TextDecoder().decode(item.value);
+    if (output.includes('event: live.ready')) break;
+  }
+  assert.match(output, /"replayGap":true/);
+  assert.match(output, /"type":"live.ready"/);
+  await reader.cancel();
 });
 
 test('event hub rejects publish calls without internal Worker assertion', async () => {

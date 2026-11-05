@@ -82,12 +82,15 @@ const CLOUDFLARE_FINANCIAL_BACKEND_URL = IS_SMV_PHASE1_STAGING
   : "https://smvastroservices.astroservices.workers.dev";
 function smvApiBackend(path) {
   const pathname = String(path || '').split('?')[0].toLowerCase();
-  const financialRoute = /^\/(?:wallet(?:\/|$)|live\/(?:requests|sessions(?:\/|$)|bookings(?:\/|$)|pricing(?:\/|$)|ice-config(?:\/|$)|events(?:\/|$)|scheduled-appointments(?:\/|$))|appointment-booking(?:\/|$)|test-razorpay(?:\/|$)|astrologer\/(?:availability|earnings|withdrawal-request)(?:\/|$)|admin\/(?:withdrawals-data|withdrawal-payout|withdrawal-mark-processing|withdrawal-reject|withdrawal-mark-paid|offers|live\/(?:pricing|commission))(?:\/|$))/.test(pathname);
-  return window.SMV_CLOUDFLARE_FINANCIAL_API_ENABLED === true && financialRoute
+  // Only APIs already registered in the Cloudflare Worker are routed here.
+  // Firebase login/token, public-ID lookup, Customer/Astrologer registration,
+  // Horoscope/Calendar and APIs awaiting Cloudflare parity stay on their existing backend.
+  const cloudflareRoute = /^\/(?:wallet(?:\/|$)|live\/(?:requests|sessions|bookings|pricing|ice-config|events|scheduled-appointments|push)(?:\/|$)|appointment-booking(?:\/|$)|test-razorpay(?:\/|$)|admin-data(?:\/|$)|admin\/(?:appointments|astrologers-data|settings-data|questions-data|reviews-data|dashboard-touch|wallet\/transactions|withdrawals-data|withdrawal-payout|withdrawal-mark-processing|withdrawal-reject|withdrawal-mark-paid|offers|content|android-app|approve-astrologer|reject-astrologer|payout-change-status|appointment-status|set-open-workflow|approve-question|reallocate-question|edit-question|takeover-answer|astrologer-languages|astrologer-pricing|astrologer-profile-permission|astrologer-profile-description|astrologer-auto-approval\/settings|astrologer-quiz\/(?:questions(?:\/delete)?|load-defaults|sync-google-form)|live\/(?:pricing|commission))(?:\/|$)|astrologer\/(?:appointments|availability|change-payout|earnings|open-questions|qualification-config|sync-approval|withdrawal-request|edit-answer|claim-question)(?:\/|$)|customer\/(?:appointments|reviews|submit-review|consultations|mark-answer-viewed)(?:\/|$)|public\/(?:astrologers(?:\/[A-Za-z0-9_-]+\/reviews)?|content|android-app|push-config)(?:\/|$)|google-form\/astrologer-quiz-config(?:\/|$)|webhooks\/google-form\/astrologer-qualification(?:\/|$)|submit-answer(?:\/|$))/.test(pathname);
+  return window.SMV_CLOUDFLARE_FINANCIAL_API_ENABLED === true && cloudflareRoute
     ? CLOUDFLARE_FINANCIAL_BACKEND_URL
     : RAZORPAY_BACKEND_URL;
 }
-// Availability uses the D1-backed Worker when financial routing is active; other legacy APIs and FCM push stay on Render.
+// SMV ASTRO application APIs with an implemented Cloudflare route use one Worker origin; Auth, Registration, Horoscope/Calendar and unported APIs are intentionally excluded.
 const BACKEND=RAZORPAY_BACKEND_URL; window.SMV_BACKEND_URL=RAZORPAY_BACKEND_URL;
 
 let smvHomeWalletOffersFetchedAt=0, smvHomeWalletOffersRequest=null;
@@ -3979,7 +3982,7 @@ if(firebaseInitError){
 // Phase 1 Live Call / Chat client. Prices and settlement remain server-owned.
 let smvLiveEventController=null,smvLiveEventUid='',smvLiveEventRetry=null,smvLiveCurrentSession=null,smvLivePanelSessionId='',smvLivePricingLoadedAt=0;
 let smvLivePeer=null,smvLiveLocalStream=null,smvLiveRemoteStream=null,smvLiveSignalTimer=null,smvLiveMessageTimer=null,smvLiveDashboardTimer=null,smvLiveClockTimer=null;
-let smvLiveEventStreamConnected=false,smvLiveTransportPrimedSessionId='';
+let smvLiveEventStreamConnected=false,smvLiveTransportPrimedSessionId='',smvLiveEventCursor=0,smvLiveEventCursorUid='';
 let smvLiveDashboardStatusTimer=null;
 const smvLiveDashboardSessionsById=new Map();
 let smvLivePollBusy=false,smvLivePollRefreshRequested=false,smvLiveSignalSeen=new Set(),smvLiveMessageSeen=new Set(),smvLiveQueuedIce=[],smvLiveReadySentKey='',smvLiveOfferStartedKey='',smvLiveSignalSinceMs=0,smvLiveMessageSinceMs=0;
@@ -4856,7 +4859,7 @@ function smvLiveStartFallbackPolling(){
  if(smvLiveEventStreamConnected||!currentUser||!auth?.currentUser||currentUser.uid!==auth.currentUser.uid)return;
  // Recovery-only pollers: a healthy SSE stream already carries session, booking,
  // chat-message and WebRTC-signal events, so running both transports wastes reads.
- if(!smvLiveDashboardTimer)smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions().catch(()=>{}),12000);
+ if(!smvLiveDashboardTimer)smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions(true).catch(()=>{}),2500);
  const session=smvLiveCurrentSession,id=smvLivePanelSessionId;
  if(!session||!id||session.state==='ended')return;
  if(session.mode==='call'&&!smvLiveSignalTimer)smvLiveSignalTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollSignals(id).catch(()=>{});},1800);
@@ -4885,10 +4888,10 @@ function smvLiveHandleEvent(ev){
  if(ev.type==='live.session.request'||ev.type==='live.session.updated'){
   const s=ev.session;if(!s)return;
   smvLiveUpdateDashboardSessionStatus(s);
-  if(s.state==='ringing'&&s.astrologerUid===currentUser?.uid&&s.id!==smvLivePanelSessionId){smvLiveStartRingtone(s.id);smvLiveOpenSession(s,null,true);}
-  else if(s.id===smvLivePanelSessionId){if(s.state!=='ringing'&&smvLiveRingCurrentId===String(s.id||''))smvLiveStopRingtone();smvLiveApplySession(s);}
-  else if(['preparing','connecting','active'].includes(s.state)&&s.astrologerUid===currentUser?.uid&&!smvLiveRingSuppressedIds.has(String(s.id||'')))smvLiveOpenSession(s,null,false);
-  else if(['preparing','ringing','connecting','active'].includes(s.state)&&s.customerUid===currentUser?.uid&&!smvLiveRingSuppressedIds.has(String(s.id||'')))smvLiveOpenSession(s,null,false);
+  if(s.id===smvLivePanelSessionId){if(s.state!=='ringing'&&smvLiveRingCurrentId===String(s.id||''))smvLiveStopRingtone();smvLiveApplySession(s);}
+  else if(ev.replayed!==true&&s.state==='ringing'&&s.astrologerUid===currentUser?.uid){smvLiveStartRingtone(s.id);smvLiveOpenSession(s,null,true);}
+  else if(ev.replayed!==true&&['preparing','connecting','active'].includes(s.state)&&s.astrologerUid===currentUser?.uid&&!smvLiveRingSuppressedIds.has(String(s.id||'')))smvLiveOpenSession(s,null,false);
+  else if(ev.replayed!==true&&['preparing','ringing','connecting','active'].includes(s.state)&&s.customerUid===currentUser?.uid&&!smvLiveRingSuppressedIds.has(String(s.id||'')))smvLiveOpenSession(s,null,false);
  }else if(ev.type==='live.session.ended'){
   const s=ev.session;if(s)smvLiveUpdateDashboardSessionStatus(s);if(s&&s.id===smvLivePanelSessionId){smvLiveApplySession(s);const result=$('smvLiveSessionResult');if(result)result.textContent=smvLiveSessionEndedMessage(s,ev.wallet);loadDashboard(window.__smvCurrentRole||null,true,true).catch(()=>{});}
  }else if(ev.type==='live.chat.message'&&ev.message?.sessionId===smvLivePanelSessionId){
@@ -4912,6 +4915,21 @@ function smvLiveStopEventStream(){
  smvLiveEventUid='';
  smvLiveStopFallbackPolling();
 }
+function smvLiveReadEventCursor(uid){
+ const owner=String(uid||'');
+ if(smvLiveEventCursorUid!==owner){
+  smvLiveEventCursorUid=owner;smvLiveEventCursor=0;
+  try{smvLiveEventCursor=Math.max(0,Math.trunc(Number(sessionStorage.getItem('smv-live-event-cursor:'+owner))||0));}catch(_){}
+ }
+ return smvLiveEventCursor;
+}
+function smvLiveSaveEventCursor(uid,value,reset=false){
+ const owner=String(uid||''),next=Math.max(0,Math.trunc(Number(value)||0));
+ if(!owner||!Number.isSafeInteger(next))return;
+ if(smvLiveEventCursorUid!==owner){smvLiveEventCursorUid=owner;smvLiveEventCursor=0;}
+ smvLiveEventCursor=reset?next:Math.max(smvLiveEventCursor,next);
+ try{sessionStorage.setItem('smv-live-event-cursor:'+owner,String(smvLiveEventCursor));}catch(_){}
+}
 function smvLiveStartEventStream(){
  const user=auth?.currentUser;if(!user||!currentUser||currentUser.uid!==user.uid)return;if(smvLiveEventUid===user.uid&&smvLiveEventController)return;
  smvLiveStopEventStream();smvLiveEventUid=user.uid;const uid=user.uid,controller=new AbortController();smvLiveEventController=controller;
@@ -4920,7 +4938,7 @@ function smvLiveStartEventStream(){
  (async()=>{
   let watchdog=null,lastByteAt=Date.now();
   try{
-   const token=await user.getIdToken(),resp=await fetch(smvApiBackend('/live/events')+'/live/events',{headers:{Authorization:'Bearer '+token,Accept:'text/event-stream'},cache:'no-store',signal:controller.signal});
+   const token=await user.getIdToken(),after=smvLiveReadEventCursor(uid),resp=await fetch(smvApiBackend('/live/events')+'/live/events?after='+encodeURIComponent(String(after)),{headers:{Authorization:'Bearer '+token,Accept:'text/event-stream'},cache:'no-store',signal:controller.signal});
    if(!resp.ok||!resp.body)throw new Error('Live event stream HTTP '+resp.status);
    const reader=resp.body.getReader(),decoder=new TextDecoder();let buffer='';
    // Some proxies keep HTTP 200 open after the application stream has stalled.
@@ -4935,18 +4953,25 @@ function smvLiveStartEventStream(){
     let n;
     while((n=buffer.indexOf('\n\n'))>=0){
      const frame=buffer.slice(0,n);buffer=buffer.slice(n+2);
-     const line=frame.split('\n').find(x=>x.startsWith('data:'));
+     const lines=frame.split('\n');
+     const line=lines.find(x=>x.startsWith('data:'));
      if(!line)continue;
+     const idLine=lines.find(x=>x.startsWith('id:'));
+     const eventCursor=idLine?Number(idLine.slice(3).trim()):0;
      try{
       const event=JSON.parse(line.slice(5).trim());
       if(event?.type==='live.ready'&&!smvLiveEventStreamConnected){
        smvLiveEventStreamConnected=true;
+       smvLiveSaveEventCursor(uid,event.cursor??eventCursor,event.resetCursor===true);
        smvLiveStopFallbackPolling();
-       // Reconcile state, chat history and WebRTC signals missed while reconnecting.
+       // Reconcile authoritative session state and chat/signal history after every replay or reconnect.
        smvLiveReconcileAfterEventStreamConnect().catch(()=>{});
+      }else{
+       smvLiveHandleEvent(event);
+       if(Number.isSafeInteger(eventCursor)&&eventCursor>0)smvLiveSaveEventCursor(uid,eventCursor);
       }
-      smvLiveHandleEvent(event);
      }catch(e){console.warn('Invalid Live Session event:',e);}
+
     }
    }
   }catch(e){
@@ -5050,7 +5075,7 @@ function smvLiveUpdateDashboardSessionStatus(session){
   },1000);
  }
 }
-async function smvLivePollSessions(){
+async function smvLivePollSessions(statusOnly=false){
  if(!currentUser||!auth?.currentUser||currentUser.uid!==auth.currentUser.uid)return;
  const role=String(window.__smvCurrentRole||'').toLowerCase();if(!['customer','astrologer'].includes(role))return;
  if(smvLivePollBusy){smvLivePollRefreshRequested=true;return;}
@@ -5063,6 +5088,7 @@ async function smvLivePollSessions(){
    else if(['preparing','connecting','active'].includes(session.state)&&session.astrologerUid===currentUser.uid&&role==='astrologer'&&!smvLiveRingSuppressedIds.has(String(session.id||'')))smvLiveOpenSession(session,null,false);
    else if(['preparing','ringing','connecting','active'].includes(session.state)&&session.customerUid===currentUser.uid&&role==='customer'&&!smvLiveRingSuppressedIds.has(String(session.id||'')))smvLiveOpenSession(session,null,false);
   }
+  if(statusOnly)return;
   if(role==='astrologer'){
    const b=await renderApi('/live/bookings/pending',{method:'GET',timeoutMs:12000});smvLiveRenderBookings(b.bookings||[]);
    const pendingSession=(list.sessions||[]).find(x=>x.astrologerUid===currentUser.uid&&x.state==='ringing'&&!smvLiveRingSuppressedIds.has(String(x.id||'')));

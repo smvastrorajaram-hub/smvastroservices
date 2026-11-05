@@ -187,7 +187,8 @@ export function registerD1LiveSessionRoutes({
   async function streamUserEvents(req,res,user) {
     const uid=String(user.uid||'');
     const stub=env.LIVE_USER_EVENT_HUB.get(env.LIVE_USER_EVENT_HUB.idFromName(uid));
-    const response=await stub.fetch('https://live-user-hub.internal/events?uid='+encodeURIComponent(uid),{
+    const cursor=Math.max(0,Math.trunc(Number(req.query?.after)||0));
+    const response=await stub.fetch('https://live-user-hub.internal/events?uid='+encodeURIComponent(uid)+'&after='+encodeURIComponent(String(cursor)),{
       method:'GET',headers:{'x-smv-internal-uid':uid,'x-smv-internal-role':String(user.role||'')}
     });
     if(!response.ok||!response.body) {
