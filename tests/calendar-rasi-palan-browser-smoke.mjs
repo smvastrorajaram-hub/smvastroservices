@@ -270,16 +270,17 @@ try {
       fontFamily: style?.fontFamily || '',
       controls: [...document.querySelectorAll('#languageTamil,#languageEnglish,#smvHoroscopeAuth [data-login],#smvHoroscopeAuth [data-register],#smvHoroscopeAuth [data-logout]')].map(el => {
         const rect = el.getBoundingClientRect();
-        return { width: rect.width, height: rect.height };
+        return { label: el.textContent.trim(), width: rect.width, height: rect.height, visible: rect.width > 0 && rect.height > 0 };
       })
     };
   });
   assert.equal(horoscopeBrand.text, 'SMV HOROSCOPE', 'Horoscope header must show the red SMV HOROSCOPE product title.');
   assert.equal(horoscopeBrand.logoLoaded, true, 'Horoscope header must load its dedicated product logo.');
   assert.match(horoscopeBrand.logoSrc, /smv-horoscope-website\.webp/);
-  assert.equal(horoscopeBrand.controls.length, 5, 'Horoscope header must show two language and three account actions.');
-  assert.ok(Math.max(...horoscopeBrand.controls.map(x => x.width)) - Math.min(...horoscopeBrand.controls.map(x => x.width)) <= 1.5, 'All five Horoscope header controls must have equal width.');
-  assert.ok(horoscopeBrand.controls.every(x => Math.abs(x.height - 40) < 1), 'All five Horoscope mobile header controls must have the same 40px height.');
+  const visibleHoroscopeControls = horoscopeBrand.controls.filter(x => x.visible);
+  assert.equal(visibleHoroscopeControls.length, 4, 'Signed-out Horoscope header must show two language and two account actions; Logout remains hidden.');
+  assert.ok(Math.max(...visibleHoroscopeControls.map(x => x.width)) - Math.min(...visibleHoroscopeControls.map(x => x.width)) < 1, 'All visible signed-out Horoscope header controls must have equal width: ' + JSON.stringify(visibleHoroscopeControls));
+  assert.ok(visibleHoroscopeControls.every(x => Math.abs(x.height - 40) < 1), 'All visible signed-out Horoscope header controls must have the same 40px height.');
   assert.equal(horoscopeBrand.color, 'rgb(255, 0, 0)', "Horoscope brand title must use the main site red.");
   assert.match(horoscopeBrand.fontFamily, /Georgia/i, "Horoscope brand title must use the main site serif brand font.");
   await page.waitForFunction(() =>
