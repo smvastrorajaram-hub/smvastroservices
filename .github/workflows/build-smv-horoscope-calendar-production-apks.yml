@@ -38,7 +38,6 @@ on:
       - "public/horoscope/sw.js"
       - "public/horoscope/calendar/sw.js"
       - "public/horoscope/location-search-online-offline.js"
-      - "test/android-cache-release-build-triggers.test.mjs"
   push:
     paths:
       - "settings.gradle"
@@ -55,6 +54,7 @@ on:
       - "test/android-horoscope-calendar-production.test.mjs"
       - "scripts/next-android-release-version.mjs"
       - "test/android-release-version-resolution.test.mjs"
+      - "test/android-cache-release-build-triggers.test.mjs"
       - "public/horoscope/sw.js"
       - "public/horoscope/calendar/sw.js"
       - "public/horoscope/location-search-online-offline.js"
