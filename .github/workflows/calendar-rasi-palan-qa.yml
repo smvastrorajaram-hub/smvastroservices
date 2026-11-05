@@ -45,7 +45,7 @@ permissions:
   contents: read
 concurrency:
   group: calendar-rasi-palan-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   source-regression:
     runs-on: ubuntu-latest
