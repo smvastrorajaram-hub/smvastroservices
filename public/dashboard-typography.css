@@ -472,3 +472,37 @@ html body #dashboardContent .smv-astrologer-dashboard{padding:0!important;margin
 #dashboardContent #smvLiveDashboardCard .smv-live-session-open-button:hover{
   text-decoration:none!important;
 }
+
+
+/* Live session state: the two role dashboards share this same session row. */
+#dashboardContent #smvLiveDashboardCard .smv-live-presence-dot{
+  display:inline-block;
+  width:10px;height:10px;flex:0 0 10px;
+  border-radius:50%;box-sizing:border-box;vertical-align:middle;
+}
+#dashboardContent #smvLiveDashboardCard .smv-live-presence-dot[hidden]{
+  display:none!important;
+}
+#dashboardContent #smvLiveDashboardCard .smv-live-presence-dot--active{
+  background:#00e676;border:1px solid #008f4c;
+  box-shadow:0 0 0 2px rgba(0,230,118,.18);
+  animation:smvLiveSessionGreenPulse .42s steps(2,end) infinite;
+}
+#dashboardContent #smvLiveDashboardCard .smv-live-presence-dot--closed{
+  background:#ff1744;border:1px solid #b8001e;
+  box-shadow:0 0 0 2px rgba(255,23,68,.16);
+}
+#dashboardContent #smvLiveDashboardCard .smv-live-window-closed-label:not([hidden]){
+  display:inline-block;
+  font-weight:900!important;color:#ff1744!important;
+  -webkit-text-fill-color:#ff1744!important;
+}
+@keyframes smvLiveSessionGreenPulse{
+  0%,100%{opacity:1;transform:scale(1);}
+  50%{opacity:.2;transform:scale(.78);}
+}
+@media(prefers-reduced-motion:reduce){
+  #dashboardContent #smvLiveDashboardCard .smv-live-presence-dot--active{
+    animation:none;opacity:1;
+  }
+}

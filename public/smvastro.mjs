@@ -5020,12 +5020,12 @@ function smvLiveUpdateDashboardSessionStatus(session){
   if(status)status.textContent=smvLiveDashboardSessionStatusLabel(current);
   if(liveDot)liveDot.hidden=!running;
   if(closedDot)closedDot.hidden=!windowClosed;
-  if(windowStatus){windowStatus.hidden=!windowClosed;windowStatus.textContent=ended?'CLOSED SESSION':'WINDOW CLOSED';}
+  if(windowStatus){windowStatus.hidden=!windowClosed||ended;windowStatus.textContent='Window Closed';}
   if(openButton){
-   openButton.textContent=ended?'OPEN CLOSED SESSION / RECEIPT':'OPEN SESSION';
+   openButton.textContent=ended?'Closed Session Receipt':'Open Session';
    openButton.style.background='transparent';
-   openButton.style.color=ended?'#ff1744':'#00e676';
-   openButton.style.webkitTextFillColor=ended?'#ff1744':'#00e676';
+   openButton.style.color=ended?'#000':'#00e676';
+   openButton.style.webkitTextFillColor=ended?'#000':'#00e676';
    openButton.style.border='0';
    openButton.style.borderRadius='0';openButton.style.padding='0';openButton.style.fontWeight='900';
    openButton.style.boxShadow='none';openButton.style.textDecoration='none';
