@@ -115,7 +115,7 @@ jobs:
               'X-GitHub-Api-Version': '2022-11-28'
             };
             const shortShaPattern = /Latest commit:\s*<\/strong>\s*<\/td>\s*<td>\s*<code>([a-f0-9]{7,40})<\/code>/i;
-            const branchUrlPattern = /Branch Preview URL:\s*<\/strong>\s*<\/td>\s*<td>\s*<a\s+href=['"]([^'"]+)['"]/i;
+            const previewUrlPattern = /Preview URL:\s*<\/strong>\s*<\/td>\s*<td>\s*<a\s+href=['"]([^'"]+)['"]/i;
             let resolvedOrigin = '';
 
             for (let attempt = 1; attempt <= 60; attempt++) {
@@ -138,14 +138,15 @@ jobs:
                   .sort((a, b) => String(b.comment.updated_at || b.comment.created_at).localeCompare(String(a.comment.updated_at || a.comment.created_at)));
 
                 for (const item of matches) {
-                  const match = item.comment.body.match(branchUrlPattern);
+                  if (!/Deploy successful!/i.test(item.comment.body)) continue;
+                  const match = item.comment.body.match(previewUrlPattern);
                   if (!match) continue;
                   const candidate = new URL(match[1]);
                   if (candidate.protocol !== 'https:' || !candidate.hostname.endsWith('.smvastroservices.pages.dev')) {
                     throw new Error(`Cloudflare returned an unexpected preview host: ${candidate.origin}`);
                   }
                   resolvedOrigin = candidate.origin;
-                  console.error(`Cloudflare deployment comment matches PR head ${item.sha}: ${resolvedOrigin}`);
+                  console.error(`Cloudflare commit-specific deployment URL matches PR head ${item.sha}: ${resolvedOrigin}`);
                   break;
                 }
               }
@@ -162,7 +163,7 @@ jobs:
             console.log(resolvedOrigin);
           NODE
             )"
-            echo "Using Cloudflare-reported PR Preview origin: $origin"
+            echo "Using Cloudflare commit-specific PR Preview origin: $origin"
             ready=0
             for attempt in $(seq 1 120); do
               curl --fail --silent --connect-timeout 5 --max-time 15 -H 'Cache-Control: no-cache' "$origin/" -o /dev/null 2>/dev/null &
