@@ -35,7 +35,7 @@ function isStaticPresentationRequest(req,url){
   // HOROSCOPE and CALENDAR own narrower service-worker scopes and caches.
   if(p==='/horoscope'||p.startsWith('/horoscope/'))return false;
   if(req.mode==='navigate')return true;
-  return /\\.(?:html?|css|js|mjs|json|webmanifest|png|jpe?g|webp|gif|svg|ico|avif|woff2?|ttf|otf|wasm|data)$/.test(p);
+  return /\.(?:html?|css|js|mjs|json|webmanifest|png|jpe?g|webp|gif|svg|ico|avif|woff2?|ttf|otf|wasm|data)$/.test(p);
 }
 
 async function cacheAppShell(){
