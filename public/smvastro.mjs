@@ -4955,6 +4955,7 @@ function smvLiveStopEventStream(){
  if(smvLiveEventController){smvLiveEventController.abort();smvLiveEventController=null;}
  smvLiveEventStreamConnected=false;
  smvLiveEventUid='';
+ smvLiveStopChatConnectRecovery();
  smvLiveStopFallbackPolling();
 }
 function smvLiveReadEventCursor(uid){
