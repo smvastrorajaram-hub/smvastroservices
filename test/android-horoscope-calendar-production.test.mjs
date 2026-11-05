@@ -222,7 +222,7 @@ test('All three production Android WebViews use network-first Service Worker cac
     assert.ok(activity.includes('ServiceWorkerController.getInstance().getServiceWorkerWebSettings()'), path + ' must configure the Service Worker runtime');
     assert.ok(activity.includes('serviceWorkerSettings.setCacheMode(WebSettings.LOAD_DEFAULT);'), path + ' must keep Service Worker requests online-first');
     assert.ok(activity.includes('serviceWorkerSettings.setBlockNetworkLoads(false);'), path + ' must allow online refresh');
-    assert.doesNotMatch(activity, /(?:webView|WebView)\\.clearCache\\s*\\(/, path + ' must not clear WebView storage on launch');
-    assert.doesNotMatch(activity, /localStorage\\.clear|sessionStorage\\.clear|caches\\.delete/, path + ' must not clear web app or customer data');
+    assert.doesNotMatch(activity, /(?:webView|WebView)\.clearCache\s*\(/, path + ' must not clear WebView storage on launch');
+    assert.doesNotMatch(activity, /localStorage\.clear|sessionStorage\.clear|caches\.delete/, path + ' must not clear web app or customer data');
   }
 });
