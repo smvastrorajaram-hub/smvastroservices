@@ -58,11 +58,6 @@ jobs:
   sync-independent-pwas:
     name: Sync Horoscope + Calendar PWAs
     needs: deploy
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      contains(join(github.event.commits.*.modified, ','), 'public/horoscope/') ||
-      contains(join(github.event.commits.*.added, ','), 'public/horoscope/') ||
-      contains(join(github.event.commits.*.removed, ','), 'public/horoscope/')
     runs-on: ubuntu-latest
     steps:
       - name: Trigger satellite PWA deployments
