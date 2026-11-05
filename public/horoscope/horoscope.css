@@ -2913,7 +2913,7 @@ details>*{display:block!important}
 .smv-horoscope-controls-row #smvHoroscopeAuth .header-account .action-row>.btn{box-sizing:border-box;flex:1 1 0;width:0;min-width:0;height:42px;min-height:42px;padding:7px 5px!important;border:1px solid #dfba65!important;border-radius:24px!important;background:#fffaf0!important;color:#38271c!important;box-shadow:none!important;font-family:inherit!important;font-size:12px!important;font-weight:800!important;line-height:1.1!important;text-align:center;text-transform:none!important;white-space:nowrap;}
 .smv-horoscope-controls-row .smv-language-buttons button:hover,
 .smv-horoscope-controls-row #smvHoroscopeAuth .header-account .action-row>.btn:hover{background:#fff3d8!important;border-color:#c79b45!important;}
-@media(max-width:420px){.smv-horoscope-controls-row .smv-language-buttons button,.smv-horoscope-controls-row #smvHoroscopeAuth .header-account .action-row>.btn{height:40px;min-height:40px;font-size:11px!important;padding-inline:3px!important}}
+@media(max-width:420px){.smv-horoscope-controls-row .smv-language-buttons button,.smv-horoscope-controls-row #smvHoroscopeAuth .header-account .action-row>.btn{height:40px!important;min-height:40px!important;font-size:11px!important;padding-inline:3px!important}}
 
 /* Use equal grid tracks for currently visible language/account actions. */
 .smv-horoscope-controls-row{
