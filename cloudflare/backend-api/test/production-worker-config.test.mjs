@@ -13,7 +13,8 @@ test('Production Worker uses the exact requested Worker name, D1 ID, Firebase Pr
   assert.equal(config.vars.SMV_ENVIRONMENT, 'production');
   assert.equal(config.vars.FIREBASE_PROJECT_ID, 'smv-astro');
   assert.equal(config.vars.FIREBASE_AUTH_PROJECT_IDS, 'smv-astro');
-  assert.equal(config.vars.ALLOWED_ORIGINS, 'https://smvastroservices.in,https://smvastroservices.pages.dev');
+  assert.equal(config.vars.ALLOWED_ORIGINS, 'https://smvastroservices.in,https://smvastroservices.pages.dev,https://horoscope.smvastroservices.in,https://calendar.smvastroservices.in');
+  assert.equal(config.vars.GEONAMES_USERNAME, undefined, 'GeoNames username must be a Worker secret, never a plain Wrangler variable.');
   assert.equal(config.observability.enabled, true);
   assert.equal(config.observability.logs.invocation_logs, true);
   assert.equal(config.observability.logs.head_sampling_rate, 1);
@@ -65,6 +66,32 @@ test('Production deploy workflow provisions and validates Firebase Project 1 cre
   assert.match(workflow, /d\.liveCallChatRoutesEnabled!==true/);
 });
 
+test('Production Worker registers a server-side GeoNames proxy for all three public app origins', () => {
+  const entry = fs.readFileSync(path.join(root, 'src', 'index.mjs'), 'utf8');
+  const routes = fs.readFileSync(path.join(root, 'src', 'geonames-location-routes.mjs'), 'utf8');
+  const workflow = fs.readFileSync(path.join(root, '..', '..', '.github', 'workflows', 'cloudflare-backend-api-production-deploy.yml'), 'utf8');
+  const mainLocation = fs.readFileSync(path.join(root, '..', '..', 'public', 'main-location-search.js'), 'utf8');
+  const sharedLocation = fs.readFileSync(path.join(root, '..', '..', 'public', 'horoscope', 'location-search-online-offline.js'), 'utf8');
+
+  assert.ok(entry.includes('registerGeoNamesRoutes({ app, env });'));
+  assert.ok(routes.includes('env.GEONAMES_USERNAME'));
+  assert.ok(routes.includes("new URL('https://secure.geonames.org/' + endpoint)"));
+  for (const route of ['/api/locations/status', '/api/locations/search', '/api/locations/timezone']) {
+    assert.ok(routes.includes("'" + route + "'"), 'Missing GeoNames route: ' + route);
+  }
+
+  assert.ok(workflow.includes('Sync GeoNames service username into Production Worker'));
+  assert.ok(workflow.includes('GEONAMES_USERNAME: ${{ secrets.GEONAMES_USERNAME }}'));
+  assert.ok(workflow.includes('secret put GEONAMES_USERNAME'));
+  assert.ok(workflow.includes("['GeoNames service username', names.has('GEONAMES_USERNAME')]"));
+  assert.ok(workflow.includes('Verify Production GeoNames search and timezone routes'));
+  assert.ok(workflow.includes('Validated GeoNames username secret. Value remains hidden.'));
+  assert.ok(!config.vars.GEONAMES_USERNAME, 'GeoNames username must not be stored as a plain Wrangler variable.');
+
+  assert.ok(mainLocation.includes('https://smvastroservices.astroservices.workers.dev'));
+  assert.ok(sharedLocation.includes("const defaultBackend='https://smvastroservices.astroservices.workers.dev'"));
+});
+ 
 test('Production diagnostic probe Workers have separate names and cannot bind Production D1', () => {
   const native = JSON.parse(fs.readFileSync(path.join(root, 'wrangler.native-probe.jsonc'), 'utf8'));
   const express = JSON.parse(fs.readFileSync(path.join(root, 'wrangler.express-probe.jsonc'), 'utf8'));
