@@ -85,12 +85,12 @@ function smvApiBackend(path) {
   // Only APIs already registered in the Cloudflare Worker are routed here.
   // Firebase login/token, public-ID lookup, Customer/Astrologer registration,
   // Horoscope/Calendar and APIs awaiting Cloudflare parity stay on their existing backend.
-  const cloudflareRoute = /^\/(?:wallet(?:\/|$)|live\/(?:requests|sessions(?:\/|$)|bookings(?:\/|$)|pricing(?:\/|$)|ice-config(?:\/|$)|events(?:\/|$)|scheduled-appointments(?:\/|$)|push(?:\/|$))|appointment-booking(?:\/|$)|test-razorpay(?:\/|$)|account\/role(?:\/|$)|admin\/(?:access|appointments|astrologers-data|settings-data|questions-data|reviews-data|dashboard-touch|wallet\/transactions|withdrawals-data|withdrawal-payout|withdrawal-mark-processing|withdrawal-reject|withdrawal-mark-paid|offers|content(?:\/|$)|android-app(?:\/|$)|approve-astrologer|reject-astrologer|payout-change-status|appointment-status|set-open-workflow|approve-question|reallocate-question|edit-question|takeover-answer|astrologer-languages|astrologer-pricing|astrologer-profile-permission|astrologer-profile-description|astrologer-auto-approval\/settings|astrologer-quiz\/(?:questions(?:\/delete)?|load-defaults|sync-google-form)|live\/(?:pricing|commission))(?:\/|$)|astrologer\/(?:appointments(?:\/|$)|availability(?:\/|$)|change-payout|earnings|open-questions|qualification-config|sync-approval|withdrawal-request|edit-answer|claim-question)(?:\/|$)|customer\/(?:appointments|reviews|submit-review|consultations|mark-answer-viewed)(?:\/|$)|public\/(?:astrologers(?:\/[^/]+\/reviews)?|content|android-app|push-config)(?:\/|$)|google-form\/astrologer-quiz-config(?:\/|$)|webhooks\/google-form\/astrologer-qualification(?:\/|$)|submit-answer(?:\/|$))/.test(pathname);
+  const cloudflareRoute = /^\/(?:wallet(?:\/|$)|live\/(?:requests|sessions|bookings|pricing|ice-config|events|scheduled-appointments|push)(?:\/|$)|appointment-booking(?:\/|$)|test-razorpay(?:\/|$)|account\/role(?:\/|$)|admin\/(?:access|appointments|astrologers-data|settings-data|questions-data|reviews-data|dashboard-touch|wallet\/transactions|withdrawals-data|withdrawal-payout|withdrawal-mark-processing|withdrawal-reject|withdrawal-mark-paid|offers|content|android-app|approve-astrologer|reject-astrologer|payout-change-status|appointment-status|set-open-workflow|approve-question|reallocate-question|edit-question|takeover-answer|astrologer-languages|astrologer-pricing|astrologer-profile-permission|astrologer-profile-description|astrologer-auto-approval\/settings|astrologer-quiz\/(?:questions(?:\/delete)?|load-defaults|sync-google-form)|live\/(?:pricing|commission))(?:\/|$)|astrologer\/(?:appointments|availability|change-payout|earnings|open-questions|qualification-config|sync-approval|withdrawal-request|edit-answer|claim-question)(?:\/|$)|customer\/(?:appointments|reviews|submit-review|consultations|mark-answer-viewed)(?:\/|$)|public\/(?:astrologers(?:\/[^/]+\/reviews)?|content|android-app|push-config)(?:\/|$)|google-form\/astrologer-quiz-config(?:\/|$)|webhooks\/google-form\/astrologer-qualification(?:\/|$)|submit-answer(?:\/|$))/.test(pathname);
   return window.SMV_CLOUDFLARE_FINANCIAL_API_ENABLED === true && cloudflareRoute
     ? CLOUDFLARE_FINANCIAL_BACKEND_URL
     : RAZORPAY_BACKEND_URL;
 }
-// SMV ASTRO application APIs with an implemented Cloudflare route use one Worker origin; Auth, Registration, Horoscope/Calendar and unported APIs are intentionally excluded.// Availability uses the D1-backed Worker when financial routing is active; other legacy APIs and FCM push stay on Render.
+// SMV ASTRO application APIs with an implemented Cloudflare route use one Worker origin; Auth, Registration, Horoscope/Calendar and unported APIs are intentionally excluded.
 const BACKEND=RAZORPAY_BACKEND_URL; window.SMV_BACKEND_URL=RAZORPAY_BACKEND_URL;
 
 let smvHomeWalletOffersFetchedAt=0, smvHomeWalletOffersRequest=null;
@@ -4961,7 +4961,7 @@ function smvLiveStartEventStream(){
      try{
       const event=JSON.parse(line.slice(5).trim());
       if(event?.type==='live.ready'&&!smvLiveEventStreamConnected){
-       smvLiveEventConnected=true;
+       smvLiveEventStreamConnected=true;
        smvLiveSaveEventCursor(uid,event.cursor??eventCursor,event.resetCursor===true);
        smvLiveStopFallbackPolling();
        // Reconcile authoritative session state and chat/signal history after every replay or reconnect.
@@ -4970,7 +4970,8 @@ function smvLiveStartEventStream(){
        smvLiveHandleEvent(event);
        if(Number.isSafeInteger(eventCursor)&&eventCursor>0)smvLiveSaveEventCursor(uid,eventCursor);
       }
-     }catch(e){console.warn('Invalid Live Session event:',e);}     }catch(e){console.warn('Invalid Live Session event:',e);}
+     }catch(e){console.warn('Invalid Live Session event:',e);}
+
     }
    }
   }catch(e){
