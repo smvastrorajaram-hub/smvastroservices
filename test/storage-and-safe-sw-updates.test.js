@@ -38,6 +38,9 @@ test('main SMV ASTRO caches only the offline UI shell while leaving online-only 
   assert.ok(sw.includes("APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE"));
   assert.ok(sw.includes("SMV_CACHE_RELEASE='20261105-offline-ui-v2'"));
   assert.ok(sw.includes('APP_SHELL_FILES'));
+  assert.ok(sw.includes("'./main-location-search.js'"));
+  assert.ok(sw.includes("'./horoscope/offline/places/india-manifest.json'"));
+  assert.ok(sw.includes('isOfflinePlaceAsset(new URL(request.url))?await caches.open(OFFLINE_PLACE_CACHE):cache'));
   assert.ok(sw.includes('isOnlineOnlyRequest'));
   assert.ok(sw.includes('if(!isStaticPresentationRequest(req,url))return;'));
   assert.ok(sw.includes("if(p==='/horoscope'||p.startsWith('/horoscope/'))return false"));
@@ -75,6 +78,9 @@ test('Calendar keeps its offline UI/WASM precache and India shard migration whil
   assert.ok(sw.includes("SMV_CACHE_RELEASE='20261105-offline-ui-v2'"));
   assert.ok(sw.includes('const REQUIRED_CORE = new Set(['));
   assert.ok(sw.includes('await preserveCachedIndiaPlaces(target)'));
+  assert.ok(sw.includes("'../offline/places/timezone.mjs'"));
+  assert.ok(sw.includes("'../offline/places/tz-boundary-lookup.mjs'"));
+  assert.ok(sw.includes("'../offline/places/place-display.mjs'"));
   assert.ok(sw.includes('isOnlineOnlyRequest'));
   assert.ok(sw.includes('if(!isStaticPresentationRequest(e.request,u))return;'));
 });
@@ -105,4 +111,11 @@ test('All three app workers share the same release bump while preserving indepen
   assert.ok(workers[2].includes("CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"));
   assert.ok(workers[0].includes("OFFLINE_PLACE_CACHE='smv-astro-offline-places'"));
   assert.ok(workers[1].includes("OFFLINE_CACHE='smv-horoscope-offline'"));
+});
+
+
+test('SMV ASTRO checks the root Service Worker update on every app entry', () => {
+  const html = read('public/index.html');
+  assert.match(html, /navigator\.serviceWorker\.register\('\.\/sw\.js',\{scope:'\.\/',updateViaCache:'none'\}\)\.then\(function\(reg\)/);
+  assert.match(html, /reg\.update\(\)\.catch\(function\(\)\{\}\)/);
 });
