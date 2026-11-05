@@ -2,7 +2,7 @@
    HTML/CSS/JS presentation is network-first and retained for offline reopening.
    Authentication, account data, APIs, payments and consultation operations stay network-only.
    Location search keeps its existing independent online/offline cache. */
-const SMV_CACHE_RELEASE='20261105-offline-location-pack-v4';
+const SMV_CACHE_RELEASE='20261105-brand-header-v1';
 const SMV_LOCATION_CACHE='smv-shared-india-places';
 const APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE;
 const APP_SHELL_FILES=[
@@ -14,8 +14,8 @@ const APP_SHELL_FILES=[
   './android-app-install.js','./public-navigation.js',
   './main-location-search.js','./question-place-search.mjs',
   './horoscope/offline/places/place-search.mjs','./horoscope/offline/places/india-manifest.json','./horoscope/offline/places/place-display.mjs',
-  './assets/icon-192.png','./assets/icon-512.png','./assets/icon-512-maskable.png',
-  './assets/favicon-astro-16.png','./assets/favicon-astro-32.png','./assets/favicon-64.png','./assets/favicon.ico',
+  './assets/icon-192.png',
+  './assets/favicon-astro-16.png','./assets/favicon-astro-32.png','./assets/favicon-astro-64.png','./assets/favicon-astro.ico',
   './assets/smv-home-logo.webp'
 ];
 const REQUIRED_APP_SHELL=new Set([
