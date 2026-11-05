@@ -10,7 +10,7 @@ const RUNTIME_REVISION='v261-offline-first-shell-20261105';
 const CORE=[
   './','./index.html',
   './horoscope.css','./chart-style.css','./marriage-basic-report.css',
-  './horoscope-readings.css','./smv-ui.css','./header-layout.css',
+  './horoscope-readings.css','./smv-ui.css',
   './v358-result-layout.css','./v359-symmetric-gutters.css',
   './manifest-en.webmanifest','./manifest-ta.webmanifest',
   './report-identity.js','./boot.mjs','./horoscope-auth.mjs','./report-store.mjs',
@@ -48,11 +48,24 @@ const CORE=[
 ];
 
 const REQUIRED_CORE=new Set([
-  './index.html','./horoscope.css','./boot.mjs',
+  './index.html','./horoscope.css','./boot.mjs','./horoscope.js',
+  './marriage-matching.js','./marriage-basic-report.mjs','./matching-timeline.mjs',
+  './d1-15-year-reading.mjs',
   './offline/offline-engine.mjs','./offline/server-wrapper.browser.mjs',
   './offline/swiss_vedic.browser.mjs','./offline/wasm-provider.mjs',
-  './offline/transit_panchang.browser.mjs',
-  './offline/astro_advanced.browser.mjs','./offline/dasa_engine.browser.mjs',
+  './offline/transit_panchang.browser.mjs','./offline/astro_advanced.browser.mjs',
+  './offline/dasa_engine.browser.mjs','./offline/pvr-longevity-sodhya-timing.browser.mjs',
+  './offline/cg-rajan-ayurdaya-pinda.browser.mjs','./offline/cg-rajan-ayurdaya-research.browser.mjs',
+  './offline/bv-raman-ayurdaya-report.browser.mjs','./offline/bv-raman-hpa-ayurdaya-combined.browser.mjs',
+  './offline/bv-raman-ashtakavarga-ayurdaya.browser.mjs','./offline/bv-raman-ishta-kashta.browser.mjs',
+  './offline/bv-raman-shadbala.browser.mjs','./offline/cg-rajan-jathaka-kanitham-shadbala.browser.mjs',
+  './offline/bphs-cheshta-swiss-orbital-research.browser.mjs','./offline/bphs-shadbala-rectification.browser.mjs',
+  './offline/bphs-sputa-drishti.browser.mjs','./offline/bphs-swiss-solar-cheshta.browser.mjs',
+  './offline/classical-shodhana.browser.mjs','./offline/saura-classical-mean-motion.browser.mjs',
+  './offline/saura-classical-tabular-jya.browser.mjs','./offline/saura-classical-true-longitude.browser.mjs',
+  './offline/saura-natal-five-cheshta.browser.mjs','./offline/uttara-kalamrita-ayurdaya.browser.mjs',
+  './offline/uttara-kalamrita-shadbala.browser.mjs','./offline/uttara-kalamrita-six-bala.browser.mjs',
+  './offline/places/timezone.mjs','./offline/places/tz-boundary-lookup.mjs',
   './offline/vendor/smv-swisseph-local.mjs',
   './offline/vendor/wasm/swisseph.mjs','./offline/vendor/wasm/swisseph.wasm',
   './offline/vendor/wasm/swisseph.data'
