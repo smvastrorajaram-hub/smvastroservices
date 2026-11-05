@@ -1,4 +1,4 @@
-const SMV_CACHE_RELEASE='20261106-active-only-auto-busy-icons-v2';
+const SMV_CACHE_RELEASE='20261106-india-place-manifest-count-v1';
 const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE;
 const LOCATION_CACHE='smv-shared-india-places';
 const CORE=[
@@ -80,8 +80,8 @@ async function prefetchIndiaPlaceShards(target,manifestPath,shardDirectory){
   }
   await Promise.all([worker(),worker()]);
   if(failures.length)throw new Error('India offline location pack incomplete: '+failures.length+' shards failed: '+failures.slice(0,8).join(', '));
-  const records=entries.reduce((sum,[,item])=>sum+(Number(item?.records)||0),0);
-  if(records!==557995)throw new Error('Unexpected India place count: '+records);
+  const records=Number(manifest?.records);
+  if(!Number.isSafeInteger(records)||records!==557995)throw new Error('Unexpected India place count in manifest: '+records);
   console.info('SMV India offline place pack verified:',records,'records,',entries.length,'shards.');
 }
 
