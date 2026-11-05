@@ -57,11 +57,12 @@ const launchBrowser = async () => puppeteer.launch({
 });
 
 const results = [];
+const browser = await launchBrowser();
+try {
 for (const app of apps) {
   process.stdout.write('START: ' + app.name + ' online cache install\\n');
-  const browser = await launchBrowser();
+  const page = await browser.newPage();
   try {
-    const page = await browser.newPage();
     page.setDefaultNavigationTimeout(120000);
     page.setDefaultTimeout(120000);
 
@@ -212,12 +213,12 @@ for (const app of apps) {
     process.stderr.write('FAIL: ' + app.name + ' offline browser diagnostic: ' + (error?.stack || String(error)) + '\\n');
     throw error;
   } finally {
-    try {
-      await browser.close();
-    } catch (closeError) {
-      process.stderr.write('WARN: ' + app.name + ' Chromium shutdown: ' + String(closeError?.message || closeError) + '\\n');
-    }
+    try { await page.setOfflineMode(false); } catch (_) {}
+    try { await page.close(); } catch (_) {}
   }
+}
+} finally {
+  try { await browser.close(); } catch (_) {}
 }
 
 for (const result of results) process.stdout.write(JSON.stringify(result) + '\\n');
