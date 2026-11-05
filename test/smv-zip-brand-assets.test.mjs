@@ -17,7 +17,6 @@ function pngDimensions(file) {
 test('PWA manifests and image assets retain their pre-existing icon mappings', () => {
   const astro = JSON.parse(read('public/manifest.webmanifest'));
   assert.deepEqual(astro.icons.map(icon => [icon.src, icon.sizes, icon.purpose]), [
-    ['/assets/icon-512-transparent.svg', 'any', 'any'],
     ['/assets/icon-192.png', '192x192', 'any'],
     ['/assets/icon-512.png', '512x512', 'any']
   ]);
@@ -53,7 +52,7 @@ test('PWA manifests and image assets retain their pre-existing icon mappings', (
   ]) assert.deepEqual(pngDimensions(file),[size,size],file+' PWA artwork dimensions');
 });
 
-test('The supplied three-part favicon strip is used for browser tabs only', () => {
+test('Each website uses its matching original SMV WEBSITE artwork as its browser favicon', () => {
   const pages = [
     ['public/index.html','favicon-astro'],
     ['public/horoscope/index.html','favicon-horoscope'],
@@ -65,14 +64,14 @@ test('The supplied three-part favicon strip is used for browser tabs only', () =
     for (const size of [16,32,64]) {
       const file=folder+'/'+prefix+'-'+size+'.png';
       assert.deepEqual(pngDimensions(file),[size,size],file+' favicon dimensions');
-      assert.ok(html.includes(prefix+'-'+size+'.png?v=20261105-brand-header-v1'),page+' must reference its own tab icon');
+      assert.ok(html.includes(prefix+'-'+size+'.png?v=20261105-active-only-auto-busy-v1'),page+' must reference its own tab icon');
     }
     const ico=folder+'/'+prefix+'.ico';
     assert.ok(exists(ico),ico+' ICO must exist');
     assert.ok(fs.readFileSync(path.join(root,ico)).subarray(0,4).equals(Buffer.from([0,0,1,0])),ico+' must be an ICO file');
-    assert.ok(html.includes(prefix+'.ico?v=20261105-brand-header-v1'),page+' must reference its own ICO');
+    assert.ok(html.includes(prefix+'.ico?v=20261105-active-only-auto-busy-v1'),page+' must reference its own ICO');
   }
-  assert.ok(read('public/index.html').includes('href="./manifest.webmanifest?v=20261105-brand-header-v1" rel="manifest"'));
+  assert.ok(read('public/index.html').includes('href="./manifest.webmanifest?v=20261105-active-only-auto-busy-v1" rel="manifest"'));
 });
 
 test('Horoscope and Calendar logo headers are removed while Horoscope controls remain in one row', () => {
