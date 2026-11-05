@@ -188,7 +188,7 @@ test('Astrologer availability POST passes the selected status and mode switches 
  assert.deepEqual(calls,[{
   astrologerUid:'astro-1',availabilityStatus:'online',liveCallEnabled:true,liveChatEnabled:false
  }]);
- assert.equal(res.body.availabilityStatus,'busy');
+ assert.equal(res.body.availabilityStatus,'online');
  assert.equal(firestore.writes.length,0,'D1 source owns the write; do not duplicate a Firestore transaction');
 });
 
