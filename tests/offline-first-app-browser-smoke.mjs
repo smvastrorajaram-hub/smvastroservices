@@ -38,7 +38,7 @@ const apps = [
   }
 ];
 
-const launchBrowser = () => puppeteer.launch({
+const launchBrowser = async () => puppeteer.launch({
   args: chromium.args,
   executablePath: await chromium.executablePath(),
   headless: true
@@ -82,7 +82,8 @@ for (const app of apps) {
         const c = await caches.open(name);
         for (const request of await c.keys()) cachedUrls.push(new URL(request.url).pathname);
       }
-      const onlineOnlyCached = cachedUrls.filter(path => /^\\/(?:api|auth|wallet|payment|payments|razorpay|sessions?|bookings?|consultations?|account|profile|firebase|firestore|functions)(?:\\/|$)/i.test(path));
+      const onlineOnlyRoots = new Set(['api','auth','wallet','payment','payments','razorpay','session','sessions','booking','bookings','consultation','consultations','account','profile','firebase','firestore','functions']);
+      const onlineOnlyCached = cachedUrls.filter(path => onlineOnlyRoots.has(path.split('/')[1] || ''));
       return { exists, found, onlineOnlyCached, cacheNames: names };
     }, app.cacheName, app.requiredAssets);
     assert.ok(cacheState.exists, app.name + ' release cache must exist: ' + app.cacheName);
