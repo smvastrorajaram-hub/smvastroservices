@@ -1,0 +1,69 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  ANDROID_RELEASE_APPS,
+  nextAndroidReleaseVersion,
+  resolveNextAndroidReleaseVersion
+} from '../scripts/next-android-release-version.mjs';
+
+const current = (appId, versionName, versionCode) => ({
+  success: true,
+  available: true,
+  appId,
+  appName: appId,
+  packageName: ANDROID_RELEASE_APPS[appId].packageName,
+  versionName,
+  versionCode
+});
+
+test('next Android release versions increase from the live published version per app', () => {
+  assert.deepEqual(nextAndroidReleaseVersion(current('astro', 'v1.18', 1018), 'astro'), {
+    appId: 'astro', versionName: 'v1.19', versionCode: 1019
+  });
+  assert.deepEqual(nextAndroidReleaseVersion(current('horoscope', 'v1.1', 1001), 'horoscope'), {
+    appId: 'horoscope', versionName: 'v1.2', versionCode: 1002
+  });
+  assert.deepEqual(nextAndroidReleaseVersion(current('calendar', 'v1.1', 1001), 'calendar'), {
+    appId: 'calendar', versionName: 'v1.2', versionCode: 1002
+  });
+});
+
+test('version allocation carries to the next major at minor 999', () => {
+  assert.deepEqual(nextAndroidReleaseVersion(current('astro', 'v1.999', 1999), 'astro'), {
+    appId: 'astro', versionName: 'v2.0', versionCode: 2000
+  });
+});
+
+test('version allocation fails closed on missing release metadata or identity mismatch', () => {
+  assert.throws(() => nextAndroidReleaseVersion({ success: true, available: false }, 'astro'), /unavailable/);
+  const wrongApp = current('astro', 'v1.18', 1018);
+  wrongApp.packageName = 'in.smvastroservices.horoscope';
+  assert.throws(() => nextAndroidReleaseVersion(wrongApp, 'astro'), /identity mismatch/);
+  assert.throws(() => nextAndroidReleaseVersion(current('astro', 'v1.18', 1017), 'astro'), /mismatch/);
+  assert.throws(() => nextAndroidReleaseVersion(current('astro', 'v1.18', 1018), 'unknown'), /Unsupported/);
+});
+
+test('version allocation reads only the selected app public metadata endpoint', async () => {
+  const requested = [];
+  const fetchImpl = async (url, options) => {
+    requested.push({ url, options });
+    const appId = url.endsWith('/public/android-app') ? 'astro' : 'horoscope';
+    return new Response(JSON.stringify(current(appId, appId === 'astro' ? 'v1.18' : 'v1.1', appId === 'astro' ? 1018 : 1001)), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  };
+  const astro = await resolveNextAndroidReleaseVersion('astro', fetchImpl);
+  const horoscope = await resolveNextAndroidReleaseVersion('horoscope', fetchImpl);
+  assert.equal(astro.versionName, 'v1.19');
+  assert.equal(horoscope.versionName, 'v1.2');
+  assert.deepEqual(requested.map(x => x.url), [
+    'https://smv-astro-apk-release-api.astroservices.workers.dev/public/android-app',
+    'https://smv-astro-apk-release-api.astroservices.workers.dev/public/android-apps/horoscope'
+  ]);
+  for (const call of requested) {
+    assert.equal(call.options.method, 'GET');
+    assert.equal(call.options.cache, 'no-store');
+    assert.equal(call.options.headers.Accept, 'application/json');
+  }
+});
