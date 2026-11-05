@@ -2752,15 +2752,9 @@ html body.smv-v12-theme #home .smv33-trust img{width:16px;height:16px}}
 #english-horoscope .smv-location-suggestions.show{display:block}
 #english-horoscope .smv-location-suggestion{display:block;width:100%;padding:9px 0;margin:0 0 6px;background:transparent;border:0;border-radius:0;box-shadow:none;text-align:left;color:inherit;font:inherit;line-height:1.5;white-space:normal;cursor:pointer}
 #english-horoscope .smv-location-suggestion:focus-visible{outline:2px solid #966d26;outline-offset:2px}
-.smv-horoscope-controls{max-width:1160px;margin:0 auto;padding:10px 8px;color:#38271c}
-.smv-horoscope-controls-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:center;gap:6px}
-.smv-horoscope-controls-row>.smv-language-buttons,#smvHoroscopeAuth{display:contents}
-.smv-horoscope-controls .smv-language-buttons button,#smvHoroscopeAuth .header-account .action-row>.btn{display:block;width:100%;min-width:0;min-height:42px;box-sizing:border-box;padding:8px 4px;border:1px solid #dfba65;border-radius:8px;background:#fffaf0;color:#38271c;font:inherit;font-size:clamp(11px,3vw,14px);line-height:1.2;text-align:center;white-space:nowrap;cursor:pointer}
-.smv-horoscope-controls .smv-language-buttons button[aria-pressed=true]{background:#fffaf0;color:#38271c}
-.smv-horoscope-auth .header-account,.smv-horoscope-auth .action-row{display:contents}
-.smv-horoscope-auth{max-width:none;margin:0;padding:0;color:#38271c;text-align:center}
-.smv-horoscope-auth [data-auth-status]{grid-column:1/-1}
-@media(max-width:360px){.smv-horoscope-controls{padding-inline:5px}.smv-horoscope-controls-row{gap:4px}.smv-horoscope-controls .smv-language-buttons button,#smvHoroscopeAuth .header-account .action-row>.btn{padding-inline:2px;font-size:11px}}
+.smv-horoscope-controls{max-width:1160px;margin:0 auto;padding:12px 16px;color:#38271c}.smv-horoscope-controls-row{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:nowrap}.smv-horoscope-controls .smv-language-buttons{display:flex;flex:1 1 0;min-width:0;margin:8px 0;gap:8px}.smv-horoscope-controls .smv-language-buttons button,#smvHoroscopeAuth .header-account .action-row>.btn{box-sizing:border-box;flex:1 1 0;width:0;min-width:0;min-height:42px;font:inherit;padding:8px 6px;border:1px solid #dfba65;border-radius:24px;background:#fffaf0;color:#38271c;cursor:pointer}.smv-horoscope-controls .smv-language-buttons button[aria-pressed=true]{background:#fffaf0;color:#38271c;outline:none}.smv-horoscope-auth{flex:1 1 0;min-width:0;max-width:none;margin:0;padding:0;color:#38271c;text-align:center}
+.smv-horoscope-auth .header-account{margin:0 auto}
+.smv-horoscope-auth .action-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));justify-content:center;gap:8px}
 .smv-horoscope-auth [data-auth-form]{text-align:left;background:#fffaf0;color:#38271c;padding:18px;border-radius:12px;margin-top:12px}
 .smv-horoscope-auth [data-auth-form][hidden]{display:none}
 .smv-horoscope-auth [data-auth-status]{font-size:13px;color:inherit}
@@ -2771,7 +2765,9 @@ html body.smv-v12-theme #home .smv33-trust img{width:16px;height:16px}}
 .smv-horoscope-auth.is-logged-in [data-logout]{display:inline-flex}
 .smv-horoscope-pay-gate-single{padding:18px 0;margin:0;border:0;background:transparent;box-shadow:none}
 .smv-real-pdf-download[hidden]{display:none}
-.smv-horoscope-auth .btn{flex:0 0 auto;width:auto;min-width:90px;padding:8px 18px;align-items:center;justify-content:center;text-align:center;margin:0}
+.smv-horoscope-auth .btn{box-sizing:border-box;flex:1 1 0;width:100%;min-width:0;min-height:42px;padding:8px 6px;align-items:center;justify-content:center;text-align:center;margin:0}
+.smv-horoscope-auth.is-logged-in .action-row::after{content:"";display:block;visibility:hidden}
+@media(max-width:380px){.smv-horoscope-controls{padding-left:10px;padding-right:10px}.smv-horoscope-controls-row{gap:6px}.smv-horoscope-controls .smv-language-buttons,.smv-horoscope-auth .action-row{gap:6px}.smv-horoscope-controls .smv-language-buttons button,#smvHoroscopeAuth .header-account .action-row>.btn{font-size:13px;padding-left:4px;padding-right:4px}}
 #smvHoroscopeInstallArea{max-width:420px;margin:20px auto 0;padding:0 12px}
 #smvHoroscopeInstallArea #installApp{display:inline-flex;align-items:center;justify-content:center;gap:10px;max-width:100%;min-height:48px;padding:10px 16px;margin:0;border-radius:12px;font-size:15px;line-height:1.4;box-sizing:border-box}
 #smvHoroscopeInstallArea #installApp[hidden]{display:none}
