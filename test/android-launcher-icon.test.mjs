@@ -78,8 +78,10 @@ test('Android icon source is isolated from all website and PWA icon assets', () 
   const workflow = read('.github/workflows/build-smv-astro-production-apk.yml');
   assert.equal((workflow.match(/"smvastroproduction\/launcher\/icon-512\.png"/g) || []).length, 2);
   assert.match(workflow, /github\.ref == 'refs\/heads\/main'/);
-  assert.match(workflow, /Allocate the next permanent Android release version on main pushes/);
-  assert.match(workflow, /release_sequence=\$\(\(GITHUB_RUN_NUMBER - 327\)\)/);
+  assert.match(workflow, /Allocate the next SMV ASTRO version from the published Cloudflare APK release/);
+  assert.match(workflow, /node scripts\/next-android-release-version\.mjs astro/);
+  assert.match(workflow, /scripts\/next-android-release-version\.mjs/);
+  assert.doesNotMatch(workflow, /release_sequence=\$\(\(GITHUB_RUN_NUMBER - 327\)\)/);
   assert.match(workflow, /github\.ref == 'refs\/heads\/main'/);
 });
 
