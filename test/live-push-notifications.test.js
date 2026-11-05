@@ -1173,13 +1173,14 @@ test('Live Session End and Cancel are distinct from closing the session window',
   assert.ok(frontend.includes('smvLiveDismissedSessionIds.add(id)'), 'Closing the panel marks its window as closed without ending the server session');
   assert.ok(frontend.includes('data-live-presence-dot='), 'Running sessions expose a separate live indicator');
   assert.ok(frontend.includes('data-live-window-dot='), 'Closed windows expose a red closed indicator');
-  assert.ok(frontend.includes("openButton.textContent=ended?'Closed Session Receipt':'Open Session'"), 'Open and receipt labels use the requested title case');
+  assert.ok(frontend.includes("openButton.textContent=ended?'Download Receipt':'Open Session'"), 'Open Session and Download Receipt use the requested title case');
   assert.ok(frontend.includes("windowStatus.hidden=!windowClosed||ended;windowStatus.textContent='Window Closed';"), 'A terminal session does not render an extra status label beside Closed Session Receipt');
   assert.ok(frontend.includes('if(closedDot)closedDot.hidden=!windowClosed;'), 'The original red closed-session indicator remains visible for ended sessions');
   assert.ok(frontend.includes("return 'LIVE SESSION · '+clock+' remaining'"), 'A dismissed but active Call/Chat continues to show its server-based remaining time');
   assert.ok(frontend.includes("['preparing','active'].includes(String(row.state||''))"), 'The dashboard timer refreshes both horoscope preparation and active session time');
-  assert.ok(frontend.includes("openButton.style.color=ended?'#000':'#00e676'"), 'Open Session is green and Closed Session Receipt is black');
+  assert.ok(frontend.includes("openButton.style.color=ended?'#000':'#00e676'"), 'Open Session is green and Download Receipt is bold black');
   assert.ok(frontend.includes("openButton.style.webkitTextFillColor=ended?'#000':'#00e676'"), 'Android WebView text fill follows the live-session state');
+  assert.ok(frontend.includes("openButton.style.fontWeight='900'"), 'The receipt remains bold black through the shared Customer/Astrologer renderer');
   assert.ok(frontend.includes("openButton.style.background='transparent'"), 'Closed receipt action has no button box');
   assert.ok(frontend.includes("openButton.style.textDecoration='none'"), 'Closed receipt action has no underline');
   const dashboardCss = read('public/dashboard-typography.css');
