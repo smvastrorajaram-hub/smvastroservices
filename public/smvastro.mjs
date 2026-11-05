@@ -4512,6 +4512,7 @@ function smvLiveChatBoxIsVisible(){
 }
 function smvLiveOpenSession(session,wallet,incoming){
  if(!session)return;const id=String(session.id||session.sessionId||'');if(!id)return;
+ smvLiveUpdateDashboardSessionStatus({...session,id});
  const samePanelSession=smvLivePanelSessionId===id;
  if(!samePanelSession){smvLiveCloseMedia();smvLiveClearTransport();}
  const incomingSession={...session,id,mode:smvLiveCanonicalMode(session)||String(session.mode||'').toLowerCase()};
@@ -4989,13 +4990,31 @@ function smvLiveUpdateDashboardSessionStatus(session){
  }
  const updateRow=()=>{
   const host=$('smvLiveDashboardSessions');if(!host)return;
-  const openButton=Array.from(host.querySelectorAll('[data-live-open]')).find(button=>String(button.dataset.liveOpen||'')===id);
-  const article=openButton?.closest('article');
+  let openButton=Array.from(host.querySelectorAll('[data-live-open]')).find(button=>String(button.dataset.liveOpen||'')===id);
+  let article=openButton?.closest('article')||null;
+  if(!article){
+   // A fresh request can arrive before the initial Dashboard history read
+   // completes. Create its row so closing the session modal never hides it.
+   const emptyLabel=host.querySelector('p.small');
+   if(emptyLabel&&/No Live Sessions yet|Loading/i.test(emptyLabel.textContent||''))emptyLabel.remove();
+   article=document.createElement('article');
+   article.className='card smv-live-session-card';
+   article.style.margin='8px 0';
+   article.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><b class="smv-live-session-mode">'+escapeHtml(String(current.mode||'chat').toUpperCase())+' · '+Number(current.minutes||1)+' min</b><span style="display:inline-flex;align-items:center;gap:7px"><span data-live-presence-dot="'+escapeHtml(id)+'" class="smv-live-presence-dot smv-live-presence-dot--active" hidden aria-label="Live session running"></span><span data-live-window-dot="'+escapeHtml(id)+'" class="smv-live-presence-dot smv-live-presence-dot--closed" hidden aria-label="Window closed or session ended"></span></span></div><p class="small smv-live-session-meta"><b>Status:</b> <span data-live-dashboard-status="'+escapeHtml(id)+'"></span> · <b>Rate:</b> '+smvLiveMoney(current.ratePerMinutePaise)+'/min</p><p class="small smv-live-session-meta"><span data-live-window-status="'+escapeHtml(id)+'" class="smv-live-window-closed-label" hidden></span> <b>Charged:</b> '+smvLiveMoney(current.actualChargePaise)+' · <b>Released:</b> '+smvLiveMoney(current.releasedAmountPaise)+'</p><button type="button" class="smv-plain-text-action smv-live-session-open-button" data-live-open="'+escapeHtml(id)+'">OPEN SESSION</button>';
+   host.prepend(article);
+   openButton=article.querySelector('[data-live-open]');
+   if(openButton)openButton.onclick=()=>{
+    const latest=smvLiveDashboardSessionsById.get(id)||current;
+    smvLiveDismissedSessionIds.delete(id);
+    smvLiveUpdateDashboardSessionStatus(latest);
+    smvLiveOpenSession(latest,null,String(window.__smvCurrentRole||'').toLowerCase()==='astrologer'&&latest.astrologerUid===currentUser?.uid&&latest.state==='ringing');
+   };
+  }
   const status=article?.querySelector('[data-live-dashboard-status]');
   const liveDot=article?.querySelector('[data-live-presence-dot]');
   const closedDot=article?.querySelector('[data-live-window-dot]');
   const windowStatus=article?.querySelector('[data-live-window-status]');
-  const running=['preparing','connecting','active'].includes(String(current.state||''));
+  const running=['ringing','preparing','connecting','active'].includes(String(current.state||''));
   const ended=String(current.state||'')==='ended';
   const windowClosed=ended||smvLiveDismissedSessionIds.has(id);
   if(status)status.textContent=smvLiveDashboardSessionStatusLabel(current);
@@ -5328,7 +5347,19 @@ async function smvLiveLoadDashboard(role){
  const host=$('smvLiveDashboardSessions'),msg=$('smvLiveDashboardMsg');if(!host)return;
  const reload=async()=>{
   try{
-   const list=await renderApi('/live/sessions',{method:'GET'}),rows=list.sessions||[];smvLiveDashboardSessionsById.clear();
+   const list=await renderApi('/live/sessions',{method:'GET'});
+   // Keep any request/event that arrived while the history read was in flight.
+   // A Customer may create the request from the public directory before this
+   // Dashboard is mounted; a stale initial response must not erase that event.
+   const rowsById=new Map();
+   for(const item of list.sessions||[]){
+    const id=String(item.id||item.sessionId||'');if(!id)continue;
+    rowsById.set(id,smvLiveMergeSessionState(smvLiveDashboardSessionsById.get(id)||{},{...item,id}));
+   }
+   for(const [id,item] of smvLiveDashboardSessionsById)if(!rowsById.has(id))rowsById.set(id,item);
+   const rows=Array.from(rowsById.values());
+   smvLiveDashboardSessionsById.clear();
+   rows.forEach(item=>smvLiveDashboardSessionsById.set(String(item.id||item.sessionId||''),item));
    host.innerHTML=rows.length?rows.map(s=>'<article class="card smv-live-session-card" style="margin:8px 0"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><b class="smv-live-session-mode">'+escapeHtml(String(s.mode||'chat').toUpperCase())+' · '+Number(s.minutes||1)+' min</b><span style="display:inline-flex;align-items:center;gap:7px"><span data-live-presence-dot="'+escapeHtml(s.id)+'" class="smv-live-presence-dot smv-live-presence-dot--active" hidden aria-label="Live session running"></span><span data-live-window-dot="'+escapeHtml(s.id)+'" class="smv-live-presence-dot smv-live-presence-dot--closed" hidden aria-label="Window closed or session ended"></span></span></div><p class="small smv-live-session-meta"><b>Status:</b> <span data-live-dashboard-status="'+escapeHtml(s.id)+'">'+escapeHtml(smvLiveSessionStatusLabel(s))+'</span> · <b>Rate:</b> '+smvLiveMoney(s.ratePerMinutePaise)+'/min</p><p class="small smv-live-session-meta"><span data-live-window-status="'+escapeHtml(s.id)+'" class="smv-live-window-closed-label" hidden></span> <b>Charged:</b> '+smvLiveMoney(s.actualChargePaise)+' · <b>Released:</b> '+smvLiveMoney(s.releasedAmountPaise)+'</p><button type="button" class="smv-plain-text-action smv-live-session-open-button" data-live-open="'+escapeHtml(s.id)+'">OPEN SESSION</button></article>').join(''):'<p class="small">No Live Sessions yet.</p>';
     rows.forEach(s=>smvLiveUpdateDashboardSessionStatus(s));
    host.querySelectorAll('[data-live-open]').forEach(btn=>btn.onclick=()=>{const s=rows.find(x=>x.id===btn.dataset.liveOpen);if(s){smvLiveDismissedSessionIds.delete(String(s.id||''));smvLiveUpdateDashboardSessionStatus(s);smvLiveOpenSession(s,null,String(window.__smvCurrentRole||'').toLowerCase()==='astrologer'&&s.astrologerUid===currentUser?.uid&&s.state==='ringing');}});
@@ -5341,7 +5372,9 @@ async function smvLiveLoadDashboard(role){
     const sel=$('smvLiveAvailability');
     const callToggle=$('smvLiveCallEnabled'),chatToggle=$('smvLiveChatEnabled');
     if(sel&&!sel.dataset.initialized){
-     if(astro)sel.value=astro.availabilityStatus||'offline';
+     if(astro)sel.value=astro.manualAvailabilityStatus||
+      (String(astro.availabilityStatus||'').toLowerCase()==='busy'&&Number(astro.activeSessionCount||0)===0
+       ?'busy':(astro.liveCallEnabled===true||astro.liveChatEnabled===true?'online':'offline'));
      if(callToggle)callToggle.checked=astro?.liveCallEnabled===true;
      if(chatToggle)chatToggle.checked=astro?.liveChatEnabled===true;
      sel.dataset.initialized='1';
@@ -5390,10 +5423,11 @@ async function smvLiveLoadDashboard(role){
     liveCallEnabled:callToggle?.checked===true,
     liveChatEnabled:chatToggle?.checked===true
    })});
-   if(availabilitySelect)availabilitySelect.value=r.availabilityStatus||'offline';
+   if(availabilitySelect)availabilitySelect.value=r.manualAvailabilityStatus||
+    (r.liveCallEnabled===true||r.liveChatEnabled===true?'online':'offline');
    if(callToggle)callToggle.checked=r.liveCallEnabled===true;
    if(chatToggle)chatToggle.checked=r.liveChatEnabled===true;
-   if(availabilityMessage)availabilityMessage.textContent='Saved. '+modeNote(r.liveCallEnabled===true,r.liveChatEnabled===true,r.availabilityStatus||'offline');
+   if(availabilityMessage)availabilityMessage.textContent='Saved. '+modeNote(r.liveCallEnabled===true,r.liveChatEnabled===true,availabilitySelect?.value||'offline');
    await reload();
   }catch(e){if(availabilityMessage)availabilityMessage.textContent=e.message||String(e);}
   finally{

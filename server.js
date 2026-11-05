@@ -1,6 +1,6 @@
 const {createCorsMiddleware,createRequestBodyParser,createRouteRateLimiter}=require('./api-security');
 const {registerWalletRoutes,walletLedgerDocId,WALLET_OFFER_THEMES,WALLET_RECHARGE_OFFER_TYPE,offerDateMilliseconds,parseRupeesToPaise}=require('./wallet-service');
-const {registerLiveSessionRoutes,astrologerAvailabilityStatus,scheduledAppointmentStartDeadlineMs}=require('./live-session-service');
+const {registerLiveSessionRoutes,astrologerManualBusy,astrologerAvailabilityStatus,scheduledAppointmentStartDeadlineMs}=require('./live-session-service');
 const {registerGeoNamesRoutes}=require('./geonames-location-service');
 const {isConfiguredAdminIdentity}=require('./admin-auth');
 const {getStorage}=require('firebase-admin/storage');
@@ -1285,18 +1285,53 @@ app.get("/public/astrologers", async (req, res) => {
       const storedAvailability=["online","busy","offline"].includes(rawAvailability)?rawAvailability:"offline";
       const liveCallEnabled=x.liveCallEnabled===true,liveChatEnabled=x.liveChatEnabled===true;
       const activeSessionCount=Number.isSafeInteger(Number(x.activeSessionCount))&&Number(x.activeSessionCount)>0?Number(x.activeSessionCount):0;
-      const availabilityStatus=astrologerAvailabilityStatus({...x,liveCallEnabled,liveChatEnabled},activeSessionCount);
+      const manualBusy=astrologerManualBusy(x,activeSessionCount);
+      const manualAvailabilityStatus=manualBusy?'busy':'';
+      const availabilityStatus=astrologerAvailabilityStatus({...x,liveCallEnabled,liveChatEnabled,manualAvailabilityStatus},activeSessionCount);
       const callRateCandidates=[x.callPricePerMinute,x.pricePerMinute,x.callRatePerMinute].map(Number);
       const configuredCallRate=callRateCandidates.find(v=>Number.isFinite(v)&&v>0);
       const chatRateCandidates=[x.chatPricePerMinute,x.liveChatPricePerMinute,x.chatRatePerMinute].map(Number);
       const configuredChatRate=chatRateCandidates.find(v=>Number.isFinite(v)&&v>0);
-      return {id:d.id,name:x.name||"Astrologer",expertise:x.expertise||x.specialization||"Astrology",specialization:x.specialization||x.expertise||"Astrology",experience:x.experience||0,profileDescription:x.profileDescription||x.bio||x.about||"",bio:x.profileDescription||x.bio||x.about||"",about:x.profileDescription||x.about||x.bio||"",photoData:x.photoData||x.photoURL||x.photoUrl||"",rating:x.rating||x.averageRating||"New",publicId:x.publicId||"",languages,availabilityStatus,liveCallEnabled,liveChatEnabled,callPricePerMinute:configuredCallRate??null,chatPricePerMinute:configuredChatRate??null,chatPrice:Number(x.pricePerQuestion||0),status:x.status||""};
+      return {id:d.id,name:x.name||"Astrologer",expertise:x.expertise||x.specialization||"Astrology",specialization:x.specialization||x.expertise||"Astrology",experience:x.experience||0,profileDescription:x.profileDescription||x.bio||x.about||"",bio:x.profileDescription||x.bio||x.about||"",about:x.profileDescription||x.about||x.bio||"",photoData:x.photoData||x.photoURL||x.photoUrl||"",rating:x.rating||x.averageRating||"New",publicId:x.publicId||"",languages,availabilityStatus,manualAvailabilityStatus,activeSessionCount,liveCallEnabled,liveChatEnabled,callPricePerMinute:configuredCallRate??null,chatPricePerMinute:configuredChatRate??null,chatPrice:Number(x.pricePerQuestion||0),status:x.status||""};
     }));
     const astrologers=checked.filter(Boolean);
     publicAstrologersCache={expiresAt:now+60000,data:astrologers};
     res.set("Cache-Control","public, max-age=30, stale-while-revalidate=60");
     return res.json({success:true,astrologers});
   }catch(e){console.error("Public astrologers load failed:",e);return res.status(500).json({error:e?.message||"Unable to load approved astrologers."});}
+});
+
+// Availability GET returns both live presence and the separately persisted manual mode.
+// A session-managed Busy state must not be mistaken for a manual Busy selection.
+app.get("/astrologer/availability",async(req,res)=>{
+ const user=await requireUser(req,res);if(!user)return;
+ try{
+  const uid=String(user.uid||"").trim();
+  const [userSnap,astroSnap]=await Promise.all([
+   db.collection("smv_users").doc(uid).get(),
+   db.collection("smv_astrologers").doc(uid).get()
+  ]);
+  const profile=userSnap.exists?(userSnap.data()||{}):{};
+  const astro=astroSnap.exists?(astroSnap.data()||{}):{};
+  if(String(profile.role||"").toLowerCase()!=="astrologer"||!astroSnap.exists||
+     (astro.uid&&String(astro.uid)!==uid)||!["approved","active"].includes(String(astro.status||"").toLowerCase())){
+   return res.status(403).set("Cache-Control","no-store").json({success:false,error:"Approved Astrologer profile required."});
+  }
+  const activeCount=Number.isSafeInteger(Number(astro.activeSessionCount))&&Number(astro.activeSessionCount)>=0?Number(astro.activeSessionCount):0;
+  const manualBusy=astrologerManualBusy(astro,activeCount);
+  const manualAvailabilityStatus=manualBusy?"busy":(astro.liveCallEnabled===true||astro.liveChatEnabled===true?"online":"offline");
+  return res.set("Cache-Control","no-store").json({
+   success:true,
+   availabilityStatus:astrologerAvailabilityStatus({...astro,manualAvailabilityStatus},activeCount),
+   manualAvailabilityStatus,
+   liveCallEnabled:astro.liveCallEnabled===true,
+   liveChatEnabled:astro.liveChatEnabled===true,
+   activeSessionCount:activeCount
+  });
+ }catch(error){
+  console.error("Astrologer availability read failed:",error?.stack||error);
+  return res.status(500).set("Cache-Control","no-store").json({success:false,error:"Unable to read Astrologer availability."});
+ }
 });
 
 // Astrologers may update only their own availability; approved profiles are
@@ -1336,16 +1371,17 @@ app.post("/astrologer/availability", express.json({limit:"5kb"}), async (req,res
       const rawMax=Number(stored.maxConcurrentSessions);
       const maxConcurrent=Number.isSafeInteger(rawMax)&&rawMax>=1&&rawMax<=3?rawMax:1;
       const automaticallyBusy=activeCount>0;
-      const finalStatus=astrologerAvailabilityStatus({liveCallEnabled,liveChatEnabled},activeCount);
+      const manualAvailabilityStatus=availabilityStatus==="busy"?"busy":"";
+      const finalStatus=astrologerAvailabilityStatus({liveCallEnabled,liveChatEnabled,manualAvailabilityStatus},activeCount);
       tx.set(astroRef,{
-        liveCallEnabled,liveChatEnabled,
+        liveCallEnabled,liveChatEnabled,manualAvailabilityStatus,
         availabilityStatus:finalStatus,
         availabilityUpdatedAt:FieldValue.serverTimestamp(),
         availabilityUpdatedBy:user.uid,
         // A Live session keeps the Astrologer Busy until its final active session settles.
         liveSessionBusyManaged:automaticallyBusy
       },{merge:true});
-      return {availabilityStatus:finalStatus,liveCallEnabled,liveChatEnabled,activeSessionCount:activeCount,maxConcurrentSessions:maxConcurrent};
+      return {availabilityStatus:finalStatus,manualAvailabilityStatus,liveCallEnabled,liveChatEnabled,activeSessionCount:activeCount,maxConcurrentSessions:maxConcurrent};
     });
     publicAstrologersCache={expiresAt:0,data:null};
     res.set("Cache-Control","no-store");

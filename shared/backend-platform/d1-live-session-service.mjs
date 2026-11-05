@@ -8,6 +8,7 @@ import {
   calculateLiveSettlement,
   reserveLiveWallet,
   astrologerRatePaise,
+  astrologerManualBusy,
   liveRequestCanStartNow,
   validateLiveBirthDetails,
   splitLiveCommission,
@@ -176,10 +177,12 @@ export function createD1LiveSessionService({
       throw liveError('LIVE_ASTROLOGER_NOT_APPROVED','Only the approved profile owner can change availability.',403);
     }
     const count=await activeSessionCount(uid);
-    const availabilityStatus=count>0||String(astro.manualAvailabilityStatus||'').toLowerCase()==='busy'?'busy':
+    const manualBusy=astrologerManualBusy(astro,count);
+    const manualAvailabilityStatus=manualBusy?'busy':
       (astro.liveCallEnabled===true||astro.liveChatEnabled===true?'online':'offline');
+    const availabilityStatus=count>0||manualBusy?'busy':manualAvailabilityStatus;
     return {
-      availabilityStatus,
+      availabilityStatus,manualAvailabilityStatus,
       liveCallEnabled:astro.liveCallEnabled===true,
       liveChatEnabled:astro.liveChatEnabled===true,
       activeSessionCount:count
@@ -206,19 +209,21 @@ export function createD1LiveSessionService({
     if(requestedStatus==='online'&&!callEnabled&&!chatEnabled) {
       throw liveError('LIVE_MODE_DISABLED','Enable Live Call or Live Chat before setting Online.',409);
     }
+    const manualAvailabilityStatus=requestedStatus==='busy'?'busy':'';
     const finalAvailabilityStatus=current.activeSessionCount>0?'busy':requestedStatus;
     await firestore.setDocument('smv_astrologers/'+uid,{
       liveCallEnabled:callEnabled,
       liveChatEnabled:chatEnabled,
       activeSessionCount:current.activeSessionCount,
       availabilityStatus:finalAvailabilityStatus,
-      manualAvailabilityStatus:requestedStatus==='busy'?'busy':'',
+      manualAvailabilityStatus,
       liveSessionBusyManaged:current.activeSessionCount>0,
       availabilityUpdatedAt:new Date(Number(now())),
       availabilityUpdatedBy:uid
     },{merge:true});
     return {
       availabilityStatus:finalAvailabilityStatus,
+      manualAvailabilityStatus,
       liveCallEnabled:callEnabled,
       liveChatEnabled:chatEnabled,
       activeSessionCount:current.activeSessionCount
@@ -232,7 +237,7 @@ export function createD1LiveSessionService({
     const profile=await firestore.getDocument('smv_astrologers/'+uid);
     if(!profile.exists) return {skipped:true};
     const astro=profile.data||{};
-    const availability=count>0||String(astro.manualAvailabilityStatus||'').toLowerCase()==='busy'?'busy':
+    const availability=count>0||astrologerManualBusy(astro,count)?'busy':
       (astro.liveCallEnabled===true||astro.liveChatEnabled===true?'online':'offline');
     await firestore.setDocument('smv_astrologers/'+uid,{
       activeSessionCount:count,
@@ -327,6 +332,9 @@ export function createD1LiveSessionService({
     // display field and may still say Offline after an Admin enables a Live mode.
     // Never convert an enabled, capacity-available Live request into a scheduled
     // booking merely because that cached Firestore status has not caught up yet.
+    if(astrologerManualBusy(astro,count)) {
+      throw liveError('LIVE_ASTROLOGER_BUSY','This Astrologer is in Busy mode and is not accepting new Live Call or Chat requests.',409);
+    }
     const canStartNow=liveRequestCanStartNow(astro,kind,count,pricing.maxConcurrentSessions);
     const timestamp=Number(now());
     const common={

@@ -19,6 +19,7 @@ const {
   scheduledConnectionGraceRemainingMs,
   SCHEDULED_CONNECT_GRACE_MS,
   isAstrologerLiveModeEnabled,
+  astrologerManualBusy,
   astrologerAvailabilityStatus,
   MAX_SESSION_MINUTES,
   DEFAULT_RATE_PAISE,
@@ -290,6 +291,15 @@ test('availability automatically follows enabled modes, while active sessions st
   assert.equal(astrologerAvailabilityStatus({liveCallEnabled:false,liveChatEnabled:false}, 0), 'offline');
   assert.equal(astrologerAvailabilityStatus({liveCallEnabled:false,liveChatEnabled:false}, 1), 'busy');
   assert.equal(astrologerAvailabilityStatus({liveCallEnabled:true,liveChatEnabled:true}, 1), 'busy');
+});
+
+test('Manual Busy blocks new Live requests without confusing a session-managed Busy state', () => {
+  assert.equal(astrologerManualBusy({manualAvailabilityStatus:'busy',liveCallEnabled:true}, 0), true);
+  assert.equal(astrologerAvailabilityStatus({manualAvailabilityStatus:'busy',liveCallEnabled:true}, 0), 'busy');
+  assert.equal(astrologerManualBusy({manualAvailabilityStatus:'busy',liveCallEnabled:true,liveSessionBusyManaged:true}, 1), false);
+  assert.equal(astrologerManualBusy({availabilityStatus:'busy',liveSessionBusyManaged:true}, 0), false);
+  assert.equal(astrologerManualBusy({availabilityStatus:'busy',liveSessionBusyManaged:false}, 0), true);
+  assert.equal(astrologerAvailabilityStatus({manualAvailabilityStatus:'',liveCallEnabled:true,liveSessionBusyManaged:false}, 0), 'online');
 });
 
 

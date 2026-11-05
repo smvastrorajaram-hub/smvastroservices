@@ -13,8 +13,15 @@ function safeUid(user) {
   return String(user?.uid || '').trim();
 }
 
+function manualBusyStatus(profile, activeSessionCount) {
+  if (Number(activeSessionCount) > 0) return false;
+  const explicit = String(profile.manualAvailabilityStatus || '').trim().toLowerCase();
+  if (explicit) return explicit === 'busy';
+  return String(profile.availabilityStatus || profile.onlineStatus || '').trim().toLowerCase() === 'busy' &&
+    profile.liveSessionBusyManaged !== true;
+}
 function availabilityStatus(profile, activeSessionCount) {
-  if (activeSessionCount > 0) return 'busy';
+  if (activeSessionCount > 0 || manualBusyStatus(profile, activeSessionCount)) return 'busy';
   return profile.liveCallEnabled === true || profile.liveChatEnabled === true ? 'online' : 'offline';
 }
 
@@ -69,12 +76,17 @@ export function registerLegacyBusinessRoutes({ app, firestore, identityService, 
           success: false, error: 'Approved Astrologer profile required.'
         });
       }
+      const activeSessionCount = Number.isSafeInteger(Number(astro.activeSessionCount)) && Number(astro.activeSessionCount) >= 0
+        ? Number(astro.activeSessionCount) : 0;
+      const manualAvailabilityStatus = manualBusyStatus(astro, activeSessionCount) ? 'busy' :
+        (astro.liveCallEnabled === true || astro.liveChatEnabled === true ? 'online' : 'offline');
       return res.set('Cache-Control', 'no-store').json({
         success: true,
-        availabilityStatus: String(astro.availabilityStatus || 'offline').toLowerCase(),
+        availabilityStatus: availabilityStatus(astro, activeSessionCount),
+        manualAvailabilityStatus,
         liveCallEnabled: astro.liveCallEnabled === true,
         liveChatEnabled: astro.liveChatEnabled === true,
-        activeSessionCount: Number(astro.activeSessionCount || 0)
+        activeSessionCount
       });
     } catch (error) {
       return sendError(res, error, 'Unable to load Astrologer availability.');
@@ -144,10 +156,13 @@ export function registerLegacyBusinessRoutes({ app, firestore, identityService, 
         const rawMax = Number(storedPricing.maxConcurrentSessions);
         const maxConcurrentSessions = Number.isSafeInteger(rawMax) && rawMax >= 1 && rawMax <= 3
           ? rawMax : 1;
-        const finalStatus = availabilityStatus({ liveCallEnabled, liveChatEnabled }, activeCount);
+        const manualAvailabilityStatus = inputStatus === 'busy' ? 'busy' : '';
+        const finalStatus = activeCount > 0 ? 'busy' : manualAvailabilityStatus === 'busy' ? 'busy' :
+          availabilityStatus({ liveCallEnabled, liveChatEnabled, manualAvailabilityStatus }, activeCount);
         tx.set('smv_astrologers/' + uid, {
           liveCallEnabled,
           liveChatEnabled,
+          manualAvailabilityStatus,
           availabilityStatus: finalStatus,
           availabilityUpdatedAt: FirestoreFieldValue.serverTimestamp(),
           availabilityUpdatedBy: uid,
@@ -155,6 +170,7 @@ export function registerLegacyBusinessRoutes({ app, firestore, identityService, 
         }, { merge: true });
         return {
           availabilityStatus: finalStatus,
+          manualAvailabilityStatus,
           liveCallEnabled,
           liveChatEnabled,
           activeSessionCount: activeCount,

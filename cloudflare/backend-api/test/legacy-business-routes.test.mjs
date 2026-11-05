@@ -59,6 +59,23 @@ test('Astrologer availability validates input and updates only an approved owned
  assert.equal(firestore.writes[0].data.liveSessionBusyManaged,true);
 });
 
+test('Astrologer-selected Busy is persisted separately from a session-managed Busy state',async()=>{
+ const app=harness(),firestore=transactionalFirestore({docs:{
+  'smv_users/astro-1':{exists:true,data:{role:'astrologer'}},
+  'smv_astrologers/astro-1':{exists:true,data:{uid:'astro-1',status:'approved',activeSessionCount:0,liveCallEnabled:true}}
+ }});
+ registerLegacyBusinessRoutes({app,firestore,identityService:{async authenticateAuthorization(){return {uid:'astro-1',role:'astrologer'};}}});
+ const res=response();
+ await app.handlers.get('POST /astrologer/availability')(request({
+  availabilityStatus:'busy',liveCallEnabled:true,liveChatEnabled:true
+ }),res);
+ assert.equal(res.statusCode,200);
+ assert.equal(res.body.availabilityStatus,'busy');
+ assert.equal(res.body.manualAvailabilityStatus,'busy');
+ assert.equal(firestore.writes[0].data.manualAvailabilityStatus,'busy');
+ assert.equal(firestore.writes[0].data.liveSessionBusyManaged,false);
+});
+
 test('Astrologer availability rejects non-approved profiles and malformed switches', async()=>{
  const app=harness(),firestore=transactionalFirestore({docs:{
    'smv_users/astro-1':{exists:true,data:{role:'astrologer'}},

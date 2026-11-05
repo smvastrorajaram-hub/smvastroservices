@@ -8,6 +8,7 @@ import {
   splitLiveCommission,
   commissionFromPayload,
   astrologerRatePaise,
+  astrologerManualBusy,
   liveRequestCanStartNow,
   validateLiveBirthDetails,
   scheduledAppointmentStartAtMs,
@@ -84,6 +85,13 @@ test('Live request start ignores stale availability text and uses enabled mode p
   assert.equal(liveRequestCanStartNow({liveCallEnabled:true},'call',1,1),false);
   assert.equal(liveRequestCanStartNow({liveCallEnabled:true},'call',1,2),true);
   assert.equal(liveRequestCanStartNow({liveCallEnabled:true},'video',0,1),false);
+});
+
+test('Manual Busy blocks new D1 Live requests while session-managed Busy still respects capacity',()=>{
+  assert.equal(astrologerManualBusy({manualAvailabilityStatus:'busy',liveCallEnabled:true},0),true);
+  assert.equal(liveRequestCanStartNow({manualAvailabilityStatus:'busy',liveCallEnabled:true},'call',0,2),false);
+  assert.equal(liveRequestCanStartNow({availabilityStatus:'busy',liveSessionBusyManaged:true,liveCallEnabled:true},'call',1,2),true);
+  assert.equal(liveRequestCanStartNow({availabilityStatus:'busy',liveSessionBusyManaged:true,liveCallEnabled:true},'call',2,2),false);
 });
 
 test('birth details validate Tamil-local customer date and coordinate boundaries',()=>{

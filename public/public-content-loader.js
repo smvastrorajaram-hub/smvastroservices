@@ -5,7 +5,7 @@
  */
 (function(){
   'use strict';
-  const MODULE_URL='./public-content.mjs?v=20261104-astro-presence-dots-v1';
+  const MODULE_URL='./public-content.mjs?v=20261105-live-busy-mode-v1';
   let pending=null;
   function isConsultVisible(){
     const target=document.getElementById('consult');
