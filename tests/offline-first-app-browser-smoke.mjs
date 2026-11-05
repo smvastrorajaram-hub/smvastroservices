@@ -58,13 +58,18 @@ for (const app of apps) {
       const reg = await navigator.serviceWorker.ready;
       return {
         scope: reg.scope,
-        scriptURL: reg.active?.scriptURL || '',
-        state: reg.active?.state || ''
+        scriptURL: reg.active?.scriptURL || ''
       };
     });
-    assert.equal(registration.state, 'activated', app.name + ' Service Worker must activate after first online load.');
     assert.ok(registration.scriptURL.endsWith('/sw.js'), app.name + ' must run its own scoped Service Worker: ' + registration.scriptURL);
-    await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller), { timeout: 30000 });
+    // navigator.serviceWorker.ready can resolve while the worker is still
+    // transitioning from "activating" to "activated". Wait for controller
+    // ownership before testing the newly installed cache.
+    await page.waitForFunction(async () => {
+      const reg = await navigator.serviceWorker.getRegistration();
+      return reg?.active?.state === 'activated' &&
+        navigator.serviceWorker.controller?.state === 'activated';
+    }, { timeout: 60000 });
 
     const cacheState = await page.evaluate(async (cacheName, requiredAssets) => {
       const names = await caches.keys();
