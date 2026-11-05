@@ -103,17 +103,11 @@ function publicAstrologerView(id, value = {}) {
     .map(Number).find(rate => Number.isFinite(rate) && rate > 0);
   const active = Number.isSafeInteger(Number(value.activeSessionCount)) && Number(value.activeSessionCount) > 0
     ? Number(value.activeSessionCount) : 0;
+  const started = Number.isSafeInteger(Number(value.startedSessionCount)) && Number(value.startedSessionCount) > 0
+    ? Number(value.startedSessionCount) : 0;
   const callEnabled = value.liveCallEnabled === true;
   const chatEnabled = value.liveChatEnabled === true;
-  const rawStatus = String(value.availabilityStatus || value.onlineStatus || 'offline').toLowerCase();
-  const explicitManualStatus = String(value.manualAvailabilityStatus || '').trim().toLowerCase();
-  const manualBusy = active === 0 && (explicitManualStatus
-    ? explicitManualStatus === 'busy'
-    : rawStatus === 'busy' && value.liveSessionBusyManaged !== true);
-  const manualAvailabilityStatus = manualBusy ? 'busy' :
-    (callEnabled || chatEnabled) && ['online', 'busy', 'offline'].includes(rawStatus) && rawStatus !== 'busy'
-      ? rawStatus : (callEnabled || chatEnabled ? 'online' : 'offline');
-  const availability = active > 0 || manualBusy ? 'busy' : manualAvailabilityStatus;
+  const availability = started > 0 ? 'busy' : (callEnabled || chatEnabled ? 'online' : 'offline');
   return {
     id,
     name: String(value.name || 'Astrologer'),
@@ -128,8 +122,8 @@ function publicAstrologerView(id, value = {}) {
     publicId: String(value.publicId || ''),
     languages,
     availabilityStatus: availability,
-    manualAvailabilityStatus: manualBusy ? 'busy' : '',
     activeSessionCount: active,
+    startedSessionCount: started,
     liveCallEnabled: callEnabled,
     liveChatEnabled: chatEnabled,
     callPricePerMinute: callRate ?? null,
