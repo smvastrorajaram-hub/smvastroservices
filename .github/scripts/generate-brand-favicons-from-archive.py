@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Generate SMV ASTRO PWA icon and the three website favicon families from ICON/SMV.zip."""
+# HOROSCOPE and CALENDAR PWA manifest icons are deliberately left unchanged.
 from io import BytesIO
 from pathlib import Path
 from zipfile import ZipFile
