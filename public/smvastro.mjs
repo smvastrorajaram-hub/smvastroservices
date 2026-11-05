@@ -5020,7 +5020,7 @@ function smvLiveUpdateDashboardSessionStatus(session){
   if(status)status.textContent=smvLiveDashboardSessionStatusLabel(current);
   if(liveDot)liveDot.hidden=!running;
   if(closedDot)closedDot.hidden=!windowClosed;
-  if(windowStatus){windowStatus.hidden=!windowClosed;windowStatus.textContent=ended?'Closed Session':'Window Closed';}
+  if(windowStatus){windowStatus.hidden=!windowClosed||ended;windowStatus.textContent='Window Closed';}
   if(openButton){
    openButton.textContent=ended?'Closed Session Receipt':'Open Session';
    openButton.style.background='transparent';
