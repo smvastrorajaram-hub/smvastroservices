@@ -1,4 +1,4 @@
-const SMV_CACHE_RELEASE='20261105-offline-ui-v2';
+const SMV_CACHE_RELEASE='20261105-offline-ui-v3';
 const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE;
 const CORE=[
  './','./index.html','./admin.html','./rasi-palan-periods.mjs','./calendar-pwa.mjs','./manifest-en.webmanifest','./manifest-ta.webmanifest',
