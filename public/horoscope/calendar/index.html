@@ -39,18 +39,20 @@
 <meta name="twitter:image" content="https://calendar.smvastroservices.in/assets/smv-calendar-website.webp">
 <link id="calendarManifest" rel="manifest" href="manifest-en.webmanifest">
 <script>window.__smvCalendarInstallPrompt=null;addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__smvCalendarInstallPrompt=e;window.dispatchEvent(new CustomEvent('smv:calendar-installable'));});</script>
-<link rel="icon" href="../assets/favicon-calendar.ico?v=20261106-livechat-brand-header-v1" sizes="any">
-<link rel="icon" type="image/png" sizes="16x16" href="../assets/favicon-calendar-16.png?v=20261106-livechat-brand-header-v1">
-<link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-calendar-32.png?v=20261106-livechat-brand-header-v1">
-<link rel="icon" type="image/png" sizes="64x64" href="../assets/favicon-calendar-64.png?v=20261106-livechat-brand-header-v1">
+<link rel="icon" href="../assets/favicon-calendar.ico?v=20261106-product-pwa-header-v2" sizes="any">
+<link rel="icon" type="image/png" sizes="16x16" href="../assets/favicon-calendar-16.png?v=20261106-product-pwa-header-v2">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-calendar-32.png?v=20261106-product-pwa-header-v2">
+<link rel="icon" type="image/png" sizes="64x64" href="../assets/favicon-calendar-64.png?v=20261106-product-pwa-header-v2">
 <link rel="apple-touch-icon" href="../assets/calendar-192.png">
 <link rel="stylesheet" href="../horoscope.css">
 <link rel="stylesheet" href="../daily-calendar.css">
-<link rel="stylesheet" href="../calendar-theme.css?v=20261106-livechat-brand-header-v1">
+<link rel="stylesheet" href="../calendar-theme.css?v=20261106-product-pwa-header-v2">
 <script id="smv-apk-release-api-config">window.SMV_APK_RELEASE_API_URL = window.SMV_APK_RELEASE_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev";</script>
 </head>
 <body class="calendar-only">
 <header class="calendar-topbar">
+<div class="calendar-brand-header"><img src="../assets/smv-calendar-website.webp" width="56" height="56" alt="SMV CALENDAR logo"><span class="calendar-brand-title">SMV CALENDAR</span></div>
+<div class="calendar-header-actions">
 <nav class="calendar-product-nav" aria-label="SMV services">
 <a href="https://smvastroservices.in/" target="_blank" rel="noopener" data-en="Services" data-ta="சேவைகள்">Services</a>
 <a href="https://horoscope.smvastroservices.in/" target="_blank" rel="noopener" data-en="Horoscope" data-ta="ஜாதகம்">Horoscope</a>
@@ -64,6 +66,7 @@
 })();
 </script>
 <nav class="calendar-language-switch" aria-label="Calendar language"><button id="calTamil" lang="ta" type="button">தமிழ்</button><button id="calEnglish" lang="en" type="button">English</button></nav>
+</div>
 </header>
 <main class="calendar-page-shell"><section id="smvDailyCalendar" aria-label="Daily Calendar"></section></main>
 <section aria-labelledby="smvCalendarAndroidApkHeading" class="smv-android-apk-section" id="smvCalendarAndroidApkSection" aria-label="SMV CALENDAR Android app download">

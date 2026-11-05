@@ -2752,7 +2752,7 @@ html body.smv-v12-theme #home .smv33-trust img{width:16px;height:16px}}
 #english-horoscope .smv-location-suggestions.show{display:block}
 #english-horoscope .smv-location-suggestion{display:block;width:100%;padding:9px 0;margin:0 0 6px;background:transparent;border:0;border-radius:0;box-shadow:none;text-align:left;color:inherit;font:inherit;line-height:1.5;white-space:normal;cursor:pointer}
 #english-horoscope .smv-location-suggestion:focus-visible{outline:2px solid #966d26;outline-offset:2px}
-.smv-horoscope-controls{max-width:1160px;margin:0 auto;padding:12px 16px;color:#38271c}.smv-horoscope-controls-row{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:nowrap}.smv-horoscope-controls .smv-language-buttons{display:flex;flex:1 1 0;min-width:0;margin:8px 0;gap:8px}.smv-horoscope-controls .smv-language-buttons button,#smvHoroscopeAuth .header-account .action-row>.btn{box-sizing:border-box;flex:1 1 0;width:0;min-width:0;min-height:42px;font:inherit;padding:8px 6px;border:1px solid #dfba65;border-radius:24px;background:#fffaf0;color:#38271c;cursor:pointer}.smv-horoscope-controls .smv-language-buttons button[aria-pressed=true]{background:#fffaf0;color:#38271c;outline:none}.smv-horoscope-auth{flex:1 1 0;min-width:0;max-width:none;margin:0;padding:0;color:#38271c;text-align:center}
+.smv-horoscope-controls{max-width:1160px;margin:0 auto;padding:12px 16px;color:#38271c}.smv-horoscope-controls-row{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:nowrap}.smv-horoscope-controls .smv-language-buttons{display:flex;flex:2 1 0;min-width:0;margin:8px 0;gap:8px}.smv-horoscope-controls .smv-language-buttons button,#smvHoroscopeAuth .header-account .action-row>.btn{box-sizing:border-box;flex:1 1 0;width:0;min-width:0;min-height:42px;font:inherit;padding:8px 6px;border:1px solid #dfba65;border-radius:24px;background:#fffaf0;color:#38271c;cursor:pointer}.smv-horoscope-controls .smv-language-buttons button[aria-pressed=true]{background:#fffaf0;color:#38271c;outline:none}.smv-horoscope-auth{flex:3 1 0;min-width:0;max-width:none;margin:0;padding:0;color:#38271c;text-align:center}
 .smv-horoscope-auth .header-account{margin:0 auto}
 .smv-horoscope-auth .action-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));justify-content:center;gap:8px}
 .smv-horoscope-auth [data-auth-form]{text-align:left;background:#fffaf0;color:#38271c;padding:18px;border-radius:12px;margin-top:12px}
@@ -2901,8 +2901,46 @@ details>*{display:block!important}
 }
 
 
-/* SMV ASTRO SERVICES identity shared with the main website header. */
+/* SMV HOROSCOPE product identity: dedicated product logo and red serif title. */
 .smv-horoscope-brand-header{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-width:0;margin:0 auto 8px;padding:4px 8px;box-sizing:border-box}
-.smv-horoscope-brand-header img{display:block;flex:0 0 48px;width:48px;height:48px;object-fit:contain;border-radius:50%;background:#fffaf0}
+.smv-horoscope-brand-header img{display:block;flex:0 0 52px;width:52px;height:52px;object-fit:contain;border-radius:10px;background:#fffaf0}
 .smv-horoscope-brand-title{display:block;min-width:0;color:rgb(255,0,0)!important;-webkit-text-fill-color:rgb(255,0,0)!important;font-family:Georgia,"Times New Roman",serif!important;font-size:clamp(20px,4vw,32px)!important;font-weight:900!important;line-height:1.12!important;letter-spacing:1px!important;text-align:center;overflow-wrap:anywhere}
-@media(max-width:420px){.smv-horoscope-brand-header{gap:8px;padding-inline:2px}.smv-horoscope-brand-header img{flex-basis:40px;width:40px;height:40px}.smv-horoscope-brand-title{font-size:clamp(17px,5vw,22px)!important;letter-spacing:.45px!important}}
+@media(max-width:420px){.smv-horoscope-brand-header{gap:8px;padding-inline:2px}.smv-horoscope-brand-header img{flex-basis:42px;width:42px;height:42px}.smv-horoscope-brand-title{font-size:clamp(17px,5vw,22px)!important;letter-spacing:.45px!important}}
+
+/* Header actions use one shared five-column sizing and treatment. */
+.smv-horoscope-controls .smv-horoscope-auth .header-account .action-row{display:flex;width:100%;gap:7px!important;}
+.smv-horoscope-controls-row .smv-language-buttons button,
+.smv-horoscope-controls-row #smvHoroscopeAuth .header-account .action-row>.btn{box-sizing:border-box;flex:1 1 0;width:0;min-width:0;height:42px;min-height:42px;padding:7px 5px!important;border:1px solid #dfba65!important;border-radius:24px!important;background:#fffaf0!important;color:#38271c!important;box-shadow:none!important;font-family:inherit!important;font-size:12px!important;font-weight:800!important;line-height:1.1!important;text-align:center;text-transform:none!important;white-space:nowrap;}
+.smv-horoscope-controls-row .smv-language-buttons button:hover,
+.smv-horoscope-controls-row #smvHoroscopeAuth .header-account .action-row>.btn:hover{background:#fff3d8!important;border-color:#c79b45!important;}
+@media(max-width:420px){.smv-horoscope-controls-row .smv-language-buttons button,.smv-horoscope-controls-row #smvHoroscopeAuth .header-account .action-row>.btn{height:40px!important;min-height:40px!important;font-size:11px!important;padding-inline:3px!important}}
+
+/* Use equal grid tracks for currently visible language/account actions. */
+.smv-horoscope-controls-row{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  align-items:center!important;
+  justify-content:stretch!important;
+  gap:8px!important;
+}
+.smv-horoscope-controls-row .smv-language-buttons,
+.smv-horoscope-controls-row #smvHoroscopeAuth,
+.smv-horoscope-controls-row #smvHoroscopeAuth .header-account,
+.smv-horoscope-controls-row #smvHoroscopeAuth .header-account .action-row{
+  display:contents!important;
+}
+.smv-horoscope-controls-row:has(#smvHoroscopeAuth.is-logged-in){grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.smv-horoscope-controls-row #smvHoroscopeAuth .header-account [data-auth-status],
+.smv-horoscope-controls-row #smvHoroscopeAuth .header-account [data-auth-form]{
+  grid-column:1/-1;
+}
+.smv-horoscope-controls-row .smv-language-buttons button,
+.smv-horoscope-controls-row #smvHoroscopeAuth .header-account .action-row>.btn{
+  width:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+  flex:none!important;
+}
+@media(max-width:420px){
+  .smv-horoscope-controls-row{column-gap:6px!important;row-gap:0!important}
+}
