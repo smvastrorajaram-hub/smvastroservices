@@ -57,18 +57,30 @@ jobs:
           while IFS= read -r file; do
             [[ -z "$file" ]] && continue
             case "$file" in
-              .github/workflows/cloudflare-backend-api-production-deploy.yml|\
-              cloudflare/backend-api/README.md|\
-              cloudflare/backend-api/package.json|\
-              cloudflare/backend-api/test/production-worker-config.test.mjs|\
-              cloudflare/backend-api/wrangler.production.jsonc)
+              .github/workflows/cloudflare-backend-api-production-deploy.yml)
                 ;;
-              *)
+              shared/backend-platform/*|.github/scripts/resolve-cloudflare-account-from-production-d1.mjs)
                 geonames_only=false
                 ;;
-            esac
-            case "$file" in
-              cloudflare/backend-api/migrations/*.sql) migrations_changed=true ;;
+              cloudflare/backend-api/*)
+                case "$file" in
+                  cloudflare/backend-api/migrations/*.sql) migrations_changed=true ;;
+                esac
+                case "$file" in
+                  cloudflare/backend-api/README.md|\
+                  cloudflare/backend-api/package.json|\
+                  cloudflare/backend-api/test/production-worker-config.test.mjs|\
+                  cloudflare/backend-api/wrangler.production.jsonc)
+                    ;;
+                  *)
+                    geonames_only=false
+                    ;;
+                esac
+                ;;
+              *)
+                # Website/PWA and Android APK files are separate deployment products.
+                # They do not widen the Cloudflare backend Worker deployment scope.
+                ;;
             esac
           done <<< "$changed"
 
