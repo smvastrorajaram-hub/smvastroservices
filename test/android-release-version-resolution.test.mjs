@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import {
   ANDROID_RELEASE_APPS,
+  appendAndroidReleaseVersionToEnv,
   nextAndroidReleaseVersion,
   resolveNextAndroidReleaseVersion
 } from '../scripts/next-android-release-version.mjs';
@@ -65,5 +69,32 @@ test('version allocation reads only the selected app public metadata endpoint', 
     assert.equal(call.options.method, 'GET');
     assert.equal(call.options.cache, 'no-store');
     assert.equal(call.options.headers.Accept, 'application/json');
+  }
+});
+
+test('GITHUB_ENV receives one real newline-delimited variable for each app', async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'smv-apk-version-env-'));
+  const envFile = path.join(directory, 'github-env');
+  try {
+    await appendAndroidReleaseVersionToEnv('astro', {
+      appId: 'astro', versionName: 'v1.19', versionCode: 1019
+    }, envFile);
+    await appendAndroidReleaseVersionToEnv('horoscope', {
+      appId: 'horoscope', versionName: 'v1.2', versionCode: 1002
+    }, envFile);
+    await appendAndroidReleaseVersionToEnv('calendar', {
+      appId: 'calendar', versionName: 'v1.2', versionCode: 1002
+    }, envFile);
+
+    const value = await readFile(envFile, 'utf8');
+    assert.deepEqual(value.split('\\n'), [
+      'SMV_ANDROID_VERSION_NAME=v1.19',
+      'SMV_HOROSCOPE_ANDROID_VERSION_NAME=v1.2',
+      'SMV_CALENDAR_ANDROID_VERSION_NAME=v1.2',
+      ''
+    ]);
+    assert.ok(!value.includes('\\\\n'), 'GITHUB_ENV must contain actual line breaks, not literal backslash-n text.');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
   }
 });
