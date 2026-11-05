@@ -50,10 +50,17 @@ test('Horoscope precaches its UI and required local calculation/WASM assets with
   assert.ok(sw.includes("SHELL_CACHE='smv-horoscope-shell-v1'"));
   assert.ok(sw.includes("OFFLINE_CACHE='smv-horoscope-offline'"));
   for (const asset of [
-    './index.html','./boot.mjs','./offline/offline-engine.mjs',
-    './offline/server-wrapper.browser.mjs','./offline/swiss_vedic.browser.mjs',
-    './offline/wasm-provider.mjs','./offline/vendor/smv-swisseph-local.mjs',
-    './offline/vendor/wasm/swisseph.wasm','./offline/vendor/wasm/swisseph.data'
+    './index.html','./boot.mjs','./horoscope.js','./marriage-matching.js',
+    './marriage-basic-report.mjs','./matching-timeline.mjs','./d1-15-year-reading.mjs',
+    './offline/offline-engine.mjs','./offline/server-wrapper.browser.mjs',
+    './offline/swiss_vedic.browser.mjs','./offline/wasm-provider.mjs',
+    './offline/transit_panchang.browser.mjs','./offline/astro_advanced.browser.mjs',
+    './offline/dasa_engine.browser.mjs','./offline/pvr-longevity-sodhya-timing.browser.mjs',
+    './offline/cg-rajan-ayurdaya-pinda.browser.mjs',
+    './offline/bv-raman-ayurdaya-report.browser.mjs',
+    './offline/vendor/smv-swisseph-local.mjs',
+    './offline/vendor/wasm/swisseph.wasm','./offline/vendor/wasm/swisseph.data',
+    './offline/places/timezone.mjs','./offline/places/tz-boundary-lookup.mjs'
   ]) assert.ok(sw.includes(asset), 'Missing offline core asset: '+asset);
   assert.ok(sw.includes('const retained=new Set([OFFLINE_CACHE,SHELL_CACHE])'));
   assert.ok(sw.includes('isOnlineOnlyRequest'));
