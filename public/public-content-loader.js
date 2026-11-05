@@ -5,7 +5,7 @@
  */
 (function(){
   'use strict';
-  const MODULE_URL='./public-content.mjs?v=20261105-active-only-auto-busy-v1';
+  const MODULE_URL='./public-content.mjs?v=20261106-active-only-auto-busy-icons-v2';
   let pending=null;
   function isConsultVisible(){
     const target=document.getElementById('consult');
