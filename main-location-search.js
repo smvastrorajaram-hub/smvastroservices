@@ -18,9 +18,8 @@
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   async function getJson(url){
-    const r=await fetch(url,{cache:'default'});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    return r.json();
+    try{const r=await fetch(url,{cache:'default'});if(r.ok)return await r.json();throw new Error('HTTP '+r.status);}
+    catch(error){if(typeof caches!=='undefined'){try{const hit=await caches.match(url instanceof URL?url.href:String(url));if(hit?.ok)return await hit.json();}catch(_){}}throw error;}
   }
   async function getManifest(){
     if(manifest) return manifest;
@@ -41,7 +40,9 @@
       const m=await getManifest();
       const meta=m?.shards?.[k];
       if(!meta) return [];
-      const rows=await getJson(BASE+'india/'+encodeURIComponent(meta.file)+'?v=187');
+      const url=new URL(BASE+'india/'+encodeURIComponent(meta.file),document.baseURI);
+      url.searchParams.set('v',String(m.version||1));
+      const rows=await getJson(url);
       shardCache.set(k,rows);
       return rows;
     })();
@@ -89,7 +90,7 @@
   }
 
 
-  // GeoNames worldwide search through the existing Render proxy. India records
+  // GeoNames worldwide search through the configured Cloudflare Worker proxy. India records
   // stay available as a fallback when offline or the provider is unavailable.
   async function searchWorldwide(q,limit){
     if(navigator.onLine===false)return [];
@@ -100,7 +101,7 @@
       }catch(e){if(e?.name==='AbortError')throw e;}
     }
     try{
-      const url=new URL('https://smvastroservices.onrender.com/api/locations/search');
+      const url=new URL('https://smvastroservices.astroservices.workers.dev/api/locations/search');
       url.searchParams.set('q',q);
       url.searchParams.set('limit',String(Math.max(1,Math.min(70,Number(limit)||70))));
       url.searchParams.set('lang',/^ta(?:-|$)/i.test(document.documentElement.lang||'')?'ta':'en');
@@ -148,7 +149,7 @@
           input.dataset.timezoneSource=String(x.timezoneSource||(x.timezone?'offline-india':'unverified'));
           if(!x.timezone&&Number.isFinite(Number(x.lat))&&Number.isFinite(Number(x.lon))){
             const chosen=input.value;
-            const url=new URL('https://smvastroservices.onrender.com/api/locations/timezone');
+            const url=new URL('https://smvastroservices.astroservices.workers.dev/api/locations/timezone');
             url.searchParams.set('lat',String(x.lat));
             url.searchParams.set('lng',String(x.lon));
             fetch(url.toString(),{headers:{Accept:'application/json'}})

@@ -72,6 +72,7 @@ test('Production Worker registers a server-side GeoNames proxy for all three pub
   const workflow = fs.readFileSync(path.join(root, '..', '..', '.github', 'workflows', 'cloudflare-backend-api-production-deploy.yml'), 'utf8');
   const mainLocation = fs.readFileSync(path.join(root, '..', '..', 'public', 'main-location-search.js'), 'utf8');
   const sharedLocation = fs.readFileSync(path.join(root, '..', '..', 'public', 'horoscope', 'location-search-online-offline.js'), 'utf8');
+  const questionLocation = fs.readFileSync(path.join(root, '..', '..', 'public', 'question-place-search.mjs'), 'utf8');
 
   assert.ok(entry.includes('registerGeoNamesRoutes({ app, env });'));
   assert.ok(routes.includes('env.GEONAMES_USERNAME'));
@@ -100,6 +101,8 @@ test('Production Worker registers a server-side GeoNames proxy for all three pub
 
   assert.ok(mainLocation.includes('https://smvastroservices.astroservices.workers.dev'));
   assert.ok(sharedLocation.includes("const defaultBackend='https://smvastroservices.astroservices.workers.dev'"));
+  assert.ok(questionLocation.includes('https://smvastroservices.astroservices.workers.dev'), 'Production booking/question location boxes must use Cloudflare.');
+  assert.ok(!questionLocation.includes('https://smvastroservices.onrender.com'), 'Production question lookup must not bypass Cloudflare.');
 });
  
 test('Production diagnostic probe Workers have separate names and cannot bind Production D1', () => {

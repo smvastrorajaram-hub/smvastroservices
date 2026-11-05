@@ -4,15 +4,16 @@ import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 
 const origin = process.env.SMV_OFFLINE_PREVIEW_ORIGIN || 'http://127.0.0.1:4173';
-const release = '20261105-smv-zip-assets-v1';
+const release = '20261105-offline-location-pack-v4';
 const apps = [
   {
     name: 'SMV ASTRO',
     url: origin + '/',
     cacheName: 'smv-astro-shell-' + release,
-    placeCacheName: 'smv-astro-offline-places',
+    placeCacheName: 'smv-shared-india-places',
     requiredAssets: ['/smvastro.mjs','/assets/icon-192.png','/assets/icon-512.png','/assets/icon-512-maskable.png','/assets/smv-home-logo.webp','/assets/favicon.ico'],
-    probeAsset: '/smvastro.mjs'
+    probeAsset: '/smvastro.mjs',
+    locationMode: 'question'
   },
   {
     name: 'SMV HOROSCOPE',
@@ -25,7 +26,8 @@ const apps = [
       '/horoscope/offline/vendor/wasm/swisseph.wasm',
       '/horoscope/offline/places/india-manifest.json'
     ],
-    probeAsset: '/horoscope/offline/offline-engine.mjs'
+    probeAsset: '/horoscope/offline/offline-engine.mjs',
+    locationMode: 'shared'
   },
   {
     name: 'SMV CALENDAR',
@@ -41,42 +43,46 @@ const apps = [
       '/horoscope/assets/smv-calendar-website.webp',
       '/horoscope/assets/favicon-calendar.ico'
     ],
-    probeAsset: '/horoscope/calendar-rasi-palan.mjs'
+    probeAsset: '/horoscope/calendar-rasi-palan.mjs',
+    locationMode: 'shared'
   }
 ];
 
 const launchBrowser = async () => puppeteer.launch({
   args: chromium.args,
   executablePath: await chromium.executablePath(),
-  headless: true
+  headless: true,
+  // Reuse one persistent origin profile across the three scoped app workers.
+  // This models the Pages origin where all three apps can share the verified
+  // India place pack instead of downloading the same 60 MB dataset three times.
+  userDataDir: process.env.SMV_OFFLINE_BROWSER_PROFILE || '/tmp/smv-offline-shared-browser-profile',
+  protocolTimeout: 360000
 });
 
 const results = [];
+const browser = await launchBrowser();
+try {
 for (const app of apps) {
   process.stdout.write('START: ' + app.name + ' online cache install\\n');
-  const browser = await launchBrowser();
+  const page = await browser.newPage();
   try {
-    const page = await browser.newPage();
     page.setDefaultNavigationTimeout(120000);
     page.setDefaultTimeout(120000);
 
     await page.goto(app.url, { waitUntil: 'domcontentloaded', timeout: 90000 });
-    const registration = await page.evaluate(async () => {
-      const reg = await navigator.serviceWorker.ready;
-      return {
-        scope: reg.scope,
-        scriptURL: reg.active?.scriptURL || ''
-      };
-    });
-    assert.ok(registration.scriptURL.endsWith('/sw.js'), app.name + ' must run its own scoped Service Worker: ' + registration.scriptURL);
-    // navigator.serviceWorker.ready can resolve while the worker is still
-    // transitioning from "activating" to "activated". Wait for controller
-    // ownership before testing the newly installed cache.
+    // Do not hold a single Runtime.evaluate open while the worker downloads
+    // the full India pack. Poll the short registration state instead; this
+    // avoids a Puppeteer protocol timeout during a legitimate first install.
     await page.waitForFunction(async () => {
       const reg = await navigator.serviceWorker.getRegistration();
       return reg?.active?.state === 'activated' &&
         navigator.serviceWorker.controller?.state === 'activated';
-    }, { timeout: 60000 });
+    }, { timeout: 10 * 60 * 1000, polling: 1000 });
+    const registration = await page.evaluate(async () => {
+      const reg = await navigator.serviceWorker.getRegistration();
+      return { scope: reg?.scope || '', scriptURL: reg?.active?.scriptURL || '' };
+    });
+    assert.ok(registration.scriptURL.endsWith('/sw.js'), app.name + ' must run its own scoped Service Worker: ' + registration.scriptURL);
 
     const cacheState = await page.evaluate(async (cacheName, requiredAssets, placeCacheName, offlineCacheName, offlineAssets) => {
       const names = await caches.keys();
@@ -104,13 +110,25 @@ for (const app of apps) {
           offlineFound.push({ path, ok: Boolean(response?.ok), status: response?.status || 0 });
         }
       }
-      let placeManifest = null;
+      let placeManifest = null, placeShards = null;
       if (placeCacheName) {
         const places = await caches.open(placeCacheName);
-        const response = await places.match(new URL('/horoscope/offline/places/india-manifest.json', location.origin).href);
+        const manifestUrl = new URL('/horoscope/offline/places/india-manifest.json', location.origin).href;
+        const response = await places.match(manifestUrl);
         placeManifest = { ok: Boolean(response?.ok), status: response?.status || 0 };
+        if (response?.ok) {
+          const manifest = await response.clone().json();
+          const entries = Object.values(manifest.shards || {});
+          const missing = [];
+          for (const metadata of entries) {
+            const url = new URL('india/' + metadata.file, new URL('/horoscope/offline/places/', location.origin));
+            url.searchParams.set('v', String(manifest.version || 1));
+            if (!(await places.match(url.href))?.ok) missing.push(metadata.file);
+          }
+          placeShards = { expected: entries.length, found: entries.length - missing.length, missing, records: manifest.records };
+        }
       }
-      return { exists, found, offlineFound, onlineOnlyCached, placeManifest, cacheNames: names };
+      return { exists, found, offlineFound, onlineOnlyCached, placeManifest, placeShards, cacheNames: names };
     }, app.cacheName, app.requiredAssets, app.placeCacheName || null, app.offlineCacheName || null, app.offlineAssets || []);
     assert.ok(cacheState.exists, app.name + ' release cache must exist: ' + app.cacheName);
     for (const asset of cacheState.found) {
@@ -120,7 +138,12 @@ for (const app of apps) {
       assert.equal(asset.ok, true, app.name + ' required calculation asset must be cached in its separate offline cache: ' + asset.path + ' (HTTP ' + asset.status + ')');
     }
     assert.deepEqual(cacheState.onlineOnlyCached, [], app.name + ' must not cache online account or financial API routes.');
-    if (app.placeCacheName) assert.equal(cacheState.placeManifest?.ok, true, app.name + ' India place manifest must be preserved in its independent place cache (HTTP ' + (cacheState.placeManifest?.status || 0) + ').');
+    if (app.placeCacheName) {
+      assert.equal(cacheState.placeManifest?.ok, true, app.name + ' India place manifest must exist in the shared offline cache.');
+      assert.equal(cacheState.placeShards?.expected, 28, app.name + ' must cache all 28 India place shards.');
+      assert.equal(cacheState.placeShards?.found, 28, app.name + ' must find all versioned place shards: ' + (cacheState.placeShards?.missing || []).join(', '));
+      assert.equal(cacheState.placeShards?.records, 557995, app.name + ' must contain exactly 557,995 India place records.');
+    }
     process.stdout.write('PASS: ' + app.name + ' release cache and ' + cacheState.found.length + ' core asset checks\\n');
 
     await page.evaluate(async () => {
@@ -144,7 +167,7 @@ for (const app of apps) {
     await page.setOfflineMode(true);
     const offlineResponse = await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
     assert.ok(offlineResponse && offlineResponse.status() === 200, app.name + ' navigation must reload from the Service Worker cache while offline.');
-    const offlineState = await page.evaluate(async probeAsset => {
+    const offlineState = await page.evaluate(async (probeAsset, locationMode) => {
       let indexed = '';
       await new Promise((resolve, reject) => {
         const request = indexedDB.open('smv-offline-preservation-test', 1);
@@ -159,6 +182,25 @@ for (const app of apps) {
         };
       });
       const response = await fetch(probeAsset, { cache: 'no-store' });
+      let offlineLocations = [];
+      if (locationMode === 'question') {
+        const module = await import('/question-place-search.mjs');
+        const wrapper = document.createElement('div');
+        const input = document.createElement('input');
+        wrapper.appendChild(input);
+        document.body.appendChild(wrapper);
+        module.bindQuestionPlaceSearch(input);
+        input.value = 'Chennai';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        await new Promise(resolve => setTimeout(resolve, 900));
+        offlineLocations = [...wrapper.querySelectorAll('[role="option"]')].map(option => option.textContent || '');
+      } else {
+        if (typeof window.__smvSearchPlacesOnlineOffline !== 'function') {
+          throw new Error('Shared GeoNames/India offline location loader was not cached in ' + locationMode + '.');
+        }
+        const places = await window.__smvSearchPlacesOnlineOffline('Chennai', 5);
+        offlineLocations = places.map(place => place.place || '');
+      }
       return {
         online: navigator.onLine,
         title: document.title,
@@ -166,15 +208,17 @@ for (const app of apps) {
         local: localStorage.getItem('smv-offline-preserve-local'),
         session: sessionStorage.getItem('smv-offline-preserve-session'),
         indexed,
-        probe: { ok: response.ok, status: response.status }
+        probe: { ok: response.ok, status: response.status },
+        offlineLocations
       };
-    }, app.probeAsset);
+    }, app.probeAsset, app.locationMode);
     assert.equal(offlineState.online, false, app.name + ' must be tested with the browser genuinely offline.');
     assert.ok(offlineState.title && offlineState.bodyTextLength > 0, app.name + ' static UI must remain visible offline.');
     assert.equal(offlineState.local, 'keep-local', app.name + ' localStorage must be preserved.');
     assert.equal(offlineState.session, 'keep-session', app.name + ' sessionStorage must be preserved.');
     assert.equal(offlineState.indexed, 'keep-indexeddb', app.name + ' IndexedDB data must be preserved.');
     assert.equal(offlineState.probe.ok, true, app.name + ' local calculation/UI asset must load offline: ' + app.probeAsset);
+    assert.ok(offlineState.offlineLocations.some(place => /chennai/i.test(place)), app.name + ' must return a real Chennai India location result with the browser offline.');
 
     results.push({
       app: app.name,
@@ -190,12 +234,12 @@ for (const app of apps) {
     process.stderr.write('FAIL: ' + app.name + ' offline browser diagnostic: ' + (error?.stack || String(error)) + '\\n');
     throw error;
   } finally {
-    try {
-      await browser.close();
-    } catch (closeError) {
-      process.stderr.write('WARN: ' + app.name + ' Chromium shutdown: ' + String(closeError?.message || closeError) + '\\n');
-    }
+    try { await page.setOfflineMode(false); } catch (_) {}
+    try { await page.close(); } catch (_) {}
   }
+}
+} finally {
+  try { await browser.close(); } catch (_) {}
 }
 
 for (const result of results) process.stdout.write(JSON.stringify(result) + '\\n');

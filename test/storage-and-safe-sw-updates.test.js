@@ -19,8 +19,8 @@ test('main site does not clear origin-wide local/session storage or all Cache AP
 test('main Service Worker does not force-reload open tabs and preserves offline place cache', () => {
   const sw = read('public/sw.js');
   assert.doesNotMatch(sw, /client\.navigate\s*\(\s*client\.url\s*\)/);
-  assert.match(sw, /OFFLINE_PLACE_CACHE='smv-astro-offline-places'/);
-  assert.match(sw, /k!==OFFLINE_PLACE_CACHE/);
+  assert.match(sw, /SMV_LOCATION_CACHE='smv-shared-india-places'/);
+  assert.match(sw, /k!==SMV_LOCATION_CACHE/);
   assert.match(sw, /await self\.clients\.claim\(\)/);
 });
 
@@ -37,15 +37,17 @@ test('Horoscope Service Worker does not force-reload open report/form tabs and p
 test('main SMV ASTRO caches only the offline UI shell while leaving online-only routes and Horoscope scope isolated', () => {
   const sw = read('public/sw.js');
   assert.ok(sw.includes("APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE"));
-  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261105-smv-zip-assets-v1'"));
+  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261105-offline-location-pack-v4'"));
   assert.ok(sw.includes('APP_SHELL_FILES'));
   assert.ok(sw.includes("'./main-location-search.js'"));
   assert.ok(sw.includes("'./horoscope/offline/places/india-manifest.json'"));
-  assert.ok(sw.includes('isOfflinePlaceAsset(new URL(request.url))?await caches.open(OFFLINE_PLACE_CACHE):cache'));
+  assert.ok(sw.includes("SMV_LOCATION_CACHE='smv-shared-india-places'"));
+  assert.ok(sw.includes('prefetchIndiaPlaceShards'));
+  assert.ok(sw.includes('isOfflinePlaceAsset(new URL(request.url))?await caches.open(SMV_LOCATION_CACHE):cache'));
   assert.ok(sw.includes('isOnlineOnlyRequest'));
   assert.ok(sw.includes('if(!isStaticPresentationRequest(req,url))return;'));
   assert.ok(sw.includes("if(p==='/horoscope'||p.startsWith('/horoscope/'))return false"));
-  assert.ok(sw.includes('k!==OFFLINE_PLACE_CACHE&&k!==APP_SHELL_CACHE'));
+  assert.ok(sw.includes('k!==SMV_LOCATION_CACHE&&k!==APP_SHELL_CACHE'));
   assert.ok(sw.includes("if(isOfflinePlaceAsset(url))"));
   assert.ok(sw.includes("if(req.mode==='navigate')"));
 });
@@ -53,8 +55,10 @@ test('main SMV ASTRO caches only the offline UI shell while leaving online-only 
 test('Horoscope precaches its UI and required local calculation/WASM assets without caching online services', () => {
   const sw = read('public/horoscope/sw.js');
   assert.ok(sw.includes("SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE"));
-  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261105-smv-zip-assets-v1'"));
+  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261105-offline-location-pack-v4'"));
   assert.ok(sw.includes("OFFLINE_CACHE='smv-horoscope-offline'"));
+  assert.ok(sw.includes("LOCATION_CACHE='smv-shared-india-places'"));
+  assert.ok(sw.includes('prefetchIndiaPlaceShards'));
   for (const asset of [
     './index.html','./boot.mjs','./horoscope.js','./marriage-matching.js',
     './marriage-basic-report.mjs','./matching-timeline.mjs','./d1-15-year-reading.mjs',
@@ -76,12 +80,15 @@ test('Horoscope precaches its UI and required local calculation/WASM assets with
 test('Calendar keeps its offline UI/WASM precache and India shard migration while bypassing online-only API routes', () => {
   const sw = read('public/horoscope/calendar/sw.js');
   assert.ok(sw.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"));
-  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261105-smv-zip-assets-v1'"));
+  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261105-offline-location-pack-v4'"));
   assert.ok(sw.includes('const REQUIRED_CORE = new Set(['));
   assert.ok(sw.includes('await preserveCachedIndiaPlaces(target)'));
+  assert.ok(sw.includes("LOCATION_CACHE='smv-shared-india-places'"));
+  assert.ok(sw.includes('prefetchIndiaPlaceShards'));
   assert.ok(sw.includes("'../offline/places/timezone.mjs'"));
   assert.ok(sw.includes("'../offline/places/tz-boundary-lookup.mjs'"));
   assert.ok(sw.includes("'../offline/places/place-display.mjs'"));
+  assert.ok(sw.includes("'../location-search-online-offline.js'"));
   assert.ok(sw.includes('isOnlineOnlyRequest'));
   assert.ok(sw.includes('if(!isStaticPresentationRequest(e.request,u))return;'));
 });
@@ -106,11 +113,11 @@ test('All three app workers share the same release bump while preserving indepen
     assert.ok(match, 'Every app worker must declare SMV_CACHE_RELEASE');
     return match[1];
   });
-  assert.deepEqual(releases, ['20261105-smv-zip-assets-v1','20261105-smv-zip-assets-v1','20261105-smv-zip-assets-v1']);
+  assert.deepEqual(releases, ['20261105-offline-location-pack-v4','20261105-offline-location-pack-v4','20261105-offline-location-pack-v4']);
   assert.ok(workers[0].includes("APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE"));
   assert.ok(workers[1].includes("SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE"));
   assert.ok(workers[2].includes("CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"));
-  assert.ok(workers[0].includes("OFFLINE_PLACE_CACHE='smv-astro-offline-places'"));
+  assert.ok(workers[0].includes("SMV_LOCATION_CACHE='smv-shared-india-places'"));
   assert.ok(workers[1].includes("OFFLINE_CACHE='smv-horoscope-offline'"));
 });
 

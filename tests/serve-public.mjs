@@ -3,6 +3,7 @@ import http from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gzipSync } from 'node:zlib';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../public');
 const port = Number(process.env.PORT || 4173);
@@ -48,12 +49,20 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     const body = await readFile(file);
-    res.writeHead(200, {
+    // Match Cloudflare Pages' automatic text compression so the 62.8 MB India
+    // place pack is transferred as gzip in Chromium CI instead of raw JSON.
+    const acceptsGzip = /\\bgzip\\b/i.test(String(req.headers['accept-encoding'] || ''));
+    const compressible = path.extname(file).toLowerCase() === '.json' && body.length >= 1024;
+    const payload = acceptsGzip && compressible ? gzipSync(body, { level: 6 }) : body;
+    const headers = {
       'Content-Type': mimeTypes.get(path.extname(file).toLowerCase()) || 'application/octet-stream',
-      'Content-Length': body.length,
-      'Cache-Control': 'no-store'
-    });
-    res.end(req.method === 'HEAD' ? undefined : body);
+      'Content-Length': payload.length,
+      'Cache-Control': 'no-store',
+      'Vary': 'Accept-Encoding'
+    };
+    if (payload !== body) headers['Content-Encoding'] = 'gzip';
+    res.writeHead(200, headers);
+    res.end(req.method === 'HEAD' ? undefined : payload);
   } catch (error) {
     const status = error?.code === 'ENOENT' || error?.code === 'ENOTDIR' ? 404 : 500;
     res.writeHead(status, { 'Cache-Control': 'no-store', 'Content-Type': 'text/plain; charset=utf-8' });

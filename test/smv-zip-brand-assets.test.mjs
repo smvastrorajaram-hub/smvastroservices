@@ -115,9 +115,9 @@ test('All three independent service workers cache the new artwork and use one sy
   ];
   const releases = workers.map(source => /const SMV_CACHE_RELEASE='([^']+)'/.exec(source)?.[1]);
   assert.deepEqual(releases, [
-    '20261105-smv-zip-assets-v1',
-    '20261105-smv-zip-assets-v1',
-    '20261105-smv-zip-assets-v1'
+    '20261105-offline-location-pack-v4',
+    '20261105-offline-location-pack-v4',
+    '20261105-offline-location-pack-v4'
   ]);
   for (const asset of [
     './assets/icon-512-maskable.png',

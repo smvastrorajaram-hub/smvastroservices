@@ -2,8 +2,8 @@
    HTML/CSS/JS presentation is network-first and retained for offline reopening.
    Authentication, account data, APIs, payments and consultation operations stay network-only.
    Location search keeps its existing independent online/offline cache. */
-const SMV_CACHE_RELEASE='20261105-smv-zip-assets-v1';
-const OFFLINE_PLACE_CACHE='smv-astro-offline-places';
+const SMV_CACHE_RELEASE='20261105-offline-location-pack-v4';
+const SMV_LOCATION_CACHE='smv-shared-india-places';
 const APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE;
 const APP_SHELL_FILES=[
   './','./index.html','./manifest.webmanifest',
@@ -11,9 +11,9 @@ const APP_SHELL_FILES=[
   './android-app-install.css','./payment-timing.js','./smvastro.mjs',
   './coalesced-refresh.mjs','./razorpay-checkout-loader.mjs','./chat-moderation.js',
   './dashboard-window.js','./public-content-loader.js','./interface.js',
-  './android-app-install.js','./public-navigation.js','./main-location-search.js',
-  './horoscope/offline/places/india-manifest.json','./horoscope/offline/places/place-display.mjs','./main-location-search.js',
-  './horoscope/offline/places/india-manifest.json','./horoscope/offline/places/place-display.mjs',
+  './android-app-install.js','./public-navigation.js',
+  './main-location-search.js','./question-place-search.mjs',
+  './horoscope/offline/places/place-search.mjs','./horoscope/offline/places/india-manifest.json','./horoscope/offline/places/place-display.mjs',
   './assets/icon-192.png','./assets/icon-512.png','./assets/icon-512-maskable.png',
   './assets/favicon-astro-16.png','./assets/favicon-astro-32.png','./assets/favicon-64.png','./assets/favicon.ico',
   './assets/smv-home-logo.webp'
@@ -24,7 +24,8 @@ const REQUIRED_APP_SHELL=new Set([
   './android-app-install.css','./payment-timing.js','./smvastro.mjs',
   './dashboard-window.js','./public-content-loader.js','./interface.js',
   './android-app-install.js','./public-navigation.js',
-  './coalesced-refresh.mjs','./razorpay-checkout-loader.mjs','./chat-moderation.js'
+  './coalesced-refresh.mjs','./razorpay-checkout-loader.mjs','./chat-moderation.js',
+  './question-place-search.mjs'
 ]);
 const ONLINE_ONLY_ROOTS=new Set([
   'api','auth','wallet','payment','payments','razorpay','session','sessions',
@@ -53,6 +54,50 @@ function isStaticPresentationRequest(req,url){
   return /\.(?:html?|css|js|mjs|json|webmanifest|png|jpe?g|webp|gif|svg|ico|avif|woff2?|ttf|otf|wasm|data)$/.test(p);
 }
 
+const cacheURL=path=>new URL(path,self.registration.scope).href;
+async function prefetchIndiaPlaceShards(target,manifestPath,shardDirectory){
+  const manifestUrl=new URL(manifestPath,self.registration.scope).href;
+  let response=await target.match(manifestUrl);
+  if(!response){
+    response=await fetch(new Request(manifestUrl,{cache:'reload'}),{cache:'no-store'});
+    if(!response?.ok)throw new Error('India offline location manifest could not be downloaded.');
+    await target.put(manifestUrl,response.clone());
+  }
+  const manifest=await response.json();
+  const entries=Object.entries(manifest?.shards||{});
+  if(entries.length!==28)throw new Error('Expected 28 India location shards; found '+entries.length);
+  const version=encodeURIComponent(String(manifest.version||1));
+  let next=0;const failures=[];
+  async function worker(){
+    while(next<entries.length){
+      const [key,metadata]=entries[next++];
+      const file=String(metadata?.file||'');
+      if(!/^[a-z]+\.json$/.test(file)){failures.push(String(key)+': invalid shard filename');continue;}
+      const url=new URL(shardDirectory+encodeURIComponent(file)+'?v='+version,self.registration.scope).href;
+      const request=new Request(url,{cache:'reload'});
+      const current=await target.match(request).catch(()=>null);
+      if(current?.ok)continue;
+      let saved=false,lastError=null;
+      for(let attempt=0;attempt<2&&!saved;attempt++){
+        try{
+          const result=await fetch(request,{cache:'no-store'});
+          if(!result?.ok)throw new Error('HTTP '+(result?.status||'unavailable'));
+          await target.put(request,result.clone());
+          const verified=await target.match(request);
+          if(!verified?.ok)throw new Error('Cache Storage verification failed');
+          saved=true;
+        }catch(error){lastError=error;}
+      }
+      if(!saved)failures.push(file+' ('+String(lastError?.message||lastError||'download failed')+')');
+    }
+  }
+  await Promise.all([worker(),worker()]);
+  if(failures.length)throw new Error('India offline location pack incomplete: '+failures.length+' shards failed: '+failures.slice(0,8).join(', '));
+  const records=entries.reduce((sum,[,item])=>sum+(Number(item?.records)||0),0);
+  if(records!==557995)throw new Error('Unexpected India place count: '+records);
+  console.info('SMV India offline place pack verified:',records,'records,',entries.length,'shards.');
+}
+
 async function cacheAppShell(){
   const cache=await caches.open(APP_SHELL_CACHE);
   const failures=[];
@@ -61,7 +106,7 @@ async function cacheAppShell(){
     try{
       const response=await fetch(request,{cache:'no-store'});
       if(response&&response.ok){
-        const target=isOfflinePlaceAsset(new URL(request.url))?await caches.open(OFFLINE_PLACE_CACHE):cache;
+        const target=isOfflinePlaceAsset(new URL(request.url))?await caches.open(SMV_LOCATION_CACHE):cache;
         await target.put(request,response.clone());
       }else if(REQUIRED_APP_SHELL.has(path))failures.push(path+' (HTTP '+(response?.status||'unknown')+')');
     }catch(error){
@@ -74,6 +119,7 @@ async function cacheAppShell(){
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
     await cacheAppShell();
+    await prefetchIndiaPlaceShards(await caches.open(SMV_LOCATION_CACHE),'./horoscope/offline/places/india-manifest.json','./horoscope/offline/places/india/');
     await self.skipWaiting();
   })());
 });
@@ -81,7 +127,7 @@ self.addEventListener('install',event=>{
 self.addEventListener('activate',event=>{
   event.waitUntil((async()=>{
     const keys=await caches.keys();
-    await Promise.all(keys.filter(k=>k!==OFFLINE_PLACE_CACHE&&k!==APP_SHELL_CACHE&&(k.startsWith('smv-astro-')||k.startsWith('smvastro-'))).map(k=>caches.delete(k)));
+    await Promise.all(keys.filter(k=>k!==SMV_LOCATION_CACHE&&k!==APP_SHELL_CACHE&&(k.startsWith('smv-astro-')||k.startsWith('smvastro-'))).map(k=>caches.delete(k)));
     await self.clients.claim();
     // Do not force-reload open customer/admin/live-session windows during activation.
     // The online-authoritative fetch handler serves current assets on their next request.
@@ -182,13 +228,14 @@ self.addEventListener('fetch',event=>{
   // Keep the established online + offline India place-search behavior isolated.
   if(isOfflinePlaceAsset(url)){
     event.respondWith((async()=>{
-      const cache=await caches.open(OFFLINE_PLACE_CACHE);
+      const cache=await caches.open(SMV_LOCATION_CACHE);
       try{
         const network=await fetch(req,{cache:'no-store'});
         if(network&&network.ok)await cache.put(req,network.clone());
         return network;
       }catch(_){
-        const saved=await cache.match(req,{ignoreSearch:true})||await cache.match(url.pathname,{ignoreSearch:true});
+        const versionedShard=/\/offline\/places\/india\/[^/]+\.json$/i.test(url.pathname)&&url.searchParams.has('v');
+        const saved=await cache.match(req)||(!versionedShard?(await cache.match(req,{ignoreSearch:true})||await cache.match(url.pathname,{ignoreSearch:true})):null);
         if(saved)return saved;
         return new Response('Offline place-search data is unavailable.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});
       }

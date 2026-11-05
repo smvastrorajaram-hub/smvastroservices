@@ -205,13 +205,13 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE='20261105-smv-zip-assets-v1'"), 'Calendar uses the synchronized release marker');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE='20261105-offline-location-pack-v4'"), 'Calendar uses the synchronized release marker');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
    assert.ok(calendarWorkerSource.includes('const REQUIRED_CORE = new Set(['));
    assert.ok(calendarWorkerSource.includes('await preserveCachedIndiaPlaces(target)'), 'Previously cached India place shards must survive cache migration');
-   assert.ok(!calendarWorkerSource.includes('PLACE_SHARDS.map'), 'PWA must not download every India location shard during install');
-   assert.ok(calendarWorkerSource.includes('cached lazily when the user searches'), 'Missing India shards continue to cache lazily');
+   assert.ok(calendarWorkerSource.includes('prefetchIndiaPlaceShards'), 'Calendar downloads the complete India offline location pack during first online install');
+   assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
    assert.ok(calendarIndexSource.includes('20261024-sunmoon-regex-fix-v3'));
