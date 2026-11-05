@@ -305,6 +305,22 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(html.includes('smvastro.mjs?v=20261106-india-place-manifest-count-v1'));
 });
 
+test('Live Chat recovers a missed connecting-to-active event while SSE remains connected', () => {
+  const frontend = read('public/smvastro.mjs');
+  const recoveryStart = frontend.indexOf('function smvLiveStartChatConnectRecovery(id,session){');
+  const recoveryEnd = frontend.indexOf('function smvLiveStartChatRecovery(id,session){', recoveryStart);
+  assert.ok(recoveryStart >= 0 && recoveryEnd > recoveryStart, 'A session-scoped Live Chat connection recovery loop must exist.');
+  const recovery = frontend.slice(recoveryStart, recoveryEnd);
+  assert.ok(recovery.includes("!smvLiveEventStreamConnected"), 'The chat-specific poll must defer to normal fallback polling while SSE is disconnected.');
+  assert.ok(recovery.includes("renderApi('/live/sessions'"), 'The recovery loop must read authoritative participant session state.');
+  assert.ok(recovery.includes("String(row.id||row.sessionId||'')===key"), 'The recovery loop must reconcile only the current session.');
+  assert.ok(recovery.includes('smvLiveApplySession(fresh)'), 'An authoritative active state must open the existing customer Chat panel.');
+  assert.ok(recovery.includes('smvLivePollMessages(key)'), 'The missed transition must immediately load server-saved Chat messages.');
+  assert.ok(frontend.includes("if(chat&&s.state==='connecting')smvLiveStartChatConnectRecovery(s.id,s);else smvLiveStopChatConnectRecovery();"));
+  assert.ok(frontend.includes('smvLiveStopChatConnectRecovery();smvLiveSignalSeen=new Set();'), 'Closing/replacing a session must stop its transition poller.');
+  assert.ok(frontend.includes('if(chat&&active)smvLiveStartChatRecovery(s.id,s);else smvLiveStopChatRecovery();'), 'The existing active Chat message recovery remains enabled.');
+});
+
 test('Customer and Astrologer Dashboards mount the Live Call/Chat controls after rendering', () => {
   const frontend = read('public/smvastro.mjs');
   const dashboardStart = frontend.indexOf('async function loadDashboard(expectedRole=null,force=false,background=false)');
