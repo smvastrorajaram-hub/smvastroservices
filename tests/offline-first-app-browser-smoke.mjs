@@ -70,22 +70,19 @@ for (const app of apps) {
     page.setDefaultTimeout(120000);
 
     await page.goto(app.url, { waitUntil: 'domcontentloaded', timeout: 90000 });
-    const registration = await page.evaluate(async () => {
-      const reg = await navigator.serviceWorker.ready;
-      return {
-        scope: reg.scope,
-        scriptURL: reg.active?.scriptURL || ''
-      };
-    });
-    assert.ok(registration.scriptURL.endsWith('/sw.js'), app.name + ' must run its own scoped Service Worker: ' + registration.scriptURL);
-    // navigator.serviceWorker.ready can resolve while the worker is still
-    // transitioning from "activating" to "activated". Wait for controller
-    // ownership before testing the newly installed cache.
+    // Do not hold a single Runtime.evaluate open while the worker downloads
+    // the full India pack. Poll the short registration state instead; this
+    // avoids a Puppeteer protocol timeout during a legitimate first install.
     await page.waitForFunction(async () => {
       const reg = await navigator.serviceWorker.getRegistration();
       return reg?.active?.state === 'activated' &&
         navigator.serviceWorker.controller?.state === 'activated';
-    }, { timeout: 60000 });
+    }, { timeout: 10 * 60 * 1000, polling: 1000 });
+    const registration = await page.evaluate(async () => {
+      const reg = await navigator.serviceWorker.getRegistration();
+      return { scope: reg?.scope || '', scriptURL: reg?.active?.scriptURL || '' };
+    });
+    assert.ok(registration.scriptURL.endsWith('/sw.js'), app.name + ' must run its own scoped Service Worker: ' + registration.scriptURL);
 
     const cacheState = await page.evaluate(async (cacheName, requiredAssets, placeCacheName, offlineCacheName, offlineAssets) => {
       const names = await caches.keys();
