@@ -135,19 +135,35 @@ jobs:
                 const matches = comments
                   .filter(comment => comment.user?.login === botLogin && typeof comment.body === 'string')
                   .map(comment => ({ comment, sha: comment.body.match(shortShaPattern)?.[1]?.toLowerCase() || '' }))
-                  .filter(item => item.sha && expectedSha.startsWith(item.sha))
+                  .filter(item => item.sha && /Deploy successful!/i.test(item.comment.body))
                   .sort((a, b) => String(b.comment.updated_at || b.comment.created_at).localeCompare(String(a.comment.updated_at || a.comment.created_at)));
 
                 for (const item of matches) {
-                  if (!/Deploy successful!/i.test(item.comment.body)) continue;
+                  let sameAppSource = expectedSha.startsWith(item.sha);
+                  if (!sameAppSource) {
+                    // Pages may skip a deployment when only this QA workflow changes.
+                    // Reuse that preview only if GitHub confirms no app/source files changed.
+                    const compareUrl = api + '/repos/' + repo + '/compare/' + item.sha + '...' + expectedSha;
+                    const compareResponse = await fetch(compareUrl, { headers, cache: 'no-store' });
+                    if (compareResponse.ok) {
+                      const comparison = await compareResponse.json();
+                      const changedFiles = Array.isArray(comparison.files) ? comparison.files : [];
+                      sameAppSource = comparison.status === 'identical' ||
+                        (comparison.status === 'ahead' && changedFiles.length > 0 &&
+                          changedFiles.every(file => file.filename === '.github/workflows/calendar-rasi-palan-qa.yml'));
+                    } else {
+                      console.error('Could not compare Cloudflare deployment commit ' + item.sha + ' with PR head (HTTP ' + compareResponse.status + ').');
+                    }
+                  }
+                  if (!sameAppSource) continue;
                   const match = item.comment.body.match(previewUrlPattern);
                   if (!match) continue;
                   const candidate = new URL(match[1]);
                   if (candidate.protocol !== 'https:' || !candidate.hostname.endsWith('.smvastroservices.pages.dev')) {
-                    throw new Error(`Cloudflare returned an unexpected preview host: ${candidate.origin}`);
+                    throw new Error('Cloudflare returned an unexpected preview host: ' + candidate.origin);
                   }
                   resolvedPreview = candidate.origin;
-                  console.error(`Cloudflare preview for PR head ${item.sha}: ${resolvedPreview}`);
+                  console.error('Cloudflare Preview ' + item.sha + ' is valid for PR head ' + expectedSha.slice(0, 7) + '; app source is unchanged.');
                   break;
                 }
               }
