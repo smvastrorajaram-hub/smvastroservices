@@ -87,13 +87,13 @@ test('GITHUB_ENV receives one real newline-delimited variable for each app', asy
     }, envFile);
 
     const value = await readFile(envFile, 'utf8');
-    assert.deepEqual(value.split('\\n'), [
+    assert.deepEqual(value.split('\n'), [
       'SMV_ANDROID_VERSION_NAME=v1.19',
       'SMV_HOROSCOPE_ANDROID_VERSION_NAME=v1.2',
       'SMV_CALENDAR_ANDROID_VERSION_NAME=v1.2',
       ''
     ]);
-    assert.ok(!value.includes('\\\\n'), 'GITHUB_ENV must contain actual line breaks, not literal backslash-n text.');
+    assert.ok(!value.includes('\\n'), 'GITHUB_ENV must contain actual line breaks, not literal backslash-n text.');
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
