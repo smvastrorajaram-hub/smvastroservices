@@ -45,3 +45,19 @@ test('SMV HOROSCOPE and SMV CALENDAR production APKs rebuild when either scoped 
     }
   }
 });
+
+test('Only signed production builds publish raw APK files as direct-download GitHub release assets', () => {
+  assert.ok(astro.includes('contents: write'));
+  assert.ok(horoscopeCalendar.includes('contents: write'));
+  assert.ok(astro.includes("Publish raw signed SMV ASTRO APK direct-download release asset"));
+  assert.ok(horoscopeCalendar.includes("Publish raw signed HOROSCOPE and CALENDAR APK direct-download release assets"));
+  assert.ok(astro.includes('softprops/action-gh-release@v2'));
+  assert.ok(horoscopeCalendar.includes('softprops/action-gh-release@v2'));
+  assert.ok(astro.includes("if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}"));
+  assert.ok(horoscopeCalendar.includes("if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}"));
+  assert.ok(astro.includes('SMV-ASTRO-${{ env.SMV_ANDROID_VERSION_NAME }}.apk'));
+  assert.ok(horoscopeCalendar.includes('SMV-HOROSCOPE-${{ env.SMV_HOROSCOPE_ANDROID_VERSION_NAME }}.apk'));
+  assert.ok(horoscopeCalendar.includes('SMV-CALENDAR-${{ env.SMV_CALENDAR_ANDROID_VERSION_NAME }}.apk'));
+  assert.ok(astro.includes('-run-${{ github.run_number }}'));
+  assert.ok(horoscopeCalendar.includes('-run-${{ github.run_number }}'));
+});
