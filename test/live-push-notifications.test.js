@@ -521,7 +521,7 @@ test('Admin dashboard loads Live commission from Cloudflare D1 before non-essent
   const adminDataLoad = frontend.indexOf("renderApi('/admin-data',{method:'GET'})", adminStart);
   assert.ok(frontend.includes("renderApi('/admin/live/commission',{method:'GET'})"));
   assert.ok(frontend.includes("renderApi('/admin/live/commission',{method:'POST'"));
-  assert.ok(frontend.includes("admin\\/(?:withdrawals-data|withdrawal-payout|withdrawal-mark-processing|withdrawal-reject|withdrawal-mark-paid|offers|live\\/(?:pricing|commission))"));
+  assert.ok(frontend.includes("admin\\/(?:appointments|astrologers-data|settings-data|questions-data|reviews-data|dashboard-touch|wallet\\/transactions|withdrawals-data|withdrawal-payout|withdrawal-mark-processing|withdrawal-reject|withdrawal-mark-paid|offers|content|android-app|approve-astrologer|reject-astrologer|payout-change-status|appointment-status|set-open-workflow|approve-question|reallocate-question|edit-question|takeover-answer|astrologer-languages|astrologer-pricing|astrologer-profile-permission|astrologer-profile-description|astrologer-auto-approval\\/settings|astrologer-quiz\\/(?:questions(?:\\/delete)?|load-defaults|sync-google-form)|live\\/(?:pricing|commission))"));
   assert.ok(earlyCommissionLoad > adminStart && earlyCommissionLoad < adminDataLoad);
   assert.ok(frontend.includes('Could not load commission from Cloudflare Production D1'));
   assert.ok(html.includes('id="refreshCommissionSettings"'));
@@ -852,7 +852,7 @@ test('Wallet recharge offer endpoints use the selected Wallet financial domain',
 
 test('Customer Live Session dashboard status follows the accepted-session SSE update without a manual refresh', () => {
   const frontend = read('public/smvastro.mjs');
-  const pollStart = frontend.indexOf('async function smvLivePollSessions(){');
+  const pollStart = frontend.indexOf('async function smvLivePollSessions(statusOnly=false){');
   const pollEnd = frontend.indexOf('function smvLiveRenderScheduledBookings(', pollStart);
   const poll = frontend.slice(pollStart, pollEnd);
   const eventsStart = frontend.indexOf('function smvLiveHandleEvent(ev){');
@@ -867,7 +867,7 @@ test('Customer Live Session dashboard status follows the accepted-session SSE up
   assert.ok(frontend.includes('smvLiveUpdateDashboardSessionStatus(current);'),
     'the 2:15 preparation countdown must keep the Dashboard status current');
   const dashboardStart=frontend.indexOf('function smvLiveUpdateDashboardSessionStatus(session){');
-  const dashboardEnd=frontend.indexOf('async function smvLivePollSessions(){',dashboardStart);
+  const dashboardEnd=frontend.indexOf('async function smvLivePollSessions(statusOnly=false){',dashboardStart);
   const upsert=frontend.slice(dashboardStart,dashboardEnd);
   assert.ok(upsert.includes('article=document.createElement(\'article\')'),
     'a newly requested session must create its Dashboard row even when no history row exists');
@@ -954,7 +954,7 @@ test('Live Chat state stays active across delayed events and the Connect action 
   const apply = frontend.slice(applyStart, applyEnd);
   assert.ok(apply.includes('smvLiveMergeSessionState(smvLiveCurrentSession,{...session,id:smvLivePanelSessionId})'));
   const dashboardStart = frontend.indexOf('function smvLiveUpdateDashboardSessionStatus(session){');
-  const dashboardEnd = frontend.indexOf('async function smvLivePollSessions(){', dashboardStart);
+  const dashboardEnd = frontend.indexOf('async function smvLivePollSessions(statusOnly=false){', dashboardStart);
   assert.ok(frontend.slice(dashboardStart, dashboardEnd).includes('smvLiveMergeSessionState(previous,{...session,id})'));
   const connectStart = frontend.indexOf("const connectChat=$('smvLiveConnectChat');");
   const connectEnd = frontend.indexOf("const connectMic=$('smvLiveConnectMic');", connectStart);
@@ -1101,7 +1101,7 @@ test('Session-ended event and end API never send Customer wallet balance to the 
   assert.ok(frontend.includes('function smvLiveSessionEndedMessage(session,wallet){'));
   assert.ok(frontend.includes("return 'Session ended. Your Astrologer earnings summary has been refreshed.';"));
   const statusStart = frontend.indexOf('function smvLiveUpdateDashboardSessionStatus(session){');
-  const statusEnd = frontend.indexOf('async function smvLivePollSessions(){', statusStart);
+  const statusEnd = frontend.indexOf('async function smvLivePollSessions(statusOnly=false){', statusStart);
   assert.ok(statusStart >= 0 && statusEnd > statusStart);
   const statusUpdater = frontend.slice(statusStart, statusEnd);
   assert.ok(statusUpdater.includes("current.state==='ended'"));
@@ -1170,7 +1170,7 @@ test('Live Session SSE reconnects when an HTTP 200 stream becomes silent', () =>
 test('A terminal session state refreshes the Customer Wallet even when the modal is closed', () => {
   const frontend = read('public/smvastro.mjs');
   const start = frontend.indexOf('function smvLiveUpdateDashboardSessionStatus(session){');
-  const end = frontend.indexOf('async function smvLivePollSessions(){', start);
+  const end = frontend.indexOf('async function smvLivePollSessions(statusOnly=false){', start);
   assert.ok(start >= 0 && end > start, 'Dashboard session status updater exists');
   const updater = frontend.slice(start, end);
   assert.ok(updater.includes("current.state==='ended'"), 'Refresh is triggered by the terminal state');
