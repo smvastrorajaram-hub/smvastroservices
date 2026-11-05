@@ -13,7 +13,8 @@ test('Production Worker uses the exact requested Worker name, D1 ID, Firebase Pr
   assert.equal(config.vars.SMV_ENVIRONMENT, 'production');
   assert.equal(config.vars.FIREBASE_PROJECT_ID, 'smv-astro');
   assert.equal(config.vars.FIREBASE_AUTH_PROJECT_IDS, 'smv-astro');
-  assert.equal(config.vars.ALLOWED_ORIGINS, 'https://smvastroservices.in,https://smvastroservices.pages.dev');
+  assert.equal(config.vars.ALLOWED_ORIGINS, 'https://smvastroservices.in,https://smvastroservices.pages.dev,https://horoscope.smvastroservices.in,https://calendar.smvastroservices.in');
+  assert.equal(config.vars.GEONAMES_USERNAME, undefined, 'GeoNames username must be a Worker secret, never a plain Wrangler variable.');
   assert.equal(config.observability.enabled, true);
   assert.equal(config.observability.logs.invocation_logs, true);
   assert.equal(config.observability.logs.head_sampling_rate, 1);
@@ -63,6 +64,25 @@ test('Production deploy workflow provisions and validates Firebase Project 1 cre
   assert.match(workflow, /d\.razorpayMode!=='live'/);
   assert.match(workflow, /d\.walletRechargeRoutesEnabled!==true/);
   assert.match(workflow, /d\.liveCallChatRoutesEnabled!==true/);
+});
+
+test('Production Worker registers a server-side GeoNames proxy for all three public app origins', () => {
+  const entry = fs.readFileSync(path.join(root, 'src', 'index.mjs'), 'utf8');
+  const routes = fs.readFileSync(path.join(root, 'src', 'geonames-location-routes.mjs'), 'utf8');
+  const workflow = fs.readFileSync(path.join(root, '..', '..', '.github', 'workflows', 'cloudflare-backend-api-production-deploy.yml'), 'utf8');
+  assert.match(entry, /registerGeoNamesRoutes\\(\\{\\s*app,\\s*env\\s*\\}\\)/);
+  assert.match(routes, /env\\.GEONAMES_USERNAME/);
+  assert.match(routes, /https:\\/\\/secure\\.geonames\\.org\\//);
+  assert.match(routes, /'/);
+  assert.match(routes, /'\\/api\\/locations\\/status'/);
+  assert.match(routes, /'\\/api\\/locations\\/search'/);
+  assert.match(routes, /'\\/api\\/locations\\/timezone'/);
+  assert.match(workflow, /Sync GeoNames service username into Production Worker/);
+  assert.match(workflow, /GEONAMES_USERNAME:\\s*\\$\\{\\{\\s*secrets\\.GEONAMES_USERNAME\\s*\\}\\}/);
+  assert.match(workflow, /secret put GEONAMES_USERNAME/);
+  assert.match(workflow, /GeoNames service username.*names\\.has\\('GEONAMES_USERNAME'\\)/);
+  assert.match(workflow, /Verify Production GeoNames search and timezone routes/);
+  assert.match(workflow, /GEONAMES_USERNAME.*remains hidden/);
 });
 
 test('Production diagnostic probe Workers have separate names and cannot bind Production D1', () => {
