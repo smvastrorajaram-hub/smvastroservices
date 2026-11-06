@@ -1,0 +1,63 @@
+{
+  "name": "smvastro-backend-api-staging",
+  "main": "src/index.mjs",
+  "compatibility_date": "2026-10-31",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "SMV_ENVIRONMENT": "staging",
+    "SMV_BACKEND_CLOUDFLARE_ACTIVE": "false",
+    "SMV_WALLET_BACKFILL_TOOLS_ENABLED": "true",
+    "SMV_WALLET_DOMAIN_QUIESCED": "false",
+    "SMV_WALLET_DOMAIN_CUTOVER_COMPLETE": "false",
+    "SMV_WALLET_PAYOUT_KEY_VERSION": "v1",
+    "SMV_IDENTITY_PROFILE_BACKFILL_ENABLED": "true",
+    "SMV_IDENTITY_PROFILE_CUTOVER_COMPLETE": "false",
+    "SMV_IDENTITY_PROFILE_BACKFILL_PREVIEW_ONLY": "true",
+    "SMV_IDENTITY_PROFILE_D1_AUTHORIZATION_ENABLED": "false",
+    "SMV_LIVE_SESSION_ROUTES_ENABLED": "false",
+    "SMV_RAZORPAY_LIVE_MODE_ENABLED": "false",
+    "SMV_RAZORPAY_TEST_MODE_ENABLED": "true",
+    "SMV_NEW_QUESTION_PAYMENTS_ENABLED": "false",
+    "SMV_LEGACY_PRIVATE_CONSULTATION_ENABLED": "false",
+    "FIREBASE_AUTH_PROJECT_IDS": "smv-astro-staging",
+    "SMV_PUBLIC_BACKEND_URL": "https://smvastro-backend-api-staging.astroservices.workers.dev",
+    "ALLOWED_ORIGINS": "https://smv-astro-phase1-browser-staging.onrender.com,https://smv-astro-phase1-browser-staging-v2.onrender.com,https://fix-cloudflare-live-booking.smvastroservices.pages.dev"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "smvastro-wallet-staging",
+      "database_id": "0ddb87a9-8a16-4e39-a806-c9137c64959a"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "LIVE_SESSION_COORDINATOR",
+        "class_name": "LiveSessionCoordinator"
+      },
+      {
+        "name": "LIVE_USER_EVENT_HUB",
+        "class_name": "LiveUserEventHub"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1_live_session_coordinator",
+      "new_sqlite_classes": [
+        "LiveSessionCoordinator",
+        "LiveUserEventHub"
+      ]
+    }
+  ],
+  // The isolated staging APK Worker is not yet provisioned. Keep the binding absent;
+  // /admin/android-app/upload returns APK_RELEASE_SERVICE_NOT_READY until it exists.
+}
