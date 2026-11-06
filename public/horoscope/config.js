@@ -61,7 +61,7 @@ async function getOnlineConfig(){
   }
 
   let response=null,lastError=null;
-  for(let attempt=0;attempt<3;attempt++){
+  for(let attempt=0;attempt<5;attempt++){
     try{
       response=await nativeFetch(
         backend()+'/horoscope-feature-config?_='+Date.now(),
@@ -70,14 +70,17 @@ async function getOnlineConfig(){
           headers:{'Accept':'application/json'}
         }
       );
-      if(response.ok||![502,503,504].includes(response.status)||attempt===2)break;
+      if(response.ok||![502,503,504].includes(response.status)||attempt===4)break;
     }catch(error){
       lastError=error;
-      if(attempt===2)throw error;
+      if(attempt===4)throw error;
     }
-    // Render's free service can be waking after an idle period. Retry only
-    // transient gateway/startup failures; Admin settings remain no-store.
-    await new Promise(resolve=>setTimeout(resolve,700*(attempt+1)));
+    // The existing Render Free instance may need time to wake after idling.
+    // Honour Retry-After when supplied; otherwise use bounded exponential
+    // backoff (1, 2, 4, 8 seconds). Admin settings remain no-store.
+    const retryAfter=Number(response?.headers?.get?.('Retry-After')||0);
+    const delay=retryAfter>0?Math.min(8000,retryAfter*1000):Math.min(8000,1000*Math.pow(2,attempt));
+    await new Promise(resolve=>setTimeout(resolve,delay));
   }
   if(!response)throw lastError||Error('Horoscope settings endpoint did not respond.');
   const json=await response.json().catch(()=>({}));
