@@ -5,6 +5,7 @@ on:
       - main
       - fix/horoscope-benefits-login-export-policy-20261106
       - fix/horoscope-login-paid-quick-unlock-20261107
+      - fix/horoscope-paid-report-mirror-20261107
     paths:
       - 'public/horoscope/config.js'
       - 'public/horoscope/index.html'
