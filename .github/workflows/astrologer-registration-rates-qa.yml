@@ -1,0 +1,44 @@
+name: Astrologer Registration Rates and Admin Profile QA
+on:
+  push:
+    branches:
+      - main
+      - feat/astrologer-registration-rates-admin-20261106
+    paths:
+      - 'public/index.html'
+      - 'public/smvastro.mjs'
+      - 'public/public-content.mjs'
+      - 'server.js'
+      - 'tests/astrologer-registration-rates-admin-regression.mjs'
+      - '.github/workflows/astrologer-registration-rates-qa.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/index.html'
+      - 'public/smvastro.mjs'
+      - 'public/public-content.mjs'
+      - 'server.js'
+      - 'tests/astrologer-registration-rates-admin-regression.mjs'
+      - '.github/workflows/astrologer-registration-rates-qa.yml'
+permissions:
+  contents: read
+concurrency:
+  group: astrologer-registration-rates-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  source-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax-check changed runtime files
+        run: |
+          set -euo pipefail
+          node --check server.js
+          node --check public/smvastro.mjs
+          node --check public/public-content.mjs
+      - name: Run registration, approval, Dashboard and Admin regression tests
+        run: node tests/astrologer-registration-rates-admin-regression.mjs
