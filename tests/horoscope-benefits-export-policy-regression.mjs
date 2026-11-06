@@ -81,11 +81,11 @@ test("The same no-export report policy covers both Horoscope and Marriage Matchi
 });
 
 test("All three apps use one synchronized cache release; Horoscope runtime revision is bumped", () => {
-  const expected = "20261107-horoscope-quick-payment-v1";
+  const expected = "20261107-horoscope-report-mirror-v2";
   const versions = workers.map(source => /const SMV_CACHE_RELEASE='([^']+)'/.exec(source)?.[1]);
   assert.deepEqual(versions, [expected, expected, expected]);
   const runtime = /const RUNTIME_REVISION='([^']+)'/.exec(workers[1])?.[1];
-  assert.equal(runtime, "v267-horoscope-quick-payment-20261107");
+  assert.equal(runtime, "v268-horoscope-report-mirror-20261107");
 });
 
 test("No origin-wide browser data or Cache API clearing is introduced", () => {
