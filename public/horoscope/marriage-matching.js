@@ -2099,9 +2099,9 @@ function mount(){
   if(btn){btn.disabled=false;btn.removeAttribute('aria-busy');}
   const visitor=!state.loggedIn;
   const actualAmount=Number(state.actualPrice??state.price??0);
-  const adminOnPositive=state.enabled===true&&actualAmount>=1;
-  const adminOffPositive=state.enabled!==true&&actualAmount>=1;
-  const adminOffZero=state.enabled!==true&&actualAmount<1;
+  const adminOnPositive=state.mode==='paid'&&actualAmount>=1;
+  const adminOffPositive=state.mode==='off_public_basic'&&actualAmount>=1;
+  const adminOffZero=state.mode==='off_free_full'&&actualAmount<1;
   const showBasicManual=adminOnPositive||(visitor&&(adminOffPositive||adminOffZero));
   const hideBirthBasedForm=visitor&&(adminOnPositive||adminOffPositive);
   mmFullAccess=state.fullAllowed===true;
