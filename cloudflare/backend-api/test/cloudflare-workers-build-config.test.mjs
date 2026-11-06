@@ -26,6 +26,17 @@ test('Workers Builds default Preview config matches the connected Worker but use
   assert.equal(preview.d1_databases[0].database_name, 'smvastro-wallet-staging');
   assert.equal(preview.d1_databases[0].database_id, '0ddb87a9-8a16-4e39-a806-c9137c64959a');
   assert.equal(preview.d1_databases[0].migrations_dir, undefined);
+  assert.ok(preview.previews && typeof preview.previews === 'object');
+  assert.equal(preview.previews.vars.SMV_ENVIRONMENT, 'staging');
+  assert.equal(preview.previews.vars.FIREBASE_AUTH_PROJECT_IDS, 'smv-astro-staging');
+  assert.equal(preview.previews.d1_databases[0].database_name, 'smvastro-wallet-staging');
+  assert.equal(preview.previews.d1_databases[0].database_id, '0ddb87a9-8a16-4e39-a806-c9137c64959a');
+  assert.deepEqual(
+    preview.previews.durable_objects.bindings.map(binding => binding.name),
+    ['LIVE_SESSION_COORDINATOR', 'LIVE_USER_EVENT_HUB']
+  );
+  assert.ok(!JSON.stringify(preview.previews).includes('b1d5684c-3fcd-48fe-9571-ea41fc605c7d'),
+    'Preview bindings must never reference Production D1');
 });
 
 test('Dedicated staging config continues to target the isolated staging Worker and D1', () => {
