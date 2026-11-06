@@ -4,7 +4,7 @@ import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 
 const origin = process.env.SMV_OFFLINE_PREVIEW_ORIGIN || 'http://127.0.0.1:4173';
-const release = '20261106-horoscope-benefits-export-policy-v1';
+const release = '20261107-horoscope-report-mirror-v2';
 const apps = [
   {
     name: 'SMV ASTRO',

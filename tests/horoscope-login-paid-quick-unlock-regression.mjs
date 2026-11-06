@@ -32,28 +32,36 @@ test("The quick-payment box is added below each Generate button without replacin
   assert.match(policy, /smvHoroscopePaidEntryTamil/);
 });
 
-test("Quick payment appears only for Admin ON + positive price + an authenticated Customer", () => {
-  assert.match(policy, /const active=state\.mode==='paid'&&state\.loggedIn===true&&Number\(state\.actualPrice\|\|0\)===1/);
-  assert.match(policy, /if\(!active\)\{clearGate\(item\.root\);continue;\}/);
-  assert.match(policy, /renderQuickHoroscopePayment\(item\.root,state,item\.language\)/);
+test("The mirrored Full Report box appears only for Admin ON + Rs.1 or above + logged-in unpaid Customer", () => {
+  assert.match(policy, /const paidCustomerMode=state\.mode==='paid'&&state\.loggedIn===true&&Number\(state\.actualPrice\|\|0\)>=1/);
+  assert.match(policy, /const showPaymentMirror=paidCustomerMode&&state\.entitled!==true/);
+  assert.match(policy, /if\(!showPaymentMirror\)\{clearGate\(item\.root\);continue;\}/);
+  assert.match(policy, /renderHoroscopePaymentMirror\(item,state,allPaymentRoots\)/);
+  assert.match(policy, /setPaidModeGenerateLabels\(paidCustomerMode\)/);
 });
 
-test("The existing full ten-section benefits box stays in place and receives logged-in before-pay and after-pay callbacks", () => {
+test("The original Full Report INDEX and payment box stay in place and use the same renderer after login", () => {
+  assert.match(policy, /for\(const item of benefitsRoots\)[\s\S]{0,450}renderHoroscopePaymentMirror\(item,state,allPaymentRoots\)/);
+  assert.match(policy, /Preserve the original pre-login Login-to-Pay behavior unchanged/);
   assert.match(policy, /renderPolicyLock\(\s*'advanced_analysis',\s*item\.root/);
-  assert.match(policy, /const requestedPaidMode=state\.loggedIn===true&&Number\(state\.actualPrice\|\|0\)===1/);
-  assert.match(policy, /const beforePay=requestedPaidMode\s*\? \(\)=>window\.__smvPrepareHoroscopePaymentContext\?\.\(item\.language\)/);
-  assert.match(policy, /const onUnlock=requestedPaidMode\s*\? \(\)=>window\.__smvGenerateHoroscopeFromCurrentFields\?\.\(item\.language\)/);
-  assert.match(policy, /root,\s*\{enabled:true,price:state\.actualPrice\},\s*onUnlock,\s*beforePay,\s*state/);
 });
 
-test("The new compact payment card reuses the existing Horoscope payment flow and opens the full result from current fields", () => {
-  assert.match(policy, /class="smv-horoscope-pay-gate smv-horoscope-quick-pay-gate"/);
-  assert.match(policy, /__smvPrepareHoroscopePaymentContext\(language\)/);
-  assert.match(policy, /__smvPayForHoroscopeFeature\('advanced_analysis'\)/);
-  assert.match(policy, /__smvGenerateHoroscopeFromCurrentFields\(language\)/);
-  assert.match(policy, /birth details already entered/i);
-  assert.match(css, /\.smv-horoscope-quick-pay-gate/);
-  assert.match(css, /\.smv-horoscope-quick-pay-gate button\{display:block;width:100%/);
+test("The new mirror reuses the original ten-section INDEX, exact configured price and existing Razorpay payment window", () => {
+  assert.match(policy, /function renderHoroscopePaymentMirror\(item,state,paymentRoots\)/);
+  assert.match(policy, /renderPolicyLock\(\s*'advanced_analysis',\s*item\.root,\s*\{enabled:true,price:state\.actualPrice\}/);
+  assert.doesNotMatch(policy, /function renderQuickHoroscopePayment/);
+  assert.match(auth, /function featureIndex\(feature\)/);
+  assert.match(auth, /Full Report Payment/);
+  assert.match(auth, /Unlock Full Report — ₹/);
+  assert.match(auth, /<ul>\$\{featureIndex\(feature\)\.map/);
+  assert.match(auth, /await payForFeature\(feature\)/);
+  assert.match(auth, /horoscope-payment\/create-order/);
+  assert.match(auth, /horoscope-payment\/verify/);
+});
+
+test("Successful payment closes both mirrored boxes and explicitly launches the full report", () => {
+  assert.match(policy, /for\(const root of paymentRoots\)clearGate\(root\)/);
+  assert.match(policy, /__smvGenerateHoroscopeFromCurrentFields\(item\.language,\{fullReport:true\}\)/);
 });
 
 test("Generate button label changes only under the logged-in paid Admin policy; all other modes restore the existing label", () => {
@@ -75,12 +83,22 @@ test("Birth details are prepared from the existing English or Tamil inputs, incl
   assert.match(auth, /window\.__smvPayForHoroscopeFeature=payForFeature/);
 });
 
-test("After verified payment the same selected form is used; the user is not asked to re-enter birth details", () => {
-  assert.match(form, /window\.__smvGenerateHoroscopeFromCurrentFields=\(language='en'\)=>/);
+test("After verified payment the same selected form opens the full result; birth details are not re-entered", () => {
+  assert.match(policy, /await window\.__smvPrepareHoroscopePaymentContext\(item\.language\)/);
+  assert.match(policy, /window\.__smvGenerateHoroscopeFromCurrentFields\(item\.language,\{fullReport:true\}\)/);
+  assert.match(form, /window\.__smvGenerateHoroscopeFromCurrentFields=\(language='en',options=\{\}\)=>/);
   assert.match(form, /button\.click\(\);\s*return true/);
-  assert.match(policy, /await window\.__smvPrepareHoroscopePaymentContext\(language\)/);
-  assert.match(policy, /await window\.__smvPayForHoroscopeFeature\('advanced_analysis'\)/);
   assert.match(auth, /rememberPaidAccess\(feature,key\)/);
+});
+
+test("Basic Generate remains Basic-only even after payment; only the payment mirror may launch the full report", () => {
+  assert.match(policy, /state\.mode==='paid'&&state\.loggedIn===true&&[\s\S]{0,140}Number\(state\.actualPrice\|\|0\)>=1&&!paidFullReportLaunch/);
+  assert.match(form, /options\?\.fullReport===true\)button\.dataset\.smvFullReportLaunch='1'/);
+  assert.match(form, /const fullReportLaunch=generateButton\?\.dataset\.smvFullReportLaunch==='1'/);
+  assert.match(form, /window\.__smvPaidFullReportLaunch=fullReportLaunch/);
+  assert.match(horoscope, /const fullReportLaunch=button\?\.dataset\.smvFullReportLaunch==='1'/);
+  assert.match(horoscope, /generate\(true,fullReportLaunch\)/);
+  assert.match(form, /window\.__smvAdminPaidQuickMode\?text\('Calculate Basic Horoscope','அடிப்படை ஜாதகம் கணிக்க'\)/);
 });
 
 test("English and Tamil Horoscope generators both enforce the same paid access policy", () => {
@@ -97,11 +115,11 @@ test("Verified full Horoscope report continues through existing Save and PDF/Pri
 });
 
 test("All three apps use one synchronized cache release; Horoscope runtime revision is bumped", () => {
-  const expected = "20261107-horoscope-quick-payment-v1";
+  const expected = "20261107-horoscope-report-mirror-v2";
   const versions = workers.map(source => /const SMV_CACHE_RELEASE='([^']+)'/.exec(source)?.[1]);
   assert.deepEqual(versions, [expected, expected, expected]);
   const runtime = /const RUNTIME_REVISION='([^']+)'/.exec(workers[1])?.[1];
-  assert.equal(runtime, "v267-horoscope-quick-payment-20261107");
+  assert.equal(runtime, "v268-horoscope-report-mirror-20261107");
 });
 
 test("No origin-wide local storage, Cache API or IndexedDB deletion is introduced", () => {

@@ -88,10 +88,12 @@
     return context;
   };
 
-  window.__smvGenerateHoroscopeFromCurrentFields=(language='en')=>{
+  window.__smvGenerateHoroscopeFromCurrentFields=(language='en',options={})=>{
     if(window.__smvHoroscopeIsBusy?.()||window.__smvHoroscopeGenerating)throw new Error(text('A Horoscope calculation is already running.','ஜாதகக் கணக்கீடு தற்போது நடைபெறுகிறது.'));
     const button=$(String(language)==='ta'?'generateTamilHoroscope':'generateEnglishHoroscope');
     if(!button)throw new Error(text('Horoscope calculation button is unavailable.','ஜாதகம் கணிக்கும் பொத்தான் கிடைக்கவில்லை.'));
+    if(options?.fullReport===true)button.dataset.smvFullReportLaunch='1';
+    else delete button.dataset.smvFullReportLaunch;
     if(String(language)==='ta'){try{localStorage.setItem('smvLanguage','ta');}catch(_){}}
     button.click();
     return true;
@@ -99,6 +101,9 @@
 
   $('generateEnglishHoroscope')?.addEventListener('click',async()=>{
     if(busy||window.__smvHoroscopeGenerating)return;
+    const generateButton=$('generateEnglishHoroscope');
+    const fullReportLaunch=generateButton?.dataset.smvFullReportLaunch==='1';
+    if(generateButton)delete generateButton.dataset.smvFullReportLaunch;
     const lang=document.documentElement.lang==='ta'?'ta':'en';
     // V90: lock the language at Generate click. The generated report language remains immutable for this calculation.
     const generationLanguage=lang;
@@ -285,7 +290,9 @@ if(lat===''||lon===''){
             target.classList.remove('hidden'); target.setAttribute('aria-busy','false');
             window.dispatchEvent(new CustomEvent('smv:report-ready',{detail:{feature:'advanced_analysis',root:target,generationLanguage,prepareViews:buildViews,birthIdentity:window.__smvGetReportContext('advanced_analysis'),name:($('englishAstroName')?.value||'Horoscope').trim(),calculation:window.__smvLastFullReport||generated}}));
           };
+          window.__smvPaidFullReportLaunch=fullReportLaunch;
           const allowed=await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',englishAdvancedRoot,runEnglishAdvanced);
+          window.__smvPaidFullReportLaunch=false;
           if(!allowed){
             englishAdvancedRoot.classList.add('hidden');
             target.dataset.resultLanguage=generationLanguage;target.dataset.generationLanguage=generationLanguage;
@@ -351,9 +358,9 @@ if(lat===''||lon===''){
     }
     finally{
       if(englishResult) englishResult.setAttribute('aria-busy','false');
-      if(btn){btn.disabled=false;btn.textContent=text('Create Horoscope','ஜாதகம் உருவாக்குக');}
+      if(btn){btn.disabled=false;btn.textContent=window.__smvAdminPaidQuickMode?text('Calculate Basic Horoscope','அடிப்படை ஜாதகம் கணிக்க'):text('Create Horoscope','ஜாதகம் உருவாக்குக');}
       if(englishProgress) englishProgress.remove();
-      busy=false;window.__smvHoroscopeGenerating=false;
+      busy=false;window.__smvHoroscopeGenerating=false;window.__smvPaidFullReportLaunch=false;
       document.querySelectorAll('.smv-language-buttons button,#clearEnglishHoroscope').forEach(b=>b.disabled=false);
     }
   });
