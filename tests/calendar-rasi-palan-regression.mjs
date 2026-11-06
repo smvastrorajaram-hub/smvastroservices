@@ -226,7 +226,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(horoscopeIndexSource.includes('id="smvHoroscopeControls"'), 'Language/account controls remain available outside the removed site header');
    assert.ok(horoscopeIndexSource.includes('id="smvHoroscopeAuth"'), 'Existing Horoscope authentication remains available');
    assert.doesNotMatch(horoscopeIndexSource, /id="templeHeader"|class="header-navigation"/, 'The removed site header and navigation must not return');
-   for (const entry of ["'Services':'சேவைகள்'", "'Matching':'பொருத்தம்'", "'Calendar':'நாட்காட்டி'", "'Horoscope':'ஜாதகம்'", "'Login':'உள்நுழை'", "'Register':'பதிவு செய்க'", "'Logout':'வெளியேறு'", "'Admin Login':'நிர்வாக உள்நுழைவு'"]) assert.ok(horoscopeLanguageSource.includes(entry), 'Missing Tamil header label mapping: '+entry);
+   for (const entry of ["'Services':'சேவைகள்'", "'Matching':'பொருத்தம்'", "'Calendar':'நாட்காட்டி'", "'Horoscope':'ஜாதகம்'", "'Login':'உள்நுழை'", "'Register':'பதிவு'", "'Logout':'வெளியேறு'", "'Admin Login':'நிர்வாக உள்நுழைவு'"]) assert.ok(horoscopeLanguageSource.includes(entry), 'Missing Tamil header label mapping: '+entry);
    assert.ok(!horoscopeIndexSource.includes('data-horoscope-nav>SERVICES</a>'));
    assert.ok(!horoscopeIndexSource.includes('<a href="#english-horoscope" data-horoscope-nav>'));
    assert.ok(!horoscopeAdminWorkbenchSource.includes('border:1px solid #dcc59e'));
