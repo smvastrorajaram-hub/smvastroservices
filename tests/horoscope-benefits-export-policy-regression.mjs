@@ -46,7 +46,7 @@ test("Admin ON with a positive price keeps the same benefits and price panel bef
   assert.match(policy, /if\(state\.mode!=='paid'\|\|Number\(state\.actualPrice\|\|0\)<1\|\|state\.entitled\)/);
   assert.match(policy, /renderPolicyLock\(\s*'advanced_analysis',\s*root,[\s\S]{0,450}state\s*\)/);
   assert.match(policy, /mode:'paid'[\s\S]{0,180}loggedIn,entitled,fullAllowed:entitled/);
-  assert.match(policy, /Full Horoscope payment/);
+  assert.match(auth, /Full Report Payment/);
   assert.match(policy, /Login to Pay/);
 });
 
