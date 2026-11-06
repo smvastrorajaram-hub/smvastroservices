@@ -129,7 +129,12 @@ yes(form.includes("target.classList.remove('hidden');target.setAttribute('aria-b
 yes(matching.includes('mmFullAccess=state.fullAllowed===true;'),'Matching uses the canonical Full-access decision');
 yes(matching.includes("btn.dataset.publicPoruthamOnly=mmFullAccess?'0':'1';"),'A public free Full mode starts Full Matching before Login');
 yes(matching.includes("T('View Full Marriage Matching','முழு நட்சத்திரப் பொருத்தம் காண்க')"),'The public free Full CTA is shown before Login');
-yes(matching.includes("chooser.hidden=true;")&&matching.includes('if(manualEntry)manualEntry.hidden=true;'),'The old Rasi/Nakshatra-only input section stays hidden');
+yes(matching.indexOf('id="mmManualSection"')<matching.indexOf('id="mmFullMatchingSection"'),'Basic Rasi/Nakshatra entry is mounted above Full Marriage Matching');
+yes(matching.includes("const adminOnPositive=state.mode==='paid'&&actualAmount>=1;")&&matching.includes("const adminOffPositive=state.mode==='off_public_basic'&&actualAmount>=1;")&&matching.includes("const adminOffZero=state.mode==='off_free_full'&&actualAmount<1;"),'Admin ON paid, Admin OFF paid and Admin OFF free modes are distinguished by canonical policy state');
+yes(matching.includes("const showBasicManual=adminOnPositive||(visitor&&(adminOffPositive||adminOffZero));"),'Basic input is shown for Admin ON paid modes and the two requested Admin OFF guest modes');
+yes(matching.includes("const hideBirthBasedForm=visitor&&(adminOnPositive||adminOffPositive);"),'Full DOB entry is hidden only for pre-login positive-price states');
+yes(matching.includes("if(fullSection)fullSection.hidden=visitor&&adminOffPositive;"),'Admin OFF + positive price guests see Basic matching without the Full Matching form');
+yes(matching.includes("},'mmManualResult');")&&matching.includes('id="mmManualResult"'),'Basic result has its own output area and does not overwrite the Full result');
 yes(matching.includes("state.mode==='paid'&&cfg.enabled&&cfg.price>0"),'A pre-login paid benefit box appears only for Admin ON + positive price');
 no(matching.includes("preview.querySelector('[data-smv-unlock]')?.remove();"),'The pre-login Matching Login/Pay CTA is retained');
 no(matching.includes('#smvMarriageMatching #mmPaidFeaturePreview button{display:none!important}'),'The pre-login Matching CTA is not hidden by CSS');
@@ -140,10 +145,10 @@ yes(policy.includes('function syncHoroscopePaidEntry()'),'Horoscope has a pre-ca
 yes(html.includes('id="smvHoroscopePaidEntryEnglish"')&&html.includes('id="smvHoroscopePaidEntryTamil"'),'Both Horoscope language forms host the pre-login benefit panel');
 yes(html.includes('config.js?v=20261106-horoscope-access-v1'),'Access config uses its cache-busted URL');
 yes(html.includes('horoscope-form.js?v=20261106-horoscope-access-v1'),'Horoscope form uses its cache-busted URL');
-yes(html.includes('marriage-matching.js?v=20261106-horoscope-access-v1'),'Marriage Matching uses its cache-busted URL');
+yes(html.includes('marriage-matching.js?v=20261106-basic-nakshatra-input-v1'),'Marriage Matching uses its cache-busted URL');
 
 // All three products share the marker. Existing offline/user data is not cleared.
-const marker='20261106-horoscope-access-v1';
+const marker='20261106-basic-nakshatra-input-v1';
 yes(workers.every(source=>source.includes(marker)),'All three Service Workers share the synchronized cache release');
 no(policy.includes('localStorage.clear('),'The policy does not clear origin-wide localStorage');
 no(policy.includes('caches.delete('),'The policy does not clear Cache Storage');

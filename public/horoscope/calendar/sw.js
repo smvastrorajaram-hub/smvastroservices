@@ -1,4 +1,4 @@
-const SMV_CACHE_RELEASE='20261106-horoscope-access-v1';
+const SMV_CACHE_RELEASE='20261106-basic-nakshatra-input-v1';
 const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE;
 const LOCATION_CACHE='smv-shared-india-places';
 const CORE=[

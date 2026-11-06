@@ -2003,8 +2003,8 @@ function mount(){
   '<h3>Nakshatra Matching Benefits</h3><ul><li>Starts with a human-readable Nakshatra compatibility summary before technical details.</li><li>Highlights Rajju, Vedha, Nadi, Yoni and Moon-sign relationship for review.</li><li>Full matching adds D1/D9 married-life reading, near-term and 15-year Dasha timing, dosha clarity and chart-based guidance.</li></ul>',
   '<h3>நட்சத்திரப் பொருத்தத்தின் பயன்கள்</h3><ul><li>தொழில்நுட்ப விவரங்களுக்கு முன் மனிதர்களுக்கு புரியும் நட்சத்திர பொருத்த வாசிப்பை முதலில் காட்டும்.</li><li>ரஜ்ஜு, வேதை, நாடி, யோனி மற்றும் சந்திர ராசி உறவை ஆய்வுக்காக தெளிவாகக் காட்டும்.</li><li>முழு பொருத்தத்தில் D1/D9 திருமண வாழ்க்கை வாசிப்பு, வெகு விரைவான மற்றும் 15 ஆண்டு தசை காலம், தோஷ தெளிவு மற்றும் ஜாதக அடிப்படையிலான வழிகாட்டல் சேர்க்கப்படும்.</li></ul>'
  );
- host.innerHTML=`<h2>${T('Full Horoscope Marriage Matching','முழு ஜாதக திருமணப் பொருத்தம்')}</h2><p class="mm-note">${T('Uses the sidereal Lahiri horoscope calculation and reviews Lagna, 7th house/lord, Venus, Jupiter, Mars/Kuja dosha, Moon strength and Vimshottari Dasha periods. This is a traditional astrological analysis, not a scientific predictor of relationship outcomes.','நிராயண லஹிரி ஜாதக கணக்கீட்டை பயன்படுத்தி லக்னம், 7-ஆம் பாவம்/அதிபதி, சுக்கிரன், குரு, செவ்வாய்/குஜ தோஷம், சந்திர பலம் மற்றும் விம்சோத்தரி தசா காலங்கள் ஆய்வு செய்யப்படுகின்றன. இது பாரம்பரிய ஜோதிட ஆய்வு; உறவின் முடிவை அறிவியல் முறையில் கணிக்கும் கருவி அல்ல.')}</p><div id="mmNakshatraGate"><section class="mm-person-result mm-benefits">${benefits}</section></div><style id="mmV317InputModeStyles">
-#smvMarriageMatching #mmPublicChoice[hidden],#smvMarriageMatching #mmManualEntry[hidden],#smvMarriageMatching #mmFullEntry[hidden],#smvMarriageMatching #mmPaidFeatureIndex[hidden],#smvMarriageMatching #mmCheck[hidden]{display:none!important}
+ host.innerHTML=`<section id="mmManualSection" hidden><h2>${T('Basic Rasi & Nakshatra Matching','அடிப்படை ராசி மற்றும் நட்சத்திரப் பொருத்தம்')}</h2><p class="mm-note">${T('Enter only each person’s Rasi and Nakshatra to view the basic Nakshatra Porutham result.','இருவரின் ராசி மற்றும் நட்சத்திரத்தை மட்டும் உள்ளிட்டு அடிப்படை நட்சத்திரப் பொருத்தத்தைப் பார்க்கலாம்.')}</p><div id="mmManualEntry"><div class="mm-grid mm-birth-grid">${mmManualOptions()}</div><button type="button" id="mmManualCheck">${T('Check Basic Nakshatra Porutham','அடிப்படை நட்சத்திரப் பொருத்தம் பார்க்க')}</button></div><div id="mmManualResult"></div></section><section id="mmFullMatchingSection"><h2>${T('Full Horoscope Marriage Matching','முழு ஜாதக திருமணப் பொருத்தம்')}</h2><p class="mm-note">${T('Uses the sidereal Lahiri horoscope calculation and reviews Lagna, 7th house/lord, Venus, Jupiter, Mars/Kuja dosha, Moon strength and Vimshottari Dasha periods. This is a traditional astrological analysis, not a scientific predictor of relationship outcomes.','நிராயண லஹிரி ஜாதக கணக்கீட்டை பயன்படுத்தி லக்னம், 7-ஆம் பாவம்/அதிபதி, சுக்கிரன், குரு, செவ்வாய்/குஜ தோஷம், சந்திர பலம் மற்றும் விம்சோத்தரி தசா காலங்கள் ஆய்வு செய்யப்படுகின்றன. இது பாரம்பரிய ஜோதிட ஆய்வு; உறவின் முடிவை அறிவியல் முறையில் கணிக்கும் கருவி அல்ல.')}</p><div id="mmNakshatraGate"><section class="mm-person-result mm-benefits">${benefits}</section></div><style id="mmV317InputModeStyles">
+#smvMarriageMatching #mmPublicChoice[hidden],#smvMarriageMatching #mmFullEntry[hidden],#smvMarriageMatching #mmPaidFeatureIndex[hidden],#smvMarriageMatching #mmCheck[hidden],#smvMarriageMatching #mmManualSection[hidden],#smvMarriageMatching #mmFullMatchingSection[hidden]{display:none!important}
 #smvMarriageMatching #mmPublicChoice{margin:14px auto;padding:12px;max-width:680px;border:1px solid #dccaa9;border-radius:10px;text-align:center}
 /* V319: two equally sized compact choices, on one line even on a phone. */
 #smvMarriageMatching #mmPublicChoice .mm-choice-row{display:grid;grid-template-columns:repeat(2,minmax(0,150px));justify-content:center;gap:8px;margin-top:10px}
@@ -2022,7 +2022,7 @@ function mount(){
 /* Pre-login continue and post-login payment use one small button footprint. */
 #smvMarriageMatching #mmCheck[data-login-to-continue="1"],#smvMarriageMatching #mmPaidFeatureIndex button[data-smv-unlock],#smvMarriageMatching #mmPaidFeaturePreview button[data-smv-unlock]{display:flex;box-sizing:border-box;align-items:center;justify-content:center;width:min(100%,185px)!important;max-width:185px!important;min-height:44px!important;height:auto!important;margin:10px auto!important;padding:7px 10px!important;border-radius:8px!important;font-size:13px!important;font-weight:700;line-height:1.25!important;text-align:center;white-space:normal!important}
 /* The pre-login paid-benefit preview keeps its Login/Pay CTA visible. */
-</style><div id="mmPublicChoice" hidden role="group" aria-label="${T('Select matching input method','பொருத்தம் பார்க்கும் உள்ளீட்டைத் தேர்ந்தெடுக்கவும்')}"><b>${T('How would you like to check basic Nakshatra Porutham?','அடிப்படை நட்சத்திரப் பொருத்தத்தை எவ்வாறு பார்க்க விரும்புகிறீர்கள்?')}</b><div class="mm-choice-row"><label><input type="radio" name="mmPublicInputMode" value="dob" checked>${T('Birth date, time and place','பிறந்த தேதி, நேரம், இடம்')}</label><label><input type="radio" name="mmPublicInputMode" value="rasi">${T('Rasi and Nakshatra only','ராசி மற்றும் நட்சத்திரம் மட்டும்')}</label></div></div><div id="mmFullEntry"><div class="mm-grid mm-birth-grid">${fields('mmBride',T('Bride','பெண்'))}${fields('mmGroom',T('Groom','ஆண்'))}</div><div class="mm-gochar-date"><label>${T('Gochara / marriage review date','கோச்சார / திருமண ஆய்வு தேதி')}<input type="date" id="mmGocharDate" value="${new Date().toISOString().slice(0,10)}"></label></div><button type="button" id="mmCheck" hidden disabled aria-busy="true">${T('Calculate Full Matching','முழு பொருத்தம் கணக்கிடுக')}</button><div id="mmPaidFeatureIndex" class="mm-bottom-payment" hidden></div></div><div id="mmManualEntry" hidden><div class="mm-grid mm-birth-grid">${mmManualOptions()}</div><button type="button" id="mmManualCheck">${T('Check Basic Nakshatra Porutham','அடிப்படை நட்சத்திரப் பொருத்தம் பார்க்க')}</button></div><div id="mmResult"></div>`;
+</style><div id="mmPublicChoice" hidden role="group" aria-label="${T('Select matching input method','பொருத்தம் பார்க்கும் உள்ளீட்டைத் தேர்ந்தெடுக்கவும்')}"><b>${T('How would you like to check basic Nakshatra Porutham?','அடிப்படை நட்சத்திரப் பொருத்தத்தை எவ்வாறு பார்க்க விரும்புகிறீர்கள்?')}</b><div class="mm-choice-row"><label><input type="radio" name="mmPublicInputMode" value="dob" checked>${T('Birth date, time and place','பிறந்த தேதி, நேரம், இடம்')}</label><label><input type="radio" name="mmPublicInputMode" value="rasi">${T('Rasi and Nakshatra only','ராசி மற்றும் நட்சத்திரம் மட்டும்')}</label></div></div><div id="mmFullEntry"><div class="mm-grid mm-birth-grid">${fields('mmBride',T('Bride','பெண்'))}${fields('mmGroom',T('Groom','ஆண்'))}</div><div class="mm-gochar-date"><label>${T('Gochara / marriage review date','கோச்சார / திருமண ஆய்வு தேதி')}<input type="date" id="mmGocharDate" value="${new Date().toISOString().slice(0,10)}"></label></div><button type="button" id="mmCheck" hidden disabled aria-busy="true">${T('Calculate Full Matching','முழு பொருத்தம் கணக்கிடுக')}</button><div id="mmPaidFeatureIndex" class="mm-bottom-payment" hidden></div></div><div id="mmResult"></div></section>`;
  ['mmBride','mmGroom'].forEach(p=>{const el=document.getElementById(p+'Place');let t;el?.addEventListener('input',()=>{el.dataset.timezoneSource='';const z=document.getElementById(p+'Timezone');if(z)z.value='';mmUpdateUtcOffset(p);clearTimeout(t);t=setTimeout(()=>searchPlace(p),250)});});
  ['mmBride','mmGroom'].forEach(p=>{
    for(const suffix of ['Date','Time','Timezone']){
@@ -2035,11 +2035,9 @@ function mount(){
  const chooser=document.getElementById('mmPublicChoice');
  const dobEntry=document.getElementById('mmFullEntry'),manualEntry=document.getElementById('mmManualEntry');
  const applyChoice=()=>{
-  // Full DOB/place details are the sole matching entry route. The old
-  // Rasi + Nakshatra-only manual Basic section stays hidden in every mode.
+  // The retired input-method chooser stays hidden. Feature policy independently
+  // controls visibility of Basic Rasi/Nakshatra and full birth-detail forms.
   if(chooser)chooser.hidden=true;
-  if(dobEntry)dobEntry.hidden=false;
-  if(manualEntry)manualEntry.hidden=true;
  };
  applyChoice();
  chooser.querySelectorAll('input[name="mmPublicInputMode"]').forEach(r=>{
@@ -2058,8 +2056,8 @@ function mount(){
    mmManualSnapshot={br:Number(document.getElementById('mmBrideRasi').value),bi:Number(document.getElementById('mmBrideStar').value),gr:Number(document.getElementById('mmGroomRasi').value),gi:Number(document.getElementById('mmGroomStar').value)};
    matchingSnapshot=null;matchingRenderMode='manual';matchingTransit=null;renderPublicPorutham(b,g,out);
   }catch(e){mmManualSnapshot=null;matchingRenderMode='none';out.innerHTML=`<p class="mm-error">${esc(e.message||e)}</p>`;}
- });
- document.getElementById('mmManualCheck').onclick=async()=>{await runManualPorutham();document.getElementById('mmResult')?.scrollIntoView({behavior:'auto',block:'start'});};
+ },'mmManualResult');
+ document.getElementById('mmManualCheck').onclick=async()=>{await runManualPorutham();document.getElementById('mmManualResult')?.scrollIntoView({behavior:'auto',block:'start'});};
  const prepareContext=async()=>{const {offsetMinutesAt,approximateTimezoneAt}=await import('./offline/places/timezone.mjs');
  const birth=async p=>{
   const place=document.getElementById(p+'Place'),date=document.getElementById(p+'Date').value,time=document.getElementById(p+'Time').value,
@@ -2074,7 +2072,7 @@ function mount(){
  const ctx={bride,groom};window.__smvSetReportContext?.('marriage_matching',ctx);return ctx;
 };
  let matchingRun=null;
- const withMatchingRun=(kind,work)=>{if(matchingRun)return matchingRun;const out=document.getElementById('mmResult'),btn=document.getElementById('mmCheck'),manualBtn=document.getElementById('mmManualCheck');matchingRun=(async()=>{window.__smvMatchingCalculationBusy=true;if(out)out.setAttribute('aria-busy','true');if(btn)btn.disabled=true;if(manualBtn)manualBtn.disabled=true;try{return await work(out);}finally{if(out)out.setAttribute('aria-busy','false');if(btn)btn.disabled=false;if(manualBtn)manualBtn.disabled=false;window.__smvMatchingCalculationBusy=false;matchingRun=null;}})();return matchingRun;};
+ const withMatchingRun=(kind,work,outputId='mmResult')=>{if(matchingRun)return matchingRun;const out=document.getElementById(outputId),btn=document.getElementById('mmCheck'),manualBtn=document.getElementById('mmManualCheck');matchingRun=(async()=>{window.__smvMatchingCalculationBusy=true;if(out)out.setAttribute('aria-busy','true');if(btn)btn.disabled=true;if(manualBtn)manualBtn.disabled=true;try{return await work(out);}finally{if(out)out.setAttribute('aria-busy','false');if(btn)btn.disabled=false;if(manualBtn)manualBtn.disabled=false;window.__smvMatchingCalculationBusy=false;matchingRun=null;}})();return matchingRun;};
  const runPublicPorutham=()=>withMatchingRun('public',async out=>{out.innerHTML=`<p>${T('Calculating Nakshatra Porutham…','நட்சத்திரப் பொருத்தம் கணக்கிடப்படுகிறது…')}</p>`;try{await prepareContext();const b=await getChart('mmBride',true);const g=await getChart('mmGroom',true);matchingSnapshot={b,g};matchingTransit=null;matchingRenderMode='public';renderPublicPorutham(b,g,out);}catch(e){out.innerHTML=`<p class="mm-error">${esc(e.message||e)}</p>`;}});
  const runFull=()=>withMatchingRun('full',async out=>{if(!mmFullAccess){out.textContent=T('Full-report access is not available.','முழு அறிக்கை அனுமதி கிடைக்கவில்லை.');return;}out.innerHTML=`<p>${T('Calculating both horoscopes…','இரு ஜாதகங்களும் கணக்கிடப்படுகின்றன…')}</p>`;try{await prepareContext();const b=await getChart('mmBride',false,true);const g=await getChart('mmGroom',false,true);matchingSnapshot={b,g};matchingTransit=null;matchingRenderMode='full';await renderMatching(b,g,out);}catch(e){out.innerHTML=`<p class="mm-error">${esc(e.message||e)}</p>`;}});
  document.getElementById('mmCheck').onclick=async()=>{const b=document.getElementById('mmCheck');
@@ -2096,15 +2094,23 @@ function mount(){
   // must never replace the button mode selected by a newer login/language event.
   if(!isCurrentMount()||!host.isConnected)return;
   const cfg={enabled:!!state.enabled,price:Number(state.price??0)},btn=document.getElementById('mmCheck'),gate=document.getElementById('mmNakshatraGate'),paidRoot=document.getElementById('mmPaidFeatureIndex');
+  const manualSection=document.getElementById('mmManualSection'),fullSection=document.getElementById('mmFullMatchingSection');
   host.removeAttribute('aria-busy');
   if(btn){btn.disabled=false;btn.removeAttribute('aria-busy');}
   const visitor=!state.loggedIn;
+  const actualAmount=Number(state.actualPrice??state.price??0);
+  const adminOnPositive=state.mode==='paid'&&actualAmount>=1;
+  const adminOffPositive=state.mode==='off_public_basic'&&actualAmount>=1;
+  const adminOffZero=state.mode==='off_free_full'&&actualAmount<1;
+  const showBasicManual=adminOnPositive||(visitor&&(adminOffPositive||adminOffZero));
+  const hideBirthBasedForm=visitor&&(adminOnPositive||adminOffPositive);
   mmFullAccess=state.fullAllowed===true;
-  // The Rasi/Nakshatra-only manual selector remains hidden. Basic and Full
-  // matching both use the established full birth-details form.
-  chooser.hidden=true;
-  if(dobEntry)dobEntry.hidden=false;
-  if(manualEntry)manualEntry.hidden=true;
+  // Basic Rasi/Nakshatra is displayed above Full Matching for the requested
+  // modes; positive-price guests do not see the full birth-detail form.
+  if(manualSection)manualSection.hidden=!showBasicManual;
+  if(manualEntry)manualEntry.hidden=!showBasicManual;
+  if(dobEntry)dobEntry.hidden=hideBirthBasedForm;
+  if(fullSection)fullSection.hidden=visitor&&adminOffPositive;
   applyChoice();
   host.hidden=false;
 
@@ -2205,9 +2211,12 @@ const remount=()=>{
  const ready=mount();
  for(const [id,value]of Object.entries(values)){const el=document.getElementById(id);if(el)el.value=value;}
  ['mmBride','mmGroom'].forEach(p=>mmUpdateUtcOffset(p));
- Promise.resolve(ready).then(()=>{const out=document.getElementById('mmResult');if(!out||!document.getElementById('smvMarriageMatching')||document.getElementById('smvMarriageMatching').hidden)return;
-  if(matchingRenderMode==='manual'&&mmManualSnapshot&&mmPublicChoice==='rasi'&&!document.getElementById('mmPublicChoice').hidden){const x=mmManualSnapshot;renderPublicPorutham(mmMoonOnly(x.br,x.bi),mmMoonOnly(x.gr,x.gi),out);}
-  else if(matchingSnapshot){
+ Promise.resolve(ready).then(()=>{if(!document.getElementById('smvMarriageMatching')||document.getElementById('smvMarriageMatching').hidden)return;
+  if(matchingRenderMode==='manual'&&mmManualSnapshot){
+   const manualOut=document.getElementById('mmManualResult'),x=mmManualSnapshot;
+   if(manualOut&&!document.getElementById('mmManualSection')?.hidden)renderPublicPorutham(mmMoonOnly(x.br,x.bi),mmMoonOnly(x.gr,x.gi),manualOut);
+  }else if(matchingSnapshot){
+   const out=document.getElementById('mmResult');if(!out)return;
    if(matchingRenderMode==='public')renderPublicPorutham(matchingSnapshot.b,matchingSnapshot.g,out);
    else if(matchingRenderMode==='full'&&mmFullAccess)renderMatching(matchingSnapshot.b,matchingSnapshot.g,out,true).catch(console.error);
   }
