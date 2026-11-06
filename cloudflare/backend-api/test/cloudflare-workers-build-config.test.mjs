@@ -8,7 +8,9 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repo = resolve(root, '../..');
 
 function readJsonc(path) {
-  const source = readFileSync(path, 'utf8').replace(/^\s*\/\/.*$/gm, '');
+  const source = readFileSync(path, 'utf8')
+    .replace(/^\s*\/\/.*$/gm, '')
+    .replace(/,\s*([}\]])/g, '$1');
   return JSON.parse(source);
 }
 
