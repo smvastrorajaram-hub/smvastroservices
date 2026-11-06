@@ -91,7 +91,7 @@ test("Admin retains the existing ₹10,000 Live Call and Live Chat edit limit", 
   const pricing = between(
     backend,
     'app.post("/admin/astrologer-pricing"',
-    'app.post("/admin/reject-astrologer"'
+    'app.get("/admin/astrologers-data"'
   );
   assert.match(pricing, /callPrice>10000/);
   assert.match(pricing, /liveChatPrice>10000/);
