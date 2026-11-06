@@ -20,12 +20,13 @@ test('legacy scripts retain document order when deferred', () => {
   const expected = [
     'chart-style.js', 'config.js', 'report-identity.js', 'boot.mjs', 'horoscope-auth.mjs', 'report-store.mjs',
     'd9-reading.js', 'prediction-rules-published.js', 'prediction-rule-engine.js', 'prediction-rules-sync.mjs',
-    'prediction-admin.mjs', 'prediction-admin-workbench.mjs', 'horoscope.js?v=20261019-ayurdaya-rules-duration-v253',
+    'prediction-admin.mjs', 'prediction-admin-workbench.mjs', 'horoscope.js',
     'prediction-online.js', 'horoscope-translations.js', 'horoscope-language.js', './location-search-online-offline.js',
     'horoscope-details.js', 'horoscope-form.js', './birth-offset-live.mjs', 'pwa.js'
   ];
-  const indexes = expected.map(file => html.indexOf(`src="${file}"`));
-  assert.ok(indexes.every(index => index >= 0), 'all existing entry scripts must remain present');
+  // Cache-busting query parameters may change independently from script identity.
+  const indexes = expected.map(file => tags.findIndex(attrs => source(attrs)?.split('?')[0] === file));
+  assert.ok(indexes.every(index => index >= 0), 'all existing entry scripts must remain present, including versioned URLs');
   assert.deepEqual([...indexes].sort((a,b) => a-b), indexes, 'external script source order must remain unchanged');
 });
 

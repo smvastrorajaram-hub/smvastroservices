@@ -60,14 +60,29 @@ async function getOnlineConfig(){
     try{localStorage.removeItem(key)}catch(_){}
   }
 
-  const response=await nativeFetch(
-    backend()+'/horoscope-feature-config?_='+Date.now(),
-    {
-      cache:'no-store',
-      headers:{'Accept':'application/json'}
+  let response=null,lastError=null;
+  for(let attempt=0;attempt<5;attempt++){
+    try{
+      response=await nativeFetch(
+        backend()+'/horoscope-feature-config?_='+Date.now(),
+        {
+          cache:'no-store',
+          headers:{'Accept':'application/json'}
+        }
+      );
+      if(response.ok||![502,503,504].includes(response.status)||attempt===4)break;
+    }catch(error){
+      lastError=error;
+      if(attempt===4)throw error;
     }
-  );
-
+    // The existing Render Free instance may need time to wake after idling.
+    // Honour Retry-After when supplied; otherwise use bounded exponential
+    // backoff (1, 2, 4, 8 seconds). Admin settings remain no-store.
+    const retryAfter=Number(response?.headers?.get?.('Retry-After')||0);
+    const delay=retryAfter>0?Math.min(8000,retryAfter*1000):Math.min(8000,1000*Math.pow(2,attempt));
+    await new Promise(resolve=>setTimeout(resolve,delay));
+  }
+  if(!response)throw lastError||Error('Horoscope settings endpoint did not respond.');
   const json=await response.json().catch(()=>({}));
   if(!response.ok)throw Error(json?.error||('HTTP '+response.status));
 
@@ -121,25 +136,32 @@ async function stateFor(feature){
   const paidMode=adminEnabled&&actualPrice>=1;
 
   /*
-    V260: The admin ON/OFF switch and configured Rupee amount are two
-    INDEPENDENT inputs. In particular, ADMIN OFF + Rs.1 is NOT paid mode.
+    The Admin switch and stored Rupee amount are independent policy inputs.
 
     ADMIN OFF + Rs.0:
-      Basic Horoscope only, Nakshatra Porutham only, before/after login.
-      No full-report Save/Print/PDF or payment panel.
+      Full Horoscope / Advanced Analysis and Full Marriage Matching are free
+      before and after Login. No Basic-only downgrade or payment gate.
 
     ADMIN OFF + Rs.1+:
-      Before login: Basic Horoscope / public Nakshatra Porutham only.
-      After customer login: Full Horoscope and Full Marriage Matching with
-      Save + browser-native PDF/Print (no Razorpay payment).
+      Before Login: public Basic Horoscope / Basic Nakshatra Matching.
+      After Customer Login: free Full Horoscope and Full Matching, including
+      the existing Save / browser-native PDF path.
 
-    NOTE: marriage-matching.js uses synthetic price<=0 as the full matching
-    mode signal. Set synthetic price=1 for basic and 0 for free full.
-    Actual Admin price is separately preserved in actualPrice.
+    ADMIN ON + Rs.1+:
+      Basic remains free; Full Horoscope and Full Matching use Razorpay.
+
+    Keep the actual Admin price in actualPrice. Synthetic price is retained
+    only for legacy callers; state.fullAllowed is the authoritative decision.
   */
   if(!adminEnabled){
     let state;
-    if(actualPrice>=1&&loggedIn){
+    if(actualPrice<1){
+      state={
+        feature,mode:'off_free_full',enabled:true,
+        price:0,actualPrice,loggedIn,
+        entitled:true,fullAllowed:true,exportAllowed:loggedIn
+      };
+    }else if(loggedIn){
       state={
         feature,mode:'off_full_export',enabled:true,
         price:0,actualPrice,loggedIn:true,
@@ -147,8 +169,8 @@ async function stateFor(feature){
       };
     }else{
       state={
-        feature,mode:actualPrice>=1?'off_public_basic':'off_zero_basic',
-        enabled:true,price:1,actualPrice,loggedIn,
+        feature,mode:'off_public_basic',enabled:true,
+        price:1,actualPrice,loggedIn:false,
         entitled:false,fullAllowed:false,exportAllowed:false
       };
     }
@@ -219,11 +241,15 @@ function syncPaidButton(root,price){
 
   const loggedIn=!!window.__smvHoroscopeLoggedIn?.();
   const amount=Number(price||0).toFixed(2);
-  button.textContent=loggedIn
-    ? root.dataset.smvPaidFeature==='marriage_matching'
+  if(loggedIn){
+    button.textContent=root.dataset.smvPaidFeature==='marriage_matching'
       ? `${T('Full Marriage Matching ₹','முழு திருமணப் பொருத்தம் ₹')}${amount}`
-      : `${T('Unlock Full Report — ₹','முழு அறிக்கை திறக்க — ₹')}${amount}`
-    : T('Login to Continue','தொடர Login செய்யவும்');
+      : `${T('Unlock Full Report — ₹','முழு அறிக்கை திறக்க — ₹')}${amount}`;
+  }else{
+    button.textContent=root.dataset.smvPaidFeature==='marriage_matching'
+      ? `${T('Full Marriage Matching ₹','முழு திருமணப் பொருத்தம் ₹')}${amount} — ${T('Login to Pay','Login செய்து கட்டணம் செலுத்தவும்')}`
+      : `${T('Full Horoscope ₹','முழு ஜாதகம் ₹')}${amount} — ${T('Login to Pay','Login செய்து கட்டணம் செலுத்தவும்')}`;
+  }
 }
 
 function syncAllPaidButtons(){
@@ -240,16 +266,14 @@ async function renderPolicyLock(feature,root,_legacyFeature,onUnlock,beforePay,s
     return;
   }
 
-  // Admin OFF before login:
-  // keep the public/basic calculation controls, but show NO payment panel.
-  if(state.mode==='off_public_basic'||state.mode==='off_zero_basic'){
+  // Admin OFF with Rs.1+ and before Login keeps the free Basic route.
+  if(state.mode==='off_public_basic'){
     clearGate(root);
     return;
   }
 
-  // Admin OFF after login:
-  // Full calculation is already allowed; no payment panel.
-  if(state.mode==='off_full_no_export'||state.mode==='off_full_export'){
+  // Public or authenticated free Full modes never enter the payment renderer.
+  if(state.mode==='off_free_full'||state.mode==='off_full_no_export'||state.mode==='off_full_export'||state.fullAllowed){
     clearGate(root);
     return;
   }
@@ -281,7 +305,7 @@ async function requireAccess(feature,gateRoot,onUnlock){
     return false;
   }
 
-  if(state.mode==='off_public_basic'||state.mode==='off_zero_basic'){
+  if(state.mode==='off_public_basic'){
     clearGate(gateRoot);
     return false;
   }
@@ -333,10 +357,8 @@ protect('__smvRenderFeatureLock',renderPolicyLock,v=>{
 
 /*
   Preserve the previously locked Admin-ON + Rs.0 no-export behavior.
-
-  The V260 Admin-OFF + Rs.1 Full case must NEVER be marked as basicOnly:
-  report-store.mjs adds Save + Print/PDF actions to the completed full report.
-  This listener only marks the pre-existing V259 no-export mode as basicOnly.
+  Admin OFF + Rs.0 is public Full mode and must never be marked basicOnly.
+  Admin OFF + Rs.1+ after Login remains a full, no-payment report.
 */
 window.addEventListener('smv:report-ready',event=>{
   const feature=event?.detail?.feature;
@@ -373,6 +395,41 @@ function clearAfterAuthRemount(){
   setTimeout(clearCurrentResults,0);
 }
 
+function syncHoroscopePaidEntry(){
+  const roots=[
+    document.getElementById('smvHoroscopePaidEntryEnglish'),
+    document.getElementById('smvHoroscopePaidEntryTamil')
+  ].filter(Boolean);
+  if(!roots.length)return Promise.resolve();
+  return stateFor('advanced_analysis').then(state=>{
+    for(const root of roots){
+      // Only show this early benefits/CTA panel to a logged-out visitor when
+      // Admin is ON and the Full Horoscope has a positive configured price.
+      if(state.mode!=='paid'||state.loggedIn||Number(state.actualPrice||0)<1){
+        clearGate(root);
+        continue;
+      }
+      const amount=Number(state.actualPrice).toFixed(2);
+      root.classList.remove('hidden');
+      root.innerHTML=`<section class="smv-horoscope-pay-gate smv-horoscope-prelogin-benefits">
+        <h3>${T('Full Horoscope & Advanced Analysis','முழு ஜாதகம் மற்றும் மேம்பட்ட ஆய்வு')}</h3>
+        <p>${T('Basic calculation is free. The complete report is available at the configured price after Customer Login and payment.','அடிப்படை கணிப்பு இலவசம். Customer Login மற்றும் கட்டணத்திற்குப் பிறகு முழு அறிக்கையை நிர்ணயிக்கப்பட்ட விலையில் பெறலாம்.')}</p>
+        <ul>
+          <li>${T('Complete D1 chart, planetary positions, houses and aspects','முழு D1 ஜாதகம், கிரக நிலைகள், பாவங்கள் மற்றும் பார்வைகள்')}</li>
+          <li>${T('Divisional charts, Shadbala, Ashtakavarga and special strengths','வர்க்க ஜாதகங்கள், ஷட்பலம், அஷ்டகவர்க்கம் மற்றும் சிறப்பு பலங்கள்')}</li>
+          <li>${T('Vimshottari and other Dasa analysis, Tajaka and transit','விம்சோத்தரி உள்ளிட்ட தசா ஆய்வு, தாஜக மற்றும் கோச்சாரம்')}</li>
+          <li>${T('Complete Advanced Analysis, predictions and remedies','முழு மேம்பட்ட ஆய்வு, பலன்கள் மற்றும் பரிகார வழிகாட்டல்')}</li>
+        </ul>
+        <p class="smv-lock-price"><b>${T('Full Horoscope payment','முழு ஜாதகக் கட்டணம்')}: ₹${amount}</b></p>
+        <button type="button" data-horoscope-paid-entry>${T('Full Horoscope ₹','முழு ஜாதகம் ₹')}${amount} — ${T('Login to Pay','Login செய்து கட்டணம் செலுத்தவும்')}</button>
+      </section>`;
+      root.querySelector('[data-horoscope-paid-entry]')?.addEventListener('click',()=>{
+        document.querySelector('#smvHoroscopeAuth [data-login]')?.click();
+      });
+    }
+  });
+}
+
 window.__smvOnlineAccessPolicy={
   state:stateFor,
   refresh:getOnlineConfig,
@@ -389,6 +446,7 @@ window.addEventListener('smv:horoscope-local-auth',event=>{
     */
     queueMicrotask(syncAllPaidButtons);
     setTimeout(syncAllPaidButtons,0);
+    syncHoroscopePaidEntry().catch(()=>{});
     return;
   }
 
@@ -400,7 +458,16 @@ window.addEventListener('smv:horoscope-local-auth',event=>{
 window.addEventListener('smv-language',()=>{
   if(!window.__smvHoroscopeLoggedIn?.())clearAfterAuthRemount();
   else queueMicrotask(syncAllPaidButtons);
+  syncHoroscopePaidEntry().catch(()=>{});
 });
+document.addEventListener('DOMContentLoaded',()=>syncHoroscopePaidEntry().catch(()=>{}),{once:true});
+document.addEventListener('click',event=>{
+  if(!event.target?.closest?.('#generateEnglishHoroscope,#generateTamilHoroscope'))return;
+  for(const id of ['smvHoroscopePaidEntryEnglish','smvHoroscopePaidEntryTamil']){
+    const root=document.getElementById(id);
+    if(root)root.classList.add('hidden');
+  }
+},true);
 })();
 /*
   PUBLIC NAKSHATRA PORUTHAM FAST PATH

@@ -2020,8 +2020,8 @@ function mount(){
 #smvMarriageMatching #mmPaidFeatureIndex.mm-bottom-payment{margin:14px auto;text-align:center;max-width:760px}
 #smvMarriageMatching .mm-bottom-payment .smv-horoscope-pay-gate>h3,#smvMarriageMatching .mm-bottom-payment .smv-horoscope-pay-gate>p:not([data-smv-lock-msg]),#smvMarriageMatching .mm-bottom-payment .smv-horoscope-pay-gate>ul{display:none!important}
 /* Pre-login continue and post-login payment use one small button footprint. */
-#smvMarriageMatching #mmCheck[data-login-to-continue="1"],#smvMarriageMatching #mmPaidFeatureIndex button[data-smv-unlock]{display:flex;box-sizing:border-box;align-items:center;justify-content:center;width:min(100%,185px)!important;max-width:185px!important;min-height:44px!important;height:auto!important;margin:10px auto!important;padding:7px 10px!important;border-radius:8px!important;font-size:13px!important;font-weight:700;line-height:1.25!important;text-align:center;white-space:normal!important}
-#smvMarriageMatching #mmPaidFeaturePreview button{display:none!important}
+#smvMarriageMatching #mmCheck[data-login-to-continue="1"],#smvMarriageMatching #mmPaidFeatureIndex button[data-smv-unlock],#smvMarriageMatching #mmPaidFeaturePreview button[data-smv-unlock]{display:flex;box-sizing:border-box;align-items:center;justify-content:center;width:min(100%,185px)!important;max-width:185px!important;min-height:44px!important;height:auto!important;margin:10px auto!important;padding:7px 10px!important;border-radius:8px!important;font-size:13px!important;font-weight:700;line-height:1.25!important;text-align:center;white-space:normal!important}
+/* The pre-login paid-benefit preview keeps its Login/Pay CTA visible. */
 </style><div id="mmPublicChoice" hidden role="group" aria-label="${T('Select matching input method','பொருத்தம் பார்க்கும் உள்ளீட்டைத் தேர்ந்தெடுக்கவும்')}"><b>${T('How would you like to check basic Nakshatra Porutham?','அடிப்படை நட்சத்திரப் பொருத்தத்தை எவ்வாறு பார்க்க விரும்புகிறீர்கள்?')}</b><div class="mm-choice-row"><label><input type="radio" name="mmPublicInputMode" value="dob" checked>${T('Birth date, time and place','பிறந்த தேதி, நேரம், இடம்')}</label><label><input type="radio" name="mmPublicInputMode" value="rasi">${T('Rasi and Nakshatra only','ராசி மற்றும் நட்சத்திரம் மட்டும்')}</label></div></div><div id="mmFullEntry"><div class="mm-grid mm-birth-grid">${fields('mmBride',T('Bride','பெண்'))}${fields('mmGroom',T('Groom','ஆண்'))}</div><div class="mm-gochar-date"><label>${T('Gochara / marriage review date','கோச்சார / திருமண ஆய்வு தேதி')}<input type="date" id="mmGocharDate" value="${new Date().toISOString().slice(0,10)}"></label></div><button type="button" id="mmCheck" hidden disabled aria-busy="true">${T('Calculate Full Matching','முழு பொருத்தம் கணக்கிடுக')}</button><div id="mmPaidFeatureIndex" class="mm-bottom-payment" hidden></div></div><div id="mmManualEntry" hidden><div class="mm-grid mm-birth-grid">${mmManualOptions()}</div><button type="button" id="mmManualCheck">${T('Check Basic Nakshatra Porutham','அடிப்படை நட்சத்திரப் பொருத்தம் பார்க்க')}</button></div><div id="mmResult"></div>`;
  ['mmBride','mmGroom'].forEach(p=>{const el=document.getElementById(p+'Place');let t;el?.addEventListener('input',()=>{el.dataset.timezoneSource='';const z=document.getElementById(p+'Timezone');if(z)z.value='';mmUpdateUtcOffset(p);clearTimeout(t);t=setTimeout(()=>searchPlace(p),250)});});
  ['mmBride','mmGroom'].forEach(p=>{
@@ -2035,10 +2035,13 @@ function mount(){
  const chooser=document.getElementById('mmPublicChoice');
  const dobEntry=document.getElementById('mmFullEntry'),manualEntry=document.getElementById('mmManualEntry');
  const applyChoice=()=>{
-  const manual=!chooser.hidden&&mmPublicChoice==='rasi';
-  if(dobEntry)dobEntry.hidden=manual;
-  if(manualEntry)manualEntry.hidden=!manual;
+  // Full DOB/place details are the sole matching entry route. The old
+  // Rasi + Nakshatra-only manual Basic section stays hidden in every mode.
+  if(chooser)chooser.hidden=true;
+  if(dobEntry)dobEntry.hidden=false;
+  if(manualEntry)manualEntry.hidden=true;
  };
+ applyChoice();
  chooser.querySelectorAll('input[name="mmPublicInputMode"]').forEach(r=>{
   r.checked=r.value===mmPublicChoice;
   r.addEventListener('change',()=>{if(!r.checked)return;mmPublicChoice=r.value;matchingSnapshot=null;mmManualSnapshot=null;matchingRenderMode='none';applyChoice();document.getElementById('mmResult')?.replaceChildren();});
@@ -2096,39 +2099,45 @@ function mount(){
   host.removeAttribute('aria-busy');
   if(btn){btn.disabled=false;btn.removeAttribute('aria-busy');}
   const visitor=!state.loggedIn;
-  mmFullAccess=cfg.enabled&&!visitor&&(cfg.price<=0||state.entitled);
-  // Visitors always have Nakshatra-only access, even when the Admin feature is OFF.
-  // No new read, payment, birth-chart computation, or editor is required for manual input.
-  if(!cfg.enabled&&!visitor){host.hidden=true;document.getElementById('mmResult').replaceChildren();matchingSnapshot=null;matchingRenderMode='none';return;}
-  host.hidden=false;chooser.hidden=!visitor;
+  mmFullAccess=state.fullAllowed===true;
+  // The Rasi/Nakshatra-only manual selector remains hidden. Basic and Full
+  // matching both use the established full birth-details form.
+  chooser.hidden=true;
+  if(dobEntry)dobEntry.hidden=false;
+  if(manualEntry)manualEntry.hidden=true;
+  applyChoice();
+  host.hidden=false;
+
   if(visitor){
-   // Never replay a prior logged-in full report after logout/remount.
-   if(matchingRenderMode==='full'){matchingSnapshot=null;matchingTransit=null;matchingRenderMode='none';}
-   if(btn){const needsLogin=cfg.enabled&&cfg.price>0;btn.hidden=false;btn.dataset.loginToContinue=needsLogin?'1':'0';btn.dataset.publicPoruthamOnly=needsLogin?'0':'1';btn.textContent=needsLogin?T('Continue — Login','தொடர உள்நுழையவும்'):T('Check Nakshatra Porutham','நட்சத்திரப் பொருத்தம் பார்க்க');}
+   // A logged-in Full result is not replayed for a visitor who is still locked.
+   if(matchingRenderMode==='full'&&!mmFullAccess){
+    matchingSnapshot=null;matchingTransit=null;matchingRenderMode='none';
+    document.getElementById('mmResult')?.replaceChildren();
+   }
+   if(btn){
+    btn.hidden=false;
+    btn.dataset.loginToContinue='0';
+    btn.dataset.publicPoruthamOnly=mmFullAccess?'0':'1';
+    btn.textContent=mmFullAccess
+      ? T('View Full Marriage Matching','முழு நட்சத்திரப் பொருத்தம் காண்க')
+      : T('Check Basic Nakshatra Matching','அடிப்படை நட்சத்திரப் பொருத்தம் பார்க்க');
+   }
    if(paidRoot){paidRoot.replaceChildren();paidRoot.hidden=true;}
    document.getElementById('mmPaidFeaturePreview')?.remove();
-   applyChoice();
-   // Keep the existing paid-feature INDEX visible when Admin is ON and price > 0;
-   // no public visitor payment action is opened from this basic-entry choice.
-   if(cfg.enabled&&cfg.price>0&&gate&&typeof window.__smvRenderFeatureLock==='function'){
+
+   // Admin ON + positive price: Basic stays free while the paid benefits,
+   // Full Matching price and Login/Pay CTA are visible before Login.
+   if(state.mode==='paid'&&cfg.enabled&&cfg.price>0&&gate&&typeof window.__smvRenderFeatureLock==='function'){
     const preview=document.createElement('div');preview.id='mmPaidFeaturePreview';gate.appendChild(preview);
-    window.__smvRenderFeatureLock('marriage_matching',preview,cfg,()=>{},()=>{});
-    preview.querySelector('[data-smv-unlock]')?.remove();
-    preview.querySelector('[data-smv-lock-msg]')?.remove();
+    window.__smvRenderFeatureLock('marriage_matching',preview,cfg,()=>{},()=>{},state);
    }
    return;
   }
-  if(dobEntry)dobEntry.hidden=false;
-  if(manualEntry)manualEntry.hidden=true;
+
   if(btn)btn.dataset.loginToContinue='0';
   document.getElementById('mmPaidFeaturePreview')?.remove();
-  // V322 — Admin OFF + Rs.0 is BASIC-ONLY before AND after customer login.
-  // The V260 policy intentionally reports this as enabled:true, price:1,
-  // mode:'off_zero_basic' (synthetic price, NOT a payment). Treating this as a
-  // paid plan would hide #mmCheck and render no payment button, because the
-  // policy correctly refuses to open a Razorpay gate for an Admin-OFF feature.
-  // Unavailable online policy is also restricted to basic, never paid/full.
-  const basicAfterLogin=['off_zero_basic','off_public_basic','online_unavailable'].includes(state.mode);
+  // If Admin settings cannot be read, fail closed to the public Basic route.
+  const basicAfterLogin=state.mode==='online_unavailable';
   if(basicAfterLogin){
    if(matchingRenderMode==='full'){
     matchingSnapshot=null;matchingTransit=null;matchingRenderMode='none';
@@ -2137,7 +2146,7 @@ function mount(){
    if(btn){
     btn.hidden=false;
     btn.dataset.publicPoruthamOnly='1';
-    btn.textContent=T('Check Nakshatra Porutham','நட்சத்திரப் பொருத்தம் பார்க்க');
+    btn.textContent=T('Check Basic Nakshatra Matching','அடிப்படை நட்சத்திரப் பொருத்தம் பார்க்க');
    }
    return;
   }

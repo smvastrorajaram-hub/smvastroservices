@@ -39,5 +39,5 @@ test('generation, Admin and Matching entry points wait for deferred engines', ()
   assert.match(html, /await window\.__smvEnsureCalculationNarrativeEngines/);
   assert.match(html, /window\.addEventListener\('hashchange'/);
   assert.match(html, /io\.observe\(target\)/);
-  assert.match(html, /sc\.src='marriage-matching\.js\?v=20261019-ayurdaya-rules-duration-v253'/);
+  assert.match(html, /sc\.src='marriage-matching\.js\?v=[^']+'/);
 });
