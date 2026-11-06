@@ -356,9 +356,9 @@ ok(horoscopeCss.includes('tbody tr:not(.smv-ayurdaya-totals):not(.smv-ayurdaya-a
 const matchingCss=fs.readFileSync(new URL('../public/horoscope/marriage-basic-report.css',import.meta.url),'utf8');
 ok(matchingCss.includes('.mm-basic-report .smv-cg-rajan-ayurdaya table.smv-ayurdaya-table thead th{')&&matchingCss.includes('color:#4a352d;background:#fff7e8;font-weight:800;')&&matchingCss.includes('color:#302722;background:#fff;font-weight:800;')&&matchingCss.includes('.smv-ayurdaya-method-selection{')&&!matchingCss.includes('background:#fff7e8!important'), 'Matching Ayurdaya colors live in semantic component rules without a wrapper-specific override stack');
 const appHtml=fs.readFileSync(new URL('../public/horoscope/index.html',import.meta.url),'utf8');
-ok(appHtml.includes('horoscope.css?v=20261019-ayurdaya-selected-total-v251')&&appHtml.includes('marriage-basic-report.css?v=20261019-ayurdaya-selected-total-v251'), 'Live pages request the revised Marriage Matching stylesheet');
+ok(appHtml.includes('horoscope.css?v=20261106-product-pwa-header-v2')&&appHtml.includes('marriage-basic-report.css?v=20261019-ayurdaya-selected-total-v251'), 'Live pages request the current Horoscope stylesheet and revised Marriage Matching stylesheet');
 const swSource=fs.readFileSync(new URL('../public/horoscope/sw.js',import.meta.url),'utf8');
-ok(swSource.includes('v250-ayurdaya-selected-total-20261019'),'PWA refresh revision activates the revised Matching stylesheet');
+ok(swSource.includes("'./marriage-basic-report.css'")&&swSource.includes("const SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE"), 'PWA shell cache refresh precaches the current Marriage Matching stylesheet');
 ok(src.includes("p1Title('Arudha Padas','ஆரூட பாதங்கள்')")&&!src.includes('ஆரூட பாதங்கள் (A1–A12)'),'Arudha heading omits the A1-A12 range');
 ok(src.includes("p1ArudhaLabel(x,i)")&&src.includes("const p1ArudhaLabel=(x,i=0)=>{const h=Number(x?.house);"), 'Arudha renderer normalizes house values before showing AL, A2-A11 and UL');
 const births=[['1971-05-04','05:05'],['1974-01-11','16:04'],

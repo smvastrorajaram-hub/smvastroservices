@@ -292,8 +292,24 @@ try {
   await page.waitForFunction(() =>
     document.documentElement.lang === 'ta' &&
     document.querySelector('#smvHoroscopeAuth [data-login]')?.textContent.trim() === 'உள்நுழை' &&
-    document.querySelector('#smvHoroscopeAuth [data-register]')?.textContent.trim() === 'பதிவு செய்க',
+    document.querySelector('#smvHoroscopeAuth [data-register]')?.textContent.trim() === 'பதிவு',
     { timeout: 20000 });
+  const tamilRegisterFit = await page.$eval('#smvHoroscopeAuth [data-register]', el => {
+    const rect = el.getBoundingClientRect();
+    return {
+      label: el.textContent.trim(),
+      width: rect.width,
+      height: rect.height,
+      scrollWidth: el.scrollWidth,
+      clientWidth: el.clientWidth
+    };
+  });
+  const englishRegisterControl = visibleHoroscopeControls.find(control => control.label === 'Register');
+  assert.equal(tamilRegisterFit.label, 'பதிவு', 'Tamil Register button must use the concise label.');
+  assert.ok(englishRegisterControl, 'The original English Register button dimensions must be available for comparison.');
+  assert.ok(Math.abs(tamilRegisterFit.width - englishRegisterControl.width) < 1, 'Tamil translation must not change the Register button width.');
+  assert.ok(Math.abs(tamilRegisterFit.height - englishRegisterControl.height) < 1, 'Tamil translation must not change the Register button height.');
+  assert.ok(tamilRegisterFit.scrollWidth <= tamilRegisterFit.clientWidth + 1, 'Tamil Register label must fit inside the unchanged button box.');
   await page.waitForSelector('#smvAdminOpenTools', { timeout: 20000 });
   const unauthenticatedAdminState = await page.evaluate(() => ({
     fixedHeaderAdminButton: Boolean(document.querySelector('#smvAdminRulesAccess')),

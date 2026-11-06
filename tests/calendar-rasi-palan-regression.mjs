@@ -205,7 +205,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE='20261106-product-pwa-header-v2'"), 'Calendar uses the synchronized release marker');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE='20261106-saved-list-full-width-red-v1'"), 'Calendar uses the synchronized release marker');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
    assert.ok(calendarWorkerSource.includes('const REQUIRED_CORE = new Set(['));
@@ -226,7 +226,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(horoscopeIndexSource.includes('id="smvHoroscopeControls"'), 'Language/account controls remain available outside the removed site header');
    assert.ok(horoscopeIndexSource.includes('id="smvHoroscopeAuth"'), 'Existing Horoscope authentication remains available');
    assert.doesNotMatch(horoscopeIndexSource, /id="templeHeader"|class="header-navigation"/, 'The removed site header and navigation must not return');
-   for (const entry of ["'Services':'சேவைகள்'", "'Matching':'பொருத்தம்'", "'Calendar':'நாட்காட்டி'", "'Horoscope':'ஜாதகம்'", "'Login':'உள்நுழை'", "'Register':'பதிவு செய்க'", "'Logout':'வெளியேறு'", "'Admin Login':'நிர்வாக உள்நுழைவு'"]) assert.ok(horoscopeLanguageSource.includes(entry), 'Missing Tamil header label mapping: '+entry);
+   for (const entry of ["'Services':'சேவைகள்'", "'Matching':'பொருத்தம்'", "'Calendar':'நாட்காட்டி'", "'Horoscope':'ஜாதகம்'", "'Login':'உள்நுழை'", "'Register':'பதிவு'", "'Logout':'வெளியேறு'", "'Admin Login':'நிர்வாக உள்நுழைவு'"]) assert.ok(horoscopeLanguageSource.includes(entry), 'Missing Tamil header label mapping: '+entry);
    assert.ok(!horoscopeIndexSource.includes('data-horoscope-nav>SERVICES</a>'));
    assert.ok(!horoscopeIndexSource.includes('<a href="#english-horoscope" data-horoscope-nav>'));
    assert.ok(!horoscopeAdminWorkbenchSource.includes('border:1px solid #dcc59e'));

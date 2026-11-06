@@ -1,0 +1,25 @@
+// Saved Reports mobile layout regression: full-width account list and readable actions.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
+const store=read('public/horoscope/report-store.mjs');
+const css=read('public/horoscope/smv-ui.css');
+const html=read('public/horoscope/index.html');
+const sw=read('public/horoscope/sw.js');
+let n=0;
+const ok=(value,message)=>{assert.ok(value,message);n++;};
+const panel=store.slice(store.indexOf('function panel()'),store.indexOf('function savedGroup'));
+ok(panel.includes("auth.closest('.smv-horoscope-controls-row')"),'Saved Reports panel locates the header grid row');
+ok(panel.includes("controlsRow.insertAdjacentElement('afterend',p)"),'Saved Reports panel is moved outside the compact header grid');
+ok(store.includes('<div class="smv-saved-actions">'),'Saved report actions have a separate responsive wrapper');
+ok(store.includes('data-open=')&&store.includes('data-pdf=')&&store.includes('data-delete='),'Open, PDF and Delete action hooks remain available');
+ok(css.includes('#smvSavedReports .smv-saved-row{')&&css.includes('grid-template-columns:minmax(0,1fr) auto!important'),'Desktop row uses a readable text column and separate action group');
+ok(css.includes('#smvSavedReports .smv-saved-actions{display:flex!important;'),'Action buttons have a dedicated flex row');
+ok(css.includes('@media(max-width:600px)')&&css.includes('#smvSavedReports .smv-saved-row{grid-template-columns:minmax(0,1fr)!important;'),'Mobile list stacks report details above its actions');
+ok(css.includes('background:#8b1717!important;color:#fff!important;-webkit-text-fill-color:#fff!important'),'Saved-list buttons use high-contrast red boxes with white text');
+ok(css.includes('overflow-wrap:anywhere!important'),'Long saved report names wrap instead of collapsing into individual letters');
+ok(html.includes('20261106-saved-list-full-width-red-v1'),'Horoscope stylesheet URL has a new cache-busting version');
+ok(sw.includes("const SMV_CACHE_RELEASE='20261106-saved-list-full-width-red-v1';"),'Horoscope service-worker shell cache is versioned for this UI update');
+ok(sw.includes('const RUNTIME_REVISION=\'v262-saved-list-full-width-red-20261106\';'),'Horoscope runtime revision is bumped');
+ok(store.includes("const DB='smv-reports-v2',STORE='reports',DB_VERSION=3;"),'Saved report database schema is unchanged');
+console.log(JSON.stringify({pass:true,assertions:n,scope:'Saved Reports placement, responsive layout, contrast and cache-version source checks; no saved data migration or deletion'}));
