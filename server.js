@@ -827,7 +827,7 @@ app.post("/register-astrologer-profile", async (req, res) => {
         updatedAt:FieldValue.serverTimestamp()
       };
       await Promise.all([
-        userRef.set({name,fullName:name,displayName:name,languages,spokenLanguages:languages,updatedAt:FieldValue.serverTimestamp()},{merge:true}),
+        userRef.set({name,fullName:name,displayName:name,languages,spokenLanguages:languages,callPricePerMinute,chatPricePerMinute,updatedAt:FieldValue.serverTimestamp()},{merge:true}),
         astroRef.set(repair,{merge:true})
       ]);
       return res.json({ok:true,alreadyRegistered:true,publicId:existing.data().publicId,name,languages});
