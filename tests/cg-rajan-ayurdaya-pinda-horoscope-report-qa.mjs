@@ -358,7 +358,7 @@ ok(matchingCss.includes('.mm-basic-report .smv-cg-rajan-ayurdaya table.smv-ayurd
 const appHtml=fs.readFileSync(new URL('../public/horoscope/index.html',import.meta.url),'utf8');
 ok(appHtml.includes('horoscope.css?v=20261106-product-pwa-header-v2')&&appHtml.includes('marriage-basic-report.css?v=20261019-ayurdaya-selected-total-v251'), 'Live pages request the current Horoscope stylesheet and revised Marriage Matching stylesheet');
 const swSource=fs.readFileSync(new URL('../public/horoscope/sw.js',import.meta.url),'utf8');
-ok(swSource.includes('v250-ayurdaya-selected-total-20261019'),'PWA refresh revision activates the revised Matching stylesheet');
+ok(swSource.includes("'./marriage-basic-report.css'")&&swSource.includes("const SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE"), 'PWA shell cache refresh precaches the current Marriage Matching stylesheet');
 ok(src.includes("p1Title('Arudha Padas','ஆரூட பாதங்கள்')")&&!src.includes('ஆரூட பாதங்கள் (A1–A12)'),'Arudha heading omits the A1-A12 range');
 ok(src.includes("p1ArudhaLabel(x,i)")&&src.includes("const p1ArudhaLabel=(x,i=0)=>{const h=Number(x?.house);"), 'Arudha renderer normalizes house values before showing AL, A2-A11 and UL');
 const births=[['1971-05-04','05:05'],['1974-01-11','16:04'],
