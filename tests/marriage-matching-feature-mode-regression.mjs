@@ -51,13 +51,14 @@ function policyHarness({enabled,price,loggedIn=false,entitled=false,responses=nu
  return {state:()=>sandbox.__smvFeatureState('advanced_analysis'),requestCount:()=>requests};
 }
 
-// Admin OFF + Rs.0: public Full access before and after Login.
+// Admin OFF + Rs.0: public Full access before Login; signed-in Full remains no-export.
 for(const loggedIn of [false,true]){
  const h=policyHarness({enabled:false,price:0,loggedIn});
  const state=await h.state();
- yes(state.mode==='off_free_full','Admin OFF + Rs.0 is identified as public free Full mode');
+ yes(state.mode===(loggedIn?'off_free_full_no_export':'off_free_full'),'Admin OFF + Rs.0 selects the correct public/signed-in Full mode');
  yes(state.fullAllowed===true&&state.entitled===true,'Admin OFF + Rs.0 grants Full Horoscope and Advanced Analysis');
  yes(state.loggedIn===loggedIn,'Admin OFF + Rs.0 preserves the actual Login state');
+ yes(state.exportAllowed===false,'Admin OFF + Rs.0 never enables Save/Print');
 }
 
 // Admin OFF + Rs.1: Basic remains public; verified Customer Login unlocks Full free.
