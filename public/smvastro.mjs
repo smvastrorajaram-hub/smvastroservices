@@ -1387,8 +1387,8 @@ async function compressPhoto(file){
 }
 $("astroRegistrationForm")?.addEventListener("submit",async e=>{
  e.preventDefault();const form=e.target,btn=form.querySelector('button[type="submit"]');
- const name=$("arName").value.trim(),mobile=$("arMobile").value.trim(),email=$("arEmail").value.trim(),password=$("arPassword").value,specialization=$("arSpecialization").value.trim(),experience=Number($("arExperience").value||0),languages=String($("arLanguages")?.value||"").split(/[,;|]/).map(v=>v.trim().replace(/\s+/g," ")).filter(Boolean),bio=$("arBio").value.trim(),bankName=$("arBankName").value.trim(),accountName=$("arAccountName").value.trim(),accountNumber=$("arAccountNumber").value.trim(),ifsc=$("arIfsc").value.trim(),upi=$("arUpi").value.trim(),photoFile=$("arPhoto").files[0];
- if(!name||!mobile||!email||password.length<6||!specialization||experience<0||!languages.length||languages.length>12||languages.some(v=>v.length>40)||languages.join(", ").length>240||!bio||!bankName||!accountName||!accountNumber||!ifsc||!photoFile){message("astroRegMsg",'<span class="error">Please complete all required fields.</span>');return;}
+ const name=$("arName").value.trim(),mobile=$("arMobile").value.trim(),email=$("arEmail").value.trim(),password=$("arPassword").value,specialization=$("arSpecialization").value.trim(),experience=Number($("arExperience").value||0),languages=String($("arLanguages")?.value||"").split(/[,;|]/).map(v=>v.trim().replace(/\s+/g," ")).filter(Boolean),chatPricePerMinute=Number($("arChatRate")?.value),callPricePerMinute=Number($("arCallRate")?.value),bio=$("arBio").value.trim(),bankName=$("arBankName").value.trim(),accountName=$("arAccountName").value.trim(),accountNumber=$("arAccountNumber").value.trim(),ifsc=$("arIfsc").value.trim(),upi=$("arUpi").value.trim(),photoFile=$("arPhoto").files[0];
+ if(!name||!mobile||!email||password.length<6||!specialization||experience<0||!languages.length||languages.length>12||languages.some(v=>v.length>40)||languages.join(", ").length>240||!Number.isFinite(chatPricePerMinute)||chatPricePerMinute<1||chatPricePerMinute>30||Math.abs(chatPricePerMinute*100-Math.round(chatPricePerMinute*100))>1e-7||!Number.isFinite(callPricePerMinute)||callPricePerMinute<1||callPricePerMinute>30||Math.abs(callPricePerMinute*100-Math.round(callPricePerMinute*100))>1e-7||!bio||!bankName||!accountName||!accountNumber||!ifsc||!photoFile){message("astroRegMsg",'<span class="error">Complete all required fields. Live Call and Live Chat rates must each be ₹1–₹30 per minute, with up to two decimal places.</span>');return;}
  btn.disabled=true;btn.textContent="CREATING ACCOUNT...";message("astroRegMsg",'<span class="small">Creating your account...</span>');
  smvRegistrationInProgress=true;
  try{
@@ -1409,7 +1409,7 @@ $("astroRegistrationForm")?.addEventListener("submit",async e=>{
   try {
     profileResponse=await withTimeout(renderApi("/register-astrologer-profile",{
       method:"POST",
-      body:JSON.stringify({name,mobile,specialization,experience,languages,bio,bankName,accountName,accountNumber,ifsc,upi,photoData,language:"en"})
+      body:JSON.stringify({name,mobile,specialization,experience,languages,callPricePerMinute,chatPricePerMinute,bio,bankName,accountName,accountNumber,ifsc,upi,photoData,language:"en"})
     },cred.user),30000);
   } catch(networkErr) {
     const raw=String(networkErr?.message||networkErr||"");
