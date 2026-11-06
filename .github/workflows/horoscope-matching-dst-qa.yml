@@ -15,6 +15,11 @@ on:
       - 'tests/bv-raman-hpa-ayurdaya-combined-regression.mjs'
       - 'tests/five-book-structural-audit.mjs'
       - 'tests/v358-unified-result-layout-regression.mjs'
+      - 'tests/saved-report-mobile-layout-regression.mjs'
+      - 'public/horoscope/report-store.mjs'
+      - 'public/horoscope/smv-ui.css'
+      - 'public/horoscope/index.html'
+      - 'public/horoscope/sw.js'
       - 'tests/v357-bphs-varga-regression.mjs'
       - 'tests/v357-d60-deity-designation-regression.mjs'
       - 'tests/v357-bphs-shodhana-regression.mjs'
@@ -60,6 +65,11 @@ on:
       - 'tests/bv-raman-hpa-ayurdaya-combined-regression.mjs'
       - 'tests/five-book-structural-audit.mjs'
       - 'tests/v358-unified-result-layout-regression.mjs'
+      - 'tests/saved-report-mobile-layout-regression.mjs'
+      - 'public/horoscope/report-store.mjs'
+      - 'public/horoscope/smv-ui.css'
+      - 'public/horoscope/index.html'
+      - 'public/horoscope/sw.js'
       - 'tests/v357-bphs-varga-regression.mjs'
       - 'tests/v357-d60-deity-designation-regression.mjs'
       - 'tests/v357-bphs-shodhana-regression.mjs'
@@ -130,6 +140,8 @@ jobs:
 
       - name: V358 unified result layer source regression
         run: node tests/v358-unified-result-layout-regression.mjs
+      - name: Saved Reports full-width mobile layout and contrast regression
+        run: node tests/saved-report-mobile-layout-regression.mjs
       - name: BPHS V357 independent varga-boundary oracle
         run: node tests/v357-bphs-varga-regression.mjs
       - name: V357 D60 deity name reverse order and sign-lord regression
