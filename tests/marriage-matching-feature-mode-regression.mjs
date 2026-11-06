@@ -145,7 +145,7 @@ yes(policy.includes("T('Login to Pay','Login செய்து கட்டண�
 yes(policy.includes('function syncHoroscopePaidEntry()'),'Horoscope has a pre-calculation paid-benefit panel');
 yes(html.includes('id="smvHoroscopePaidEntryEnglish"')&&html.includes('id="smvHoroscopePaidEntryTamil"'),'Both Horoscope language forms host the pre-login benefit panel');
 yes(html.includes('config.js?v=20261107-horoscope-report-mirror-v2'),'Access config uses its cache-busted URL');
-yes(html.includes('horoscope-form.js?v=20261107-horoscope-quick-payment-v1'),'Horoscope form uses its cache-busted URL');
+yes(html.includes('horoscope-form.js?v=20261107-horoscope-report-mirror-v2'),'Horoscope form uses its cache-busted URL');
 yes(html.includes('marriage-matching.js?v=20261106-basic-nakshatra-input-v1'),'Marriage Matching uses its cache-busted URL');
 
 // All three products share the marker. Existing offline/user data is not cleared.
