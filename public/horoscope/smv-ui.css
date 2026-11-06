@@ -147,3 +147,49 @@ body.smv-v12-theme :where(#englishHoroscopeResult,#tamilHoroscopeResult) .horosc
     gap:12px!important;
   }
 }
+
+
+/* Saved Reports V1: keep the account list outside the compact header action grid. */
+#smvSavedReports.smv-saved-reports{
+  display:block!important;box-sizing:border-box!important;width:100%!important;max-width:980px!important;
+  margin:12px auto 18px!important;padding:10px 12px!important;
+  border:1px solid #e2cdb0!important;border-radius:10px!important;
+  background:#fffaf2!important;color:#30251f!important;
+}
+#smvSavedReports[hidden]{display:none!important}
+#smvSavedReports .smv-saved-group{display:block!important;min-width:0!important;padding:6px 0!important}
+#smvSavedReports .smv-saved-group+.smv-saved-group{margin-top:8px!important;padding-top:10px!important;border-top:1px solid #e2cdb0!important}
+#smvSavedReports .smv-saved-group h3{margin:2px 0 7px!important;color:#701010!important;-webkit-text-fill-color:#701010!important;font-size:1rem!important;line-height:1.35!important;font-weight:850!important}
+#smvSavedReports .smv-saved-row{
+  display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important;
+  gap:10px!important;min-width:0!important;min-height:48px!important;padding:9px 0!important;
+  border-top:1px solid #eadfca!important;
+}
+#smvSavedReports .smv-saved-row>span{display:block!important;min-width:0!important;max-width:100%!important}
+#smvSavedReports .smv-saved-row b{display:block!important;color:#30251f!important;-webkit-text-fill-color:#30251f!important;font-size:.93rem!important;line-height:1.4!important;font-weight:800!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important}
+#smvSavedReports .smv-saved-row small{display:block!important;margin-top:3px!important;color:#62564d!important;-webkit-text-fill-color:#62564d!important;font-size:.78rem!important;line-height:1.4!important;white-space:normal!important;overflow-wrap:anywhere!important}
+#smvSavedReports .smv-saved-actions{display:flex!important;flex:0 0 auto!important;align-items:center!important;justify-content:flex-end!important;gap:7px!important;flex-wrap:wrap!important;min-width:0!important}
+#smvSavedReports .smv-saved-row button,
+#smvSavedReports [data-saved-sync-now]{
+  display:inline-flex!important;box-sizing:border-box!important;align-items:center!important;justify-content:center!important;
+  min-width:58px!important;min-height:36px!important;padding:8px 11px!important;
+  border:1px solid #701010!important;border-radius:7px!important;
+  background:#8b1717!important;color:#fff!important;-webkit-text-fill-color:#fff!important;
+  font-family:inherit!important;font-size:.8rem!important;font-weight:800!important;line-height:1.2!important;
+  text-align:center!important;white-space:nowrap!important;box-shadow:none!important;opacity:1!important;
+}
+#smvSavedReports .smv-saved-row button:hover,
+#smvSavedReports [data-saved-sync-now]:hover{background:#701010!important;border-color:#560b0b!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
+#smvSavedReports .smv-saved-row button:focus-visible,
+#smvSavedReports [data-saved-sync-now]:focus-visible{outline:3px solid #d7a34a!important;outline-offset:2px!important}
+#smvSavedReports .smv-saved-row .smv-delete-report{min-width:68px!important;background:#8b1717!important;border-color:#701010!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
+#smvSavedReports .smv-saved-sync-bar{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;flex-wrap:wrap!important;margin:0 0 8px!important;color:#62564d!important;font-size:.78rem!important;line-height:1.45!important}
+#smvSavedReports .smv-saved-sync-bar [data-saved-sync-status]{min-width:0!important;overflow-wrap:anywhere!important}
+#smvSavedReports .smv-saved-group>p{margin:4px 0!important;color:#62564d!important;line-height:1.5!important}
+@media(max-width:600px){
+  #smvSavedReports.smv-saved-reports{width:100%!important;max-width:none!important;margin:9px 0 14px!important;padding:8px 9px!important}
+  #smvSavedReports .smv-saved-row{grid-template-columns:minmax(0,1fr)!important;gap:8px!important;min-height:0!important;padding:10px 0!important}
+  #smvSavedReports .smv-saved-actions{justify-content:flex-start!important;gap:7px!important}
+  #smvSavedReports .smv-saved-row button{min-width:64px!important;min-height:36px!important;padding:8px 10px!important;font-size:.78rem!important}
+  #smvSavedReports .smv-saved-row .smv-delete-report{min-width:72px!important}
+}
