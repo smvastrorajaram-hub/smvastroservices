@@ -2907,7 +2907,7 @@ function renderTransitPanchang(t,p,lang,rootId,horaOverride=null){
   window.__smvLoadAdvancedAstrology=loadAdvancedAstrology;
 
 
-  async function generate(loadAdvanced=true){
+  async function generate(loadAdvanced=true,fullReportLaunch=false){
     const date=$('tamilDob')?.value||'', time=$('tamilTob')?.value||'';
     const lat=$('tamilLat')?.value||'', lon=$('tamilLon')?.value||'';
     if(!date||!time){alert('பிறந்த தேதி மற்றும் பிறந்த நேரத்தை உள்ளிடவும்.');return;}
@@ -2985,7 +2985,9 @@ if(lat===''||lon===''){
         };
         if(typeof window.__smvRequireHoroscopeFeatureAccess!=='function')
           throw new Error('Horoscope payment policy is not ready. Please reload the page.');
+        window.__smvPaidFullReportLaunch=fullReportLaunch===true;
         const allowed=await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',advRoot,runAdvancedAfterAccess);
+        window.__smvPaidFullReportLaunch=false;
         if(allowed)await runAdvancedAfterAccess();
       }
       // SINGLE RELEASE: chart + all new features become visible together.
@@ -3003,13 +3005,17 @@ if(lat===''||lon===''){
       if(resultBox) resultBox.setAttribute('aria-busy','false');
       if(btn){btn.disabled=false;btn.textContent=window.__smvAdminPaidQuickMode?'அடிப்படை ஜாதகம் கணிக்க':'தமிழில் ஜாதகம் உருவாக்குக';} if(progress) progress.remove();
       window.__smvHoroscopeGenerating=false;
+      window.__smvPaidFullReportLaunch=false;
     }
   }
   $('generateTamilHoroscope')?.addEventListener('click',()=>{
+    const button=$('generateTamilHoroscope');
+    const fullReportLaunch=button?.dataset.smvFullReportLaunch==='1';
+    if(button)delete button.dataset.smvFullReportLaunch;
     try{localStorage.setItem('smvLanguage','ta');}catch(_e){}
     $('englishHoroscopeResult')?.classList.add('hidden');
     if($('englishHoroscopeResult'))$('englishHoroscopeResult').innerHTML='';
-    generate();
+    generate(true,fullReportLaunch);
   });
   $('clearTamilHoroscope')?.addEventListener('click',()=>{['tamilAstroName','tamilDob','tamilTob','tamilBirthPlace','tamilNakshatra','tamilLat','tamilLon','tamilCurrentResidence'].forEach(id=>{if($(id))$(id).value='';});if($('tamilBirthPlace')){$('tamilBirthPlace').dataset.locationSelected='0';$('tamilBirthPlace').dataset.latitude='';$('tamilBirthPlace').dataset.longitude='';}if($('tamilRasi'))$('tamilRasi').value='மேஷம்';if($('tamilCurrentWork'))$('tamilCurrentWork').value='';if($('tamilMaritalStatus'))$('tamilMaritalStatus').value='';if($('tamilHoroscopeResult')){$('tamilHoroscopeResult').classList.add('hidden');$('tamilHoroscopeResult').innerHTML='';}if($('englishHoroscopeResult')){$('englishHoroscopeResult').classList.add('hidden');$('englishHoroscopeResult').innerHTML='';}});
   // V149: expose horoscope helpers so the separate English section can safely
