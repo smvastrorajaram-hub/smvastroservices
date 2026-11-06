@@ -102,7 +102,7 @@ async function renderList(){
 }
 
 async function refreshSaved(){try{await window.__smvEnsureHoroscopeAuthReady?.();}catch{}const u=owner();if(!u){resetCloud('');await renderList();return;}if(cloud.uid!==u.uid)resetCloud(u.uid);panel();setSyncStatus(ta()?'Account saved reports சரிபார்க்கப்படுகிறது…':'Checking account saved reports…');try{await recoverLegacy(u.uid);}catch{}try{await loadCloudIndex(u.uid);const n=Object.values(cloud.reports||{}).filter(x=>x&&!x.deleted).length;setSyncStatus(ta()?`Account sync இணைக்கப்பட்டது · ${n} cloud reports`:`Account sync connected · ${n} cloud reports`);}catch(e){setSyncStatus('',ta()?`Account sync கிடைக்கவில்லை: ${e?.message||e}`:`Account sync unavailable: ${e?.message||e}`);}await renderList();if(cloud.loaded)setTimeout(()=>migrateLocalToCloud(u.uid).catch(e=>setSyncStatus('',e?.message||String(e))),0);}
-window.addEventListener('smv:report-ready',e=>{if(owner()&&!e.detail?.basicOnly)attach(e.detail);});
+window.addEventListener('smv:report-ready',e=>{if(owner()&&!e.detail?.basicOnly&&!e.detail?.noSavePrint)attach(e.detail);});
 window.addEventListener('smv:horoscope-local-auth',()=>refreshSaved().catch(console.error));
 window.addEventListener('smv-language',()=>renderList().catch(console.error));
 document.readyState==='loading'?document.addEventListener('DOMContentLoaded',()=>refreshSaved().catch(console.error)):refreshSaved().catch(console.error);
