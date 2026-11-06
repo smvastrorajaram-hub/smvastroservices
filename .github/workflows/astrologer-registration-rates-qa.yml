@@ -9,6 +9,15 @@ on:
       - 'public/smvastro.mjs'
       - 'public/public-content.mjs'
       - 'server.js'
+      - 'public/sw.js'
+      - 'public/horoscope/sw.js'
+      - 'public/horoscope/calendar/sw.js'
+      - 'test/storage-and-safe-sw-updates.test.js'
+      - 'test/smv-zip-brand-assets.test.mjs'
+      - 'tests/calendar-rasi-palan-regression.mjs'
+      - 'tests/saved-report-mobile-layout-regression.mjs'
+      - 'tests/marriage-matching-feature-mode-regression.mjs'
+      - 'tests/offline-first-app-browser-smoke.mjs'
       - 'tests/astrologer-registration-rates-admin-regression.mjs'
       - '.github/workflows/astrologer-registration-rates-qa.yml'
   pull_request:
@@ -18,6 +27,15 @@ on:
       - 'public/smvastro.mjs'
       - 'public/public-content.mjs'
       - 'server.js'
+      - 'public/sw.js'
+      - 'public/horoscope/sw.js'
+      - 'public/horoscope/calendar/sw.js'
+      - 'test/storage-and-safe-sw-updates.test.js'
+      - 'test/smv-zip-brand-assets.test.mjs'
+      - 'tests/calendar-rasi-palan-regression.mjs'
+      - 'tests/saved-report-mobile-layout-regression.mjs'
+      - 'tests/marriage-matching-feature-mode-regression.mjs'
+      - 'tests/offline-first-app-browser-smoke.mjs'
       - 'tests/astrologer-registration-rates-admin-regression.mjs'
       - '.github/workflows/astrologer-registration-rates-qa.yml'
 permissions:
@@ -42,3 +60,11 @@ jobs:
           node --check public/public-content.mjs
       - name: Run registration, approval, Dashboard and Admin regression tests
         run: node tests/astrologer-registration-rates-admin-regression.mjs
+      - name: Run synchronized three-app cache and storage regression tests
+        run: node --test test/storage-and-safe-sw-updates.test.js test/smv-zip-brand-assets.test.mjs
+      - name: Run Calendar, Saved Reports and Marriage Matching source regressions
+        run: |
+          set -euo pipefail
+          node tests/calendar-rasi-palan-regression.mjs
+          node tests/saved-report-mobile-layout-regression.mjs
+          node tests/marriage-matching-feature-mode-regression.mjs
