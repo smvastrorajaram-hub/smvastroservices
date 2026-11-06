@@ -1,4 +1,4 @@
-const SMV_CACHE_RELEASE='20261106-horoscope-benefits-export-policy-v1';
+const SMV_CACHE_RELEASE='20261107-horoscope-quick-payment-v1';
 const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE;
 const LOCATION_CACHE='smv-shared-india-places';
 const CORE=[

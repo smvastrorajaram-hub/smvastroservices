@@ -2796,6 +2796,10 @@ html,body{scroll-behavior:auto!important}
 .smv-horoscope-pay-gate h3{margin:0 0 8px}
 .smv-horoscope-pay-gate ul{margin:8px 0 12px;padding-left:22px}
 .smv-horoscope-pay-gate button{border:0;border-radius:10px;padding:10px 14px;background:#8b164e;color:#fff;font-weight:800}
+.smv-horoscope-quick-pay-gate{margin:10px 0 14px;padding:12px 14px}
+.smv-horoscope-quick-pay-gate p{line-height:1.5;margin:6px 0 10px}
+.smv-horoscope-quick-pay-gate button{display:block;width:100%;min-height:46px;box-sizing:border-box;text-align:center}
+.smv-horoscope-quick-pay-gate [data-smv-quick-horoscope-message]{min-height:1.2em;font-size:.88rem}
 .smv-saved-group+.smv-saved-group{margin-top:18px;padding-top:14px;border-top:2px solid #ead8b8}
 #smvSavedReports .smv-saved-group,#smvSavedReports h3,#smvSavedReports p,#smvSavedReports .smv-saved-row,#smvSavedReports .smv-saved-row span,#smvSavedReports .smv-saved-row b,#smvSavedReports .smv-saved-row small{color:#2f241d!important;-webkit-text-fill-color:#2f241d!important;opacity:1!important}
 #smvSavedReports h3{font-weight:900!important;font-size:1.15rem!important}

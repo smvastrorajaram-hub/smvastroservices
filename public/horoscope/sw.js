@@ -3,11 +3,11 @@
    Authentication, published Firestore refresh, account data and online services stay network-only.
    Location lookup keeps its existing GeoNames + India-offline behavior.
 */
-const SMV_CACHE_RELEASE='20261106-horoscope-benefits-export-policy-v1';
+const SMV_CACHE_RELEASE='20261107-horoscope-quick-payment-v1';
 const OFFLINE_CACHE='smv-horoscope-offline';
 const LOCATION_CACHE='smv-shared-india-places';
 const SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE;
-const RUNTIME_REVISION='v266-horoscope-benefits-export-policy-20261106';
+const RUNTIME_REVISION='v267-horoscope-quick-payment-20261107';
 
 const CORE=[
   './','./index.html',

@@ -4,13 +4,20 @@ on:
     branches:
       - main
       - fix/horoscope-benefits-login-export-policy-20261106
+      - fix/horoscope-login-paid-quick-unlock-20261107
     paths:
       - 'public/horoscope/config.js'
+      - 'public/horoscope/index.html'
+      - 'public/horoscope/horoscope-auth.mjs'
+      - 'public/horoscope/horoscope-form.js'
+      - 'public/horoscope/horoscope.js'
+      - 'public/horoscope/horoscope.css'
       - 'public/horoscope/report-store.mjs'
       - 'public/horoscope/sw.js'
       - 'public/sw.js'
       - 'public/horoscope/calendar/sw.js'
       - 'tests/horoscope-benefits-export-policy-regression.mjs'
+      - 'tests/horoscope-login-paid-quick-unlock-regression.mjs'
       - 'test/storage-and-safe-sw-updates.test.js'
       - 'test/smv-zip-brand-assets.test.mjs'
       - 'tests/calendar-rasi-palan-regression.mjs'
@@ -23,11 +30,17 @@ on:
       - feat/astrologer-registration-rates-admin-20261106
     paths:
       - 'public/horoscope/config.js'
+      - 'public/horoscope/index.html'
+      - 'public/horoscope/horoscope-auth.mjs'
+      - 'public/horoscope/horoscope-form.js'
+      - 'public/horoscope/horoscope.js'
+      - 'public/horoscope/horoscope.css'
       - 'public/horoscope/report-store.mjs'
       - 'public/horoscope/sw.js'
       - 'public/sw.js'
       - 'public/horoscope/calendar/sw.js'
       - 'tests/horoscope-benefits-export-policy-regression.mjs'
+      - 'tests/horoscope-login-paid-quick-unlock-regression.mjs'
       - 'test/storage-and-safe-sw-updates.test.js'
       - 'test/smv-zip-brand-assets.test.mjs'
       - 'tests/calendar-rasi-palan-regression.mjs'
@@ -52,9 +65,14 @@ jobs:
         run: |
           set -euo pipefail
           node --check public/horoscope/config.js
+          node --check public/horoscope/horoscope-auth.mjs
+          node --check public/horoscope/horoscope-form.js
+          node --check public/horoscope/horoscope.js
           node --check public/horoscope/report-store.mjs
       - name: Run benefits, login, no-export and scope regression tests
         run: node tests/horoscope-benefits-export-policy-regression.mjs
+      - name: Run logged-in quick payment, existing-form and PDF/Print regression tests
+        run: node tests/horoscope-login-paid-quick-unlock-regression.mjs
       - name: Run safe storage and synchronized cache tests
         run: node --test test/storage-and-safe-sw-updates.test.js test/smv-zip-brand-assets.test.mjs
       - name: Run Calendar, Saved Reports and Marriage Matching regressions
