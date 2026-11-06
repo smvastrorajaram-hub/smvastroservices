@@ -7,7 +7,7 @@ const SMV_CACHE_RELEASE='20261106-horoscope-benefits-export-policy-v1';
 const OFFLINE_CACHE='smv-horoscope-offline';
 const LOCATION_CACHE='smv-shared-india-places';
 const SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE;
-const RUNTIME_REVISION='v265-astrologer-registration-rates-20261106';
+const RUNTIME_REVISION='v266-horoscope-benefits-export-policy-20261106';
 
 const CORE=[
   './','./index.html',
