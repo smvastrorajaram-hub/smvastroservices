@@ -157,9 +157,9 @@ async function stateFor(feature){
     let state;
     if(actualPrice<1){
       state={
-        feature,mode:'off_free_full',enabled:true,
+        feature,mode:loggedIn?'off_free_full_no_export':'off_free_full',enabled:true,
         price:0,actualPrice,loggedIn,
-        entitled:true,fullAllowed:true,exportAllowed:loggedIn
+        entitled:true,fullAllowed:true,exportAllowed:false
       };
     }else if(loggedIn){
       state={
@@ -273,7 +273,7 @@ async function renderPolicyLock(feature,root,_legacyFeature,onUnlock,beforePay,s
   }
 
   // Public or authenticated free Full modes never enter the payment renderer.
-  if(state.mode==='off_free_full'||state.mode==='off_full_no_export'||state.mode==='off_full_export'||state.fullAllowed){
+  if(state.mode==='off_free_full'||state.mode==='off_free_full_no_export'||state.mode==='off_full_no_export'||state.mode==='off_full_export'||state.fullAllowed){
     clearGate(root);
     return;
   }
@@ -364,10 +364,17 @@ window.addEventListener('smv:report-ready',event=>{
   const feature=event?.detail?.feature;
   if(!FEATURES.has(feature))return;
 
-  if(modeCache.get(feature)==='off_full_no_export'){
+  const mode=modeCache.get(feature);
+  if(mode==='off_full_no_export'){
+    // Preserve the existing Admin ON + ₹0 handling exactly.
     event.detail.basicOnly=true;
     event.detail.noSavePrint=true;
+  }else if(mode==='off_free_full_no_export'){
+    // Admin OFF + ₹0 keeps the complete result, but never mounts Save/Print.
+    event.detail.noSavePrint=true;
+  }
 
+  if(event.detail?.noSavePrint){
     queueMicrotask(()=>{
       const root=event?.detail?.root;
       root?.querySelectorAll?.('.smv-manual-save-actions').forEach(el=>el.remove());
@@ -403,29 +410,20 @@ function syncHoroscopePaidEntry(){
   if(!roots.length)return Promise.resolve();
   return stateFor('advanced_analysis').then(state=>{
     for(const root of roots){
-      // Only show this early benefits/CTA panel to a logged-out visitor when
-      // Admin is ON and the Full Horoscope has a positive configured price.
-      if(state.mode!=='paid'||state.loggedIn||Number(state.actualPrice||0)<1){
+      // Keep the same full ten-section benefits and payment index visible
+      // before Login and after Login until the configured payment is verified.
+      if(state.mode!=='paid'||Number(state.actualPrice||0)<1||state.entitled){
         clearGate(root);
         continue;
       }
-      const amount=Number(state.actualPrice).toFixed(2);
-      root.classList.remove('hidden');
-      root.innerHTML=`<section class="smv-horoscope-pay-gate smv-horoscope-prelogin-benefits">
-        <h3>${T('Full Horoscope & Advanced Analysis','முழு ஜாதகம் மற்றும் மேம்பட்ட ஆய்வு')}</h3>
-        <p>${T('Basic calculation is free. The complete report is available at the configured price after Customer Login and payment.','அடிப்படை கணிப்பு இலவசம். Customer Login மற்றும் கட்டணத்திற்குப் பிறகு முழு அறிக்கையை நிர்ணயிக்கப்பட்ட விலையில் பெறலாம்.')}</p>
-        <ul>
-          <li>${T('Complete D1 chart, planetary positions, houses and aspects','முழு D1 ஜாதகம், கிரக நிலைகள், பாவங்கள் மற்றும் பார்வைகள்')}</li>
-          <li>${T('Divisional charts, Shadbala, Ashtakavarga and special strengths','வர்க்க ஜாதகங்கள், ஷட்பலம், அஷ்டகவர்க்கம் மற்றும் சிறப்பு பலங்கள்')}</li>
-          <li>${T('Vimshottari and other Dasa analysis, Tajaka and transit','விம்சோத்தரி உள்ளிட்ட தசா ஆய்வு, தாஜக மற்றும் கோச்சாரம்')}</li>
-          <li>${T('Complete Advanced Analysis, predictions and remedies','முழு மேம்பட்ட ஆய்வு, பலன்கள் மற்றும் பரிகார வழிகாட்டல்')}</li>
-        </ul>
-        <p class="smv-lock-price"><b>${T('Full Horoscope payment','முழு ஜாதகக் கட்டணம்')}: ₹${amount}</b></p>
-        <button type="button" data-horoscope-paid-entry>${T('Full Horoscope ₹','முழு ஜாதகம் ₹')}${amount} — ${T('Login to Pay','Login செய்து கட்டணம் செலுத்தவும்')}</button>
-      </section>`;
-      root.querySelector('[data-horoscope-paid-entry]')?.addEventListener('click',()=>{
-        document.querySelector('#smvHoroscopeAuth [data-login]')?.click();
-      });
+      renderPolicyLock(
+        'advanced_analysis',
+        root,
+        {enabled:true,price:state.actualPrice},
+        undefined,
+        undefined,
+        state
+      );
     }
   });
 }
