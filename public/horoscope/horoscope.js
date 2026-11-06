@@ -247,7 +247,11 @@
     labels.forEach((el,i)=>{if(texts[i])el.textContent=texts[i];});
     if(heading)heading.textContent=ta?'தமிழில் ஜாதகம் உருவாக்குக':'Create Horoscope';
     if(sectionRule)sectionRule.textContent=ta?'தமிழ் ஜோதிட வழிகாட்டி':'Horoscope';
-    if(btn){btn.textContent=ta?'தமிழில் ஜாதகம் உருவாக்குக':'Create Horoscope';}
+    if(btn){
+      btn.textContent=window.__smvAdminPaidQuickMode
+        ? (ta?'அடிப்படை ஜாதகம் கணிக்க':'Calculate Basic Horoscope')
+        : (ta?'தமிழில் ஜாதகம் உருவாக்குக':'Create Horoscope');
+    }
     if(clear)clear.textContent=ta?'மீட்டமை':'Reset';
     const fields={tamilAstroName:ta?'உங்கள் பெயர்':'Your name',tamilBirthPlace:ta?'நகரம், மாநிலம்':'City, State',tamilNakshatra:ta?'எ.கா. ரோகிணி':'e.g. Rohini',tamilLat:ta?'எ.கா. 13.0827':'e.g. 13.0827',tamilLon:ta?'எ.கா. 80.2707':'e.g. 80.2707',tamilCurrentResidence:ta?'நகரம், மாநிலம், நாடு':'City, State, Country'};
     Object.entries(fields).forEach(([id,v])=>{const el=$(id);if(el)el.placeholder=v;});
@@ -2970,8 +2974,19 @@ if(lat===''||lon===''){
           await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang:getHoroscopeLang(),rootId:'tamilAdvancedAstrology',name:($('tamilAstroName')?.value||'').trim(),chart:d,generationId,birthPlace:placeValue,currentWork,maritalStatus,currentResidence});
           resultBox?.classList.remove('hidden');
           resultBox?.setAttribute('aria-busy','false');
+          window.dispatchEvent(new CustomEvent('smv:report-ready',{detail:{
+            feature:'advanced_analysis',
+            root:resultBox,
+            generationLanguage:getHoroscopeLang(),
+            birthIdentity:window.__smvGetReportContext?.('advanced_analysis'),
+            name:($('tamilAstroName')?.value||'Horoscope').trim(),
+            calculation:window.__smvLastFullReport||d
+          }}));
         };
-        await runAdvancedAfterAccess();
+        if(typeof window.__smvRequireHoroscopeFeatureAccess!=='function')
+          throw new Error('Horoscope payment policy is not ready. Please reload the page.');
+        const allowed=await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',advRoot,runAdvancedAfterAccess);
+        if(allowed)await runAdvancedAfterAccess();
       }
       // SINGLE RELEASE: chart + all new features become visible together.
       if(resultBox){
@@ -2986,7 +3001,7 @@ if(lat===''||lon===''){
     }
     finally{
       if(resultBox) resultBox.setAttribute('aria-busy','false');
-      if(btn){btn.disabled=false;btn.textContent='தமிழில் ஜாதகம் உருவாக்குக';} if(progress) progress.remove();
+      if(btn){btn.disabled=false;btn.textContent=window.__smvAdminPaidQuickMode?'அடிப்படை ஜாதகம் கணிக்க':'தமிழில் ஜாதகம் உருவாக்குக';} if(progress) progress.remove();
       window.__smvHoroscopeGenerating=false;
     }
   }

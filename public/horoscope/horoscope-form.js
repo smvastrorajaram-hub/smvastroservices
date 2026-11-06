@@ -44,6 +44,59 @@
   let busy=false;
   window.__smvHoroscopeIsBusy=()=>busy||window.__smvSnapshotBusy;
 
+  const normalizePaymentBirthTime=value=>{
+    const s=String(value||'').trim();
+    let m=s.match(/^(\d{1,2}):([0-5]\d)$/);
+    if(m){const h=Number(m[1]);if(h>=0&&h<=23)return `${String(h).padStart(2,'0')}:${m[2]}`;}
+    m=s.match(/^(\d{1,2})[.:]([0-5]\d)\s*(AM|PM)$/i);
+    if(m){let h=Number(m[1]);const ap=m[3].toUpperCase();if(h<1||h>12)return '';if(ap==='AM')h=h===12?0:h;else h=h===12?12:h+12;return `${String(h).padStart(2,'0')}:${m[2]}`;}
+    return '';
+  };
+
+  // Payment report keys are built from the exact same birth fields and historical
+  // IANA offset as the normal Generate flow. This prevents a second birth-details
+  // prompt when the Customer opens either existing or quick payment box.
+  window.__smvPrepareHoroscopePaymentContext=async(language='en')=>{
+    const tamil=String(language)==='ta',prefix=tamil?'tamil':'english';
+    const date=$(prefix==='tamil'?'tamilDob':'englishDob')?.value||'';
+    const rawTime=$(prefix==='tamil'?'tamilTob':'englishTob')?.value||'';
+    const time=normalizePaymentBirthTime(rawTime);
+    const placeEl=$(prefix==='tamil'?'tamilBirthPlace':'englishBirthPlace');
+    const place=String(placeEl?.value||'').trim();
+    const lat=String($(prefix==='tamil'?'tamilLat':'englishLat')?.value||'').trim();
+    const lon=String($(prefix==='tamil'?'tamilLon':'englishLon')?.value||'').trim();
+    const fail=message=>{throw new Error(message);};
+    const year=Number(date.slice(0,4));
+    if(!date||!Number.isInteger(year)||year<1800||year>2399)fail(text('Enter a supported birth date (1800–2399).','ஆதரிக்கப்படும் பிறந்த தேதியை உள்ளிடவும் (1800–2399).'));
+    if(!time)fail(text('Enter a valid birth time, for example 22:05.','சரியான பிறந்த நேரத்தை உள்ளிடவும். உதாரணம்: 22:05.'));
+    if(place.length<2)fail(text('Enter your Place of Birth.','பிறந்த இடத்தை உள்ளிடவும்.'));
+    if(lat===''||lon===''||!Number.isFinite(Number(lat))||!Number.isFinite(Number(lon))||Math.abs(Number(lat))>90||Math.abs(Number(lon))>180)fail(text('Enter a valid Place of Birth, Latitude and Longitude.','சரியான பிறந்த இடம், அட்சரேகை, தீர்க்கரேகையை உள்ளிடவும்.'));
+    const zoneInput=$(prefix==='tamil'?'tamilBirthTimezone':'englishBirthTimezone');
+    if(placeEl?.dataset?.timezoneSource==='unverified'&&!String(zoneInput?.value||'').trim())fail(text('Verify or enter the correct IANA birth timezone before payment.','கட்டணத்திற்கு முன் சரியான IANA பிறப்பு நேர மண்டலத்தை உறுதிப்படுத்தவும்.'));
+    let zone=String(zoneInput?.value||placeEl?.dataset?.timezone||'').trim();
+    const {offsetMinutesAt,approximateTimezoneAt}=await import('./offline/places/timezone.mjs');
+    if(!zone){zone=await approximateTimezoneAt(lat,lon);if(zoneInput)zoneInput.value=zone;}
+    const historicalOffset=offsetMinutesAt(zone,date,time);
+    if(!Number.isFinite(historicalOffset))fail(text('The birth timezone could not be verified.','பிறந்த இட நேர மண்டலத்தைச் சரிபார்க்க முடியவில்லை.'));
+    if($('birthUtcOffset'))$('birthUtcOffset').value=String(historicalOffset/60);
+    const currentWork=tamil?String($('tamilCurrentWork')?.value||'').trim():'';
+    const maritalStatus=tamil?String($('tamilMaritalStatus')?.value||'').trim():'';
+    const currentResidence=tamil?String($('tamilCurrentResidence')?.value||'').trim():'';
+    const context={date,time,lat,lon,birthPlace:place,currentWork,maritalStatus,currentResidence,utcOffsetMinutes:historicalOffset,language:tamil?'ta':'en'};
+    if(typeof window.__smvSetReportContext!=='function')fail(text('Horoscope payment context is not ready. Please reload the page.','ஜாதக கட்டண விவரங்கள் தயாராகவில்லை. பக்கத்தை மீண்டும் திறக்கவும்.'));
+    window.__smvSetReportContext('advanced_analysis',context);
+    return context;
+  };
+
+  window.__smvGenerateHoroscopeFromCurrentFields=(language='en')=>{
+    if(window.__smvHoroscopeIsBusy?.()||window.__smvHoroscopeGenerating)throw new Error(text('A Horoscope calculation is already running.','ஜாதகக் கணக்கீடு தற்போது நடைபெறுகிறது.'));
+    const button=$(String(language)==='ta'?'generateTamilHoroscope':'generateEnglishHoroscope');
+    if(!button)throw new Error(text('Horoscope calculation button is unavailable.','ஜாதகம் கணிக்கும் பொத்தான் கிடைக்கவில்லை.'));
+    if(String(language)==='ta'){try{localStorage.setItem('smvLanguage','ta');}catch(_){}}
+    button.click();
+    return true;
+  };
+
   $('generateEnglishHoroscope')?.addEventListener('click',async()=>{
     if(busy||window.__smvHoroscopeGenerating)return;
     const lang=document.documentElement.lang==='ta'?'ta':'en';

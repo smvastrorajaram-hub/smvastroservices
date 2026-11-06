@@ -112,7 +112,7 @@ test('Horoscope and Calendar show their own product logos, titles and consistent
 test('All three independent Service Workers share one new cache release and cache the intended website artwork', () => {
   const workers=[read('public/sw.js'),read('public/horoscope/sw.js'),read('public/horoscope/calendar/sw.js')];
   const versions=workers.map(source=>/const SMV_CACHE_RELEASE='([^']+)'/.exec(source)?.[1]);
-  assert.deepEqual(versions,['20261106-horoscope-benefits-export-policy-v1','20261106-horoscope-benefits-export-policy-v1','20261106-horoscope-benefits-export-policy-v1']);
+  assert.deepEqual(versions,['20261107-horoscope-quick-payment-v1','20261107-horoscope-quick-payment-v1','20261107-horoscope-quick-payment-v1']);
   assert.ok(workers[0].includes("'./assets/favicon-astro.ico'"));
   assert.ok(workers[0].includes("'./assets/smv-home-logo.webp'"));
   assert.ok(workers[1].includes("'./assets/favicon-horoscope.ico'"));

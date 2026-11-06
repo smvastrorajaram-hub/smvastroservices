@@ -402,26 +402,94 @@ function clearAfterAuthRemount(){
   setTimeout(clearCurrentResults,0);
 }
 
+function setPaidModeGenerateLabels(active){
+  window.__smvAdminPaidQuickMode=!!active;
+  const isTamil=ta();
+  const englishButton=document.getElementById('generateEnglishHoroscope');
+  const tamilButton=document.getElementById('generateTamilHoroscope');
+  if(englishButton)englishButton.textContent=active
+    ? T('Calculate Basic Horoscope','அடிப்படை ஜாதகம் கணிக்க')
+    : T('Create Horoscope','ஜாதகம் உருவாக்குக');
+  if(tamilButton)tamilButton.textContent=active
+    ? T('Calculate Basic Horoscope','அடிப்படை ஜாதகம் கணிக்க')
+    : (isTamil?'தமிழில் ஜாதகம் உருவாக்குக':'Create Horoscope');
+}
+
+function renderQuickHoroscopePayment(root,state,language){
+  if(!root)return;
+  const amount=Number(state.actualPrice||0).toFixed(2);
+  root.classList.remove('hidden');
+  root.innerHTML=`<section class="smv-horoscope-pay-gate smv-horoscope-quick-pay-gate">
+    <h3>${T('Full Horoscope Report','முழு ஜாதக அறிக்கை')}</h3>
+    <p>${T('Use the birth details already entered above. After payment verification, the complete Horoscope with all ten Advanced Analysis sections and PDF / Print options will open.','மேலே ஏற்கனவே உள்ளிட்ட பிறந்த விவரங்களே பயன்படுத்தப்படும். கட்டணம் உறுதியானதும் பத்து Advanced Analysis பகுதிகளுடன் முழு ஜாதகமும் PDF / Print வசதியும் திறக்கும்.')}</p>
+    <p class="smv-lock-price"><b>${T('Full Horoscope Payment','முழு ஜாதகக் கட்டணம்')}: ₹${amount}</b></p>
+    <button type="button" data-smv-quick-horoscope-unlock>${T('Open Full Horoscope — ₹','முழு ஜாதகம் திறக்க — ₹')}${amount}</button>
+    <p data-smv-quick-horoscope-message role="status" aria-live="polite"></p>
+  </section>`;
+  const button=root.querySelector('[data-smv-quick-horoscope-unlock]');
+  const message=root.querySelector('[data-smv-quick-horoscope-message]');
+  button?.addEventListener('click',async()=>{
+    if(button.disabled)return;
+    button.disabled=true;
+    if(message)message.textContent=T('Preparing the birth details already entered…','ஏற்கனவே உள்ளிட்ட பிறந்த விவரங்கள் தயாராகின்றன…');
+    try{
+      if(typeof window.__smvPrepareHoroscopePaymentContext!=='function')throw Error(T('Horoscope birth details are not ready. Reload the page and try again.','ஜாதகப் பிறந்த விவரங்கள் தயாராகவில்லை. பக்கத்தை மீண்டும் திறந்து முயற்சிக்கவும்.'));
+      if(typeof window.__smvPayForHoroscopeFeature!=='function')throw Error(T('Payment service is not ready. Reload the page and try again.','கட்டணச் சேவை தயாராகவில்லை. பக்கத்தை மீண்டும் திறந்து முயற்சிக்கவும்.'));
+      if(typeof window.__smvGenerateHoroscopeFromCurrentFields!=='function')throw Error(T('Horoscope calculation is not ready. Reload the page and try again.','ஜாதகக் கணிப்பு தயாராகவில்லை. பக்கத்தை மீண்டும் திறந்து முயற்சிக்கவும்.'));
+      await window.__smvPrepareHoroscopePaymentContext(language);
+      if(message)message.textContent=T('Opening the existing secure payment flow…','ஏற்கனவே உள்ள பாதுகாப்பான கட்டணச் செயல்முறை திறக்கப்படுகிறது…');
+      await window.__smvPayForHoroscopeFeature('advanced_analysis');
+      if(message)message.textContent=T('Payment verified. Opening the complete Horoscope and Advanced Analysis…','கட்டணம் உறுதி செய்யப்பட்டது. முழு ஜாதகமும் மேம்பட்ட ஆய்வும் திறக்கப்படுகின்றன…');
+      await window.__smvGenerateHoroscopeFromCurrentFields(language);
+    }catch(error){
+      if(message)message.textContent=error?.message||String(error);
+    }finally{
+      button.disabled=false;
+    }
+  });
+}
+
 function syncHoroscopePaidEntry(){
-  const roots=[
-    document.getElementById('smvHoroscopePaidEntryEnglish'),
-    document.getElementById('smvHoroscopePaidEntryTamil')
-  ].filter(Boolean);
-  if(!roots.length)return Promise.resolve();
+  const benefitsRoots=[
+    {root:document.getElementById('smvHoroscopePaidEntryEnglish'),language:'en'},
+    {root:document.getElementById('smvHoroscopePaidEntryTamil'),language:'ta'}
+  ].filter(item=>item.root);
+  const quickRoots=[
+    {root:document.getElementById('smvHoroscopeQuickPaidEntryEnglish'),language:'en'},
+    {root:document.getElementById('smvHoroscopeQuickPaidEntryTamil'),language:'ta'}
+  ].filter(item=>item.root);
   return stateFor('advanced_analysis').then(state=>{
-    for(const root of roots){
-      // Keep the same full ten-section benefits and payment index visible
-      // before Login and after Login until the configured payment is verified.
+    const active=state.mode==='paid'&&state.loggedIn===true&&Number(state.actualPrice||0)===1;
+    setPaidModeGenerateLabels(active);
+
+    // The compact button is deliberately limited to Admin ON + positive price
+    // + an authenticated Customer. Other access modes retain their old UI.
+    for(const item of quickRoots){
+      if(!active){clearGate(item.root);continue;}
+      renderQuickHoroscopePayment(item.root,state,item.language);
+    }
+
+    // Preserve the existing ten-section benefits/payment boxes in their
+    // original DOM position. Once logged in, prepare the current form context
+    // before payment and reopen the same form after verified payment.
+    for(const item of benefitsRoots){
       if(state.mode!=='paid'||Number(state.actualPrice||0)<1||state.entitled){
-        clearGate(root);
+        clearGate(item.root);
         continue;
       }
+      const requestedPaidMode=state.loggedIn===true&&Number(state.actualPrice||0)===1;
+      const beforePay=requestedPaidMode
+        ? ()=>window.__smvPrepareHoroscopePaymentContext?.(item.language)
+        : undefined;
+      const onUnlock=requestedPaidMode
+        ? ()=>window.__smvGenerateHoroscopeFromCurrentFields?.(item.language)
+        : undefined;
       renderPolicyLock(
         'advanced_analysis',
-        root,
+        item.root,
         {enabled:true,price:state.actualPrice},
-        undefined,
-        undefined,
+        onUnlock,
+        beforePay,
         state
       );
     }
@@ -451,6 +519,7 @@ window.addEventListener('smv:horoscope-local-auth',event=>{
   // Logout closes any Full/current calculation and returns to public/basic mode.
   modeCache.clear();
   clearAfterAuthRemount();
+  syncHoroscopePaidEntry().catch(()=>{});
 });
 
 window.addEventListener('smv-language',()=>{

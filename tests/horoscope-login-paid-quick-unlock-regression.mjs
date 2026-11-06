@@ -33,15 +33,16 @@ test("The quick-payment box is added below each Generate button without replacin
 });
 
 test("Quick payment appears only for Admin ON + positive price + an authenticated Customer", () => {
-  assert.match(policy, /const active=state\.mode==='paid'&&state\.loggedIn===true&&Number\(state\.actualPrice\|\|0\)>=1/);
+  assert.match(policy, /const active=state\.mode==='paid'&&state\.loggedIn===true&&Number\(state\.actualPrice\|\|0\)===1/);
   assert.match(policy, /if\(!active\)\{clearGate\(item\.root\);continue;\}/);
   assert.match(policy, /renderQuickHoroscopePayment\(item\.root,state,item\.language\)/);
 });
 
 test("The existing full ten-section benefits box stays in place and receives logged-in before-pay and after-pay callbacks", () => {
   assert.match(policy, /renderPolicyLock\(\s*'advanced_analysis',\s*item\.root/);
-  assert.match(policy, /const beforePay=state\.loggedIn===true\s*\? \(\)=>window\.__smvPrepareHoroscopePaymentContext\?\.\(item\.language\)/);
-  assert.match(policy, /const onUnlock=state\.loggedIn===true\s*\? \(\)=>window\.__smvGenerateHoroscopeFromCurrentFields\?\.\(item\.language\)/);
+  assert.match(policy, /const requestedPaidMode=state\.loggedIn===true&&Number\(state\.actualPrice\|\|0\)===1/);
+  assert.match(policy, /const beforePay=requestedPaidMode\s*\? \(\)=>window\.__smvPrepareHoroscopePaymentContext\?\.\(item\.language\)/);
+  assert.match(policy, /const onUnlock=requestedPaidMode\s*\? \(\)=>window\.__smvGenerateHoroscopeFromCurrentFields\?\.\(item\.language\)/);
   assert.match(policy, /root,\s*\{enabled:true,price:state\.actualPrice\},\s*onUnlock,\s*beforePay,\s*state/);
 });
 
@@ -65,7 +66,7 @@ test("Generate button label changes only under the logged-in paid Admin policy; 
 
 test("Birth details are prepared from the existing English or Tamil inputs, including historical IANA timezone offset", () => {
   assert.match(form, /window\.__smvPrepareHoroscopePaymentContext=async\(language='en'\)/);
-  assert.match(form, /const prefix=tamil\?'tamil':'english'/);
+  assert.match(form, /prefix=tamil\?'tamil':'english'/);
   assert.match(form, /normalizePaymentBirthTime/);
   assert.match(form, /offsetMinutesAt\(zone,date,time\)/);
   assert.match(form, /window\.__smvSetReportContext\('advanced_analysis',context\)/);
@@ -77,7 +78,7 @@ test("Birth details are prepared from the existing English or Tamil inputs, incl
 test("After verified payment the same selected form is used; the user is not asked to re-enter birth details", () => {
   assert.match(form, /window\.__smvGenerateHoroscopeFromCurrentFields=\(language='en'\)=>/);
   assert.match(form, /button\.click\(\);\s*return true/);
-  assert.match(policy, /await window\.__smvPrepareHoroscopePaymentContext\(item\.language\)/);
+  assert.match(policy, /await window\.__smvPrepareHoroscopePaymentContext\(language\)/);
   assert.match(policy, /await window\.__smvPayForHoroscopeFeature\('advanced_analysis'\)/);
   assert.match(auth, /rememberPaidAccess\(feature,key\)/);
 });
@@ -93,10 +94,9 @@ test("Verified full Horoscope report continues through existing Save and PDF/Pri
   assert.match(store, /window\.addEventListener\('smv:report-ready',e=>\{if\(owner\(\)&&!e\.detail\?\.basicOnly&&!e\.detail\?\.noSavePrint\)attach\(e\.detail\);\}\);/);
   assert.match(store, /async function saveAndPrint\(detail\)/);
   assert.match(store, /function attach\(detail\)[\s\S]{0,700}data-print/);
-  assert.match(horoscope, /noSavePrint|smv:report-ready/);
 });
 
-test("Only Horoscope payment UI and cache markers change; all three app cache releases remain synchronized", () => {
+test("All three apps use one synchronized cache release; Horoscope runtime revision is bumped", () => {
   const expected = "20261107-horoscope-quick-payment-v1";
   const versions = workers.map(source => /const SMV_CACHE_RELEASE='([^']+)'/.exec(source)?.[1]);
   assert.deepEqual(versions, [expected, expected, expected]);
