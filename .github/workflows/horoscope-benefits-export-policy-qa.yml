@@ -16,6 +16,7 @@ on:
       - 'tests/calendar-rasi-palan-regression.mjs'
       - 'tests/saved-report-mobile-layout-regression.mjs'
       - 'tests/marriage-matching-feature-mode-regression.mjs'
+      - '.github/workflows/horoscope-benefits-export-policy-qa.yml'
   pull_request:
     branches:
       - main
@@ -32,6 +33,7 @@ on:
       - 'tests/calendar-rasi-palan-regression.mjs'
       - 'tests/saved-report-mobile-layout-regression.mjs'
       - 'tests/marriage-matching-feature-mode-regression.mjs'
+      - '.github/workflows/horoscope-benefits-export-policy-qa.yml'
 permissions:
   contents: read
 concurrency:
