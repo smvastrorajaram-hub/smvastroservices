@@ -51,13 +51,14 @@ function policyHarness({enabled,price,loggedIn=false,entitled=false,responses=nu
  return {state:()=>sandbox.__smvFeatureState('advanced_analysis'),requestCount:()=>requests};
 }
 
-// Admin OFF + Rs.0: public Full access before and after Login.
+// Admin OFF + Rs.0: public Full access before Login; signed-in Full remains no-export.
 for(const loggedIn of [false,true]){
  const h=policyHarness({enabled:false,price:0,loggedIn});
  const state=await h.state();
- yes(state.mode==='off_free_full','Admin OFF + Rs.0 is identified as public free Full mode');
+ yes(state.mode===(loggedIn?'off_free_full_no_export':'off_free_full'),'Admin OFF + Rs.0 selects the correct public/signed-in Full mode');
  yes(state.fullAllowed===true&&state.entitled===true,'Admin OFF + Rs.0 grants Full Horoscope and Advanced Analysis');
  yes(state.loggedIn===loggedIn,'Admin OFF + Rs.0 preserves the actual Login state');
+ yes(state.exportAllowed===false,'Admin OFF + Rs.0 never enables Save/Print');
 }
 
 // Admin OFF + Rs.1: Basic remains public; verified Customer Login unlocks Full free.
@@ -148,7 +149,7 @@ yes(html.includes('horoscope-form.js?v=20261106-horoscope-access-v1'),'Horoscope
 yes(html.includes('marriage-matching.js?v=20261106-basic-nakshatra-input-v1'),'Marriage Matching uses its cache-busted URL');
 
 // All three products share the marker. Existing offline/user data is not cleared.
-const marker='20261106-astrologer-registration-rates-v1';
+const marker='20261106-horoscope-benefits-export-policy-v1';
 yes(workers.every(source=>source.includes(marker)),'All three Service Workers share the synchronized cache release');
 no(policy.includes('localStorage.clear('),'The policy does not clear origin-wide localStorage');
 no(policy.includes('caches.delete('),'The policy does not clear Cache Storage');
