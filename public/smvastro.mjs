@@ -1387,8 +1387,8 @@ async function compressPhoto(file){
 }
 $("astroRegistrationForm")?.addEventListener("submit",async e=>{
  e.preventDefault();const form=e.target,btn=form.querySelector('button[type="submit"]');
- const name=$("arName").value.trim(),mobile=$("arMobile").value.trim(),email=$("arEmail").value.trim(),password=$("arPassword").value,specialization=$("arSpecialization").value.trim(),experience=Number($("arExperience").value||0),languages=String($("arLanguages")?.value||"").split(/[,;|]/).map(v=>v.trim().replace(/\s+/g," ")).filter(Boolean),bio=$("arBio").value.trim(),bankName=$("arBankName").value.trim(),accountName=$("arAccountName").value.trim(),accountNumber=$("arAccountNumber").value.trim(),ifsc=$("arIfsc").value.trim(),upi=$("arUpi").value.trim(),photoFile=$("arPhoto").files[0];
- if(!name||!mobile||!email||password.length<6||!specialization||experience<0||!languages.length||languages.length>12||languages.some(v=>v.length>40)||languages.join(", ").length>240||!bio||!bankName||!accountName||!accountNumber||!ifsc||!photoFile){message("astroRegMsg",'<span class="error">Please complete all required fields.</span>');return;}
+ const name=$("arName").value.trim(),mobile=$("arMobile").value.trim(),email=$("arEmail").value.trim(),password=$("arPassword").value,specialization=$("arSpecialization").value.trim(),experience=Number($("arExperience").value||0),languages=String($("arLanguages")?.value||"").split(/[,;|]/).map(v=>v.trim().replace(/\s+/g," ")).filter(Boolean),chatPricePerMinute=Number($("arChatRate")?.value),callPricePerMinute=Number($("arCallRate")?.value),bio=$("arBio").value.trim(),bankName=$("arBankName").value.trim(),accountName=$("arAccountName").value.trim(),accountNumber=$("arAccountNumber").value.trim(),ifsc=$("arIfsc").value.trim(),upi=$("arUpi").value.trim(),photoFile=$("arPhoto").files[0];
+ if(!name||!mobile||!email||password.length<6||!specialization||experience<0||!languages.length||languages.length>12||languages.some(v=>v.length>40)||languages.join(", ").length>240||!Number.isFinite(chatPricePerMinute)||chatPricePerMinute<1||chatPricePerMinute>30||Math.abs(chatPricePerMinute*100-Math.round(chatPricePerMinute*100))>1e-7||!Number.isFinite(callPricePerMinute)||callPricePerMinute<1||callPricePerMinute>30||Math.abs(callPricePerMinute*100-Math.round(callPricePerMinute*100))>1e-7||!bio||!bankName||!accountName||!accountNumber||!ifsc||!photoFile){message("astroRegMsg",'<span class="error">Complete all required fields. Live Call and Live Chat rates must each be ₹1–₹30 per minute, with up to two decimal places.</span>');return;}
  btn.disabled=true;btn.textContent="CREATING ACCOUNT...";message("astroRegMsg",'<span class="small">Creating your account...</span>');
  smvRegistrationInProgress=true;
  try{
@@ -1409,7 +1409,7 @@ $("astroRegistrationForm")?.addEventListener("submit",async e=>{
   try {
     profileResponse=await withTimeout(renderApi("/register-astrologer-profile",{
       method:"POST",
-      body:JSON.stringify({name,mobile,specialization,experience,languages,bio,bankName,accountName,accountNumber,ifsc,upi,photoData,language:"en"})
+      body:JSON.stringify({name,mobile,specialization,experience,languages,callPricePerMinute,chatPricePerMinute,bio,bankName,accountName,accountNumber,ifsc,upi,photoData,language:"en"})
     },cred.user),30000);
   } catch(networkErr) {
     const raw=String(networkErr?.message||networkErr||"");
@@ -1971,6 +1971,8 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
         <p class="smv-astro-profile-value">${escapeHtml(ad.experience||0)} years experience</p>
         <p class="astro-profile-bio">${escapeHtml(ad.bio||ad.about||'')}</p>
         <p class="small"><b>Languages:</b> ${escapeHtml(astrologerLanguages.length?astrologerLanguages.join(', '):'Not specified in profile')}</p>
+        <p class="small"><b>Live Chat Rate:</b> ${Number(ad.chatPricePerMinute??data.chatPricePerMinute)>0?'₹'+Number(ad.chatPricePerMinute??data.chatPricePerMinute).toFixed(2)+'/minute':'Not configured'}</p>
+        <p class="small"><b>Live Call Rate:</b> ${Number(ad.callPricePerMinute??data.callPricePerMinute)>0?'₹'+Number(ad.callPricePerMinute??data.callPricePerMinute).toFixed(2)+'/minute':'Not configured'}</p>
         <div id="smvLiveDashboardMount" style="margin-top:12px"></div>
       </div>
     </div>
@@ -3159,7 +3161,7 @@ async function loadAdminPanelData(background=false){
   $('testRazorpayBtn').onclick=async()=>{const b=$('testRazorpayBtn');b.disabled=true;b.textContent='TESTING...';try{const r=await withTimeout(renderApi('/test-razorpay',{method:'GET'}),60000);$('razorpayTestMsg').innerHTML='<span class="success"><b>Razorpay connection OK.</b> '+escapeHtml(r?.message||'Render payment server and Razorpay API are working.')+'</span>';}catch(e){$('razorpayTestMsg').innerHTML='<span class="error"><b>Razorpay test failed:</b> '+escapeHtml(e.message||String(e))+'</span>';}b.disabled=false;b.textContent='TEST RAZORPAY CONNECTION';};
 
   const box=$('pendingAstros');
-  box.innerHTML=pendingDocs.length?pendingDocs.map(d=>{const a=d.data();return `<div class="card" style="margin:10px 0">${a.photoData?`<img src="${a.photoData}" style="width:100px;height:100px;border-radius:50%;object-fit:cover">`:''}<h3>${escapeHtml(a.name||'Astrologer')}</h3><p><b>Email:</b> ${escapeHtml(a.adminContactEmail||'')}</p><p><b>Mobile:</b> ${escapeHtml(a.adminContactMobile||'')}</p><p><b>Expertise:</b> ${escapeHtml(a.expertise||a.specialization||'')}</p><p><b>Experience:</b> ${escapeHtml(a.experience||0)} years</p><p><b>Bio:</b> ${escapeHtml(a.bio||a.about||'')}</p><div id="payout_${d.id}" class="small">Loading private payout details...</div><div class="action-row"><button class="btn" data-approve="${d.id}">APPROVE</button><button class="btn gray" data-reject="${d.id}">REJECT</button></div><input id="reject_${d.id}" placeholder="Rejection reason (required if rejecting)"><div id="astroApprovalMsg_${d.id}" class="small" role="status" aria-live="polite"></div></div>`}).join(''):'<div class="empty">No pending astrologer applications.</div>';
+  box.innerHTML=pendingDocs.length?pendingDocs.map(d=>{const a=d.data();return `<div class="card" style="margin:10px 0">${a.photoData?`<img src="${a.photoData}" style="width:100px;height:100px;border-radius:50%;object-fit:cover">`:''}<h3>${escapeHtml(a.name||'Astrologer')}</h3><p><b>Email:</b> ${escapeHtml(a.adminContactEmail||'')}</p><p><b>Mobile:</b> ${escapeHtml(a.adminContactMobile||'')}</p><p><b>Expertise:</b> ${escapeHtml(a.expertise||a.specialization||'')}</p><p><b>Experience:</b> ${escapeHtml(a.experience??a.experienceYears??0)} years</p><p><b>Languages:</b> ${escapeHtml((()=>{const raw=a.languages??a.spokenLanguages??a.language??[];return (Array.isArray(raw)?raw:String(raw||'').split(/[,;|]/)).map(v=>String(v||'').trim()).filter(Boolean).join(', ');})()||'Not specified')}</p><p><b>Live Chat Rate:</b> ${Number(a.chatPricePerMinute)>0?'₹'+Number(a.chatPricePerMinute).toFixed(2)+'/minute':'Not configured'}</p><p><b>Live Call Rate:</b> ${Number(a.callPricePerMinute)>0?'₹'+Number(a.callPricePerMinute).toFixed(2)+'/minute':'Not configured'}</p><p><b>Bio:</b> ${escapeHtml(a.bio||a.about||'')}</p><div id="payout_${d.id}" class="small">Loading private payout details...</div><div class="action-row"><button class="btn" data-approve="${d.id}">APPROVE</button><button class="btn gray" data-reject="${d.id}">REJECT</button></div><input id="reject_${d.id}" placeholder="Rejection reason (required if rejecting)"><div id="astroApprovalMsg_${d.id}" class="small" role="status" aria-live="polite"></div></div>`}).join(''):'<div class="empty">No pending astrologer applications.</div>';
   await smvMapLimit(pendingDocs,4,async d=>{try{const ps=await getDoc(doc(db,'smv_payouts',d.id));if(ps.exists()){const p=ps.data();const target=$('payout_'+d.id);if(target)target.innerHTML=`<b>PRIVATE BANK/UPI:</b> Bank: ${escapeHtml(p.bankName||'')} · Holder: ${escapeHtml(p.accountName||'')} · Account: ${escapeHtml(p.accountNumber||'')} · IFSC: ${escapeHtml(p.ifsc||'')} · UPI: ${escapeHtml(p.upi||'')} · Status: ${escapeHtml(p.status||'')}`;}}catch(e){const target=$('payout_'+d.id);if(target)target.textContent='Payout details unavailable.';}});
   box.querySelectorAll('[data-approve]').forEach(b=>b.onclick=async()=>{
     const id=b.dataset.approve;
@@ -3210,6 +3212,14 @@ async function loadAdminPanelData(background=false){
         <h3>${escapeHtml(a.name||'Astrologer')}</h3>
         <div class="small"><b>Astrologer ID:</b> ${escapeHtml(d.id)} · <b>Profile Edit:</b> ${allowed?'Allowed':'Blocked'}</div>
         <div style="margin:10px 0">
+          <div class="grid" style="align-items:end;gap:10px">
+            <label for="adminAstrologerExpertise_${d.id}"><b>Expertise / Specialization</b><input id="adminAstrologerExpertise_${d.id}" type="text" maxlength="180" value="${escapeHtml(a.expertise||a.specialization||'')}" placeholder="Expertise / Specialization" required></label>
+            <label for="adminAstrologerExperience_${d.id}"><b>Experience (years)</b><input id="adminAstrologerExperience_${d.id}" type="number" min="0" max="100" step="1" value="${escapeHtml(String(Number(a.experience??a.experienceYears??0)))}" required></label>
+          </div>
+          <div class="action-row"><button class="btn" data-professional-details-save="${d.id}" type="button">SAVE EXPERIENCE &amp; EXPERTISE</button></div>
+          <div class="small" id="adminAstrologerDetailsMsg_${d.id}" role="status" aria-live="polite"></div>
+        </div>
+        <div style="margin:10px 0">
           <label for="adminAstrologerLanguages_${d.id}"><b>Languages Spoken</b><input id="adminAstrologerLanguages_${d.id}" type="text" maxlength="240" value="${escapeHtml((()=>{const raw=a.languages??a.spokenLanguages??a.language??[];return (Array.isArray(raw)?raw:String(raw||'').split(/[,;|]/)).map(v=>String(v||'').trim()).filter(Boolean).join(', ');})())}" placeholder="Tamil, English"></label>
           <div class="action-row"><button class="btn" data-languages-save="${d.id}" type="button">SAVE LANGUAGES</button></div>
           <div class="small" id="adminAstrologerLanguagesMsg_${d.id}" role="status"></div>
@@ -3232,6 +3242,26 @@ async function loadAdminPanelData(background=false){
         <div class="small" id="adminProfileMsg_${d.id}"></div>
       </div>`;
     }).join(''):'<div class="empty">No approved astrologers available.</div>';
+
+    profileBox.querySelectorAll('[data-professional-details-save]').forEach(b=>b.onclick=async()=>{
+      const id=b.dataset.professionalDetailsSave;
+      const expertiseInput=$('adminAstrologerExpertise_'+id),experienceInput=$('adminAstrologerExperience_'+id);
+      const msg=$('adminAstrologerDetailsMsg_'+id);
+      const expertise=String(expertiseInput?.value||'').trim();
+      const experienceRaw=String(experienceInput?.value||'').trim(),experience=Number(experienceRaw);
+      if(!expertise||expertise.length>180){if(msg)msg.innerHTML='<span class="error">Enter Expertise / Specialization (up to 180 characters).</span>';return;}
+      if(experienceRaw===''||!Number.isSafeInteger(experience)||experience<0||experience>100){if(msg)msg.innerHTML='<span class="error">Experience must be a whole number from 0 to 100 years.</span>';return;}
+      b.disabled=true;b.textContent='SAVING…';
+      try{
+        const result=await renderApi('/admin/astrologer-professional-details',{method:'POST',body:JSON.stringify({astrologerId:id,expertise,experience})});
+        if(!result?.success)throw new Error(result?.error||'The backend did not confirm Experience and Expertise changes.');
+        await smvAdminTouch();
+        window.__smvInvalidatePublicAstrologersOnce?.();
+        window.dispatchEvent(new Event('smv:astrologer-professional-details-changed'));
+        if(msg)msg.innerHTML='<span class="success">Experience and Expertise saved. Profile description and Profile Edit permission were not changed.</span>';
+      }catch(e){if(msg)msg.innerHTML='<span class="error">'+escapeHtml(e?.message||String(e))+'</span>';}
+      finally{b.disabled=false;b.textContent='SAVE EXPERIENCE &amp; EXPERTISE';}
+    });
 
     profileBox.querySelectorAll('[data-languages-save]').forEach(b=>b.onclick=async()=>{
       const id=b.dataset.languagesSave,input=$('adminAstrologerLanguages_'+id),msg=$('adminAstrologerLanguagesMsg_'+id);

@@ -413,6 +413,11 @@ document.addEventListener('DOMContentLoaded', function(){
 <input id="arSpecialization" placeholder="Expertise / Specialization (Vedic, KP, Numerology...)" required=""/>
 <input id="arExperience" min="0" placeholder="Experience (years)" required="" type="number"/>
 <input id="arLanguages" maxlength="240" placeholder="Languages Spoken (comma-separated: Tamil, English)" required="" type="text"/>
+<label class="small" for="arChatRate">Live Chat Rate per minute (₹)</label>
+<input id="arChatRate" type="number" min="1" max="30" step="0.01" placeholder="Chat rate ₹1–₹30 per minute" required/>
+<label class="small" for="arCallRate">Live Call Rate per minute (₹)</label>
+<input id="arCallRate" type="number" min="1" max="30" step="0.01" placeholder="Call rate ₹1–₹30 per minute" required/>
+<p class="small">Registration rate limit: ₹1–₹30 per minute. Admin can later change or reduce these rates. / பதிவு செய்யும் போது நிமிடத்திற்கு ₹1–₹30 வரை. பின்னர் நிர்வாகி இந்தக் கட்டணங்களை மாற்றவோ குறைக்கவோ முடியும்.</p>
 <textarea id="arBio" placeholder="Professional Bio" required="" rows="5"></textarea>
 <h3>Payment Method</h3>
 <input id="arBankName" placeholder="Bank Name" required=""/>
