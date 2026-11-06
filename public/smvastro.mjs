@@ -1971,6 +1971,8 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
         <p class="smv-astro-profile-value">${escapeHtml(ad.experience||0)} years experience</p>
         <p class="astro-profile-bio">${escapeHtml(ad.bio||ad.about||'')}</p>
         <p class="small"><b>Languages:</b> ${escapeHtml(astrologerLanguages.length?astrologerLanguages.join(', '):'Not specified in profile')}</p>
+        <p class="small"><b>Live Chat Rate:</b> ${Number(ad.chatPricePerMinute??data.chatPricePerMinute)>0?'₹'+Number(ad.chatPricePerMinute??data.chatPricePerMinute).toFixed(2)+'/minute':'Not configured'}</p>
+        <p class="small"><b>Live Call Rate:</b> ${Number(ad.callPricePerMinute??data.callPricePerMinute)>0?'₹'+Number(ad.callPricePerMinute??data.callPricePerMinute).toFixed(2)+'/minute':'Not configured'}</p>
         <div id="smvLiveDashboardMount" style="margin-top:12px"></div>
       </div>
     </div>
