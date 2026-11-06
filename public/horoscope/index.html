@@ -178,7 +178,7 @@ addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__s
   },true);
 })();
 </script><script>
-(()=>{let loaded=false,promise=null;const load=()=>{if(loaded)return promise||Promise.resolve();loaded=true;promise=(async()=>{await window.__smvEnsureCalculationNarrativeEngines?.();await new Promise((resolve,reject)=>{const sc=document.createElement('script');sc.src='marriage-matching.js?v=20261106-horoscope-access-v1';sc.onload=resolve;sc.onerror=()=>reject(new Error('Marriage Matching module could not be loaded.'));document.body.appendChild(sc);});})().catch(e=>{loaded=false;promise=null;console.error(e);});return promise;};
+(()=>{let loaded=false,promise=null;const load=()=>{if(loaded)return promise||Promise.resolve();loaded=true;promise=(async()=>{await window.__smvEnsureCalculationNarrativeEngines?.();await new Promise((resolve,reject)=>{const sc=document.createElement('script');sc.src='marriage-matching.js?v=20261106-basic-nakshatra-input-v1';sc.onload=resolve;sc.onerror=()=>reject(new Error('Marriage Matching module could not be loaded.'));document.body.appendChild(sc);});})().catch(e=>{loaded=false;promise=null;console.error(e);});return promise;};
  const target=document.getElementById('smvMarriageMatching');
  if(location.hash==='#smvMarriageMatching')load();
  if(target&&'IntersectionObserver'in window){const io=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting)){io.disconnect();load();}},{rootMargin:'700px'});io.observe(target);}else if(target)load();
