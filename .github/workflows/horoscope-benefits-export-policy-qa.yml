@@ -1,0 +1,63 @@
+name: Horoscope Benefits and Export Policy QA
+on:
+  push:
+    branches:
+      - main
+      - fix/horoscope-benefits-login-export-policy-20261106
+    paths:
+      - 'public/horoscope/config.js'
+      - 'public/horoscope/report-store.mjs'
+      - 'public/horoscope/sw.js'
+      - 'public/sw.js'
+      - 'public/horoscope/calendar/sw.js'
+      - 'tests/horoscope-benefits-export-policy-regression.mjs'
+      - 'test/storage-and-safe-sw-updates.test.js'
+      - 'test/smv-zip-brand-assets.test.mjs'
+      - 'tests/calendar-rasi-palan-regression.mjs'
+      - 'tests/saved-report-mobile-layout-regression.mjs'
+      - 'tests/marriage-matching-feature-mode-regression.mjs'
+  pull_request:
+    branches:
+      - main
+      - feat/astrologer-registration-rates-admin-20261106
+    paths:
+      - 'public/horoscope/config.js'
+      - 'public/horoscope/report-store.mjs'
+      - 'public/horoscope/sw.js'
+      - 'public/sw.js'
+      - 'public/horoscope/calendar/sw.js'
+      - 'tests/horoscope-benefits-export-policy-regression.mjs'
+      - 'test/storage-and-safe-sw-updates.test.js'
+      - 'test/smv-zip-brand-assets.test.mjs'
+      - 'tests/calendar-rasi-palan-regression.mjs'
+      - 'tests/saved-report-mobile-layout-regression.mjs'
+      - 'tests/marriage-matching-feature-mode-regression.mjs'
+permissions:
+  contents: read
+concurrency:
+  group: horoscope-benefits-export-policy-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  source-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax-check Horoscope policy and report storage
+        run: |
+          set -euo pipefail
+          node --check public/horoscope/config.js
+          node --check public/horoscope/report-store.mjs
+      - name: Run benefits, login, no-export and scope regression tests
+        run: node tests/horoscope-benefits-export-policy-regression.mjs
+      - name: Run safe storage and synchronized cache tests
+        run: node --test test/storage-and-safe-sw-updates.test.js test/smv-zip-brand-assets.test.mjs
+      - name: Run Calendar, Saved Reports and Marriage Matching regressions
+        run: |
+          set -euo pipefail
+          node tests/calendar-rasi-palan-regression.mjs
+          node tests/saved-report-mobile-layout-regression.mjs
+          node tests/marriage-matching-feature-mode-regression.mjs
