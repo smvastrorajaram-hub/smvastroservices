@@ -39,7 +39,7 @@ function policyHarness({enabled,price,loggedIn=false,entitled=false,responses=nu
    requests++;
    return new Response(JSON.stringify(item.body||{}),{
     status:item.status,
-    headers:{'Content-Type':'application/json'}
+    headers:{'Content-Type':'application/json',...(item.headers||{})}
    });
   },
   __smvEnsureHoroscopeAuthReady:async()=>true,
@@ -91,6 +91,33 @@ for(const loggedIn of [false,true]){
  const state=await h.state();
  yes(h.requestCount()===2,'A transient Render 503 is retried before resolving Admin settings');
  yes(state.mode==='paid','The successful retry uses the current Admin paid mode');
+}
+
+// The Free Render service may take longer to wake: use all five bounded attempts,
+// honour a Retry-After response, and fail closed only after the retry budget is exhausted.
+{
+ const h=policyHarness({
+  enabled:true,price:1,
+  responses:[
+   {status:503,headers:{'Retry-After':'1'},body:{error:'Service is starting'}},
+   {status:503,body:{error:'Service is starting'}},
+   {status:503,body:{error:'Service is starting'}},
+   {status:503,body:{error:'Service is starting'}},
+   {status:200,body:{advanced_analysis:{enabled:true,price:1},marriage_matching:{enabled:true,price:1}}}
+  ]
+ });
+ const state=await h.state();
+ yes(h.requestCount()===5,'Render Admin settings retry through the fifth bounded request');
+ yes(state.mode==='paid','The fifth successful response applies the current Admin paid mode');
+}
+{
+ const h=policyHarness({
+  enabled:true,price:1,
+  responses:Array.from({length:5},()=>({status:503,body:{error:'Service is still starting'}}))
+ });
+ const state=await h.state();
+ yes(h.requestCount()===5,'A persistent Render 503 stops at the five-attempt retry limit');
+ yes(state.mode==='online_unavailable'&&state.fullAllowed===false,'Persistent Admin settings failure remains fail-closed');
 }
 
 // Horoscope still uses the canonical access guard and does not bypass its complete report check.
