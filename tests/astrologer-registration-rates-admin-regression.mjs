@@ -9,6 +9,7 @@ const read = path => readFileSync(resolve(root, path), "utf8");
 const html = read("public/index.html");
 const frontend = read("public/smvastro.mjs");
 const backend = read("server.js");
+const security = read("api-security.js");
 const publicContent = read("public/public-content.mjs");
 
 function between(source, start, end) {
@@ -83,6 +84,10 @@ test("Public Astrologer list response and cards use stored Languages and per-min
   assert.match(publicContent, /<b>Languages:<\/b>[\s\S]{0,180}languages\.join\(', '\)/);
   assert.match(publicContent, /<b>Call -<\/b>[\s\S]{0,180}callPrice\.toFixed\(2\)/);
   assert.match(publicContent, /<b>Chat -<\/b>[\s\S]{0,180}chatPricePerMinute\.toFixed\(2\)/);
+});
+
+test("New Admin professional-details endpoint retains the central 10 KB request-body limit", () => {
+  assert.match(security, /'\/admin\/astrologer-professional-details': '10kb'/);
 });
 
 test("Admin retains the existing ₹10,000 Live Call and Live Chat edit limit", () => {
