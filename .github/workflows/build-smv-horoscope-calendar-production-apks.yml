@@ -120,7 +120,7 @@ jobs:
                   horoscope=true ;;
                 smvcalendarproduction/*|smvcalendar/*)
                   calendar=true ;;
-                ICON/SMV\ HOROSCOPE.jpg|ICON/SMV\ CALENDAR.jpg|settings.gradle|prepare-icons.sh|prepare-smv-horoscope-calendar-production-icons.sh|tools/SmvProductLauncherIconGenerator.java)
+                ICON/SMV\ HOROSCOPE.jpg|ICON/SMV\ CALENDAR.jpg|settings.gradle|prepare-icons.sh|prepare-smv-horoscope-calendar-production-icons.sh|tools/SmvProductLauncherIconGenerator.java|public/horoscope/sw.js|public/horoscope/calendar/sw.js|public/horoscope/location-search-online-offline.js|public/question-place-search.mjs|public/horoscope/offline/places/place-search.mjs|public/horoscope/offline/places/india-manifest.json|scripts/next-android-release-version.mjs|scripts/normalize-android-release-version-name.mjs)
                   horoscope=true; calendar=true ;;
               esac
             done <<< "$changed_files"
