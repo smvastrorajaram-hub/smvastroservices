@@ -15,6 +15,7 @@ import { createD1IdentityAuthorizationGate } from '../../../shared/backend-platf
 import { registerWalletReadRoutes, isWalletReadRouteGateOpen } from './wallet-read-routes.mjs';
 import { registerWalletRechargeRoutes } from './wallet-recharge-routes.mjs';
 import { registerLegacyRazorpayRoutes } from './legacy-razorpay-routes.mjs';
+import { registerPrivateChatRoutes } from './private-chat-routes.mjs';
 import { resolveRazorpayMode } from '../../../shared/backend-platform/razorpay-mode-policy.mjs';
 import { registerAccountRoleRoute, registerAdminAccessRoute, registerPublicRuntimeReadRoutes } from './core-read-routes.mjs';
 import { registerWalletOfferRoutes } from './wallet-offer-routes.mjs';
@@ -586,7 +587,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       credentialsConfigured: true,
       getVerification: getRazorpayProviderVerification
     });
-    registerLegacyRazorpayRoutes({
+    const legacyRazorpayRoutes = registerLegacyRazorpayRoutes({
       app,
       identityService: walletIdentityService,
       firestore: firestoreAdmin,
@@ -596,10 +597,20 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       razorpayKeySecretPresent: !!razorpayKeySecret,
       razorpayWebhookSecret,
       razorpayMode: razorpayPolicy.mode,
-      // Retired product surfaces stay disabled regardless of dashboard variable drift.
+      // Retired Public Questions and legacy Private Consultation entry points
+      // remain closed. The new Private Chat service is independently registered.
       enablePrivateConsultation: false,
       allowNewQuestions: false,
       isD1Ready: checkWalletRechargeSchemaReady
+    });
+    registerPrivateChatRoutes({
+      app,
+      identityService: walletIdentityService,
+      firestore: firestoreAdmin,
+      razorpay: sharedRazorpayClient,
+      razorpayKeyId,
+      paymentDetails: legacyRazorpayRoutes.paymentDetails,
+      recordQuestionPayment: legacyRazorpayRoutes.recordQuestionPayment
     });
     legacyRazorpayRoutesRegistered = true;
   }
