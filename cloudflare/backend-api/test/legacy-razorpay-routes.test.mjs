@@ -538,7 +538,7 @@ test('Private Chat rejection reaches the shared Razorpay refund service and stor
    ['smv_questions/'+questionId]:{
     questionId,privateChat:true,questionType:'private_chat',customerId:'customer-1',
     amount:499,paymentStatus:'paid',status:'private_chat_assigned',
-    razorpayOrderId:'order_test_1',razorpayPaymentId:'pay_private_refund'
+    razorpayOrderId:'order_test_1',razorpayPaymentId:'pay_privateRefund01'
    }
   },
   razorpay:{
@@ -560,13 +560,13 @@ test('Private Chat rejection reaches the shared Razorpay refund service and stor
  assert.equal(saved.status,'question_rejected');
  assert.equal(saved.refundStatus,'pending');
  assert.equal(saved.refundId,'rfnd_1');
- assert.equal(saved.refundPaymentId,'pay_private_refund');
+ assert.equal(saved.refundPaymentId,'pay_privateRefund01');
  assert.equal(saved.refundRrn,'rrn-fixture');
  assert.ok(saved.adminQuestionRejectedAt);
  assert.ok(saved.refundRequestedAt);
  assert.ok(saved.refundCreatedAt);
  const providerCall=state.razorpay.calls.find(call=>call[0]==='refundPayment');
- assert.equal(providerCall[1],'pay_private_refund');
+ assert.equal(providerCall[1],'pay_privateRefund01');
  assert.equal(providerCall[2].amountPaise,49900);
  assert.ok(providerCall[2].idempotencyKey.startsWith('smv-question-'));
  await state.legacyRoutes.refundPrivateChatQuestion({questionId,actorUid:'admin-1'});
