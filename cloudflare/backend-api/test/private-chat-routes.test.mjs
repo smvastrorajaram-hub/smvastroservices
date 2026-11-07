@@ -120,7 +120,7 @@ function setup(){
       assignmentMode:settings.assignmentMode||'admin_assigned',adminApprovalBypassed:direct,
       customerPaymentId:'smvpy-123456',razorpayPaymentId:paymentId
     },{merge:true});
-    return {customerPaymentId:'smvpy-123456',amount:499,status};
+    return {customerPaymentId:'smvpy-123456',amount:499,status,astrologerId:direct?'astro-1':null};
   };
   const refundCalls=[];
   const refundPrivateChatQuestion=async input=>{

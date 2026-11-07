@@ -180,6 +180,7 @@ export function registerPrivateChatRoutes({
       razorpayOrderId:order.id,questionId,questionType:'private_chat',privateChat:true,
       amount:order.amount,currency:order.currency,firebaseUid:user.uid,
       customerEmail:user.email||null,requestedAstrologerId:String(question.requestedAstrologerId||''),
+      requestedAstrologerName:String(question.requestedAstrologerName||''),
       serviceName:'SMV ASTRO Private Chat',status:'created',createdAt:FirestoreFieldValue.serverTimestamp()
     },{merge:true});
     return {
@@ -404,18 +405,16 @@ export function registerPrivateChatRoutes({
       if(!astro.exists||String(astro.data?.status||'').toLowerCase()!=='approved'){
         throw apiError('ASTROLOGER_NOT_APPROVED','Your Astrologer profile is not approved.',403);
       }
-      const settings=await readSettings();
       const documents=await firestore.runQuery({collectionPath:QUESTION_COLLECTION,limit:1000});
       const questions=documents
         .filter(document=>{
           const q=document.data||{};
           if(q.privateChat!==true||String(q.questionType||'')!=='private_chat'||q.paymentStatus!=='paid')return false;
-          return String(q.astrologerId||'')===String(user.uid)||
-            (settings.assignmentMode==='open_to_all'&&String(q.status||'')==='private_chat_available_to_astrologers'&&!q.astrologerId);
+          return String(q.astrologerId||'')===String(user.uid);
         })
         .map(document=>{
           const q=selectFields(document.data,ASTROLOGER_FIELDS);
-          return {id:document.id,...q,canClaim:settings.assignmentMode==='open_to_all'&&String(q.status||'')==='private_chat_available_to_astrologers'&&!q.astrologerId};
+          return {id:document.id,...q};
         })
         .sort((a,b)=>millis(b.createdAt)-millis(a.createdAt)).slice(0,100);
       return res.set('Cache-Control','no-store').json({success:true,assignmentMode:settings.assignmentMode,questions});
@@ -424,67 +423,45 @@ export function registerPrivateChatRoutes({
 
   app.post('/admin/private-chat/approve-question',async(req,res)=>{
     try{
-      const actor=await requireAdmin(req),questionId=safeId(req.body?.questionId),astrologerId=safeId(req.body?.astrologerId,160);
-      if(!questionId||!astrologerId)throw apiError('PRIVATE_CHAT_ASSIGNMENT_REQUIRED','Select the question and an approved Astrologer.',400);
-      const astroSnapshot=await firestore.getDocument('smv_astrologers/'+astrologerId);
-      if(!astroSnapshot.exists||String(astroSnapshot.data?.status||'').toLowerCase()!=='approved')throw apiError('PRIVATE_CHAT_ASTROLOGER_UNAVAILABLE','The selected Astrologer is not approved.',409);
-      const astroName=String(astroSnapshot.data?.name||'Astrologer');
+      const actor=await requireAdmin(req),questionId=safeId(req.body?.questionId);
+      if(!questionId)throw apiError('PRIVATE_CHAT_ASSIGNMENT_REQUIRED','Select the paid question before approval.',400);
       const saved=await firestore.runTransaction(async tx=>{
         const snapshot=await tx.getDocument(QUESTION_COLLECTION+'/'+questionId);
         if(!snapshot.exists)throw apiError('PRIVATE_CHAT_NOT_FOUND','Private Chat question was not found.',404);
         const q=snapshot.data||{};
         if(q.privateChat!==true||String(q.questionType||'')!=='private_chat'||String(q.paymentStatus||'')!=='paid')throw apiError('PRIVATE_CHAT_NOT_PAID','Only a paid Private Chat question can be allocated.',409);
         if(q.refundId||['question_rejected','admin_rejected'].includes(String(q.status||'')))throw apiError('PRIVATE_CHAT_CLOSED','Refunded or rejected questions cannot be allocated.',409);
-        if(String(q.status||'')!=='private_chat_pending_admin'||String(q.astrologerId||''))throw apiError('PRIVATE_CHAT_NOT_AWAITING_ADMIN','This question is no longer waiting for Admin allocation.',409);
+        if(!['private_chat_pending_admin','private_chat_available_to_astrologers'].includes(String(q.status||''))||String(q.astrologerId||''))throw apiError('PRIVATE_CHAT_NOT_AWAITING_ADMIN','This question is no longer awaiting its selected Astrologer allocation.',409);
+        const orderId=safeId(q.razorpayOrderId,160);
+        const orderSnapshot=orderId?await tx.getDocument(ORDER_COLLECTION+'/'+orderId):{exists:false,data:null};
+        const astrologerId=safeId(q.requestedAstrologerId||orderSnapshot.data?.requestedAstrologerId,160);
+        if(!astrologerId)throw apiError('PRIVATE_CHAT_SELECTED_ASTROLOGER_MISSING','The Customer-selected Astrologer could not be safely recovered. Do not assign this question to another Astrologer.',409);
+        const astroSnapshot=await tx.getDocument('smv_astrologers/'+astrologerId);
+        if(!astroSnapshot.exists||String(astroSnapshot.data?.status||'').toLowerCase()!=='approved')throw apiError('PRIVATE_CHAT_ASTROLOGER_UNAVAILABLE','The Customer-selected Astrologer is not currently approved. No other Astrologer can be substituted.',409);
+        const astroName=String(q.requestedAstrologerName||orderSnapshot.data?.requestedAstrologerName||astroSnapshot.data?.name||'Astrologer');
+        const directSelected=q.adminApprovalBypassed===true||['direct_selected','open_to_all'].includes(String(q.assignmentMode||''));
         const timestamp=FirestoreFieldValue.serverTimestamp();
         tx.update(QUESTION_COLLECTION+'/'+questionId,{
           astrologerId,astrologerName:astroName,status:'private_chat_assigned',allocationStatus:'assigned_to_astrologer',
-          assignmentMode:'admin_assigned',adminQuestionApprovedAt:timestamp,adminQuestionApprovedBy:String(actor.uid||''),
+          requestedAstrologerId:astrologerId,requestedAstrologerName:astroName,
+          assignmentMode:directSelected?'direct_selected':'admin_assigned',adminApprovalBypassed:directSelected,
+          adminQuestionApprovedAt:timestamp,adminQuestionApprovedBy:String(actor.uid||''),
           commissionStatus:'allocated_pending_answer',updatedAt:timestamp
         });
-        return {customerId:String(q.customerId||'')};
+        return {customerId:String(q.customerId||''),astrologerId,astrologerName:astroName};
       });
       await firestore.setDocument('smv_notifications/private_chat_assigned_'+questionId,{
-        userId:astrologerId,type:'private_chat_assigned',title:'New Paid Private Chat Question',
-        message:'Admin assigned a paid Private Chat question to you. Submit your answer within 24–48 hours.',
+        userId:saved.astrologerId,type:'private_chat_assigned',title:'New Paid Private Chat Question',
+        message:'A paid Private Chat question selected for you by the Customer has been assigned to you. Submit your answer within 24–48 hours.',
         questionId,createdAt:FirestoreFieldValue.serverTimestamp(),read:false
       },{merge:true}).catch(()=>{});
       if(saved.customerId)await firestore.setDocument('smv_notifications/'+saved.customerId+'_private_chat_allocated_'+questionId,{
         userId:saved.customerId,type:'private_chat_allocated',title:'Private Chat Astrologer Assigned',
-        message:astroName+' has been assigned to your Private Chat question. Answer expected within 24–48 hours.',
-        questionId,astrologerId,astrologerName:astroName,createdAt:FirestoreFieldValue.serverTimestamp(),read:false
+        message:saved.astrologerName+' has been assigned to your Private Chat question. Answer expected within 24–48 hours.',
+        questionId,astrologerId:saved.astrologerId,astrologerName:saved.astrologerName,createdAt:FirestoreFieldValue.serverTimestamp(),read:false
       },{merge:true}).catch(()=>{});
-      return res.set('Cache-Control','no-store').json({success:true,questionId,astrologerId,astrologerName:astroName,status:'private_chat_assigned'});
+      return res.set('Cache-Control','no-store').json({success:true,questionId,astrologerId:saved.astrologerId,astrologerName:saved.astrologerName,status:'private_chat_assigned'});
     }catch(error){return sendError(res,error,'Unable to approve and allocate the Private Chat question.');}
-  });
-
-  app.post('/astrologer/private-chat/claim',async(req,res)=>{
-    try{
-      const user=await authenticate(req,['astrologer']),questionId=safeId(req.body?.questionId);
-      if(!questionId)throw apiError('PRIVATE_CHAT_ID_REQUIRED','Question ID is required.',400);
-      const [astroSnapshot,settings]=await Promise.all([firestore.getDocument('smv_astrologers/'+String(user.uid||'')),readSettings()]);
-      if(!astroSnapshot.exists||String(astroSnapshot.data?.status||'').toLowerCase()!=='approved')throw apiError('ASTROLOGER_NOT_APPROVED','Your Astrologer profile is not approved.',403);
-      if(settings.assignmentMode!=='open_to_all')throw apiError('PRIVATE_CHAT_CLAIM_DISABLED','Admin currently assigns Private Chat questions to a specified Astrologer.',409);
-      const astroName=String(astroSnapshot.data?.name||'Astrologer');
-      const saved=await firestore.runTransaction(async tx=>{
-        const snapshot=await tx.getDocument(QUESTION_COLLECTION+'/'+questionId);
-        if(!snapshot.exists)throw apiError('PRIVATE_CHAT_NOT_FOUND','Private Chat question was not found.',404);
-        const q=snapshot.data||{};
-        if(q.privateChat!==true||String(q.questionType||'')!=='private_chat'||String(q.paymentStatus||'')!=='paid')throw apiError('PRIVATE_CHAT_NOT_PAID','Only a paid Private Chat question can be claimed.',409);
-        if(String(q.status||'')!=='private_chat_available_to_astrologers'||String(q.astrologerId||''))throw apiError('PRIVATE_CHAT_ALREADY_CLAIMED','Another Astrologer has already claimed this question or Admin has allocated it.',409);
-        tx.update(QUESTION_COLLECTION+'/'+questionId,{
-          astrologerId:String(user.uid),astrologerName:astroName,status:'private_chat_assigned',allocationStatus:'assigned_to_astrologer',
-          claimedAt:FirestoreFieldValue.serverTimestamp(),commissionStatus:'allocated_pending_answer',updatedAt:FirestoreFieldValue.serverTimestamp()
-        });
-        return {customerId:String(q.customerId||'')};
-      });
-      if(saved.customerId)await firestore.setDocument('smv_notifications/'+saved.customerId+'_private_chat_allocated_'+questionId,{
-        userId:saved.customerId,type:'private_chat_allocated',title:'Private Chat Astrologer Assigned',
-        message:astroName+' has claimed your Private Chat question. Answer expected within 24–48 hours.',
-        questionId,astrologerId:String(user.uid),astrologerName:astroName,createdAt:FirestoreFieldValue.serverTimestamp(),read:false
-      },{merge:true}).catch(()=>{});
-      return res.set('Cache-Control','no-store').json({success:true,questionId,astrologerId:String(user.uid),astrologerName:astroName,status:'private_chat_assigned'});
-    }catch(error){return sendError(res,error,'Unable to claim the Private Chat question.');}
   });
 
   app.post('/admin/private-chat/approve-answer',async(req,res)=>{
@@ -577,14 +554,23 @@ export function registerPrivateChatRoutes({
   app.get('/admin/private-chat/questions',async(req,res)=>{
     try{
       await requireAdmin(req);
-      const [documents,astrologers,settings]=await Promise.all([
+      const [documents,astrologers,orders,settings]=await Promise.all([
         firestore.runQuery({collectionPath:QUESTION_COLLECTION,limit:1000}),
         firestore.runQuery({collectionPath:'smv_astrologers',filters:[{field:'status',op:'==',value:'approved'}],limit:1000}),
+        firestore.runQuery({collectionPath:ORDER_COLLECTION,limit:1000}),
         readSettings()
       ]);
+      const orderById=new Map(orders.map(order=>[order.id,order.data||{}]));
+      const astrologerById=new Map(astrologers.map(item=>[item.id,item.data||{}]));
       const questions=documents
         .filter(document=>document.data?.privateChat===true&&String(document.data?.questionType||'')==='private_chat')
-        .map(document=>({id:document.id,...selectFields(document.data,ADMIN_FIELDS)}))
+        .map(document=>{
+          const data=document.data||{},order=orderById.get(String(data.razorpayOrderId||''))||{};
+          const requestedAstrologerId=String(data.requestedAstrologerId||order.requestedAstrologerId||'');
+          const selectedAstrologer=astrologerById.get(requestedAstrologerId)||{};
+          const requestedAstrologerName=String(data.requestedAstrologerName||order.requestedAstrologerName||selectedAstrologer.name||'');
+          return {id:document.id,...selectFields(data,ADMIN_FIELDS),requestedAstrologerId,requestedAstrologerName};
+        })
         .sort((a,b)=>millis(b.createdAt)-millis(a.createdAt)).slice(0,200);
       return res.set('Cache-Control','no-store').json({
         success:true,questions,assignmentMode:settings.assignmentMode,
@@ -597,7 +583,7 @@ export function registerPrivateChatRoutes({
     'GET /private-chat/settings','GET /admin/private-chat/settings','POST /admin/private-chat/settings',
     'POST /private-chat/create-order','POST /private-chat/retry-payment','POST /private-chat/verify-payment',
     'GET /customer/private-chat/questions','GET /astrologer/private-chat/questions','GET /admin/private-chat/questions',
-    'POST /admin/private-chat/approve-question','POST /astrologer/private-chat/claim',
+    'POST /admin/private-chat/approve-question',
     'POST /admin/private-chat/approve-answer','POST /admin/private-chat/reject-answer',
     'POST /admin/private-chat/reject-question','POST /admin/private-chat/retry-refund','POST /admin/private-chat/sync-refund'
   ])});
