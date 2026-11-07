@@ -86,3 +86,22 @@ test('HTTP route authenticates Customer and settles only owned answer',async()=>
  const res=response();await app.handlers.get('POST /customer/mark-answer-viewed')(req({questionId:'q1'}),res);
  assert.equal(res.statusCode,200);assert.equal(res.body.viewed,true);assert.equal(res.body.credited,true);
 });
+
+
+test('Private Chat answer view settles the saved Admin-defined 75/25 split',async()=>{
+ const privateQuestion={...question,privateChat:true,questionType:'private_chat',amount:499,commissionPercent:75,adminCommissionPercent:25,astrologerCommissionAmount:374.25,adminCommissionAmount:124.75};
+ const firestore=fixture({docs:{'smv_questions/smvqt-123456':privateQuestion}});
+ const service=createPublicAnswerCreditService({firestore});
+ const result=await service.settle('smvqt-123456',{customerId:'cus-1'});
+ assert.equal(result.credited,true);assert.equal(result.astrologerAmount,374.25);assert.equal(result.adminAmount,124.75);
+ const ledger=firestore.store.get('smv_payments/SMV-Q-EARN-smvqt-123456');
+ assert.equal(ledger.commissionPercent,75);assert.equal(ledger.adminCommissionPercent,25);assert.equal(ledger.adminCommissionAmount,124.75);
+});
+
+test('Private Chat settlement fails closed when its Admin commission split is missing',async()=>{
+ const privateQuestion={...question,privateChat:true,questionType:'private_chat'};
+ const firestore=fixture({docs:{'smv_questions/smvqt-654321':privateQuestion}});
+ const service=createPublicAnswerCreditService({firestore});
+ await assert.rejects(service.settle('smvqt-654321',{customerId:'cus-1'}),e=>e.code==='ANSWER_COMMISSION_INVALID');
+ assert.equal(firestore.writes.length,0);
+});

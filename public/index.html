@@ -26,11 +26,11 @@ if(location.hostname==='smvastroservices.pages.dev'){
 <meta content="SMV ASTRO SERVICES | Astrology Services &amp; Online Horoscope" name="twitter:title"/>
 <meta content="Sri Madurai Veerayah Astro Services offers online astrology services, horoscope, Tamil horoscope, marriage matching, customer registration and astrologer registration." name="twitter:description"/>
 <meta content="https://smvastroservices.in/assets/smv-home-logo.webp?v=20261105-brand-header-v1" name="twitter:image"/>
-<link href="./manifest.webmanifest?v=20261107-private-chat-paid-question-v1" rel="manifest">
-<link href="./assets/favicon-astro.ico?v=20261107-private-chat-paid-question-v1" rel="icon" sizes="any"/>
-<link href="./assets/favicon-astro-16.png?v=20261107-private-chat-paid-question-v1" rel="icon" sizes="16x16" type="image/png"/>
-<link href="./assets/favicon-astro-32.png?v=20261107-private-chat-paid-question-v1" rel="icon" sizes="32x32" type="image/png"/>
-<link href="./assets/favicon-astro-64.png?v=20261107-private-chat-paid-question-v1" rel="icon" sizes="64x64" type="image/png"/>
+<link href="./manifest.webmanifest?v=20261107-private-chat-paid-question-v2" rel="manifest">
+<link href="./assets/favicon-astro.ico?v=20261107-private-chat-paid-question-v2" rel="icon" sizes="any"/>
+<link href="./assets/favicon-astro-16.png?v=20261107-private-chat-paid-question-v2" rel="icon" sizes="16x16" type="image/png"/>
+<link href="./assets/favicon-astro-32.png?v=20261107-private-chat-paid-question-v2" rel="icon" sizes="32x32" type="image/png"/>
+<link href="./assets/favicon-astro-64.png?v=20261107-private-chat-paid-question-v2" rel="icon" sizes="64x64" type="image/png"/>
 <link href="./assets/icon-192.png" rel="apple-touch-icon"/>
 <meta content="#8b1717" name="theme-color">
 <meta content="yes" name="mobile-web-app-capable">
@@ -291,12 +291,15 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="card" id="adminCommissionSettings"><h3>Live / Booking Commission</h3><p class="small">Applied to completed, charged Live Calls, Live Chats, and accepted Live bookings using the actual session charge.</p><div class="action-row"><input id="astroCommission" max="100" min="0" placeholder="Astrologer %" type="number"/><input id="adminCommission" max="100" min="0" placeholder="Admin %" type="number"/><button class="btn" id="saveCommission" type="button">SAVE COMMISSION</button><button class="btn gray" id="refreshCommissionSettings" type="button">REFRESH FROM D1</button></div><div class="small" id="commissionMsg" role="status" aria-live="polite">Commission values load from Cloudflare Production D1 when Admin opens.</div></div>
 <div class="card" id="adminPrivateChatSettings">
 <h3>PRIVATE CHAT — PRICE & QUESTION MANAGEMENT</h3>
-<p class="small">Set one Admin-controlled price for Private Chat. Customers see this amount on the PRIVATE CHAT button. Paid questions go only to the Astrologer selected in the Astrologer List and remain separate from Public Questions.</p>
+<p class="small">Set one Admin-controlled price for Private Chat. The price is shown inside the Question Form, not on the Astrologer List button. Paid questions go only to the selected approved Astrologer and remain separate from Public Questions.</p>
 <div class="grid">
  <label><b>Private Chat Status</b><select id="privateChatEnabled"><option value="false">OFF</option><option value="true">ON</option></select></label>
  <label><b>Private Chat Price (₹)</b><input id="privateChatPrice" type="number" min="0" max="100000" step="0.01" inputmode="decimal" value="0"></label>
  <label><b>Astrologer Minimum Answer Words</b><input id="privateChatMinimumAnswerWords" type="number" min="1" max="10000" step="1" inputmode="numeric" value="150"></label>
+ <label><b>Private Chat Astrologer Commission (%)</b><input id="privateChatAstrologerCommissionPercent" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="Astrologer share"></label>
+ <label><b>Private Chat Admin Commission (%)</b><input id="privateChatAdminCommissionPercent" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="Admin share"></label>
 </div>
+<p class="small">Private Chat commission is separate from Live / Booking commission. Enter both shares; Astrologer % + Admin % must total exactly 100% before Private Chat can be enabled.</p>
 <p class="small">The Astrologer Answer opens in a separate single-layer editor with a large writing box and a live word counter. Submit is enabled only after this minimum word limit is reached. The word limit is saved with each new paid question.</p>
 <div class="action-row"><button class="btn" id="savePrivateChatSettings" type="button">SAVE PRIVATE CHAT SETTINGS</button><button class="btn gray" id="adminPrivateChatRefresh" type="button">REFRESH QUESTIONS</button></div>
 <div class="small" id="privateChatSettingsMsg" role="status" aria-live="polite">Private Chat is OFF until Admin enables it with a saved price.</div>
@@ -488,7 +491,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <script src="./dashboard-window.js"></script>
 <script id="smv-apk-release-api-config">window.SMV_APK_RELEASE_API_URL = window.SMV_APK_RELEASE_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev"; window.SMV_APK_RELEASE_ADMIN_API_URL = window.SMV_APK_RELEASE_ADMIN_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev";</script>
 <script id="smv-financial-backend-routing-config">window.SMV_CLOUDFLARE_FINANCIAL_API_ENABLED = true;</script>
-<script src="./smvastro.mjs?v=20261107-private-chat-paid-question-v1" type="module"></script>
+<script src="./smvastro.mjs?v=20261107-private-chat-paid-question-v2" type="module"></script>
 <!-- Legacy fallback authentication block removed in V109. Main Firebase auth is the single login system. -->
 <script>
 (function(){
@@ -532,7 +535,7 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 })();
 </script>
-<script defer src="./public-content-loader.js?v=20261107-private-chat-paid-question-v1"></script>
+<script defer src="./public-content-loader.js?v=20261107-private-chat-paid-question-v2"></script>
 <script>
 document.addEventListener("click",function(e){
   const b=e.target.closest("[data-open-booking]");

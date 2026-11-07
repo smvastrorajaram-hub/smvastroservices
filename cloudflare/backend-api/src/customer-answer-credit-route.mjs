@@ -44,14 +44,15 @@ export function createPublicAnswerCreditService({firestore,now=Date.now}={}){
         return {credited:false,already:true,commissionAmount:0};
       }
 
+      const privateChat=question.privateChat===true&&String(question.questionType||'')==='private_chat';
       const astrologerAmount=money(question.astrologerCommissionAmount??question.commissionAmount);
       const grossAmount=money(question.amount??question.paymentAmount);
-      const adminAmount=money(grossAmount-astrologerAmount);
+      const adminAmount=money(privateChat?(question.adminCommissionAmount??grossAmount-astrologerAmount):(grossAmount-astrologerAmount));
       const percent=Number(question.commissionPercent??question.commissionRate??0);
-      if(!Number.isFinite(astrologerAmount)||astrologerAmount<0||
-         !Number.isFinite(grossAmount)||grossAmount<=0||
-         !Number.isFinite(adminAmount)||adminAmount<0||
-         !Number.isFinite(percent)||percent<0||percent>100){
+      const adminPercent=question.adminCommissionPercent==null?(privateChat?NaN:100-percent):Number(question.adminCommissionPercent);
+      if(!Number.isFinite(astrologerAmount)||astrologerAmount<0||!Number.isFinite(grossAmount)||grossAmount<=0||
+         !Number.isFinite(adminAmount)||adminAmount<0||!Number.isFinite(percent)||percent<0||percent>100||
+         (privateChat&&(!Number.isFinite(adminPercent)||adminPercent<0||adminPercent>100||Math.abs(percent+adminPercent-100)>0.000001))){
         throw apiError('Saved commission amounts are invalid. Admin reconciliation is required.',409,'ANSWER_COMMISSION_INVALID');
       }
 
@@ -79,6 +80,7 @@ export function createPublicAnswerCreditService({firestore,now=Date.now}={}){
           question:String(question.question||'Consultation'),
           grossAmount,
           commissionPercent:percent,
+          ...(privateChat?{adminCommissionPercent:adminPercent}:{}),
           commissionAmount:astrologerAmount,
           earningAmount:astrologerAmount,
           adminCommissionAmount:adminAmount,

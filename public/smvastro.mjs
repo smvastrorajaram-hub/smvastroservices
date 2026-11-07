@@ -1749,13 +1749,20 @@ async function smvLoadAdminPrivateChat(){
    const enabled=$('privateChatEnabled')?.value==='true';
    const price=Number($('privateChatPrice')?.value);
    const minimumAnswerWords=Number($('privateChatMinimumAnswerWords')?.value);
+   const astroRaw=String($('privateChatAstrologerCommissionPercent')?.value??'').trim();
+   const adminRaw=String($('privateChatAdminCommissionPercent')?.value??'').trim();
+   const astrologerCommissionPercent=astroRaw===''?null:Number(astroRaw);
+   const adminCommissionPercent=adminRaw===''?null:Number(adminRaw);
    save.disabled=true;if(settingsMsg)settingsMsg.textContent='Saving Private Chat settings to Cloudflare…';
    try{
-    const result=await smvPrivateChatApi('/admin/private-chat/settings',{method:'POST',body:{enabled,price,minimumAnswerWords}});
-    if($('privateChatEnabled'))$('privateChatEnabled').value=String(result.enabled===true);
+    const result=await smvPrivateChatApi('/admin/private-chat/settings',{method:'POST',body:{enabled,price,minimumAnswerWords,astrologerCommissionPercent,adminCommissionPercent}});
+    if($('privateChatEnabled'))$('privateChatEnabled').value=String(result.configuredEnabled===true);
     if($('privateChatPrice'))$('privateChatPrice').value=Number(result.price||0).toFixed(2);
     if($('privateChatMinimumAnswerWords'))$('privateChatMinimumAnswerWords').value=String(result.minimumAnswerWords||150);
-    if(settingsMsg)settingsMsg.textContent='Saved. Private Chat: '+(result.enabled?'ON':'OFF')+' · Customer price ₹'+Number(result.price||0).toFixed(2)+' · Astrologer minimum answer '+Number(result.minimumAnswerWords||150)+' words.';
+    if($('privateChatAstrologerCommissionPercent'))$('privateChatAstrologerCommissionPercent').value=result.astrologerCommissionPercent==null?'':String(result.astrologerCommissionPercent);
+    if($('privateChatAdminCommissionPercent'))$('privateChatAdminCommissionPercent').value=result.adminCommissionPercent==null?'':String(result.adminCommissionPercent);
+    const splitLabel=result.commissionConfigured?'Astrologer '+result.astrologerCommissionPercent+'% / Admin '+result.adminCommissionPercent+'%':'Commission not configured — both shares must total 100%.';
+    if(settingsMsg)settingsMsg.textContent='Saved. Private Chat: '+(result.enabled?'ON':'OFF')+' · Customer price ₹'+Number(result.price||0).toFixed(2)+' · '+splitLabel+' · Astrologer minimum answer '+Number(result.minimumAnswerWords||150)+' words.';
     void smvLoadAdminPrivateChat();
    }catch(error){if(settingsMsg)settingsMsg.textContent=error?.message||String(error);}
    finally{save.disabled=false;}
@@ -1768,10 +1775,13 @@ async function smvLoadAdminPrivateChat(){
    smvPrivateChatApi('/admin/private-chat/settings'),
    smvPrivateChatApi('/admin/private-chat/questions')
   ]);
-  if($('privateChatEnabled'))$('privateChatEnabled').value=String(settings.enabled===true);
+  if($('privateChatEnabled'))$('privateChatEnabled').value=String(settings.configuredEnabled===true);
   if($('privateChatPrice'))$('privateChatPrice').value=Number(settings.price||0).toFixed(2);
   if($('privateChatMinimumAnswerWords'))$('privateChatMinimumAnswerWords').value=String(settings.minimumAnswerWords||150);
-  if(settingsMsg)settingsMsg.textContent='Current setting: '+(settings.enabled?'ON':'OFF')+' · ₹'+Number(settings.price||0).toFixed(2)+' · Astrologer minimum answer '+Number(settings.minimumAnswerWords||150)+' words.';
+  if($('privateChatAstrologerCommissionPercent'))$('privateChatAstrologerCommissionPercent').value=settings.astrologerCommissionPercent==null?'':String(settings.astrologerCommissionPercent);
+  if($('privateChatAdminCommissionPercent'))$('privateChatAdminCommissionPercent').value=settings.adminCommissionPercent==null?'':String(settings.adminCommissionPercent);
+  const splitLabel=settings.commissionConfigured?'Astrologer '+settings.astrologerCommissionPercent+'% / Admin '+settings.adminCommissionPercent+'%':'Commission not configured — enter both shares totalling 100% before enabling.';
+  if(settingsMsg)settingsMsg.textContent='Current setting: '+(settings.enabled?'ON':'OFF')+' · ₹'+Number(settings.price||0).toFixed(2)+' · '+splitLabel+' · Astrologer minimum answer '+Number(settings.minimumAnswerWords||150)+' words.';
   const questions=Array.isArray(result.questions)?result.questions:[];
   queue.innerHTML=questions.length?questions.map(q=>{
    const id=String(q.questionId||q.id||'');

@@ -73,12 +73,19 @@ export function registerAstrologerSubmitAnswerRoute({app,firestore,identityServi
     if(!Number.isFinite(minWords)||wordCount<minWords){
      throw Object.assign(new Error('Please write at least '+minWords+' words.'),{code:'ANSWER_MINIMUM_WORDS',httpStatus:400});
     }
-    const percent=Number(q.commissionPercent||q.commissionRate||20);
-    const amount=Number(q.amount||0);
-    if(!Number.isFinite(percent)||percent<0||percent>100||!Number.isFinite(amount)||amount<0){
-     throw Object.assign(new Error('Saved commission details are invalid.'),{code:'ANSWER_COMMISSION_INVALID',httpStatus:409});
+    const percentValue=q.commissionPercent??q.commissionRate??(privateChat?null:20);
+    const percent=percentValue==null?NaN:Number(percentValue);
+    const amount=Number(q.amount??0);
+    const adminPercent=q.adminCommissionPercent==null?NaN:Number(q.adminCommissionPercent);
+    const amountPaise=Math.round(amount*100);
+    if(!Number.isFinite(percent)||percent<0||percent>100||!Number.isFinite(amount)||amount<0||!Number.isSafeInteger(amountPaise)||
+       (privateChat&&(!Number.isFinite(adminPercent)||adminPercent<0||adminPercent>100||Math.abs(percent+adminPercent-100)>0.000001))){
+     throw Object.assign(new Error('Saved commission details are invalid. Admin must configure the Private Chat Astrologer/Admin split to 100%.'),
+      {code:'ANSWER_COMMISSION_INVALID',httpStatus:409});
     }
-    const commission=Math.round(amount*percent)/100;
+    const commissionPaise=Math.round(amountPaise*percent/100);
+    const commission=commissionPaise/100;
+    const adminCommission=(amountPaise-commissionPaise)/100;
     const timestamp=FirestoreFieldValue.serverTimestamp();
     const patch={
      answer,
@@ -99,6 +106,7 @@ export function registerAstrologerSubmitAnswerRoute({app,firestore,identityServi
      answerEmailStatus:{state:bypass?'pending':'awaiting_admin_approval',updatedAt:timestamp},
      updatedAt:timestamp
     };
+    if(privateChat){patch.adminCommissionPercent=adminPercent;patch.adminCommissionAmount=adminCommission;}
     tx.update(questionPath,patch);
     const auditId=String(randomId()).replace(/[^A-Za-z0-9_-]/g,'').slice(0,100);
     tx.create('smv_admin_audit/ANSWER_SUBMITTED_'+questionId+'_'+(auditId||'event'),{
