@@ -115,6 +115,24 @@ test('Customer review submission checks ownership/final status and atomically cr
  assert.ok(firestore.writes.some(x=>x.type==='set'&&x.path==='smv_questions/q1'));
 });
 
+test('Private Chat review is accepted only after Customer views the released answer',async()=>{
+ const app=harness(),firestore=transactionalFirestore({docs:{
+   'smv_questions/private-q':{exists:true,data:{customerId:'cus-1',astrologerId:'astro-1',status:'answered',privateChat:true,questionType:'private_chat',customerAnswerViewedAt:null}},
+   'smv_reviews/private-q_cus-1':{exists:false,data:null}
+ }});
+ registerLegacyBusinessRoutes({app,firestore,identityService:{async authenticateAuthorization(){return {uid:'cus-1',role:'customer'};}}});
+ const blocked=response();
+ await app.handlers.get('POST /customer/submit-review')(request({questionId:'private-q',astrologerId:'astro-1',rating:5,review:'Excellent guidance.'}),blocked);
+ assert.equal(blocked.statusCode,409);
+ assert.equal(firestore.writes.length,0);
+ firestore.documents.get('smv_questions/private-q').data.customerAnswerViewedAt={seconds:1794050000};
+ const allowed=response();
+ await app.handlers.get('POST /customer/submit-review')(request({questionId:'private-q',astrologerId:'astro-1',rating:5,review:'Excellent guidance.'}),allowed);
+ assert.equal(allowed.statusCode,200);
+ assert.equal(allowed.body.alreadySubmitted,false);
+ assert.ok(firestore.writes.some(x=>x.type==='create'&&x.path==='smv_reviews/private-q_cus-1'));
+});
+
 test('Customer review submission refuses another Customer’s question', async()=>{
  const app=harness(),firestore=transactionalFirestore({docs:{
    'smv_questions/q1':{exists:true,data:{customerId:'someone-else',astrologerId:'astro-1',status:'answered'}},
