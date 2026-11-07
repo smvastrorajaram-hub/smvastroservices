@@ -43,12 +43,11 @@ test('Mobile report tables scroll horizontally while A4 print CSS remains screen
 test('The PDF fix remains native-only and does not clear saved reports or origin storage', () => {
   assert.doesNotMatch(horoscope, /webView\.clearCache\s*\(/);
   assert.doesNotMatch(horoscope, /localStorage\.clear|sessionStorage\.clear|caches\.delete/);
-  for (const file of [
-    'smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java',
-    'smvcalendarproduction/src/main/java/in/smvastroservices/calendar/MainActivity.java'
-  ]) {
-    const source = read(file);
-    assert.doesNotMatch(source, /NativePdfBridge|smvAndroidPdfDownload|smv-android-wide-table/);
+  const astroMain = read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java');
+  const calendarMain = read('smvcalendarproduction/src/main/java/in/smvastroservices/calendar/MainActivity.java');
+  for (const [name, source] of [['SMV ASTRO', astroMain], ['SMV CALENDAR', calendarMain]]) {
+    assert.doesNotMatch(source, /SMVNativePdf|smvAndroidPdfDownload|__smvAndroidPdfActionsInstalled|applyAndroidHoroscopeReportLayout/,
+      name + ' must not install the SMV HOROSCOPE-specific JavaScript bridge');
   }
   assert.match(workflow, /test\/android-horoscope-pdf-native\.test\.mjs/);
 });
