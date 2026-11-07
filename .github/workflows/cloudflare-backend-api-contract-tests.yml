@@ -6,6 +6,10 @@ on:
     paths:
       - "cloudflare/backend-api/**"
       - "shared/backend-platform/**"
+      - "wrangler.jsonc"
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/fix-cloudflare-iconv-lite.mjs"
       - ".github/workflows/cloudflare-backend-api-contract-tests.yml"
       - ".github/scripts/resolve-cloudflare-account-from-production-d1.*"
   push:
@@ -13,6 +17,10 @@ on:
     paths:
       - "cloudflare/backend-api/**"
       - "shared/backend-platform/**"
+      - "wrangler.jsonc"
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/fix-cloudflare-iconv-lite.mjs"
       - ".github/workflows/cloudflare-backend-api-contract-tests.yml"
       - ".github/scripts/resolve-cloudflare-account-from-production-d1.*"
 
