@@ -31,6 +31,29 @@ function millis(value){
   const parsed=typeof value==='number'?value:Date.parse(String(value||''));
   return Number.isFinite(parsed)?parsed:0;
 }
+const CUSTOMER_FIELDS=[
+  'questionId','questionType','privateChat','customerName','question','amount',
+  'status','paymentStatus','allocationStatus','customerPaymentId','astrologerId',
+  'astrologerName','answer','answerSubmittedAt','answerAvailableAt','createdAt',
+  'updatedAt','refundStatus','refundId','refundAmount','refundRrn'
+];
+const ASTROLOGER_FIELDS=[
+  'questionId','questionType','privateChat','customerName','birthDetails',
+  'birthDate','birthTime','birthPlace','birthGender','question','amount',
+  'status','paymentStatus','allocationStatus','customerPaymentId',
+  'astrologerId','astrologerName','answer','answerMinWords','answerSubmittedAt',
+  'answerAvailableAt','createdAt','updatedAt'
+];
+const ADMIN_FIELDS=[
+  ...ASTROLOGER_FIELDS,'refundStatus','refundId','refundAmount','refundReason',
+  'adminQuestionRejectedAt','commissionStatus','commissionPercent',
+  'astrologerCommissionAmount','adminCommissionAmount'
+];
+function selectFields(record,fields){
+  const output={};
+  for(const key of fields)if(record?.[key]!==undefined)output[key]=record[key];
+  return output;
+}
 function sendError(res,error,fallback){
   const status=Number(error?.httpStatus)||500;
   return res.status(status).set('Cache-Control','no-store').json({
@@ -324,8 +347,9 @@ export function registerPrivateChatRoutes({
         filters:[{field:'customerId',op:'==',value:user.uid}],
         limit:1000
       });
-      const questions=documents.map(document=>({id:document.id,...(document.data||{})}))
-        .filter(question=>question.privateChat===true&&String(question.questionType||'')==='private_chat')
+      const questions=documents
+        .filter(document=>document.data?.privateChat===true&&String(document.data?.questionType||'')==='private_chat')
+        .map(document=>({id:document.id,...selectFields(document.data,CUSTOMER_FIELDS)}))
         .sort((a,b)=>millis(b.createdAt)-millis(a.createdAt)).slice(0,100);
       return res.set('Cache-Control','no-store').json({success:true,questions});
     }catch(error){return sendError(res,error,'Unable to load your Private Chat questions.');}
@@ -343,8 +367,9 @@ export function registerPrivateChatRoutes({
         filters:[{field:'astrologerId',op:'==',value:user.uid}],
         limit:1000
       });
-      const questions=documents.map(document=>({id:document.id,...(document.data||{})}))
-        .filter(question=>question.privateChat===true&&String(question.questionType||'')==='private_chat'&&question.paymentStatus==='paid')
+      const questions=documents
+        .filter(document=>document.data?.privateChat===true&&String(document.data?.questionType||'')==='private_chat'&&document.data?.paymentStatus==='paid')
+        .map(document=>({id:document.id,...selectFields(document.data,ASTROLOGER_FIELDS)}))
         .sort((a,b)=>millis(b.createdAt)-millis(a.createdAt)).slice(0,100);
       return res.set('Cache-Control','no-store').json({success:true,questions});
     }catch(error){return sendError(res,error,'Unable to load assigned Private Chat questions.');}
@@ -354,8 +379,9 @@ export function registerPrivateChatRoutes({
     try{
       await requireAdmin(req);
       const documents=await firestore.runQuery({collectionPath:QUESTION_COLLECTION,limit:1000});
-      const questions=documents.map(document=>({id:document.id,...(document.data||{})}))
-        .filter(question=>question.privateChat===true&&String(question.questionType||'')==='private_chat')
+      const questions=documents
+        .filter(document=>document.data?.privateChat===true&&String(document.data?.questionType||'')==='private_chat')
+        .map(document=>({id:document.id,...selectFields(document.data,ADMIN_FIELDS)}))
         .sort((a,b)=>millis(b.createdAt)-millis(a.createdAt)).slice(0,200);
       return res.set('Cache-Control','no-store').json({success:true,questions});
     }catch(error){return sendError(res,error,'Unable to load the Private Chat Admin queue.');}
