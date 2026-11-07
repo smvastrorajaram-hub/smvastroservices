@@ -1,12 +1,8 @@
 name: Cloudflare Production Backend Worker deploy
 
+# Routine PR previews and main-branch Worker deployments are handled by Cloudflare Workers Builds.
+# Keep this full Production secrets/D1/Worker operation manual to avoid competing deploy pipelines.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'cloudflare/backend-api/**'
-      - 'shared/backend-platform/**'
-      - '.github/workflows/cloudflare-backend-api-production-deploy.yml'
   workflow_dispatch:
 
 permissions:

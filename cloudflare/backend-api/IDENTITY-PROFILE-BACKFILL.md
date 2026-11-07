@@ -36,7 +36,7 @@ Keep this key outside source control and do not paste it into chat, PR comments,
 
 ## Protected staging configuration
 
-The following non-secret staging values are already pinned in `cloudflare/backend-api/wrangler.jsonc`; do not redirect this Worker to a production Firebase project or database. For the operator-managed credentials, use GitHub repository Settings → Secrets and variables → Actions:
+The following non-secret staging values are already pinned in `cloudflare/backend-api/wrangler.staging.jsonc`; do not redirect this Worker to a production Firebase project or database. For the operator-managed credentials, use GitHub repository Settings → Secrets and variables → Actions:
 
 - `SMV_ENVIRONMENT=staging`
 - `FIREBASE_PROJECT_ID=smv-astro-staging`

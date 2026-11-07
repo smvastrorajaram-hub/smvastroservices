@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 const output = execFileSync('npx', [
   '--yes', 'wrangler@4.156.0',
   'd1', 'execute', 'smvastro-wallet-staging',
-  '--local', '--json', '--config', 'wrangler.jsonc',
+  '--local', '--json', '--config', 'wrangler.staging.jsonc',
   '--file', 'test/fixtures/d1-staging-legacy-schema-assert.sql'
 ], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] });
 

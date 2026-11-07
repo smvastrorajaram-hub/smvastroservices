@@ -101,7 +101,7 @@ test('Cloudflare branch preview uses staging services rather than Production ser
   const worker = read('public/sw.js');
   const places = read('public/question-place-search.mjs');
   const mainPlaces = read('public/main-location-search.js');
-  const wrangler = read('cloudflare/backend-api/wrangler.jsonc');
+  const wrangler = read('cloudflare/backend-api/wrangler.staging.jsonc');
   const preview = 'fix-cloudflare-live-booking.smvastroservices.pages.dev';
   for (const source of [frontend,content,page,worker,places,mainPlaces]) assert.ok(source.includes(preview));
   assert.ok(wrangler.includes('https://'+preview));
