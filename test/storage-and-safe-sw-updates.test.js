@@ -176,14 +176,36 @@ test('Private Chat Admin approval, allocation and refund controls are wired to t
   assert.match(app, /Waiting for Admin approval before Customer can view it/);
 });
 
-test('Private Chat Answer editor uses one close control and explicit high-contrast textarea styling', () => {
+test('Private Chat Answer editor restores Submit at the Admin word count and keeps its heading badge white', () => {
   const app = read('public/smvastro.mjs');
   const css = read('public/smvastro.css');
   assert.match(app, /smv-private-chat-answer-modal/);
   assert.doesNotMatch(app, /smvPrivateChatAnswerClose/);
-  assert.match(app, /waiting for Admin approval/);
+  assert.match(app, /Minimum words set by Admin/);
+  assert.match(app, /submit\.textContent=ready\?'SUBMIT ANSWER'/);
+  assert.match(app, /\['input','keyup','change','compositionend','blur'\]/);
+  assert.match(app, /\/submit-answer/);
   assert.match(css, /#modal #smvPrivateChatAnswerText\{[^}]*color:#241b16!important/);
   assert.match(css, /#modal #smvPrivateChatAnswerText::placeholder/);
+  assert.match(css, /#modal \.smv-private-chat-answer-heading \.badge\{[^}]*color:#fff!important/);
+});
+
+test('Private Chat 24-hour reallocation, Customer Review flow and workflow timestamps are wired', () => {
+  const app = read('public/smvastro.mjs');
+  const backend = read('cloudflare/backend-api/src/private-chat-routes.mjs');
+  const review = read('cloudflare/backend-api/src/legacy-business-routes.mjs');
+  assert.match(backend, /POST \/admin\/private-chat\/reallocate/);
+  assert.match(backend, /24\*60\*60\*1000/);
+  assert.match(app, /data-private-chat-admin-action="reallocate"/);
+  assert.match(app, /canReallocate/);
+  assert.match(app, /data-private-chat-review-form/);
+  assert.match(app, /\/customer\/submit-review/);
+  assert.match(review, /PRIVATE_CHAT_ANSWER_NOT_VIEWED/);
+  assert.match(app, /Razorpay Refund ID/);
+  assert.match(app, /Admin rejected answer — revision requested/);
+  assert.match(app, /\['Requested',w\.createdAt\|\|w\.requestedAt\],\['Processing',w\.processingAt\]/);
+  assert.match(app, /saveEditedReview/);
+  assert.match(app, /data-review-edit/);
 });
 
 test('Reviews stays inside the Live Chat controls with matching button dimensions', () => {
