@@ -34,6 +34,11 @@ Preview command:
 npx wrangler preview
 ```
 
+Worker Previews require Wrangler `4.135.0` or later. The backend package pins
+`wrangler@4.158.0` in `devDependencies`, and the Build command installs that
+package before the default Preview command runs. Keep the default Preview
+command as `npx wrangler preview`; do not point it at the Production config.
+
 Enable Preview Builds in Settings → Build → Branch control. The default
 `wrangler.jsonc` is intentionally a Preview config: it uses the connected
 Production Worker name so Workers Builds can identify the Worker, but its

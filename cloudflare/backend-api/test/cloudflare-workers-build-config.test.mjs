@@ -17,6 +17,13 @@ function readJsonc(path) {
 const preview = readJsonc(resolve(root, 'wrangler.jsonc'));
 const staging = readJsonc(resolve(root, 'wrangler.staging.jsonc'));
 const production = readJsonc(resolve(root, 'wrangler.production.jsonc'));
+const workerPackage = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'));
+
+test('Workers Builds Preview uses a pinned Wrangler version that supports Worker Previews', () => {
+  assert.equal(workerPackage.devDependencies?.wrangler, '4.158.0');
+  const [major, minor] = workerPackage.devDependencies.wrangler.split('.').map(Number);
+  assert.ok(major > 4 || (major === 4 && minor >= 135), 'Worker Previews require Wrangler 4.135.0 or later');
+});
 
 test('Workers Builds default Preview config matches the connected Worker but uses staging-only resources', () => {
   assert.equal(preview.name, 'smvastroservices');
