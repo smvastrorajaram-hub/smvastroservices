@@ -82,7 +82,7 @@ function fixture({now=Date.parse('2026-10-31T10:00:00Z'),payoutEncryptionKey=TES
         },
         async all() {
           if(sql.includes('FROM smv_domain_withdrawals')) {
-            const rows=[...withdrawals.values()].filter(row=>!values.length||row.status===values[0]).map(row=>{
+            const rows=[...withdrawals.values()].filter(row=>!sql.includes('WHERE w.status=?')||row.status===values[0]).map(row=>{
               const encrypted=payouts.get(row.withdrawal_id)||{};
               const legacy=legacyPayouts.get(row.withdrawal_id)||{};
               return {...row,
@@ -198,6 +198,8 @@ test('Admin rejection updates the D1 withdrawal row and preserves encrypted payo
   await f.service.createRequest({astrologerUid:'astro-1',amountPaise:30000});
   const rejected=await f.service.rejectWithdrawal({withdrawalId:'uuid-1',adminUid:'admin-1'});
   assert.equal(rejected.withdrawal.status,'rejected');
+  const listed=await f.service.listAdminWithdrawals();
+  assert.equal(listed[0].rejectedAt,new Date(Date.UTC(2026,9,31,10,0,0)).toISOString());
   const retry=await f.service.rejectWithdrawal({withdrawalId:'uuid-1',adminUid:'admin-1'});
   assert.equal(retry.alreadyProcessed,true);
   const encrypted=f.payouts.get('uuid-1');
@@ -225,6 +227,12 @@ test('Admin can process, pay and safely retry a withdrawal; payout snapshot rema
   const retry=await f.service.markPaid({withdrawalId:'uuid-1',adminUid:'admin-1'});
   assert.equal(retry.alreadyProcessed,true);
   assert.equal(retry.paymentId,paid.paymentId);
+  const listed=await f.service.listAdminWithdrawals();
+  assert.equal(listed[0].processingAt,new Date(Date.UTC(2026,9,31,10,0,0)).toISOString());
+  assert.equal(listed[0].paidAt,new Date(Date.UTC(2026,9,31,10,0,0)).toISOString());
+  const dashboard=await f.service.getEarningsDashboard('astro-1');
+  assert.equal(dashboard.withdrawals[0].processingAt,new Date(Date.UTC(2026,9,31,10,0,0)).toISOString());
+  assert.equal(dashboard.withdrawals[0].paidAt,new Date(Date.UTC(2026,9,31,10,0,0)).toISOString());
   const details=await f.service.getPrivatePayout('uuid-1');
   assert.equal(details.payout.accountNumber,'123456789');
   assert.match(created.withdrawalId,/^smvwt-[0-9]{6}$/);

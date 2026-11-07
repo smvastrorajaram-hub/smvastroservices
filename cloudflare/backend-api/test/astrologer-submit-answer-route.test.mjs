@@ -95,11 +95,34 @@ test('Missing email configuration does not block saving answer; notifications re
 });
 
 
+test('Private Chat uses the exact 15-word limit saved by Admin and returns a clear error below it',async()=>{
+ const answer15='One two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen';
+ const make=()=>{const app=harness(),firestore=fixture({docs:{
+  'smv_questions/smvqt-15words':{
+   customerId:'cus-1',astrologerId:'astro-1',privateChat:true,questionType:'private_chat',
+   assignmentMode:'admin_assigned',adminApprovalBypassed:false,status:'private_chat_assigned',
+   paymentStatus:'paid',answerMinWords:15,amount:499,commissionPercent:75,adminCommissionPercent:25,
+   astrologerCommissionAmount:374.25,adminCommissionAmount:124.75,question:'Private question'
+  },
+  'smv_settings/workflow':{allowWithoutAdminApproval:false}
+ }});registerAstrologerSubmitAnswerRoute({app,firestore,identityService:{async authenticateAuthorization(){return{uid:'astro-1'};}}});return{app,firestore};};
+ const accepted=make(),ok=response();
+ await accepted.app.handlers.get('POST /submit-answer')(request({questionId:'smvqt-15words',answer:answer15}),ok);
+ assert.equal(ok.statusCode,200);
+ assert.equal(ok.body.wordCount,15);
+ assert.equal(accepted.firestore.store.get('smv_questions/smvqt-15words').status,'processing');
+ const denied=make(),short=response();
+ await denied.app.handlers.get('POST /submit-answer')(request({questionId:'smvqt-15words',answer:answer15.split(' ').slice(0,14).join(' ')}),short);
+ assert.equal(short.statusCode,400);
+ assert.equal(short.body.code,'ANSWER_MINIMUM_WORDS');
+ assert.equal(denied.firestore.writes.length,0);
+});
+
 test('Private Chat Admin OFF releases an approved Astrologer answer directly to the Customer',async()=>{
  const app=harness(),firestore=fixture({docs:{
   'smv_questions/smvqt-654321':{
    customerId:'cus-1',astrologerId:'astro-1',privateChat:true,questionType:'private_chat',
-   assignmentMode:'open_to_all',status:'private_chat_assigned',paymentStatus:'paid',
+   assignmentMode:'direct_selected',adminApprovalBypassed:true,status:'private_chat_assigned',paymentStatus:'paid',
    answerMinWords:150,amount:499,commissionPercent:75,adminCommissionPercent:25,
    astrologerCommissionAmount:374.25,adminCommissionAmount:124.75,question:'Private question'
   },

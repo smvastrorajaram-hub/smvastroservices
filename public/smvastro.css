@@ -4379,7 +4379,7 @@ html body #smv24-footer .smv24-footer-top .smv24-brand h2{
 #modal .smv-private-chat-answer-modal{display:flex;flex-direction:column;gap:14px;width:100%;max-width:100%;min-width:0;box-sizing:border-box;padding:8px 4px 6px;color:#241b16!important;-webkit-text-fill-color:#241b16}
 #modal .smv-private-chat-answer-header{display:flex;align-items:flex-start;justify-content:flex-start;width:100%;min-width:0;padding:2px 44px 0 0;box-sizing:border-box}
 #modal .smv-private-chat-answer-heading{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;width:100%}
-#modal .smv-private-chat-answer-heading .badge{display:inline-flex;align-items:center;justify-content:center;width:auto;max-width:100%;min-height:32px;padding:7px 12px;white-space:nowrap;line-height:1.2}
+#modal .smv-private-chat-answer-heading .badge{display:inline-flex;align-items:center;justify-content:center;width:auto;max-width:100%;min-height:32px;padding:7px 12px;white-space:nowrap;line-height:1.2;color:#fff!important;-webkit-text-fill-color:#fff!important}
 #modal .smv-private-chat-answer-heading h2{margin:2px 0!important;font-size:clamp(19px,5vw,24px)!important;line-height:1.2!important;letter-spacing:normal;overflow-wrap:normal;word-break:normal;color:#241b16!important;-webkit-text-fill-color:#241b16!important}
 #modal .smv-private-chat-answer-heading p{margin:0!important;color:#4e443b!important;-webkit-text-fill-color:#4e443b!important;overflow-wrap:anywhere}
 #modal .smv-private-chat-question-preview{display:flex;flex-direction:column;gap:7px;margin:0;padding:13px;background:#fff8e7;border:1px solid #d4af37;border-radius:12px;color:#241b16!important;-webkit-text-fill-color:#241b16!important}

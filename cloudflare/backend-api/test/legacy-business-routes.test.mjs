@@ -115,6 +115,30 @@ test('Customer review submission checks ownership/final status and atomically cr
  assert.ok(firestore.writes.some(x=>x.type==='set'&&x.path==='smv_questions/q1'));
 });
 
+test('Private Chat review is accepted only after Customer views the released answer',async()=>{
+ const identityService={async authenticateAuthorization(){return {uid:'cus-1',role:'customer'};}};
+ const appBlocked=harness(),blockedStore=transactionalFirestore({docs:{
+   'smv_questions/private-q':{exists:true,data:{customerId:'cus-1',astrologerId:'astro-1',status:'answered',privateChat:true,questionType:'private_chat'}},
+   'smv_reviews/private-q_cus-1':{exists:false,data:null}
+ }});
+ registerLegacyBusinessRoutes({app:appBlocked,firestore:blockedStore,identityService});
+ const blocked=response();
+ await appBlocked.handlers.get('POST /customer/submit-review')(request({questionId:'private-q',astrologerId:'astro-1',rating:5,review:'Excellent guidance.'}),blocked);
+ assert.equal(blocked.statusCode,409);
+ assert.equal(blockedStore.writes.length,0);
+
+ const appViewed=harness(),viewedStore=transactionalFirestore({docs:{
+   'smv_questions/private-q':{exists:true,data:{customerId:'cus-1',astrologerId:'astro-1',status:'answered',privateChat:true,questionType:'private_chat',customerAnswerViewedAt:{seconds:1794050000}}},
+   'smv_reviews/private-q_cus-1':{exists:false,data:null}
+ }});
+ registerLegacyBusinessRoutes({app:appViewed,firestore:viewedStore,identityService});
+ const allowed=response();
+ await appViewed.handlers.get('POST /customer/submit-review')(request({questionId:'private-q',astrologerId:'astro-1',rating:5,review:'Excellent guidance.'}),allowed);
+ assert.equal(allowed.statusCode,200);
+ assert.equal(allowed.body.alreadySubmitted,false);
+ assert.ok(viewedStore.writes.some(x=>x.type==='create'&&x.path==='smv_reviews/private-q_cus-1'));
+});
+
 test('Customer review submission refuses another Customer’s question', async()=>{
  const app=harness(),firestore=transactionalFirestore({docs:{
    'smv_questions/q1':{exists:true,data:{customerId:'someone-else',astrologerId:'astro-1',status:'answered'}},

@@ -61,7 +61,7 @@ export function registerAstrologerSubmitAnswerRoute({app,firestore,identityServi
     // Admin ON holds Private Chat answers for review. Public Questions follow
     // the global Admin Control setting stored in smv_settings/workflow.
     const bypass=privateChat
-     ?String(q.assignmentMode||'admin_assigned')==='open_to_all'
+     ?q.adminApprovalBypassed===true
      :workflow.allowWithoutAdminApproval===true&&q.adminApprovalBypassed!==false;
     const editable=['admin_approved','revision_required','processing','admin_review','private_chat_assigned'];
     if(bypass&&String(q.status||'')==='answered'&&(q.customerAnswerViewedAt||String(q.commissionStatus||'')==='credited')){

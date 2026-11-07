@@ -134,7 +134,7 @@ test("Verified full Horoscope report continues through existing Save and PDF/Pri
 });
 
 test("All three apps use one synchronized cache release; Horoscope runtime revision is bumped", () => {
-  const expected = "20261107-private-chat-admin-review-refund-v3";
+  const expected = "20261107-private-chat-selected-astrologer-v5";
   const versions = workers.map(source => /const SMV_CACHE_RELEASE='([^']+)'/.exec(source)?.[1]);
   assert.deepEqual(versions, [expected, expected, expected]);
   const runtime = /const RUNTIME_REVISION='([^']+)'/.exec(workers[1])?.[1];

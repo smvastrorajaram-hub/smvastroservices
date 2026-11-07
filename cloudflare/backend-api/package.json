@@ -32,7 +32,7 @@
     "test:live-session-do": "node --test test/live-session-coordinator.test.mjs",
     "test:wallet-live-audit": "node --test test/wallet-domain-backfill.test.mjs test/d1-wallet-domain-backfill.test.mjs test/wallet-live-readonly-audit.test.mjs",
     "test:route-parity-gaps": "node --test test/legacy-route-parity-gap-routes.test.mjs",
-    "test:private-chat": "node --test test/private-chat-routes.test.mjs"
+    "test:private-chat": "node --test test/private-chat-routes.test.mjs test/legacy-razorpay-routes.test.mjs test/astrologer-submit-answer-route.test.mjs"
   },
   "dependencies": {
     "express": "5.1.0"

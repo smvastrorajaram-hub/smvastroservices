@@ -353,6 +353,9 @@ export function createD1WithdrawalService({db,firestore,now=Date.now,cryptoImpl=
         adminPaymentId:item.adminPaymentId,
         createdAt:new Date(item.createdAtMs).toISOString(),
         requestedAt:new Date(item.createdAtMs).toISOString(),
+        processingAt:payload.processingAtMs?new Date(Number(payload.processingAtMs)).toISOString():null,
+        approvedAt:payload.approvedAtMs?new Date(Number(payload.approvedAtMs)).toISOString():null,
+        rejectedAt:payload.rejectedAtMs?new Date(Number(payload.rejectedAtMs)).toISOString():null,
         paidAt:payload.paidAtMs?new Date(Number(payload.paidAtMs)).toISOString():null
       };
     });
@@ -403,6 +406,9 @@ export function createD1WithdrawalService({db,firestore,now=Date.now,cryptoImpl=
         adminPaymentId:item.adminPaymentId,
         createdAt:new Date(item.createdAtMs).toISOString(),
         requestedAt:new Date(item.createdAtMs).toISOString(),
+        processingAt:data.processingAtMs?new Date(Number(data.processingAtMs)).toISOString():null,
+        approvedAt:data.approvedAtMs?new Date(Number(data.approvedAtMs)).toISOString():null,
+        rejectedAt:data.rejectedAtMs?new Date(Number(data.rejectedAtMs)).toISOString():null,
         paidAt:data.paidAtMs?new Date(Number(data.paidAtMs)).toISOString():null,
         payout
       });
