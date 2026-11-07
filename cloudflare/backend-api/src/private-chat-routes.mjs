@@ -411,7 +411,7 @@ export function registerPrivateChatRoutes({
           const q=document.data||{},status=String(q.status||'');
           if(q.privateChat!==true||String(q.questionType||'')!=='private_chat'||q.paymentStatus!=='paid')return false;
           if(!['private_chat_assigned','processing','answered'].includes(status))return false;
-          if(q.refundRequestedAt||q.refundEligible===true||q.refundId||['question_rejected','admin_rejected','rejected_by_admin'].includes(status))return false;
+          if(q.refundRequestedAt||q.refundEligible===true||q.refundId||['pending','created','initiated','processing','failed','waiting_balance'].includes(String(q.refundStatus||'').toLowerCase())||['question_rejected','admin_rejected','rejected_by_admin'].includes(status))return false;
           return String(q.astrologerId||'')===String(user.uid);
         })
         .map(document=>{
