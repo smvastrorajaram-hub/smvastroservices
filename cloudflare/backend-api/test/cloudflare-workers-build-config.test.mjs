@@ -18,6 +18,21 @@ const preview = readJsonc(resolve(root, 'wrangler.jsonc'));
 const staging = readJsonc(resolve(root, 'wrangler.staging.jsonc'));
 const production = readJsonc(resolve(root, 'wrangler.production.jsonc'));
 const workerPackage = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'));
+const repoRootPreview = readJsonc(resolve(repo, 'wrangler.jsonc'));
+
+test('repository-root Worker Preview shim keeps root-based Preview Builds on Staging resources', () => {
+  assert.equal(repoRootPreview.name, 'smvastroservices');
+  assert.equal(repoRootPreview.main, './cloudflare/backend-api/src/index.mjs');
+  assert.equal(repoRootPreview.vars.SMV_ENVIRONMENT, 'staging');
+  assert.equal(repoRootPreview.vars.FIREBASE_AUTH_PROJECT_IDS, 'smv-astro-staging');
+  assert.equal(repoRootPreview.d1_databases[0].database_name, 'smvastro-wallet-staging');
+  assert.equal(repoRootPreview.d1_databases[0].database_id, '0ddb87a9-8a16-4e39-a806-c9137c64959a');
+  assert.ok(repoRootPreview.previews && typeof repoRootPreview.previews === 'object');
+  assert.equal(repoRootPreview.previews.vars.SMV_ENVIRONMENT, 'staging');
+  assert.equal(repoRootPreview.previews.d1_databases[0].database_id, '0ddb87a9-8a16-4e39-a806-c9137c64959a');
+  assert.ok(!JSON.stringify(repoRootPreview).includes('b1d5684c-3fcd-48fe-9571-ea41fc605c7d'), 'Root Preview config must never reference Production D1');
+  assert.equal(repoRootPreview.preview_urls, false);
+});
 
 test('Workers Builds Preview uses a pinned Wrangler version that supports Worker Previews', () => {
   assert.equal(workerPackage.devDependencies?.wrangler, '4.158.0');

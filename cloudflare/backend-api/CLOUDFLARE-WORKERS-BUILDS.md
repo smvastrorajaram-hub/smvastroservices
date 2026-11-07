@@ -56,6 +56,10 @@ previews do not target the Production D1 database.
 Do not change the Preview config's Staging Firebase/D1 values to Production.
 Do not copy the Production D1 binding into a PR Preview config.
 
+## Repository-root Preview fallback
+
+The current Cloudflare Preview build runner can execute `npx wrangler preview` from the repository root (`/`) rather than the nested Worker directory. The repository-root `wrangler.jsonc` is therefore a Preview-only shim whose `main` points to `cloudflare/backend-api/src/index.mjs`; all of its runtime variables, D1 bindings, and Preview base bindings are Staging-only. This ensures the default root-based Preview command finds a `previews` block and cannot bind to Production D1. The Production build remains rooted at `cloudflare/backend-api` and continues to use only `wrangler.production.jsonc`.
+
 ## Deployment ownership
 
 - A push to a PR branch runs GitHub contract tests and, when Preview Builds are
