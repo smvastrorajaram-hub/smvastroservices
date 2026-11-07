@@ -19,7 +19,19 @@ const browser = await puppeteer.launch({
 const runtimeErrors = [];
 try {
   const page = await browser.newPage();
-  page.on('console', message => { if (message.type() === 'error') { const location=message.location?.()||{}; runtimeErrors.push('console: ' + message.text() + (location.url ? ' [source=' + location.url + ']' : '')); } });
+  page.on('console', message => {
+    if (message.type() !== 'error') return;
+    const messageText = message.text();
+    // Chromium reports this external Google frame as a console error even though
+    // the site's frame-ancestors policy is report-only and does not block the page.
+    // Ignore only this exact report-only notice; real CSP blocks and app errors fail.
+    const knownReportOnlyGoogleFrameNotice =
+      messageText.includes("Framing 'https://www.google.com/' violates the following report-only Content Security Policy directive:") &&
+      messageText.includes("frame-ancestors 'self'");
+    if (knownReportOnlyGoogleFrameNotice) return;
+    const location = message.location?.() || {};
+    runtimeErrors.push('console: ' + messageText + (location.url ? ' [source=' + location.url + ']' : ''));
+  });
   // Test the deployed current source, not an installed/stale PWA service-worker shell.
   await page.setBypassServiceWorker(true);
   // Keep the deployed source test independent from the Calendar PWA's one-time
