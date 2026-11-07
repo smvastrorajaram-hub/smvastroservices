@@ -35,7 +35,7 @@ const CUSTOMER_FIELDS=[
   'questionId','questionType','privateChat','customerName','question','amount',
   'status','paymentStatus','allocationStatus','customerPaymentId','astrologerId',
   'astrologerName','answer','answerSubmittedAt','answerAvailableAt','createdAt',
-  'updatedAt','refundStatus','refundId','refundAmount','refundPaymentId','refundRrn','refundArn','refundUtr','refundBankReference','refundRequestedAt','refundCreatedAt','refundSyncedAt','refundProcessedAt','refundFailedAt','refundError','refundReason','paidAt','paymentRecordedAt','questionSubmittedAt','adminQuestionApprovedAt','adminQuestionRejectedAt','answerSubmittedAt','answerApprovedAt','answerAvailableAt','customerAnswerViewedAt','reviewed','reviewSubmittedAt'
+  'updatedAt','refundStatus','refundId','refundAmount','refundPaymentId','refundRrn','refundArn','refundUtr','refundBankReference','refundRequestedAt','refundCreatedAt','refundSyncedAt','refundProcessedAt','refundFailedAt','refundError','refundReason','paidAt','paymentRecordedAt','questionSubmittedAt','adminQuestionApprovedAt','adminQuestionRejectedAt','answerSubmittedAt','answerApprovedAt','answerAvailableAt','lastAnswerRejectedAt','customerAnswerViewedAt','reviewed','reviewSubmittedAt'
 ];
 const ASTROLOGER_FIELDS=[
   'questionId','questionType','privateChat','customerName','birthDetails',
