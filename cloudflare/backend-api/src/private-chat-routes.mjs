@@ -35,7 +35,7 @@ const CUSTOMER_FIELDS=[
   'questionId','questionType','privateChat','customerName','question','amount',
   'status','paymentStatus','allocationStatus','customerPaymentId','astrologerId',
   'astrologerName','answer','answerSubmittedAt','answerAvailableAt','createdAt',
-  'updatedAt','refundStatus','refundId','refundAmount','refundPaymentId','refundRrn','refundArn','refundUtr','refundBankReference','refundRequestedAt','refundCreatedAt','refundSyncedAt','refundProcessedAt','refundFailedAt','refundError','paidAt','paymentRecordedAt','questionSubmittedAt','adminQuestionApprovedAt','adminQuestionRejectedAt','answerSubmittedAt','answerApprovedAt','answerAvailableAt','customerAnswerViewedAt','reviewed','reviewSubmittedAt'
+  'updatedAt','refundStatus','refundId','refundAmount','refundPaymentId','refundRrn','refundArn','refundUtr','refundBankReference','refundRequestedAt','refundCreatedAt','refundSyncedAt','refundProcessedAt','refundFailedAt','refundError','refundReason','paidAt','paymentRecordedAt','questionSubmittedAt','adminQuestionApprovedAt','adminQuestionRejectedAt','answerSubmittedAt','answerApprovedAt','answerAvailableAt','customerAnswerViewedAt','reviewed','reviewSubmittedAt'
 ];
 const ASTROLOGER_FIELDS=[
   'questionId','questionType','privateChat','customerName','birthDetails',
@@ -305,7 +305,7 @@ export function registerPrivateChatRoutes({
               },
               birthDate:String(birth.birthDate),birthTime,birthPlace,birthGender:gender,
               status:'awaiting_payment',paymentStatus:'pending',allocationStatus:'awaiting_payment',
-              clientRequestId:requestId,createdAt:FirestoreFieldValue.serverTimestamp(),
+              clientRequestId:requestId,questionSubmittedAt:FirestoreFieldValue.serverTimestamp(),createdAt:FirestoreFieldValue.serverTimestamp(),
               updatedAt:FirestoreFieldValue.serverTimestamp()
             };
             tx.create(path,record);
