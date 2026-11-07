@@ -197,6 +197,37 @@ async function renderApi(path, options={}, authUserOverride=null){
   }finally{clearTimeout(timer);signal?.removeEventListener('abort',cancel);}
 }
 
+// Private Chat uses its own Cloudflare Worker API; it does not depend on the
+// global financial-route switch and never falls back to the retired Render Q&A routes.
+async function smvPrivateChatApi(path,options={}){
+ const user=options.authUserOverride||auth?.currentUser||currentUser;
+ if(!user)throw new Error('Please log in to continue.');
+ if(typeof path!=='string'||!path.startsWith('/')||path.startsWith('//'))throw new Error('Invalid Private Chat API path.');
+ const {authUserOverride,timeoutMs=25000,...request}=options;
+ const token=await user.getIdToken();
+ if(auth?.currentUser?.uid&&auth.currentUser.uid!==user.uid)throw new Error('Your login changed. Please sign in again.');
+ const headers=new Headers(request.headers||{});
+ headers.set('Authorization','Bearer '+token);
+ headers.set('Accept','application/json');
+ let body=request.body;
+ if(body!=null&&!(body instanceof FormData)&&typeof body!=='string'){
+  headers.set('Content-Type','application/json');
+  body=JSON.stringify(body);
+ }
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),timeoutMs);
+ try{
+  const response=await fetch(CLOUDFLARE_FINANCIAL_BACKEND_URL+path,{...request,body,headers,cache:'no-store',signal:controller.signal});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok||data?.success===false)throw new Error(data?.error||'Private Chat request failed ('+response.status+').');
+  if(auth?.currentUser?.uid&&auth.currentUser.uid!==user.uid)throw new Error('Your login changed. Please sign in again.');
+  return data;
+ }catch(error){
+  if(error?.name==='AbortError')throw new Error('Private Chat request timed out. Refresh the Dashboard before retrying payment.');
+  throw error;
+ }finally{clearTimeout(timer);}
+}
+
 function smvVerificationLanguage(){ return "en"; }
 async function smvSendVerificationEmail(user){
   if(!user)throw new Error("A signed-in Firebase account is required.");
