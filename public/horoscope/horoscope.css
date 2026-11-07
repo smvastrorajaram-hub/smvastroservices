@@ -2822,11 +2822,35 @@ html,body{scroll-behavior:auto!important}
 #smvSavedReports .smv-saved-row button{min-height:28px!important;font-size:.7rem!important}
 #smvSavedReports .smv-saved-row .smv-delete-report{background:transparent!important}
 #smvSavedReports .smv-saved-group>p{font-size:.78rem!important}
-.smv-horoscope-pay-gate,.mm-benefits{border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;padding:6px 0!important;margin:8px 0!important}
-.smv-horoscope-pay-gate h3,.mm-benefits h3{margin:0 0 5px!important;font-size:1rem!important}
-.smv-horoscope-pay-gate ul,.mm-benefits ul{margin:4px 0 7px!important;padding-left:20px!important}
-.smv-horoscope-pay-gate li,.mm-benefits li{margin:2px 0!important;padding:0!important;font-size:.86rem!important;line-height:1.35!important}
+.mm-benefits{border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;padding:6px 0!important;margin:8px 0!important}
+.mm-benefits h3{margin:0 0 5px!important;font-size:1rem!important}
+.mm-benefits ul{margin:4px 0 7px!important;padding-left:20px!important}
+.mm-benefits li{margin:2px 0!important;padding:0!important;font-size:.86rem!important;line-height:1.35!important}
 .smv-horoscope-pay-gate button,#mmCheck{width:auto!important;min-width:0!important;padding:7px 10px!important;border-radius:7px!important;font-size:.8rem!important;line-height:1.1!important}
+.smv-horoscope-pay-gate{
+  box-sizing:border-box!important;width:100%!important;
+  margin:12px 0 16px!important;padding:clamp(14px,2vw,18px)!important;
+  border:1px solid var(--smv207-line,#e4d7bf)!important;
+  border-radius:var(--smv207-radius,12px)!important;
+  background:#fff!important;
+  box-shadow:var(--smv207-shadow-sm,0 4px 14px rgba(69,38,22,.06))!important;
+  color:var(--smv207-ink,#2d2522)!important;
+  -webkit-text-fill-color:currentColor!important
+}
+.smv-horoscope-pay-gate h3{
+  margin:0 0 8px!important;font-size:var(--smv207-h3,1rem)!important;
+  font-weight:850!important;color:var(--smv207-red,#8b1717)!important;
+  -webkit-text-fill-color:var(--smv207-red,#8b1717)!important
+}
+.smv-horoscope-pay-gate p,.smv-horoscope-pay-gate li,.smv-horoscope-pay-gate .smv-lock-price{
+  color:var(--smv207-ink,#2d2522)!important;
+  -webkit-text-fill-color:var(--smv207-ink,#2d2522)!important
+}
+.smv-horoscope-pay-gate button{
+  border:1px solid var(--smv207-red-strong,#701010)!important;
+  background:linear-gradient(135deg,var(--smv207-red,#8b1717),var(--smv207-red-soft,#a52a23))!important;
+  color:#fff!important;-webkit-text-fill-color:#fff!important;font-weight:850!important
+}
 @media (max-width:600px){
 #smvSavedReports .smv-saved-row{flex-wrap:nowrap!important}
 #smvSavedReports .smv-saved-row>span{flex-basis:auto!important}
