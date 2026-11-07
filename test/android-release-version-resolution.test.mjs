@@ -9,6 +9,10 @@ import {
   nextAndroidReleaseVersion,
   resolveNextAndroidReleaseVersion
 } from '../scripts/next-android-release-version.mjs';
+import {
+  normalizeAndroidReleaseVersionName,
+  normalizeAndroidReleaseVersionsInEnv
+} from '../scripts/normalize-android-release-version-name.mjs';
 
 const current = (appId, versionName, versionCode) => ({
   success: true,
@@ -94,6 +98,53 @@ test('GITHUB_ENV receives one real newline-delimited variable for each app', asy
       ''
     ]);
     assert.ok(!value.includes('\\n'), 'GITHUB_ENV must contain actual line breaks, not literal backslash-n text.');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+
+test('manual Android version shorthand is normalized to the required major.minor format', () => {
+  assert.deepEqual(normalizeAndroidReleaseVersionName('v3', 'SMV ASTRO'), {
+    versionName: 'v3.0', versionCode: 3000, wasNormalized: true
+  });
+  assert.deepEqual(normalizeAndroidReleaseVersionName('v2', 'SMV HOROSCOPE'), {
+    versionName: 'v2.0', versionCode: 2000, wasNormalized: true
+  });
+  assert.deepEqual(normalizeAndroidReleaseVersionName('v1.18', 'SMV ASTRO'), {
+    versionName: 'v1.18', versionCode: 1018, wasNormalized: false
+  });
+  assert.throws(() => normalizeAndroidReleaseVersionName('v0', 'SMV ASTRO'), /vMAJOR\.MINOR/);
+  assert.throws(() => normalizeAndroidReleaseVersionName('v2.1000', 'SMV CALENDAR'), /vMAJOR\.MINOR/);
+  assert.throws(() => normalizeAndroidReleaseVersionName('v2100001', 'SMV HOROSCOPE'), /supported range/);
+});
+
+test('manual Android version normalization writes each selected app version to GITHUB_ENV', async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'smv-manual-apk-version-'));
+  const envFile = path.join(directory, 'github-env');
+  try {
+    const records = await normalizeAndroidReleaseVersionsInEnv(
+      ['astro', 'horoscope', 'calendar'],
+      {
+        SMV_ANDROID_VERSION_NAME: 'v3',
+        SMV_HOROSCOPE_ANDROID_VERSION_NAME: 'v2',
+        SMV_CALENDAR_ANDROID_VERSION_NAME: 'v1.7'
+      },
+      envFile
+    );
+    assert.deepEqual(records.map(({appId, versionName, versionCode, wasNormalized}) => ({
+      appId, versionName, versionCode, wasNormalized
+    })), [
+      {appId:'astro',versionName:'v3.0',versionCode:3000,wasNormalized:true},
+      {appId:'horoscope',versionName:'v2.0',versionCode:2000,wasNormalized:true},
+      {appId:'calendar',versionName:'v1.7',versionCode:1007,wasNormalized:false}
+    ]);
+    assert.equal(await readFile(envFile, 'utf8'), [
+      'SMV_ANDROID_VERSION_NAME=v3.0',
+      'SMV_HOROSCOPE_ANDROID_VERSION_NAME=v2.0',
+      'SMV_CALENDAR_ANDROID_VERSION_NAME=v1.7',
+      ''
+    ].join('\n'));
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
