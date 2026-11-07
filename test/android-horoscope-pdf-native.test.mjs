@@ -58,6 +58,11 @@ test('A Horoscope-only main-branch change does not allocate or publish a new Cal
   assert.match(workflow, /node scripts\/next-android-release-version\.mjs \$\{\{ steps\.app_targets\.outputs\.apps \}\}/);
   assert.match(workflow, /SMV_BUILD_HOROSCOPE/);
   assert.match(workflow, /SMV_BUILD_CALENDAR/);
+  const releaseGradleCommand = workflow.split('\n').find(row => row.includes('gradle --no-daemon --no-build-cache -PsmvHoroscopeVersionName='));
+  assert.ok(releaseGradleCommand, 'selected signed release must invoke Gradle');
+  assert.ok(releaseGradleCommand.includes('"\u0024{tasks[@]}"'), 'selected Gradle tasks must remain one shell argument array');
+  assert.equal(releaseGradleCommand.trim().endsWith('\\'), false, 'release Gradle command must not leave a line-continuation token as a task');
+
   assert.match(workflow, /steps\.app_targets\.outputs\.horoscope == 'true'/);
   assert.match(workflow, /steps\.app_targets\.outputs\.calendar == 'true'/);
   assert.ok(workflow.includes('public/horoscope/sw.js|public/horoscope/calendar/sw.js'), 'shared offline cache changes must continue to rebuild both Android apps');
