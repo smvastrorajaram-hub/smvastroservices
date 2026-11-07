@@ -396,6 +396,86 @@ test('Legacy open-to-all Private Chat records are held from every Astrologer unt
   assert.equal(other.body.questions.length,0);
 });
 
+test('Rejected or refund-processing Private Chat questions disappear from every Astrologer queue',async()=>{
+  const state=setup();
+  state.firestore.documents.set('smv_questions/smvqt-rejected-1',{
+    questionId:'smvqt-rejected-1',privateChat:true,questionType:'private_chat',paymentStatus:'paid',
+    status:'question_rejected',allocationStatus:'rejected_by_admin',astrologerId:'astro-1',
+    refundRequestedAt:{seconds:1794040000},refundStatus:'pending'
+  });
+  state.firestore.documents.set('smv_questions/smvqt-refunding-1',{
+    questionId:'smvqt-refunding-1',privateChat:true,questionType:'private_chat',paymentStatus:'paid',
+    status:'private_chat_assigned',allocationStatus:'assigned_to_astrologer',astrologerId:'astro-1',
+    refundRequestedAt:{seconds:1794040000},refundStatus:'processing'
+  });
+  const result=response();
+  await state.app.handlers.get('GET /astrologer/private-chat/questions')(
+    request({authorization:'Bearer astrologer-token'}),result
+  );
+  assert.equal(result.statusCode,200);
+  assert.equal(result.body.questions.length,0);
+});
+
+test('Admin can reallocate an unanswered Private Chat only after 24 hours to another approved Astrologer',async()=>{
+  const state=setup();
+  const assignedAt=Date.UTC(2026,10,6,4,0,0);
+  state.firestore.documents.set('smv_questions/smvqt-reallocate-1',{
+    questionId:'smvqt-reallocate-1',privateChat:true,questionType:'private_chat',paymentStatus:'paid',
+    status:'private_chat_assigned',allocationStatus:'assigned_to_astrologer',
+    customerId:'customer-1',requestedAstrologerId:'astro-1',requestedAstrologerName:'Test Astrologer',
+    astrologerId:'astro-1',astrologerName:'Test Astrologer',astrologerAssignedAt:{seconds:assignedAt/1000},
+    question:'Please answer this private question',amount:499,answerMinWords:15,
+    commissionPercent:75,adminCommissionPercent:25
+  });
+  const tooEarly=response();
+  await state.app.handlers.get('POST /admin/private-chat/reallocate')(
+    request({authorization:'Bearer admin-token',body:{questionId:'smvqt-reallocate-1',astrologerId:'astro-2'}}),tooEarly
+  );
+  assert.equal(tooEarly.statusCode,200);
+  assert.equal(tooEarly.body.astrologerId,'astro-2');
+  const saved=state.firestore.documents.get('smv_questions/smvqt-reallocate-1');
+  assert.equal(saved.astrologerId,'astro-2');
+  assert.equal(saved.previousAstrologerId,'astro-1');
+  assert.equal(saved.requestedAstrologerId,'astro-1');
+  assert.ok(saved.astrologerReassignedAt);
+  assert.equal(saved.astrologerReassignmentCount,1);
+  const oldAstrologer=response(),newAstrologer=response();
+  await state.app.handlers.get('GET /astrologer/private-chat/questions')(
+    request({authorization:'Bearer astrologer-token'}),oldAstrologer
+  );
+  await state.app.handlers.get('GET /astrologer/private-chat/questions')(
+    request({authorization:'Bearer other-astrologer-token'}),newAstrologer
+  );
+  assert.equal(oldAstrologer.body.questions.length,0);
+  assert.equal(newAstrologer.body.questions.length,1);
+  assert.equal(newAstrologer.body.questions[0].astrologerId,'astro-2');
+});
+
+test('Admin cannot reallocate before 24 hours or after an answer has been submitted',async()=>{
+  const state=setup();
+  const now=Date.UTC(2026,10,7,6,0,0);
+  state.firestore.documents.set('smv_questions/smvqt-reallocate-early',{
+    questionId:'smvqt-reallocate-early',privateChat:true,questionType:'private_chat',paymentStatus:'paid',
+    status:'private_chat_assigned',astrologerId:'astro-1',astrologerAssignedAt:{seconds:(now-23*60*60*1000)/1000}
+  });
+  state.firestore.documents.set('smv_questions/smvqt-reallocate-answered',{
+    questionId:'smvqt-reallocate-answered',privateChat:true,questionType:'private_chat',paymentStatus:'paid',
+    status:'private_chat_assigned',astrologerId:'astro-1',astrologerAssignedAt:{seconds:(now-30*60*60*1000)/1000},
+    answerSubmittedAt:{seconds:(now-60*60*1000)/1000},answer:'An answer has been submitted'
+  });
+  const early=response(),answered=response();
+  await state.app.handlers.get('POST /admin/private-chat/reallocate')(
+    request({authorization:'Bearer admin-token',body:{questionId:'smvqt-reallocate-early',astrologerId:'astro-2'}}),early
+  );
+  await state.app.handlers.get('POST /admin/private-chat/reallocate')(
+    request({authorization:'Bearer admin-token',body:{questionId:'smvqt-reallocate-answered',astrologerId:'astro-2'}}),answered
+  );
+  assert.equal(early.statusCode,409);
+  assert.equal(answered.statusCode,409);
+  assert.equal(state.firestore.documents.get('smv_questions/smvqt-reallocate-early').astrologerId,'astro-1');
+  assert.equal(state.firestore.documents.get('smv_questions/smvqt-reallocate-answered').astrologerId,'astro-1');
+});
+
 test('Admin answer approval releases an answer to Customer only after acceptance',async()=>{
   const state=setup();
   state.firestore.documents.set('smv_questions/smvqt-333333',{
