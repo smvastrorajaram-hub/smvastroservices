@@ -32,6 +32,14 @@ test("The quick-payment box is added below each Generate button without replacin
   assert.match(policy, /smvHoroscopePaidEntryTamil/);
 });
 
+test("Only one Horoscope paid-entry synchronizer exists; a legacy duplicate must not shadow the mirrored UI", () => {
+  const declarations = [...policy.matchAll(/function\s+syncHoroscopePaidEntry\s*\(/g)];
+  assert.equal(declarations.length, 1, "Exactly one syncHoroscopePaidEntry declaration must remain.");
+  assert.match(policy, /const paidCustomerMode=state\.mode==='paid'&&state\.loggedIn===true&&Number\(state\.actualPrice\|\|0\)>=1/);
+  assert.doesNotMatch(policy, /const active=state\.mode==='paid'&&state\.loggedIn===true&&Number\(state\.actualPrice\|\|0\)===1/);
+  assert.doesNotMatch(policy, /renderQuickHoroscopePayment\(/);
+});
+
 test("The mirrored Full Report box appears only for Admin ON + Rs.1 or above + logged-in unpaid Customer", () => {
   assert.match(policy, /const paidCustomerMode=state\.mode==='paid'&&state\.loggedIn===true&&Number\(state\.actualPrice\|\|0\)>=1/);
   assert.match(policy, /const showPaymentMirror=paidCustomerMode&&state\.entitled!==true/);
@@ -115,11 +123,11 @@ test("Verified full Horoscope report continues through existing Save and PDF/Pri
 });
 
 test("All three apps use one synchronized cache release; Horoscope runtime revision is bumped", () => {
-  const expected = "20261107-horoscope-report-mirror-v2";
+  const expected = "20261107-horoscope-paid-entry-shadow-fix-v3";
   const versions = workers.map(source => /const SMV_CACHE_RELEASE='([^']+)'/.exec(source)?.[1]);
   assert.deepEqual(versions, [expected, expected, expected]);
   const runtime = /const RUNTIME_REVISION='([^']+)'/.exec(workers[1])?.[1];
-  assert.equal(runtime, "v268-horoscope-report-mirror-20261107");
+  assert.equal(runtime, "v269-horoscope-paid-entry-shadow-fix-20261107");
 });
 
 test("No origin-wide local storage, Cache API or IndexedDB deletion is introduced", () => {
