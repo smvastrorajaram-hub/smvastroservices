@@ -295,7 +295,9 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="grid">
  <label><b>Private Chat Status</b><select id="privateChatEnabled"><option value="false">OFF</option><option value="true">ON</option></select></label>
  <label><b>Private Chat Price (₹)</b><input id="privateChatPrice" type="number" min="0" max="100000" step="0.01" inputmode="decimal" value="0"></label>
+ <label><b>Astrologer Minimum Answer Words</b><input id="privateChatMinimumAnswerWords" type="number" min="1" max="10000" step="1" inputmode="numeric" value="150"></label>
 </div>
+<p class="small">The Astrologer Answer opens in a separate single-layer editor with a large writing box and a live word counter. Submit is enabled only after this minimum word limit is reached. The word limit is saved with each new paid question.</p>
 <div class="action-row"><button class="btn" id="savePrivateChatSettings" type="button">SAVE PRIVATE CHAT SETTINGS</button><button class="btn gray" id="adminPrivateChatRefresh" type="button">REFRESH QUESTIONS</button></div>
 <div class="small" id="privateChatSettingsMsg" role="status" aria-live="polite">Private Chat is OFF until Admin enables it with a saved price.</div>
 <h4>Private Chat Questions</h4>
