@@ -498,7 +498,7 @@
         '<button class="btn smv-modal-action" id="smvPrivateChatSuccessClose" type="button" style="width:100%;min-height:44px;background:#5b2a86;color:#fff;border:1px solid #d4af37">CLOSE</button></div>');
       $('smvPrivateChatSuccessClose')?.addEventListener('click',closeModal,{once:true});
     };
-    const dialog=\`<div class="profile-dialog smv-call-booking-dialog" style="position:relative;max-height:calc(100dvh - 8px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;width:100%;max-width:100%;min-width:0;padding:12px 12px 10px;background:#fff8e7;color:#30251b;border:1px solid #d4af37;border-radius:14px;overflow-wrap:anywhere">
+    const dialog=`<div class="profile-dialog smv-call-booking-dialog" style="position:relative;max-height:calc(100dvh - 8px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;width:100%;max-width:100%;min-width:0;padding:12px 12px 10px;background:#fff8e7;color:#30251b;border:1px solid #d4af37;border-radius:14px;overflow-wrap:anywhere">
       <h2 style="padding-right:32px;font-size:20px;line-height:1.2;margin:0 0 5px">PRIVATE CHAT</h2>
       <p style="margin:3px 0 8px;font-size:14px"><b>Selected Astrologer:</b> ${esc(astrologer.name||'Astrologer')}</p>
       <p style="margin:3px 0 12px;font-size:18px;font-weight:900;color:#741b1b">Private Chat Price: ${priceLabel}</p>
@@ -515,7 +515,7 @@
         <div id="smvPrivateChatMessage" class="small" role="status" aria-live="polite"></div>
         <button class="btn smv-modal-action" id="smvPrivateChatPay" type="submit" style="display:block;width:100%;min-height:48px;margin-top:4px;background:#5b2a86;color:#fff;border:1px solid #d4af37;white-space:normal">CONTINUE PAYMENT ${priceLabel}</button>
       </form>
-    </div>\`;
+    </div>`;
     showPublicProfileModal(dialog);
     const placeInput=$('smvPrivateChatBirthPlace');
     if(placeInput){
