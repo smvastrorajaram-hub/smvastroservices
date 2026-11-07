@@ -240,20 +240,7 @@ public class MainActivity extends Activity {
                 "var root=document.getElementById('printReport');if(!root)return;" +
                 "var sheet=Array.prototype.find.call(document.styleSheets,function(x){return x.href&&x.href.indexOf('report-print.css')!==-1;});" +
                 "if(sheet&&!window.__smvAndroidResponsivePdfCss){" +
-                "var css='@media screen and (max-width:720px){' +
-                'html,body{width:100%;max-width:100%;overflow-x:hidden}' +
-                'main{width:100%;max-width:100%;padding:0 8px}' +
-                '#printReport{width:100%;max-width:100%;overflow:visible}' +
-                '#printReport .smv-android-table-scroll{display:block!important;width:100%!important;max-width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior-x:contain!important;padding-bottom:5px!important}' +
-                '#printReport table{width:100%!important;max-width:100%!important;table-layout:auto!important}' +
-                '#printReport table.smv-android-wide-table{width:max-content!important;min-width:680px!important;max-width:none!important;table-layout:auto!important}' +
-                '#printReport table.smv-android-wide-table.smv-shadbala-table{min-width:900px!important}' +
-                '#printReport table.smv-android-wide-table th,#printReport table.smv-android-wide-table td{min-width:58px!important;max-width:180px!important;padding:7px 6px!important;font-size:12px!important;line-height:1.4!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important}' +
-                '#printReport .south-indian-chart{width:100%!important;max-width:560px!important;min-height:0!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;grid-template-rows:repeat(4,minmax(68px,auto))!important}' +
-                '#printReport .south-rasi-cell{min-width:0!important;padding:5px!important;font-size:clamp(10px,2.7vw,14px)!important}' +
-                '#printReport .south-chart-center{font-size:clamp(15px,4vw,22px)!important}' +
-                '#printReport .sbc-grid-full{width:100%!important;max-width:100%!important;grid-template-rows:repeat(9,minmax(70px,auto))!important}' +
-                '}';" +
+                "var css='@media screen and (max-width:720px){html,body{width:100%;max-width:100%;overflow-x:hidden}main{width:100%;max-width:100%;padding:0 8px}#printReport{width:100%;max-width:100%;overflow:visible}#printReport .smv-android-table-scroll{display:block!important;width:100%!important;max-width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior-x:contain!important;padding-bottom:5px!important}#printReport table{width:100%!important;max-width:100%!important;table-layout:auto!important}#printReport table.smv-android-wide-table{width:max-content!important;min-width:680px!important;max-width:none!important;table-layout:auto!important}#printReport table.smv-android-wide-table.smv-shadbala-table{min-width:900px!important}#printReport table.smv-android-wide-table th,#printReport table.smv-android-wide-table td{min-width:58px!important;max-width:180px!important;padding:7px 6px!important;font-size:12px!important;line-height:1.4!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important}#printReport .south-indian-chart{width:100%!important;max-width:560px!important;min-height:0!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;grid-template-rows:repeat(4,minmax(68px,auto))!important}#printReport .south-rasi-cell{min-width:0!important;padding:5px!important;font-size:clamp(10px,2.7vw,14px)!important}#printReport .south-chart-center{font-size:clamp(15px,4vw,22px)!important}#printReport .sbc-grid-full{width:100%!important;max-width:100%!important;grid-template-rows:repeat(9,minmax(70px,auto))!important}}';" +
                 "try{sheet.insertRule(css,sheet.cssRules.length);window.__smvAndroidResponsivePdfCss=true;}catch(e){}}" +
                 "var enhance=function(){root.querySelectorAll('table').forEach(function(table){" +
                 "var cols=0;Array.prototype.forEach.call(table.rows,function(row){cols=Math.max(cols,row.cells.length);});" +
