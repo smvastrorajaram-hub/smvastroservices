@@ -5,7 +5,7 @@
  */
 (function(){
   'use strict';
-  const MODULE_URL='./public-content.mjs?v=20261107-private-chat-paid-question-v2';
+  const MODULE_URL='./public-content.mjs?v=20261107-private-chat-admin-review-refund-v3';
   let pending=null;
   function isConsultVisible(){
     const target=document.getElementById('consult');

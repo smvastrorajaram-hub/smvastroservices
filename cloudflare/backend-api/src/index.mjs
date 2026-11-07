@@ -610,7 +610,8 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       razorpay: sharedRazorpayClient,
       razorpayKeyId,
       paymentDetails: legacyRazorpayRoutes.paymentDetails,
-      recordQuestionPayment: legacyRazorpayRoutes.recordQuestionPayment
+      recordQuestionPayment: legacyRazorpayRoutes.recordQuestionPayment,
+      refundPrivateChatQuestion: legacyRazorpayRoutes.refundPrivateChatQuestion
     });
     legacyRazorpayRoutesRegistered = true;
   }

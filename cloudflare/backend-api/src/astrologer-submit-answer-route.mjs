@@ -57,10 +57,10 @@ export function registerAstrologerSubmitAnswerRoute({app,firestore,identityServi
     const workflow=workflowSnapshot.data||{};
     if(String(q.astrologerId||'')!==uid)throw Object.assign(new Error('This question is not assigned to you.'),{code:'QUESTION_NOT_ASSIGNED',httpStatus:403});
     const privateChat=q.privateChat===true&&String(q.questionType||'')==='private_chat';
-    // A paid Private Chat is assigned to the selected approved Astrologer. It
-    // follows the paid-question answer path and is released to its Customer
-    // automatically, without changing the separate Public Questions workflow.
-    const bypass=privateChat||(workflow.allowWithoutAdminApproval===true&&q.adminApprovalBypassed!==false);
+    // Private Chat answers always require explicit Admin approval before the
+    // Customer can read them. Public Question behaviour remains controlled by
+    // its separate legacy workflow setting.
+    const bypass=!privateChat&&workflow.allowWithoutAdminApproval===true&&q.adminApprovalBypassed!==false;
     const editable=['admin_approved','revision_required','processing','admin_review','private_chat_assigned'];
     if(bypass&&String(q.status||'')==='answered'&&(q.customerAnswerViewedAt||String(q.commissionStatus||'')==='credited')){
      throw Object.assign(new Error('The customer has already viewed this answer. It can no longer be edited.'),{code:'ANSWER_ALREADY_VIEWED',httpStatus:409});
@@ -103,7 +103,7 @@ export function registerAstrologerSubmitAnswerRoute({app,firestore,identityServi
      commissionRate:percent,
      commissionStatus:bypass?'pending_customer_view':'pending_admin_approval',
      commissionCreditedAt:FirestoreFieldValue.delete(),
-     answerEmailStatus:{state:bypass?'pending':'awaiting_admin_approval',updatedAt:timestamp},
+     answerEmailStatus:{state:'awaiting_admin_approval',updatedAt:timestamp},
      updatedAt:timestamp
     };
     if(privateChat){patch.adminCommissionPercent=adminPercent;patch.adminCommissionAmount=adminCommission;}

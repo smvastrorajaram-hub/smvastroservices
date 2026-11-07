@@ -296,10 +296,12 @@ document.addEventListener('DOMContentLoaded', function(){
  <label><b>Private Chat Status</b><select id="privateChatEnabled"><option value="false">OFF</option><option value="true">ON</option></select></label>
  <label><b>Private Chat Price (₹)</b><input id="privateChatPrice" type="number" min="0" max="100000" step="0.01" inputmode="decimal" value="0"></label>
  <label><b>Astrologer Minimum Answer Words</b><input id="privateChatMinimumAnswerWords" type="number" min="1" max="10000" step="1" inputmode="numeric" value="150"></label>
+ <label><b>Question Allocation Mode</b><select id="privateChatAssignmentMode"><option value="admin_assigned">ON — Admin selects Astrologer and approves each question</option><option value="open_to_all">OFF — Show to all approved Astrologers; first claim wins</option></select></label>
  <label><b>Private Chat Astrologer Commission (%)</b><input id="privateChatAstrologerCommissionPercent" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="Astrologer share"></label>
  <label><b>Private Chat Admin Commission (%)</b><input id="privateChatAdminCommissionPercent" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="Admin share"></label>
 </div>
 <p class="small">Private Chat commission is separate from Live / Booking commission. Enter both shares; Astrologer % + Admin % must total exactly 100% before Private Chat can be enabled.</p>
+<p class="small">Allocation ON: Admin approves each paid Customer Question and assigns it to the selected approved Astrologer. Allocation OFF: the paid question appears to all approved Astrologers; the first successful claim receives it. All Astrologer Answers remain hidden from the Customer until Admin accepts them.</p>
 <p class="small">The Astrologer Answer opens in a separate single-layer editor with a large writing box and a live word counter. Submit is enabled only after this minimum word limit is reached. The word limit is saved with each new paid question.</p>
 <div class="action-row"><button class="btn" id="savePrivateChatSettings" type="button">SAVE PRIVATE CHAT SETTINGS</button><button class="btn gray" id="adminPrivateChatRefresh" type="button">REFRESH QUESTIONS</button></div>
 <div class="small" id="privateChatSettingsMsg" role="status" aria-live="polite">Private Chat is OFF until Admin enables it with a saved price.</div>

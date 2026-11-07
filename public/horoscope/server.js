@@ -3,6 +3,7 @@ const express = require("express");
 let SwissVedic = null;
 try { SwissVedic = require('./swiss_vedic'); } catch (e) { console.error('Swiss Ephemeris module unavailable:', e.message); }
 const crypto = require("crypto");
+const { nextCustomerPaymentIdInTransaction } = require("./customer-payment-reference.cjs");
 const PredictionSynthesis = require("./prediction-synthesis");
 const path = require("path");
 const PDFDocument = require("pdfkit");
@@ -913,15 +914,6 @@ async function nextQuestionId() {
     return `SMV-QST-${dateKey}-${String(next).padStart(2, "0")}`;
   });
 }
-
-function nextPaymentIdInTransaction(dateKey, snap) {
-  const next = (snap.exists ? Number(snap.data()?.lastNumber || 0) : 0) + 1;
-  return {
-    id: `SMV-PAY-${dateKey}-${String(next).padStart(2, "0")}`,
-    next
-  };
-}
-
 
 async function nextPaymentId() {
   const dateKey = indiaDateKey();
@@ -2812,12 +2804,7 @@ async function markQuestionPaid(questionId, orderId, paymentId, signature, sourc
     if (q.paymentStatus === "paid" && q.razorpayPaymentId === paymentId) return { already: true, customerId: q.customerId, customerPaymentId: q.customerPaymentId || null };
     const amount = Number(q.amount || 0);
     if (!Number.isFinite(amount) || amount <= 0) throw new Error("Invalid question amount.");
-    const paymentDateKey = indiaDateKey();
-    const paymentCounterRef = db.collection("smv_counters").doc(`payment_${paymentDateKey}`);
-    const paymentCounterSnap = await tx.get(paymentCounterRef);
-    const paymentInfo = nextPaymentIdInTransaction(paymentDateKey, paymentCounterSnap);
-    tx.set(paymentCounterRef, { lastNumber: paymentInfo.next, dateKey: paymentDateKey, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    const customerPaymentId = paymentInfo.id;
+    const customerPaymentId = await nextCustomerPaymentIdInTransaction(tx, db.collection("smv_payments"));
     const paymentRecordedAt = new Date().toISOString();
     tx.set(db.collection("smv_payments").doc(customerPaymentId), {
       paymentId: customerPaymentId, type: "customer_payment", customerId: q.customerId, astrologerId: null, questionId, bookingId: q.bookingId || null,
