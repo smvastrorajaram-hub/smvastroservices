@@ -41,10 +41,19 @@ test("Full Horoscope payment index contains all ten detailed Advanced Analysis b
   assert.match(index, /Complete Life Predictions/);
 });
 
-test("Admin ON with a positive price keeps the same benefits and price panel before and after Customer login until paid", () => {
-  assert.match(policy, /const entitled=loggedIn \? await paidEntitled\(feature\) : false/);
-  assert.match(policy, /if\(state\.mode!=='paid'\|\|Number\(state\.actualPrice\|\|0\)<1\|\|state\.entitled\)/);
-  assert.match(policy, /renderPolicyLock\(\s*'advanced_analysis',\s*item\.root,[\s\S]{0,500}onUnlock,[\s\S]{0,120}beforePay,[\s\S]{0,120}state\s*\)/);
+test("Admin ON + Rs.1 or above keeps pre-login Benefits, then shows only one payment card after Customer login", () => {
+  assert.ok(policy.includes("const entitled=loggedIn ? await paidEntitled(feature) : false;"));
+  assert.ok(policy.includes("state.entitled||state.loggedIn===true"), "The lower Benefits entry is cleared after Customer login");
+  assert.ok(policy.includes("const paidCustomerMode=state.mode==='paid'&&state.loggedIn===true&&Number(state.actualPrice||0)>=1;"));
+  assert.ok(policy.includes("const showPaymentMirror=paidCustomerMode&&state.entitled!==true;"));
+  assert.ok(policy.includes("renderHoroscopePaymentMirror(item,state,allPaymentRoots);"), "The single payment card uses the existing mirror renderer");
+  const benefitsStart=policy.indexOf("for(const item of benefitsRoots){");
+  const benefitsEnd=policy.indexOf("\n    }\n  });",benefitsStart);
+  assert.ok(benefitsStart>=0&&benefitsEnd>benefitsStart, "The lower Benefits synchronizer remains present");
+  const benefitsLoop=policy.slice(benefitsStart,benefitsEnd);
+  assert.ok(benefitsLoop.includes("state.loggedIn===true"));
+  assert.ok(!benefitsLoop.includes("renderHoroscopePaymentMirror"), "The lower Benefits root must not render a second paid card after login");
+  assert.ok(benefitsLoop.includes("renderPolicyLock("), "The pre-login benefits/payment route is preserved");
   assert.match(policy, /mode:'paid'[\s\S]{0,180}loggedIn,entitled,fullAllowed:entitled/);
   assert.match(auth, /Full Report Payment/);
   assert.match(policy, /Login to Pay/);
@@ -81,11 +90,11 @@ test("The same no-export report policy covers both Horoscope and Marriage Matchi
 });
 
 test("All three apps use one synchronized cache release; Horoscope runtime revision is bumped", () => {
-  const expected = "20261107-horoscope-paid-entry-shadow-fix-v3";
+  const expected = "20261107-horoscope-single-paid-entry-theme-v1";
   const versions = workers.map(source => /const SMV_CACHE_RELEASE='([^']+)'/.exec(source)?.[1]);
   assert.deepEqual(versions, [expected, expected, expected]);
   const runtime = /const RUNTIME_REVISION='([^']+)'/.exec(workers[1])?.[1];
-  assert.equal(runtime, "v269-horoscope-paid-entry-shadow-fix-20261107");
+  assert.equal(runtime, "v270-horoscope-single-paid-entry-theme-20261107");
 });
 
 test("No origin-wide browser data or Cache API clearing is introduced", () => {

@@ -48,8 +48,10 @@ test("The mirrored Full Report box appears only for Admin ON + Rs.1 or above + l
   assert.match(policy, /setPaidModeGenerateLabels\(paidCustomerMode\)/);
 });
 
-test("The original Full Report INDEX and payment box stay in place and use the same renderer after login", () => {
-  assert.match(policy, /for\(const item of benefitsRoots\)[\s\S]{0,450}renderHoroscopePaymentMirror\(item,state,allPaymentRoots\)/);
+test("After login the single paid INDEX/CTA stays below Calculate Basic; the duplicate lower Benefits copy is cleared", () => {
+  assert.match(policy, /for\(const item of quickRoots\)[\s\S]{0,300}renderHoroscopePaymentMirror\(item,state,allPaymentRoots\)/);
+  assert.match(policy, /for\(const item of benefitsRoots\)\{\s*if\(state\.mode!=='paid'\|\|Number\(state\.actualPrice\|\|0\)<1\|\|state\.entitled\|\|state\.loggedIn===true\)\{\s*clearGate\(item\.root\);/);
+  assert.doesNotMatch(policy, /for\(const item of benefitsRoots\)\{[\s\S]{0,700}renderHoroscopePaymentMirror/);
   assert.match(policy, /Preserve the original pre-login Login-to-Pay behavior unchanged/);
   assert.match(policy, /renderPolicyLock\(\s*'advanced_analysis',\s*item\.root/);
 });
@@ -67,7 +69,16 @@ test("The new mirror reuses the original ten-section INDEX, exact configured pri
   assert.match(auth, /horoscope-payment\/verify/);
 });
 
-test("Successful payment closes both mirrored boxes and explicitly launches the full report", () => {
+test("The Full Horoscope and Marriage Matching lock card uses the matching white, cream-border and red-heading palette", () => {
+  assert.ok(css.includes("border:1px solid var(--smv207-line,#e4d7bf)!important"));
+  assert.ok(css.includes("background:#fff!important"));
+  assert.ok(css.includes("color:var(--smv207-red,#8b1717)!important"));
+  assert.ok(css.includes("background:linear-gradient(135deg,var(--smv207-red,#8b1717),var(--smv207-red-soft,#a52a23))!important"));
+  assert.match(auth, /முழு ஜாதக அறிக்கை/);
+  assert.match(auth, /முழு திருமணப் பொருத்த அறிக்கை/);
+});
+
+test("Successful payment clears the paid-entry hosts and explicitly launches the full report", () => {
   assert.match(policy, /for\(const root of paymentRoots\)clearGate\(root\)/);
   assert.match(policy, /__smvGenerateHoroscopeFromCurrentFields\(item\.language,\{fullReport:true\}\)/);
 });
@@ -123,11 +134,11 @@ test("Verified full Horoscope report continues through existing Save and PDF/Pri
 });
 
 test("All three apps use one synchronized cache release; Horoscope runtime revision is bumped", () => {
-  const expected = "20261107-horoscope-paid-entry-shadow-fix-v3";
+  const expected = "20261107-horoscope-single-paid-entry-theme-v1";
   const versions = workers.map(source => /const SMV_CACHE_RELEASE='([^']+)'/.exec(source)?.[1]);
   assert.deepEqual(versions, [expected, expected, expected]);
   const runtime = /const RUNTIME_REVISION='([^']+)'/.exec(workers[1])?.[1];
-  assert.equal(runtime, "v269-horoscope-paid-entry-shadow-fix-20261107");
+  assert.equal(runtime, "v270-horoscope-single-paid-entry-theme-20261107");
 });
 
 test("No origin-wide local storage, Cache API or IndexedDB deletion is introduced", () => {

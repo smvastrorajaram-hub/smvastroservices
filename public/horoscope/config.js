@@ -445,8 +445,8 @@ function horoscopePaymentCallbacks(item,paymentRoots){
 
 function renderHoroscopePaymentMirror(item,state,paymentRoots){
   const {beforePay,onUnlock}=horoscopePaymentCallbacks(item,paymentRoots);
-  // Both the original benefits box and its mirror use the exact same
-  // ten-section renderer, configured price, Razorpay window and verification.
+  // The single post-login card uses the original ten-section renderer,
+  // configured price, Razorpay window and verification.
   renderPolicyLock(
     'advanced_analysis',
     item.root,
@@ -479,26 +479,23 @@ function syncHoroscopePaidEntry(){
       renderHoroscopePaymentMirror(item,state,allPaymentRoots);
     }
 
-    // Keep the original Full Report INDEX and payment box in its existing
-    // position. Both locations now share the same callbacks and payment flow.
+    // The lower Benefits preview remains for visitors before Login.
+    // After Login, keep the one payment card directly below Calculate Basic;
+    // clearing this second host prevents the Full Report INDEX/CTA appearing twice.
     for(const item of benefitsRoots){
-      if(state.mode!=='paid'||Number(state.actualPrice||0)<1||state.entitled){
+      if(state.mode!=='paid'||Number(state.actualPrice||0)<1||state.entitled||state.loggedIn===true){
         clearGate(item.root);
         continue;
       }
-      if(state.loggedIn===true){
-        renderHoroscopePaymentMirror(item,state,allPaymentRoots);
-      }else{
-        // Preserve the original pre-login Login-to-Pay behavior unchanged.
-        renderPolicyLock(
-          'advanced_analysis',
-          item.root,
-          {enabled:true,price:state.actualPrice},
-          undefined,
-          undefined,
-          state
-        );
-      }
+      // Preserve the original pre-login Login-to-Pay behavior unchanged.
+      renderPolicyLock(
+        'advanced_analysis',
+        item.root,
+        {enabled:true,price:state.actualPrice},
+        undefined,
+        undefined,
+        state
+      );
     }
   });
 }
