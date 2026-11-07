@@ -417,7 +417,7 @@ export function registerPrivateChatRoutes({
           return {id:document.id,...q};
         })
         .sort((a,b)=>millis(b.createdAt)-millis(a.createdAt)).slice(0,100);
-      return res.set('Cache-Control','no-store').json({success:true,assignmentMode:settings.assignmentMode,questions});
+      return res.set('Cache-Control','no-store').json({success:true,questions});
     }catch(error){return sendError(res,error,'Unable to load assigned Private Chat questions.');}
   });
 
