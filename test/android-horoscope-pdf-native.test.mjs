@@ -58,7 +58,8 @@ test('A Horoscope-only main-branch change does not allocate or publish a new Cal
   assert.match(workflow, /node scripts\/next-android-release-version\.mjs \$\{\{ steps\.app_targets\.outputs\.apps \}\}/);
   assert.match(workflow, /SMV_BUILD_HOROSCOPE/);
   assert.match(workflow, /SMV_BUILD_CALENDAR/);
-  const releaseGradleCommand = workflow.split('\n').find(row => row.includes('gradle --no-daemon --no-build-cache -PsmvHoroscopeVersionName='));
+  const signedReleaseBlock = workflow.slice(workflow.indexOf('Build selected permanently signed production Release APKs'));
+  const releaseGradleCommand = signedReleaseBlock.split('\n').find(row => row.includes('gradle --no-daemon --no-build-cache -PsmvHoroscopeVersionName='));
   assert.ok(releaseGradleCommand, 'selected signed release must invoke Gradle');
   assert.ok(releaseGradleCommand.includes('"\u0024{tasks[@]}"'), 'selected Gradle tasks must remain one shell argument array');
   assert.equal(releaseGradleCommand.trim().endsWith('\\'), false, 'release Gradle command must not leave a line-continuation token as a task');
