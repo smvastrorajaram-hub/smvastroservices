@@ -63,5 +63,8 @@ test('SMV ASTRO production workflow runs native PDF regression checks and still 
   assert.match(astroWorkflow, /node scripts\/next-android-release-version\.mjs astro/);
   assert.match(astroWorkflow, /:smvastroproduction:assembleRelease/);
   assert.match(astroWorkflow, /smv-astro-apk-\$\{\{ env\.SMV_ANDROID_VERSION_NAME \}\}-run-/);
-  assert.match(astroWorkflow, /7a3be159218a38083986dec117c0bd281b3ef42bda65f2bb7b8c9946b5293401/);
+  assert.match(astroWorkflow, /SMV_ANDROID_KEY_ALIAS/);
+  assert.match(astroWorkflow, /apksigner" verify --verbose --print-certs/);
+  const horoscopeCalendarWorkflow = read('.github/workflows/build-smv-horoscope-calendar-production-apks.yml');
+  assert.doesNotMatch(horoscopeCalendarWorkflow, /smvastroproduction\\/src\\/main\\/java\\/in\\/smvastr[o]services\\/smvastro\\/MainActivity\\.java/);
 });
