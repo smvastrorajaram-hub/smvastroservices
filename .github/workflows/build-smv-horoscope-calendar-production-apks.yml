@@ -291,10 +291,7 @@ jobs:
           if [[ "$SMV_BUILD_CALENDAR" == "true" ]]; then
             tasks+=( :smvcalendarproduction:clean :smvcalendarproduction:assembleRelease )
           fi
-          gradle --no-daemon --no-build-cache \\
-            -PsmvHoroscopeVersionName="$SMV_HOROSCOPE_ANDROID_VERSION_NAME" \\
-            -PsmvCalendarVersionName="$SMV_CALENDAR_ANDROID_VERSION_NAME" \\
-            "${tasks[@]}"
+          gradle --no-daemon --no-build-cache -PsmvHoroscopeVersionName="$SMV_HOROSCOPE_ANDROID_VERSION_NAME" -PsmvCalendarVersionName="$SMV_CALENDAR_ANDROID_VERSION_NAME" "${tasks[@]}"
 
       - name: Verify v2 signature and permanent certificate on selected production APKs
         if: ${{ env.SMV_SIGNED_RELEASE == 'true' && steps.app_targets.outputs.modules != '' }}
