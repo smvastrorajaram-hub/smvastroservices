@@ -229,11 +229,12 @@ test('registers the unified webhook, Question payment and Question/Private refun
   ]) assert.equal(state.app.handlers.has(path), true, path);
 });
 
-test('paid Private Chat uses the smvpy six-digit customer Payment ID and selected Astrologer allocation', async () => {
+test('paid Private Chat gets a smvpy six-digit ID and waits for Admin allocation by default', async () => {
   const questionId = 'smvqt-123456';
   const state = setup({
     documents: {
       'smv_settings/workflow': { allowWithoutAdminApproval: false },
+      'smv_settings/privateChat': { assignmentMode: 'admin_assigned' },
       ['smv_questions/' + questionId]: {
         id: questionId, questionId, privateChat: true, questionType: 'private_chat',
         customerId: 'customer-1', customerName: 'Customer One',
@@ -250,17 +251,18 @@ test('paid Private Chat uses the smvpy six-digit customer Payment ID and selecte
   });
   assert.match(result.customerPaymentId, /^smvpy-\d{6}$/);
   assert.equal(result.privateChat, true);
-  assert.equal(result.status, 'private_chat_assigned');
+  assert.equal(result.status, 'private_chat_pending_admin');
   const question = state.firestore.documents.get('smv_questions/' + questionId);
   assert.equal(question.paymentStatus, 'paid');
-  assert.equal(question.status, 'private_chat_assigned');
-  assert.equal(question.allocationStatus, 'assigned_to_astrologer');
-  assert.equal(question.astrologerId, 'astro-1');
+  assert.equal(question.status, 'private_chat_pending_admin');
+  assert.equal(question.allocationStatus, 'awaiting_admin');
+  assert.equal(question.astrologerId, '');
+  assert.equal(question.requestedAstrologerId, 'astro-1');
   assert.equal(question.customerPaymentId, result.customerPaymentId);
   const ledger = state.firestore.documents.get('smv_payments/' + result.customerPaymentId);
   assert.equal(ledger.questionType, 'private_chat');
   assert.equal(ledger.privateChat, true);
-  assert.equal(ledger.astrologerId, 'astro-1');
+  assert.equal(ledger.astrologerId, null);
   assert.equal(ledger.razorpayPaymentId, 'pay_private_123');
 });
 
@@ -309,7 +311,7 @@ test('Question verify-payment checks owner, order, signature and provider captur
   const question = state.firestore.documents.get('smv_questions/q-1');
   assert.equal(question.paymentStatus, 'paid');
   assert.equal(question.razorpayPaymentId, 'pay_123');
-  assert.ok(question.customerPaymentId.startsWith('smvcp_'));
+  assert.match(question.customerPaymentId, /^smvpy-\d{6}$/);
   const paymentDocs = [...state.firestore.documents.keys()].filter(path => path.startsWith('smv_payments/'));
   assert.equal(paymentDocs.length, 1);
 });
@@ -649,4 +651,56 @@ test('unified webhook does not guess when the same Razorpay order maps to multip
   assert.equal(res.statusCode, 500);
   assert.equal(state.firestore.documents.get('smv_questions/q-ambiguous').paymentStatus, 'order_created');
   assert.equal(state.wallet.calls.some(call => call[0] === 'release'), true);
+});
+
+
+test('paid Private Chat opens to all approved Astrologers only when Admin sets open_to_all', async () => {
+  const questionId = 'smvqt-234567';
+  const state = setup({documents:{
+    'smv_settings/workflow': {allowWithoutAdminApproval:false},
+    'smv_settings/privateChat': {assignmentMode:'open_to_all'},
+    ['smv_questions/'+questionId]: {
+      privateChat:true,questionType:'private_chat',customerId:'customer-1',
+      requestedAstrologerId:'astro-1',requestedAstrologerName:'Test Astrologer',
+      question:'Open question',amount:499,status:'awaiting_payment',paymentStatus:'order_created',
+      razorpayOrderId:'order_test_1',commissionPercent:75,adminCommissionPercent:25
+    }
+  }});
+  const result=await state.legacyRoutes.recordQuestionPayment({
+    questionId,orderId:'order_test_1',paymentId:'pay_private_open',
+    signature:'verified-signature',source:'private_chat_checkout_verification'
+  });
+  assert.equal(result.status,'private_chat_available_to_astrologers');
+  const question=state.firestore.documents.get('smv_questions/'+questionId);
+  assert.equal(question.status,'private_chat_available_to_astrologers');
+  assert.equal(question.allocationStatus,'available_to_astrologers');
+  assert.equal(question.astrologerId,'');
+});
+
+
+
+test('new Public Question payments use the same random smvpy six-digit reference as Private Chat', async () => {
+  const state = setup({
+    documents: {
+      'smv_settings/workflow': { allowWithoutAdminApproval: true },
+      'smv_questions/q-public-random': {
+        questionId: 'q-public-random', customerId: 'customer-1',
+        question: 'A public customer question', amount: 10,
+        status: 'awaiting_payment', paymentStatus: 'order_created',
+        razorpayOrderId: 'order_test_1'
+      }
+    }
+  });
+  const result = await state.legacyRoutes.recordQuestionPayment({
+    questionId: 'q-public-random', orderId: 'order_test_1',
+    paymentId: 'pay_public_random', signature: 'verified-signature',
+    source: 'cloudflare_checkout_verification'
+  });
+  assert.match(result.customerPaymentId, /^smvpy-\d{6}$/);
+  assert.equal(result.status, 'available_to_astrologers');
+  const saved = state.firestore.documents.get('smv_questions/q-public-random');
+  assert.equal(saved.customerPaymentId, result.customerPaymentId);
+  const ledger = state.firestore.documents.get('smv_payments/' + result.customerPaymentId);
+  assert.equal(ledger.questionType, 'public_question');
+  assert.equal(ledger.privateChat, false);
 });

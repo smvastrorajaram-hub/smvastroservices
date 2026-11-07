@@ -199,13 +199,17 @@ export function registerLegacyRazorpayRoutes({
     const initial = await firestore.getDocument(questionPath);
     if (!initial.exists) throw httpError('QUESTION_NOT_FOUND', 'Question not found.', 404);
     const privateChat = initial.data?.privateChat === true && String(initial.data?.questionType || '') === 'private_chat';
-    const legacyPaymentDocId = privateChat ? '' : await paymentRecordId('question', questionId, paymentId);
+    const privateChatSettings = privateChat
+      ? await firestore.getDocument('smv_settings/privateChat').catch(() => ({ exists:false,data:null }))
+      : { exists:false,data:null };
+    const assignmentMode = privateChatSettings.data?.assignmentMode === 'open_to_all' ? 'open_to_all' : 'admin_assigned';
     const recordedAt = new Date(Number(now())).toISOString();
 
-    for (let attempt = 0; attempt < (privateChat ? 12 : 1); attempt++) {
-      const paymentDocId = privateChat
-        ? randomPrivateChatPaymentId()
-        : legacyPaymentDocId;
+    // Every new Customer Question payment (Public Question or Private Chat)
+    // receives the same unique random smvpy-###### reference. Already-paid
+    // questions return their stored ID above and are never rewritten.
+    for (let attempt = 0; attempt < 32; attempt++) {
+      const paymentDocId = randomCustomerPaymentId();
       const paymentPath = PAYMENT_COLLECTION + '/' + paymentDocId;
       try {
         const result = await firestore.runTransaction(async tx => {
@@ -232,19 +236,22 @@ export function registerLegacyRazorpayRoutes({
           }
           const amount = Number(data.amount || 0);
           if (!Number.isFinite(amount) || amount <= 0) throw httpError('QUESTION_AMOUNT_INVALID', 'Saved question amount is invalid.', 409);
-          if (privateChat) {
-            const existingPayment = await tx.getDocument(paymentPath);
-            if (existingPayment.exists) throw httpError('PRIVATE_CHAT_PAYMENT_ID_COLLISION', 'A payment reference already exists. Generate a fresh reference and retry.', 409);
+          const existingPayment = await tx.getDocument(paymentPath);
+          if (existingPayment.exists) {
+            throw httpError('CUSTOMER_PAYMENT_ID_COLLISION', 'A payment reference already exists. Generate a fresh reference and retry.', 409);
           }
+          const requestedAstrologerId = String(data.requestedAstrologerId || data.astrologerId || '');
+          const requestedAstrologerName = String(data.requestedAstrologerName || data.astrologerName || '');
+          const privateChatOpenToAll = privateChat && assignmentMode === 'open_to_all';
           const nextStatus = privateChat
-            ? 'private_chat_assigned'
+            ? privateChatOpenToAll ? 'private_chat_available_to_astrologers' : 'private_chat_pending_admin'
             : allowWithoutAdminApproval ? 'available_to_astrologers' : 'pending_admin_approval';
           const nextAllocation = privateChat
-            ? 'assigned_to_astrologer'
+            ? privateChatOpenToAll ? 'available_to_astrologers' : 'awaiting_admin'
             : allowWithoutAdminApproval ? 'available_to_astrologers' : 'awaiting_admin';
           tx.create(paymentPath, {
             paymentId: paymentDocId, type: 'customer_payment', customerId: data.customerId || null,
-            astrologerId: privateChat ? (data.astrologerId || null) : null,
+            astrologerId: null,
             questionId, bookingId: data.bookingId || null,
             razorpayOrderId: orderId, razorpayPaymentId: paymentId, amount,
             questionType: privateChat ? 'private_chat' : 'public_question',
@@ -257,7 +264,14 @@ export function registerLegacyRazorpayRoutes({
             ...(privateChat ? {
               privateChat: true,
               questionType: 'private_chat',
-              privateChatSubmittedAt: firestoreTimestamp()
+              assignmentMode,
+              requestedAstrologerId: assignmentMode === 'admin_assigned' ? requestedAstrologerId : '',
+              requestedAstrologerName: assignmentMode === 'admin_assigned' ? requestedAstrologerName : '',
+              astrologerId: '',
+              astrologerName: '',
+              privateChatSubmittedAt: firestoreTimestamp(),
+              adminApprovalBypassed: false,
+              openedToAstrologersAt: assignmentMode === 'open_to_all' ? firestoreTimestamp() : FirestoreFieldValue.delete()
             } : {
               adminApprovalBypassed: allowWithoutAdminApproval,
               openedToAstrologersAt: allowWithoutAdminApproval ? firestoreTimestamp() : FirestoreFieldValue.delete()
@@ -267,12 +281,12 @@ export function registerLegacyRazorpayRoutes({
             paymentConfirmedBy: source, customerPaymentId: paymentDocId, paymentRecordedAt: recordedAt,
             astrologerPaymentId: FirestoreFieldValue.delete(),
             commissionStatus: privateChat
-              ? 'allocated_pending_answer'
+              ? privateChatOpenToAll ? 'open_for_claim' : 'awaiting_admin_allocation'
               : allowWithoutAdminApproval ? 'open_for_claim' : 'awaiting_admin_allocation'
           });
           return {
             already: false, privateChat, customerId: data.customerId,
-            astrologerId: data.astrologerId || null, customerPaymentId: paymentDocId,
+            astrologerId: privateChat ? null : (data.astrologerId || null), customerPaymentId: paymentDocId,
             paymentRecordedAt: recordedAt, amount, question: String(data.question || ''),
             customerEmail: String(data.customerEmail || ''), status: nextStatus
           };
@@ -286,7 +300,9 @@ export function registerLegacyRazorpayRoutes({
               type: privateChat ? 'private_chat_payment' : 'payment',
               title: privateChat ? 'Private Chat Question Submitted' : 'Payment successful',
               message: privateChat
-                ? 'Your Private Chat question has been submitted. Your selected Astrologer will answer within 24–48 hours.'
+                ? assignmentMode === 'open_to_all'
+                  ? 'Your paid Private Chat question is open to all approved Astrologers. The first Astrologer to claim it will answer within 24–48 hours.'
+                  : 'Your paid Private Chat question is waiting for Admin to allocate it to an approved Astrologer.'
                 : allowWithoutAdminApproval
                   ? 'Your payment was verified. Your question is now open to approved astrologers.'
                   : 'Your payment was verified. Your question is now waiting for Admin approval.',
@@ -308,20 +324,27 @@ export function registerLegacyRazorpayRoutes({
         }
         return result;
       } catch (error) {
-        if (privateChat && error?.code === 'PRIVATE_CHAT_PAYMENT_ID_COLLISION') continue;
+        if (error?.code === 'CUSTOMER_PAYMENT_ID_COLLISION') continue;
         throw error;
       }
     }
-    throw httpError('PRIVATE_CHAT_PAYMENT_ID_UNAVAILABLE', 'A unique Private Chat Payment ID could not be created. Please retry payment verification.', 503);
+    throw httpError('CUSTOMER_PAYMENT_ID_UNAVAILABLE', 'A unique Customer Payment ID could not be created. Please retry payment verification.', 503);
   }
 
-  function randomPrivateChatPaymentId() {
+  function randomCustomerPaymentId() {
     if (!cryptoImpl || typeof cryptoImpl.getRandomValues !== 'function') {
       throw httpError('SECURE_RANDOM_UNAVAILABLE', 'Secure payment ID generation is unavailable.', 503);
     }
-    const bytes = new Uint32Array(1);
-    cryptoImpl.getRandomValues(bytes);
-    return 'smvpy-' + String(100000 + (bytes[0] % 900000));
+    // Rejection sampling gives an unbiased value in the six-digit range.
+    const sample = new Uint32Array(1);
+    const range = 900000;
+    const acceptedLimit = Math.floor(0x100000000 / range) * range;
+    for (let attempt = 0; attempt < 128; attempt += 1) {
+      cryptoImpl.getRandomValues(sample);
+      const value = Number(sample[0]) >>> 0;
+      if (value < acceptedLimit) return 'smvpy-' + String(100000 + (value % range));
+    }
+    throw httpError('SECURE_RANDOM_UNAVAILABLE', 'A secure Customer Payment ID could not be generated. Please retry.', 503);
   }
 
   async function recordPrivateConsultationPayment({ consultationId, orderId, paymentId, signature = '', source }) {
@@ -1249,9 +1272,26 @@ export function registerLegacyRazorpayRoutes({
     } catch (error) { return sendError(res, error, 'Unable to load refund trace.'); }
   });
 
+
+  async function refundPrivateChatQuestion({ questionId, reason = '', actorUid = '', retry = false, sync = false } = {}) {
+    const id = safeId(questionId);
+    if (!id) throw httpError('QUESTION_ID_INVALID', 'A valid Question ID is required.', 400);
+    const snapshot = await firestore.getDocument(QUESTION_COLLECTION + '/' + id);
+    if (!snapshot.exists || snapshot.data?.privateChat !== true ||
+        String(snapshot.data?.questionType || '') !== 'private_chat') {
+      throw httpError('PRIVATE_CHAT_NOT_FOUND', 'Private Chat question was not found.', 404);
+    }
+    const actor = { uid: String(actorUid || '') };
+    if (!actor.uid) throw httpError('ADMIN_REQUIRED', 'Admin identity is required.', 403);
+    return sync
+      ? syncRefund('question', id, actor)
+      : createRefund('question', id, String(reason || '').trim(), actor, { retry: retry === true });
+  }
+
   return Object.freeze({
     paymentDetails,
     recordQuestionPayment,
+    refundPrivateChatQuestion,
     paths: Object.freeze([
       '/razorpay/webhook', '/create-order', '/verify-payment',
       '/admin/reject-question', '/admin/retry-refund', '/customer/sync-refund', '/admin/sync-refund',

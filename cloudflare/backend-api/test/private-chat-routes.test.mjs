@@ -77,7 +77,7 @@ function firestoreFixture(initial={}){
 function setup(){
   const app=appHarness();
   const firestore=firestoreFixture({
-    'smv_settings/privateChat':{enabled:true,price:499,astrologerCommissionPercent:75,adminCommissionPercent:25},
+    'smv_settings/privateChat':{enabled:true,price:499,astrologerCommissionPercent:75,adminCommissionPercent:25,assignmentMode:'admin_assigned'},
     'smv_settings/commission':{astroPercent:20},
     'smv_settings/answer':{minimumWords:40},
     'smv_astrologers/astro-1':{status:'approved',name:'Test Astrologer'},
@@ -107,13 +107,22 @@ function setup(){
   const paymentDetails=async(...args)=>{calls.push(['paymentDetails',...args]);return {status:'captured'};};
   const recordQuestionPayment=async({questionId,orderId,paymentId})=>{
     calls.push(['recordQuestionPayment',{questionId,orderId,paymentId}]);
+    const settings=firestore.documents.get('smv_settings/privateChat')||{};
+    const open=settings.assignmentMode==='open_to_all';
+    const status=open?'private_chat_available_to_astrologers':'private_chat_pending_admin';
     const path='smv_questions/'+questionId;
     await firestore.setDocument(path,{
-      paymentStatus:'paid',status:'private_chat_assigned',
-      allocationStatus:'assigned_to_astrologer',
+      paymentStatus:'paid',status,
+      allocationStatus:open?'available_to_astrologers':'awaiting_admin',
+      astrologerId:'',astrologerName:'',
       customerPaymentId:'smvpy-123456',razorpayPaymentId:paymentId
     },{merge:true});
-    return {customerPaymentId:'smvpy-123456',amount:499,status:'private_chat_assigned'};
+    return {customerPaymentId:'smvpy-123456',amount:499,status};
+  };
+  const refundCalls=[];
+  const refundPrivateChatQuestion=async input=>{
+    refundCalls.push(input);
+    return {questionId:input.questionId,refundId:'rfnd_private_fixture',refundStatus:input.sync?'processed':'pending'};
   };
   const cryptoImpl={
     counter:0,
@@ -121,9 +130,9 @@ function setup(){
   };
   registerPrivateChatRoutes({
     app,firestore,identityService,razorpay,razorpayKeyId:'rzp_test_fixture',
-    paymentDetails,recordQuestionPayment,cryptoImpl,now:()=>Date.UTC(2026,10,7,6,0,0)
+    paymentDetails,recordQuestionPayment,refundPrivateChatQuestion,cryptoImpl,now:()=>Date.UTC(2026,10,7,6,0,0)
   });
-  return {app,firestore,razorpay,orders,calls};
+  return {app,firestore,razorpay,orders,calls,refundCalls};
 }
 
 test('Admin controls a single Private Chat price and public settings expose only its enabled state and price',async()=>{
@@ -141,6 +150,7 @@ test('Admin controls a single Private Chat price and public settings expose only
     {enabled:read.body.enabled,price:read.body.price,minimumAnswerWords:read.body.minimumAnswerWords,turnaround:read.body.turnaround},
     {enabled:true,price:650.5,minimumAnswerWords:80,turnaround:'24–48 hours'}
   );
+  assert.equal(read.body.assignmentMode,undefined);
   const adminRead=response();
   await state.app.handlers.get('GET /admin/private-chat/settings')(request({authorization:'Bearer admin-token'}),adminRead);
   assert.equal(adminRead.body.commissionConfigured,true);
@@ -183,7 +193,9 @@ test('create-order trusts the Admin price, creates a six-digit smvqt ID and reus
   assert.equal(question.amount,499);
   assert.equal(question.privateChat,true);
   assert.equal(question.questionType,'private_chat');
-  assert.equal(question.astrologerId,'astro-1');
+  assert.equal(question.astrologerId,'');
+  assert.equal(question.requestedAstrologerId,'astro-1');
+  assert.equal(question.assignmentMode,'admin_assigned');
   assert.equal(question.answerMinWords,40);
   assert.equal(question.commissionPercent,75);
   assert.equal(question.adminCommissionPercent,25);
@@ -226,8 +238,9 @@ test('payment verification writes the private payment ID and assigns the paid qu
   assert.equal(verified.body.customerPaymentId,'smvpy-123456');
   const question=state.firestore.documents.get('smv_questions/'+questionId);
   assert.equal(question.paymentStatus,'paid');
-  assert.equal(question.status,'private_chat_assigned');
-  assert.equal(question.allocationStatus,'assigned_to_astrologer');
+  assert.equal(question.status,'private_chat_pending_admin');
+  assert.equal(question.allocationStatus,'awaiting_admin');
+  assert.equal(question.astrologerId,'');
   assert.equal(question.customerPaymentId,'smvpy-123456');
   assert.equal(question.razorpayPaymentId,'pay_test_123');
   assert.equal(state.calls.filter(call=>call[0]==='paymentDetails').length,1);
@@ -270,4 +283,103 @@ test('Customer, assigned Astrologer and Admin reads are separated by Private Cha
     request({authorization:'Bearer admin-token'}),admin
   );
   assert.equal(admin.body.questions.length,1);
+});
+
+test('Admin approves a paid Private Chat question and allocates the specified approved Astrologer',async()=>{
+  const state=setup();
+  state.firestore.documents.set('smv_questions/smvqt-111111',{
+    questionId:'smvqt-111111',privateChat:true,questionType:'private_chat',paymentStatus:'paid',
+    status:'private_chat_pending_admin',allocationStatus:'awaiting_admin',requestedAstrologerId:'astro-1',
+    customerId:'customer-1',question:'Question',amount:499
+  });
+  const result=response();
+  await state.app.handlers.get('POST /admin/private-chat/approve-question')(
+    request({authorization:'Bearer admin-token',body:{questionId:'smvqt-111111',astrologerId:'astro-1'}}),result
+  );
+  assert.equal(result.statusCode,200);
+  const saved=state.firestore.documents.get('smv_questions/smvqt-111111');
+  assert.equal(saved.astrologerId,'astro-1');
+  assert.equal(saved.astrologerName,'Test Astrologer');
+  assert.equal(saved.status,'private_chat_assigned');
+  assert.equal(saved.allocationStatus,'assigned_to_astrologer');
+  assert.equal(saved.commissionStatus,'allocated_pending_answer');
+});
+
+test('Admin OFF opens paid Private Chat to all approved Astrologers and first claim wins',async()=>{
+  const state=setup();
+  await state.firestore.setDocument('smv_settings/privateChat',{assignmentMode:'open_to_all'},{merge:true});
+  state.firestore.documents.set('smv_questions/smvqt-222222',{
+    questionId:'smvqt-222222',privateChat:true,questionType:'private_chat',paymentStatus:'paid',
+    status:'private_chat_available_to_astrologers',allocationStatus:'available_to_astrologers',
+    customerId:'customer-1',question:'Open question',amount:499,commissionPercent:75,adminCommissionPercent:25,
+    astrologerCommissionAmount:374.25,adminCommissionAmount:124.75
+  });
+  const list=response();
+  await state.app.handlers.get('GET /astrologer/private-chat/questions')(
+    request({authorization:'Bearer astrologer-token'}),list
+  );
+  assert.equal(list.body.questions.length,1);
+  assert.equal(list.body.questions[0].canClaim,true);
+  const claim=response();
+  await state.app.handlers.get('POST /astrologer/private-chat/claim')(
+    request({authorization:'Bearer astrologer-token',body:{questionId:'smvqt-222222'}}),claim
+  );
+  assert.equal(claim.statusCode,200);
+  assert.equal(state.firestore.documents.get('smv_questions/smvqt-222222').astrologerId,'astro-1');
+  assert.equal(state.firestore.documents.get('smv_questions/smvqt-222222').status,'private_chat_assigned');
+});
+
+test('Admin answer approval releases an answer to Customer only after acceptance',async()=>{
+  const state=setup();
+  state.firestore.documents.set('smv_questions/smvqt-333333',{
+    questionId:'smvqt-333333',privateChat:true,questionType:'private_chat',paymentStatus:'paid',
+    status:'processing',astrologerId:'astro-1',astrologerName:'Test Astrologer',
+    customerId:'customer-1',question:'Private question',answer:'Long answer',answerWordCount:40,
+    amount:499,commissionPercent:75,adminCommissionPercent:25,astrologerCommissionAmount:374.25,adminCommissionAmount:124.75
+  });
+  const before=response();
+  await state.app.handlers.get('GET /customer/private-chat/questions')(request(),before);
+  assert.equal(before.body.questions[0].answer,undefined);
+  const approved=response();
+  await state.app.handlers.get('POST /admin/private-chat/approve-answer')(
+    request({authorization:'Bearer admin-token',body:{questionId:'smvqt-333333'}}),approved
+  );
+  assert.equal(approved.statusCode,200);
+  const after=response();
+  await state.app.handlers.get('GET /customer/private-chat/questions')(request(),after);
+  assert.equal(after.body.questions[0].answer,'Long answer');
+  assert.equal(after.body.questions[0].status,'answered');
+  assert.equal(state.firestore.documents.get('smv_questions/smvqt-333333').commissionStatus,'pending_customer_view');
+});
+
+test('Admin rejects submitted answer back to Astrologer for revision and keeps it hidden from Customer',async()=>{
+  const state=setup();
+  state.firestore.documents.set('smv_questions/smvqt-444444',{
+    questionId:'smvqt-444444',privateChat:true,questionType:'private_chat',paymentStatus:'paid',
+    status:'processing',astrologerId:'astro-1',customerId:'customer-1',question:'Question',answer:'Needs changes',
+    amount:499,commissionStatus:'pending_admin_approval'
+  });
+  const rejected=response();
+  await state.app.handlers.get('POST /admin/private-chat/reject-answer')(
+    request({authorization:'Bearer admin-token',body:{questionId:'smvqt-444444',reason:'Please clarify the timing.'}}),rejected
+  );
+  assert.equal(rejected.statusCode,200);
+  const saved=state.firestore.documents.get('smv_questions/smvqt-444444');
+  assert.equal(saved.status,'private_chat_assigned');
+  assert.equal(saved.astrologerAnswerStatus,'revision_required');
+  const customer=response();
+  await state.app.handlers.get('GET /customer/private-chat/questions')(request(),customer);
+  assert.equal(customer.body.questions[0].answer,undefined);
+});
+
+test('Private Chat rejection uses the shared Admin-controlled Razorpay refund service',async()=>{
+  const state=setup();
+  const rejected=response();
+  await state.app.handlers.get('POST /admin/private-chat/reject-question')(
+    request({authorization:'Bearer admin-token',body:{questionId:'smvqt-555555',reason:'Question is not eligible.'}}),rejected
+  );
+  assert.equal(rejected.statusCode,200);
+  assert.deepEqual(state.refundCalls[0],{
+    questionId:'smvqt-555555',reason:'Question is not eligible.',actorUid:'admin-1',retry:false
+  });
 });

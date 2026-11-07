@@ -37,7 +37,7 @@ test('Horoscope Service Worker does not force-reload open report/form tabs and p
 test('main SMV ASTRO caches only the offline UI shell while leaving online-only routes and Horoscope scope isolated', () => {
   const sw = read('public/sw.js');
   assert.ok(sw.includes("APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE"));
-  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261107-private-chat-paid-question-v2'"));
+  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261107-private-chat-admin-review-refund-v3'"));
   assert.ok(sw.includes('APP_SHELL_FILES'));
   for (const icon of ['./assets/icon-192.png','./assets/icon-512.png','./assets/favicon-astro.ico']) {
     assert.ok(sw.includes(icon), 'SMV ASTRO must precache its manifest icon/favicon: '+icon);
@@ -58,7 +58,7 @@ test('main SMV ASTRO caches only the offline UI shell while leaving online-only 
 test('Horoscope precaches its UI and required local calculation/WASM assets without caching online services', () => {
   const sw = read('public/horoscope/sw.js');
   assert.ok(sw.includes("SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE"));
-  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261107-private-chat-paid-question-v2'"));
+  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261107-private-chat-admin-review-refund-v3'"));
   assert.ok(sw.includes("OFFLINE_CACHE='smv-horoscope-offline'"));
   assert.ok(sw.includes("LOCATION_CACHE='smv-shared-india-places'"));
   assert.ok(sw.includes('prefetchIndiaPlaceShards'));
@@ -85,7 +85,7 @@ test('Horoscope precaches its UI and required local calculation/WASM assets with
 test('Calendar keeps its offline UI/WASM precache and India shard migration while bypassing online-only API routes', () => {
   const sw = read('public/horoscope/calendar/sw.js');
   assert.ok(sw.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"));
-  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261107-private-chat-paid-question-v2'"));
+  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261107-private-chat-admin-review-refund-v3'"));
   assert.ok(sw.includes('const REQUIRED_CORE = new Set(['));
   assert.ok(sw.includes('await preserveCachedIndiaPlaces(target)'));
   assert.ok(sw.includes("LOCATION_CACHE='smv-shared-india-places'"));
@@ -122,7 +122,7 @@ test('All three app workers share the same release bump while preserving indepen
     assert.ok(match, 'Every app worker must declare SMV_CACHE_RELEASE');
     return match[1];
   });
-  assert.deepEqual(releases, ['20261107-private-chat-paid-question-v2','20261107-private-chat-paid-question-v2','20261107-private-chat-paid-question-v2']);
+  assert.deepEqual(releases, ['20261107-private-chat-admin-review-refund-v3','20261107-private-chat-admin-review-refund-v3','20261107-private-chat-admin-review-refund-v3']);
   assert.ok(workers[0].includes("APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE"));
   assert.ok(workers[1].includes("SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE"));
   assert.ok(workers[2].includes("CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"));
@@ -154,4 +154,62 @@ test('Private Chat availability refreshes when the Astrologer List returns and p
   assert.match(admin, /id="privateChatAstrologerCommissionPercent"/);
   assert.match(admin, /id="privateChatAdminCommissionPercent"/);
   assert.match(admin, /Private Chat commission is separate from Live \/ Booking commission[\s\S]*100%/);
+});
+
+
+test('Private Chat Admin approval, allocation and refund controls are wired to the Admin queue', () => {
+  const app = read('public/smvastro.mjs');
+  const html = read('public/index.html');
+  assert.match(app, /privateChatAssignmentMode/);
+  assert.match(app, /\/admin\/private-chat\/approve-question/);
+  assert.match(app, /\/admin\/private-chat\/reject-question/);
+  assert.match(app, /\/admin\/private-chat\/approve-answer/);
+  assert.match(app, /\/admin\/private-chat\/reject-answer/);
+  assert.match(app, /\/admin\/private-chat\/retry-refund/);
+  assert.match(app, /\/admin\/private-chat\/sync-refund/);
+  assert.match(app, /\/astrologer\/private-chat\/claim/);
+  assert.match(html, /id="privateChatAssignmentMode"/);
+  assert.match(app, /Waiting for Admin approval before Customer can view it/);
+});
+
+test('Private Chat Answer editor uses one close control and explicit high-contrast textarea styling', () => {
+  const app = read('public/smvastro.mjs');
+  const css = read('public/smvastro.css');
+  assert.match(app, /smv-private-chat-answer-modal/);
+  assert.doesNotMatch(app, /smvPrivateChatAnswerClose/);
+  assert.match(app, /waiting for Admin approval/);
+  assert.match(css, /#modal #smvPrivateChatAnswerText\{[^}]*color:#241b16!important/);
+  assert.match(css, /#modal #smvPrivateChatAnswerText::placeholder/);
+});
+
+test('Reviews stays inside the Live Chat controls with matching button dimensions', () => {
+  const source = read('public/public-content.mjs');
+  const chat = source.indexOf('data-live-action="chat"');
+  const reviews = source.indexOf('data-reviews', chat);
+  const booking = source.indexOf('smv-astro-booking-actions', chat);
+  assert.ok(chat >= 0 && reviews > chat && (booking < 0 || reviews < booking));
+  assert.match(source, /data-reviews[^>]*height:44px/);
+  assert.match(source, /data-live-action="chat"[^>]*height:44px/);
+});
+
+
+test('Customer Question Admin Control uses ON for approval and OFF for open questions and direct answers', () => {
+  const admin = read('smvastro.mjs');
+  assert.match(admin, /const adminControlOn=!allowWithoutAdminApproval/);
+  assert.match(admin, /ADMIN CONTROL ON/);
+  assert.match(admin, /ADMIN CONTROL OFF/);
+  assert.match(admin, /allowWithoutAdminApproval:nextAllowWithoutAdminApproval/);
+  assert.match(admin, /Refunds remain Admin-controlled in both modes/);
+});
+
+test('Live Call, Live Chat and Reviews share one equal-size row with Reviews to the right of Chat', () => {
+  const source = read('public/public-content.mjs');
+  const actions = source.indexOf('smv-live-service-actions');
+  const call = source.indexOf('data-live-action="call"', actions);
+  const chat = source.indexOf('data-live-action="chat"', call);
+  const reviews = source.indexOf('data-reviews', chat);
+  assert.ok(actions >= 0 && call > actions && chat > call && reviews > chat);
+  assert.match(source, /data-live-action="call"[^>]*height:44px/);
+  assert.match(source, /data-live-action="chat"[^>]*height:44px/);
+  assert.match(source, /data-reviews[^>]*height:44px/);
 });

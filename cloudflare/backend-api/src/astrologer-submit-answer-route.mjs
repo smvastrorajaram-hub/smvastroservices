@@ -57,10 +57,12 @@ export function registerAstrologerSubmitAnswerRoute({app,firestore,identityServi
     const workflow=workflowSnapshot.data||{};
     if(String(q.astrologerId||'')!==uid)throw Object.assign(new Error('This question is not assigned to you.'),{code:'QUESTION_NOT_ASSIGNED',httpStatus:403});
     const privateChat=q.privateChat===true&&String(q.questionType||'')==='private_chat';
-    // A paid Private Chat is assigned to the selected approved Astrologer. It
-    // follows the paid-question answer path and is released to its Customer
-    // automatically, without changing the separate Public Questions workflow.
-    const bypass=privateChat||(workflow.allowWithoutAdminApproval===true&&q.adminApprovalBypassed!==false);
+    // Private Chat Admin OFF is open-to-all and releases answers directly.
+    // Admin ON holds Private Chat answers for review. Public Questions follow
+    // the global Admin Control setting stored in smv_settings/workflow.
+    const bypass=privateChat
+     ?String(q.assignmentMode||'admin_assigned')==='open_to_all'
+     :workflow.allowWithoutAdminApproval===true&&q.adminApprovalBypassed!==false;
     const editable=['admin_approved','revision_required','processing','admin_review','private_chat_assigned'];
     if(bypass&&String(q.status||'')==='answered'&&(q.customerAnswerViewedAt||String(q.commissionStatus||'')==='credited')){
      throw Object.assign(new Error('The customer has already viewed this answer. It can no longer be edited.'),{code:'ANSWER_ALREADY_VIEWED',httpStatus:409});

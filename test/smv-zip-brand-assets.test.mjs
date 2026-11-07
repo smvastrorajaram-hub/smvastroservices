@@ -64,14 +64,14 @@ test('Each website uses its matching original SMV WEBSITE artwork as its browser
     for (const size of [16,32,64]) {
       const file=folder+'/'+prefix+'-'+size+'.png';
       assert.deepEqual(pngDimensions(file),[size,size],file+' favicon dimensions');
-      assert.ok(html.includes(prefix+'-'+size+'.png?v=20261107-private-chat-paid-question-v2'),page+' must reference its own tab icon');
+      assert.ok(html.includes(prefix+'-'+size+'.png?v=20261107-private-chat-admin-review-refund-v3'),page+' must reference its own tab icon');
     }
     const ico=folder+'/'+prefix+'.ico';
     assert.ok(exists(ico),ico+' ICO must exist');
     assert.ok(fs.readFileSync(path.join(root,ico)).subarray(0,4).equals(Buffer.from([0,0,1,0])),ico+' must be an ICO file');
-    assert.ok(html.includes(prefix+'.ico?v=20261107-private-chat-paid-question-v2'),page+' must reference its own ICO');
+    assert.ok(html.includes(prefix+'.ico?v=20261107-private-chat-admin-review-refund-v3'),page+' must reference its own ICO');
   }
-  assert.ok(read('public/index.html').includes('href="./manifest.webmanifest?v=20261107-private-chat-paid-question-v2" rel="manifest"'));
+  assert.ok(read('public/index.html').includes('href="./manifest.webmanifest?v=20261107-private-chat-admin-review-refund-v3" rel="manifest"'));
 });
 
 test('Horoscope and Calendar show their own product logos, titles and consistent headers', () => {
@@ -112,7 +112,7 @@ test('Horoscope and Calendar show their own product logos, titles and consistent
 test('All three independent Service Workers share one new cache release and cache the intended website artwork', () => {
   const workers=[read('public/sw.js'),read('public/horoscope/sw.js'),read('public/horoscope/calendar/sw.js')];
   const versions=workers.map(source=>/const SMV_CACHE_RELEASE='([^']+)'/.exec(source)?.[1]);
-  assert.deepEqual(versions,['20261107-private-chat-paid-question-v2','20261107-private-chat-paid-question-v2','20261107-private-chat-paid-question-v2']);
+  assert.deepEqual(versions,['20261107-private-chat-admin-review-refund-v3','20261107-private-chat-admin-review-refund-v3','20261107-private-chat-admin-review-refund-v3']);
   assert.ok(workers[0].includes("'./assets/favicon-astro.ico'"));
   assert.ok(workers[0].includes("'./assets/smv-home-logo.webp'"));
   assert.ok(workers[1].includes("'./assets/favicon-horoscope.ico'"));

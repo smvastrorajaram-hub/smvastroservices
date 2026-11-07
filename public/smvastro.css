@@ -4373,3 +4373,40 @@ html body #smv24-footer .smv24-footer-top .smv24-brand h2{
 .smv-wallet-bonus-summary strong{color:#30251b;-webkit-text-fill-color:#30251b;font-size:1.1rem;overflow-wrap:anywhere}
 .smv-wallet-bonus-summary>p{grid-column:1/-1;margin:0;color:#6b6257;-webkit-text-fill-color:#6b6257;font-size:.88rem;line-height:1.5}
 @media(max-width:520px){.smv-wallet-bonus-summary{grid-template-columns:minmax(0,1fr)}.smv-wallet-bonus-summary>p{grid-column:1}}
+
+
+/* Private Chat Astrologer Answer editor — responsive, high-contrast single-layer modal. */
+#modal .smv-private-chat-answer-modal{display:flex;flex-direction:column;gap:14px;width:100%;max-width:100%;min-width:0;box-sizing:border-box;padding:8px 4px 6px;color:#241b16!important;-webkit-text-fill-color:#241b16}
+#modal .smv-private-chat-answer-header{display:flex;align-items:flex-start;justify-content:flex-start;width:100%;min-width:0;padding:2px 44px 0 0;box-sizing:border-box}
+#modal .smv-private-chat-answer-heading{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;width:100%}
+#modal .smv-private-chat-answer-heading .badge{display:inline-flex;align-items:center;justify-content:center;width:auto;max-width:100%;min-height:32px;padding:7px 12px;white-space:nowrap;line-height:1.2}
+#modal .smv-private-chat-answer-heading h2{margin:2px 0!important;font-size:clamp(19px,5vw,24px)!important;line-height:1.2!important;letter-spacing:normal;overflow-wrap:normal;word-break:normal;color:#241b16!important;-webkit-text-fill-color:#241b16!important}
+#modal .smv-private-chat-answer-heading p{margin:0!important;color:#4e443b!important;-webkit-text-fill-color:#4e443b!important;overflow-wrap:anywhere}
+#modal .smv-private-chat-question-preview{display:flex;flex-direction:column;gap:7px;margin:0;padding:13px;background:#fff8e7;border:1px solid #d4af37;border-radius:12px;color:#241b16!important;-webkit-text-fill-color:#241b16!important}
+#modal .smv-private-chat-question-preview p{margin:0;color:#241b16!important;-webkit-text-fill-color:#241b16!important;line-height:1.5}
+#modal .smv-private-chat-question-preview span{white-space:pre-wrap;overflow-wrap:anywhere}
+#modal .smv-private-chat-answer-form{display:flex;flex-direction:column;gap:10px;min-width:0;width:100%}
+#modal .smv-private-chat-answer-label{display:grid;gap:7px;min-width:0;color:#241b16!important;-webkit-text-fill-color:#241b16!important;font-size:17px}
+#modal #smvPrivateChatAnswerText{display:block;width:100%;min-width:0;min-height:clamp(280px,45dvh,540px);max-height:58dvh;box-sizing:border-box;padding:14px;font-family:inherit;font-size:17px;line-height:1.65;color:#241b16!important;-webkit-text-fill-color:#241b16!important;caret-color:#241b16;background:#fffdf5!important;border:1.5px solid #b9a17b;border-radius:11px;resize:vertical;white-space:pre-wrap;opacity:1}
+#modal #smvPrivateChatAnswerText::placeholder{color:#766c61!important;-webkit-text-fill-color:#766c61!important;opacity:1}
+#modal #smvPrivateChatAnswerText:focus{outline:3px solid rgba(91,42,134,.2);border-color:#5b2a86}
+#modal .smv-private-chat-answer-meta{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;color:#30251b!important;-webkit-text-fill-color:#30251b!important}
+#modal .smv-private-chat-answer-meta strong{font-size:16px;color:#241b16!important;-webkit-text-fill-color:#241b16!important}
+#modal .smv-private-chat-answer-meta span{font-size:13px;color:#51483f!important;-webkit-text-fill-color:#51483f!important}
+#modal #smvPrivateChatAnswerMessage{margin:0;color:#51483f!important;-webkit-text-fill-color:#51483f!important}
+#modal .smv-private-chat-answer-actions{display:flex;justify-content:flex-end;align-items:stretch;gap:10px;flex-wrap:wrap}
+#modal .smv-private-chat-answer-actions button{min-width:120px;min-height:46px;box-sizing:border-box}
+#modal .smv-private-chat-answer-actions button:not(.gray){background:#5b2a86!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border:1px solid #d4af37}
+#modal .smv-private-chat-answer-actions button.gray{background:#f5e8c9!important;color:#321a1a!important;-webkit-text-fill-color:#321a1a!important}
+@media(max-width:520px){
+ #modal .smv-private-chat-answer-modal{gap:11px;padding:5px 2px 4px}
+ #modal .smv-private-chat-answer-header{padding-right:40px}
+ #modal .smv-private-chat-answer-heading h2{font-size:20px!important}
+ #modal #smvPrivateChatAnswerText{min-height:clamp(270px,42dvh,480px);font-size:16px;line-height:1.6;padding:12px}
+ #modal .smv-private-chat-answer-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ #modal .smv-private-chat-answer-actions button{width:100%;min-width:0}
+}
+
+.smv-private-chat-admin-action-row{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin:9px 0}
+.smv-private-chat-admin-action-row select{flex:1 1 190px;min-width:0;min-height:44px;box-sizing:border-box}
+.smv-private-chat-admin-action-row button{flex:1 1 145px;min-width:0;min-height:44px;white-space:normal;overflow-wrap:anywhere}
