@@ -9,7 +9,7 @@ on:
         type: boolean
         default: false
       version_name:
-        description: "App version in order: v1.0, v1.1, v1.2, ... v2.0"
+        description: "App version: v1.0, v1.1, etc. A major-only value such as v3 is normalized to v3.0"
         required: true
         type: string
         default: "v1.2"
@@ -31,6 +31,7 @@ on:
       - "test/android-launcher-icon.test.mjs"
       - "test/android-google-native-signin.test.mjs"
       - "scripts/next-android-release-version.mjs"
+      - "scripts/normalize-android-release-version-name.mjs"
       - "test/android-release-version-resolution.test.mjs"
       - "test/android-cache-release-build-triggers.test.mjs"
       - "public/smvastro.mjs"
@@ -54,6 +55,7 @@ on:
       - "public/smvastro.mjs"
       - "test/android-google-native-signin.test.mjs"
       - "scripts/next-android-release-version.mjs"
+      - "scripts/normalize-android-release-version-name.mjs"
       - "test/android-release-version-resolution.test.mjs"
       - "test/android-cache-release-build-triggers.test.mjs"
       - "docs/android-native-call-ringtone.md"
@@ -187,6 +189,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+
+      - name: Normalize manually entered SMV ASTRO Android version
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: node scripts/normalize-android-release-version-name.mjs astro
 
       - name: Verify permanent Release and native Google sign-in configuration
         run: node --test test/android-permanent-release.test.mjs test/android-google-native-signin.test.mjs test/android-release-version-resolution.test.mjs test/android-cache-release-build-triggers.test.mjs
