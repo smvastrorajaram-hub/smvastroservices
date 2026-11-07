@@ -470,7 +470,7 @@ async function openAstrologerRegistration(){
 }
 function smvDateTime(value){ try { if(value==null || value==='') return '—'; let d=null; if(value instanceof Date) d=value; else if(typeof value?.toDate==='function') d=value.toDate(); else if(typeof value==='object' && value){ const sec=value.seconds ?? value._seconds; const ns=value.nanoseconds ?? value._nanoseconds ?? 0; if(sec!=null) d=new Date(Number(sec)*1000+Math.floor(Number(ns)/1e6)); else if(value.timestamp) return smvDateTime(value.timestamp); else if(value.date) return smvDateTime(value.date); else if(value.value) return smvDateTime(value.value); } if(!d) d=new Date(value); if(Number.isNaN(d.getTime())) return '—'; return d.toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'}); } catch(e){ return '—'; } }
 function smvDateSortMs(value){ try { if(value==null||value==='')return 0; if(typeof value?.toMillis==='function')return Number(value.toMillis())||0; if(typeof value?.toDate==='function')return value.toDate().getTime()||0; if(value instanceof Date)return value.getTime()||0; if(typeof value==='object'&&value){const sec=value.seconds??value._seconds;const ns=value.nanoseconds??value._nanoseconds??0;if(sec!=null)return Number(sec)*1000+Math.floor(Number(ns)/1e6);if(value.timestamp!=null)return smvDateSortMs(value.timestamp);if(value.date!=null)return smvDateSortMs(value.date);if(value.value!=null)return smvDateSortMs(value.value);} const n=typeof value==='number'?value:Date.parse(String(value));return Number.isFinite(n)?n:0;}catch(_e){return 0;} }
-function smvDashboardActivityMs(item={}){return smvDateSortMs(item.paymentRecordedAt||item.paidAt||item.paymentUpdatedAt||item.commissionCreditedAt||item.customerViewedAt||item.answerApprovedAt||item.answerSubmittedAt||item.adminQuestionApprovedAt||item.questionApprovedAt||item.requestedAt||item.date||item.updatedAt||item.createdAt||item.submittedAt);}
+function smvDashboardActivityMs(item={}){return smvDateSortMs(item.paymentRecordedAt||item.paidAt||item.paymentUpdatedAt||item.commissionCreditedAt||item.customerViewedAt||item.answerApprovedAt||item.answerSubmittedAt||item.adminQuestionApprovedAt||item.questionApprovedAt||item.processingAt||item.rejectedAt||item.requestedAt||item.date||item.updatedAt||item.createdAt||item.submittedAt);}
 function smvDashboardData(item){try{return typeof item?.data==='function'?(item.data()||{}):(item||{});}catch(_e){return {};}}
 function smvSortDashboardDesc(items){return (Array.isArray(items)?items:[]).slice().sort((a,b)=>smvDashboardActivityMs(smvDashboardData(b))-smvDashboardActivityMs(smvDashboardData(a)));}
   window.__smvOpenRegister=openRegister;
@@ -1783,7 +1783,7 @@ async function smvLoadAdminPrivateChat(){
    const enabled=$('privateChatEnabled')?.value==='true',price=Number($('privateChatPrice')?.value),minimumAnswerWords=Number($('privateChatMinimumAnswerWords')?.value);
    const astroRaw=String($('privateChatAstrologerCommissionPercent')?.value??'').trim(),adminRaw=String($('privateChatAdminCommissionPercent')?.value??'').trim();
    const astrologerCommissionPercent=astroRaw===''?null:Number(astroRaw),adminCommissionPercent=adminRaw===''?null:Number(adminRaw);
-   const assignmentMode=$('privateChatAssignmentMode')?.value==='open_to_all'?'open_to_all':'admin_assigned';
+   const assignmentMode='direct_selected';
    save.disabled=true;if(settingsMsg)settingsMsg.textContent='Saving Private Chat settings to Cloudflare…';
    try{
     const result=await smvPrivateChatApi('/admin/private-chat/settings',{method:'POST',body:{enabled,price,minimumAnswerWords,astrologerCommissionPercent,adminCommissionPercent,assignmentMode}});
@@ -1794,7 +1794,7 @@ async function smvLoadAdminPrivateChat(){
     if($('privateChatAdminCommissionPercent'))$('privateChatAdminCommissionPercent').value=result.adminCommissionPercent==null?'':String(result.adminCommissionPercent);
     if($('privateChatAssignmentMode'))$('privateChatAssignmentMode').value=result.assignmentMode||assignmentMode;
     const split=result.commissionConfigured?'Astrologer '+result.astrologerCommissionPercent+'% / Admin '+result.adminCommissionPercent+'%':'Commission not configured — both shares must total 100%.';
-    const mode=result.assignmentMode==='open_to_all'?'OFF — Open to all approved Astrologers':'ON — Admin assigns a selected Astrologer';
+    const mode='Customer selects an approved Astrologer; Admin can reallocate after 24 hours without an answer';
     if(settingsMsg)settingsMsg.textContent='Saved. Private Chat: '+(result.enabled?'ON':'OFF')+' · ₹'+Number(result.price||0).toFixed(2)+' · '+split+' · '+mode+' · Minimum answer '+Number(result.minimumAnswerWords||150)+' words.';
     void smvLoadAdminPrivateChat();
    }catch(error){if(settingsMsg)settingsMsg.textContent=error?.message||String(error);}
@@ -1811,6 +1811,7 @@ async function smvLoadAdminPrivateChat(){
    try{
     let path='',body={questionId};
     if(action==='approve-question'){body.astrologerId=card.querySelector('[data-private-chat-assign-astro]')?.value||'';if(!body.astrologerId)throw new Error('Select an approved Astrologer before allocation.');path='/admin/private-chat/approve-question';}
+    else if(action==='reallocate-question'){body.astrologerId=card.querySelector('[data-private-chat-reallocate-astro]')?.value||'';if(!body.astrologerId)throw new Error('Select a different approved Astrologer.');path='/admin/private-chat/reallocate-question';}
     else if(action==='reject-question'){body.reason=window.prompt('Enter the reason for rejecting this Customer Question and refunding the payment:');if(!body.reason){button.disabled=false;return;}path='/admin/private-chat/reject-question';}
     else if(action==='approve-answer')path='/admin/private-chat/approve-answer';
     else if(action==='reject-answer'){body.reason=window.prompt('Enter the reason for rejecting this Astrologer Answer:');if(!body.reason){button.disabled=false;return;}path='/admin/private-chat/reject-answer';}
@@ -1832,26 +1833,55 @@ async function smvLoadAdminPrivateChat(){
   if($('privateChatAdminCommissionPercent'))$('privateChatAdminCommissionPercent').value=settings.adminCommissionPercent==null?'':String(settings.adminCommissionPercent);
   if($('privateChatAssignmentMode'))$('privateChatAssignmentMode').value=settings.assignmentMode||'admin_assigned';
   const split=settings.commissionConfigured?'Astrologer '+settings.astrologerCommissionPercent+'% / Admin '+settings.adminCommissionPercent+'%':'Commission not configured — enter both shares totalling 100% before enabling.';
-  const mode=settings.assignmentMode==='open_to_all'?'OFF — Open to all approved Astrologers':'ON — Admin assigns a selected Astrologer';
+  const mode='Customer selects an approved Astrologer; Admin can reallocate after 24 hours without an answer';
   if(settingsMsg)settingsMsg.textContent='Current setting: '+(settings.enabled?'ON':'OFF')+' · ₹'+Number(settings.price||0).toFixed(2)+' · '+split+' · '+mode+' · Minimum answer '+Number(settings.minimumAnswerWords||150)+' words.';
   const questions=Array.isArray(result.questions)?result.questions:[],astrologers=Array.isArray(result.astrologers)?result.astrologers:[];
   const astroOptions='<option value="">Select approved Astrologer</option>'+astrologers.map(a=>'<option value="'+escapeHtml(a.id)+'">'+escapeHtml(a.name)+'</option>').join('');
   queue.innerHTML=questions.length?questions.map(q=>{
    const id=String(q.questionId||q.id||''),status=String(q.status||''),pendingAssignment=status==='private_chat_pending_admin',pendingAnswer=status==='processing';
-   const refunded=Boolean(q.refundId)||['question_rejected','admin_rejected'].includes(status);
+   const refundStatus=String(q.refundStatus||'').toLowerCase();
+   const refunded=Boolean(q.refundId||q.refundRequestedAt||q.adminQuestionRejectedAt||refundStatus)||['question_rejected','admin_rejected','refunded'].includes(status.toLowerCase());
+   const assignedMs=smvDateSortMs(q.assignedAt||q.paidAt||q.privateChatSubmittedAt||q.createdAt);
+   const dueMs=smvDateSortMs(q.answerDueAt)||(assignedMs?assignedMs+24*60*60*1000:0);
+   const answerExists=Boolean(String(q.answer||'').trim()||q.answerSubmittedAt);
+   const reallocationReady=status==='private_chat_assigned'&&q.paymentStatus==='paid'&&!answerExists&&!refunded&&Boolean(q.astrologerId)&&dueMs>0&&Date.now()>=dueMs;
+   const reallocationOptions='<option value="">Choose another approved Astrologer</option>'+astrologers.filter(a=>String(a.id)!==String(q.astrologerId||'')).map(a=>'<option value="'+escapeHtml(a.id)+'">'+escapeHtml(a.name)+'</option>').join('');
+   const reallocate=reallocationReady
+    ?'<p class="small success">The selected Astrologer has not answered within 24 hours. Admin reallocation is now available.</p><div class="smv-private-chat-admin-action-row"><select data-private-chat-reallocate-astro aria-label="Reallocate to another Astrologer">'+reallocationOptions+'</select><button class="btn" type="button" data-private-chat-admin-action="reallocate-question" data-question-id="'+escapeHtml(id)+'">REALLOCATE QUESTION</button></div>'
+    :(!refunded&&!answerExists&&dueMs>0&&status==='private_chat_assigned'?'<p class="small">Current Astrologer response deadline: <b>'+escapeHtml(smvDateTime(new Date(dueMs)))+'</b>. Reallocation becomes available after 24 hours.</p>':'');
    const assign=pendingAssignment?'<div class="smv-private-chat-admin-action-row"><select data-private-chat-assign-astro aria-label="Select Astrologer">'+astroOptions+'</select><button class="btn" type="button" data-private-chat-admin-action="approve-question" data-question-id="'+escapeHtml(id)+'">APPROVE & ASSIGN</button></div>':'';
-   const rejectAction=q.paymentStatus==='paid'&&!refunded&&['private_chat_pending_admin','private_chat_available_to_astrologers','private_chat_assigned','processing'].includes(status)
+   const rejectAction=q.paymentStatus==='paid'&&!refunded&&['private_chat_pending_admin','private_chat_available_to_astrologers','private_chat_assigned','processing','answered'].includes(status)
     ?'<div class="smv-private-chat-admin-action-row"><button class="btn gray" type="button" data-private-chat-admin-action="reject-question" data-question-id="'+escapeHtml(id)+'">REJECT QUESTION & REFUND</button></div>':'';
-   const review=pendingAnswer?'<details open><summary>Astrologer Answer — Admin Review</summary><p style="white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(q.answer||'')+'</p><div class="smv-private-chat-admin-action-row"><button class="btn" type="button" data-private-chat-admin-action="approve-answer" data-question-id="'+escapeHtml(id)+'">ACCEPT ANSWER</button><button class="btn gray" type="button" data-private-chat-admin-action="reject-answer" data-question-id="'+escapeHtml(id)+'">REJECT ANSWER</button></div></details>' :(q.answer?'<details><summary>Astrologer Answer</summary><p style="white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(q.answer)+'</p></details>':'');
-   const refundActions=refunded&&q.paymentStatus==='paid'&&q.refundStatus!=='processed'&&q.refundStatus!=='completed'?'<div class="smv-private-chat-admin-action-row"><button class="btn gray" type="button" data-private-chat-admin-action="retry-refund" data-question-id="'+escapeHtml(id)+'">RETRY REFUND</button><button class="btn gray" type="button" data-private-chat-admin-action="sync-refund" data-question-id="'+escapeHtml(id)+'">SYNC REFUND</button></div>':'';
-   const modeNote=status==='private_chat_available_to_astrologers'?'<p class="small">This paid question is open to all approved Astrologers. The first successful claim receives it.</p>':'';
+   const review=pendingAnswer?'<details open><summary>Astrologer Answer — Admin Review · Submitted '+escapeHtml(smvDateTime(q.answerSubmittedAt))+'</summary><p style="white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(q.answer||'')+'</p><div class="smv-private-chat-admin-action-row"><button class="btn" type="button" data-private-chat-admin-action="approve-answer" data-question-id="'+escapeHtml(id)+'">ACCEPT ANSWER</button><button class="btn gray" type="button" data-private-chat-admin-action="reject-answer" data-question-id="'+escapeHtml(id)+'">REJECT ANSWER</button></div></details>' :(q.answer?'<details><summary>Astrologer Answer · Submitted '+escapeHtml(smvDateTime(q.answerSubmittedAt))+'</summary><p style="white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(q.answer)+'</p></details>':'');
+   const refundActions=refunded&&q.paymentStatus==='paid'&&refundStatus!=='processed'&&refundStatus!=='completed'
+    ?(!q.refundId?'<div class="smv-private-chat-admin-action-row"><button class="btn gray" type="button" data-private-chat-admin-action="retry-refund" data-question-id="'+escapeHtml(id)+'">RETRY RAZORPAY REFUND</button></div>':'<div class="smv-private-chat-admin-action-row"><button class="btn gray" type="button" data-private-chat-admin-action="sync-refund" data-question-id="'+escapeHtml(id)+'">SYNC RAZORPAY REFUND</button></div>'):'';
+   const times=[
+    ['Question Submitted',q.createdAt],['Payment Verified',q.paidAt],['Assigned',q.assignedAt||q.adminQuestionApprovedAt],
+    ['Answer Submitted',q.answerSubmittedAt],['Answer Approved',q.answerApprovedAt||q.adminAnswerApprovedAt],
+    ['Answer Rejected',q.lastAnswerRejectedAt],['Question Rejected',q.adminQuestionRejectedAt],
+    ['Refund Requested',q.refundRequestedAt],['Refund Created',q.refundCreatedAt],
+    ['Refund Processed',q.refundProcessedAt],['Refund Last Checked',q.refundSyncedAt]
+   ].filter(item=>item[1]).map(item=>'<div><b>'+item[0]+':</b> '+escapeHtml(smvDateTime(item[1]))+'</div>').join('');
+   const refundRefs=[
+    q.refundId?'<div><b>Razorpay Refund ID:</b> '+escapeHtml(q.refundId)+'</div>':'',
+    q.refundStatus?'<div><b>Refund Status:</b> '+escapeHtml(String(q.refundStatus).toUpperCase())+'</div>':'',
+    q.refundAmount!=null?'<div><b>Refund Amount:</b> ₹'+Number(q.refundAmount).toFixed(2)+'</div>':'',
+    q.refundRrn?'<div><b>RRN:</b> '+escapeHtml(q.refundRrn)+'</div>':'',
+    q.refundArn?'<div><b>ARN:</b> '+escapeHtml(q.refundArn)+'</div>':'',
+    q.refundUtr?'<div><b>UTR:</b> '+escapeHtml(q.refundUtr)+'</div>':'',
+    q.refundBankReference?'<div><b>Bank Reference:</b> '+escapeHtml(q.refundBankReference)+'</div>':'',
+    q.refundError?'<div class="error"><b>Refund Error:</b> '+escapeHtml(q.refundError)+'</div>':''
+   ].join('');
+   const assignmentHistory=Array.isArray(q.assignmentHistory)&&q.assignmentHistory.length
+    ?'<details><summary>Previous Astrologer Assignments</summary>'+q.assignmentHistory.map(item=>'<p class="small">'+escapeHtml(item.astrologerName||item.astrologerId||'Astrologer')+' · '+escapeHtml(smvDateTime(item.assignedAt||item.reallocatedAt))+'</p>').join('')+'</details>':'';
    return '<article class="card" data-private-chat-admin-card="'+escapeHtml(id)+'" style="margin:10px 0;padding:12px;border:1px solid #d8c8a2">'+
     '<p><b>Customer:</b> '+escapeHtml(q.customerName||q.birthName||'Customer')+'</p><p><b>Requested Astrologer:</b> '+escapeHtml(q.requestedAstrologerName||'—')+'</p><p><b>Assigned Astrologer:</b> '+escapeHtml(q.astrologerName||'Not allocated')+'</p>'+
     '<p><b>Question ID:</b> '+escapeHtml(id)+'</p><p><b>Payment ID:</b> '+escapeHtml(q.customerPaymentId||'Payment pending')+'</p>'+
     '<p><b>Price:</b> ₹'+Number(q.amount||0).toFixed(2)+' · <b>Status:</b> '+escapeHtml(smvPrivateChatStatusLabel(q))+'</p>'+
     '<p><b>Question:</b> <span style="white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(q.question||'')+'</span></p>'+
-    (q.refundId?'<p><b>Refund:</b> '+escapeHtml(q.refundId)+' · '+escapeHtml(q.refundStatus||'pending')+'</p>':'')+
-    modeNote+assign+rejectAction+review+refundActions+'<p class="small" data-private-chat-admin-message role="status"></p></article>';
+    (times?'<div class="small smv-private-chat-timeline" style="line-height:1.65;margin:8px 0">'+times+'</div>':'')+
+    (refundRefs?'<div class="small smv-private-chat-refund-refs" style="line-height:1.65;margin:8px 0">'+refundRefs+'</div>':'')+
+    assignmentHistory+reallocate+assign+rejectAction+review+refundActions+'<p class="small" data-private-chat-admin-message role="status"></p></article>';
   }).join(''):'<div class="empty">No Private Chat questions have been submitted yet.</div>';
   queue.querySelectorAll('[data-private-chat-admin-card]').forEach(card=>{
    const q=questions.find(item=>String(item.questionId||item.id||'')===card.dataset.privateChatAdminCard),selector=card.querySelector('[data-private-chat-assign-astro]');
@@ -2632,7 +2662,7 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
         const st=String(w.status||'pending').toLowerCase();
         const cls=st==='paid'?'success':st==='rejected'?'error':st==='processing'?'small':'small';
         const label=st==='paid'?'Paid':st==='processing'?'Processing':st==='rejected'?'Rejected':'Pending';
-        return '<div class="smv-history-row smv-withdrawal-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹'+Number(w.amount||0).toFixed(2)+'</b> · <span class="'+cls+'">'+label+'</span></div><div class="smv-history-detail"><b>Withdrawal ID:</b> '+escapeHtml(w.withdrawalId||'—')+'</div>'+(st==='paid'&&/^(?:smvpt-|smv-pmt-)/i.test(String(w.adminPaymentId||''))?'<div class="small"><b>Admin Payment ID:</b> '+escapeHtml(w.adminPaymentId)+'</div>':'')+'<div class="small"><b>Requested:</b> '+escapeHtml(smvDateTime(w.createdAt||w.requestedAt))+(st==='paid'&&w.paidAt?'<br><b>Paid Date & Time:</b> '+escapeHtml(smvDateTime(w.paidAt)):'')+'</div></div>';
+        return '<div class="smv-history-row smv-withdrawal-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹'+Number(w.amount||0).toFixed(2)+'</b> · <span class="'+cls+'">'+label+'</span></div><div class="smv-history-detail"><b>Withdrawal ID:</b> '+escapeHtml(w.withdrawalId||'—')+'</div>'+(st==='paid'&&/^(?:smvpt-|smv-pmt-)/i.test(String(w.adminPaymentId||''))?'<div class="small"><b>Admin Payment ID:</b> '+escapeHtml(w.adminPaymentId)+'</div>':'')+'<div class="small"><b>Requested:</b> '+escapeHtml(smvDateTime(w.createdAt||w.requestedAt))+(w.processingAt?'<br><b>Processing:</b> '+escapeHtml(smvDateTime(w.processingAt)):'')+(w.rejectedAt?'<br><b>Rejected:</b> '+escapeHtml(smvDateTime(w.rejectedAt)):'')+(w.paidAt?'<br><b>Paid:</b> '+escapeHtml(smvDateTime(w.paidAt)):'')+(w.updatedAt?'<br><b>Last Updated:</b> '+escapeHtml(smvDateTime(w.updatedAt)):'')+'</div></div>';
        }).join('')
        :'<div class="small">No withdrawal requests yet.</div>')
       :'<div class="small">Withdrawal history is temporarily unavailable.</div>';
@@ -3746,7 +3776,7 @@ async function loadAdminPanelData(background=false){
   // Admin payout and withdrawal history is loaded from trusted backend records.
   const withdrawalPayload=await renderApi('/admin/withdrawals-data',{method:'GET'});
   const withdrawalDocs=smvSortDashboardDesc(Array.isArray(withdrawalPayload?.withdrawals)?withdrawalPayload.withdrawals:[]).slice(0,50);
-  $('adminWithdrawals').innerHTML=withdrawalDocs.length?withdrawalDocs.map(w=>{const docId=String(w.id||'');return `<div class="card" style="margin:10px 0"><b>₹${Number(w.amount||0).toFixed(2)}</b> · <b>${escapeHtml(w.status||'pending').toUpperCase()}</b><div class="small">Astrologer: ${escapeHtml(w.astrologerName||w.astrologerId||'')} · Astrologer ID: ${escapeHtml(w.astrologerId||'')}<br><b>Withdrawal ID:</b> ${escapeHtml(w.withdrawalId||'—')}${String(w.status||'').toLowerCase()==='paid' && /^(?:smvpt-|smv-pmt-)/i.test(String(w.adminPaymentId||'')) ? `<br><b>Admin Payment ID:</b> ${escapeHtml(w.adminPaymentId)}` : ''}<br>Requested: ${escapeHtml(smvDateTime(w.createdAt||w.requestedAt))}${String(w.status||'').toLowerCase()==='paid' && w.paidAt ? `<br><b>Paid Date & Time:</b> ${escapeHtml(smvDateTime(w.paidAt))}` : ''}</div><div id="withdrawBank_${docId}" class="small" style="margin-top:8px"><b>PRIVATE PAYMENT DETAILS:</b> Loading…</div><div class="action-row">${w.status==='pending'?`<button class="btn" data-wstatus="${docId}" data-status="processing">MARK PROCESSING</button><button class="btn gray" data-wstatus="${docId}" data-status="rejected">REJECT</button>`:''}${w.status==='processing'?`<button class="btn" data-wstatus="${docId}" data-status="paid">MARK PAID</button>`:''}${String(w.status||'').toLowerCase()==='paid' && !/^(?:smvpt-|smv-pmt-)/i.test(String(w.adminPaymentId||''))?`<button class="btn" data-wstatus="${docId}" data-status="paid">CREATE ADMIN PAYMENT ID</button>`:''}</div></div>`}).join(''):'<div class="empty">No withdrawal requests.</div>';
+  $('adminWithdrawals').innerHTML=withdrawalDocs.length?withdrawalDocs.map(w=>{const docId=String(w.id||'');const timeRows=[['Requested',w.createdAt||w.requestedAt],['Processing',w.processingAt],['Rejected',w.rejectedAt],['Paid',w.paidAt],['Last Updated',w.updatedAt]].filter(x=>x[1]).map(x=>'<div><b>'+x[0]+':</b> '+escapeHtml(smvDateTime(x[1]))+'</div>').join('');return `<div class="card" style="margin:10px 0"><b>₹${Number(w.amount||0).toFixed(2)}</b> · <b>${escapeHtml(w.status||'pending').toUpperCase()}</b><div class="small">Astrologer: ${escapeHtml(w.astrologerName||w.astrologerId||'')} · Astrologer ID: ${escapeHtml(w.astrologerId||'')}<br><b>Withdrawal ID:</b> ${escapeHtml(w.withdrawalId||'—')}${String(w.status||'').toLowerCase()==='paid' && /^(?:smvpt-|smv-pmt-)/i.test(String(w.adminPaymentId||'')) ? `<br><b>Admin Payment ID:</b> ${escapeHtml(w.adminPaymentId)}` : ''}<div class="smv-private-chat-timeline" style="line-height:1.6;margin:8px 0">${timeRows}</div></div><div id="withdrawBank_${docId}" class="small" style="margin-top:8px"><b>PRIVATE PAYMENT DETAILS:</b> Loading…</div><div class="action-row">${w.status==='pending'?`<button class="btn" data-wstatus="${docId}" data-status="processing">MARK PROCESSING</button><button class="btn gray" data-wstatus="${docId}" data-status="rejected">REJECT</button>`:''}${w.status==='processing'?`<button class="btn" data-wstatus="${docId}" data-status="paid">MARK PAID</button>`:''}${String(w.status||'').toLowerCase()==='paid' && !/^(?:smvpt-|smv-pmt-)/i.test(String(w.adminPaymentId||''))?`<button class="btn" data-wstatus="${docId}" data-status="paid">CREATE ADMIN PAYMENT ID</button>`:''}</div></div>`}).join(''):'<div class="empty">No withdrawal requests.</div>';
   withdrawalDocs.forEach(w=>{
     const docId=String(w.id||''),p=w.payout||{},bankBox=$('withdrawBank_'+docId);
     if(!bankBox)return;
