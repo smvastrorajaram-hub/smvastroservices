@@ -161,7 +161,7 @@ test('create-order trusts the Admin price, creates a six-digit smvqt ID and reus
   assert.equal(created.statusCode,200);
   assert.match(created.body.questionId,/^smvqt-\d{6}$/);
   assert.equal(created.body.amount,49900);
-  assert.equal(state.razorpay.calls.filter(call=>call[0]==='createOrder').length,1);
+  assert.equal(state.calls.filter(call=>call[0]==='createOrder').length,1);
   const id=created.body.questionId;
   const question=state.firestore.documents.get('smv_questions/'+id);
   assert.equal(question.amount,499);
@@ -180,7 +180,7 @@ test('create-order trusts the Admin price, creates a six-digit smvqt ID and reus
   );
   assert.equal(retry.body.questionId,id);
   assert.equal(retry.body.orderId,created.body.orderId);
-  assert.equal(state.razorpay.calls.filter(call=>call[0]==='createOrder').length,1);
+  assert.equal(state.calls.filter(call=>call[0]==='createOrder').length,1);
 });
 
 test('payment verification writes the private payment ID and assigns the paid question to its selected Astrologer',async()=>{
