@@ -1018,6 +1018,9 @@ export function registerLegacyRazorpayRoutes({
       const snapshot = await tx.getDocument(path);
       if (!snapshot.exists) throw httpError('PAYMENT_RECORD_NOT_FOUND', 'Payment record not found.', 404);
       record = snapshot.data || {};
+      // An existing provider refund must be reconciled before validating a new rejection.
+      // This keeps repeated Admin actions idempotent and prevents another Razorpay refund.
+      if (record.refundId) return;
       if (entity === 'question') {
         if (retry && !['question_rejected', 'admin_rejected'].includes(String(record.status || ''))) {
           throw httpError('QUESTION_NOT_REJECTED', 'Only a rejected question can be retried.', 409);
@@ -1026,7 +1029,6 @@ export function registerLegacyRazorpayRoutes({
       } else if (!retry && !reason) {
         throw httpError('REFUND_REASON_REQUIRED', 'Enter a rejection reason.', 400);
       }
-      if (record.refundId) return;
       if (Number(record.refundBusyUntil || 0) > Number(now())) throw httpError('REFUND_IN_PROGRESS', 'A refund request is already running. Wait and refresh its status.', 409);
       if (record.paymentStatus !== 'paid' || !/^pay_[A-Za-z0-9]+$/.test(String(record.razorpayPaymentId || ''))) {
         throw httpError('RAZORPAY_PAYMENT_ID_MISSING', 'A verified Razorpay payment ID is required. The internal customer payment reference cannot be refunded.', 409);
