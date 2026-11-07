@@ -23,6 +23,7 @@ on:
       - "ICON/SMV ASTRO.jpg"
       - "tools/SmvProductLauncherIconGenerator.java"
       - "smvastroproduction/**"
+      - "test/android-astro-pdf-native.test.mjs"
       - "smvastroproduction/launcher/icon-512.png"
       - "settings.gradle"
       - "prepare-smv-astro-production-icon.sh"
@@ -195,7 +196,7 @@ jobs:
         run: node scripts/normalize-android-release-version-name.mjs astro
 
       - name: Verify permanent Release and native Google sign-in configuration
-        run: node --test test/android-permanent-release.test.mjs test/android-google-native-signin.test.mjs test/android-release-version-resolution.test.mjs test/android-cache-release-build-triggers.test.mjs
+        run: node --test test/android-permanent-release.test.mjs test/android-google-native-signin.test.mjs test/android-astro-pdf-native.test.mjs test/android-release-version-resolution.test.mjs test/android-cache-release-build-triggers.test.mjs
 
       - name: Java 17
         uses: actions/setup-java@v4
