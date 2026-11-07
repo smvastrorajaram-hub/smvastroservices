@@ -145,6 +145,6 @@ test('Cloudflare contract tests are triggered by every repository-root Preview i
     'scripts/fix-cloudflare-iconv-lite.mjs'
   ]) {
     const occurrences = workflow.split(`      - "${path}"`).length - 1;
-    assert.equal(occurrences.length, 2, `${path} must trigger both pull_request and push contract checks.`);
+    assert.equal(occurrences, 2, `${path} must trigger both pull_request and push contract checks.`);
   }
 });
