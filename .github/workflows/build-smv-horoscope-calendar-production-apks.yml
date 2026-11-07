@@ -34,6 +34,7 @@ on:
       - "smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java"
       - ".github/workflows/build-smv-horoscope-calendar-production-apks.yml"
       - "test/android-horoscope-calendar-production.test.mjs"
+      - "test/android-horoscope-pdf-native.test.mjs"
       - "scripts/next-android-release-version.mjs"
       - "scripts/normalize-android-release-version-name.mjs"
       - "test/android-release-version-resolution.test.mjs"
@@ -60,6 +61,7 @@ on:
       - "smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java"
       - ".github/workflows/build-smv-horoscope-calendar-production-apks.yml"
       - "test/android-horoscope-calendar-production.test.mjs"
+      - "test/android-horoscope-pdf-native.test.mjs"
       - "scripts/next-android-release-version.mjs"
       - "scripts/normalize-android-release-version-name.mjs"
       - "test/android-release-version-resolution.test.mjs"
@@ -91,6 +93,55 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Select production APKs for this change
+        id: app_targets
+        shell: bash
+        env:
+          PUSH_BASE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          horoscope=false
+          calendar=false
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" || "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            # Manual release dispatch retains the established two-app flow.
+            # Pull requests compile both QA packages but never publish signed APKs.
+            horoscope=true
+            calendar=true
+          elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            if [[ -z "$PUSH_BASE_SHA" || "$PUSH_BASE_SHA" =~ ^0+$ ]]; then
+              changed_files="$(git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA")"
+            else
+              changed_files="$(git diff --name-only "$PUSH_BASE_SHA" "$GITHUB_SHA")"
+            fi
+            while IFS= read -r file; do
+              case "$file" in
+                smvhoroscopeproduction/*|smvhoroscope/*|test/android-horoscope-pdf-native.test.mjs)
+                  horoscope=true ;;
+                smvcalendarproduction/*|smvcalendar/*)
+                  calendar=true ;;
+                ICON/SMV\ HOROSCOPE.jpg|ICON/SMV\ CALENDAR.jpg|settings.gradle|prepare-icons.sh|prepare-smv-horoscope-calendar-production-icons.sh|tools/SmvProductLauncherIconGenerator.java|public/horoscope/sw.js|public/horoscope/calendar/sw.js|public/horoscope/location-search-online-offline.js|public/question-place-search.mjs|public/horoscope/offline/places/place-search.mjs|public/horoscope/offline/places/india-manifest.json|scripts/next-android-release-version.mjs|scripts/normalize-android-release-version-name.mjs)
+                  horoscope=true; calendar=true ;;
+              esac
+            done <<< "$changed_files"
+          fi
+          apps=""
+          modules=""
+          if [[ "$horoscope" == "true" ]]; then
+            apps="horoscope"
+            modules="smvhoroscopeproduction"
+          fi
+          if [[ "$calendar" == "true" ]]; then
+            apps="${apps:+$apps }calendar"
+            modules="${modules:+$modules }smvcalendarproduction"
+          fi
+          echo "horoscope=$horoscope" >> "$GITHUB_OUTPUT"
+          echo "calendar=$calendar" >> "$GITHUB_OUTPUT"
+          echo "apps=$apps" >> "$GITHUB_OUTPUT"
+          echo "modules=$modules" >> "$GITHUB_OUTPUT"
+          echo "Selected production APK modules: ${modules:-none (tests only)}"
 
       - name: Node 22 production app regression tests
         uses: actions/setup-node@v4
@@ -98,7 +149,7 @@ jobs:
           node-version: "22"
 
       - name: Verify independent production packages and test-module isolation
-        run: node --test test/android-horoscope-calendar-production.test.mjs test/android-horoscope-calendar-launcher-icons.test.mjs test/android-permanent-release.test.mjs test/android-release-version-resolution.test.mjs test/android-cache-release-build-triggers.test.mjs
+        run: node --test test/android-horoscope-calendar-production.test.mjs test/android-horoscope-pdf-native.test.mjs test/android-horoscope-calendar-launcher-icons.test.mjs test/android-permanent-release.test.mjs test/android-release-version-resolution.test.mjs test/android-cache-release-build-triggers.test.mjs
 
       - name: Normalize manually entered HOROSCOPE and CALENDAR Android versions
         if: ${{ github.event_name == 'workflow_dispatch' }}
@@ -123,9 +174,9 @@ jobs:
         with:
           gradle-version: "9.6.0"
 
-      - name: Allocate HOROSCOPE and CALENDAR versions from their published Cloudflare APK releases
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        run: node scripts/next-android-release-version.mjs horoscope calendar
+      - name: Allocate only the changed production app version from Cloudflare APK releases
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.app_targets.outputs.apps != '' }}
+        run: node scripts/next-android-release-version.mjs ${{ steps.app_targets.outputs.apps }}
 
       - name: Prepare production Horoscope and Calendar icons
         run: bash prepare-smv-horoscope-calendar-production-icons.sh
@@ -179,8 +230,9 @@ jobs:
             :smvhoroscopeproduction:assembleRelease \
             :smvcalendarproduction:assembleRelease
 
+      # Shared signed-release gate is if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}; app-target outputs narrow publication to changed products.
       - name: Validate shared permanent Android Release signing secrets
-        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' && steps.app_targets.outputs.modules != '' }}
         shell: bash
         env:
           SMV_ANDROID_KEYSTORE_BASE64: ${{ secrets.SMV_ANDROID_KEYSTORE_BASE64 }}
@@ -206,7 +258,7 @@ jobs:
           echo "Permanent Android signing secrets are present; values are not printed."
 
       - name: Restore permanent PKCS12 Android signing keystore
-        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' && steps.app_targets.outputs.modules != '' }}
         shell: bash
         env:
           SMV_ANDROID_KEYSTORE_BASE64: ${{ secrets.SMV_ANDROID_KEYSTORE_BASE64 }}
@@ -222,28 +274,38 @@ jobs:
           keytool -list -keystore "$keystore_path" -storetype PKCS12 -storepass "$SMV_ANDROID_KEYSTORE_PASSWORD" -alias "$SMV_ANDROID_KEY_ALIAS" >/dev/null
           echo "SMV_ANDROID_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
 
-      - name: Build both permanently signed Release APKs
-        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+      - name: Build selected permanently signed production Release APKs
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' && steps.app_targets.outputs.modules != '' }}
         env:
           SMV_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.SMV_ANDROID_KEYSTORE_PASSWORD }}
           SMV_ANDROID_KEY_ALIAS: ${{ secrets.SMV_ANDROID_KEY_ALIAS }}
           SMV_ANDROID_KEY_PASSWORD: ${{ secrets.SMV_ANDROID_KEY_PASSWORD }}
+          SMV_BUILD_HOROSCOPE: ${{ steps.app_targets.outputs.horoscope }}
+          SMV_BUILD_CALENDAR: ${{ steps.app_targets.outputs.calendar }}
         run: |
           set -euo pipefail
-          gradle --no-daemon --no-build-cache -PsmvHoroscopeVersionName="$SMV_HOROSCOPE_ANDROID_VERSION_NAME" -PsmvCalendarVersionName="$SMV_CALENDAR_ANDROID_VERSION_NAME" \
-            :smvhoroscopeproduction:clean \
-            :smvcalendarproduction:clean \
-            :smvhoroscopeproduction:assembleRelease \
-            :smvcalendarproduction:assembleRelease
+          tasks=()
+          if [[ "$SMV_BUILD_HOROSCOPE" == "true" ]]; then
+            tasks+=( :smvhoroscopeproduction:clean :smvhoroscopeproduction:assembleRelease )
+          fi
+          if [[ "$SMV_BUILD_CALENDAR" == "true" ]]; then
+            tasks+=( :smvcalendarproduction:clean :smvcalendarproduction:assembleRelease )
+          fi
+          gradle --no-daemon --no-build-cache \\
+            -PsmvHoroscopeVersionName="$SMV_HOROSCOPE_ANDROID_VERSION_NAME" \\
+            -PsmvCalendarVersionName="$SMV_CALENDAR_ANDROID_VERSION_NAME" \\
+            "${tasks[@]}"
 
-      - name: Verify v2 signature and permanent certificate on both APKs
-        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+      - name: Verify v2 signature and permanent certificate on selected production APKs
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' && steps.app_targets.outputs.modules != '' }}
         shell: bash
+        env:
+          SMV_BUILD_MODULES: ${{ steps.app_targets.outputs.modules }}
         run: |
           set -euo pipefail
           expected="7a3be159218a38083986dec117c0bd281b3ef42bda65f2bb7b8c9946b5293401"
           apksigner="$ANDROID_HOME/build-tools/36.0.0/apksigner"
-          for module in smvhoroscopeproduction smvcalendarproduction; do
+          for module in $SMV_BUILD_MODULES; do
             apk="$module/build/outputs/apk/release/$module-release.apk"
             test -s "$apk"
             if ! report="$("$apksigner" verify --verbose --print-certs "$apk" 2>&1)"; then
@@ -251,8 +313,6 @@ jobs:
               echo "::error::$module APK signature verification failed; see the apksigner diagnostics above."
               exit 1
             fi
-            # Certificate fingerprints are public certificate metadata, not signing secrets.
-            # Print them so a failed release can be diagnosed without weakening the check.
             printf '%s\\n' "$report"
             if ! grep -Fq 'Verified using v2 scheme (APK Signature Scheme v2): true' <<< "$report"; then
               echo "::error::$module APK is not verified with APK Signature Scheme v2."
@@ -271,7 +331,7 @@ jobs:
           done
 
       - name: Upload signed SMV HOROSCOPE Production APK
-        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' && steps.app_targets.outputs.horoscope == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: SMV-HOROSCOPE-PERMANENT-RELEASE-APK
@@ -280,7 +340,7 @@ jobs:
           retention-days: 30
 
       - name: Upload signed SMV CALENDAR Production APK
-        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' && steps.app_targets.outputs.calendar == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: SMV-CALENDAR-PERMANENT-RELEASE-APK
@@ -288,28 +348,31 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Prepare versioned signed SMV HOROSCOPE APK
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' && steps.app_targets.outputs.horoscope == 'true' }}
+        run: cp smvhoroscopeproduction/build/outputs/apk/release/smvhoroscopeproduction-release.apk "$RUNNER_TEMP/SMV-HOROSCOPE-$SMV_HOROSCOPE_ANDROID_VERSION_NAME.apk"
 
-      - name: Prepare versioned signed HOROSCOPE and CALENDAR APK release assets
-        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          horoscope="smvhoroscopeproduction/build/outputs/apk/release/smvhoroscopeproduction-release.apk"
-          calendar="smvcalendarproduction/build/outputs/apk/release/smvcalendarproduction-release.apk"
-          test -s "$horoscope"
-          test -s "$calendar"
-          cp "$horoscope" "$RUNNER_TEMP/SMV-HOROSCOPE-$SMV_HOROSCOPE_ANDROID_VERSION_NAME.apk"
-          cp "$calendar" "$RUNNER_TEMP/SMV-CALENDAR-$SMV_CALENDAR_ANDROID_VERSION_NAME.apk"
+      - name: Prepare versioned signed SMV CALENDAR APK
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' && steps.app_targets.outputs.calendar == 'true' }}
+        run: cp smvcalendarproduction/build/outputs/apk/release/smvcalendarproduction-release.apk "$RUNNER_TEMP/SMV-CALENDAR-$SMV_CALENDAR_ANDROID_VERSION_NAME.apk"
 
-      - name: Publish raw signed HOROSCOPE and CALENDAR APK direct-download release assets
-        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+      - name: Publish raw signed HOROSCOPE and CALENDAR APK direct-download release assets (HOROSCOPE)
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' && steps.app_targets.outputs.horoscope == 'true' }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: smv-horoscope-calendar-apks-${{ env.SMV_HOROSCOPE_ANDROID_VERSION_NAME }}-${{ env.SMV_CALENDAR_ANDROID_VERSION_NAME }}-run-${{ github.run_number }}
-          name: SMV HOROSCOPE ${{ env.SMV_HOROSCOPE_ANDROID_VERSION_NAME }} + SMV CALENDAR ${{ env.SMV_CALENDAR_ANDROID_VERSION_NAME }} signed APKs
-          files: |
-            ${{ runner.temp }}/SMV-HOROSCOPE-${{ env.SMV_HOROSCOPE_ANDROID_VERSION_NAME }}.apk
-            ${{ runner.temp }}/SMV-CALENDAR-${{ env.SMV_CALENDAR_ANDROID_VERSION_NAME }}.apk
+          tag_name: smv-horoscope-apk-${{ env.SMV_HOROSCOPE_ANDROID_VERSION_NAME }}-run-${{ github.run_number }}
+          name: SMV HOROSCOPE ${{ env.SMV_HOROSCOPE_ANDROID_VERSION_NAME }} signed APK
+          files: ${{ runner.temp }}/SMV-HOROSCOPE-${{ env.SMV_HOROSCOPE_ANDROID_VERSION_NAME }}.apk
+          draft: false
+          prerelease: false
+
+      - name: Publish raw signed HOROSCOPE and CALENDAR APK direct-download release assets (CALENDAR)
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' && steps.app_targets.outputs.calendar == 'true' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: smv-calendar-apk-${{ env.SMV_CALENDAR_ANDROID_VERSION_NAME }}-run-${{ github.run_number }}
+          name: SMV CALENDAR ${{ env.SMV_CALENDAR_ANDROID_VERSION_NAME }} signed APK
+          files: ${{ runner.temp }}/SMV-CALENDAR-${{ env.SMV_CALENDAR_ANDROID_VERSION_NAME }}.apk
           draft: false
           prerelease: false
 
