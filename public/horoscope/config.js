@@ -503,53 +503,6 @@ function syncHoroscopePaidEntry(){
   });
 }
 
-function syncHoroscopePaidEntry(){
-  const benefitsRoots=[
-    {root:document.getElementById('smvHoroscopePaidEntryEnglish'),language:'en'},
-    {root:document.getElementById('smvHoroscopePaidEntryTamil'),language:'ta'}
-  ].filter(item=>item.root);
-  const quickRoots=[
-    {root:document.getElementById('smvHoroscopeQuickPaidEntryEnglish'),language:'en'},
-    {root:document.getElementById('smvHoroscopeQuickPaidEntryTamil'),language:'ta'}
-  ].filter(item=>item.root);
-  return stateFor('advanced_analysis').then(state=>{
-    const active=state.mode==='paid'&&state.loggedIn===true&&Number(state.actualPrice||0)===1;
-    setPaidModeGenerateLabels(active);
-
-    // The compact button is deliberately limited to Admin ON + positive price
-    // + an authenticated Customer. Other access modes retain their old UI.
-    for(const item of quickRoots){
-      if(!active){clearGate(item.root);continue;}
-      renderQuickHoroscopePayment(item.root,state,item.language);
-    }
-
-    // Preserve the existing ten-section benefits/payment boxes in their
-    // original DOM position. Once logged in, prepare the current form context
-    // before payment and reopen the same form after verified payment.
-    for(const item of benefitsRoots){
-      if(state.mode!=='paid'||Number(state.actualPrice||0)<1||state.entitled){
-        clearGate(item.root);
-        continue;
-      }
-      const requestedPaidMode=state.loggedIn===true&&Number(state.actualPrice||0)===1;
-      const beforePay=requestedPaidMode
-        ? ()=>window.__smvPrepareHoroscopePaymentContext?.(item.language)
-        : undefined;
-      const onUnlock=requestedPaidMode
-        ? ()=>window.__smvGenerateHoroscopeFromCurrentFields?.(item.language)
-        : undefined;
-      renderPolicyLock(
-        'advanced_analysis',
-        item.root,
-        {enabled:true,price:state.actualPrice},
-        onUnlock,
-        beforePay,
-        state
-      );
-    }
-  });
-}
-
 window.__smvOnlineAccessPolicy={
   state:stateFor,
   refresh:getOnlineConfig,

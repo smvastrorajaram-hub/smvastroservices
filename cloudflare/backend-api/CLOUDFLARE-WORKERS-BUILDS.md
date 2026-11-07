@@ -1,86 +1,111 @@
-# Cloudflare Workers Builds — SMV ASTRO Production Worker
+# Cloudflare Workers Builds — SMV ASTRO
 
-This repository uses Cloudflare Workers Builds for the normal GitHub PR-preview and
-main-branch deployment lifecycle of the Production Worker.
+This document is the source-of-truth for the two separate Cloudflare Workers
+Builds configurations. **Production and Preview use different Root directories,
+install commands, and Wrangler configuration files. Do not copy one tab's
+settings into the other.**
 
-## Cloudflare Dashboard settings
+## Dashboard: Production Build
 
 Worker: `smvastroservices`  
 Git repository: `smvastrorajaram-hub/smvastroservices`  
-Production branch: `main`  
-Root directory: `cloudflare/backend-api`
+Production branch: `main`
 
-Build command:
+| Field | Required value |
+|---|---|
+| Root directory | `cloudflare/backend-api` |
+| Build command | `npm install --ignore-scripts --no-audit --no-fund` |
+| Build variable | `SKIP_DEPENDENCY_INSTALL=1` |
+| Deploy command | `npx wrangler deploy --config wrangler.production.jsonc` |
 
-```sh
-npm install --ignore-scripts --no-audit --no-fund
-```
+The Production Root directory is already the Worker package directory. Therefore
+the Production deploy command is relative to that directory and must name
+`wrangler.production.jsonc` directly. This is the only Workers Builds tab that
+uses the Production deploy configuration.
 
-Build variable:
+## Dashboard: Preview Base
 
-```text
-SKIP_DEPENDENCY_INSTALL=1
-```
+Preview Builds use the repository checkout root, not the nested Worker directory.
 
-Production Deploy command:
+| Field | Required value |
+|---|---|
+| Root directory | `/` (repository root) |
+| Build command | `npm install --no-audit --no-fund` |
+| Preview command | `npx --yes wrangler@4.158.0 preview --config wrangler.jsonc` |
 
-```sh
-npx wrangler deploy --config wrangler.production.jsonc
-```
+The Preview build command must run at the repository root. Do not add
+`--prefix cloudflare/backend-api` and do not add `--ignore-scripts`.
+The exact Preview command must use the root config path `wrangler.jsonc`;
+do not prefix it with `cloudflare/backend-api/`.
 
-Preview command:
+If `SKIP_DEPENDENCY_INSTALL=1` is present in the build environment, it disables
+Cloudflare's automatic dependency-install step. It does **not** suppress the
+explicit user Build command above: that command still runs `npm install` at
+the repository root and runs the root `postinstall` script.
 
-```sh
-npx wrangler preview
-```
+## Why the two configurations are different
 
-Worker Previews require Wrangler `4.135.0` or later. The backend package pins
-`wrangler@4.158.0` in `devDependencies`, and the Build command installs that
-package before the default Preview command runs. Keep the default Preview
-command as `npx wrangler preview`; do not point it at the Production config.
+The repository-root `package.json` runs
+`scripts/fix-cloudflare-iconv-lite.mjs` through `postinstall`. This narrowly
+removes incompatible browser aliases from installed `iconv-lite` manifests so
+Wrangler can bundle the Node stream helpers used by the Worker. The Preview
+install must therefore run from the root and must not use `--ignore-scripts`.
+The patch changes installed package metadata only; it does not change package
+versions or application source.
 
-The root npm install runs `scripts/fix-cloudflare-iconv-lite.mjs` as a
-`postinstall` step. It removes only the browser fallback aliases for Node stream
-helpers from installed `iconv-lite` manifests. Wrangler's Worker bundle needs
-the actual Node stream helpers when `process.versions.node` is present; leaving
-the browser `false` aliases in place can make Preview deployment fail with
-`require_streams(...) is not a function` (Workers SDK issue #9309). Package
-versions and application runtime source are not changed by this patch.
+The Preview command is pinned to Wrangler `4.158.0`, matching the version in
+`cloudflare/backend-api/package.json`. Worker Preview support requires Wrangler
+`4.135.0` or later. Pinning the command makes the CLI version deterministic
+rather than relying on whichever version an unpinned `npx wrangler` may fetch.
 
-Enable Preview Builds in Settings → Build → Branch control. The default
-`wrangler.jsonc` is intentionally a Preview config: it uses the connected
-Production Worker name so Workers Builds can identify the Worker, but its
-runtime environment and D1 binding remain Staging-only. This ensures PR
-previews do not target the Production D1 database.
-
-## Configuration separation
+## Configuration separation and Preview safety
 
 | File | Purpose | Worker name | Firebase | D1 |
 |---|---|---|---|---|
-| `wrangler.jsonc` | Workers Builds default PR Preview | `smvastroservices` | `smv-astro-staging` | Staging |
-| `wrangler.staging.jsonc` | Dedicated Staging operations and local D1 QA | `smvastro-backend-api-staging` | `smv-astro-staging` | Staging |
-| `wrangler.production.jsonc` | Explicit Production deployment and secret/D1 operations | `smvastroservices` | `smv-astro` | Production |
+| Repository-root `wrangler.jsonc` | Workers Builds PR Preview | `smvastroservices` | `smv-astro-staging` | `smvastro-wallet-staging` |
+| `cloudflare/backend-api/wrangler.jsonc` | Worker-directory Staging/Preview config | `smvastroservices` | `smv-astro-staging` | `smvastro-wallet-staging` |
+| `cloudflare/backend-api/wrangler.staging.jsonc` | Dedicated Staging operations and local D1 QA | `smvastro-backend-api-staging` | `smv-astro-staging` | `smvastro-wallet-staging` |
+| `cloudflare/backend-api/wrangler.production.jsonc` | Explicit Production deploy, secrets and D1 operations | `smvastroservices` | `smv-astro` | `smvastro-wallet-production` |
 
-Do not change the Preview config's Staging Firebase/D1 values to Production.
-Do not copy the Production D1 binding into a PR Preview config.
+The repository-root Preview shim points its `main` to
+`./cloudflare/backend-api/src/index.mjs`. Its runtime variables, Firebase
+project, D1 binding and `previews` bindings are Staging-only. The root Preview
+config must never contain the Production D1 ID
+`b1d5684c-3fcd-48fe-9571-ea41fc605c7d` or Production Firebase project
+`smv-astro`.
 
-## Repository-root Preview fallback
+Do not change Preview Firebase/D1 settings to Production. Do not point a PR
+Preview at `wrangler.production.jsonc`. The Production build remains rooted at
+`cloudflare/backend-api` and uses only `wrangler.production.jsonc`.
 
-The current Cloudflare Preview build runner can execute `npx wrangler preview` from the repository root (`/`) rather than the nested Worker directory. The repository-root `wrangler.jsonc` is therefore a Preview-only shim whose `main` points to `cloudflare/backend-api/src/index.mjs`; all of its runtime variables, D1 bindings, and Preview base bindings are Staging-only. This ensures the default root-based Preview command finds a `previews` block and cannot bind to Production D1. The Production build remains rooted at `cloudflare/backend-api` and continues to use only `wrangler.production.jsonc`.
+## CI coverage for root Preview inputs
+
+The Cloudflare backend contract workflow must run when any of these root-level
+Preview inputs change:
+
+- `wrangler.jsonc`
+- `package.json`
+- `package-lock.json`
+- `scripts/fix-cloudflare-iconv-lite.mjs`
+
+Keep these paths in both the workflow's `pull_request.paths` and `push.paths`
+filters. The config regression test also checks the Dashboard commands,
+different Root directories, and the root install/postinstall requirement.
+This prevents a root Preview config change from silently bypassing its tests.
 
 ## Deployment ownership
 
 - A push to a PR branch runs GitHub contract tests and, when Preview Builds are
   enabled, Cloudflare Workers Builds creates the PR Preview and reports it on
-  the PR.
+  that PR.
 - A merge/push to `main` triggers the Cloudflare Workers Builds Production
-  Deploy command.
+  deploy using the Production settings above.
 - The GitHub workflow
   `.github/workflows/cloudflare-backend-api-production-deploy.yml` remains
   available through `workflow_dispatch` for explicitly authorized operations
   that validate/synchronize Production secrets, inspect/apply additive
-  Production D1 migrations, deploy, and run live health/readiness checks. It
-  is intentionally not triggered automatically on every push, avoiding two
+  Production D1 migrations, deploy, and run live health/readiness checks. It is
+  intentionally not triggered automatically on every push, avoiding two
   concurrent systems deploying the same Production Worker.
 
 Before any release that changes Production D1 migrations or requires secret

@@ -119,7 +119,32 @@ test('Workers Builds process is documented with Preview and Production commands'
   const doc = readFileSync(resolve(root, 'CLOUDFLARE-WORKERS-BUILDS.md'), 'utf8');
   assert.ok(doc.includes('cloudflare/backend-api'));
   assert.ok(doc.includes('SKIP_DEPENDENCY_INSTALL=1'));
-  assert.ok(doc.includes('npx wrangler preview'));
+  assert.ok(doc.includes('npx --yes wrangler@4.158.0 preview --config wrangler.jsonc'));
   assert.ok(doc.includes('wrangler.production.jsonc'));
   assert.ok(doc.includes('wrangler.staging.jsonc'));
+});
+
+test('Workers Builds Dashboard configuration is documented separately for Production and Preview', () => {
+  const doc = readFileSync(resolve(root, 'CLOUDFLARE-WORKERS-BUILDS.md'), 'utf8');
+  assert.match(doc, /\| Root directory \| `cloudflare\/backend-api` \|/);
+  assert.match(doc, /\| Build command \| `npm install --ignore-scripts --no-audit --no-fund` \|/);
+  assert.match(doc, /\| Deploy command \| `npx wrangler deploy --config wrangler\.production\.jsonc` \|/);
+  assert.match(doc, /\| Root directory \| `\/` \(repository root\) \|/);
+  assert.match(doc, /\| Build command \| `npm install --no-audit --no-fund` \|/);
+  assert.match(doc, /\| Preview command \| `npx --yes wrangler@4\.158\.0 preview --config wrangler\.jsonc` \|/);
+  assert.doesNotMatch(doc, /Preview command[\s\S]{0,100}cloudflare\/backend-api\/wrangler\.jsonc/);
+  assert.match(doc, /must not use `--ignore-scripts`/);
+});
+
+test('Cloudflare contract tests are triggered by every repository-root Preview input', () => {
+  const workflow = readFileSync(resolve(repo, '.github/workflows/cloudflare-backend-api-contract-tests.yml'), 'utf8');
+  for (const path of [
+    'wrangler.jsonc',
+    'package.json',
+    'package-lock.json',
+    'scripts/fix-cloudflare-iconv-lite.mjs'
+  ]) {
+    const occurrences = workflow.split(`      - "${path}"`).length - 1;
+    assert.equal(occurrences, 2, `${path} must trigger both pull_request and push contract checks.`);
+  }
 });

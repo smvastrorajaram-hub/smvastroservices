@@ -1,4 +1,4 @@
-const SMV_CACHE_RELEASE='20261107-horoscope-report-mirror-v2';
+const SMV_CACHE_RELEASE='20261107-horoscope-paid-entry-shadow-fix-v3';
 const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE;
 const LOCATION_CACHE='smv-shared-india-places';
 const CORE=[
