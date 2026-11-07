@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       horoscope_version_name:
-        description: "SMV HOROSCOPE version (v1.0, v1.1, v2.0...)"
+        description: "SMV HOROSCOPE version (v1.0, v1.1, etc.; v2 is accepted as v2.0)"
         required: true
         type: string
         default: "v1.0"
       calendar_version_name:
-        description: "SMV CALENDAR version (independent sequence)"
+        description: "SMV CALENDAR version (independent sequence; v2 is accepted as v2.0)"
         required: true
         type: string
         default: "v1.0"
@@ -35,6 +35,7 @@ on:
       - ".github/workflows/build-smv-horoscope-calendar-production-apks.yml"
       - "test/android-horoscope-calendar-production.test.mjs"
       - "scripts/next-android-release-version.mjs"
+      - "scripts/normalize-android-release-version-name.mjs"
       - "test/android-release-version-resolution.test.mjs"
       - "test/android-cache-release-build-triggers.test.mjs"
       - "public/horoscope/sw.js"
@@ -60,6 +61,7 @@ on:
       - ".github/workflows/build-smv-horoscope-calendar-production-apks.yml"
       - "test/android-horoscope-calendar-production.test.mjs"
       - "scripts/next-android-release-version.mjs"
+      - "scripts/normalize-android-release-version-name.mjs"
       - "test/android-release-version-resolution.test.mjs"
       - "test/android-cache-release-build-triggers.test.mjs"
       - "public/horoscope/sw.js"
@@ -97,6 +99,10 @@ jobs:
 
       - name: Verify independent production packages and test-module isolation
         run: node --test test/android-horoscope-calendar-production.test.mjs test/android-horoscope-calendar-launcher-icons.test.mjs test/android-permanent-release.test.mjs test/android-release-version-resolution.test.mjs test/android-cache-release-build-triggers.test.mjs
+
+      - name: Normalize manually entered HOROSCOPE and CALENDAR Android versions
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: node scripts/normalize-android-release-version-name.mjs horoscope calendar
 
       - name: Java 17
         uses: actions/setup-java@v4
