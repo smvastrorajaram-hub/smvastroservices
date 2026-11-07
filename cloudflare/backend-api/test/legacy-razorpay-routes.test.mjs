@@ -531,6 +531,48 @@ test('Admin Question refund uses a stable idempotency key, checks provider histo
   assert.equal(state.firestore.documents.get('smv_questions/q-1').refundId, 'rfnd_1');
 });
 
+test('Private Chat rejection reaches the shared Razorpay refund service and stores provider refund references',async()=>{
+ const questionId='smvqt-refund-livepath';
+ const state=setup({
+  documents:{
+   ['smv_questions/'+questionId]:{
+    questionId,privateChat:true,questionType:'private_chat',customerId:'customer-1',
+    amount:499,paymentStatus:'paid',status:'private_chat_assigned',
+    razorpayOrderId:'order_test_1',razorpayPaymentId:'pay_private_refund'
+   }
+  },
+  razorpay:{
+   async fetchPayment(id){
+    this.calls.push(['fetchPayment',id]);
+    return {id,order_id:'order_test_1',amount:49900,currency:'INR',status:'captured'};
+   }
+  }
+ });
+ const result=await state.legacyRoutes.refundPrivateChatQuestion({
+  questionId,reason:'Admin rejected the paid Private Chat question.',actorUid:'admin-1'
+ });
+ assert.equal(result.success,true);
+ assert.equal(result.questionId,questionId);
+ assert.equal(result.refundId,'rfnd_1');
+ assert.equal(result.refundStatus,'pending');
+ assert.equal(result.refundRrn,'rrn-fixture');
+ const saved=state.firestore.documents.get('smv_questions/'+questionId);
+ assert.equal(saved.status,'question_rejected');
+ assert.equal(saved.refundStatus,'pending');
+ assert.equal(saved.refundId,'rfnd_1');
+ assert.equal(saved.refundPaymentId,'pay_private_refund');
+ assert.equal(saved.refundRrn,'rrn-fixture');
+ assert.ok(saved.adminQuestionRejectedAt);
+ assert.ok(saved.refundRequestedAt);
+ assert.ok(saved.refundCreatedAt);
+ const providerCall=state.razorpay.calls.find(call=>call[0]==='refundPayment');
+ assert.equal(providerCall[1],'pay_private_refund');
+ assert.equal(providerCall[2].amountPaise,49900);
+ assert.ok(providerCall[2].idempotencyKey.startsWith('smv-question-'));
+ await state.legacyRoutes.refundPrivateChatQuestion({questionId,actorUid:'admin-1'});
+ assert.equal(state.razorpay.calls.filter(call=>call[0]==='refundPayment').length,1);
+});
+
 test('Question refund retry reconciles the prior provider refund before creating another', async () => {
   const existingRefund = { id: 'rfnd_existing', payment_id: 'pay_123', amount: 1000, status: 'pending' };
   const state = setup({
