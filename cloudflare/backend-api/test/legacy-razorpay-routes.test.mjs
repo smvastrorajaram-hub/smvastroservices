@@ -204,7 +204,7 @@ function setup({ documents = {}, privateConsultation = true, allowNewQuestions =
       return { uid: 'customer-1', email: 'customer@example.test', role: 'customer' };
     }
   };
-  registerLegacyRazorpayRoutes({
+  const legacyRoutes = registerLegacyRazorpayRoutes({
     app, identityService, firestore, walletAdapter: d1, razorpay: gateway,
     razorpayKeyId: 'rzp_test_fixture', razorpayKeySecretPresent: true,
     razorpayWebhookSecret: 'test-webhook-secret', razorpayMode: 'test',
@@ -213,7 +213,7 @@ function setup({ documents = {}, privateConsultation = true, allowNewQuestions =
     cryptoImpl: globalThis.crypto,
     now: () => 1760000000000
   });
-  return { app, firestore, wallet: d1, razorpay: gateway };
+  return { app, firestore, wallet: d1, razorpay: gateway, legacyRoutes };
 }
 
 test('registers the unified webhook, Question payment and Question/Private refund routes', () => {
@@ -227,6 +227,41 @@ test('registers the unified webhook, Question payment and Question/Private refun
     'POST /admin/private-consultation/reject-question', 'POST /admin/private-consultation/retry-refund',
     'POST /admin/private-consultation/sync-refund', 'GET /admin/refund-trace/:questionId'
   ]) assert.equal(state.app.handlers.has(path), true, path);
+});
+
+test('paid Private Chat uses the smvpy six-digit customer Payment ID and selected Astrologer allocation', async () => {
+  const questionId = 'smvqt-123456';
+  const state = setup({
+    documents: {
+      'smv_settings/workflow': { allowWithoutAdminApproval: false },
+      ['smv_questions/' + questionId]: {
+        id: questionId, questionId, privateChat: true, questionType: 'private_chat',
+        customerId: 'customer-1', customerName: 'Customer One',
+        astrologerId: 'astro-1', astrologerName: 'Test Astrologer',
+        question: 'A private question', amount: 499, commissionPercent: 20,
+        astrologerCommissionAmount: 99.8, status: 'awaiting_payment',
+        paymentStatus: 'order_created', razorpayOrderId: 'order_test_1'
+      }
+    }
+  });
+  const result = await state.legacyRoutes.recordQuestionPayment({
+    questionId, orderId: 'order_test_1', paymentId: 'pay_private_123',
+    signature: 'verified-signature', source: 'private_chat_checkout_verification'
+  });
+  assert.match(result.customerPaymentId, /^smvpy-\\d{6}$/);
+  assert.equal(result.privateChat, true);
+  assert.equal(result.status, 'private_chat_assigned');
+  const question = state.firestore.documents.get('smv_questions/' + questionId);
+  assert.equal(question.paymentStatus, 'paid');
+  assert.equal(question.status, 'private_chat_assigned');
+  assert.equal(question.allocationStatus, 'assigned_to_astrologer');
+  assert.equal(question.astrologerId, 'astro-1');
+  assert.equal(question.customerPaymentId, result.customerPaymentId);
+  const ledger = state.firestore.documents.get('smv_payments/' + result.customerPaymentId);
+  assert.equal(ledger.questionType, 'private_chat');
+  assert.equal(ledger.privateChat, true);
+  assert.equal(ledger.astrologerId, 'astro-1');
+  assert.equal(ledger.razorpayPaymentId, 'pay_private_123');
 });
 
 test('Question create-order keeps the saved original price, validates ownership and returns legacy checkout fields', async () => {
