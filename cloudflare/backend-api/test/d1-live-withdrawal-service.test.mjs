@@ -82,7 +82,7 @@ function fixture({now=Date.parse('2026-10-31T10:00:00Z'),payoutEncryptionKey=TES
         },
         async all() {
           if(sql.includes('FROM smv_domain_withdrawals')) {
-            const rows=[...withdrawals.values()].filter(row=>!values.length||row.status===values[0]).map(row=>{
+            const rows=[...withdrawals.values()].filter(row=>!sql.includes('WHERE w.status=?')||row.status===values[0]).map(row=>{
               const encrypted=payouts.get(row.withdrawal_id)||{};
               const legacy=legacyPayouts.get(row.withdrawal_id)||{};
               return {...row,
