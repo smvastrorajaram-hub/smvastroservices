@@ -130,15 +130,16 @@ test('Admin controls a single Private Chat price and public settings expose only
   const state=setup();
   const save=response();
   await state.app.handlers.get('POST /admin/private-chat/settings')(
-    request({authorization:'Bearer admin-token',body:{enabled:true,price:650.5}}),save
+    request({authorization:'Bearer admin-token',body:{enabled:true,price:650.5,minimumAnswerWords:80}}),save
   );
   assert.equal(save.statusCode,200);
   assert.equal(save.body.price,650.5);
+  assert.equal(save.body.minimumAnswerWords,80);
   const read=response();
   await state.app.handlers.get('GET /private-chat/settings')(request(),read);
   assert.deepEqual(
-    {enabled:read.body.enabled,price:read.body.price,turnaround:read.body.turnaround},
-    {enabled:true,price:650.5,turnaround:'24–48 hours'}
+    {enabled:read.body.enabled,price:read.body.price,minimumAnswerWords:read.body.minimumAnswerWords,turnaround:read.body.turnaround},
+    {enabled:true,price:650.5,minimumAnswerWords:80,turnaround:'24–48 hours'}
   );
   const forbidden=response();
   await state.app.handlers.get('POST /admin/private-chat/settings')(
