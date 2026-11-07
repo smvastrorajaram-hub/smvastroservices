@@ -77,7 +77,7 @@ function firestoreFixture(initial={}){
 function setup(){
   const app=appHarness();
   const firestore=firestoreFixture({
-    'smv_settings/privateChat':{enabled:true,price:499},
+    'smv_settings/privateChat':{enabled:true,price:499,astrologerCommissionPercent:75,adminCommissionPercent:25},
     'smv_settings/commission':{astroPercent:20},
     'smv_settings/answer':{minimumWords:40},
     'smv_astrologers/astro-1':{status:'approved',name:'Test Astrologer'},
@@ -130,7 +130,7 @@ test('Admin controls a single Private Chat price and public settings expose only
   const state=setup();
   const save=response();
   await state.app.handlers.get('POST /admin/private-chat/settings')(
-    request({authorization:'Bearer admin-token',body:{enabled:true,price:650.5,minimumAnswerWords:80}}),save
+    request({authorization:'Bearer admin-token',body:{enabled:true,price:650.5,minimumAnswerWords:80,astrologerCommissionPercent:75,adminCommissionPercent:25}}),save
   );
   assert.equal(save.statusCode,200);
   assert.equal(save.body.price,650.5);
@@ -141,11 +141,27 @@ test('Admin controls a single Private Chat price and public settings expose only
     {enabled:read.body.enabled,price:read.body.price,minimumAnswerWords:read.body.minimumAnswerWords,turnaround:read.body.turnaround},
     {enabled:true,price:650.5,minimumAnswerWords:80,turnaround:'24–48 hours'}
   );
+  const adminRead=response();
+  await state.app.handlers.get('GET /admin/private-chat/settings')(request({authorization:'Bearer admin-token'}),adminRead);
+  assert.equal(adminRead.body.commissionConfigured,true);
+  assert.equal(adminRead.body.astrologerCommissionPercent,75);
+  assert.equal(adminRead.body.adminCommissionPercent,25);
+  assert.equal(read.body.astrologerCommissionPercent,undefined);
   const forbidden=response();
-  await state.app.handlers.get('POST /admin/private-chat/settings')(
-    request({body:{enabled:true,price:300}}),forbidden
-  );
+  await state.app.handlers.get('POST /admin/private-chat/settings')(request({body:{enabled:true,price:300}}),forbidden);
   assert.equal(forbidden.statusCode,403);
+});
+
+test('Admin cannot enable Private Chat without a dedicated 100 percent commission split',async()=>{
+  const state=setup();
+  await state.firestore.setDocument('smv_settings/privateChat',{enabled:false,price:499,astrologerCommissionPercent:null,adminCommissionPercent:null},{merge:true});
+  const save=response();
+  await state.app.handlers.get('POST /admin/private-chat/settings')(request({authorization:'Bearer admin-token',body:{enabled:true,price:499,minimumAnswerWords:80}}),save);
+  assert.equal(save.statusCode,400);
+  assert.equal(save.body.code,'PRIVATE_CHAT_COMMISSION_REQUIRED');
+  const publicSettings=response();
+  await state.app.handlers.get('GET /private-chat/settings')(request(),publicSettings);
+  assert.equal(publicSettings.body.enabled,false);
 });
 
 test('create-order trusts the Admin price, creates a six-digit smvqt ID and reuses its order on retry',async()=>{
@@ -169,6 +185,10 @@ test('create-order trusts the Admin price, creates a six-digit smvqt ID and reus
   assert.equal(question.questionType,'private_chat');
   assert.equal(question.astrologerId,'astro-1');
   assert.equal(question.answerMinWords,40);
+  assert.equal(question.commissionPercent,75);
+  assert.equal(question.adminCommissionPercent,25);
+  assert.equal(question.astrologerCommissionAmount,374.25);
+  assert.equal(question.adminCommissionAmount,124.75);
   assert.equal(question.paymentStatus,'order_created');
   const retry=response();
   await state.app.handlers.get('POST /private-chat/create-order')(

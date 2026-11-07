@@ -112,8 +112,17 @@ export function registerPrivateChatRoutes({
     const price=Number(data.price||0);
     const configuredWords=data.minimumAnswerWords??legacyAnswerSettings.data?.minimumWords??150;
     const minimumAnswerWords=Math.max(1,Math.min(10000,Math.floor(Number(configuredWords)||150)));
+    const astrologerCommissionPercent=data.astrologerCommissionPercent==null||String(data.astrologerCommissionPercent).trim()===''?null:Number(data.astrologerCommissionPercent);
+    const adminCommissionPercent=data.adminCommissionPercent==null||String(data.adminCommissionPercent).trim()===''?null:Number(data.adminCommissionPercent);
+    const commissionConfigured=Number.isFinite(astrologerCommissionPercent)&&astrologerCommissionPercent>=0&&astrologerCommissionPercent<=100&&
+      Number.isFinite(adminCommissionPercent)&&adminCommissionPercent>=0&&adminCommissionPercent<=100&&
+      Math.abs(astrologerCommissionPercent+adminCommissionPercent-100)<0.000001;
+    const configuredEnabled=data.enabled===true;
     return {
-      enabled:data.enabled===true&&Number.isFinite(price)&&price>=1,
+      enabled:configuredEnabled&&Number.isFinite(price)&&price>=1&&commissionConfigured,
+      configuredEnabled,commissionConfigured,
+      astrologerCommissionPercent:Number.isFinite(astrologerCommissionPercent)?astrologerCommissionPercent:null,
+      adminCommissionPercent:Number.isFinite(adminCommissionPercent)?adminCommissionPercent:null,
       price:Number.isFinite(price)&&price>=0?Math.round(price*100)/100:0,
       minimumAnswerWords,turnaround:'24–48 hours'
     };
@@ -178,8 +187,10 @@ export function registerPrivateChatRoutes({
   }
 
   app.get('/private-chat/settings',async(_req,res)=>{
-    try{return res.set('Cache-Control','no-store').json({success:true,...await readSettings()});}
-    catch(error){return sendError(res,error,'Private Chat price is temporarily unavailable.');}
+    try{
+      const settings=await readSettings();
+      return res.set('Cache-Control','no-store').json({success:true,enabled:settings.enabled,price:settings.price,minimumAnswerWords:settings.minimumAnswerWords,turnaround:settings.turnaround});
+    }catch(error){return sendError(res,error,'Private Chat price is temporarily unavailable.');}
   });
 
   app.get('/admin/private-chat/settings',async(req,res)=>{
@@ -196,19 +207,29 @@ export function registerPrivateChatRoutes({
       const enabled=req.body?.enabled===true;
       const price=Number(req.body?.price);
       const minimumAnswerWords=Number(req.body?.minimumAnswerWords);
-      if(!Number.isFinite(price)||price<0||price>100000||Math.abs(price*100-Math.round(price*100))>0.000001){
-        throw apiError('PRIVATE_CHAT_PRICE_INVALID','Enter a valid Private Chat price between ₹0 and ₹1,00,000.',400);
-      }
+      const parsePercent=value=>value==null||String(value).trim()===''?null:Number(value);
+      const astrologerCommissionPercent=parsePercent(req.body?.astrologerCommissionPercent);
+      const adminCommissionPercent=parsePercent(req.body?.adminCommissionPercent);
+      const commissionProvided=astrologerCommissionPercent!==null||adminCommissionPercent!==null;
+      const commissionConfigured=astrologerCommissionPercent!==null&&adminCommissionPercent!==null&&
+        Number.isFinite(astrologerCommissionPercent)&&Number.isFinite(adminCommissionPercent)&&
+        astrologerCommissionPercent>=0&&astrologerCommissionPercent<=100&&adminCommissionPercent>=0&&adminCommissionPercent<=100&&
+        Math.abs(astrologerCommissionPercent*100-Math.round(astrologerCommissionPercent*100))<0.000001&&
+        Math.abs(adminCommissionPercent*100-Math.round(adminCommissionPercent*100))<0.000001&&
+        Math.abs(astrologerCommissionPercent+adminCommissionPercent-100)<0.000001;
+      if(!Number.isFinite(price)||price<0||price>100000||Math.abs(price*100-Math.round(price*100))>0.000001)throw apiError('PRIVATE_CHAT_PRICE_INVALID','Enter a valid Private Chat price between ₹0 and ₹1,00,000.',400);
       if(enabled&&price<1)throw apiError('PRIVATE_CHAT_PRICE_REQUIRED','Set a Private Chat price of at least ₹1 before enabling the feature.',400);
-      if(!Number.isInteger(minimumAnswerWords)||minimumAnswerWords<1||minimumAnswerWords>10000){
-        throw apiError('PRIVATE_CHAT_WORD_LIMIT_INVALID','Set the Astrologer minimum answer limit between 1 and 10,000 words.',400);
-      }
+      if(!Number.isInteger(minimumAnswerWords)||minimumAnswerWords<1||minimumAnswerWords>10000)throw apiError('PRIVATE_CHAT_WORD_LIMIT_INVALID','Set the Astrologer minimum answer limit between 1 and 10,000 words.',400);
+      if(commissionProvided&&!commissionConfigured)throw apiError('PRIVATE_CHAT_COMMISSION_SPLIT_INVALID','Astrologer and Admin commission percentages must both be valid and total exactly 100%.',400);
+      if(enabled&&!commissionConfigured)throw apiError('PRIVATE_CHAT_COMMISSION_REQUIRED','Set the separate Private Chat Astrologer and Admin commission percentages so they total 100% before enabling Private Chat.',400);
       const saved={
         enabled,price:Math.round(price*100)/100,minimumAnswerWords,
+        astrologerCommissionPercent:commissionConfigured?astrologerCommissionPercent:null,
+        adminCommissionPercent:commissionConfigured?adminCommissionPercent:null,
         updatedAt:FirestoreFieldValue.serverTimestamp(),updatedBy:String(actor.uid||'')
       };
       await firestore.setDocument(SETTINGS_PATH,saved,{merge:true});
-      return res.set('Cache-Control','no-store').json({success:true,enabled,price:saved.price,minimumAnswerWords,turnaround:'24–48 hours'});
+      return res.set('Cache-Control','no-store').json({success:true,enabled:enabled&&price>=1&&commissionConfigured,configuredEnabled:enabled,commissionConfigured,price:saved.price,minimumAnswerWords,astrologerCommissionPercent:saved.astrologerCommissionPercent,adminCommissionPercent:saved.adminCommissionPercent,turnaround:'24–48 hours'});
     }catch(error){return sendError(res,error,'Unable to save Private Chat settings.');}
   });
 
@@ -236,9 +257,9 @@ export function registerPrivateChatRoutes({
         throw apiError('PRIVATE_CHAT_ASTROLOGER_UNAVAILABLE','The selected Astrologer is not currently approved.',409);
       }
       const astrologer=astrologerSnapshot.data||{};
-      const commissionSnapshot=await firestore.getDocument('smv_settings/commission').catch(()=>({exists:false,data:null}));
-      const configuredRate=Number(commissionSnapshot.data?.astroPercent??20);
-      const commissionPercent=Number.isFinite(configuredRate)&&configuredRate>=0&&configuredRate<=100?configuredRate:20;
+      if(!settings.commissionConfigured)throw apiError('PRIVATE_CHAT_COMMISSION_REQUIRED','Private Chat commission percentages are not configured. Ask Admin to set the separate Astrologer and Admin split to 100%.',409);
+      const commissionPercent=Number(settings.astrologerCommissionPercent);
+      const adminCommissionPercent=Number(settings.adminCommissionPercent);
       const answerMinWords=settings.minimumAnswerWords;
       const markerId=(String(user.uid).replace(/[^A-Za-z0-9_-]/g,'_')+'_'+requestId).slice(0,200);
       const markerPath='smv_private_chat_requests/'+markerId;
@@ -260,14 +281,18 @@ export function registerPrivateChatRoutes({
             const collision=await tx.getDocument(path);
             if(collision.exists)throw apiError('PRIVATE_CHAT_QUESTION_ID_COLLISION','Please retry the Private Chat submission.',409);
             const amount=settings.price;
-            const astroAmount=Math.round(amount*commissionPercent)/100;
+            const amountPaise=rupeesToPaise(amount);
+            if(amountPaise===null||amountPaise<100)throw apiError('PRIVATE_CHAT_AMOUNT_INVALID','The saved Private Chat price is invalid.',409);
+            const astrologerCommissionPaise=Math.round(amountPaise*commissionPercent/100);
+            const astroAmount=astrologerCommissionPaise/100;
+            const adminAmount=(amountPaise-astrologerCommissionPaise)/100;
             const record={
               id:candidate,questionId:candidate,questionType:'private_chat',privateChat:true,
               customerId:user.uid,customerEmail:user.email||null,customerName,birthName:customerName,
               question:questionText,amount,originalAmount:amount,
               astrologerId,astrologerName:String(astrologer.name||'Astrologer'),
-              commissionPercent,commissionRate:commissionPercent,
-              astrologerCommissionAmount:astroAmount,adminCommissionAmount:Math.round((amount-astroAmount)*100)/100,
+              commissionPercent,commissionRate:commissionPercent,adminCommissionPercent,
+              astrologerCommissionAmount:astroAmount,adminCommissionAmount:adminAmount,
               answerMinWords,birthDetails:{
                 name:customerName,birthDate:String(birth.birthDate),birthTime,birthPlace,
                 birthGender:gender,timezone:'Asia/Kolkata',utcOffsetMinutes:330

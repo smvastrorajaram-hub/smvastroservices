@@ -45,7 +45,8 @@ test('Paid Private Chat answer is released directly to the Customer without chan
   'smv_questions/smvqt-123456':{
    customerId:'cus-1',astrologerId:'astro-1',privateChat:true,questionType:'private_chat',
    status:'private_chat_assigned',paymentStatus:'paid',answerMinWords:150,
-   amount:499,astrologerCommissionAmount:99.8,commissionPercent:20,
+   amount:499,astrologerCommissionAmount:374.25,commissionPercent:75,
+   adminCommissionAmount:124.75,adminCommissionPercent:25,
    customerPaymentId:'smvpy-123456',question:'Private question'
   },
   'smv_settings/workflow':{allowWithoutAdminApproval:false}
@@ -60,6 +61,10 @@ test('Paid Private Chat answer is released directly to the Customer without chan
  assert.equal(saved.status,'answered');
  assert.equal(saved.astrologerAnswerStatus,'approved');
  assert.equal(saved.commissionStatus,'pending_customer_view');
+ assert.equal(saved.commissionPercent,75);
+ assert.equal(saved.adminCommissionPercent,25);
+ assert.equal(saved.astrologerCommissionAmount,374.25);
+ assert.equal(saved.adminCommissionAmount,124.75);
  assert.equal(firestore.store.get('smv_notifications/cus-1_answer_submitted_smvqt-123456').type,'answer_ready');
 });
 

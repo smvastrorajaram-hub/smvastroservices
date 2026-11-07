@@ -37,7 +37,7 @@ test('Horoscope Service Worker does not force-reload open report/form tabs and p
 test('main SMV ASTRO caches only the offline UI shell while leaving online-only routes and Horoscope scope isolated', () => {
   const sw = read('public/sw.js');
   assert.ok(sw.includes("APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE"));
-  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261107-private-chat-paid-question-v1'"));
+  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261107-private-chat-paid-question-v2'"));
   assert.ok(sw.includes('APP_SHELL_FILES'));
   for (const icon of ['./assets/icon-192.png','./assets/icon-512.png','./assets/favicon-astro.ico']) {
     assert.ok(sw.includes(icon), 'SMV ASTRO must precache its manifest icon/favicon: '+icon);
@@ -58,7 +58,7 @@ test('main SMV ASTRO caches only the offline UI shell while leaving online-only 
 test('Horoscope precaches its UI and required local calculation/WASM assets without caching online services', () => {
   const sw = read('public/horoscope/sw.js');
   assert.ok(sw.includes("SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE"));
-  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261107-private-chat-paid-question-v1'"));
+  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261107-private-chat-paid-question-v2'"));
   assert.ok(sw.includes("OFFLINE_CACHE='smv-horoscope-offline'"));
   assert.ok(sw.includes("LOCATION_CACHE='smv-shared-india-places'"));
   assert.ok(sw.includes('prefetchIndiaPlaceShards'));
@@ -85,7 +85,7 @@ test('Horoscope precaches its UI and required local calculation/WASM assets with
 test('Calendar keeps its offline UI/WASM precache and India shard migration while bypassing online-only API routes', () => {
   const sw = read('public/horoscope/calendar/sw.js');
   assert.ok(sw.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"));
-  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261107-private-chat-paid-question-v1'"));
+  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261107-private-chat-paid-question-v2'"));
   assert.ok(sw.includes('const REQUIRED_CORE = new Set(['));
   assert.ok(sw.includes('await preserveCachedIndiaPlaces(target)'));
   assert.ok(sw.includes("LOCATION_CACHE='smv-shared-india-places'"));
@@ -122,7 +122,7 @@ test('All three app workers share the same release bump while preserving indepen
     assert.ok(match, 'Every app worker must declare SMV_CACHE_RELEASE');
     return match[1];
   });
-  assert.deepEqual(releases, ['20261107-private-chat-paid-question-v1','20261107-private-chat-paid-question-v1','20261107-private-chat-paid-question-v1']);
+  assert.deepEqual(releases, ['20261107-private-chat-paid-question-v2','20261107-private-chat-paid-question-v2','20261107-private-chat-paid-question-v2']);
   assert.ok(workers[0].includes("APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE"));
   assert.ok(workers[1].includes("SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE"));
   assert.ok(workers[2].includes("CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"));
@@ -135,4 +135,23 @@ test('SMV ASTRO checks the root Service Worker update on every app entry', () =>
   const html = read('public/index.html');
   assert.match(html, /navigator\.serviceWorker\.register\('\.\/sw\.js',\{scope:'\.\/',updateViaCache:'none'\}\)\.then\(function\(reg\)/);
   assert.match(html, /reg\.update\(\)\.catch\(function\(\)\{\}\)/);
+});
+
+
+test('Private Chat availability refreshes when the Astrologer List returns and price stays in the Question Form', () => {
+  const source = read('public/public-content.mjs');
+  assert.match(source, /function refreshPrivateChatAvailability\(\)[\s\S]*loadPrivateChatSettings\(true\)/);
+  assert.match(source, /function openAstrologerList\(\)[\s\S]*refreshPrivateChatAvailability\(\)/);
+  assert.match(source, /const privateChatButtonLabel='PRIVATE CHAT'/);
+  assert.doesNotMatch(source, /PRIVATE CHAT ₹['+]/);
+  assert.match(source, /Private Chat Price: \$\{priceLabel\}/);
+  assert.match(source, /data-live-action="chat"[\s\S]*data-reviews/);
+  const actionStart = source.indexOf('smv-astro-booking-actions');
+  const reviewsStart = source.indexOf('smv-inline-reviews hidden', actionStart);
+  assert.ok(actionStart >= 0 && reviewsStart > actionStart);
+  assert.doesNotMatch(source.slice(actionStart, reviewsStart), /data-reviews/);
+  const admin = read('public/index.html');
+  assert.match(admin, /id="privateChatAstrologerCommissionPercent"/);
+  assert.match(admin, /id="privateChatAdminCommissionPercent"/);
+  assert.match(admin, /commission percentages[\s\S]*100%/);
 });
