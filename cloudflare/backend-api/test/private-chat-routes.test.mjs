@@ -81,7 +81,9 @@ function setup(){
     'smv_settings/commission':{astroPercent:20},
     'smv_settings/answer':{minimumWords:40},
     'smv_astrologers/astro-1':{status:'approved',name:'Test Astrologer'},
-    'smv_users/astro-1':{role:'astrologer'}
+    'smv_users/astro-1':{role:'astrologer'},
+    'smv_astrologers/astro-2':{status:'approved',name:'Second Astrologer'},
+    'smv_users/astro-2':{role:'astrologer'}
   });
   const orders=new Map();
   const calls=[];
@@ -107,17 +109,17 @@ function setup(){
   const paymentDetails=async(...args)=>{calls.push(['paymentDetails',...args]);return {status:'captured'};};
   const recordQuestionPayment=async({questionId,orderId,paymentId})=>{
     calls.push(['recordQuestionPayment',{questionId,orderId,paymentId}]);
-    const settings=firestore.documents.get('smv_settings/privateChat')||{};
-    const open=settings.assignmentMode==='open_to_all';
-    const status=open?'private_chat_available_to_astrologers':'private_chat_pending_admin';
-    const path='smv_questions/'+questionId;
+    const path='smv_questions/'+questionId,saved=firestore.documents.get(path)||{};
+    const status=saved.requestedAstrologerId?'private_chat_assigned':'private_chat_pending_admin';
+    const due=new Date(Date.UTC(2026,10,8,6,0,0)).toISOString();
     await firestore.setDocument(path,{
-      paymentStatus:'paid',status,
-      allocationStatus:open?'available_to_astrologers':'awaiting_admin',
-      astrologerId:'',astrologerName:'',
+      paymentStatus:'paid',status,allocationStatus:saved.requestedAstrologerId?'assigned_to_astrologer':'awaiting_admin',
+      assignmentMode:'direct_selected',astrologerId:saved.requestedAstrologerId||'',astrologerName:saved.requestedAstrologerName||'',
+      assignedAt:{seconds:Date.UTC(2026,10,7,6,0,0)/1000},answerDueAt:saved.requestedAstrologerId?due:null,
+      paidAt:{seconds:Date.UTC(2026,10,7,6,0,0)/1000},
       customerPaymentId:'smvpy-123456',razorpayPaymentId:paymentId
     },{merge:true});
-    return {customerPaymentId:'smvpy-123456',amount:499,status};
+    return {customerPaymentId:'smvpy-123456',amount:499,status,astrologerId:saved.requestedAstrologerId||null};
   };
   const refundCalls=[];
   const refundPrivateChatQuestion=async input=>{
@@ -195,7 +197,7 @@ test('create-order trusts the Admin price, creates a six-digit smvqt ID and reus
   assert.equal(question.questionType,'private_chat');
   assert.equal(question.astrologerId,'');
   assert.equal(question.requestedAstrologerId,'astro-1');
-  assert.equal(question.assignmentMode,'admin_assigned');
+  assert.equal(question.assignmentMode,'direct_selected');
   assert.equal(question.answerMinWords,40);
   assert.equal(question.commissionPercent,75);
   assert.equal(question.adminCommissionPercent,25);
@@ -238,9 +240,10 @@ test('payment verification writes the private payment ID and assigns the paid qu
   assert.equal(verified.body.customerPaymentId,'smvpy-123456');
   const question=state.firestore.documents.get('smv_questions/'+questionId);
   assert.equal(question.paymentStatus,'paid');
-  assert.equal(question.status,'private_chat_pending_admin');
-  assert.equal(question.allocationStatus,'awaiting_admin');
-  assert.equal(question.astrologerId,'');
+  assert.equal(question.status,'private_chat_assigned');
+  assert.equal(question.allocationStatus,'assigned_to_astrologer');
+  assert.equal(question.astrologerId,'astro-1');
+  assert.equal(question.answerDueAt,'2026-11-08T06:00:00.000Z');
   assert.equal(question.customerPaymentId,'smvpy-123456');
   assert.equal(question.razorpayPaymentId,'pay_test_123');
   assert.equal(state.calls.filter(call=>call[0]==='paymentDetails').length,1);
@@ -382,4 +385,76 @@ test('Private Chat rejection uses the shared Admin-controlled Razorpay refund se
   assert.deepEqual(state.refundCalls[0],{
     questionId:'smvqt-555555',reason:'Question is not eligible.',actorUid:'admin-1',retry:false
   });
+});
+
+
+test('Astrologer API excludes all rejected and refund-started Private Chat questions',async()=>{
+ const state=setup(),base={privateChat:true,questionType:'private_chat',paymentStatus:'paid',astrologerId:'astro-1',status:'private_chat_assigned',customerId:'customer-1'};
+ const rows=[
+  ['active',{...base,questionId:'active-1',customerPaymentId:'smvpy-100001'}],
+  ['rejected',{...base,questionId:'rejected-1',status:'question_rejected',refundStatus:'pending',adminQuestionRejectedAt:{seconds:1}}],
+  ['refund-processing',{...base,questionId:'refund-1',status:'question_rejected',refundStatus:'processing'}],
+  ['refund-id',{...base,questionId:'refund-id-1',refundId:'rfnd_1',refundStatus:'pending'}],
+  ['refund-failed',{...base,questionId:'refund-failed-1',status:'question_rejected',refundStatus:'failed'}]
+ ];
+ for(const [key,value] of rows)state.firestore.documents.set('smv_questions/'+key,value);
+ const result=response();
+ await state.app.handlers.get('GET /astrologer/private-chat/questions')(request({authorization:'Bearer astrologer-token'}),result);
+ assert.equal(result.statusCode,200);
+ assert.deepEqual(result.body.questions.map(q=>q.questionId),['active-1']);
+});
+
+test('Admin cannot reallocate before the 24-hour deadline, to the same Astrologer, or after answer submission',async()=>{
+ const state=setup(),path='smv_questions/smvqt-700001',now=Date.UTC(2026,10,7,6,0,0);
+ state.firestore.documents.set(path,{
+  questionId:'smvqt-700001',privateChat:true,questionType:'private_chat',paymentStatus:'paid',
+  status:'private_chat_assigned',allocationStatus:'assigned_to_astrologer',
+  astrologerId:'astro-1',astrologerName:'Test Astrologer',customerId:'customer-1',
+  assignedAt:{seconds:now/1000},answerDueAt:new Date(now+24*60*60*1000).toISOString()
+ });
+ const early=response();
+ await state.app.handlers.get('POST /admin/private-chat/reallocate-question')(
+  request({authorization:'Bearer admin-token',body:{questionId:'smvqt-700001',astrologerId:'astro-2'}}),early
+ );
+ assert.equal(early.statusCode,409);
+ assert.equal(early.body.code,'PRIVATE_CHAT_24_HOUR_WINDOW_ACTIVE');
+ state.firestore.documents.get(path).answerDueAt=new Date(now-1000).toISOString();
+ const same=response();
+ await state.app.handlers.get('POST /admin/private-chat/reallocate-question')(
+  request({authorization:'Bearer admin-token',body:{questionId:'smvqt-700001',astrologerId:'astro-1'}}),same
+ );
+ assert.equal(same.statusCode,409);
+ state.firestore.documents.get(path).status='processing';
+ state.firestore.documents.get(path).answer='Submitted answer';
+ const answered=response();
+ await state.app.handlers.get('POST /admin/private-chat/reallocate-question')(
+  request({authorization:'Bearer admin-token',body:{questionId:'smvqt-700001',astrologerId:'astro-2'}}),answered
+ );
+ assert.equal(answered.statusCode,409);
+ assert.equal(answered.body.code,'PRIVATE_CHAT_ALREADY_ANSWERED');
+});
+
+test('Admin can reallocate an unanswered Private Chat after 24 hours and new Astrologer receives a fresh deadline',async()=>{
+ const state=setup(),now=Date.UTC(2026,10,7,6,0,0),path='smv_questions/smvqt-700002';
+ state.firestore.documents.set(path,{
+  questionId:'smvqt-700002',privateChat:true,questionType:'private_chat',paymentStatus:'paid',
+  status:'private_chat_assigned',allocationStatus:'assigned_to_astrologer',
+  astrologerId:'astro-1',astrologerName:'Test Astrologer',customerId:'customer-1',
+  assignedAt:{seconds:(now-25*60*60*1000)/1000},
+  answerDueAt:new Date(now-60*60*1000).toISOString(),amount:499,commissionStatus:'allocated_pending_answer'
+ });
+ const result=response();
+ await state.app.handlers.get('POST /admin/private-chat/reallocate-question')(
+  request({authorization:'Bearer admin-token',body:{questionId:'smvqt-700002',astrologerId:'astro-2'}}),result
+ );
+ assert.equal(result.statusCode,200);
+ assert.equal(result.body.astrologerId,'astro-2');
+ assert.equal(result.body.reallocatedFromAstrologerId,'astro-1');
+ assert.equal(result.body.answerDueAt,new Date(now+24*60*60*1000).toISOString());
+ const saved=state.firestore.documents.get(path);
+ assert.equal(saved.astrologerId,'astro-2');
+ assert.equal(saved.astrologerName,'Second Astrologer');
+ assert.equal(saved.reallocationCount,1);
+ assert.equal(saved.assignmentHistory[0].astrologerId,'astro-1');
+ assert.equal(saved.status,'private_chat_assigned');
 });

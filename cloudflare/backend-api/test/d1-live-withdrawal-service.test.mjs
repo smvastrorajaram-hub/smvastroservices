@@ -198,6 +198,9 @@ test('Admin rejection updates the D1 withdrawal row and preserves encrypted payo
   await f.service.createRequest({astrologerUid:'astro-1',amountPaise:30000});
   const rejected=await f.service.rejectWithdrawal({withdrawalId:'uuid-1',adminUid:'admin-1'});
   assert.equal(rejected.withdrawal.status,'rejected');
+  const list=await f.service.listAdminWithdrawals();
+  assert.ok(list[0].rejectedAt);
+  assert.ok(list[0].updatedAt);
   const retry=await f.service.rejectWithdrawal({withdrawalId:'uuid-1',adminUid:'admin-1'});
   assert.equal(retry.alreadyProcessed,true);
   const encrypted=f.payouts.get('uuid-1');
@@ -222,6 +225,14 @@ test('Admin can process, pay and safely retry a withdrawal; payout snapshot rema
   const paid=await f.service.markPaid({withdrawalId:'uuid-1',adminUid:'admin-1'});
   assert.match(paid.paymentId,/^smvpt-[0-9]{6}$/);
   assert.equal(paid.withdrawal.status,'paid');
+  const list=await f.service.listAdminWithdrawals();
+  assert.ok(list[0].requestedAt);
+  assert.ok(list[0].processingAt);
+  assert.ok(list[0].paidAt);
+  assert.ok(list[0].updatedAt);
+  const dashboard=await f.service.getEarningsDashboard('astro-1');
+  assert.ok(dashboard.withdrawals[0].processingAt);
+  assert.ok(dashboard.withdrawals[0].paidAt);
   const retry=await f.service.markPaid({withdrawalId:'uuid-1',adminUid:'admin-1'});
   assert.equal(retry.alreadyProcessed,true);
   assert.equal(retry.paymentId,paid.paymentId);

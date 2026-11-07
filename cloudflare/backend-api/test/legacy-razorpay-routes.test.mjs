@@ -229,7 +229,7 @@ test('registers the unified webhook, Question payment and Question/Private refun
   ]) assert.equal(state.app.handlers.has(path), true, path);
 });
 
-test('paid Private Chat gets a smvpy six-digit ID and waits for Admin allocation by default', async () => {
+test('paid Private Chat gets a smvpy ID and is assigned to the Astrologer selected by the Customer', async () => {
   const questionId = 'smvqt-123456';
   const state = setup({
     documents: {
@@ -251,13 +251,17 @@ test('paid Private Chat gets a smvpy six-digit ID and waits for Admin allocation
   });
   assert.match(result.customerPaymentId, /^smvpy-\d{6}$/);
   assert.equal(result.privateChat, true);
-  assert.equal(result.status, 'private_chat_pending_admin');
+  assert.equal(result.status, 'private_chat_assigned');
+  assert.equal(result.astrologerId, 'astro-1');
   const question = state.firestore.documents.get('smv_questions/' + questionId);
   assert.equal(question.paymentStatus, 'paid');
-  assert.equal(question.status, 'private_chat_pending_admin');
-  assert.equal(question.allocationStatus, 'awaiting_admin');
-  assert.equal(question.astrologerId, '');
+  assert.equal(question.status, 'private_chat_assigned');
+  assert.equal(question.allocationStatus, 'assigned_to_astrologer');
+  assert.equal(question.assignmentMode, 'direct_selected');
+  assert.equal(question.astrologerId, 'astro-1');
   assert.equal(question.requestedAstrologerId, 'astro-1');
+  assert.ok(question.assignedAt);
+  assert.equal(question.answerDueAt,new Date(1760000000000+24*60*60*1000).toISOString());
   assert.equal(question.customerPaymentId, result.customerPaymentId);
   const ledger = state.firestore.documents.get('smv_payments/' + result.customerPaymentId);
   assert.equal(ledger.questionType, 'private_chat');
@@ -654,7 +658,7 @@ test('unified webhook does not guess when the same Razorpay order maps to multip
 });
 
 
-test('paid Private Chat opens to all approved Astrologers only when Admin sets open_to_all', async () => {
+test('legacy open_to_all setting no longer overrides the Customer-selected Private Chat Astrologer', async () => {
   const questionId = 'smvqt-234567';
   const state = setup({documents:{
     'smv_settings/workflow': {allowWithoutAdminApproval:false},
@@ -670,11 +674,14 @@ test('paid Private Chat opens to all approved Astrologers only when Admin sets o
     questionId,orderId:'order_test_1',paymentId:'pay_private_open',
     signature:'verified-signature',source:'private_chat_checkout_verification'
   });
-  assert.equal(result.status,'private_chat_available_to_astrologers');
+  assert.equal(result.status,'private_chat_assigned');
+  assert.equal(result.astrologerId,'astro-1');
   const question=state.firestore.documents.get('smv_questions/'+questionId);
-  assert.equal(question.status,'private_chat_available_to_astrologers');
-  assert.equal(question.allocationStatus,'available_to_astrologers');
-  assert.equal(question.astrologerId,'');
+  assert.equal(question.status,'private_chat_assigned');
+  assert.equal(question.allocationStatus,'assigned_to_astrologer');
+  assert.equal(question.assignmentMode,'direct_selected');
+  assert.equal(question.astrologerId,'astro-1');
+  assert.ok(question.answerDueAt);
 });
 
 
@@ -703,4 +710,35 @@ test('new Public Question payments use the same random smvpy six-digit reference
   const ledger = state.firestore.documents.get('smv_payments/' + result.customerPaymentId);
   assert.equal(ledger.questionType, 'public_question');
   assert.equal(ledger.privateChat, false);
+});
+
+
+test('Private Chat Admin rejection creates a real Razorpay refund and stores its refund ID and bank RRN',async()=>{
+ const questionId='smvqt-654321';
+ const state=setup({documents:{
+  ['smv_questions/'+questionId]:{
+   questionId,privateChat:true,questionType:'private_chat',customerId:'customer-1',
+   customerName:'Customer One',astrologerId:'astro-1',astrologerName:'Test Astrologer',
+   question:'Private question',amount:10,paymentStatus:'paid',status:'private_chat_assigned',
+   allocationStatus:'assigned_to_astrologer',customerPaymentId:'smvpy-654321',
+   razorpayOrderId:'order_test_1',razorpayPaymentId:'pay_ABC123'
+  }
+ }});
+ const result=await state.legacyRoutes.refundPrivateChatQuestion({
+  questionId,reason:'Admin rejected the paid question.',actorUid:'admin-1'
+ });
+ assert.equal(result.success,true);
+ assert.equal(result.questionId,questionId);
+ assert.equal(result.refundId,'rfnd_1');
+ assert.equal(result.refundStatus,'pending');
+ assert.equal(result.refundRrn,'rrn-fixture');
+ assert.ok(state.razorpay.calls.some(call=>call[0]==='refundPayment'&&call[1]==='pay_ABC123'));
+ const saved=state.firestore.documents.get('smv_questions/'+questionId);
+ assert.equal(saved.status,'question_rejected');
+ assert.equal(saved.allocationStatus,'rejected_by_admin');
+ assert.equal(saved.refundId,'rfnd_1');
+ assert.equal(saved.refundRrn,'rrn-fixture');
+ assert.equal(saved.refundStatus,'pending');
+ assert.ok(saved.refundRequestedAt);
+ assert.ok(saved.refundCreatedAt);
 });

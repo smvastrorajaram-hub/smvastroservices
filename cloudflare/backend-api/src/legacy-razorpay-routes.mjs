@@ -202,7 +202,7 @@ export function registerLegacyRazorpayRoutes({
     const privateChatSettings = privateChat
       ? await firestore.getDocument('smv_settings/privateChat').catch(() => ({ exists:false,data:null }))
       : { exists:false,data:null };
-    const assignmentMode = privateChatSettings.data?.assignmentMode === 'open_to_all' ? 'open_to_all' : 'admin_assigned';
+    const assignmentMode = privateChat ? 'direct_selected' : '';
     const recordedAt = new Date(Number(now())).toISOString();
 
     // Every new Customer Question payment (Public Question or Private Chat)
@@ -242,12 +242,15 @@ export function registerLegacyRazorpayRoutes({
           }
           const requestedAstrologerId = String(data.requestedAstrologerId || data.astrologerId || '');
           const requestedAstrologerName = String(data.requestedAstrologerName || data.astrologerName || '');
-          const privateChatOpenToAll = privateChat && assignmentMode === 'open_to_all';
+          const selectedAstrologerId = privateChat ? requestedAstrologerId : '';
+          const selectedAstrologerName = privateChat ? requestedAstrologerName : '';
+          const privateChatDirectAssigned = privateChat && Boolean(selectedAstrologerId);
+          const answerDueAt = new Date(Number(now()) + 24 * 60 * 60 * 1000).toISOString();
           const nextStatus = privateChat
-            ? privateChatOpenToAll ? 'private_chat_available_to_astrologers' : 'private_chat_pending_admin'
+            ? privateChatDirectAssigned ? 'private_chat_assigned' : 'private_chat_pending_admin'
             : allowWithoutAdminApproval ? 'available_to_astrologers' : 'pending_admin_approval';
           const nextAllocation = privateChat
-            ? privateChatOpenToAll ? 'available_to_astrologers' : 'awaiting_admin'
+            ? privateChatDirectAssigned ? 'assigned_to_astrologer' : 'awaiting_admin'
             : allowWithoutAdminApproval ? 'available_to_astrologers' : 'awaiting_admin';
           tx.create(paymentPath, {
             paymentId: paymentDocId, type: 'customer_payment', customerId: data.customerId || null,
@@ -264,14 +267,13 @@ export function registerLegacyRazorpayRoutes({
             ...(privateChat ? {
               privateChat: true,
               questionType: 'private_chat',
-              assignmentMode,
-              requestedAstrologerId: assignmentMode === 'admin_assigned' ? requestedAstrologerId : '',
-              requestedAstrologerName: assignmentMode === 'admin_assigned' ? requestedAstrologerName : '',
-              astrologerId: '',
-              astrologerName: '',
-              privateChatSubmittedAt: firestoreTimestamp(),
-              adminApprovalBypassed: false,
-              openedToAstrologersAt: assignmentMode === 'open_to_all' ? firestoreTimestamp() : FirestoreFieldValue.delete()
+              assignmentMode:'direct_selected',requestedAstrologerId,requestedAstrologerName,
+              astrologerId:selectedAstrologerId,astrologerName:selectedAstrologerName,
+              privateChatSubmittedAt:firestoreTimestamp(),
+              assignedAt:privateChatDirectAssigned?firestoreTimestamp():FirestoreFieldValue.delete(),
+              answerDueAt:privateChatDirectAssigned?answerDueAt:FirestoreFieldValue.delete(),
+              assignmentSource:privateChatDirectAssigned?'customer_selected':'awaiting_admin_fallback',
+              adminApprovalBypassed:false,openedToAstrologersAt:FirestoreFieldValue.delete()
             } : {
               adminApprovalBypassed: allowWithoutAdminApproval,
               openedToAstrologersAt: allowWithoutAdminApproval ? firestoreTimestamp() : FirestoreFieldValue.delete()
@@ -281,14 +283,16 @@ export function registerLegacyRazorpayRoutes({
             paymentConfirmedBy: source, customerPaymentId: paymentDocId, paymentRecordedAt: recordedAt,
             astrologerPaymentId: FirestoreFieldValue.delete(),
             commissionStatus: privateChat
-              ? privateChatOpenToAll ? 'open_for_claim' : 'awaiting_admin_allocation'
+              ? privateChatDirectAssigned ? 'allocated_pending_answer' : 'awaiting_admin_allocation'
               : allowWithoutAdminApproval ? 'open_for_claim' : 'awaiting_admin_allocation'
           });
           return {
-            already: false, privateChat, customerId: data.customerId,
-            astrologerId: privateChat ? null : (data.astrologerId || null), customerPaymentId: paymentDocId,
-            paymentRecordedAt: recordedAt, amount, question: String(data.question || ''),
-            customerEmail: String(data.customerEmail || ''), status: nextStatus
+            already:false,privateChat,customerId:data.customerId,
+            astrologerId:privateChat?(privateChatDirectAssigned?selectedAstrologerId:null):(data.astrologerId||null),
+            astrologerName:privateChat?selectedAstrologerName:'',
+            customerPaymentId:paymentDocId,paymentRecordedAt:recordedAt,amount,
+            question:String(data.question||''),customerEmail:String(data.customerEmail||''),status:nextStatus,
+            answerDueAt:privateChatDirectAssigned?answerDueAt:null
           };
         });
 
@@ -299,13 +303,13 @@ export function registerLegacyRazorpayRoutes({
               userId: result.customerId,
               type: privateChat ? 'private_chat_payment' : 'payment',
               title: privateChat ? 'Private Chat Question Submitted' : 'Payment successful',
-              message: privateChat
-                ? assignmentMode === 'open_to_all'
-                  ? 'Your paid Private Chat question is open to all approved Astrologers. The first Astrologer to claim it will answer within 24–48 hours.'
-                  : 'Your paid Private Chat question is waiting for Admin to allocate it to an approved Astrologer.'
-                : allowWithoutAdminApproval
-                  ? 'Your payment was verified. Your question is now open to approved astrologers.'
-                  : 'Your payment was verified. Your question is now waiting for Admin approval.',
+              message:privateChat
+                ?result.astrologerId
+                  ?'Your payment is verified and your question is assigned to '+String(result.astrologerName||'your selected Astrologer')+'. The answer is due within 24 hours.'
+                  :'Your payment is verified. The question is waiting for Admin to allocate an approved Astrologer.'
+                :allowWithoutAdminApproval
+                  ?'Your payment was verified. Your question is now open to approved astrologers.'
+                  :'Your payment was verified. Your question is now waiting for Admin approval.',
               paymentId: result.customerPaymentId, razorpayPaymentId: paymentId,
               questionId, createdAt: firestoreTimestamp(), read: false
             }, { merge: true }).catch(() => {});
@@ -315,10 +319,10 @@ export function registerLegacyRazorpayRoutes({
               userId: result.astrologerId,
               type: 'private_chat_assigned',
               title: 'New Paid Private Chat Question',
-              message: 'A paid Private Chat question has been assigned to you. Please submit your answer within 24–48 hours.',
-              questionId, paymentId: result.customerPaymentId,
-              customerName: String(initial.data?.customerName || initial.data?.birthName || 'Customer'),
-              createdAt: firestoreTimestamp(), read: false
+              message:'A paid Private Chat question has been assigned to you by the Customer. Please submit your answer within 24 hours.',
+              questionId,paymentId:result.customerPaymentId,
+              customerName:String(initial.data?.customerName||initial.data?.birthName||'Customer'),
+              answerDueAt:result.answerDueAt,createdAt:firestoreTimestamp(),read:false
             }, { merge: true }).catch(() => {});
           }
         }
