@@ -5,7 +5,7 @@
  */
 (function(){
   'use strict';
-  const MODULE_URL='./public-content.mjs?v=20261107-private-chat-admin-review-refund-v3';
+  const MODULE_URL='./public-content.mjs?v=20261107-private-chat-24h-reallocation-v4';
   let pending=null;
   function isConsultVisible(){
     const target=document.getElementById('consult');
