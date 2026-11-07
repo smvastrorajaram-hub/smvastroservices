@@ -195,67 +195,133 @@ export function registerLegacyRazorpayRoutes({
   async function recordQuestionPayment({ questionId, orderId, paymentId, signature = '', source }) {
     const workflowSnap = await readWorkflow(firestore, 'workflow', { allowWithoutAdminApproval: false });
     const allowWithoutAdminApproval = workflowSnap.allowWithoutAdminApproval === true;
-    const paymentDocId = await paymentRecordId('question', questionId, paymentId);
-    const paymentPath = PAYMENT_COLLECTION + '/' + paymentDocId;
     const questionPath = QUESTION_COLLECTION + '/' + questionId;
+    const initial = await firestore.getDocument(questionPath);
+    if (!initial.exists) throw httpError('QUESTION_NOT_FOUND', 'Question not found.', 404);
+    const privateChat = initial.data?.privateChat === true && String(initial.data?.questionType || '') === 'private_chat';
+    const legacyPaymentDocId = privateChat ? '' : await paymentRecordId('question', questionId, paymentId);
     const recordedAt = new Date(Number(now())).toISOString();
 
-    const result = await firestore.runTransaction(async tx => {
-      const question = await tx.getDocument(questionPath);
-      if (!question.exists) throw httpError('QUESTION_NOT_FOUND', 'Question not found.', 404);
-      const data = question.data || {};
-      if (String(data.razorpayOrderId || '') !== orderId) throw httpError('RAZORPAY_ORDER_MISMATCH', 'Payment order does not match this question.', 409);
-      if (data.paymentStatus === 'paid') {
-        if (String(data.razorpayPaymentId || '') !== paymentId) {
-          throw httpError('QUESTION_ALREADY_PAID', 'This question is already paid with a different Razorpay payment.', 409);
-        }
-        return {
-          already: true, customerId: data.customerId, customerPaymentId: data.customerPaymentId || paymentDocId,
-          paymentRecordedAt: data.paymentRecordedAt || null, amount: Number(data.amount || 0),
-          question: String(data.question || ''), customerEmail: String(data.customerEmail || ''),
-          status: String(data.status || 'paid')
-        };
-      }
-      const amount = Number(data.amount || 0);
-      if (!Number.isFinite(amount) || amount <= 0) throw httpError('QUESTION_AMOUNT_INVALID', 'Saved question amount is invalid.', 409);
-      const nextStatus = allowWithoutAdminApproval ? 'available_to_astrologers' : 'pending_admin_approval';
-      tx.create(paymentPath, {
-        paymentId: paymentDocId, type: 'customer_payment', customerId: data.customerId || null,
-        astrologerId: null, questionId, bookingId: data.bookingId || null,
-        razorpayOrderId: orderId, razorpayPaymentId: paymentId, amount,
-        status: 'paid', paymentStatus: 'paid', source,
-        createdAt: firestoreTimestamp(), paymentRecordedAt: recordedAt, updatedAt: firestoreTimestamp()
-      });
-      tx.update(questionPath, {
-        status: nextStatus, updatedAt: firestoreTimestamp(), paymentStatus: 'paid',
-        allocationStatus: allowWithoutAdminApproval ? 'available_to_astrologers' : 'awaiting_admin',
-        adminApprovalBypassed: allowWithoutAdminApproval,
-        openedToAstrologersAt: allowWithoutAdminApproval ? firestoreTimestamp() : FirestoreFieldValue.delete(),
-        razorpayPaymentId: paymentId, razorpaySignature: signature || '',
-        paidAt: data.paidAt || firestoreTimestamp(), paymentUpdatedAt: firestoreTimestamp(),
-        paymentConfirmedBy: source, customerPaymentId: paymentDocId, paymentRecordedAt: recordedAt,
-        astrologerPaymentId: FirestoreFieldValue.delete(),
-        commissionStatus: allowWithoutAdminApproval ? 'open_for_claim' : 'awaiting_admin_allocation'
-      });
-      return {
-        already: false, customerId: data.customerId, customerPaymentId: paymentDocId,
-        paymentRecordedAt: recordedAt, amount, question: String(data.question || ''),
-        customerEmail: String(data.customerEmail || ''), status: nextStatus
-      };
-    });
+    for (let attempt = 0; attempt < (privateChat ? 12 : 1); attempt++) {
+      const paymentDocId = privateChat
+        ? randomPrivateChatPaymentId()
+        : legacyPaymentDocId;
+      const paymentPath = PAYMENT_COLLECTION + '/' + paymentDocId;
+      try {
+        const result = await firestore.runTransaction(async tx => {
+          const question = await tx.getDocument(questionPath);
+          if (!question.exists) throw httpError('QUESTION_NOT_FOUND', 'Question not found.', 404);
+          const data = question.data || {};
+          const isPrivateChat = data.privateChat === true && String(data.questionType || '') === 'private_chat';
+          if (isPrivateChat !== privateChat) {
+            throw httpError('QUESTION_TYPE_CHANGED', 'The question type changed while payment was being verified.', 409);
+          }
+          if (String(data.razorpayOrderId || '') !== orderId) throw httpError('RAZORPAY_ORDER_MISMATCH', 'Payment order does not match this question.', 409);
+          if (data.paymentStatus === 'paid') {
+            if (String(data.razorpayPaymentId || '') !== paymentId) {
+              throw httpError('QUESTION_ALREADY_PAID', 'This question is already paid with a different Razorpay payment.', 409);
+            }
+            return {
+              already: true, privateChat, customerId: data.customerId,
+              astrologerId: data.astrologerId || null,
+              customerPaymentId: data.customerPaymentId || paymentDocId,
+              paymentRecordedAt: data.paymentRecordedAt || null, amount: Number(data.amount || 0),
+              question: String(data.question || ''), customerEmail: String(data.customerEmail || ''),
+              status: String(data.status || 'paid')
+            };
+          }
+          const amount = Number(data.amount || 0);
+          if (!Number.isFinite(amount) || amount <= 0) throw httpError('QUESTION_AMOUNT_INVALID', 'Saved question amount is invalid.', 409);
+          if (privateChat) {
+            const existingPayment = await tx.getDocument(paymentPath);
+            if (existingPayment.exists) throw httpError('PRIVATE_CHAT_PAYMENT_ID_COLLISION', 'A payment reference already exists. Generate a fresh reference and retry.', 409);
+          }
+          const nextStatus = privateChat
+            ? 'private_chat_assigned'
+            : allowWithoutAdminApproval ? 'available_to_astrologers' : 'pending_admin_approval';
+          const nextAllocation = privateChat
+            ? 'assigned_to_astrologer'
+            : allowWithoutAdminApproval ? 'available_to_astrologers' : 'awaiting_admin';
+          tx.create(paymentPath, {
+            paymentId: paymentDocId, type: 'customer_payment', customerId: data.customerId || null,
+            astrologerId: privateChat ? (data.astrologerId || null) : null,
+            questionId, bookingId: data.bookingId || null,
+            razorpayOrderId: orderId, razorpayPaymentId: paymentId, amount,
+            questionType: privateChat ? 'private_chat' : 'public_question',
+            privateChat, status: 'paid', paymentStatus: 'paid', source,
+            createdAt: firestoreTimestamp(), paymentRecordedAt: recordedAt, updatedAt: firestoreTimestamp()
+          });
+          tx.update(questionPath, {
+            status: nextStatus, updatedAt: firestoreTimestamp(), paymentStatus: 'paid',
+            allocationStatus: nextAllocation,
+            ...(privateChat ? {
+              privateChat: true,
+              questionType: 'private_chat',
+              privateChatSubmittedAt: firestoreTimestamp()
+            } : {
+              adminApprovalBypassed: allowWithoutAdminApproval,
+              openedToAstrologersAt: allowWithoutAdminApproval ? firestoreTimestamp() : FirestoreFieldValue.delete()
+            }),
+            razorpayPaymentId: paymentId, razorpaySignature: signature || '',
+            paidAt: data.paidAt || firestoreTimestamp(), paymentUpdatedAt: firestoreTimestamp(),
+            paymentConfirmedBy: source, customerPaymentId: paymentDocId, paymentRecordedAt: recordedAt,
+            astrologerPaymentId: FirestoreFieldValue.delete(),
+            commissionStatus: privateChat
+              ? 'allocated_pending_answer'
+              : allowWithoutAdminApproval ? 'open_for_claim' : 'awaiting_admin_allocation'
+          });
+          return {
+            already: false, privateChat, customerId: data.customerId,
+            astrologerId: data.astrologerId || null, customerPaymentId: paymentDocId,
+            paymentRecordedAt: recordedAt, amount, question: String(data.question || ''),
+            customerEmail: String(data.customerEmail || ''), status: nextStatus
+          };
+        });
 
-    if (!result.already && result.customerId) {
-      const notificationId = 'payment_' + paymentDocId;
-      await firestore.setDocument(NOTIFICATION_COLLECTION + '/' + notificationId, {
-        userId: result.customerId, type: 'payment', title: 'Payment successful',
-        message: allowWithoutAdminApproval
-          ? 'Your payment was verified. Your question is now open to approved astrologers.'
-          : 'Your payment was verified. Your question is now waiting for Admin approval.',
-        paymentId: result.customerPaymentId, razorpayPaymentId: paymentId,
-        questionId, createdAt: firestoreTimestamp(), read: false
-      }, { merge: true }).catch(() => {});
+        if (!result.already) {
+          if (result.customerId) {
+            const notificationId = 'payment_' + paymentDocId;
+            await firestore.setDocument(NOTIFICATION_COLLECTION + '/' + notificationId, {
+              userId: result.customerId,
+              type: privateChat ? 'private_chat_payment' : 'payment',
+              title: privateChat ? 'Private Chat Question Submitted' : 'Payment successful',
+              message: privateChat
+                ? 'Your Private Chat question has been submitted. Your selected Astrologer will answer within 24–48 hours.'
+                : allowWithoutAdminApproval
+                  ? 'Your payment was verified. Your question is now open to approved astrologers.'
+                  : 'Your payment was verified. Your question is now waiting for Admin approval.',
+              paymentId: result.customerPaymentId, razorpayPaymentId: paymentId,
+              questionId, createdAt: firestoreTimestamp(), read: false
+            }, { merge: true }).catch(() => {});
+          }
+          if (privateChat && result.astrologerId) {
+            await firestore.setDocument(NOTIFICATION_COLLECTION + '/private_chat_assigned_' + questionId, {
+              userId: result.astrologerId,
+              type: 'private_chat_assigned',
+              title: 'New Paid Private Chat Question',
+              message: 'A paid Private Chat question has been assigned to you. Please submit your answer within 24–48 hours.',
+              questionId, paymentId: result.customerPaymentId,
+              customerName: String(initial.data?.customerName || initial.data?.birthName || 'Customer'),
+              createdAt: firestoreTimestamp(), read: false
+            }, { merge: true }).catch(() => {});
+          }
+        }
+        return result;
+      } catch (error) {
+        if (privateChat && error?.code === 'PRIVATE_CHAT_PAYMENT_ID_COLLISION') continue;
+        throw error;
+      }
     }
-    return result;
+    throw httpError('PRIVATE_CHAT_PAYMENT_ID_UNAVAILABLE', 'A unique Private Chat Payment ID could not be created. Please retry payment verification.', 503);
+  }
+
+  function randomPrivateChatPaymentId() {
+    if (!cryptoImpl || typeof cryptoImpl.getRandomValues !== 'function') {
+      throw httpError('SECURE_RANDOM_UNAVAILABLE', 'Secure payment ID generation is unavailable.', 503);
+    }
+    const bytes = new Uint32Array(1);
+    cryptoImpl.getRandomValues(bytes);
+    return 'smvpy-' + String(100000 + (bytes[0] % 900000));
   }
 
   async function recordPrivateConsultationPayment({ consultationId, orderId, paymentId, signature = '', source }) {
@@ -1184,6 +1250,8 @@ export function registerLegacyRazorpayRoutes({
   });
 
   return Object.freeze({
+    paymentDetails,
+    recordQuestionPayment,
     paths: Object.freeze([
       '/razorpay/webhook', '/create-order', '/verify-payment',
       '/admin/reject-question', '/admin/retry-refund', '/customer/sync-refund', '/admin/sync-refund',

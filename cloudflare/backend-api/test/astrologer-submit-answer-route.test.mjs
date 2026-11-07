@@ -40,6 +40,29 @@ test('Auto Allow ON releases answer directly, but prevents editing after custome
  assert.equal(denied.statusCode,409);assert.equal(blocked.writes.length,0);
 });
 
+test('Paid Private Chat answer is released directly to the Customer without changing Public Questions approval',async()=>{
+ const app=harness(),firestore=fixture({docs:{
+  'smv_questions/smvqt-123456':{
+   customerId:'cus-1',astrologerId:'astro-1',privateChat:true,questionType:'private_chat',
+   status:'private_chat_assigned',paymentStatus:'paid',answerMinWords:150,
+   amount:499,astrologerCommissionAmount:99.8,commissionPercent:20,
+   customerPaymentId:'smvpy-123456',question:'Private question'
+  },
+  'smv_settings/workflow':{allowWithoutAdminApproval:false}
+ }});
+ registerAstrologerSubmitAnswerRoute({app,firestore,identityService:{async authenticateAuthorization(){return{uid:'astro-1',email:'astro@example.com'};}}});
+ const res=response();await app.handlers.get('POST /submit-answer')(request({
+  questionId:'smvqt-123456',answer
+ }),res);
+ assert.equal(res.statusCode,200);
+ assert.equal(res.body.status,'answered');
+ const saved=firestore.store.get('smv_questions/smvqt-123456');
+ assert.equal(saved.status,'answered');
+ assert.equal(saved.astrologerAnswerStatus,'approved');
+ assert.equal(saved.commissionStatus,'pending_customer_view');
+ assert.equal(firestore.store.get('smv_notifications/cus-1_answer_submitted_smvqt-123456').type,'answer_ready');
+});
+
 test('Answer submission rejects wrong owner, uneditable status and short answer',async()=>{
  const cases=[
   {question:{customerId:'c',astrologerId:'other',status:'processing',answerMinWords:150,amount:100},workflow:{allowWithoutAdminApproval:false},status:403},

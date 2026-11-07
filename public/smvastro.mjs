@@ -197,6 +197,37 @@ async function renderApi(path, options={}, authUserOverride=null){
   }finally{clearTimeout(timer);signal?.removeEventListener('abort',cancel);}
 }
 
+// Private Chat uses its own Cloudflare Worker API; it does not depend on the
+// global financial-route switch and never falls back to the retired Render Q&A routes.
+async function smvPrivateChatApi(path,options={}){
+ const user=options.authUserOverride||auth?.currentUser||currentUser;
+ if(!user)throw new Error('Please log in to continue.');
+ if(typeof path!=='string'||!path.startsWith('/')||path.startsWith('//'))throw new Error('Invalid Private Chat API path.');
+ const {authUserOverride,timeoutMs=25000,...request}=options;
+ const token=await user.getIdToken();
+ if(auth?.currentUser?.uid&&auth.currentUser.uid!==user.uid)throw new Error('Your login changed. Please sign in again.');
+ const headers=new Headers(request.headers||{});
+ headers.set('Authorization','Bearer '+token);
+ headers.set('Accept','application/json');
+ let body=request.body;
+ if(body!=null&&!(body instanceof FormData)&&typeof body!=='string'){
+  headers.set('Content-Type','application/json');
+  body=JSON.stringify(body);
+ }
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),timeoutMs);
+ try{
+  const response=await fetch(CLOUDFLARE_FINANCIAL_BACKEND_URL+path,{...request,body,headers,cache:'no-store',signal:controller.signal});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok||data?.success===false)throw new Error(data?.error||'Private Chat request failed ('+response.status+').');
+  if(auth?.currentUser?.uid&&auth.currentUser.uid!==user.uid)throw new Error('Your login changed. Please sign in again.');
+  return data;
+ }catch(error){
+  if(error?.name==='AbortError')throw new Error('Private Chat request timed out. Refresh the Dashboard before retrying payment.');
+  throw error;
+ }finally{clearTimeout(timer);}
+}
+
 function smvVerificationLanguage(){ return "en"; }
 async function smvSendVerificationEmail(user){
   if(!user)throw new Error("A signed-in Firebase account is required.");
@@ -1505,6 +1536,261 @@ window.__smvRefreshDashboard=()=>{
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)smvLiveQueue?.resume();});
 document.addEventListener('focusout',()=>setTimeout(()=>smvLiveQueue?.resume(),0));
 window.addEventListener('smv:logged-out',()=>{smvStopLive();dashboardReadyUid=null;dashboardReadyRole=null;dashboardReadyAt=0;smvProfiles.clear();});
+function smvCustomerPrivateChatCardHtml(){
+ return '<section class="card" id="smvCustomerPrivateChatCard" style="margin-top:16px" aria-labelledby="smvCustomerPrivateChatTitle">'+
+ '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><span class="badge">PRIVATE CHAT</span><h3 id="smvCustomerPrivateChatTitle" style="margin:8px 0">Private Chat Questions</h3><p class="small">View your submitted questions, Question IDs, Payment IDs and Astrologer answer status.</p></div><button class="btn gray" id="smvCustomerPrivateChatRefresh" type="button">REFRESH</button></div>'+
+ '<div id="smvCustomerPrivateChatQuestions"><div class="small">Loading Private Chat questions…</div></div></section>';
+}
+function smvPrivateChatStatusLabel(question){
+ const q=question||{};
+ if(q.paymentStatus!=='paid')return 'Payment Pending';
+ if(q.status==='answered')return 'Astrologer Answer Ready';
+ if(q.status==='private_chat_assigned')return 'Submitted — Awaiting Astrologer Answer';
+ if(q.status==='processing'||q.status==='admin_review')return 'Answer Being Prepared';
+ if(q.status==='question_rejected'||q.status==='admin_rejected')return 'Rejected / Refund Processing';
+ return String(q.status||'Paid');
+}
+async function smvRetryPrivateChatPayment(questionId,button){
+ const id=String(questionId||'').trim();
+ if(!id)throw new Error('Question ID is required.');
+ const original=button?.textContent||'RETRY PAYMENT';
+ if(button){button.disabled=true;button.textContent='PREPARING PAYMENT…';}
+ const note=button?.closest('[data-private-chat-card]')?.querySelector('[data-private-chat-message]');
+ try{
+  const order=await smvPrivateChatApi('/private-chat/retry-payment',{method:'POST',body:{questionId:id}});
+  if(order.alreadyPaid){if(note)note.textContent='Payment is already verified. Refreshing status…';await smvLoadCustomerPrivateChatQuestions();return;}
+  const {ensureRazorpayCheckout}=await import('./razorpay-checkout-loader.mjs?v=20261107-private-chat-checkout-v1');
+  const paymentWindow=await ensureRazorpayCheckout();
+  const RazorpayConstructor=paymentWindow?.Razorpay||window.Razorpay;
+  if(typeof RazorpayConstructor!=='function')throw new Error('Razorpay Checkout is not ready. Please retry.');
+  const options={
+   key:order.keyId,amount:order.amount,currency:order.currency||'INR',
+   name:'SMV ASTRO SERVICES',description:'Private Chat Astrology Question',
+   order_id:order.orderId,prefill:{email:auth?.currentUser?.email||currentUser?.email||''},
+   notes:{questionId:id},theme:{color:'#5b2a86'},
+   handler:async response=>{
+    try{
+     const verified=await smvPrivateChatApi('/private-chat/verify-payment',{method:'POST',body:{
+      questionId:id,razorpay_order_id:response.razorpay_order_id,
+      razorpay_payment_id:response.razorpay_payment_id,razorpay_signature:response.razorpay_signature
+     }});
+     if(!verified.verified||!verified.customerPaymentId)throw new Error('Payment was received but its Customer Payment ID is not yet available. Refresh the Dashboard; do not pay again.');
+     if(note)note.textContent='Payment verified. Question Submitted ✓ · Payment ID: '+verified.customerPaymentId+' · Astrologer Answer within 24 to 48 hours.';
+     await smvLoadCustomerPrivateChatQuestions();
+    }catch(error){
+     if(note)note.textContent=error?.message||String(error);
+    }finally{if(button){button.disabled=false;button.textContent=original;}}
+   },
+   modal:{ondismiss:()=>{if(button){button.disabled=false;button.textContent=original;}if(note)note.textContent='Payment was not confirmed. You can retry the same Question ID.';}}
+  };
+  smvAssertLiveCheckout(options.key);
+  const checkout=new RazorpayConstructor(options);
+  checkout.on('payment.failed',response=>{
+   if(note)note.textContent='Payment failed: '+String(response?.error?.description||'Please retry.');
+   if(button){button.disabled=false;button.textContent=original;}
+  });
+  checkout.open();
+ }catch(error){
+  if(note)note.textContent=error?.message||String(error);
+  if(button){button.disabled=false;button.textContent=original;}
+  else throw error;
+ }
+}
+async function smvLoadCustomerPrivateChatQuestions(){
+ const host=$('smvCustomerPrivateChatQuestions');
+ if(!host||!currentUser)return;
+ host.innerHTML='<div class="small">Loading Private Chat questions…</div>';
+ try{
+  const result=await smvPrivateChatApi('/customer/private-chat/questions');
+  const questions=Array.isArray(result.questions)?result.questions:[];
+  host.innerHTML=questions.length?questions.map(q=>{
+   const id=String(q.questionId||q.id||'');
+   const status=smvPrivateChatStatusLabel(q);
+   const paid=q.paymentStatus==='paid';
+   const answerReady=q.status==='answered'&&String(q.answer||'').trim();
+   const retry=!paid&&!['question_rejected','admin_rejected'].includes(String(q.status||''));
+   return '<article class="card" data-private-chat-card="'+escapeHtml(id)+'" style="margin:10px 0;padding:12px;border:1px solid #d8c8a2">'+
+    '<p><b>Question:</b> <span style="white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(q.question||'')+'</span></p>'+
+    '<p><b>Question ID:</b> '+escapeHtml(id)+'</p>'+
+    '<p><b>Payment ID:</b> '+escapeHtml(q.customerPaymentId||'Payment pending')+'</p>'+
+    '<p><b>Astrologer:</b> '+escapeHtml(q.astrologerName||'—')+'</p>'+
+    '<p><b>Status:</b> <strong>'+escapeHtml(status)+'</strong></p>'+
+    (paid&&q.status!=='answered'?'<p class="small success">Astrologer Answer within 24 to 48 hours.</p>':'')+
+    (retry?'<button class="btn" type="button" data-private-chat-retry="'+escapeHtml(id)+'">RETRY PAYMENT ₹'+Number(q.amount||0).toFixed(2)+'</button>':'')+
+    (answerReady?'<div class="action-row"><button class="btn" type="button" data-private-chat-answer="'+escapeHtml(id)+'">VIEW ASTROLOGER ANSWER</button></div><div class="card hidden" data-private-chat-answer-box style="margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(q.answer)+'</div>':'')+
+    '<p class="small" data-private-chat-message role="status" aria-live="polite"></p></article>';
+  }).join(''):'<div class="empty">No Private Chat questions have been submitted yet.</div>';
+  if(!host.dataset.smvBound){
+   host.dataset.smvBound='1';
+   host.onclick=async event=>{
+    const retry=event.target.closest('[data-private-chat-retry]');
+    if(retry){await smvRetryPrivateChatPayment(retry.dataset.privateChatRetry,retry);return;}
+    const reveal=event.target.closest('[data-private-chat-answer]');
+    if(!reveal)return;
+    const article=reveal.closest('[data-private-chat-card]');
+    const answer=article?.querySelector('[data-private-chat-answer-box]');
+    if(!answer)return;
+    answer.classList.remove('hidden');reveal.disabled=true;reveal.textContent='ANSWER VIEWED';
+    const message=article.querySelector('[data-private-chat-message]');
+    try{
+     await smvPrivateChatApi('/customer/mark-answer-viewed',{method:'POST',body:{questionId:reveal.dataset.privateChatAnswer}});
+     if(message)message.textContent='Answer opened. The consultation settlement has been recorded.';
+    }catch(error){if(message)message.textContent='Answer is visible. Settlement status will be reconciled: '+(error?.message||String(error));}
+   };
+  }
+ }catch(error){
+  host.innerHTML='<div class="empty error">'+escapeHtml(error?.message||String(error))+'</div>';
+ }
+}
+function smvAstrologerPrivateChatCardHtml(){
+ return '<section class="card" id="smvAstrologerPrivateChatCard" style="margin-top:16px"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><span class="badge">PRIVATE CHAT</span><h3 style="margin:8px 0">Private Chat Questions</h3><p class="small">Paid questions assigned to you. Submit each answer within 24–48 hours.</p></div><button class="btn gray" id="smvAstrologerPrivateChatRefresh" type="button">REFRESH</button></div><div id="smvAstrologerPrivateChatQuestions"><div class="small">Loading assigned questions…</div></div></section>';
+}
+function smvPrivateChatWordCount(value){
+ return String(value||'').trim().split(/\s+/).filter(Boolean).length;
+}
+function smvOpenPrivateChatAnswerEditor(question){
+ const id=String(question?.questionId||question?.id||'');
+ const minimum=Math.max(1,Math.min(10000,Math.floor(Number(question?.answerMinWords)||150)));
+ if(!id)throw new Error('Question ID is missing.');
+ const dialog=`<div class="smv-private-chat-answer-modal" style="display:flex;flex-direction:column;gap:12px;width:100%;max-width:100%;min-width:0;box-sizing:border-box;padding:8px 4px 4px;color:#30251b">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px"><div><span class="badge">PRIVATE CHAT ANSWER</span><h2 style="margin:8px 0 4px;font-size:22px">Write Astrologer Answer</h2><p class="small" style="margin:0">Question ID: <b>${escapeHtml(id)}</b></p></div><button type="button" class="btn gray" id="smvPrivateChatAnswerClose" style="min-width:42px;min-height:42px">×</button></div>
+  <div class="card" style="margin:0;padding:12px;background:#fff8e7;border:1px solid #d4af37"><p style="margin:0 0 7px"><b>Customer:</b> ${escapeHtml(question.customerName||question.birthName||'Customer')}</p><p style="margin:0;white-space:pre-wrap;overflow-wrap:anywhere"><b>Question:</b> ${escapeHtml(question.question||'')}</p></div>
+  <form id="smvPrivateChatAnswerForm" style="display:flex;flex-direction:column;gap:10px;min-height:0">
+   <label style="display:grid;gap:6px"><b style="font-size:17px">Your Answer</b><textarea id="smvPrivateChatAnswerText" rows="12" maxlength="50000" required placeholder="Write your detailed astrology answer here…" style="display:block;width:100%;min-width:0;min-height:clamp(280px,48dvh,560px);max-height:60dvh;box-sizing:border-box;padding:14px;font:17px/1.65 inherit;color:#241b16;background:#fffdf5;border:1.5px solid #b9a17b;border-radius:10px;resize:vertical;white-space:pre-wrap"></textarea></label>
+   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><strong id="smvPrivateChatAnswerWordCount" aria-live="polite">0 / ${minimum} words</strong><span class="small">Minimum words set by Admin: ${minimum}</span></div>
+   <p id="smvPrivateChatAnswerMessage" class="small" role="status" aria-live="polite">Write at least ${minimum} words to enable submission.</p>
+   <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn gray" id="smvPrivateChatAnswerCancel" type="button">CANCEL</button><button class="btn" id="smvPrivateChatAnswerSubmit" type="submit" disabled style="min-width:220px;min-height:48px;background:#5b2a86;color:#fff;border:1px solid #d4af37">SUBMIT ANSWER</button></div>
+  </form>
+ </div>`;
+ openModal(dialog);
+ const modal=$('modal'),box=modal?.querySelector('.modalbox'),content=$('modalContent');
+ if(box){box.style.width='min(100%,860px)';box.style.maxWidth='860px';box.style.maxHeight='calc(100dvh - 16px - env(safe-area-inset-bottom))';box.style.overflowY='auto';box.style.overscrollBehavior='contain';box.style.boxSizing='border-box';}
+ if(content){content.style.width='100%';content.style.minWidth='0';content.style.boxSizing='border-box';}
+ const close=()=>closeModal();
+ $('smvPrivateChatAnswerClose')?.addEventListener('click',close,{once:true});
+ $('smvPrivateChatAnswerCancel')?.addEventListener('click',close,{once:true});
+ const form=$('smvPrivateChatAnswerForm'),field=$('smvPrivateChatAnswerText');
+ const counter=$('smvPrivateChatAnswerWordCount'),message=$('smvPrivateChatAnswerMessage');
+ const submit=$('smvPrivateChatAnswerSubmit');
+ const update=()=>{
+  const words=smvPrivateChatWordCount(field?.value);
+  if(counter)counter.textContent=words+' / '+minimum+' words';
+  if(submit)submit.disabled=words<minimum;
+  if(message)message.textContent=words<minimum
+   ?'Add '+(minimum-words)+' more word'+(minimum-words===1?'':'s')+' to meet the Admin word limit.'
+   :'Minimum word limit reached. You can submit your answer.';
+ };
+ field?.addEventListener('input',update);
+ form.onsubmit=async event=>{
+  event.preventDefault();
+  const answer=String(field?.value||'').trim();
+  const words=smvPrivateChatWordCount(answer);
+  if(words<minimum){update();return;}
+  submit.disabled=true;submit.textContent='SUBMITTING…';
+  if(message)message.textContent='Submitting your answer securely…';
+  try{
+   const result=await smvPrivateChatApi('/submit-answer',{method:'POST',body:{questionId:id,answer}});
+   if(result.success!==true||result.answerSaved!==true)throw new Error(result.error||'The server did not confirm the answer.');
+   closeModal();
+   smvNotice('Answer Submitted','Your answer for '+id+' has been submitted and released to the Customer.');
+   await smvLoadAstrologerPrivateChatQuestions();
+  }catch(error){
+   if(message)message.textContent=error?.message||String(error);
+   submit.disabled=false;submit.textContent='SUBMIT ANSWER';
+   update();
+  }
+ };
+ update();
+}
+async function smvLoadAstrologerPrivateChatQuestions(){
+ const host=$('smvAstrologerPrivateChatQuestions');
+ if(!host||!currentUser)return;
+ host.innerHTML='<div class="small">Loading assigned Private Chat questions…</div>';
+ try{
+  const result=await smvPrivateChatApi('/astrologer/private-chat/questions');
+  const questions=Array.isArray(result.questions)?result.questions:[];
+  host._privateChatQuestions=new Map(questions.map(question=>[String(question.questionId||question.id||''),question]));
+  host.innerHTML=questions.length?questions.map(q=>{
+   const id=String(q.questionId||q.id||'');
+   const answered=q.status==='answered'&&String(q.answer||'').trim();
+   const birth=q.birthDetails||{};
+   const minimum=Math.max(1,Math.floor(Number(q.answerMinWords)||150));
+   return '<article class="card" data-private-chat-astro-card="'+escapeHtml(id)+'" style="margin:10px 0;padding:12px;border:1px solid #d8c8a2">'+
+    '<p><b>Customer:</b> '+escapeHtml(q.customerName||birth.name||'Customer')+'</p>'+
+    '<p><b>Birth Details:</b> '+escapeHtml([birth.birthDate,birth.birthTime,birth.birthPlace,birth.birthGender].filter(Boolean).join(' · '))+'</p>'+
+    '<p><b>Question ID:</b> '+escapeHtml(id)+'</p><p><b>Payment ID:</b> '+escapeHtml(q.customerPaymentId||'—')+'</p>'+
+    '<p><b>Question:</b> <span style="white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(q.question||'')+'</span></p>'+
+    '<p><b>Status:</b> <strong>'+escapeHtml(smvPrivateChatStatusLabel(q))+'</strong></p>'+
+    '<p class="small">Admin minimum answer length: <b>'+minimum+' words</b></p>'+
+    (answered?'<div class="card" style="margin-top:8px"><b>Your submitted answer</b><p style="white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(q.answer)+'</p></div>':
+     '<button class="btn" type="button" data-private-chat-write-answer="'+escapeHtml(id)+'" style="width:100%;min-height:48px">WRITE ANSWER</button>')+
+    '</article>';
+  }).join(''):'<div class="empty">No paid Private Chat questions are assigned to you yet.</div>';
+  if(!host.dataset.smvBound){
+   host.dataset.smvBound='1';
+   host.onclick=event=>{
+    const button=event.target.closest('[data-private-chat-write-answer]');
+    if(!button)return;
+    const question=host._privateChatQuestions?.get(button.dataset.privateChatWriteAnswer);
+    if(!question)return;
+    smvOpenPrivateChatAnswerEditor(question);
+   };
+  }
+ }catch(error){host.innerHTML='<div class="empty error">'+escapeHtml(error?.message||String(error))+'</div>';}
+}
+
+async function smvLoadAdminPrivateChat(){
+ const settingsMsg=$('privateChatSettingsMsg'),queue=$('adminPrivateChatQueue');
+ if(!queue)return;
+ const save=$('savePrivateChatSettings'),refresh=$('adminPrivateChatRefresh');
+ if(save&&!save.dataset.smvBound){
+  save.dataset.smvBound='1';
+  save.onclick=async()=>{
+   const enabled=$('privateChatEnabled')?.value==='true';
+   const price=Number($('privateChatPrice')?.value);
+   const minimumAnswerWords=Number($('privateChatMinimumAnswerWords')?.value);
+   save.disabled=true;if(settingsMsg)settingsMsg.textContent='Saving Private Chat settings to Cloudflare…';
+   try{
+    const result=await smvPrivateChatApi('/admin/private-chat/settings',{method:'POST',body:{enabled,price,minimumAnswerWords}});
+    if($('privateChatEnabled'))$('privateChatEnabled').value=String(result.enabled===true);
+    if($('privateChatPrice'))$('privateChatPrice').value=Number(result.price||0).toFixed(2);
+    if($('privateChatMinimumAnswerWords'))$('privateChatMinimumAnswerWords').value=String(result.minimumAnswerWords||150);
+    if(settingsMsg)settingsMsg.textContent='Saved. Private Chat: '+(result.enabled?'ON':'OFF')+' · Customer price ₹'+Number(result.price||0).toFixed(2)+' · Astrologer minimum answer '+Number(result.minimumAnswerWords||150)+' words.';
+    void smvLoadAdminPrivateChat();
+   }catch(error){if(settingsMsg)settingsMsg.textContent=error?.message||String(error);}
+   finally{save.disabled=false;}
+  };
+ }
+ if(refresh&&!refresh.dataset.smvBound){refresh.dataset.smvBound='1';refresh.onclick=()=>smvLoadAdminPrivateChat();}
+ queue.innerHTML='<div class="small">Loading Private Chat Admin data…</div>';
+ try{
+  const [settings,result]=await Promise.all([
+   smvPrivateChatApi('/admin/private-chat/settings'),
+   smvPrivateChatApi('/admin/private-chat/questions')
+  ]);
+  if($('privateChatEnabled'))$('privateChatEnabled').value=String(settings.enabled===true);
+  if($('privateChatPrice'))$('privateChatPrice').value=Number(settings.price||0).toFixed(2);
+  if($('privateChatMinimumAnswerWords'))$('privateChatMinimumAnswerWords').value=String(settings.minimumAnswerWords||150);
+  if(settingsMsg)settingsMsg.textContent='Current setting: '+(settings.enabled?'ON':'OFF')+' · ₹'+Number(settings.price||0).toFixed(2)+' · Astrologer minimum answer '+Number(settings.minimumAnswerWords||150)+' words.';
+  const questions=Array.isArray(result.questions)?result.questions:[];
+  queue.innerHTML=questions.length?questions.map(q=>{
+   const id=String(q.questionId||q.id||'');
+   return '<article class="card" style="margin:10px 0;padding:12px;border:1px solid #d8c8a2">'+
+    '<p><b>Customer:</b> '+escapeHtml(q.customerName||q.birthName||'Customer')+'</p>'+
+    '<p><b>Astrologer:</b> '+escapeHtml(q.astrologerName||'—')+'</p>'+
+    '<p><b>Question ID:</b> '+escapeHtml(id)+'</p>'+
+    '<p><b>Payment ID:</b> '+escapeHtml(q.customerPaymentId||'Payment pending')+'</p>'+
+    '<p><b>Price:</b> ₹'+Number(q.amount||0).toFixed(2)+' · <b>Status:</b> '+escapeHtml(smvPrivateChatStatusLabel(q))+'</p>'+
+    '<p><b>Question:</b> <span style="white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(q.question||'')+'</span></p>'+
+    (q.answer?'<details><summary>Astrologer Answer</summary><p style="white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(q.answer)+'</p></details>':'')+
+    '</article>';
+  }).join(''):'<div class="empty">No Private Chat questions have been submitted yet.</div>';
+ }catch(error){
+  if(settingsMsg)settingsMsg.textContent=error?.message||String(error);
+  queue.innerHTML='<div class="empty error">'+escapeHtml(error?.message||String(error))+'</div>';
+ }
+}
+
 function smvCustomerBookingChatCardHtml(){
  return '<section class="card smv-customer-book-chat" id="smvCustomerBookChatCard" style="margin-top:16px" aria-labelledby="smvCustomerBookChatTitle">'+
  '<div class="grid" style="align-items:center;gap:14px"><div><span class="badge">CONSULTATION</span><h3 id="smvCustomerBookChatTitle" style="margin:8px 0">Consult an Astrologer</h3><p>Browse approved astrologers, compare each Astrologer’s Call and Chat rates per minute, and consult using your Wallet balance.</p></div>'+
@@ -1521,6 +1807,10 @@ function smvBindCustomerBookingChat(){
   if(typeof window.__smvNavigatePublic==='function'){window.__smvNavigatePublic('consult');return;}
   location.href='./?view=consult';
  };
+}
+function smvBindCustomerPrivateChat(){
+ const button=$('smvCustomerPrivateChatRefresh');
+ if(button&&!button.dataset.smvBound){button.dataset.smvBound='1';button.onclick=()=>smvLoadCustomerPrivateChatQuestions();}
 }
 function smvWalletDashboardCardHtml(){
  return '<section class="card smv-customer-wallet-card" id="smvCustomerWalletCard" style="margin-top:16px" aria-labelledby="smvWalletTitle">'+
@@ -1540,8 +1830,10 @@ function smvRenderFastDashboardShell(roleValue=''){
  const user=currentUser||auth?.currentUser;
  if(role==='customer'){
   const name=[user?.displayName].map(value=>String(value||'').trim()).find(Boolean)||'Customer';
-  box.innerHTML='<div class="grid"><div class="card"><span class="badge">CUSTOMER</span><h3>Welcome, <span class="smv-dashboard-name">'+escapeHtml(name)+'</span></h3><p>Your dashboard is ready.</p></div></div>'+smvCustomerBookingChatCardHtml()+smvWalletDashboardCardHtml();
+  box.innerHTML='<div class="grid"><div class="card"><span class="badge">CUSTOMER</span><h3>Welcome, <span class="smv-dashboard-name">'+escapeHtml(name)+'</span></h3><p>Your dashboard is ready.</p></div></div>'+smvCustomerBookingChatCardHtml()+smvCustomerPrivateChatCardHtml()+smvWalletDashboardCardHtml();
   smvBindCustomerBookingChat();
+  smvBindCustomerPrivateChat();
+  void smvLoadCustomerPrivateChatQuestions();
   smvBindCustomerWallet({load:false});
   return;
  }
@@ -2285,12 +2577,21 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
    if(background&&smvEditing("dashboard")){smvLiveQueue?.request();return;}
    box.innerHTML=`<div class="grid"><div class="card"><span class="badge">CUSTOMER</span><h3>Welcome, <span class="smv-dashboard-name">${escapeHtml(customerDisplayName)}</span></h3><p><b>Email verification:</b> ${currentUser.emailVerified?'<span class="smv-verified-badge customer-profile-result"><span class="smv-check">✓</span>Verified</span>':'<span class="customer-profile-result">Pending from registration</span>'}</p><p><b>Mobile:</b> <span class="customer-profile-result">Private</span></p></div></div>
    ${smvCustomerBookingChatCardHtml()}
+   ${smvCustomerPrivateChatCardHtml()}
    ${smvWalletDashboardCardHtml()}`;
    smvBindCustomerBookingChat();
+   smvBindCustomerPrivateChat();
+   void smvLoadCustomerPrivateChatQuestions();
    smvBindCustomerWallet({load:false});
    // The fast shell only binds handlers. Load real balance/minutes after this
    // final Customer Dashboard DOM has mounted, so the request updates live nodes.
    void smvLoadCustomerWallet();
+  }
+  if(role==='astrologer'&&box){
+   if(!$('smvAstrologerPrivateChatCard'))box.insertAdjacentHTML('beforeend',smvAstrologerPrivateChatCardHtml());
+   const refreshPrivate=$('smvAstrologerPrivateChatRefresh');
+   if(refreshPrivate&&!refreshPrivate.dataset.smvBound){refreshPrivate.dataset.smvBound='1';refreshPrivate.onclick=()=>smvLoadAstrologerPrivateChatQuestions();}
+   void smvLoadAstrologerPrivateChatQuestions();
   }
   // Mount the Live Call/Chat panel only after the role-specific Dashboard DOM exists.
   // Without this call, the render helpers are defined but the controls never enter the DOM.
@@ -3088,6 +3389,7 @@ async function loadAdminPanelData(background=false){
   if(!currentUser || currentUser.uid!==adminLoadUid || currentUser.uid!==auth?.currentUser?.uid) return;
   smvBindAdminWalletLedger();
   smvLiveBindAdminPricing();
+  void smvLoadAdminPrivateChat();
   smvRenderAdminWalletOffers().catch(error=>console.warn('Admin Wallet Offers unavailable:',error?.message||error));
   if(!background)smvLoadAdminWalletLedger().catch(e=>console.warn('Admin Wallet ledger unavailable:',e));
   smvWatchAdminEvents();
