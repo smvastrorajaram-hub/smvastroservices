@@ -60,6 +60,7 @@ test('A Horoscope-only main-branch change does not allocate or publish a new Cal
   assert.match(workflow, /SMV_BUILD_CALENDAR/);
   assert.match(workflow, /steps\.app_targets\.outputs\.horoscope == 'true'/);
   assert.match(workflow, /steps\.app_targets\.outputs\.calendar == 'true'/);
+  assert.ok(workflow.includes('public/horoscope/sw.js|public/horoscope/calendar/sw.js'), 'shared offline cache changes must continue to rebuild both Android apps');
   assert.match(workflow, /smv-horoscope-apk-/);
   assert.match(workflow, /smv-calendar-apk-/);
 });
