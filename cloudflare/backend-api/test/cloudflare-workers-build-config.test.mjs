@@ -119,7 +119,7 @@ test('Workers Builds process is documented with Preview and Production commands'
   const doc = readFileSync(resolve(root, 'CLOUDFLARE-WORKERS-BUILDS.md'), 'utf8');
   assert.ok(doc.includes('cloudflare/backend-api'));
   assert.ok(doc.includes('SKIP_DEPENDENCY_INSTALL=1'));
-  assert.ok(doc.includes('npx wrangler preview'));
+  assert.ok(doc.includes('npx --yes wrangler@4.158.0 preview --config wrangler.jsonc'));
   assert.ok(doc.includes('wrangler.production.jsonc'));
   assert.ok(doc.includes('wrangler.staging.jsonc'));
 });
@@ -144,8 +144,7 @@ test('Cloudflare contract tests are triggered by every repository-root Preview i
     'package-lock.json',
     'scripts/fix-cloudflare-iconv-lite.mjs'
   ]) {
-    const escaped = path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const occurrences = workflow.match(new RegExp('^      - "' + escaped + '"$', 'gm')) || [];
+    const occurrences = workflow.split(`      - "${path}"`).length - 1;
     assert.equal(occurrences.length, 2, `${path} must trigger both pull_request and push contract checks.`);
   }
 });
