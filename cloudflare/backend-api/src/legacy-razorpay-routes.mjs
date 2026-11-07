@@ -274,7 +274,8 @@ export function registerLegacyRazorpayRoutes({
               astrologerName: privateChatDirectSelected ? requestedAstrologerName : '',
               privateChatSubmittedAt: firestoreTimestamp(),
               adminApprovalBypassed: privateChatDirectSelected,
-              openedToAstrologersAt: privateChatDirectSelected ? firestoreTimestamp() : FirestoreFieldValue.delete()
+              openedToAstrologersAt: privateChatDirectSelected ? firestoreTimestamp() : FirestoreFieldValue.delete(),
+              astrologerAssignedAt: privateChatDirectSelected ? firestoreTimestamp() : FirestoreFieldValue.delete()
             } : {
               adminApprovalBypassed: allowWithoutAdminApproval,
               openedToAstrologersAt: allowWithoutAdminApproval ? firestoreTimestamp() : FirestoreFieldValue.delete()
