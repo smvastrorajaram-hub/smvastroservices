@@ -4410,3 +4410,5 @@ html body #smv24-footer .smv24-footer-top .smv24-brand h2{
 .smv-private-chat-admin-action-row{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin:9px 0}
 .smv-private-chat-admin-action-row select{flex:1 1 190px;min-width:0;min-height:44px;box-sizing:border-box}
 .smv-private-chat-admin-action-row button{flex:1 1 145px;min-width:0;min-height:44px;white-space:normal;overflow-wrap:anywhere}
+
+#modal .smv-private-chat-answer-heading .smv-private-chat-answer-title{color:#fff;-webkit-text-fill-color:#fff}
