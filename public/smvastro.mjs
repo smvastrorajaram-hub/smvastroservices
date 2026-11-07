@@ -2650,7 +2650,7 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
         const label=st==='paid'?'Paid':st==='processing'?'Processing':st==='rejected'?'Rejected':'Pending';
         const times=[['Requested',w.createdAt||w.requestedAt],['Processing',w.processingAt],['Approved',w.approvedAt],['Rejected',w.rejectedAt],['Paid',w.paidAt]].filter(x=>x[1]);
         const timeline=times.map(x=>'<div><b>'+x[0]+' Date &amp; Time:</b> '+escapeHtml(smvDateTime(x[1]))+'</div>').join('');
-        return '<div class="smv-history-row smv-withdrawal-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹'+Number(w.amount||0).toFixed(2)+'</b> · <span class="'+cls+'">'+label+'</span></div><div class="smv-history-detail"><b>Withdrawal ID:</b> '+escapeHtml(w.withdrawalId||'—')+'</div>'+(st==='paid'&&/^(?:smvpt-|smv-pmt-)/i.test(String(w.adminPaymentId||''))?'<div class="small"><b>Admin Payment ID:</b> '+escapeHtml(w.adminPaymentId)+'</div>':'')+'<div class="small">'+timeline+'</div></div>';
+        return '<div class="smv-history-row smv-withdrawal-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹'+Number(w.amount||0).toFixed(2)+'</b> · <span class="'+cls+'">'+label+'</span></div><div class="smv-history-detail"><b>Withdrawal ID:</b> '+escapeHtml(w.withdrawalId||'—')+'</div>'+(st==='paid'&&/^(?:smvpt-|smv-pmt-)/i.test(String(w.adminPaymentId||''))?'<div class="small"><b>Admin Payment ID:</b> '+escapeHtml(w.adminPaymentId)+'</div>':'')+'<div class="small">${timeline}</div></div>';
        }).join('')
        :'<div class="small">No withdrawal requests yet.</div>')
       :'<div class="small">Withdrawal history is temporarily unavailable.</div>';
