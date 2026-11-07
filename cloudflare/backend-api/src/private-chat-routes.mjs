@@ -259,6 +259,11 @@ export function registerPrivateChatRoutes({
         }
       }
       if(!questionId)throw apiError('PRIVATE_CHAT_ID_UNAVAILABLE','A secure Question ID could not be created. Please retry.',503);
+      // Reload the canonical question after an idempotent request-marker hit so
+      // an interrupted first response reuses its existing Razorpay order.
+      const canonicalQuestion=await firestore.getDocument(QUESTION_COLLECTION+'/'+questionId);
+      if(!canonicalQuestion.exists)throw apiError('PRIVATE_CHAT_NOT_FOUND','Private Chat question was not found after creation.',404);
+      question=canonicalQuestion.data||question;
       const result=await createOrReuseOrder(questionId,question,user);
       return res.set('Cache-Control','no-store').json(result);
     }catch(error){return sendError(res,error,'Unable to create the Private Chat payment.');}
