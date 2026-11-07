@@ -13,7 +13,8 @@
     "validate:wallet-domain": "node scripts/validate-wallet-domain.js",
     "test:legacy-flow-removal": "node --test test/legacy-consultation-route-removal.test.cjs",
     "test:production-financial-routing": "node --test test/production-financial-routing.test.mjs",
-    "test:razorpay-runtime": "node --test test/razorpay-runtime.test.js"
+    "test:razorpay-runtime": "node --test test/razorpay-runtime.test.js",
+    "postinstall": "node scripts/fix-cloudflare-iconv-lite.mjs"
   },
   "engines": {
     "node": ">=20 <27"

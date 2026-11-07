@@ -19,6 +19,21 @@ const staging = readJsonc(resolve(root, 'wrangler.staging.jsonc'));
 const production = readJsonc(resolve(root, 'wrangler.production.jsonc'));
 const workerPackage = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'));
 const repoRootPreview = readJsonc(resolve(repo, 'wrangler.jsonc'));
+const rootPackage = JSON.parse(readFileSync(resolve(repo, 'package.json'), 'utf8'));
+const { removeWorkersIncompatibleBrowserAliases } = await import('../../../scripts/fix-cloudflare-iconv-lite.mjs');
+
+test('root install applies the narrow iconv-lite Node stream compatibility patch for Worker bundling', () => {
+  assert.equal(rootPackage.scripts.postinstall, 'node scripts/fix-cloudflare-iconv-lite.mjs');
+  const legacyIconv = { name: 'iconv-lite', version: '0.4.24', browser: { './lib/extend-node': false, './lib/streams': false } };
+  assert.equal(removeWorkersIncompatibleBrowserAliases(legacyIconv), true);
+  assert.equal(legacyIconv.browser, undefined);
+  const newerIconv = { name: 'iconv-lite', version: '0.7.0', browser: { stream: false } };
+  assert.equal(removeWorkersIncompatibleBrowserAliases(newerIconv), true);
+  assert.equal(newerIconv.browser, undefined);
+  const unrelated = { name: 'other-package', browser: { stream: false } };
+  assert.equal(removeWorkersIncompatibleBrowserAliases(unrelated), false);
+  assert.deepEqual(unrelated.browser, { stream: false });
+});
 
 test('repository-root Worker Preview shim keeps root-based Preview Builds on Staging resources', () => {
   assert.equal(repoRootPreview.name, 'smvastroservices');

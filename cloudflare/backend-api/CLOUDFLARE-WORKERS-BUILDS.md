@@ -39,6 +39,14 @@ Worker Previews require Wrangler `4.135.0` or later. The backend package pins
 package before the default Preview command runs. Keep the default Preview
 command as `npx wrangler preview`; do not point it at the Production config.
 
+The root npm install runs `scripts/fix-cloudflare-iconv-lite.mjs` as a
+`postinstall` step. It removes only the browser fallback aliases for Node stream
+helpers from installed `iconv-lite` manifests. Wrangler's Worker bundle needs
+the actual Node stream helpers when `process.versions.node` is present; leaving
+the browser `false` aliases in place can make Preview deployment fail with
+`require_streams(...) is not a function` (Workers SDK issue #9309). Package
+versions and application runtime source are not changed by this patch.
+
 Enable Preview Builds in Settings → Build → Branch control. The default
 `wrangler.jsonc` is intentionally a Preview config: it uses the connected
 Production Worker name so Workers Builds can identify the Worker, but its
