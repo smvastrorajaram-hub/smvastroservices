@@ -1560,7 +1560,7 @@ function smvPrivateChatTimelineHtml(q){
   ['Admin approved question',q.adminQuestionApprovedAt],['Astrologer assigned',q.astrologerAssignedAt],
   ['Astrologer reallocated',q.astrologerReassignedAt],['Astrologer answer submitted',q.answerSubmittedAt],
   ['Admin approved answer',q.answerApprovedAt||q.adminAnswerApprovedAt],['Answer available',q.answerAvailableAt],
-  ['Customer viewed answer',q.customerAnswerViewedAt],['Admin rejected question',q.adminQuestionRejectedAt],
+  ['Customer viewed answer',q.customerAnswerViewedAt],['Admin rejected question',q.adminQuestionRejectedAt],['Admin rejected answer — revision requested',q.lastAnswerRejectedAt],
   ['Refund requested',q.refundRequestedAt],['Razorpay refund created',q.refundCreatedAt],
   ['Refund processed',q.refundProcessedAt],['Refund failed',q.refundFailedAt],
   ['Refund last synced',q.refundSyncedAt],['Customer review submitted',q.reviewSubmittedAt]
