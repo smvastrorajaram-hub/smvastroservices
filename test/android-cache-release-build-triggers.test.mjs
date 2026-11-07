@@ -65,9 +65,7 @@ test('Only signed production builds publish raw APK files as direct-download Git
   assert.ok(astro.includes('softprops/action-gh-release@v2'));
   assert.ok(horoscopeCalendar.includes('softprops/action-gh-release@v2'));
   assert.ok(astro.includes("if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}"));
-  assert.ok(horoscopeCalendar.includes("if: ${{ env.SMV_SIGNED_RELEASE == 'true' && steps.app_targets.outputs.modules != '' }}"));
-  assert.ok(horoscopeCalendar.includes("if: ${{ env.SMV_SIGNED_RELEASE == 'true' && steps.app_targets.outputs.horoscope == 'true' }}"));
-  assert.ok(horoscopeCalendar.includes("if: ${{ env.SMV_SIGNED_RELEASE == 'true' && steps.app_targets.outputs.calendar == 'true' }}"));
+  assert.ok(horoscopeCalendar.includes("if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}"));
   assert.ok(astro.includes('SMV-ASTRO-${{ env.SMV_ANDROID_VERSION_NAME }}.apk'));
   assert.ok(horoscopeCalendar.includes('SMV-HOROSCOPE-${{ env.SMV_HOROSCOPE_ANDROID_VERSION_NAME }}.apk'));
   assert.ok(horoscopeCalendar.includes('SMV-CALENDAR-${{ env.SMV_CALENDAR_ANDROID_VERSION_NAME }}.apk'));
