@@ -203,11 +203,13 @@ export function registerLegacyRazorpayRoutes({
       ? await firestore.getDocument('smv_settings/privateChat').catch(() => ({ exists:false,data:null }))
       : { exists:false,data:null };
     const assignmentMode = privateChatSettings.data?.assignmentMode === 'open_to_all' ? 'open_to_all' : 'admin_assigned';
-    const legacyPaymentDocId = privateChat ? '' : await paymentRecordId('question', questionId, paymentId);
     const recordedAt = new Date(Number(now())).toISOString();
 
-    for (let attempt = 0; attempt < (privateChat ? 12 : 1); attempt++) {
-      const paymentDocId = privateChat ? randomCustomerPaymentId() : legacyPaymentDocId;
+    // Every new Customer Question payment (Public Question or Private Chat)
+    // receives the same unique random smvpy-###### reference. Already-paid
+    // questions return their stored ID above and are never rewritten.
+    for (let attempt = 0; attempt < 32; attempt++) {
+      const paymentDocId = randomCustomerPaymentId();
       const paymentPath = PAYMENT_COLLECTION + '/' + paymentDocId;
       try {
         const result = await firestore.runTransaction(async tx => {
@@ -234,9 +236,9 @@ export function registerLegacyRazorpayRoutes({
           }
           const amount = Number(data.amount || 0);
           if (!Number.isFinite(amount) || amount <= 0) throw httpError('QUESTION_AMOUNT_INVALID', 'Saved question amount is invalid.', 409);
-          if (privateChat) {
-            const existingPayment = await tx.getDocument(paymentPath);
-            if (existingPayment.exists) throw httpError('PRIVATE_CHAT_PAYMENT_ID_COLLISION', 'A payment reference already exists. Generate a fresh reference and retry.', 409);
+          const existingPayment = await tx.getDocument(paymentPath);
+          if (existingPayment.exists) {
+            throw httpError('CUSTOMER_PAYMENT_ID_COLLISION', 'A payment reference already exists. Generate a fresh reference and retry.', 409);
           }
           const requestedAstrologerId = String(data.requestedAstrologerId || data.astrologerId || '');
           const requestedAstrologerName = String(data.requestedAstrologerName || data.astrologerName || '');
@@ -322,20 +324,27 @@ export function registerLegacyRazorpayRoutes({
         }
         return result;
       } catch (error) {
-        if (privateChat && error?.code === 'PRIVATE_CHAT_PAYMENT_ID_COLLISION') continue;
+        if (error?.code === 'CUSTOMER_PAYMENT_ID_COLLISION') continue;
         throw error;
       }
     }
-    throw httpError('PRIVATE_CHAT_PAYMENT_ID_UNAVAILABLE', 'A unique Private Chat Payment ID could not be created. Please retry payment verification.', 503);
+    throw httpError('CUSTOMER_PAYMENT_ID_UNAVAILABLE', 'A unique Customer Payment ID could not be created. Please retry payment verification.', 503);
   }
 
   function randomCustomerPaymentId() {
     if (!cryptoImpl || typeof cryptoImpl.getRandomValues !== 'function') {
       throw httpError('SECURE_RANDOM_UNAVAILABLE', 'Secure payment ID generation is unavailable.', 503);
     }
-    const bytes = new Uint32Array(1);
-    cryptoImpl.getRandomValues(bytes);
-    return 'smvpy-' + String(100000 + (bytes[0] % 900000));
+    // Rejection sampling gives an unbiased value in the six-digit range.
+    const sample = new Uint32Array(1);
+    const range = 900000;
+    const acceptedLimit = Math.floor(0x100000000 / range) * range;
+    for (let attempt = 0; attempt < 128; attempt += 1) {
+      cryptoImpl.getRandomValues(sample);
+      const value = Number(sample[0]) >>> 0;
+      if (value < acceptedLimit) return 'smvpy-' + String(100000 + (value % range));
+    }
+    throw httpError('SECURE_RANDOM_UNAVAILABLE', 'A secure Customer Payment ID could not be generated. Please retry.', 503);
   }
 
   async function recordPrivateConsultationPayment({ consultationId, orderId, paymentId, signature = '', source }) {

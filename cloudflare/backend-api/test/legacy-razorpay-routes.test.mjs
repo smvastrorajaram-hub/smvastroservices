@@ -311,7 +311,7 @@ test('Question verify-payment checks owner, order, signature and provider captur
   const question = state.firestore.documents.get('smv_questions/q-1');
   assert.equal(question.paymentStatus, 'paid');
   assert.equal(question.razorpayPaymentId, 'pay_123');
-  assert.ok(question.customerPaymentId.startsWith('smvcp_'));
+  assert.match(question.customerPaymentId, /^smvpy-\d{6}$/);
   const paymentDocs = [...state.firestore.documents.keys()].filter(path => path.startsWith('smv_payments/'));
   assert.equal(paymentDocs.length, 1);
 });
@@ -677,3 +677,30 @@ test('paid Private Chat opens to all approved Astrologers only when Admin sets o
   assert.equal(question.astrologerId,'');
 });
 
+
+
+test('new Public Question payments use the same random smvpy six-digit reference as Private Chat', async () => {
+  const state = setup({
+    documents: {
+      'smv_settings/workflow': { allowWithoutAdminApproval: true },
+      'smv_questions/q-public-random': {
+        questionId: 'q-public-random', customerId: 'customer-1',
+        question: 'A public customer question', amount: 10,
+        status: 'awaiting_payment', paymentStatus: 'order_created',
+        razorpayOrderId: 'order_test_1'
+      }
+    }
+  });
+  const result = await state.legacyRoutes.recordQuestionPayment({
+    questionId: 'q-public-random', orderId: 'order_test_1',
+    paymentId: 'pay_public_random', signature: 'verified-signature',
+    source: 'cloudflare_checkout_verification'
+  });
+  assert.match(result.customerPaymentId, /^smvpy-\d{6}$/);
+  assert.equal(result.status, 'available_to_astrologers');
+  const saved = state.firestore.documents.get('smv_questions/q-public-random');
+  assert.equal(saved.customerPaymentId, result.customerPaymentId);
+  const ledger = state.firestore.documents.get('smv_payments/' + result.customerPaymentId);
+  assert.equal(ledger.questionType, 'public_question');
+  assert.equal(ledger.privateChat, false);
+});

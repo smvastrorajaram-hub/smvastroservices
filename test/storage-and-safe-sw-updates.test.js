@@ -191,3 +191,25 @@ test('Reviews stays inside the Live Chat controls with matching button dimension
   assert.match(source, /data-reviews[^>]*height:44px/);
   assert.match(source, /data-live-action="chat"[^>]*height:44px/);
 });
+
+
+test('Customer Question Admin Control uses ON for approval and OFF for open questions and direct answers', () => {
+  const admin = read('smvastro.mjs');
+  assert.match(admin, /const adminControlOn=!allowWithoutAdminApproval/);
+  assert.match(admin, /ADMIN CONTROL ON/);
+  assert.match(admin, /ADMIN CONTROL OFF/);
+  assert.match(admin, /allowWithoutAdminApproval:nextAllowWithoutAdminApproval/);
+  assert.match(admin, /Refunds remain Admin-controlled in both modes/);
+});
+
+test('Live Call, Live Chat and Reviews share one equal-size row with Reviews to the right of Chat', () => {
+  const source = read('public/public-content.mjs');
+  const actions = source.indexOf('smv-live-service-actions');
+  const call = source.indexOf('data-live-action="call"', actions);
+  const chat = source.indexOf('data-live-action="chat"', call);
+  const reviews = source.indexOf('data-reviews', chat);
+  assert.ok(actions >= 0 && call > actions && chat > call && reviews > chat);
+  assert.match(source, /data-live-action="call"[^>]*height:44px/);
+  assert.match(source, /data-live-action="chat"[^>]*height:44px/);
+  assert.match(source, /data-reviews[^>]*height:44px/);
+});

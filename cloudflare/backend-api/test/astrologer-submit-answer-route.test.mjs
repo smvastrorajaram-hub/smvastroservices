@@ -93,3 +93,26 @@ test('Missing email configuration does not block saving answer; notifications re
  const res=response();await app.handlers.get('POST /submit-answer')(request(requestData()),res);
  assert.equal(res.statusCode,200);assert.equal(firestore.store.get('smv_notifications/cus-1_answer_submitted_q1').type,'astrologer_answer_submitted');
 });
+
+
+test('Private Chat Admin OFF releases an approved Astrologer answer directly to the Customer',async()=>{
+ const app=harness(),firestore=fixture({docs:{
+  'smv_questions/smvqt-654321':{
+   customerId:'cus-1',astrologerId:'astro-1',privateChat:true,questionType:'private_chat',
+   assignmentMode:'open_to_all',status:'private_chat_assigned',paymentStatus:'paid',
+   answerMinWords:150,amount:499,commissionPercent:75,adminCommissionPercent:25,
+   astrologerCommissionAmount:374.25,adminCommissionAmount:124.75,question:'Private question'
+  },
+  'smv_settings/workflow':{allowWithoutAdminApproval:false}
+ }});
+ registerAstrologerSubmitAnswerRoute({app,firestore,identityService:{async authenticateAuthorization(){return{uid:'astro-1',email:'astro@example.com'};}}});
+ const res=response();await app.handlers.get('POST /submit-answer')(request({questionId:'smvqt-654321',answer}),res);
+ assert.equal(res.statusCode,200);
+ assert.equal(res.body.status,'answered');
+ const saved=firestore.store.get('smv_questions/smvqt-654321');
+ assert.equal(saved.status,'answered');
+ assert.equal(saved.astrologerAnswerStatus,'approved');
+ assert.equal(saved.commissionStatus,'pending_customer_view');
+ assert.ok(saved.answerAvailableAt);
+ assert.equal(firestore.store.get('smv_notifications/cus-1_answer_submitted_smvqt-654321').type,'answer_ready');
+});
