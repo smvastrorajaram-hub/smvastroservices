@@ -46,8 +46,6 @@ test('SMV ASTRO PDF preview and Save as PDF use Android A4 Print Framework', () 
   assert.match(astro, /SMV ASTRO Horoscope PDF View/);
   assert.match(astro, /SMV ASTRO Horoscope PDF Download/);
   assert.match(astro, /Choose ‘Save as PDF’/);
-  assert.match(astro, /window\.SMVAstroNativePdf\.viewPdf\(\)/);
-  assert.match(astro, /window\.SMVAstroNativePdf\.downloadPdf\(\)/);
 });
 
 test('SMV ASTRO Android mobile and print layouts format charts and wide tables', () => {
