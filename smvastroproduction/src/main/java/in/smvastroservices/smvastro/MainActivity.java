@@ -9,9 +9,12 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.print.PrintAttributes;
+import android.print.PrintManager;
 import android.view.Gravity;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.PermissionRequest;
@@ -24,6 +27,7 @@ import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -104,6 +108,9 @@ public class MainActivity extends Activity {
         settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
 
+        // Native PDF controls are exposed only on the trusted SMV ASTRO Horoscope print page.
+        webView.addJavascriptInterface(new NativePdfBridge(), "SMVAstroNativePdf");
+
         CookieManager cookies = CookieManager.getInstance();
         cookies.setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
@@ -130,6 +137,8 @@ public class MainActivity extends Activity {
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 hidePwaInstallUi(view);
+                configureAstroPdfActions(view, url);
+                applyAstroHoroscopeReportLayout(view, url);
                 requestNotificationPermissionIfNeeded();
             }
         });
@@ -172,6 +181,91 @@ public class MainActivity extends Activity {
         webView.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> openExternal(Uri.parse(url)));
 
         NativeWebBridge.install(this, webView);
+    }
+
+    private boolean isAstroHoroscopePrintPageUrl(String rawUrl) {
+        if (rawUrl == null) return false;
+        try {
+            Uri uri = Uri.parse(rawUrl);
+            int port = uri.getPort();
+            return "https".equals(lower(uri.getScheme()))
+                    && ownsHost(lower(uri.getHost()))
+                    && (port == -1 || port == 443)
+                    && "/horoscope/report-print.html".equals(uri.getPath());
+        } catch (RuntimeException ignored) {
+            return false;
+        }
+    }
+
+    private final class NativePdfBridge {
+        @JavascriptInterface
+        public void viewPdf() {
+            runOnUiThread(() -> openAstroNativePdf(false));
+        }
+
+        @JavascriptInterface
+        public void downloadPdf() {
+            runOnUiThread(() -> openAstroNativePdf(true));
+        }
+    }
+
+    private void openAstroNativePdf(boolean download) {
+        if (webView == null || !isAstroHoroscopePrintPageUrl(webView.getUrl())) {
+            Toast.makeText(this, "Open a saved SMV ASTRO Horoscope report before creating its PDF.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        PrintManager printManager = (PrintManager) getSystemService(Context.PRINT_SERVICE);
+        if (printManager == null) {
+            Toast.makeText(this, "Android PDF print service is unavailable on this device.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        String jobName = download ? "SMV ASTRO Horoscope PDF Download" : "SMV ASTRO Horoscope PDF View";
+        try {
+            PrintAttributes attributes = new PrintAttributes.Builder()
+                    .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
+                    .setResolution(new PrintAttributes.Resolution("smv_astro_horoscope_pdf", "SMV ASTRO Horoscope PDF", 300, 300))
+                    .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
+                    .build();
+            printManager.print(jobName, webView.createPrintDocumentAdapter(jobName), attributes);
+            String message = download
+                    ? "PDF preview opened. Choose ‘Save as PDF’ to save the report on your device."
+                    : "PDF preview opened. You can review it or choose ‘Save as PDF’.";
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+        } catch (RuntimeException ex) {
+            Toast.makeText(this, "Could not create the Horoscope PDF: " + ex.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void configureAstroPdfActions(WebView view, String url) {
+        if (view == null || !isAstroHoroscopePrintPageUrl(url)) return;
+        String script = "(function(){try{" +
+                "if(window.__smvAstroAndroidPdfActionsInstalled)return;window.__smvAstroAndroidPdfActionsInstalled=true;" +
+                "var preview=document.getElementById('printNow'),nav=document.querySelector('.print-tools');" +
+                "if(!preview||!nav)return;" +
+                "var ta=(document.documentElement.lang||'').toLowerCase().indexOf('ta')===0;" +
+                "preview.textContent=ta?'PDF பார்க்க':'View PDF';" +
+                "preview.setAttribute('aria-label',ta?'PDF முன்னோட்டம் பார்க்க':'Open PDF preview');" +
+                "window.print=function(){try{window.SMVAstroNativePdf.viewPdf();}catch(e){var s=document.getElementById('printStatus');if(s)s.textContent=String(e&&e.message||e);}};" +
+                "var save=document.getElementById('smvAstroAndroidPdfDownload');" +
+                "if(!save){save=document.createElement('button');save.type='button';save.id='smvAstroAndroidPdfDownload';save.className=preview.className;save.textContent=ta?'PDF பதிவிறக்கம்':'Download PDF';save.disabled=preview.disabled;preview.insertAdjacentElement('afterend',save);}" +
+                "save.onclick=function(){if(save.disabled)return;var status=document.getElementById('printStatus');if(status)status.textContent=ta?'Android PDF சேமிப்பு திறக்கப்படுகிறது…':'Opening Android PDF save options…';try{window.SMVAstroNativePdf.downloadPdf();}catch(e){if(status)status.textContent=String(e&&e.message||e);}};" +
+                "if(window.MutationObserver&&!save.__smvObserver){save.__smvObserver=new MutationObserver(function(){save.disabled=preview.disabled;});save.__smvObserver.observe(preview,{attributes:true,attributeFilter:['disabled']});}" +
+                "}catch(e){}})();";
+        view.evaluateJavascript(script, null);
+    }
+
+    private void applyAstroHoroscopeReportLayout(WebView view, String url) {
+        if (view == null || !isAstroHoroscopePrintPageUrl(url)) return;
+        String script = "(function(){try{" +
+                "var root=document.getElementById('printReport');if(!root)return;" +
+                "var sheet=Array.prototype.find.call(document.styleSheets,function(x){return x.href&&x.href.indexOf('report-print.css')!==-1;});" +
+                "if(sheet&&!window.__smvAstroAndroidResponsivePdfCss){" +
+                "var css='@media screen and (max-width:720px){html,body{width:100%;max-width:100%;overflow-x:hidden}main{width:100%;max-width:100%;padding:0 8px}#printReport{width:100%;max-width:100%;overflow:visible}#printReport .smv-android-table-scroll{display:block!important;width:100%!important;max-width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior-x:contain!important;padding-bottom:5px!important}#printReport table{width:100%!important;max-width:100%!important;table-layout:auto!important}#printReport table.smv-android-wide-table{width:max-content!important;min-width:680px!important;max-width:none!important;table-layout:auto!important}#printReport table.smv-android-wide-table.smv-shadbala-table{min-width:900px!important}#printReport table.smv-android-wide-table th,#printReport table.smv-android-wide-table td{min-width:58px!important;max-width:180px!important;padding:7px 6px!important;font-size:12px!important;line-height:1.4!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important}#printReport .south-indian-chart{width:100%!important;max-width:560px!important;min-height:0!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;grid-template-rows:repeat(4,minmax(68px,auto))!important}#printReport .south-rasi-cell{min-width:0!important;padding:5px!important;font-size:clamp(10px,2.7vw,14px)!important}#printReport .south-chart-center{font-size:clamp(15px,4vw,22px)!important}#printReport .sbc-grid-full{width:100%!important;max-width:100%!important;grid-template-rows:repeat(9,minmax(70px,auto))!important}}';" +
+                "try{sheet.insertRule(css,sheet.cssRules.length);window.__smvAstroAndroidResponsivePdfCss=true;}catch(e){}}" +
+                "var enhance=function(){root.querySelectorAll('table').forEach(function(table){var cols=0;Array.prototype.forEach.call(table.rows,function(row){cols=Math.max(cols,row.cells.length);});if(cols<6)return;table.classList.add('smv-android-wide-table');var wrap=table.closest('.data-table-wrap,.adv-table-wrap,.smv-shadbala-scroll,.smv-v257-table-wrap,.smv-android-table-scroll');if(!wrap){wrap=document.createElement('div');wrap.className='smv-android-table-scroll';table.parentNode.insertBefore(wrap,table);wrap.appendChild(table);}else{wrap.classList.add('smv-android-table-scroll');}});};enhance();" +
+                "if(window.MutationObserver&&!window.__smvAstroAndroidReportObserver){window.__smvAstroAndroidReportObserver=new MutationObserver(enhance);window.__smvAstroAndroidReportObserver.observe(root,{childList:true,subtree:true});}" +
+                "}catch(e){}})();";
+        view.evaluateJavascript(script, null);
     }
 
     private void hidePwaInstallUi(WebView view) {
