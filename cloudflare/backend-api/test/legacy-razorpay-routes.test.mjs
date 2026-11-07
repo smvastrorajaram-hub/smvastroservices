@@ -654,27 +654,33 @@ test('unified webhook does not guess when the same Razorpay order maps to multip
 });
 
 
-test('paid Private Chat opens to all approved Astrologers only when Admin sets open_to_all', async () => {
+test('Admin OFF assigns the paid Private Chat only to the Customer-selected approved Astrologer', async () => {
   const questionId = 'smvqt-234567';
   const state = setup({documents:{
     'smv_settings/workflow': {allowWithoutAdminApproval:false},
-    'smv_settings/privateChat': {assignmentMode:'open_to_all'},
+    'smv_settings/privateChat': {assignmentMode:'direct_selected'},
+    'smv_astrologers/astro-1': {status:'approved',name:'Test Astrologer'},
     ['smv_questions/'+questionId]: {
       privateChat:true,questionType:'private_chat',customerId:'customer-1',
       requestedAstrologerId:'astro-1',requestedAstrologerName:'Test Astrologer',
-      question:'Open question',amount:499,status:'awaiting_payment',paymentStatus:'order_created',
+      question:'Selected question',amount:499,status:'awaiting_payment',paymentStatus:'order_created',
       razorpayOrderId:'order_test_1',commissionPercent:75,adminCommissionPercent:25
     }
   }});
   const result=await state.legacyRoutes.recordQuestionPayment({
-    questionId,orderId:'order_test_1',paymentId:'pay_private_open',
+    questionId,orderId:'order_test_1',paymentId:'pay_private_direct',
     signature:'verified-signature',source:'private_chat_checkout_verification'
   });
-  assert.equal(result.status,'private_chat_available_to_astrologers');
+  assert.equal(result.status,'private_chat_assigned');
+  assert.equal(result.astrologerId,'astro-1');
   const question=state.firestore.documents.get('smv_questions/'+questionId);
-  assert.equal(question.status,'private_chat_available_to_astrologers');
-  assert.equal(question.allocationStatus,'available_to_astrologers');
-  assert.equal(question.astrologerId,'');
+  assert.equal(question.status,'private_chat_assigned');
+  assert.equal(question.allocationStatus,'assigned_to_astrologer');
+  assert.equal(question.astrologerId,'astro-1');
+  assert.equal(question.assignmentMode,'direct_selected');
+  assert.equal(question.adminApprovalBypassed,true);
+  const ledger=state.firestore.documents.get('smv_payments/'+result.customerPaymentId);
+  assert.equal(ledger.astrologerId,'astro-1');
 });
 
 

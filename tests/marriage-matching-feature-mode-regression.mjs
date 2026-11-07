@@ -144,13 +144,13 @@ no(matching.includes('#smvMarriageMatching #mmPaidFeaturePreview button{display:
 yes(policy.includes("T('Login to Pay','Login செய்து கட்டணம் செலுத்தவும்')"),'The paid CTA clearly indicates Login and payment');
 yes(policy.includes('function syncHoroscopePaidEntry()'),'Horoscope has a pre-calculation paid-benefit panel');
 yes(html.includes('id="smvHoroscopePaidEntryEnglish"')&&html.includes('id="smvHoroscopePaidEntryTamil"'),'Both Horoscope language forms host the pre-login benefit panel');
-yes(html.includes('config.js?v=20261107-private-chat-admin-review-refund-v3'),'Access config uses its cache-busted URL');
-yes(html.includes('horoscope-form.js?v=20261107-private-chat-admin-review-refund-v3'),'Horoscope form uses its cache-busted URL');
-yes(html.includes('horoscope.css?v=20261107-private-chat-admin-review-refund-v3'),'Horoscope styles use their cache-busted URL');
+yes(html.includes('config.js?v=20261107-private-chat-selected-astrologer-v4'),'Access config uses its cache-busted URL');
+yes(html.includes('horoscope-form.js?v=20261107-private-chat-selected-astrologer-v4'),'Horoscope form uses its cache-busted URL');
+yes(html.includes('horoscope.css?v=20261107-private-chat-selected-astrologer-v4'),'Horoscope styles use their cache-busted URL');
 yes(html.includes('marriage-matching.js?v=20261106-basic-nakshatra-input-v1'),'Marriage Matching uses its cache-busted URL');
 
 // All three products share the marker. Existing offline/user data is not cleared.
-const marker='20261107-private-chat-admin-review-refund-v3';
+const marker='20261107-private-chat-selected-astrologer-v4';
 yes(workers.every(source=>source.includes(marker)),'All three Service Workers share the synchronized cache release');
 no(policy.includes('localStorage.clear('),'The policy does not clear origin-wide localStorage');
 no(policy.includes('caches.delete('),'The policy does not clear Cache Storage');

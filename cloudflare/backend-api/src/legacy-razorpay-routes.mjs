@@ -202,7 +202,7 @@ export function registerLegacyRazorpayRoutes({
     const privateChatSettings = privateChat
       ? await firestore.getDocument('smv_settings/privateChat').catch(() => ({ exists:false,data:null }))
       : { exists:false,data:null };
-    const assignmentMode = privateChatSettings.data?.assignmentMode === 'open_to_all' ? 'open_to_all' : 'admin_assigned';
+    const assignmentMode = ['direct_selected','open_to_all'].includes(privateChatSettings.data?.assignmentMode) ? 'direct_selected' : 'admin_assigned';
     const recordedAt = new Date(Number(now())).toISOString();
 
     // Every new Customer Question payment (Public Question or Private Chat)

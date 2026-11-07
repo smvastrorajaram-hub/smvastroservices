@@ -2,7 +2,7 @@
    HTML/CSS/JS presentation is network-first and retained for offline reopening.
    Authentication, account data, APIs, payments and consultation operations stay network-only.
    Location search keeps its existing independent online/offline cache. */
-const SMV_CACHE_RELEASE='20261107-private-chat-admin-review-refund-v3';
+const SMV_CACHE_RELEASE='20261107-private-chat-selected-astrologer-v4';
 const SMV_LOCATION_CACHE='smv-shared-india-places';
 const APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE;
 const APP_SHELL_FILES=[

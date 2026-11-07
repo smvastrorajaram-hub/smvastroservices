@@ -99,7 +99,7 @@ test('Private Chat Admin OFF releases an approved Astrologer answer directly to 
  const app=harness(),firestore=fixture({docs:{
   'smv_questions/smvqt-654321':{
    customerId:'cus-1',astrologerId:'astro-1',privateChat:true,questionType:'private_chat',
-   assignmentMode:'open_to_all',status:'private_chat_assigned',paymentStatus:'paid',
+   assignmentMode:'direct_selected',adminApprovalBypassed:true,status:'private_chat_assigned',paymentStatus:'paid',
    answerMinWords:150,amount:499,commissionPercent:75,adminCommissionPercent:25,
    astrologerCommissionAmount:374.25,adminCommissionAmount:124.75,question:'Private question'
   },

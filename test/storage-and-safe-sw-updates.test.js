@@ -167,8 +167,12 @@ test('Private Chat Admin approval, allocation and refund controls are wired to t
   assert.match(app, /\/admin\/private-chat\/reject-answer/);
   assert.match(app, /\/admin\/private-chat\/retry-refund/);
   assert.match(app, /\/admin\/private-chat\/sync-refund/);
-  assert.match(app, /\/astrologer\/private-chat\/claim/);
+  assert.doesNotMatch(app, /\/astrologer\/private-chat\/claim/);
+  assert.doesNotMatch(app, /data-private-chat-claim/);
+  assert.match(app, /direct_selected/);
   assert.match(html, /id="privateChatAssignmentMode"/);
+  assert.match(html, /Customer-selected Astrologer/);
+  assert.match(html, /Private Chat questions are never shown to all Astrologers/);
   assert.match(app, /Waiting for Admin approval before Customer can view it/);
 });
 

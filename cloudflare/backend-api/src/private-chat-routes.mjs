@@ -118,7 +118,7 @@ export function registerPrivateChatRoutes({
     const commissionConfigured=Number.isFinite(astrologerCommissionPercent)&&astrologerCommissionPercent>=0&&astrologerCommissionPercent<=100&&
       Number.isFinite(adminCommissionPercent)&&adminCommissionPercent>=0&&adminCommissionPercent<=100&&
       Math.abs(astrologerCommissionPercent+adminCommissionPercent-100)<0.000001;
-    const assignmentMode=data.assignmentMode==='open_to_all'?'open_to_all':'admin_assigned';
+    const assignmentMode=['direct_selected','open_to_all'].includes(data.assignmentMode)?'direct_selected':'admin_assigned';
     const configuredEnabled=data.enabled===true;
     return {
       enabled:configuredEnabled&&Number.isFinite(price)&&price>=1&&commissionConfigured,
@@ -212,7 +212,7 @@ export function registerPrivateChatRoutes({
       const parsePercent=value=>value==null||String(value).trim()===''?null:Number(value);
       const astrologerCommissionPercent=parsePercent(req.body?.astrologerCommissionPercent);
       const adminCommissionPercent=parsePercent(req.body?.adminCommissionPercent);
-      const assignmentMode=req.body?.assignmentMode==='open_to_all'?'open_to_all':'admin_assigned';
+      const assignmentMode=['direct_selected','open_to_all'].includes(req.body?.assignmentMode)?'direct_selected':'admin_assigned';
       const commissionProvided=astrologerCommissionPercent!==null||adminCommissionPercent!==null;
       const commissionConfigured=astrologerCommissionPercent!==null&&adminCommissionPercent!==null&&
         Number.isFinite(astrologerCommissionPercent)&&Number.isFinite(adminCommissionPercent)&&
