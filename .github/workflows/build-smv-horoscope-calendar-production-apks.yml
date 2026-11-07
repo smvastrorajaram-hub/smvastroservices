@@ -230,6 +230,7 @@ jobs:
             :smvhoroscopeproduction:assembleRelease \
             :smvcalendarproduction:assembleRelease
 
+      # Shared signed-release gate is if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}; app-target outputs narrow publication to changed products.
       - name: Validate shared permanent Android Release signing secrets
         if: ${{ env.SMV_SIGNED_RELEASE == 'true' && steps.app_targets.outputs.modules != '' }}
         shell: bash
