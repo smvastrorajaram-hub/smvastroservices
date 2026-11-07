@@ -1546,7 +1546,7 @@ function smvPrivateChatStatusLabel(question){
  if(q.paymentStatus!=='paid')return 'Payment Pending';
  if(q.status==='answered')return 'Astrologer Answer Ready';
  if(q.status==='private_chat_pending_admin')return 'Paid — Awaiting Admin Astrologer Allocation';
- if(q.status==='private_chat_available_to_astrologers')return 'Open to Approved Astrologers — Awaiting Claim';
+ if(q.status==='private_chat_available_to_astrologers')return 'Legacy question — Admin must restore Customer-selected Astrologer allocation';
  if(q.status==='private_chat_assigned')return 'Submitted — Awaiting Astrologer Answer';
  if(q.status==='processing')return 'Astrologer Answer — Awaiting Admin Approval';
  if(q.status==='admin_review')return 'Answer Being Prepared';
