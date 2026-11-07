@@ -135,10 +135,10 @@ test('main page cache versions point to the audited theme assets', () => {
   assert.ok(html.includes('android-app-install.css?v=20261030-admin-apk-manager-v2'));
   assert.ok(html.includes('smv-ui.css?v=20261105-dashboard-typography-hierarchy-v1'));
   assert.ok(html.includes('dashboard-typography.css?v=20261105-session-state-labels-v1'));
-  assert.ok(html.includes('smvastro.mjs?v=20261107-private-chat-selected-astrologer-v4'));
+  assert.ok(html.includes('smvastro.mjs?v=20261107-private-chat-selected-astrologer-v5'));
   assert.ok(html.includes('android-app-install.js?v=20261031-apk-release-card-v2'));
-  assert.ok(html.includes('public-content-loader.js?v=20261107-private-chat-selected-astrologer-v4'));
+  assert.ok(html.includes('public-content-loader.js?v=20261107-private-chat-selected-astrologer-v5'));
   assert.doesNotMatch(html, /<script[^>]+src=["'][^"']*public-content\.mjs/);
   const lazyLoader = read('../public/public-content-loader.js');
-  assert.ok(lazyLoader.includes('public-content.mjs?v=20261107-private-chat-selected-astrologer-v4'));
+  assert.ok(lazyLoader.includes('public-content.mjs?v=20261107-private-chat-selected-astrologer-v5'));
 });
