@@ -66,5 +66,5 @@ test('SMV ASTRO production workflow runs native PDF regression checks and still 
   assert.match(astroWorkflow, /SMV_ANDROID_KEY_ALIAS/);
   assert.match(astroWorkflow, /apksigner" verify --verbose --print-certs/);
   const horoscopeCalendarWorkflow = read('.github/workflows/build-smv-horoscope-calendar-production-apks.yml');
-  assert.doesNotMatch(horoscopeCalendarWorkflow, /smvastroproduction\\/src\\/main\\/java\\/in\\/smvastr[o]services\\/smvastro\\/MainActivity\\.java/);
+  assert.equal(horoscopeCalendarWorkflow.includes('smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java'), false, 'ASTRO-only Java changes must not trigger the Horoscope/Calendar production workflow');
 });
