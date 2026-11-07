@@ -113,7 +113,7 @@ ok(matching.includes('cgRajanAyurdayaReportHtml'),'existing C.G. Rajan renderer 
 const horoscopeCss=fs.readFileSync(new URL('../public/horoscope/horoscope.css',import.meta.url),'utf8');
 const matchingCss=fs.readFileSync(new URL('../public/horoscope/marriage-basic-report.css',import.meta.url),'utf8');
 const appHtml=fs.readFileSync(new URL('../public/horoscope/index.html',import.meta.url),'utf8');
-ok(appHtml.includes('horoscope.js?v=20261107-private-chat-selected-astrologer-v4'),
+ok(appHtml.includes('horoscope.js?v=20261107-private-chat-selected-astrologer-v5'),
  'The PWA requests the revised Horoscope script instead of its previous cached URL');
 ok(horoscopeCss.includes('.smv-cg-rajan-ayurdaya .smv-ayurdaya-table')&&horoscopeCss.includes('background:rgb(255,243,213)'),
  'Horoscope uses the existing cream header colour for both nested result tables');
