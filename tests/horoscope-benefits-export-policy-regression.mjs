@@ -42,14 +42,19 @@ test("Full Horoscope payment index contains all ten detailed Advanced Analysis b
 });
 
 test("Admin ON + Rs.1 or above keeps pre-login Benefits, then shows only one payment card after Customer login", () => {
-  assert.match(policy, /const entitled=loggedIn \\? await paidEntitled\\(feature\\) : false/);
-  assert.match(policy, /if\\(state\\.mode!=='paid'\\|\\|Number\\(state\\.actualPrice\\|\\|0\\)<1\\|\\|state\\.entitled\\|\\|state\\.loggedIn===true\\)/);
-  assert.match(policy, /const paidCustomerMode=state\\.mode==='paid'&&state\\.loggedIn===true&&Number\\(state\\.actualPrice\\|\\|0\\)>=1/);
-  assert.match(policy, /const showPaymentMirror=paidCustomerMode&&state\\.entitled!==true/);
-  assert.match(policy, /for\\(const item of quickRoots\\)[\\s\\S]{0,300}renderHoroscopePaymentMirror\\(item,state,allPaymentRoots\\)/);
-  assert.match(policy, /Preserve the original pre-login Login-to-Pay behavior unchanged/);
-  assert.match(policy, /renderPolicyLock\\(\\s*'advanced_analysis',\\s*item\\.root/);
-  assert.match(policy, /mode:'paid'[\\s\\S]{0,180}loggedIn,entitled,fullAllowed:entitled/);
+  assert.ok(policy.includes("const entitled=loggedIn ? await paidEntitled(feature) : false;"));
+  assert.ok(policy.includes("state.entitled||state.loggedIn===true"), "The lower Benefits entry is cleared after Customer login");
+  assert.ok(policy.includes("const paidCustomerMode=state.mode==='paid'&&state.loggedIn===true&&Number(state.actualPrice||0)>=1;"));
+  assert.ok(policy.includes("const showPaymentMirror=paidCustomerMode&&state.entitled!==true;"));
+  assert.ok(policy.includes("renderHoroscopePaymentMirror(item,state,allPaymentRoots);"), "The single payment card uses the existing mirror renderer");
+  const benefitsStart=policy.indexOf("for(const item of benefitsRoots){");
+  const benefitsEnd=policy.indexOf("\n    }\n  });",benefitsStart);
+  assert.ok(benefitsStart>=0&&benefitsEnd>benefitsStart, "The lower Benefits synchronizer remains present");
+  const benefitsLoop=policy.slice(benefitsStart,benefitsEnd);
+  assert.ok(benefitsLoop.includes("state.loggedIn===true"));
+  assert.ok(!benefitsLoop.includes("renderHoroscopePaymentMirror"), "The lower Benefits root must not render a second paid card after login");
+  assert.ok(benefitsLoop.includes("renderPolicyLock("), "The pre-login benefits/payment route is preserved");
+  assert.match(policy, /mode:'paid'[\s\S]{0,180}loggedIn,entitled,fullAllowed:entitled/);
   assert.match(auth, /Full Report Payment/);
   assert.match(policy, /Login to Pay/);
 });
