@@ -199,7 +199,7 @@ test('Admin rejection updates the D1 withdrawal row and preserves encrypted payo
   const rejected=await f.service.rejectWithdrawal({withdrawalId:'uuid-1',adminUid:'admin-1'});
   assert.equal(rejected.withdrawal.status,'rejected');
   const listed=await f.service.listAdminWithdrawals();
-  assert.equal(listed[0].rejectedAt,new Date(1760000000000).toISOString());
+  assert.equal(listed[0].rejectedAt,new Date(Date.UTC(2026,9,31,10,0,0)).toISOString());
   const retry=await f.service.rejectWithdrawal({withdrawalId:'uuid-1',adminUid:'admin-1'});
   assert.equal(retry.alreadyProcessed,true);
   const encrypted=f.payouts.get('uuid-1');
@@ -228,11 +228,11 @@ test('Admin can process, pay and safely retry a withdrawal; payout snapshot rema
   assert.equal(retry.alreadyProcessed,true);
   assert.equal(retry.paymentId,paid.paymentId);
   const listed=await f.service.listAdminWithdrawals();
-  assert.equal(listed[0].processingAt,new Date(1760000000000).toISOString());
-  assert.equal(listed[0].paidAt,new Date(1760000000000).toISOString());
+  assert.equal(listed[0].processingAt,new Date(Date.UTC(2026,9,31,10,0,0)).toISOString());
+  assert.equal(listed[0].paidAt,new Date(Date.UTC(2026,9,31,10,0,0)).toISOString());
   const dashboard=await f.service.getEarningsDashboard('astro-1');
-  assert.equal(dashboard.withdrawals[0].processingAt,new Date(1760000000000).toISOString());
-  assert.equal(dashboard.withdrawals[0].paidAt,new Date(1760000000000).toISOString());
+  assert.equal(dashboard.withdrawals[0].processingAt,new Date(Date.UTC(2026,9,31,10,0,0)).toISOString());
+  assert.equal(dashboard.withdrawals[0].paidAt,new Date(Date.UTC(2026,9,31,10,0,0)).toISOString());
   const details=await f.service.getPrivatePayout('uuid-1');
   assert.equal(details.payout.accountNumber,'123456789');
   assert.match(created.withdrawalId,/^smvwt-[0-9]{6}$/);
