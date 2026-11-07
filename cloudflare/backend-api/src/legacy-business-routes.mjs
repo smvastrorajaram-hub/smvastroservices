@@ -227,6 +227,12 @@ export function registerLegacyBusinessRoutes({ app, firestore, identityService, 
             code: 'REVIEW_ANSWER_NOT_FINAL', httpStatus: 409
           });
         }
+        const isPrivateChat=question.privateChat===true&&String(question.questionType||'')==='private_chat';
+        if(isPrivateChat&&!question.customerAnswerViewedAt){
+          throw Object.assign(new Error('Open and view the approved Private Chat answer before submitting a review.'), {
+            code:'PRIVATE_CHAT_ANSWER_NOT_VIEWED',httpStatus:409
+          });
+        }
         if (String(question.astrologerId || '') !== astrologerId) {
           throw Object.assign(new Error('Astrologer information does not match.'), {
             code: 'REVIEW_ASTROLOGER_MISMATCH', httpStatus: 409
