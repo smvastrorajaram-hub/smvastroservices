@@ -104,13 +104,18 @@ export function registerPrivateChatRoutes({
     return user;
   }
   async function readSettings(){
-    const snapshot=await firestore.getDocument(SETTINGS_PATH);
+    const [snapshot,legacyAnswerSettings]=await Promise.all([
+      firestore.getDocument(SETTINGS_PATH),
+      firestore.getDocument('smv_settings/answer').catch(()=>({exists:false,data:null}))
+    ]);
     const data=snapshot.exists?(snapshot.data||{}):{};
     const price=Number(data.price||0);
+    const configuredWords=data.minimumAnswerWords??legacyAnswerSettings.data?.minimumWords??150;
+    const minimumAnswerWords=Math.max(1,Math.min(10000,Math.floor(Number(configuredWords)||150)));
     return {
       enabled:data.enabled===true&&Number.isFinite(price)&&price>=1,
       price:Number.isFinite(price)&&price>=0?Math.round(price*100)/100:0,
-      turnaround:'24–48 hours'
+      minimumAnswerWords,turnaround:'24–48 hours'
     };
   }
   async function loadOwnedPrivateQuestion(questionId,customerId){
@@ -190,16 +195,20 @@ export function registerPrivateChatRoutes({
       const actor=await requireAdmin(req);
       const enabled=req.body?.enabled===true;
       const price=Number(req.body?.price);
+      const minimumAnswerWords=Number(req.body?.minimumAnswerWords);
       if(!Number.isFinite(price)||price<0||price>100000||Math.abs(price*100-Math.round(price*100))>0.000001){
         throw apiError('PRIVATE_CHAT_PRICE_INVALID','Enter a valid Private Chat price between ₹0 and ₹1,00,000.',400);
       }
       if(enabled&&price<1)throw apiError('PRIVATE_CHAT_PRICE_REQUIRED','Set a Private Chat price of at least ₹1 before enabling the feature.',400);
+      if(!Number.isInteger(minimumAnswerWords)||minimumAnswerWords<1||minimumAnswerWords>10000){
+        throw apiError('PRIVATE_CHAT_WORD_LIMIT_INVALID','Set the Astrologer minimum answer limit between 1 and 10,000 words.',400);
+      }
       const saved={
-        enabled,price:Math.round(price*100)/100,
+        enabled,price:Math.round(price*100)/100,minimumAnswerWords,
         updatedAt:FirestoreFieldValue.serverTimestamp(),updatedBy:String(actor.uid||'')
       };
       await firestore.setDocument(SETTINGS_PATH,saved,{merge:true});
-      return res.set('Cache-Control','no-store').json({success:true,enabled,price:saved.price,turnaround:'24–48 hours'});
+      return res.set('Cache-Control','no-store').json({success:true,enabled,price:saved.price,minimumAnswerWords,turnaround:'24–48 hours'});
     }catch(error){return sendError(res,error,'Unable to save Private Chat settings.');}
   });
 
@@ -230,8 +239,7 @@ export function registerPrivateChatRoutes({
       const commissionSnapshot=await firestore.getDocument('smv_settings/commission').catch(()=>({exists:false,data:null}));
       const configuredRate=Number(commissionSnapshot.data?.astroPercent??20);
       const commissionPercent=Number.isFinite(configuredRate)&&configuredRate>=0&&configuredRate<=100?configuredRate:20;
-      const answerSettings=await firestore.getDocument('smv_settings/answer').catch(()=>({exists:false,data:null}));
-      const answerMinWords=Math.max(1,Math.min(10000,Math.floor(Number(answerSettings.data?.minimumWords||150))));
+      const answerMinWords=settings.minimumAnswerWords;
       const markerId=(String(user.uid).replace(/[^A-Za-z0-9_-]/g,'_')+'_'+requestId).slice(0,200);
       const markerPath='smv_private_chat_requests/'+markerId;
       let questionId='';
