@@ -248,7 +248,7 @@ test('paid Private Chat uses the smvpy six-digit customer Payment ID and selecte
     questionId, orderId: 'order_test_1', paymentId: 'pay_private_123',
     signature: 'verified-signature', source: 'private_chat_checkout_verification'
   });
-  assert.match(result.customerPaymentId, /^smvpy-\\d{6}$/);
+  assert.match(result.customerPaymentId, /^smvpy-\d{6}$/);
   assert.equal(result.privateChat, true);
   assert.equal(result.status, 'private_chat_assigned');
   const question = state.firestore.documents.get('smv_questions/' + questionId);
