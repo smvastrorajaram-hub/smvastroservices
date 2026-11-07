@@ -1757,6 +1757,10 @@ function smvBindCustomerBookingChat(){
   location.href='./?view=consult';
  };
 }
+function smvBindCustomerPrivateChat(){
+ const button=$('smvCustomerPrivateChatRefresh');
+ if(button&&!button.dataset.smvBound){button.dataset.smvBound='1';button.onclick=()=>smvLoadCustomerPrivateChatQuestions();}
+}
 function smvWalletDashboardCardHtml(){
  return '<section class="card smv-customer-wallet-card" id="smvCustomerWalletCard" style="margin-top:16px" aria-labelledby="smvWalletTitle">'+
  '<div class="grid" style="align-items:center;gap:14px"><div><span class="badge">CUSTOMER WALLET</span><h3 id="smvWalletTitle" style="margin:8px 0">My Wallet</h3><div class="small">Use your Wallet for Live Call, Live Chat and consultation charges.</div></div>'+
@@ -1775,8 +1779,10 @@ function smvRenderFastDashboardShell(roleValue=''){
  const user=currentUser||auth?.currentUser;
  if(role==='customer'){
   const name=[user?.displayName].map(value=>String(value||'').trim()).find(Boolean)||'Customer';
-  box.innerHTML='<div class="grid"><div class="card"><span class="badge">CUSTOMER</span><h3>Welcome, <span class="smv-dashboard-name">'+escapeHtml(name)+'</span></h3><p>Your dashboard is ready.</p></div></div>'+smvCustomerBookingChatCardHtml()+smvWalletDashboardCardHtml();
+  box.innerHTML='<div class="grid"><div class="card"><span class="badge">CUSTOMER</span><h3>Welcome, <span class="smv-dashboard-name">'+escapeHtml(name)+'</span></h3><p>Your dashboard is ready.</p></div></div>'+smvCustomerBookingChatCardHtml()+smvCustomerPrivateChatCardHtml()+smvWalletDashboardCardHtml();
   smvBindCustomerBookingChat();
+  smvBindCustomerPrivateChat();
+  void smvLoadCustomerPrivateChatQuestions();
   smvBindCustomerWallet({load:false});
   return;
  }
@@ -2520,12 +2526,21 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
    if(background&&smvEditing("dashboard")){smvLiveQueue?.request();return;}
    box.innerHTML=`<div class="grid"><div class="card"><span class="badge">CUSTOMER</span><h3>Welcome, <span class="smv-dashboard-name">${escapeHtml(customerDisplayName)}</span></h3><p><b>Email verification:</b> ${currentUser.emailVerified?'<span class="smv-verified-badge customer-profile-result"><span class="smv-check">✓</span>Verified</span>':'<span class="customer-profile-result">Pending from registration</span>'}</p><p><b>Mobile:</b> <span class="customer-profile-result">Private</span></p></div></div>
    ${smvCustomerBookingChatCardHtml()}
+   ${smvCustomerPrivateChatCardHtml()}
    ${smvWalletDashboardCardHtml()}`;
    smvBindCustomerBookingChat();
+   smvBindCustomerPrivateChat();
+   void smvLoadCustomerPrivateChatQuestions();
    smvBindCustomerWallet({load:false});
    // The fast shell only binds handlers. Load real balance/minutes after this
    // final Customer Dashboard DOM has mounted, so the request updates live nodes.
    void smvLoadCustomerWallet();
+  }
+  if(role==='astrologer'&&box){
+   if(!$('smvAstrologerPrivateChatCard'))box.insertAdjacentHTML('beforeend',smvAstrologerPrivateChatCardHtml());
+   const refreshPrivate=$('smvAstrologerPrivateChatRefresh');
+   if(refreshPrivate&&!refreshPrivate.dataset.smvBound){refreshPrivate.dataset.smvBound='1';refreshPrivate.onclick=()=>smvLoadAstrologerPrivateChatQuestions();}
+   void smvLoadAstrologerPrivateChatQuestions();
   }
   // Mount the Live Call/Chat panel only after the role-specific Dashboard DOM exists.
   // Without this call, the render helpers are defined but the controls never enter the DOM.
