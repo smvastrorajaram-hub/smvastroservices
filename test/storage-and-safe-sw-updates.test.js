@@ -37,7 +37,7 @@ test('Horoscope Service Worker does not force-reload open report/form tabs and p
 test('main SMV ASTRO caches only the offline UI shell while leaving online-only routes and Horoscope scope isolated', () => {
   const sw = read('public/sw.js');
   assert.ok(sw.includes("APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE"));
-  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261107-private-chat-admin-review-refund-v3'"));
+  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261107-private-chat-24h-reallocation-v4'"));
   assert.ok(sw.includes('APP_SHELL_FILES'));
   for (const icon of ['./assets/icon-192.png','./assets/icon-512.png','./assets/favicon-astro.ico']) {
     assert.ok(sw.includes(icon), 'SMV ASTRO must precache its manifest icon/favicon: '+icon);
@@ -58,7 +58,7 @@ test('main SMV ASTRO caches only the offline UI shell while leaving online-only 
 test('Horoscope precaches its UI and required local calculation/WASM assets without caching online services', () => {
   const sw = read('public/horoscope/sw.js');
   assert.ok(sw.includes("SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE"));
-  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261107-private-chat-admin-review-refund-v3'"));
+  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261107-private-chat-24h-reallocation-v4'"));
   assert.ok(sw.includes("OFFLINE_CACHE='smv-horoscope-offline'"));
   assert.ok(sw.includes("LOCATION_CACHE='smv-shared-india-places'"));
   assert.ok(sw.includes('prefetchIndiaPlaceShards'));
@@ -85,7 +85,7 @@ test('Horoscope precaches its UI and required local calculation/WASM assets with
 test('Calendar keeps its offline UI/WASM precache and India shard migration while bypassing online-only API routes', () => {
   const sw = read('public/horoscope/calendar/sw.js');
   assert.ok(sw.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"));
-  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261107-private-chat-admin-review-refund-v3'"));
+  assert.ok(sw.includes("SMV_CACHE_RELEASE='20261107-private-chat-24h-reallocation-v4'"));
   assert.ok(sw.includes('const REQUIRED_CORE = new Set(['));
   assert.ok(sw.includes('await preserveCachedIndiaPlaces(target)'));
   assert.ok(sw.includes("LOCATION_CACHE='smv-shared-india-places'"));
@@ -122,7 +122,7 @@ test('All three app workers share the same release bump while preserving indepen
     assert.ok(match, 'Every app worker must declare SMV_CACHE_RELEASE');
     return match[1];
   });
-  assert.deepEqual(releases, ['20261107-private-chat-admin-review-refund-v3','20261107-private-chat-admin-review-refund-v3','20261107-private-chat-admin-review-refund-v3']);
+  assert.deepEqual(releases, ['20261107-private-chat-24h-reallocation-v4','20261107-private-chat-24h-reallocation-v4','20261107-private-chat-24h-reallocation-v4']);
   assert.ok(workers[0].includes("APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE"));
   assert.ok(workers[1].includes("SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE"));
   assert.ok(workers[2].includes("CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"));
@@ -212,4 +212,46 @@ test('Live Call, Live Chat and Reviews share one equal-size row with Reviews to 
   assert.match(source, /data-live-action="call"[^>]*height:44px/);
   assert.match(source, /data-live-action="chat"[^>]*height:44px/);
   assert.match(source, /data-reviews[^>]*height:44px/);
+});
+
+
+test('Private Chat answer submit keeps the server error visible and enables a safe retry at the Admin word limit', () => {
+  const frontend = read('public/smvastro.mjs');
+  assert.match(frontend, /let submitting=false/);
+  assert.match(frontend, /submit\.disabled=submitting\|\|words<minimum/);
+  assert.match(frontend, /submitting=false;submit\.textContent='SUBMIT ANSWER';update\(\)/);
+  assert.match(frontend, /message\.textContent=error\?\.message\|\|String\(error\);message\.classList\.add\('error'\)/);
+  assert.match(frontend, /message\.classList\.remove\('error'\)/);
+});
+
+test('Private Chat UI offers reallocation only after the 24-hour deadline and displays Razorpay refund references', () => {
+  const frontend = read('public/smvastro.mjs');
+  const backend = read('cloudflare/backend-api/src/private-chat-routes.mjs');
+  assert.match(frontend, /Date\.now\(\)>=dueMs/);
+  assert.match(frontend, /data-private-chat-reallocate-astro/);
+  assert.match(frontend, /Razorpay Refund ID/);
+  assert.match(frontend, /\bRRN\b/);
+  assert.match(frontend, /\bARN\b/);
+  assert.match(frontend, /\bUTR\b/);
+  assert.match(backend, /PRIVATE_CHAT_24_HOUR_WINDOW_ACTIVE/);
+  assert.match(backend, /POST \/admin\/private-chat\/reallocate-question/);
+});
+
+test('Rejected or refund-started Private Chat questions are removed by the Astrologer API, not merely hidden in the browser', () => {
+  const backend = read('cloudflare/backend-api/src/private-chat-routes.mjs');
+  assert.match(backend, /const refundStarted=Boolean\(q\.refundId\|\|q\.refundRequestedAt\|\|q\.adminQuestionRejectedAt\|\|refundStatus\)/);
+  assert.match(backend, /if\(rejected\|\|refundStarted\)return false/);
+});
+
+test('Private Chat question and withdrawal timestamps are included for Customer, Astrologer and Admin views', () => {
+  const frontend = read('public/smvastro.mjs');
+  const withdrawal = read('shared/backend-platform/d1-live-withdrawal-service.mjs');
+  assert.match(frontend, /Question Submitted/);
+  assert.match(frontend, /Answer Submitted/);
+  assert.match(frontend, /Answer Approved/);
+  assert.match(frontend, /Refund Requested/);
+  assert.match(frontend, /Processing',w\.processingAt/);
+  assert.match(frontend, /Rejected',w\.rejectedAt/);
+  assert.match(withdrawal, /processingAt:/);
+  assert.match(withdrawal, /rejectedAt:/);
 });

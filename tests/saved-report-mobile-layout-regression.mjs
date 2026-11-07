@@ -19,7 +19,7 @@ ok(css.includes('@media(max-width:600px)')&&css.includes('#smvSavedReports .smv-
 ok(css.includes('background:#8b1717!important;color:#fff!important;-webkit-text-fill-color:#fff!important'),'Saved-list buttons use high-contrast red boxes with white text');
 ok(css.includes('overflow-wrap:anywhere!important'),'Long saved report names wrap instead of collapsing into individual letters');
 ok(html.includes('20261106-saved-list-full-width-red-v1'),'Horoscope stylesheet URL has a new cache-busting version');
-ok(sw.includes("const SMV_CACHE_RELEASE='20261107-private-chat-admin-review-refund-v3';"),'Horoscope service-worker shell cache is versioned for this UI update');
+ok(sw.includes("const SMV_CACHE_RELEASE='20261107-private-chat-24h-reallocation-v4';"),'Horoscope service-worker shell cache is versioned for this UI update');
 ok(sw.includes('const RUNTIME_REVISION=\'v270-horoscope-single-paid-entry-theme-20261107\';'),'Horoscope runtime revision is bumped');
 ok(store.includes("const DB='smv-reports-v2',STORE='reports',DB_VERSION=3;"),'Saved report database schema is unchanged');
 console.log(JSON.stringify({pass:true,assertions:n,scope:'Saved Reports placement, responsive layout, contrast and cache-version source checks; no saved data migration or deletion'}));
