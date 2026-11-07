@@ -56,8 +56,12 @@ export function registerAstrologerSubmitAnswerRoute({app,firestore,identityServi
     const q=snapshot.data||{};
     const workflow=workflowSnapshot.data||{};
     if(String(q.astrologerId||'')!==uid)throw Object.assign(new Error('This question is not assigned to you.'),{code:'QUESTION_NOT_ASSIGNED',httpStatus:403});
-    const bypass=workflow.allowWithoutAdminApproval===true&&q.adminApprovalBypassed!==false;
-    const editable=['admin_approved','revision_required','processing','admin_review'];
+    const privateChat=q.privateChat===true&&String(q.questionType||'')==='private_chat';
+    // A paid Private Chat is assigned to the selected approved Astrologer. It
+    // follows the paid-question answer path and is released to its Customer
+    // automatically, without changing the separate Public Questions workflow.
+    const bypass=privateChat||(workflow.allowWithoutAdminApproval===true&&q.adminApprovalBypassed!==false);
+    const editable=['admin_approved','revision_required','processing','admin_review','private_chat_assigned'];
     if(bypass&&String(q.status||'')==='answered'&&(q.customerAnswerViewedAt||String(q.commissionStatus||'')==='credited')){
      throw Object.assign(new Error('The customer has already viewed this answer. It can no longer be edited.'),{code:'ANSWER_ALREADY_VIEWED',httpStatus:409});
     }
