@@ -153,5 +153,5 @@ test('Private Chat availability refreshes when the Astrologer List returns and p
   const admin = read('public/index.html');
   assert.match(admin, /id="privateChatAstrologerCommissionPercent"/);
   assert.match(admin, /id="privateChatAdminCommissionPercent"/);
-  assert.match(admin, /commission percentages[\s\S]*100%/);
+  assert.match(admin, /Private Chat commission is separate from Live \/ Booking commission[\s\S]*100%/);
 });
