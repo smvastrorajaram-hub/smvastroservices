@@ -1,4 +1,4 @@
-const SMV_CACHE_RELEASE='20261107-private-chat-selected-astrologer-v4';
+const SMV_CACHE_RELEASE='20261107-private-chat-selected-astrologer-v5';
 const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE;
 const LOCATION_CACHE='smv-shared-india-places';
 const CORE=[
