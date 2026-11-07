@@ -408,6 +408,11 @@ test('Rejected or refund-processing Private Chat questions disappear from every 
     status:'private_chat_assigned',allocationStatus:'assigned_to_astrologer',astrologerId:'astro-1',
     refundRequestedAt:{seconds:1794040000},refundStatus:'processing'
   });
+  state.firestore.documents.set('smv_questions/smvqt-status-only-refund-1',{
+    questionId:'smvqt-status-only-refund-1',privateChat:true,questionType:'private_chat',paymentStatus:'paid',
+    status:'private_chat_assigned',allocationStatus:'assigned_to_astrologer',astrologerId:'astro-1',
+    refundStatus:'pending'
+  });
   const result=response();
   await state.app.handlers.get('GET /astrologer/private-chat/questions')(
     request({authorization:'Bearer astrologer-token'}),result
