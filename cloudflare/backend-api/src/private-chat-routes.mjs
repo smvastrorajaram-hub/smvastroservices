@@ -227,8 +227,8 @@ export function registerPrivateChatRoutes({
       const requestId=safeId(req.body?.requestId,100);
       if(!astrologerId||customerName.length<2||customerName.length>120||
          !validBirthDate(birth.birthDate,now)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(birthTime)||
-         !birthPlace||birthPlace.length>200||!questionText||questionText.length>10000||
-         !requestId||!['','Male','Female','Other'].includes(gender)){
+         !birthPlace||birthPlace.length>200||!gender||!['Male','Female','Other'].includes(gender)||
+         !questionText||questionText.length>10000||!requestId){
         throw apiError('PRIVATE_CHAT_FORM_INVALID','Complete your name, date/time/place of birth and question before continuing.',400);
       }
       const astrologerSnapshot=await firestore.getDocument('smv_astrologers/'+astrologerId);
