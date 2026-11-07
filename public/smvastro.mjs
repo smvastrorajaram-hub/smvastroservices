@@ -1748,12 +1748,14 @@ async function smvLoadAdminPrivateChat(){
   save.onclick=async()=>{
    const enabled=$('privateChatEnabled')?.value==='true';
    const price=Number($('privateChatPrice')?.value);
+   const minimumAnswerWords=Number($('privateChatMinimumAnswerWords')?.value);
    save.disabled=true;if(settingsMsg)settingsMsg.textContent='Saving Private Chat settings to Cloudflare…';
    try{
-    const result=await smvPrivateChatApi('/admin/private-chat/settings',{method:'POST',body:{enabled,price}});
+    const result=await smvPrivateChatApi('/admin/private-chat/settings',{method:'POST',body:{enabled,price,minimumAnswerWords}});
     if($('privateChatEnabled'))$('privateChatEnabled').value=String(result.enabled===true);
     if($('privateChatPrice'))$('privateChatPrice').value=Number(result.price||0).toFixed(2);
-    if(settingsMsg)settingsMsg.textContent='Saved. Private Chat: '+(result.enabled?'ON':'OFF')+' · Customer price ₹'+Number(result.price||0).toFixed(2)+'.';
+    if($('privateChatMinimumAnswerWords'))$('privateChatMinimumAnswerWords').value=String(result.minimumAnswerWords||150);
+    if(settingsMsg)settingsMsg.textContent='Saved. Private Chat: '+(result.enabled?'ON':'OFF')+' · Customer price ₹'+Number(result.price||0).toFixed(2)+' · Astrologer minimum answer '+Number(result.minimumAnswerWords||150)+' words.';
     void smvLoadAdminPrivateChat();
    }catch(error){if(settingsMsg)settingsMsg.textContent=error?.message||String(error);}
    finally{save.disabled=false;}
@@ -1768,7 +1770,8 @@ async function smvLoadAdminPrivateChat(){
   ]);
   if($('privateChatEnabled'))$('privateChatEnabled').value=String(settings.enabled===true);
   if($('privateChatPrice'))$('privateChatPrice').value=Number(settings.price||0).toFixed(2);
-  if(settingsMsg)settingsMsg.textContent='Current setting: '+(settings.enabled?'ON':'OFF')+' · ₹'+Number(settings.price||0).toFixed(2);
+  if($('privateChatMinimumAnswerWords'))$('privateChatMinimumAnswerWords').value=String(settings.minimumAnswerWords||150);
+  if(settingsMsg)settingsMsg.textContent='Current setting: '+(settings.enabled?'ON':'OFF')+' · ₹'+Number(settings.price||0).toFixed(2)+' · Astrologer minimum answer '+Number(settings.minimumAnswerWords||150)+' words.';
   const questions=Array.isArray(result.questions)?result.questions:[];
   queue.innerHTML=questions.length?questions.map(q=>{
    const id=String(q.questionId||q.id||'');
