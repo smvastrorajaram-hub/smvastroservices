@@ -164,8 +164,8 @@ test('manual Android version shorthand is normalized to the required major.minor
   assert.deepEqual(normalizeAndroidReleaseVersionName('v1.18', 'SMV ASTRO'), {
     versionName: 'v1.18', versionCode: 1018, wasNormalized: false
   });
-  assert.throws(() => normalizeAndroidReleaseVersionName('v0', 'SMV ASTRO'), /vMAJOR\\.MINOR/);
-  assert.throws(() => normalizeAndroidReleaseVersionName('v2.1000', 'SMV CALENDAR'), /vMAJOR\\.MINOR/);
+  assert.throws(() => normalizeAndroidReleaseVersionName('v0', 'SMV ASTRO'), /vMAJOR\.MINOR/);
+  assert.throws(() => normalizeAndroidReleaseVersionName('v2.1000', 'SMV CALENDAR'), /vMAJOR\.MINOR/);
   assert.throws(() => normalizeAndroidReleaseVersionName('v2100001', 'SMV HOROSCOPE'), /supported range/);
 });
 
