@@ -69,20 +69,20 @@ test('Existing Horoscope and Calendar QA APK modules remain test-only and keep t
   assert.match(read('smvcalendar/build.gradle'), /applicationId "in\.smvastr[o]services\.calendar\.test"/);
 });
 
-test('HOROSCOPE and CALENDAR production launchers use their matching ICON sources and compact Android JPEG resources', () => {
+test('HOROSCOPE and CALENDAR production launchers use their module-local master artwork and compact Android JPEG resources', () => {
   const script = read('prepare-smv-horoscope-calendar-production-icons.sh');
   const generator = read('tools/SmvProductLauncherIconGenerator.java');
   const workflow = read('.github/workflows/build-smv-horoscope-calendar-production-apks.yml');
 
-  assert.match(script, /copy_product_icon "ICON\/SMV HOROSCOPE\.jpg" smvhoroscopeproduction/);
-  assert.match(script, /copy_product_icon "ICON\/SMV CALENDAR\.jpg" smvcalendarproduction/);
+  assert.match(script, /copy_product_icon "smvhoroscopeproduction\/launcher\/icon-master\.jpg" smvhoroscopeproduction/);
+  assert.match(script, /copy_product_icon "smvcalendarproduction\/launcher\/icon-master\.jpg" smvcalendarproduction/);
   assert.match(script, /mipmap-nodpi\/ic_launcher\.jpg/);
   assert.match(script, /drawable-nodpi\/ic_launcher_foreground\.jpg/);
   assert.match(script, /size > 300000/);
   assert.match(generator, /MAX_ASSET_BYTES = 300000/);
   assert.match(generator, /writeJpegUnderLimit/);
-  assert.match(workflow, /ICON\/SMV HOROSCOPE\.jpg/);
-  assert.match(workflow, /ICON\/SMV CALENDAR\.jpg/);
+  assert.match(workflow, /smvhoroscopeproduction\/launcher\/icon-master\.jpg/);
+  assert.match(workflow, /smvcalendarproduction\/launcher\/icon-master\.jpg/);
   assert.doesNotMatch(script, /public\/(horoscope|assets)\/.*(write|rm|delete)/i);
 });
 
