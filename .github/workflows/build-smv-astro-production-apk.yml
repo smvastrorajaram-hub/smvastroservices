@@ -20,11 +20,10 @@ on:
         default: true
   pull_request:
     paths:
-      - "ICON/SMV ASTRO.jpg"
       - "tools/SmvProductLauncherIconGenerator.java"
       - "smvastroproduction/**"
       - "test/android-astro-pdf-native.test.mjs"
-      - "smvastroproduction/launcher/icon-512.png"
+      - "smvastroproduction/launcher/icon-master.jpg"
       - "settings.gradle"
       - "prepare-smv-astro-production-icon.sh"
       - ".github/workflows/build-smv-astro-production-apk.yml"
@@ -44,10 +43,9 @@ on:
       - "public/horoscope/offline/places/india-manifest.json"
   push:
     paths:
-      - "ICON/SMV ASTRO.jpg"
       - "tools/SmvProductLauncherIconGenerator.java"
       - "smvastroproduction/**"
-      - "smvastroproduction/launcher/icon-512.png"
+      - "smvastroproduction/launcher/icon-master.jpg"
       - "settings.gradle"
       - "prepare-smv-astro-production-icon.sh"
       - ".github/workflows/build-smv-astro-production-apk.yml"

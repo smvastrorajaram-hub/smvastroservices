@@ -2,15 +2,15 @@
 
 The Production Android app lives in `smvastroproduction/`, has launcher name **SMV ASTRO**, and uses package `in.smvastroservices.smvastro`. The modules `smvastro/`, `smvhoroscope/`, and `smvcalendar/` remain separate Test APKs. The existing `.github/workflows/build-test-apks.yml` workflow is not changed.
 
-## Android launcher icons: three independent assets from the root ICON folder
-The three production APKs use the exact product-specific images uploaded to the repository's root `ICON/` folder:
-- `ICON/SMV ASTRO.jpg` → SMV ASTRO
-- `ICON/SMV HOROSCOPE.jpg` → SMV HOROSCOPE
-- `ICON/SMV CALENDAR.jpg` → SMV CALENDAR
+## Android launcher icons: module-local launcher assets
+Each Production Android module keeps its own square master artwork in its module-local `launcher/` asset folder:
+- `smvastroproduction/launcher/icon-master.jpg` → SMV ASTRO
+- `smvhoroscopeproduction/launcher/icon-master.jpg` → SMV HOROSCOPE
+- `smvcalendarproduction/launcher/icon-master.jpg` → SMV CALENDAR
 
-Each source image is 2048×2048. The Android build generates 512×512 square/round launcher images and a 432×432 adaptive foreground JPEG, with the same centered white-background tile treatment for all three products. The shared generator reduces JPEG quality only as necessary and fails closed unless every generated launcher image is at most 300,000 bytes. The adaptive icon keeps a separate pure-white background resource.
+Each production Android module keeps its own square master artwork at `launcher/icon-master.jpg` (at least 512×512). The shared Java generator renders that artwork into 512×512 square/round launcher JPEGs and a 432×432 adaptive foreground JPEG; all generated Android launcher images are capped at 300,000 bytes. The master artwork remains in its own module folder and is not packaged directly. The adaptive icon keeps a separate pure-white background resource; website and PWA assets are not edited.
 
-Changing one source image triggers only its corresponding Android build workflow. The Website, Horoscope PWA, Calendar PWA, Firebase, Razorpay, Render and Cloudflare assets are not changed by this launcher-only update.
+Changing one module-local launcher image triggers only its corresponding Android production APK workflow. The Website, Horoscope PWA and Calendar PWA asset folders remain unchanged by this launcher-only update.
 - When the Astrologer taps the full-screen notification, Android passes the data extras (including `type`, `sessionId` or `bookingId`) to the launcher activity. `MainActivity` converts those values into the existing `smvLivePush` URL, and the signed-in Astrologer dashboard opens the matching Live request or booking.
 - A swiped-away or process-killed app can be started by Android for a delivered high-priority FCM data message. Android does not deliver FCM while the user has force-stopped the app from system App Info; the user must launch it again. Notification permission, DND/silent mode, ringtone volume, battery management, OEM background limits and network/FCM delivery remain controlled by Android and the device owner.
 - Browser notifications are separate from the native Android service. A browser tab that remains open can play its in-page alert sound, but web notifications cannot reliably force the phone's selected ringtone while the browser/tab is closed; the browser's system notification behavior is therefore left unchanged.

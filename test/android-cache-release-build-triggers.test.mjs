@@ -15,11 +15,11 @@ function section(source, name) {
   return source.slice(start, end);
 }
 
-test('SMV ASTRO production APK rebuilds when its root UI cache or location search changes', () => {
+test('SMV ASTRO production APK rebuilds when its module launcher asset, root UI cache or location search changes', () => {
   for (const trigger of ['pull_request', 'push']) {
     const block = section(astro, trigger);
     for (const file of [
-      'ICON/SMV ASTRO.jpg',
+      'smvastroproduction/launcher/icon-master.jpg',
       'tools/SmvProductLauncherIconGenerator.java',
       'public/sw.js',
       'public/main-location-search.js',
@@ -35,12 +35,12 @@ test('SMV ASTRO production APK rebuilds when its root UI cache or location searc
   }
 });
 
-test('SMV HOROSCOPE and SMV CALENDAR production APKs rebuild when either scoped UI cache or GeoNames loader changes', () => {
+test('SMV HOROSCOPE and SMV CALENDAR production APKs rebuild when their module launcher assets, scoped UI cache or GeoNames loader changes', () => {
   for (const trigger of ['pull_request', 'push']) {
     const block = section(horoscopeCalendar, trigger);
     for (const file of [
-      'ICON/SMV HOROSCOPE.jpg',
-      'ICON/SMV CALENDAR.jpg',
+      'smvhoroscopeproduction/launcher/icon-master.jpg',
+      'smvcalendarproduction/launcher/icon-master.jpg',
       'tools/SmvProductLauncherIconGenerator.java',
       'public/horoscope/sw.js',
       'public/horoscope/calendar/sw.js',
