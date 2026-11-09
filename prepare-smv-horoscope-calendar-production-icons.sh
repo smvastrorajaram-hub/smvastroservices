@@ -15,7 +15,7 @@ copy_product_icon() {
   production_res="$production_module/src/main/res"
 
   test -s "$source_icon" || {
-    echo "::error::Approved production app artwork is missing: $source_icon"
+    echo "::error::Production Android launcher asset is missing: $source_icon"
     exit 1
   }
 
@@ -44,7 +44,7 @@ copy_product_icon() {
   done
 }
 
-copy_product_icon "ICON/SMV HOROSCOPE.jpg" smvhoroscopeproduction
-copy_product_icon "ICON/SMV CALENDAR.jpg" smvcalendarproduction
+copy_product_icon "smvhoroscopeproduction/launcher/icon-master.jpg" smvhoroscopeproduction
+copy_product_icon "smvcalendarproduction/launcher/icon-master.jpg" smvcalendarproduction
 
-echo "PASS: HOROSCOPE and CALENDAR use their exact matching ICON folder artwork; every generated launcher image is below 300 KB."
+echo "PASS: HOROSCOPE and CALENDAR use their each app module’s own launcher asset; every generated launcher image is below 300 KB."

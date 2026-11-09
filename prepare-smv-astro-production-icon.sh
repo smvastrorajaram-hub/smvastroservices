@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-source_icon="ICON/SMV ASTRO.jpg"
+source_icon="smvastroproduction/launcher/icon-master.jpg"
 res="smvastroproduction/src/main/res"
 generator_dir="/tmp/smv-android-icon-generator"
 
 test -s "$source_icon" || {
-  echo "::error::Approved SMV ASTRO artwork is missing: $source_icon"
+  echo "::error::SMV ASTRO launcher asset is missing: $source_icon"
   exit 1
 }
 
@@ -32,4 +32,4 @@ for asset in "$res/drawable-nodpi/ic_launcher_foreground.jpg" "$res/mipmap-nodpi
   fi
 done
 
-echo "PASS: SMV ASTRO Android launcher assets are derived from ICON/SMV ASTRO.jpg and stay below 300 KB each."
+echo "PASS: SMV ASTRO Android launcher assets are derived from smvastroproduction/launcher/icon-master.jpg and stay below 300 KB each."

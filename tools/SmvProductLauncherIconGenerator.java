@@ -17,8 +17,8 @@ import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageOutputStream;
 
 /**
- * Builds compact Android launcher resources from the three approved JPEGs
- * stored in the repository's ICON folder. Website/PWA files are never edited.
+ * Builds compact Android launcher resources from each production module's
+ * existing square master artwork in its launcher asset folder. Website/PWA files are never edited.
  * Every generated image is a JPEG and is strictly limited to 300,000 bytes.
  */
 public final class SmvProductLauncherIconGenerator {
@@ -103,8 +103,8 @@ public final class SmvProductLauncherIconGenerator {
   }
 
   private static void verifySource(BufferedImage source, Path sourcePath) {
-    if (source == null || source.getWidth() != source.getHeight() || source.getWidth() < 512) {
-      throw new IllegalArgumentException("Approved icon must be a readable square JPG of at least 512x512: " + sourcePath);
+    if (source == null || source.getWidth() < 512 || source.getHeight() < 512 || source.getWidth() != source.getHeight()) {
+      throw new IllegalArgumentException("Approved launcher master artwork must be a readable square PNG or JPG of at least 512x512: " + sourcePath);
     }
     int center = source.getRGB(source.getWidth() / 2, source.getHeight() / 2) & 0xFFFFFF;
     if (center == WHITE) {
@@ -131,11 +131,11 @@ public final class SmvProductLauncherIconGenerator {
 
   public static void main(String[] args) throws Exception {
     if (args.length != 2) {
-      throw new IllegalArgumentException("Usage: SmvProductLauncherIconGenerator ICON/app-icon.jpg output-res-directory");
+      throw new IllegalArgumentException("Usage: SmvProductLauncherIconGenerator launcher/icon-master.jpg output-res-directory");
     }
     Path inputPath = Paths.get(args[0]);
     Path res = Paths.get(args[1]);
-    BufferedImage source = ImageIO.read(inputPath.toFile());
+        BufferedImage source = ImageIO.read(inputPath.toFile());
     verifySource(source, inputPath);
 
     Path drawable = res.resolve("drawable-nodpi");
@@ -155,7 +155,7 @@ public final class SmvProductLauncherIconGenerator {
 
     writeAdaptiveXml(res);
 
-    System.out.println("PASS: Used the supplied " + inputPath.getFileName() + " artwork unchanged in design.");
+    System.out.println("PASS: Used the module-local launcher asset " + inputPath.getFileName() + " artwork unchanged in design.");
     System.out.println("PASS: 512x512 square " + squareBytes + " bytes; 512x512 round " + roundBytes +
       " bytes; 432x432 adaptive foreground " + foregroundBytes + " bytes.");
     System.out.println("PASS: Every generated Android icon image is below 300,000 bytes.");
