@@ -3,7 +3,7 @@
 The Production Android app lives in `smvastroproduction/`, has launcher name **SMV ASTRO**, and uses package `in.smvastroservices.smvastro`. The modules `smvastro/`, `smvhoroscope/`, and `smvcalendar/` remain separate Test APKs. The existing `.github/workflows/build-test-apks.yml` workflow is not changed.
 
 ## Android launcher icons: module-local launcher assets
-Each Production Android module keeps its own 512×512 PNG launcher source in the module's `launcher/` asset folder:
+Each Production Android module keeps its own square master artwork in its module-local `launcher/` asset folder:
 - `smvastroproduction/launcher/icon-master.jpg` → SMV ASTRO
 - `smvhoroscopeproduction/launcher/icon-master.jpg` → SMV HOROSCOPE
 - `smvcalendarproduction/launcher/icon-master.jpg` → SMV CALENDAR

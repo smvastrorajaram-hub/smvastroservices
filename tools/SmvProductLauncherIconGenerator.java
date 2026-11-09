@@ -135,7 +135,7 @@ public final class SmvProductLauncherIconGenerator {
     }
     Path inputPath = Paths.get(args[0]);
     Path res = Paths.get(args[1]);
-        BufferedImage source = ImageIO.read(inputPath.toFile());
+    BufferedImage source = ImageIO.read(inputPath.toFile());
     verifySource(source, inputPath);
 
     Path drawable = res.resolve("drawable-nodpi");
