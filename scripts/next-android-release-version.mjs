@@ -114,7 +114,7 @@ export async function appendAndroidReleaseVersionToEnv(appId, next, envPath = pr
 }
 
 async function getPublishedGithubReleaseTags(appId, fetchImpl, repository, token) {
-  if (!/^[A-Za-z0-9_.-]+\\/[A-Za-z0-9_.-]+$/.test(String(repository || ''))) {
+  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(String(repository || ''))) {
     throw new Error('GITHUB_REPOSITORY is missing or invalid; refusing to allocate a possibly duplicate Android version.');
   }
 
