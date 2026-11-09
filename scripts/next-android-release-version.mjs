@@ -25,7 +25,7 @@ const GITHUB_API_ORIGIN = 'https://api.github.com';
 const MAX_GITHUB_RELEASE_PAGES = 20;
 
 function parseVersionName(versionName, appId) {
-  const match = /^v([1-9][0-9]*)\\.([0-9]{1,3})$/.exec(String(versionName || ''));
+  const match = /^v([1-9][0-9]*)\.([0-9]{1,3})$/.exec(String(versionName || ''));
   if (!match) return null;
   const major = Number(match[1]);
   const minor = Number(match[2]);
@@ -40,19 +40,19 @@ export function versionNameFromAndroidReleaseTag(tag, appId) {
   const value = String(tag || '');
   let match = null;
   if (appId === 'astro') {
-    match = /^smv-astro-apk-(v[1-9][0-9]*\\.[0-9]{1,3})-run-[0-9]+$/.exec(value);
+    match = /^smv-astro-apk-(v[1-9][0-9]*\.[0-9]{1,3})-run-[0-9]+$/.exec(value);
     return match?.[1] || null;
   }
   if (appId === 'horoscope') {
-    match = /^smv-horoscope-apk-(v[1-9][0-9]*\\.[0-9]{1,3})-run-[0-9]+$/.exec(value);
+    match = /^smv-horoscope-apk-(v[1-9][0-9]*\.[0-9]{1,3})-run-[0-9]+$/.exec(value);
     if (match) return match[1];
-    match = /^smv-horoscope-calendar-apks-(v[1-9][0-9]*\\.[0-9]{1,3})-v[1-9][0-9]*\\.[0-9]{1,3}-run-[0-9]+$/.exec(value);
+    match = /^smv-horoscope-calendar-apks-(v[1-9][0-9]*\.[0-9]{1,3})-v[1-9][0-9]*\.[0-9]{1,3}-run-[0-9]+$/.exec(value);
     return match?.[1] || null;
   }
   if (appId === 'calendar') {
-    match = /^smv-calendar-apk-(v[1-9][0-9]*\\.[0-9]{1,3})-run-[0-9]+$/.exec(value);
+    match = /^smv-calendar-apk-(v[1-9][0-9]*\.[0-9]{1,3})-run-[0-9]+$/.exec(value);
     if (match) return match[1];
-    match = /^smv-horoscope-calendar-apks-v[1-9][0-9]*\\.[0-9]{1,3}-(v[1-9][0-9]*\\.[0-9]{1,3})-run-[0-9]+$/.exec(value);
+    match = /^smv-horoscope-calendar-apks-v[1-9][0-9]*\.[0-9]{1,3}-(v[1-9][0-9]*\.[0-9]{1,3})-run-[0-9]+$/.exec(value);
     return match?.[1] || null;
   }
   throw new Error('Unsupported Android app ID: ' + appId);
@@ -103,14 +103,14 @@ export async function appendAndroidReleaseVersionToEnv(appId, next, envPath = pr
   const app = ANDROID_RELEASE_APPS[appId];
   if (!app) throw new Error('Unsupported Android app ID: ' + appId);
   if (!envPath) throw new Error('GITHUB_ENV is not available; this step must run inside GitHub Actions.');
-  if (next?.appId !== appId || !/^v[1-9][0-9]*\\.[0-9]{1,3}$/.test(String(next.versionName || ''))) {
+  if (next?.appId !== appId || !/^v[1-9][0-9]*\.[0-9]{1,3}$/.test(String(next.versionName || ''))) {
     throw new Error('Refusing to write an invalid Android release version for ' + appId + '.');
   }
   const parsed = parseVersionName(next.versionName, appId);
   if (parsed.versionCode !== next.versionCode) {
     throw new Error('Refusing to write a mismatched Android versionCode for ' + appId + '.');
   }
-  await appendFile(envPath, app.envName + '=' + next.versionName + '\\n', { encoding: 'utf8' });
+  await appendFile(envPath, app.envName + '=' + next.versionName + '\n', { encoding: 'utf8' });
 }
 
 async function getPublishedGithubReleaseTags(appId, fetchImpl, repository, token) {
@@ -176,14 +176,14 @@ async function main() {
   for (const appId of appIds) {
     const next = await resolveNextAndroidReleaseVersion(appId);
     await appendAndroidReleaseVersionToEnv(appId, next);
-    process.stdout.write('Allocated ' + appId + ' next version ' + next.versionName + ' (versionCode ' + next.versionCode + ') from the maximum Cloudflare/GitHub release history.\\n');
+    process.stdout.write('Allocated ' + appId + ' next version ' + next.versionName + ' (versionCode ' + next.versionCode + ') from the maximum Cloudflare/GitHub release history.\n');
   }
 }
 
 const entry = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : '';
 if (entry === import.meta.url) {
   main().catch(error => {
-    process.stderr.write('Android release version allocation failed: ' + (error?.message || String(error)) + '\\n');
+    process.stderr.write('Android release version allocation failed: ' + (error?.message || String(error)) + '\n');
     process.exitCode = 1;
   });
 }
