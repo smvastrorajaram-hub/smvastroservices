@@ -26,7 +26,7 @@ test('SMV ASTRO PDF route guard matches the real redirected report URL and prese
   assert.ok(horoscopeIndex.includes("https://horoscope.smvastroservices.in/"), "The Horoscope shell redirects to the canonical host");
   assert.ok(reportStore.includes("report-print.html?mode="), "The saved-report handoff uses the relative print route");
   assert.ok(astro.includes('NativeWebBridge.install(this, webView)'), 'Existing FCM and native Google sign-in bridge must remain installed');
-});;;
+});
 
 test('SMV ASTRO PDF buttons call native bridge through a document capture listener', () => {
   assert.match(astro, /document\.addEventListener\('click',clickHandler,true\)/);
