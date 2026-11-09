@@ -189,10 +189,23 @@ public class MainActivity extends Activity {
         try {
             Uri uri = Uri.parse(rawUrl);
             int port = uri.getPort();
+            String host = lower(uri.getHost());
+            String path = uri.getPath();
+
+            // The Horoscope shell redirects from smvastroservices.in to its
+            // canonical subdomain. Saved-report handoff is relative, so the
+            // actual Android WebView URL is /report-print.html on that host.
+            // Keep the exact legacy ASTRO path too; never trust a wildcard host.
+            boolean canonicalHoroscopeReport =
+                    "horoscope.smvastroservices.in".equals(host)
+                            && "/report-print.html".equals(path);
+            boolean legacyAstroReport =
+                    ownsHost(host)
+                            && "/horoscope/report-print.html".equals(path);
+
             return "https".equals(lower(uri.getScheme()))
-                    && ownsHost(lower(uri.getHost()))
                     && (port == -1 || port == 443)
-                    && "/horoscope/report-print.html".equals(uri.getPath());
+                    && (canonicalHoroscopeReport || legacyAstroReport);
         } catch (RuntimeException ignored) {
             return false;
         }

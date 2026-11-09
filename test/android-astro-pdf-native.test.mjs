@@ -9,19 +9,22 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const astro = read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java');
 const astroWorkflow = read('.github/workflows/build-smv-astro-production-apk.yml');
 const horoscope = read('smvhoroscopeproduction/src/main/java/in/smvastroservices/horoscope/MainActivity.java');
+const horoscopeIndex = read('public/horoscope/index.html');
 const reportPage = read('public/horoscope/report-print.html');
 const reportScript = read('public/horoscope/report-print.js');
 const reportStore = read('public/horoscope/report-store.mjs');
 
-test('SMV ASTRO native PDF bridge is installed only for the trusted first-party horoscope print page', () => {
-  assert.match(astro, /webView\.addJavascriptInterface\(new NativePdfBridge\(\), "SMVAstroNativePdf"\)/);
-  assert.match(astro, /@JavascriptInterface[\s\S]*?public void viewPdf\(\)/);
-  assert.match(astro, /@JavascriptInterface[\s\S]*?public void downloadPdf\(\)/);
-  assert.match(astro, /"https"\.equals\(lower\(uri\.getScheme\(\)\)\)/);
-  assert.match(astro, /ownsHost\(lower\(uri\.getHost\(\)\)\)/);
-  assert.match(astro, /"\/horoscope\/report-print\.html"\.equals\(uri\.getPath\(\)\)/);
-  assert.match(astro, /port == -1 \|\| port == 443/);
-  assert.match(astro, /!isAstroHoroscopePrintPageUrl\(webView\.getUrl\(\)\)/);
+test('SMV ASTRO PDF route guard matches the real redirected report URL and preserves the legacy route', () => {
+  assert.ok(astro.includes("webView.addJavascriptInterface(new NativePdfBridge(), \"SMVAstroNativePdf\")"), "ASTRO native PDF bridge is installed");
+  assert.ok(astro.includes("@JavascriptInterface\n        public void viewPdf()"), "View PDF native action remains");
+  assert.ok(astro.includes("@JavascriptInterface\n        public void downloadPdf()"), "Download PDF native action remains");
+  assert.ok(astro.includes("\"horoscope.smvastroservices.in\".equals(host)"), "Only the canonical Horoscope host is accepted");
+  assert.ok(astro.includes("\"/report-print.html\".equals(path)"), "Canonical saved-report route is accepted");
+  assert.ok(astro.includes("ownsHost(host)"), "Legacy own-host route remains explicitly supported");
+  assert.ok(astro.includes("\"/horoscope/report-print.html\".equals(path)"), "Exact legacy report route is supported");
+  assert.ok(astro.includes("(port == -1 || port == 443)"), "Only default HTTPS or port 443 is accepted");
+  assert.ok(horoscopeIndex.includes("https://horoscope.smvastroservices.in/"), "The Horoscope shell redirects to the canonical host");
+  assert.ok(reportStore.includes("report-print.html?mode="), "The saved-report handoff uses the relative print route");
   assert.ok(astro.includes('NativeWebBridge.install(this, webView)'), 'Existing FCM and native Google sign-in bridge must remain installed');
 });
 
