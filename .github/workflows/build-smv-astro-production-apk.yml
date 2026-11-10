@@ -226,9 +226,9 @@ jobs:
         with:
           name: SMV-ASTRO-ANDROID-LAUNCHER-ICON-PREVIEW
           path: |
-            smvastroproduction/src/main/res/mipmap-nodpi/ic_launcher.png
-            smvastroproduction/src/main/res/mipmap-nodpi/ic_launcher_round.png
-            smvastroproduction/src/main/res/drawable-nodpi/ic_launcher_foreground.png
+            smvastroproduction/src/main/res/mipmap-nodpi/smv_astro_launcher.png
+            smvastroproduction/src/main/res/mipmap-nodpi/smv_astro_launcher_round.png
+            smvastroproduction/src/main/res/drawable-nodpi/smv_astro_launcher_foreground.png
           if-no-files-found: error
           retention-days: 7
 
