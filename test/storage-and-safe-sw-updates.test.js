@@ -39,7 +39,7 @@ test('main SMV ASTRO caches only the offline UI shell while leaving online-only 
   assert.ok(sw.includes("APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE"));
   assert.ok(sw.includes("SMV_CACHE_RELEASE='20261110-pwa-icons-v1'"));
   assert.ok(sw.includes('APP_SHELL_FILES'));
-  for (const icon of ['./assets/pwa-astro-192.svg','./assets/pwa-astro-512.png','./assets/pwa-astro-maskable.svg','./assets/favicon-astro.png','./assets/favicon-astro.ico']) {
+  for (const icon of ['./assets/pwa-astro-192.svg','./assets/pwa-astro-512.png','./assets/pwa-astro-maskable-192.svg','./assets/pwa-astro-maskable.svg','./assets/favicon-astro.png','./assets/favicon-astro.ico']) {
     assert.ok(sw.includes(icon), 'SMV ASTRO must precache its manifest icon/favicon: '+icon);
   }
   assert.ok(sw.includes("'./main-location-search.js'"));
@@ -63,7 +63,7 @@ test('Horoscope precaches its UI and required local calculation/WASM assets with
   assert.ok(sw.includes("LOCATION_CACHE='smv-shared-india-places'"));
   assert.ok(sw.includes('prefetchIndiaPlaceShards'));
   for (const asset of [
-    './assets/pwa-horoscope-192.svg','./assets/pwa-horoscope-512.png','./assets/pwa-horoscope-maskable.svg',
+    './assets/pwa-horoscope-192.svg','./assets/pwa-horoscope-512.png','./assets/pwa-horoscope-maskable-192.svg','./assets/pwa-horoscope-maskable.svg',
     './assets/favicon-horoscope.png','./assets/favicon-horoscope.ico','./assets/smv-horoscope-header-logo.png',
     './index.html','./boot.mjs','./horoscope.js','./marriage-matching.js',
     './marriage-basic-report.mjs','./matching-timeline.mjs','./d1-15-year-reading.mjs',
@@ -91,7 +91,7 @@ test('Calendar keeps its offline UI/WASM precache and India shard migration whil
   assert.ok(sw.includes("LOCATION_CACHE='smv-shared-india-places'"));
   assert.ok(sw.includes('prefetchIndiaPlaceShards'));
   for (const asset of [
-    '../assets/pwa-calendar-192.svg','../assets/pwa-calendar-512.png','../assets/pwa-calendar-maskable.svg',
+    '../assets/pwa-calendar-192.svg','../assets/pwa-calendar-512.png','../assets/pwa-calendar-maskable-192.svg','../assets/pwa-calendar-maskable.svg',
     '../assets/favicon-calendar.png','../assets/favicon-calendar.ico'
   ]) assert.ok(sw.includes(asset), 'SMV CALENDAR must require and precache its manifest icon/favicon: '+asset);
   assert.ok(sw.includes("'../offline/places/timezone.mjs'"));

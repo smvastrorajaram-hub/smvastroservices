@@ -11,7 +11,7 @@ const apps = [
     url: origin + '/',
     cacheName: 'smv-astro-shell-' + release,
     placeCacheName: 'smv-shared-india-places',
-    requiredAssets: ['/smvastro.mjs','/assets/pwa-astro-192.svg','/assets/pwa-astro-512.png','/assets/pwa-astro-maskable.svg','/assets/smv-home-logo.webp','/assets/favicon-astro.png','/assets/favicon-astro.ico'],
+    requiredAssets: ['/smvastro.mjs','/assets/pwa-astro-192.svg','/assets/pwa-astro-512.png','/assets/pwa-astro-maskable-192.svg','/assets/pwa-astro-maskable.svg','/assets/smv-home-logo.webp','/assets/favicon-astro.png','/assets/favicon-astro.ico'],
     probeAsset: '/smvastro.mjs',
     locationMode: 'question'
   },
@@ -21,7 +21,7 @@ const apps = [
     cacheName: 'smv-horoscope-shell-' + release,
     placeCacheName: 'smv-shared-india-places',
     offlineCacheName: 'smv-horoscope-offline',
-    requiredAssets: ['/horoscope/marriage-matching.js','/horoscope/assets/pwa-horoscope-192.svg','/horoscope/assets/pwa-horoscope-512.png','/horoscope/assets/pwa-horoscope-maskable.svg','/horoscope/assets/smv-horoscope-website.webp','/horoscope/assets/smv-horoscope-header-logo.png','/horoscope/assets/favicon-horoscope.png','/horoscope/assets/favicon-horoscope.ico'],
+    requiredAssets: ['/horoscope/marriage-matching.js','/horoscope/assets/pwa-horoscope-192.svg','/horoscope/assets/pwa-horoscope-512.png','/horoscope/assets/pwa-horoscope-maskable-192.svg','/horoscope/assets/pwa-horoscope-maskable.svg','/horoscope/assets/smv-horoscope-website.webp','/horoscope/assets/smv-horoscope-header-logo.png','/horoscope/assets/favicon-horoscope.png','/horoscope/assets/favicon-horoscope.ico'],
     offlineAssets: [
       '/horoscope/offline/offline-engine.mjs',
       '/horoscope/offline/vendor/wasm/swisseph.wasm',
@@ -39,6 +39,7 @@ const apps = [
       '/horoscope/offline/vendor/wasm/swisseph.wasm',
       '/horoscope/assets/pwa-calendar-192.svg',
       '/horoscope/assets/pwa-calendar-512.png',
+      '/horoscope/assets/pwa-calendar-maskable-192.svg',
       '/horoscope/assets/pwa-calendar-maskable.svg',
       '/horoscope/assets/favicon-calendar.png',
       '/horoscope/assets/smv-calendar-website.webp',

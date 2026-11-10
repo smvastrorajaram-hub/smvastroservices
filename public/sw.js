@@ -14,7 +14,7 @@ const APP_SHELL_FILES=[
   './android-app-install.js','./public-navigation.js',
   './main-location-search.js','./question-place-search.mjs',
   './horoscope/offline/places/place-search.mjs','./horoscope/offline/places/india-manifest.json','./horoscope/offline/places/place-display.mjs',
-  './assets/pwa-astro-192.svg','./assets/pwa-astro-512.png','./assets/pwa-astro-maskable.svg',
+  './assets/pwa-astro-192.svg','./assets/pwa-astro-512.png','./assets/pwa-astro-maskable-192.svg','./assets/pwa-astro-maskable.svg',
   './assets/favicon-astro.png','./assets/favicon-astro.ico',
   './assets/smv-home-logo.webp'
 ];
@@ -25,7 +25,7 @@ const REQUIRED_APP_SHELL=new Set([
   './dashboard-window.js','./public-content-loader.js','./interface.js',
   './android-app-install.js','./public-navigation.js',
   './coalesced-refresh.mjs','./razorpay-checkout-loader.mjs','./chat-moderation.js',
-  './assets/pwa-astro-192.svg','./assets/pwa-astro-512.png','./assets/pwa-astro-maskable.svg',
+  './assets/pwa-astro-192.svg','./assets/pwa-astro-512.png','./assets/pwa-astro-maskable-192.svg','./assets/pwa-astro-maskable.svg',
   './assets/favicon-astro.png','./assets/favicon-astro.ico',
   './assets/smv-home-logo.webp','./question-place-search.mjs'
 ]);

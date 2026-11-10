@@ -27,6 +27,7 @@ test('PWA manifests use the uploaded artwork, 192 variants and maskable assets',
     assert.deepEqual(manifest.icons.map(icon => [icon.src,icon.sizes,icon.type,icon.purpose]), [
       [prefix+'-192.svg', '192x192', 'image/svg+xml', 'any'],
       [prefix+'-512.png', '512x512', 'image/png', 'any'],
+      [prefix+'-maskable-192.svg', '192x192', 'image/svg+xml', 'maskable'],
       [prefix+'-maskable.svg', 'any', 'image/svg+xml', 'maskable']
     ]);
     for (const icon of manifest.icons) {
@@ -43,18 +44,18 @@ test('PWA manifests use the uploaded artwork, 192 variants and maskable assets',
     ['public/horoscope/assets/favicon-calendar.png',64]
   ]) assert.deepEqual(pngDimensions(file),[size,size],file+' image dimensions');
   for (const [file,size] of [
-    ['public/assets/pwa-astro-192.svg',192],['public/assets/pwa-astro-maskable.svg',512],
-    ['public/horoscope/assets/pwa-horoscope-192.svg',192],['public/horoscope/assets/pwa-horoscope-maskable.svg',512],
-    ['public/horoscope/assets/pwa-calendar-192.svg',192],['public/horoscope/assets/pwa-calendar-maskable.svg',512]
+    ['public/assets/pwa-astro-192.svg',192],['public/assets/pwa-astro-maskable-192.svg',192],['public/assets/pwa-astro-maskable.svg',512],
+    ['public/horoscope/assets/pwa-horoscope-192.svg',192],['public/horoscope/assets/pwa-horoscope-maskable-192.svg',192],['public/horoscope/assets/pwa-horoscope-maskable.svg',512],
+    ['public/horoscope/assets/pwa-calendar-192.svg',192],['public/horoscope/assets/pwa-calendar-maskable-192.svg',192],['public/horoscope/assets/pwa-calendar-maskable.svg',512]
   ]) {
     const svg=read(file);
     assert.ok(svg.includes('data:image/png;base64,'),file+' embeds the exact uploaded source');
     assert.ok(svg.includes('width="'+size+'" height="'+size+'"'),file+' has the declared dimensions');
   }
   for (const file of [
-    'public/assets/pwa-astro-maskable.svg',
-    'public/horoscope/assets/pwa-horoscope-maskable.svg',
-    'public/horoscope/assets/pwa-calendar-maskable.svg'
+    'public/assets/pwa-astro-maskable-192.svg','public/assets/pwa-astro-maskable.svg',
+    'public/horoscope/assets/pwa-horoscope-maskable-192.svg','public/horoscope/assets/pwa-horoscope-maskable.svg',
+    'public/horoscope/assets/pwa-calendar-maskable-192.svg','public/horoscope/assets/pwa-calendar-maskable.svg'
   ]) assert.ok(read(file).includes('x="51.2" y="51.2" width="409.6" height="409.6"'),file+' keeps artwork within the centered safe area');
 });
 

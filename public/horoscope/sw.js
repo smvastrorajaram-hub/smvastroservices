@@ -15,7 +15,7 @@ const CORE=[
   './horoscope-readings.css','./smv-ui.css',
   './v358-result-layout.css','./v359-symmetric-gutters.css',
   './manifest-en.webmanifest','./manifest-ta.webmanifest',
-  './assets/pwa-horoscope-192.svg','./assets/pwa-horoscope-512.png','./assets/pwa-horoscope-maskable.svg',
+  './assets/pwa-horoscope-192.svg','./assets/pwa-horoscope-512.png','./assets/pwa-horoscope-maskable-192.svg','./assets/pwa-horoscope-maskable.svg',
   './assets/favicon-horoscope.png','./assets/favicon-horoscope.ico',
   './assets/smv-horoscope-website.webp','./assets/smv-horoscope-header-logo.png',
   './report-identity.js','./boot.mjs','./horoscope-auth.mjs','./report-store.mjs',
@@ -54,7 +54,7 @@ const CORE=[
 
 const REQUIRED_CORE=new Set([
   './index.html','./horoscope.css','./boot.mjs','./horoscope.js',
-  './assets/pwa-horoscope-192.svg','./assets/pwa-horoscope-512.png','./assets/pwa-horoscope-maskable.svg',
+  './assets/pwa-horoscope-192.svg','./assets/pwa-horoscope-512.png','./assets/pwa-horoscope-maskable-192.svg','./assets/pwa-horoscope-maskable.svg',
   './assets/favicon-horoscope.png','./assets/favicon-horoscope.ico',
   './assets/smv-horoscope-website.webp','./assets/smv-horoscope-header-logo.png',
   './marriage-matching.js','./marriage-basic-report.mjs','./matching-timeline.mjs',
