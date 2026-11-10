@@ -21,13 +21,13 @@ copy_product_icon() {
         "$res/mipmap-nodpi/ic_launcher_round.jpg" "$res/mipmap-nodpi/ic_launcher_round.png" \
         "$res/mipmap-anydpi-v26/ic_launcher.xml" "$res/mipmap-anydpi-v26/ic_launcher_round.xml"
 
-  # Fit the complete source inside a 54dp square on the 108dp adaptive canvas.
-  # 256px/512px = 54.00dp. The original icon/ PNG is kept byte-for-byte.
+  # Fit the complete source inside a 58dp square on the 108dp adaptive canvas.
+  # 275px/512px = 58.01dp. The original icon/ PNG is kept byte-for-byte.
   python3 tools/prepare_android_launcher_icons.py \
     "$source_icon" \
     "$res/drawable-nodpi/${resource_prefix}_launcher_foreground.png" \
     "$res/mipmap-nodpi/${resource_prefix}_launcher.png" \
-    --content-dp 54
+    --content-dp 58
   cp "$res/mipmap-nodpi/${resource_prefix}_launcher.png" \
      "$res/mipmap-nodpi/${resource_prefix}_launcher_round.png"
 
@@ -62,4 +62,4 @@ XML
 copy_product_icon "icon/horoscope_512.png" smvhoroscopeproduction smv_horoscope
 copy_product_icon "icon/calendar_512.png" smvcalendarproduction smv_calendar
 
-echo "PASS: HOROSCOPE and CALENDAR use their original lowercase icon/ PNGs with complete artwork centered at 54.00dp."
+echo "PASS: HOROSCOPE and CALENDAR use their original lowercase icon/ PNGs with complete artwork centered at 58.01dp."
