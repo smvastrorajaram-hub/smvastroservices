@@ -183,7 +183,7 @@ jobs:
           set -euo pipefail
           for module in smvhoroscopeproduction smvcalendarproduction; do
             res="$module/src/main/res"
-            for asset in "$res/drawable-nodpi/ic_launcher_foreground.jpg" "$res/mipmap-nodpi/ic_launcher.jpg" "$res/mipmap-nodpi/ic_launcher_round.jpg"; do
+            for asset in "$res/drawable-nodpi/ic_launcher_foreground.png" "$res/mipmap-nodpi/ic_launcher.png" "$res/mipmap-nodpi/ic_launcher_round.png"; do
               test -s "$asset"
               size="$(stat -c%s "$asset")"
               if (( size > 300000 )); then
@@ -197,7 +197,11 @@ jobs:
             grep -Fq '<color name="smv_launcher_background">#FFFFFF</color>' "$res/values/colors.xml"
             grep -Fq '@drawable/ic_launcher_foreground' "$res/mipmap-anydpi-v26/ic_launcher.xml"
           done
-          echo "PASS: HOROSCOPE and CALENDAR production launcher JPEGs are below 300,000 bytes each."
+          cmp -s icon/horoscope_512.png smvhoroscopeproduction/src/main/res/mipmap-nodpi/ic_launcher.png
+          cmp -s icon/horoscope_512.png smvhoroscopeproduction/src/main/res/drawable-nodpi/ic_launcher_foreground.png
+          cmp -s icon/calendar_512.png smvcalendarproduction/src/main/res/mipmap-nodpi/ic_launcher.png
+          cmp -s icon/calendar_512.png smvcalendarproduction/src/main/res/drawable-nodpi/ic_launcher_foreground.png
+          echo "PASS: HOROSCOPE and CALENDAR production launcher PNGs are exact copies below 300,000 bytes each."
 
       - name: Build Horoscope and Calendar Debug APKs (test builds only)
         run: |
