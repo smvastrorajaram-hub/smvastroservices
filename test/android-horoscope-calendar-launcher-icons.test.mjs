@@ -31,10 +31,10 @@ test('HOROSCOPE and CALENDAR production launcher sources remain the lowercase ic
     assert.ok(script.includes('copy_product_icon "' + source + '" ' + module + ' ' + resourcePrefix));
   }
   assert.ok(script.includes('python3 tools/prepare_android_launcher_icons.py'));
-  assert.ok(script.includes('--content-dp 57'));
+  assert.ok(script.includes('--content-dp 54'));
   assert.ok(helper.includes('CANVAS_DP = 108.0'));
-  assert.ok(helper.includes('TARGET_DP = 57.0'));
-  assert.ok(helper.includes('57.0 <= args.content_dp <= 58.0'));
+  assert.ok(helper.includes('TARGET_DP = 54.0'));
+  assert.ok(helper.includes('54.0 <= args.content_dp <= 54.0'));
   assert.ok(read('smvhoroscopeproduction/src/main/AndroidManifest.xml').includes('@mipmap/smv_horoscope_launcher'));
   assert.ok(read('smvcalendarproduction/src/main/AndroidManifest.xml').includes('@mipmap/smv_calendar_launcher'));
   assert.doesNotMatch(script, /prepare-icons\.sh|SmvProductLauncherIconGenerator|ICON\/SMV/);
@@ -46,7 +46,7 @@ test('HOROSCOPE and CALENDAR production launcher sources remain the lowercase ic
   assert.match(workflow, /Pillow==11\.3\.0/);
 });
 
-test('HOROSCOPE and CALENDAR production launchers fit complete source artwork at 56.95dp', () => {
+test('HOROSCOPE and CALENDAR production launchers fit complete source artwork at 54.00dp', () => {
   const products = [
     ['icon/horoscope_512.png', 'smvhoroscopeproduction', 'smv_horoscope'],
     ['icon/calendar_512.png', 'smvcalendarproduction', 'smv_calendar']
@@ -78,7 +78,7 @@ test('HOROSCOPE and CALENDAR production launchers fit complete source artwork at
     'for index in (1, 4):',
     '  fg = Image.open(sys.argv[index]).convert("RGBA")',
     '  assert fg.size == (512, 512)',
-    '  assert fg.getchannel("A").getbbox() == (121, 121, 391, 391)',
+    '  assert fg.getchannel("A").getbbox() == (128, 128, 384, 384)',
     '  legacy = Image.open(sys.argv[index + 1]).convert("RGB")',
     '  assert legacy.size == (512, 512)',
     '  assert legacy.getpixel((0, 0)) == (255, 255, 255)',

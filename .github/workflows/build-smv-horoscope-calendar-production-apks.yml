@@ -139,7 +139,7 @@ jobs:
           echo "modules=$modules" >> "$GITHUB_OUTPUT"
           echo "Selected production APK modules: ${modules:-none (tests only)}"
 
-      - name: Set up Python and Pillow for 57dp launcher artwork
+      - name: Set up Python and Pillow for 54dp launcher artwork
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -186,7 +186,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/next-android-release-version.mjs ${{ steps.app_targets.outputs.apps }}
 
-      - name: Verify centered 56.95dp launcher artwork on 108dp canvases
+      - name: Verify centered 54.00dp launcher artwork on 108dp canvases
         shell: bash
         run: |
           set -euo pipefail
@@ -211,7 +211,7 @@ jobs:
                   assert output.stat().st_size < 300000, f"{output} exceeds 300 KB"
               with Image.open(foreground) as image:
                   assert image.size == (512, 512)
-                  assert image.convert("RGBA").getchannel("A").getbbox() == (121, 121, 391, 391)
+                  assert image.convert("RGBA").getchannel("A").getbbox() == (128, 128, 384, 384)
               with Image.open(legacy) as image:
                   assert image.size == (512, 512)
                   assert image.convert("RGB").getpixel((0, 0)) == (255, 255, 255)
@@ -221,7 +221,7 @@ jobs:
               for name in (f"{prefix}_launcher", f"{prefix}_launcher_round"):
                   assert (res / "mipmap-anydpi-v26" / f"{name}.xml").is_file()
               assert (res / "values/colors.xml").is_file()
-          print("PASS: both complete source icons are centered at 270/512 of the 108dp canvas (56.95dp).")
+          print("PASS: both complete source icons are centered at 256/512 of the 108dp canvas (54.00dp).")
           PY
       
       - name: Build Horoscope and Calendar Debug APKs (test builds only)
