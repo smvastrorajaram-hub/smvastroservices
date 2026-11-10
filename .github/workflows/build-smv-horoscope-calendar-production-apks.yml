@@ -24,6 +24,8 @@ on:
       - "icon/calendar_512.png"
       - "settings.gradle"
       - "prepare-smv-horoscope-calendar-production-icons.sh"
+      - "prepare-smv-horoscope-round-icon.sh"
+      - "tools/prepare_android_round_launcher_icon.py"
       - "tools/prepare_android_launcher_icons.py"
       - "test/android-horoscope-calendar-launcher-icons.test.mjs"
       - "smvhoroscopeproduction/**"
@@ -49,6 +51,8 @@ on:
       - "icon/calendar_512.png"
       - "settings.gradle"
       - "prepare-smv-horoscope-calendar-production-icons.sh"
+      - "prepare-smv-horoscope-round-icon.sh"
+      - "tools/prepare_android_round_launcher_icon.py"
       - "tools/prepare_android_launcher_icons.py"
       - "test/android-horoscope-calendar-launcher-icons.test.mjs"
       - "smvhoroscopeproduction/**"
@@ -114,6 +118,8 @@ jobs:
             fi
             while IFS= read -r file; do
               case "$file" in
+                prepare-smv-horoscope-round-icon.sh|tools/prepare_android_round_launcher_icon.py)
+                  horoscope=true ;;
                 smvhoroscopeproduction/*|smvhoroscope/*|test/android-horoscope-pdf-native.test.mjs)
                   horoscope=true ;;
                 smvcalendarproduction/*|smvcalendar/*)
@@ -148,6 +154,41 @@ jobs:
 
       - name: Prepare production Horoscope and Calendar icons
         run: bash prepare-smv-horoscope-calendar-production-icons.sh
+
+      - name: Prepare round-mask-safe SMV HOROSCOPE roundIcon only
+        run: bash prepare-smv-horoscope-round-icon.sh
+
+      - name: Verify SMV HOROSCOPE roundIcon fits the 66dp circular safe zone
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from math import sqrt
+          from PIL import Image
+
+          res = Path("smvhoroscopeproduction/src/main/res")
+          source = Path("icon/horoscope_512.png")
+          foreground = res / "drawable-nodpi/smv_horoscope_launcher_round_foreground.png"
+          legacy = res / "mipmap-nodpi/smv_horoscope_launcher_round.png"
+          xml = res / "mipmap-anydpi-v26/smv_horoscope_launcher_round.xml"
+          assert source.stat().st_size < 300000
+          assert foreground.stat().st_size < 300000
+          assert legacy.stat().st_size < 300000
+          with Image.open(source) as im:
+              assert im.format == "PNG" and im.size == (512, 512)
+          with Image.open(foreground) as im:
+              assert im.size == (512, 512)
+              assert im.convert("RGBA").getchannel("A").getbbox() == (147, 147, 365, 365)
+          effective_dp = 218 * 108 / 512
+          diagonal_dp = effective_dp * sqrt(2)
+          assert diagonal_dp <= 66.0, diagonal_dp
+          with Image.open(legacy) as im:
+              assert im.size == (512, 512)
+              assert im.convert("RGB").getpixel((0, 0)) == (255, 255, 255)
+          assert "@drawable/smv_horoscope_launcher_round_foreground" in xml.read_text()
+          print(f"PASS: HOROSCOPE roundIcon square diagonal {diagonal_dp:.2f}dp <= 66dp safe circle.")
+          PY
 
       - name: Node 22 production app regression tests
         uses: actions/setup-node@v4
