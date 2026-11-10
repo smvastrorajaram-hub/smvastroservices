@@ -3,7 +3,7 @@
    Authentication, published Firestore refresh, account data and online services stay network-only.
    Location lookup keeps its existing GeoNames + India-offline behavior.
 */
-const SMV_CACHE_RELEASE='20261107-private-chat-selected-astrologer-v5';
+const SMV_CACHE_RELEASE='20261110-pwa-icons-v1';
 const OFFLINE_CACHE='smv-horoscope-offline';
 const LOCATION_CACHE='smv-shared-india-places';
 const SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE;
@@ -15,9 +15,9 @@ const CORE=[
   './horoscope-readings.css','./smv-ui.css',
   './v358-result-layout.css','./v359-symmetric-gutters.css',
   './manifest-en.webmanifest','./manifest-ta.webmanifest',
-  './assets/icon-192.png','./assets/icon-512.png','./assets/icon-512-maskable.png',
-  './assets/favicon-horoscope-16.png','./assets/favicon-horoscope-32.png','./assets/favicon-horoscope-64.png','./assets/favicon-horoscope.ico',
-  './assets/smv-horoscope-website.webp',
+  './assets/pwa-horoscope-192.svg','./assets/pwa-horoscope-512.png','./assets/pwa-horoscope-maskable.svg',
+  './assets/favicon-horoscope.png','./assets/favicon-horoscope.ico',
+  './assets/smv-horoscope-website.webp','./assets/smv-horoscope-header-logo.png',
   './report-identity.js','./boot.mjs','./horoscope-auth.mjs','./report-store.mjs',
   './chart-style.js','./config.js','./d9-reading.js','./marriage-matching.js',
   './marriage-basic-report.mjs','./matching-timeline.mjs','./d1-15-year-reading.mjs',
@@ -54,9 +54,9 @@ const CORE=[
 
 const REQUIRED_CORE=new Set([
   './index.html','./horoscope.css','./boot.mjs','./horoscope.js',
-  './assets/icon-192.png','./assets/icon-512.png','./assets/icon-512-maskable.png',
-  './assets/favicon-horoscope-16.png','./assets/favicon-horoscope-32.png','./assets/favicon-horoscope-64.png','./assets/favicon-horoscope.ico',
-  './assets/smv-horoscope-website.webp',
+  './assets/pwa-horoscope-192.svg','./assets/pwa-horoscope-512.png','./assets/pwa-horoscope-maskable.svg',
+  './assets/favicon-horoscope.png','./assets/favicon-horoscope.ico',
+  './assets/smv-horoscope-website.webp','./assets/smv-horoscope-header-logo.png',
   './marriage-matching.js','./marriage-basic-report.mjs','./matching-timeline.mjs',
   './d1-15-year-reading.mjs',
   './offline/offline-engine.mjs','./offline/server-wrapper.browser.mjs',

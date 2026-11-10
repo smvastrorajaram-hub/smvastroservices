@@ -14,21 +14,21 @@
   "theme_color": "#0f514c",
   "icons": [
     {
-      "src": "/horoscope/assets/calendar-192.png",
+      "src": "/horoscope/assets/pwa-calendar-192.svg",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/horoscope/assets/calendar-512.png",
+      "src": "/horoscope/assets/pwa-calendar-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/horoscope/assets/calendar-maskable.png",
-      "sizes": "512x512",
-      "type": "image/png",
+      "src": "/horoscope/assets/pwa-calendar-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "maskable"
     }
   ],

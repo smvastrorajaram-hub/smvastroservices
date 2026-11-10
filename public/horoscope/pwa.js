@@ -21,7 +21,7 @@ const statusText=t=>{if(status)status.textContent=t||'';};
 const hidden=()=>{document.documentElement.classList.remove(visibilityClass);if(area)area.hidden=true;};
 const visible=()=>{document.documentElement.classList.add(visibilityClass);if(area)area.hidden=false;};
 const flag=value=>{try{value?localStorage.setItem(key,'1'):localStorage.removeItem(key);}catch(_){}};
-const syncManifest=()=>{if(manifest)manifest.href=`manifest-${document.documentElement.lang==='ta'?'ta':'en'}.webmanifest`;};
+const syncManifest=()=>{if(manifest)manifest.href=`manifest-${document.documentElement.lang==='ta'?'ta':'en'}.webmanifest?v=20261110-pwa-icons-v1`;};
 const eligible=e=>{
  if(e){e.preventDefault?.();deferred=e;window.__smvHoroscopeInstallPrompt=e;}
  if(standalone()){hidden();return;}
