@@ -20,12 +20,12 @@ rm -f "$res/drawable-nodpi/ic_launcher_foreground.jpg" \
       "$res/mipmap-anydpi-v26/ic_launcher.xml" "$res/mipmap-anydpi-v26/ic_launcher_round.xml"
 
 # Android adaptive icons use a 108dp canvas. Fit the complete approved image
-# into 57dp (270/512 px = 56.95dp) and center it; don't crop or alter icon/.
+# into 54dp (256/512 px = 54.00dp) and center it; don't crop or alter icon/.
 python3 tools/prepare_android_launcher_icons.py \
   "$source_icon" \
   "$res/drawable-nodpi/smv_astro_launcher_foreground.png" \
   "$res/mipmap-nodpi/smv_astro_launcher.png" \
-  --content-dp 57
+  --content-dp 54
 cp "$res/mipmap-nodpi/smv_astro_launcher.png" "$res/mipmap-nodpi/smv_astro_launcher_round.png"
 
 cat > "$res/mipmap-anydpi-v26/smv_astro_launcher.xml" <<'XML'
@@ -55,4 +55,4 @@ for asset in \
   fi
 done
 
-echo "PASS: SMV ASTRO uses the lowercase icon/ source with complete artwork centered at 56.95dp."
+echo "PASS: SMV ASTRO uses the lowercase icon/ source with complete artwork centered at 54.00dp."
