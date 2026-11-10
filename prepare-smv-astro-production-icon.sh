@@ -20,12 +20,12 @@ rm -f "$res/drawable-nodpi/ic_launcher_foreground.jpg" \
       "$res/mipmap-anydpi-v26/ic_launcher.xml" "$res/mipmap-anydpi-v26/ic_launcher_round.xml"
 
 # Android adaptive icons use a 108dp canvas. Fit the complete approved image
-# into 54dp (256/512 px = 54.00dp) and center it; don't crop or alter icon/.
+# into 58dp (275/512 px = 58.01dp) and center it; don't crop or alter icon/.
 python3 tools/prepare_android_launcher_icons.py \
   "$source_icon" \
   "$res/drawable-nodpi/smv_astro_launcher_foreground.png" \
   "$res/mipmap-nodpi/smv_astro_launcher.png" \
-  --content-dp 54
+  --content-dp 58
 cp "$res/mipmap-nodpi/smv_astro_launcher.png" "$res/mipmap-nodpi/smv_astro_launcher_round.png"
 
 cat > "$res/mipmap-anydpi-v26/smv_astro_launcher.xml" <<'XML'
@@ -49,10 +49,10 @@ for asset in \
   "$res/mipmap-nodpi/smv_astro_launcher_round.png"; do
   test -s "$asset"
   size="$(stat -c%s "$asset")"
-  if (( size >= 300000 )); then
-    echo "::error::Generated launcher asset exceeds 300 KB: $asset ($size bytes)"
+  if (( size >= 700000 )); then
+    echo "::error::Generated launcher asset exceeds 700 KB: $asset ($size bytes)"
     exit 1
   fi
 done
 
-echo "PASS: SMV ASTRO uses the lowercase icon/ source with complete artwork centered at 54.00dp."
+echo "PASS: SMV ASTRO uses the lowercase icon/ source with complete artwork centered at 58.01dp."

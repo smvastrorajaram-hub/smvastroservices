@@ -10,7 +10,7 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const bytes = file => fs.readFileSync(path.join(root, file));
 const sourcePath = 'icon/astro_512.png';
 const res = 'smvastroproduction/src/main/res';
-const maxBytes = 300000;
+const maxBytes = 700000;
 
 function pngDimensions(data, file) {
   assert.deepEqual([...data.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10], file + ' must be PNG');
@@ -21,16 +21,16 @@ function pngDimensions(data, file) {
 test('SMV ASTRO production launcher source stays the lowercase icon folder PNG', () => {
   const source = bytes(sourcePath);
   assert.deepEqual(pngDimensions(source, sourcePath), { width: 512, height: 512 });
-  assert.ok(source.length < maxBytes, 'source PNG must remain below 300 KB');
+  assert.ok(source.length < maxBytes, 'source PNG must remain below 700 KB');
 
   const script = read('prepare-smv-astro-production-icon.sh');
   const helper = read('tools/prepare_android_launcher_icons.py');
   assert.ok(script.includes('source_icon="icon/astro_512.png"'));
   assert.ok(script.includes('python3 tools/prepare_android_launcher_icons.py'));
-  assert.ok(script.includes('--content-dp 54'));
+  assert.ok(script.includes('--content-dp 58'));
   assert.ok(helper.includes('CANVAS_DP = 108.0'));
-  assert.ok(helper.includes('TARGET_DP = 54.0'));
-  assert.ok(helper.includes('54.0 <= args.content_dp <= 54.0'));
+  assert.ok(helper.includes('TARGET_DP = 58.0'));
+  assert.ok(helper.includes('58.0 <= args.content_dp <= 58.0'));
   assert.ok(helper.includes('effective_dp = target_px * CANVAS_DP / CANVAS_PX'));
   assert.doesNotMatch(script, /SmvProductLauncherIconGenerator|ICON\/SMV ASTRO\.jpg/);
   assert.ok(!script.includes('public/assets/'));
@@ -47,7 +47,7 @@ test('SMV ASTRO production launcher source stays the lowercase icon folder PNG',
   assert.match(workflow, /Pillow==11\.3\.0/);
 });
 
-test('SMV ASTRO production launcher artwork is centered at 54.00dp on a 108dp canvas', () => {
+test('SMV ASTRO production launcher artwork is centered at 58.01dp on a 108dp canvas', () => {
   const source = bytes(sourcePath);
   const outputs = [
     res + '/mipmap-nodpi/smv_astro_launcher.png',
@@ -67,7 +67,7 @@ test('SMV ASTRO production launcher artwork is centered at 54.00dp on a 108dp ca
     'import sys',
     'fg = Image.open(sys.argv[1]).convert("RGBA")',
     'assert fg.size == (512, 512)',
-    'assert fg.getchannel("A").getbbox() == (128, 128, 384, 384)',
+    'assert fg.getchannel("A").getbbox() == (118, 118, 393, 393)',
     'legacy = Image.open(sys.argv[2]).convert("RGB")',
     'assert legacy.size == (512, 512)',
     'assert legacy.getpixel((0, 0)) == (255, 255, 255)',

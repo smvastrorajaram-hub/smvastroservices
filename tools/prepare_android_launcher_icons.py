@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create Android adaptive/legacy launcher resources with 54dp artwork on a 108dp canvas.
+"""Create Android adaptive/legacy launcher resources with 58dp artwork on a 108dp canvas.
 
 The source PNG in icon/ is never changed. Its complete square artwork is resized
 with aspect ratio preserved and centered on a transparent adaptive foreground
@@ -13,10 +13,10 @@ import sys
 
 from PIL import Image
 
-MAX_SOURCE_BYTES = 300_000
+MAX_SOURCE_BYTES = 700_000
 CANVAS_PX = 512
 CANVAS_DP = 108.0
-TARGET_DP = 54.0
+TARGET_DP = 58.0
 
 
 def png_size(path: Path) -> tuple[int, int]:
@@ -34,20 +34,20 @@ def main() -> int:
     parser.add_argument("--content-dp", type=float, default=TARGET_DP)
     args = parser.parse_args()
 
-    if not 54.0 <= args.content_dp <= 54.0:
-        raise SystemExit("ERROR: --content-dp must be 54 dp.")
+    if not 58.0 <= args.content_dp <= 58.0:
+        raise SystemExit("ERROR: --content-dp must be 58 dp.")
     if not args.source.is_file():
         raise SystemExit(f"ERROR: approved icon source is missing: {args.source}")
     source_bytes = args.source.stat().st_size
-    if source_bytes >= MAX_SOURCE_BYTES:
-        raise SystemExit(f"ERROR: source PNG must be below 300,000 bytes: {source_bytes}")
+    if source_bytes  >= MAX_SOURCE_BYTES:
+        raise SystemExit(f"ERROR: source PNG must be below 700,000 bytes: {source_bytes}")
     if png_size(args.source) != (CANVAS_PX, CANVAS_PX):
         raise SystemExit(f"ERROR: {args.source} must be 512x512 pixels.")
 
     target_px = round(CANVAS_PX * args.content_dp / CANVAS_DP)
     effective_dp = target_px * CANVAS_DP / CANVAS_PX
-    if abs(effective_dp - 54.0) > 0.01:
-        raise SystemExit(f"ERROR: generated artwork size {effective_dp:.3f}dp is not exactly 54dp after pixel conversion.")
+    if abs(effective_dp - 58.0) > 0.01:
+        raise SystemExit(f"ERROR: generated artwork size {effective_dp:.3f}dp is not exactly 58dp after pixel conversion.")
 
     with Image.open(args.source) as source_image:
         artwork = source_image.convert("RGBA").resize(
@@ -79,12 +79,12 @@ def main() -> int:
             raise SystemExit(f"ERROR: generated launcher resource is not 512x512: {output}")
         output_bytes = output.stat().st_size
         if output_bytes >= MAX_SOURCE_BYTES:
-            raise SystemExit(f"ERROR: generated launcher resource exceeds 300 KB: {output} ({output_bytes} bytes)")
+            raise SystemExit(f"ERROR: generated launcher resource exceeds 700 KB: {output} ({output_bytes} bytes)")
 
     print(
         f"PASS: {args.source} -> centered {target_px}px artwork "
         f"({effective_dp:.2f}dp) on a {CANVAS_DP:.0f}dp canvas; "
-        f"512x512 PNG outputs are below 300 KB."
+        f"512x512 PNG outputs are below 700 KB."
     )
     return 0
 

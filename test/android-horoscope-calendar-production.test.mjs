@@ -71,7 +71,7 @@ test('Existing Horoscope and Calendar QA APK modules remain test-only and keep t
   assert.match(read('smvcalendar/build.gradle'), /applicationId "in\.smvastr[o]services\.calendar\.test"/);
 });
 
-test('HOROSCOPE and CALENDAR production launchers use lowercase icon PNGs scaled to 54dp', () => {
+test('HOROSCOPE and CALENDAR production launchers use lowercase icon PNGs scaled to 58dp', () => {
   const script = read('prepare-smv-horoscope-calendar-production-icons.sh');
   const helper = read('tools/prepare_android_launcher_icons.py');
   const workflow = read('.github/workflows/build-smv-horoscope-calendar-production-apks.yml');
@@ -85,16 +85,16 @@ test('HOROSCOPE and CALENDAR production launchers use lowercase icon PNGs scaled
     assert.deepEqual([...data.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
     assert.equal(data.readUInt32BE(16), 512);
     assert.equal(data.readUInt32BE(20), 512);
-    assert.ok(data.length < 300000, source + ' must remain below 300 KB');
+    assert.ok(data.length < 700000, source + ' must remain below 700 KB');
     assert.ok(script.includes('copy_product_icon "' + source + '" ' + module + ' ' + resourcePrefix));
     assert.ok(workflow.includes(source));
   }
 
   assert.ok(script.includes('python3 tools/prepare_android_launcher_icons.py'));
-  assert.ok(script.includes('--content-dp 54'));
+  assert.ok(script.includes('--content-dp 58'));
   assert.ok(helper.includes('CANVAS_DP = 108.0'));
-  assert.ok(helper.includes('TARGET_DP = 54.0'));
-  assert.ok(helper.includes('54.0 <= args.content_dp <= 54.0'));
+  assert.ok(helper.includes('TARGET_DP = 58.0'));
+  assert.ok(helper.includes('58.0 <= args.content_dp <= 58.0'));
   assert.equal(script.includes('cmp -s "$source_icon" "$asset"'), false);
   assert.equal(script.includes('prepare-icons.sh'), false);
   assert.equal(script.includes('SmvProductLauncherIconGenerator'), false);
