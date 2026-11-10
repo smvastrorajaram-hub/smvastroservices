@@ -42,7 +42,7 @@ if(location.hostname==='smvastroservices.pages.dev'){
 <meta content="SMV ASTRO" name="apple-mobile-web-app-title">
 <title>SMV ASTRO SERVICES | Astrology Services &amp; Online Horoscope</title>
 <meta content="Sri Madurai Veerayah Astro Services offers online astrology services, horoscope, Tamil horoscope, marriage matching, customer registration and astrologer registration." name="description"/>
-<link href="./smvastro.css?v=20261102-consult-route-cleanup-v1" rel="stylesheet"/><link href="./android-app-install.css?v=20261030-admin-apk-manager-v2" rel="stylesheet"/><link href="./smv-ui.css?v=20261105-dashboard-typography-hierarchy-v1" rel="stylesheet"/><link href="./dashboard-typography.css?v=20261105-session-state-labels-v1" rel="stylesheet"/><script src="./payment-timing.js"></script>
+<link href="./smvastro.css?v=20261102-consult-route-cleanup-v1" rel="stylesheet"/><link href="./android-app-install.css?v=20261110-pwa-icons-v1" rel="stylesheet"/><link href="./smv-ui.css?v=20261105-dashboard-typography-hierarchy-v1" rel="stylesheet"/><link href="./dashboard-typography.css?v=20261105-session-state-labels-v1" rel="stylesheet"/><script src="./payment-timing.js"></script>
 <script id="smv-v223-scoped-storage-policy">
 /* App state and offline caches are retained. Each Service Worker now owns
    cleanup of its own versioned cache namespace; never clear origin-wide storage
@@ -178,11 +178,13 @@ document.addEventListener('DOMContentLoaded', function(){
 </section>
 <section aria-labelledby="smvPermanentAndroidApkHeading" class="smv-android-apk-section" id="smvPermanentAndroidAppSection" hidden>
   <div class="smv-android-apk-card">
-    <div class="smv-android-apk-icon-wrap"><img alt="SMV ASTRO Android application icon" height="58" width="58" loading="lazy" decoding="async" src="./assets/icon-192.png"/></div>
-    <div class="smv-android-apk-copy">
-      <h2 id="smvPermanentAndroidApkHeading">SMV ASTRO Android App</h2>
-      <p id="smvPermanentApkDescription">Official signed Android application.</p>
-      <p class="smv-android-apk-status" id="smvPermanentApkStatus" role="status" aria-live="polite"></p>
+    <div class="smv-android-apk-main">
+      <div class="smv-android-apk-icon-wrap"><img alt="SMV ASTRO Android application icon" height="58" width="58" loading="lazy" decoding="async" src="./assets/icon-192.png"/></div>
+      <div class="smv-android-apk-copy">
+        <h2 id="smvPermanentAndroidApkHeading">Download SMV ASTRO Android App</h2>
+        <p id="smvPermanentApkDescription">Official signed Android application.</p>
+        <p class="smv-android-apk-status" id="smvPermanentApkStatus" role="status" aria-live="polite"></p>
+      </div>
     </div>
     <div class="smv-android-apk-actions">
       <a class="smv-android-apk-download" id="smvPermanentApkDownload" href="#" hidden>DOWNLOAD APK</a>

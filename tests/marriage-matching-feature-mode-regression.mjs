@@ -144,8 +144,8 @@ no(matching.includes('#smvMarriageMatching #mmPaidFeaturePreview button{display:
 yes(policy.includes("T('Login to Pay','Login செய்து கட்டணம் செலுத்தவும்')"),'The paid CTA clearly indicates Login and payment');
 yes(policy.includes('function syncHoroscopePaidEntry()'),'Horoscope has a pre-calculation paid-benefit panel');
 yes(html.includes('id="smvHoroscopePaidEntryEnglish"')&&html.includes('id="smvHoroscopePaidEntryTamil"'),'Both Horoscope language forms host the pre-login benefit panel');
-yes(html.includes('config.js?v=20261110-pwa-icons-v1'),'Access config uses its cache-busted URL');
-yes(html.includes('horoscope-form.js?v=20261110-pwa-icons-v1'),'Horoscope form uses its cache-busted URL');
+yes(html.includes('config.js?v=20261107-private-chat-selected-astrologer-v5'),'Access config uses its cache-busted URL');
+yes(html.includes('horoscope-form.js?v=20261107-private-chat-selected-astrologer-v5'),'Horoscope form uses its cache-busted URL');
 yes(html.includes('horoscope.css?v=20261110-pwa-icons-v1'),'Horoscope styles use their cache-busted URL');
 yes(html.includes('marriage-matching.js?v=20261106-basic-nakshatra-input-v1'),'Marriage Matching uses its cache-busted URL');
 
