@@ -166,6 +166,12 @@ test('Horoscope and Calendar public pages use signed APK downloads instead of PW
   const calendar = read('public/horoscope/calendar/index.html');
   const daily = read('public/horoscope/daily-calendar.mjs');
   const apkController = read('public/horoscope/android-apk-download.mjs');
+  assert.ok(apkController.includes('release.versionName'));
+  assert.ok(apkController.includes('release.versionCode'));
+  assert.ok(apkController.includes('release.uploadedAt'));
+  assert.ok(apkController.includes('release.storageProvider'));
+  assert.ok(apkController.includes("timeZone: 'Asia/Kolkata'"));
+  assert.ok(apkController.includes("download.textContent = 'DOWNLOAD APK'"));
   const horoscopePwa = read('public/horoscope/pwa.js');
   const calendarPwa = read('public/horoscope/calendar/calendar-pwa.mjs');
 
@@ -199,16 +205,16 @@ test('Horoscope and Calendar bottom Android app cards reuse the SMV ASTRO icon-c
 
   assert.ok(horoscope.includes('class="smv-android-apk-section"'));
   assert.ok(calendar.includes('class="smv-android-apk-section"'));
-  assert.ok(horoscope.includes('src="assets/icon-192.png"'));
-  assert.ok(calendar.includes('src="../assets/calendar-192.png"'));
-  assert.ok(horoscope.includes('SMV HOROSCOPE Android App-ஐ Download செய்க'));
-  assert.ok(calendar.includes('SMV CALENDAR Android App-ஐ Download செய்க'));
-  assert.ok(horoscope.includes('OFFICIAL SIGNED ANDROID APPLICATION'));
-  assert.ok(calendar.includes('OFFICIAL SIGNED ANDROID APPLICATION'));
-  assert.ok(horoscope.includes('Checking Android APK…'));
-  assert.ok(calendar.includes('Checking Android APK…'));
-  assert.ok(horoscope.includes('Checking Android APK…'));
-  assert.ok(calendar.includes('Checking Android APK…'));
+  assert.ok(horoscope.includes('src="assets/android-app-icon-horoscope.svg"'));
+  assert.ok(calendar.includes('src="../assets/android-app-icon-calendar.svg"'));
+  assert.ok(horoscope.includes('SMV HOROSCOPE</h2>'));
+  assert.ok(calendar.includes('SMV CALENDAR</h2>'));
+  assert.equal(horoscope.includes('OFFICIAL SIGNED ANDROID APPLICATION'), false);
+  assert.equal(calendar.includes('OFFICIAL SIGNED ANDROID APPLICATION'), false);
+  assert.equal(horoscope.includes('data-apk-status'), false);
+  assert.equal(calendar.includes('data-apk-status'), false);
+  assert.ok(horoscope.includes('>DOWNLOAD APK</a>'));
+  assert.ok(calendar.includes('>DOWNLOAD APK</a>'));
   for (const html of [horoscope, calendar]) {
     assert.ok(html.includes('class="smv-android-apk-main"'));
     assert.ok(html.includes('class="smv-android-apk-icon-wrap"'));
@@ -216,7 +222,7 @@ test('Horoscope and Calendar bottom Android app cards reuse the SMV ASTRO icon-c
     assert.ok(html.includes('class="smv-android-apk-actions"'));
     assert.ok(html.includes('class="smv-android-apk-download"'));
     assert.ok(html.includes('data-apk-version'));
-    assert.ok(html.includes('data-apk-status'));
+    assert.equal(html.includes('data-apk-status'), false);
     assert.ok(html.includes('data-apk-download'));
     assert.ok(html.indexOf('class="smv-android-apk-main"') < html.indexOf('class="smv-android-apk-actions"'),
       'The Download option must remain below the icon and existing message');
@@ -225,7 +231,8 @@ test('Horoscope and Calendar bottom Android app cards reuse the SMV ASTRO icon-c
   assert.ok(sharedStyles.includes('white-space:nowrap'));
   assert.ok(sharedStyles.includes('.smv-android-apk-icon-wrap'));
   assert.ok(sharedStyles.includes('.smv-android-apk-copy h2'));
-  assert.ok(sharedStyles.includes('.smv-android-apk-download'));
+  assert.ok(sharedStyles.includes('.smv-android-apk-download{display:block'));
+  assert.ok(sharedStyles.includes('background:#fff;color:#e90046'));
   assert.match(calendarTheme, /cal-download-app-link \.cal-app-badge\{display:none\}/);
   assert.ok(read('public/horoscope/daily-calendar.mjs').includes("'#smvCalendarAndroidApkSection'"));
   assert.equal(JSON.parse(read('public/horoscope/manifest-en.webmanifest')).scope, '/horoscope/');
