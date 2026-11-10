@@ -73,17 +73,17 @@ test('HOROSCOPE and CALENDAR production launchers use the exact lowercase icon f
   const script = read('prepare-smv-horoscope-calendar-production-icons.sh');
   const workflow = read('.github/workflows/build-smv-horoscope-calendar-production-apks.yml');
   const sources = [
-    ['icon/horoscope_512.png', 'smvhoroscopeproduction'],
-    ['icon/calendar_512.png', 'smvcalendarproduction']
+    ['icon/horoscope_512.png', 'smvhoroscopeproduction', 'smv_horoscope'],
+    ['icon/calendar_512.png', 'smvcalendarproduction', 'smv_calendar']
   ];
 
-  for (const [source, module] of sources) {
+  for (const [source, module, resourcePrefix] of sources) {
     const data = fs.readFileSync(path.join(root, source));
     assert.deepEqual([...data.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
     assert.equal(data.readUInt32BE(16), 512);
     assert.equal(data.readUInt32BE(20), 512);
     assert.ok(data.length < 300000, source + ' must already be below 300 KB');
-    assert.ok(script.includes('copy_product_icon "' + source + '" ' + module));
+    assert.ok(script.includes('copy_product_icon "' + source + '" ' + module + ' ' + resourcePrefix));
     assert.ok(workflow.includes(source));
   }
 
