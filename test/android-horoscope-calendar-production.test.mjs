@@ -93,8 +93,8 @@ test('HOROSCOPE and CALENDAR production launchers use lowercase icon PNGs scaled
   assert.ok(script.includes('python3 tools/prepare_android_launcher_icons.py'));
   assert.ok(script.includes('--content-dp 58'));
   assert.ok(helper.includes('CANVAS_DP = 108.0'));
-  assert.ok(helper.includes('TARGET_DP = 54.0'));
-  assert.ok(helper.includes('54.0 <= args.content_dp <= 54.0'));
+  assert.ok(helper.includes('TARGET_DP = 58.0'));
+  assert.ok(helper.includes('58.0 <= args.content_dp <= 58.0'));
   assert.equal(script.includes('cmp -s "$source_icon" "$asset"'), false);
   assert.equal(script.includes('prepare-icons.sh'), false);
   assert.equal(script.includes('SmvProductLauncherIconGenerator'), false);
