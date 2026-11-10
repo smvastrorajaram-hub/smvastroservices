@@ -72,7 +72,7 @@ test('launcher provides navigation to all three services and states cloud/offlin
 });
 
 test('Windows executable icon is reproducibly generated from the checked-in ICO asset', () => {
-  const encoded = read('assets/smv-astro-icon.base64').replace(/\\s+/g, '');
+  const encoded = read('assets/smv-astro-icon.base64').replace(/\s+/g, '');
   const icon = Buffer.from(encoded, 'base64');
   assert.ok(icon.length > 512);
   assert.deepEqual([...icon.subarray(0, 4)], [0, 0, 1, 0]);
