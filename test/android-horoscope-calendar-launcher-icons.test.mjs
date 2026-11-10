@@ -115,7 +115,10 @@ test('HOROSCOPE and CALENDAR production launchers fit complete source artwork at
     for (const name of [resourcePrefix + '_launcher', resourcePrefix + '_launcher_round']) {
       const xml = read(res + '/mipmap-anydpi-v26/' + name + '.xml');
       assert.ok(xml.includes('@color/smv_launcher_background'));
-      assert.ok(xml.includes('@drawable/' + resourcePrefix + '_launcher_foreground'));
+      const foregroundName = module === 'smvhoroscopeproduction' && name.endsWith('_round')
+        ? '@drawable/smv_horoscope_launcher_round_foreground'
+        : '@drawable/' + resourcePrefix + '_launcher_foreground';
+      assert.ok(xml.includes(foregroundName));
     }
     assert.ok(read(res + '/values/colors.xml').includes('<color name="smv_launcher_background">#FFFFFF</color>'));
   }
@@ -131,7 +134,10 @@ test('HOROSCOPE and CALENDAR production launchers fit complete source artwork at
     '  assert legacy.size == (512, 512)',
     '  assert legacy.getpixel((0, 0)) == (255, 255, 255)',
     '  round_icon = Image.open(sys.argv[index + 2]).convert("RGB")',
-    '  assert list(legacy.getdata()) == list(round_icon.getdata())'
+    '  if index == 1:',
+    '    assert list(legacy.getdata()) != list(round_icon.getdata())',
+    '  else:',
+    '    assert list(legacy.getdata()) == list(round_icon.getdata())'
   ].join('\n');
   execFileSync('python3', ['-c', python, ...pythonArgs], { cwd: root, stdio: 'pipe' });
 });
