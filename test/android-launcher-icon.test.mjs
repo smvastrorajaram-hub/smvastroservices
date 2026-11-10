@@ -31,7 +31,7 @@ test('SMV ASTRO production launcher source is the existing lowercase icon folder
   const manifest = read('smvastroproduction/src/main/AndroidManifest.xml');
   assert.ok(manifest.includes('android:icon="@mipmap/smv_astro_launcher"'));
   assert.ok(manifest.includes('android:roundIcon="@mipmap/smv_astro_launcher_round"'));
-  assert.doesNotMatch(manifest, /@mipmap\\/ic_launcher/);
+  assert.doesNotMatch(manifest, /@mipmap\/ic_launcher/);
   const workflow = read('.github/workflows/build-smv-astro-production-apk.yml');
   for (const marker of [sourcePath, 'prepare-smv-astro-production-icon.sh', 'test/android-launcher-icon.test.mjs']) {
     assert.ok(workflow.includes(marker), 'ASTRO build workflow must include ' + marker);
@@ -55,9 +55,9 @@ test('SMV ASTRO production launcher resources are exact, unchanged PNG copies be
 
 test('SMV ASTRO production adaptive launcher resources retain their white background', () => {
   for (const name of ['smv_astro_launcher', 'smv_astro_launcher_round']) {
-    const xml = read(res + '/mipmap-anydpi-v26/smv_astro_launcher' + (name === 'smv_astro_launcher' ? '' : '_round') + '.xml');
+    const xml = read(res + '/mipmap-anydpi-v26/' + name + '.xml');
     assert.ok(xml.includes('@color/smv_launcher_background'));
-    assert.ok(xml.includes('@drawable/ic_launcher_foreground'));
+    assert.ok(xml.includes('@drawable/smv_astro_launcher_foreground'));
   }
   assert.ok(read(res + '/values/colors.xml').includes('<color name="smv_launcher_background">#FFFFFF</color>'));
 });
