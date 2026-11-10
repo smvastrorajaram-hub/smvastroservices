@@ -30,22 +30,6 @@
     }
   };
 
-  const uploadedAtLabel = value => {
-    const timestamp = Number(value);
-    if (!Number.isFinite(timestamp) || timestamp <= 0) return '';
-    const date = new Date(timestamp);
-    if (Number.isNaN(date.getTime())) return '';
-    return new Intl.DateTimeFormat('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: 'Asia/Kolkata'
-    }).format(date).replace(/\u202f/g, ' ');
-  };
-
   if (download) download.hidden = true;
   if (details) details.textContent = '';
 
@@ -83,11 +67,8 @@
         throw new Error('APK metadata validation failed.');
       }
 
-      if (heading) heading.textContent = appName + ' ' + version + ' · code ' + String(code);
-      const dateLabel = uploadedAtLabel(release.uploadedAt);
-      const storage = String(release.storageProvider || '').toLowerCase();
-      if (!['r2', 'firebase'].includes(storage)) throw new Error('APK storage metadata is unavailable.');
-      if (details) details.textContent = dateLabel ? dateLabel + ' · ' + storage : storage;
+      if (heading) heading.textContent = appName;
+      if (details) { details.textContent = ''; details.hidden = true; }
       if (download) {
         download.href = url.href;
         download.download = '';

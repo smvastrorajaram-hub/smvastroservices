@@ -1286,7 +1286,7 @@ test('Homepage removes its PWA install banner and presents the dedicated Android
   assert.ok(html.includes('class="smv-android-apk-main"'));
   // The card now has a compact product heading; the release script appends its live version.
   assert.ok(html.includes('id="smvPermanentAndroidApkHeading">SMV ASTRO</h2>'));
-  assert.ok(html.includes('src="./assets/android-app-icon-astro.svg"'));
+  assert.ok(html.includes('src="./assets/android-app-icon-astro-source.png?v=20261110-icon-png-v3"'));
   assert.ok(installer.includes("heading.textContent = 'SMV ASTRO ' + latestName"));
   assert.ok(html.includes('Official signed Android application.'));
   assert.ok(html.indexOf('class="smv-android-apk-main"') < html.indexOf('class="smv-android-apk-actions"'));

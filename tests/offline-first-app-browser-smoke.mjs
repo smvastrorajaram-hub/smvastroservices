@@ -4,14 +4,14 @@ import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 
 const origin = process.env.SMV_OFFLINE_PREVIEW_ORIGIN || 'http://127.0.0.1:4173';
-const release = '20261110-android-apk-cards-v2';
+const release = '20261110-android-icons-calendar-favicon-seo-contrast-v3';
 const apps = [
   {
     name: 'SMV ASTRO',
     url: origin + '/',
     cacheName: 'smv-astro-shell-' + release,
     placeCacheName: 'smv-shared-india-places',
-    requiredAssets: ['/smvastro.mjs','/assets/pwa-astro-192.svg','/assets/pwa-astro-512.png','/assets/pwa-astro-maskable-192.svg','/assets/pwa-astro-maskable.svg','/assets/smv-home-logo.webp','/assets/favicon-astro.png','/assets/favicon-astro.ico'],
+    requiredAssets: ['/smvastro.mjs','/assets/pwa-astro-192.svg','/assets/pwa-astro-512.png','/assets/pwa-astro-maskable-192.svg','/assets/pwa-astro-maskable.svg','/assets/smv-home-logo.webp','/assets/favicon-astro.png','/assets/favicon-astro.ico','/assets/android-app-icon-astro-source.png'],
     probeAsset: '/smvastro.mjs',
     locationMode: 'question'
   },
@@ -21,7 +21,7 @@ const apps = [
     cacheName: 'smv-horoscope-shell-' + release,
     placeCacheName: 'smv-shared-india-places',
     offlineCacheName: 'smv-horoscope-offline',
-    requiredAssets: ['/horoscope/marriage-matching.js','/horoscope/assets/pwa-horoscope-192.svg','/horoscope/assets/pwa-horoscope-512.png','/horoscope/assets/pwa-horoscope-maskable-192.svg','/horoscope/assets/pwa-horoscope-maskable.svg','/horoscope/assets/smv-horoscope-website.webp','/horoscope/assets/smv-horoscope-header-logo.png','/horoscope/assets/favicon-horoscope.png','/horoscope/assets/favicon-horoscope.ico'],
+    requiredAssets: ['/horoscope/marriage-matching.js','/horoscope/assets/pwa-horoscope-192.svg','/horoscope/assets/pwa-horoscope-512.png','/horoscope/assets/pwa-horoscope-maskable-192.svg','/horoscope/assets/pwa-horoscope-maskable.svg','/horoscope/assets/smv-horoscope-website.webp','/horoscope/assets/smv-horoscope-header-logo.png','/horoscope/assets/favicon-horoscope.png','/horoscope/assets/favicon-horoscope.ico','/horoscope/assets/android-app-icon-horoscope-source.png','/horoscope/android-apk-download.mjs','/horoscope/android-apk-icons.css'],
     offlineAssets: [
       '/horoscope/offline/offline-engine.mjs',
       '/horoscope/offline/vendor/wasm/swisseph.wasm',
@@ -43,7 +43,7 @@ const apps = [
       '/horoscope/assets/pwa-calendar-maskable.svg',
       '/horoscope/assets/favicon-calendar.png',
       '/horoscope/assets/smv-calendar-website.webp',
-      '/horoscope/assets/favicon-calendar.ico'
+      '/horoscope/assets/favicon-calendar.ico','/horoscope/assets/android-app-icon-calendar-source.png','/horoscope/android-apk-download.mjs','/horoscope/android-apk-icons.css'
     ],
     probeAsset: '/horoscope/calendar-rasi-palan.mjs',
     locationMode: 'shared'

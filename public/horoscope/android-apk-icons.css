@@ -1,0 +1,27 @@
+/* Direct PNG card icons: match the native launcher artwork without nested SVG image loading. */
+.smv-android-apk-icon-wrap {
+  flex: 0 0 72px;
+  width: 72px;
+  height: 72px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #fff;
+}
+.smv-android-apk-icon-wrap img {
+  display: block;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 12px;
+}
+@media (max-width: 650px) {
+  .smv-android-apk-icon-wrap,
+  .smv-android-apk-icon-wrap img {
+    width: 64px;
+    height: 64px;
+  }
+  .smv-android-apk-icon-wrap {
+    flex-basis: 64px;
+  }
+}
