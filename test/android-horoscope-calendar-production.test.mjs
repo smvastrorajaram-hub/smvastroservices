@@ -201,10 +201,12 @@ test('Horoscope and Calendar bottom Android app cards reuse the SMV ASTRO icon-c
   assert.ok(calendar.includes('class="smv-android-apk-section"'));
   assert.ok(horoscope.includes('src="assets/icon-192.png"'));
   assert.ok(calendar.includes('src="../assets/calendar-192.png"'));
-  assert.ok(horoscope.includes('Download SMV HOROSCOPE Android App'));
-  assert.ok(calendar.includes('Download SMV CALENDAR Android App'));
+  assert.ok(horoscope.includes('SMV HOROSCOPE Android App-ஐ Download செய்க'));
+  assert.ok(calendar.includes('SMV CALENDAR Android App-ஐ Download செய்க'));
   assert.ok(horoscope.includes('OFFICIAL SIGNED ANDROID APPLICATION'));
   assert.ok(calendar.includes('OFFICIAL SIGNED ANDROID APPLICATION'));
+  assert.ok(horoscope.includes('Checking Android APK…'));
+  assert.ok(calendar.includes('Checking Android APK…'));
   assert.ok(horoscope.includes('Checking Android APK…'));
   assert.ok(calendar.includes('Checking Android APK…'));
   for (const html of [horoscope, calendar]) {

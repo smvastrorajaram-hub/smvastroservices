@@ -2914,7 +2914,7 @@ details>*{display:block!important}
 .smv-android-apk-icon-wrap img{display:block;width:58px;height:58px;object-fit:contain}
 .smv-android-apk-copy{flex:1 1 auto;min-width:0}
 .smv-android-apk-eyebrow{margin:0 0 4px;color:#765a27;font-size:11px;font-weight:800;letter-spacing:.08em}
-.smv-android-apk-copy h2{margin:0 0 5px;color:#24103f;font-size:clamp(11px,2.8vw,17px);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.smv-android-apk-copy h2{margin:0 0 5px;color:#24103f;font-size:clamp(9px,3vw,16px);line-height:1.3;white-space:nowrap}
 .smv-android-apk-copy>p:not(.smv-android-apk-eyebrow){margin:0;color:#51445f;font-size:13px;line-height:1.45}
 .smv-android-apk-copy .smv-android-apk-status{margin-top:6px;color:#765a27;font-size:12px}
 .smv-android-apk-actions{display:flex;flex:0 0 auto;flex-direction:column;align-items:stretch;gap:7px;min-width:185px}
