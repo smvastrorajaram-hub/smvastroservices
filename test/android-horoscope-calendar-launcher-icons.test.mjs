@@ -40,8 +40,8 @@ test('HOROSCOPE and CALENDAR production launcher inputs are the three-app lowerc
 
 test('HOROSCOPE and CALENDAR production launcher resources are exact byte-for-byte PNG copies', () => {
   const products = [
-    ['icon/horoscope_512.png', 'smvhoroscopeproduction'],
-    ['icon/calendar_512.png', 'smvcalendarproduction']
+    ['icon/horoscope_512.png', 'smvhoroscopeproduction', 'smv_horoscope'],
+    ['icon/calendar_512.png', 'smvcalendarproduction', 'smv_calendar']
   ];
   for (const [sourcePath, module, resourcePrefix] of products) {
     const source = assertPng(sourcePath);
@@ -58,7 +58,7 @@ test('HOROSCOPE and CALENDAR production launcher resources are exact byte-for-by
     for (const name of [resourcePrefix + '_launcher', resourcePrefix + '_launcher_round']) {
       const xml = read(res + '/mipmap-anydpi-v26/' + name + '.xml');
       assert.ok(xml.includes('@color/smv_launcher_background'));
-      assert.ok(xml.includes('@drawable/ic_launcher_foreground'));
+      assert.ok(xml.includes('@drawable/' + resourcePrefix + '_launcher_foreground'));
     }
     assert.ok(read(res + '/values/colors.xml').includes('<color name="smv_launcher_background">#FFFFFF</color>'));
   }
