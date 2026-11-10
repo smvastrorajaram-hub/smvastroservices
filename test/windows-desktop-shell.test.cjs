@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { execFileSync } = require('node:child_process');
 
 const repoRoot = path.resolve(__dirname, '..');
 const desktopRoot = path.join(repoRoot, 'desktop', 'windows');
@@ -71,10 +72,18 @@ test('launcher provides navigation to all three services and states cloud/offlin
   assert.match(docs, /not code-signed/);
 });
 
-test('Windows executable icon is reproducibly generated from the checked-in ICO asset', () => {
-  const encoded = read('assets/smv-astro-icon.base64').replace(/\s+/g, '');
-  const icon = Buffer.from(encoded, 'base64');
-  assert.ok(icon.length > 512);
-  assert.deepEqual([...icon.subarray(0, 4)], [0, 0, 1, 0]);
-  assert.match(read('scripts/prepare-icon.cjs'), /writeFileSync\(iconPath, icon\)/);
+test('Windows executable icon is generated as a valid 256x256 ICO', () => {
+  const script = path.join(desktopRoot, 'scripts', 'prepare-icon.cjs');
+  execFileSync(process.execPath, [script]);
+  const icon = fs.readFileSync(path.join(desktopRoot, 'assets', 'smv-astro.ico'));
+  assert.deepEqual([...icon.subarray(0, 6)], [0, 0, 1, 0, 1, 0]);
+  assert.equal(icon.readUInt8(6), 0);
+  assert.equal(icon.readUInt8(7), 0);
+  assert.equal(icon.readUInt16LE(10), 1);
+  assert.equal(icon.readUInt16LE(12), 32);
+  assert.equal(icon.readUInt32LE(18), 22);
+  assert.equal(icon.readUInt32LE(22), 40);
+  assert.equal(icon.readInt32LE(26), 256);
+  assert.equal(icon.readInt32LE(30), 512);
+  assert.ok(icon.length > 256 * 256 * 4);
 });
