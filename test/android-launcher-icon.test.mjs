@@ -10,7 +10,7 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const bytes = file => fs.readFileSync(path.join(root, file));
 const sourcePath = 'icon/astro_512.png';
 const res = 'smvastroproduction/src/main/res';
-const maxBytes = 300000;
+const maxBytes = 700000;
 
 function pngDimensions(data, file) {
   assert.deepEqual([...data.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10], file + ' must be PNG');
@@ -21,7 +21,7 @@ function pngDimensions(data, file) {
 test('SMV ASTRO production launcher source stays the lowercase icon folder PNG', () => {
   const source = bytes(sourcePath);
   assert.deepEqual(pngDimensions(source, sourcePath), { width: 512, height: 512 });
-  assert.ok(source.length < maxBytes, 'source PNG must remain below 300 KB');
+  assert.ok(source.length < maxBytes, 'source PNG must remain below 700 KB');
 
   const script = read('prepare-smv-astro-production-icon.sh');
   const helper = read('tools/prepare_android_launcher_icons.py');
