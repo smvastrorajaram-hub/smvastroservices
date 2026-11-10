@@ -217,7 +217,7 @@ jobs:
         with:
           gradle-version: "9.6.0"
 
-      - name: Set up Python and Pillow for 60dp launcher artwork
+      - name: Set up Python and Pillow for 57dp launcher artwork
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
