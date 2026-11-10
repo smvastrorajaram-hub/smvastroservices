@@ -2,13 +2,13 @@
 
 The Production Android app lives in `smvastroproduction/`, has launcher name **SMV ASTRO**, and uses package `in.smvastroservices.smvastro`. The modules `smvastro/`, `smvhoroscope/`, and `smvcalendar/` remain separate Test APKs. The existing `.github/workflows/build-test-apks.yml` workflow is not changed.
 
-## Android launcher icons: three independent assets from the root ICON folder
-The three production APKs use the exact product-specific images uploaded to the repository's root `ICON/` folder:
-- `ICON/SMV ASTRO.jpg` → SMV ASTRO
-- `ICON/SMV HOROSCOPE.jpg` → SMV HOROSCOPE
-- `ICON/SMV CALENDAR.jpg` → SMV CALENDAR
+## Android launcher icons: three independent assets from the lowercase icon folder
+The three production APKs use the exact product-specific 512x512 PNGs already stored in the repository's lowercase root `icon/` folder:
+- `icon/astro_512.png` → SMV ASTRO
+- `icon/horoscope_512.png` → SMV HOROSCOPE
+- `icon/calendar_512.png` → SMV CALENDAR
 
-Each source image is 2048×2048. The Android build generates 512×512 square/round launcher images and a 432×432 adaptive foreground JPEG, with the same centered white-background tile treatment for all three products. The shared generator reduces JPEG quality only as necessary and fails closed unless every generated launcher image is at most 300,000 bytes. The adaptive icon keeps a separate pure-white background resource.
+Each source is already 512×512 and below 300,000 bytes. The build copies each PNG byte-for-byte into product-specific Android launcher resources (`smv_astro_launcher`, `smv_horoscope_launcher`, `smv_calendar_launcher`) without resizing or recompression. The manifests refer to those unique resource names, and the scripts remove the former generic `ic_launcher` resources before building.
 
 Changing one source image triggers only its corresponding Android build workflow. The Website, Horoscope PWA, Calendar PWA, Firebase, Razorpay, Render and Cloudflare assets are not changed by this launcher-only update.
 - When the Astrologer taps the full-screen notification, Android passes the data extras (including `type`, `sessionId` or `bookingId`) to the launcher activity. `MainActivity` converts those values into the existing `smvLivePush` URL, and the signed-in Astrologer dashboard opens the matching Live request or booking.
