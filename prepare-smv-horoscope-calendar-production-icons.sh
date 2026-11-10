@@ -1,50 +1,80 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Keep the existing isolated test-module assets ready; the production launcher
-# resources below come exclusively from the three user-uploaded ICON files.
-bash prepare-icons.sh
+# The lowercase repository icon/ directory is the single source of truth.
+# Copy the user's existing 512x512 PNGs unchanged; never resize/recompress.
+max_bytes=300000
+generator_unused=0
 
-generator_dir="/tmp/smv-android-icon-generator"
-mkdir -p "$generator_dir"
-javac -encoding UTF-8 -d "$generator_dir" tools/SmvProductLauncherIconGenerator.java
-
-copy_product_icon() {
-  source_icon="$1"
-  production_module="$2"
-  production_res="$production_module/src/main/res"
-
+validate_png() {
+  local source_icon="$1"
   test -s "$source_icon" || {
-    echo "::error::Approved production app artwork is missing: $source_icon"
+    echo "::error::Approved production PNG is missing: $source_icon"
     exit 1
   }
+  python3 - "$source_icon" "$max_bytes" <<'PY'
+import pathlib, struct, sys
+path = pathlib.Path(sys.argv[1])
+limit = int(sys.argv[2])
+data = path.read_bytes()
+if data[:8] != b"\x89PNG\r\n\x1a\n":
+    raise SystemExit(f"::error::{path} is not a valid PNG")
+width, height = struct.unpack(">II", data[16:24])
+if (width, height) != (512, 512):
+    raise SystemExit(f"::error::{path} must be 512x512, found {width}x{height}")
+if len(data) >= limit:
+    raise SystemExit(f"::error::{path} exceeds the 300,000-byte limit: {len(data)}")
+print(f"PASS: {path}: {width}x{height}, {len(data)} bytes.")
+PY
+}
 
-  java -Djava.awt.headless=true -cp "$generator_dir" \
-    SmvProductLauncherIconGenerator "$source_icon" "$production_res"
+write_adaptive_resources() {
+  local res="$1"
+  mkdir -p "$res/drawable-nodpi" "$res/mipmap-nodpi" "$res/mipmap-anydpi-v26" "$res/values"
+  rm -f "$res/drawable-nodpi/ic_launcher_foreground.jpg" \
+        "$res/mipmap-nodpi/ic_launcher.jpg" \
+        "$res/mipmap-nodpi/ic_launcher_round.jpg"
+  cat > "$res/mipmap-anydpi-v26/ic_launcher.xml" <<'XML'
+<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/smv_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+</adaptive-icon>
+XML
+  cp "$res/mipmap-anydpi-v26/ic_launcher.xml" "$res/mipmap-anydpi-v26/ic_launcher_round.xml"
+  cat > "$res/values/colors.xml" <<'XML'
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="smv_launcher_background">#FFFFFF</color>
+</resources>
+XML
+}
+
+copy_product_icon() {
+  local source_icon="$1"
+  local production_module="$2"
+  local res="$production_module/src/main/res"
+
+  validate_png "$source_icon"
+  write_adaptive_resources "$res"
+
+  # Keep the exact source PNG bytes in every production launcher resource slot.
+  cp "$source_icon" "$res/drawable-nodpi/ic_launcher_foreground.png"
+  cp "$source_icon" "$res/mipmap-nodpi/ic_launcher.png"
+  cp "$source_icon" "$res/mipmap-nodpi/ic_launcher_round.png"
 
   for asset in \
-    "$production_res/drawable-nodpi/ic_launcher_foreground.jpg" \
-    "$production_res/mipmap-nodpi/ic_launcher.jpg" \
-    "$production_res/mipmap-nodpi/ic_launcher_round.jpg" \
-    "$production_res/mipmap-anydpi-v26/ic_launcher.xml" \
-    "$production_res/mipmap-anydpi-v26/ic_launcher_round.xml" \
-    "$production_res/values/colors.xml"; do
-    test -s "$asset" || {
-      echo "::error::Generated launcher resource is missing: $asset"
+    "$res/drawable-nodpi/ic_launcher_foreground.png" \
+    "$res/mipmap-nodpi/ic_launcher.png" \
+    "$res/mipmap-nodpi/ic_launcher_round.png"; do
+    cmp -s "$source_icon" "$asset" || {
+      echo "::error::Launcher asset differs from $source_icon: $asset"
       exit 1
     }
   done
-
-  for asset in "$production_res/drawable-nodpi/ic_launcher_foreground.jpg" "$production_res/mipmap-nodpi/ic_launcher.jpg" "$production_res/mipmap-nodpi/ic_launcher_round.jpg"; do
-    size="$(stat -c%s "$asset")"
-    if (( size > 300000 )); then
-      echo "::error::Generated Android icon exceeds 300 KB: $asset ($size bytes)"
-      exit 1
-    fi
-  done
 }
 
-copy_product_icon "ICON/SMV HOROSCOPE.jpg" smvhoroscopeproduction
-copy_product_icon "ICON/SMV CALENDAR.jpg" smvcalendarproduction
+copy_product_icon "icon/horoscope_512.png" smvhoroscopeproduction
+copy_product_icon "icon/calendar_512.png" smvcalendarproduction
 
-echo "PASS: HOROSCOPE and CALENDAR use their exact matching ICON folder artwork; every generated launcher image is below 300 KB."
+echo "PASS: HOROSCOPE and CALENDAR production launchers are exact copies of their matching icon/ PNGs."
