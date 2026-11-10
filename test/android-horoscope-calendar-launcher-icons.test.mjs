@@ -20,15 +20,17 @@ function assertPng(file) {
 
 test('HOROSCOPE and CALENDAR production launcher inputs are the three-app lowercase icon folder PNGs', () => {
   const sources = [
-    ['icon/horoscope_512.png', 'smvhoroscopeproduction'],
-    ['icon/calendar_512.png', 'smvcalendarproduction']
+    ['icon/horoscope_512.png', 'smvhoroscopeproduction', 'smv_horoscope'],
+    ['icon/calendar_512.png', 'smvcalendarproduction', 'smv_calendar']
   ];
   const script = read('prepare-smv-horoscope-calendar-production-icons.sh');
-  for (const [source, module] of sources) {
+  for (const [source, module, resourcePrefix] of sources) {
     assertPng(source);
-    assert.ok(script.includes('copy_product_icon "' + source + '" ' + module));
+    assert.ok(script.includes('copy_product_icon "' + source + '" ' + module + ' ' + resourcePrefix));
   }
   assert.ok(script.includes('cmp -s "$source_icon" "$asset"'));
+  assert.ok(read('smvhoroscopeproduction/src/main/AndroidManifest.xml').includes('@mipmap/smv_horoscope_launcher'));
+  assert.ok(read('smvcalendarproduction/src/main/AndroidManifest.xml').includes('@mipmap/smv_calendar_launcher'));
   assert.doesNotMatch(script, /prepare-icons\.sh|SmvProductLauncherIconGenerator|ICON\/SMV/);
   const workflow = read('.github/workflows/build-smv-horoscope-calendar-production-apks.yml');
   for (const source of sources.map(item => item[0])) {
@@ -41,19 +43,19 @@ test('HOROSCOPE and CALENDAR production launcher resources are exact byte-for-by
     ['icon/horoscope_512.png', 'smvhoroscopeproduction'],
     ['icon/calendar_512.png', 'smvcalendarproduction']
   ];
-  for (const [sourcePath, module] of products) {
+  for (const [sourcePath, module, resourcePrefix] of products) {
     const source = assertPng(sourcePath);
     const res = module + '/src/main/res';
     for (const target of [
-      res + '/drawable-nodpi/ic_launcher_foreground.png',
-      res + '/mipmap-nodpi/ic_launcher.png',
-      res + '/mipmap-nodpi/ic_launcher_round.png'
+      res + '/drawable-nodpi/' + resourcePrefix + '_launcher_foreground.png',
+      res + '/mipmap-nodpi/' + resourcePrefix + '_launcher.png',
+      res + '/mipmap-nodpi/' + resourcePrefix + '_launcher_round.png'
     ]) {
       const actual = bytes(target);
       assert.deepEqual(actual, source, target + ' must exactly match ' + sourcePath);
       assert.ok(actual.length < maxBytes);
     }
-    for (const name of ['ic_launcher', 'ic_launcher_round']) {
+    for (const name of [resourcePrefix + '_launcher', resourcePrefix + '_launcher_round']) {
       const xml = read(res + '/mipmap-anydpi-v26/' + name + '.xml');
       assert.ok(xml.includes('@color/smv_launcher_background'));
       assert.ok(xml.includes('@drawable/ic_launcher_foreground'));
