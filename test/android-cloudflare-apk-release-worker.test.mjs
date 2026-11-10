@@ -325,7 +325,9 @@ test('Admin upload publishes the newer signed APK to R2 and D1 and download serv
 
   const current = await worker.fetch(new Request('https://apk.example/public/android-app'), env);
   assert.equal(current.status, 200);
-  assert.equal((await current.json()).versionCode, 1001);
+  const currentRelease = await current.json();
+  assert.equal(currentRelease.versionCode, 1001);
+  assert.equal(currentRelease.storageProvider, 'r2');
 
   const history = await worker.fetch(new Request('https://apk.example/admin/android-app/versions', {
     headers: { Authorization: 'Bearer admin-token' }
@@ -422,7 +424,9 @@ test('Horoscope and Calendar have independent package identities, version sequen
     worker.fetch(new Request('https://apk.example/public/android-apps/calendar'), env)
   ]);
   assert.equal((await horoscopePublic.json()).packageName, horoscopePackage);
+  assert.equal((await horoscopePublic.json()).storageProvider, 'r2');
   assert.equal((await calendarPublic.json()).packageName, calendarPackage);
+  assert.equal((await calendarPublic.json()).storageProvider, 'r2');
 
   const horoscopeDownload = await worker.fetch(new Request(horoscopeRelease.downloadUrl), env);
   const calendarDownload = await worker.fetch(new Request(calendarRelease.downloadUrl), env);
