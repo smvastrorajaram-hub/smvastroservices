@@ -20,8 +20,8 @@ on:
         default: true
   pull_request:
     paths:
-      - "smvhoroscopeproduction/launcher/icon-master.jpg"
-      - "smvcalendarproduction/launcher/icon-master.jpg"
+      - "ICON/SMV HOROSCOPE.jpg"
+      - "ICON/SMV CALENDAR.jpg"
       - "settings.gradle"
       - "prepare-icons.sh"
       - "prepare-smv-horoscope-calendar-production-icons.sh"
@@ -46,8 +46,8 @@ on:
       - "public/horoscope/offline/places/india-manifest.json"
   push:
     paths:
-      - "smvhoroscopeproduction/launcher/icon-master.jpg"
-      - "smvcalendarproduction/launcher/icon-master.jpg"
+      - "ICON/SMV HOROSCOPE.jpg"
+      - "ICON/SMV CALENDAR.jpg"
       - "settings.gradle"
       - "prepare-icons.sh"
       - "prepare-smv-horoscope-calendar-production-icons.sh"
@@ -120,7 +120,7 @@ jobs:
                   horoscope=true ;;
                 smvcalendarproduction/*|smvcalendar/*)
                   calendar=true ;;
-                settings.gradle|prepare-icons.sh|prepare-smv-horoscope-calendar-production-icons.sh|tools/SmvProductLauncherIconGenerator.java|public/horoscope/sw.js|public/horoscope/calendar/sw.js|public/horoscope/location-search-online-offline.js|public/question-place-search.mjs|public/horoscope/offline/places/place-search.mjs|public/horoscope/offline/places/india-manifest.json|scripts/next-android-release-version.mjs|scripts/normalize-android-release-version-name.mjs)
+                ICON/SMV\ HOROSCOPE.jpg|ICON/SMV\ CALENDAR.jpg|settings.gradle|prepare-icons.sh|prepare-smv-horoscope-calendar-production-icons.sh|tools/SmvProductLauncherIconGenerator.java|public/horoscope/sw.js|public/horoscope/calendar/sw.js|public/horoscope/location-search-online-offline.js|public/question-place-search.mjs|public/horoscope/offline/places/place-search.mjs|public/horoscope/offline/places/india-manifest.json|scripts/next-android-release-version.mjs|scripts/normalize-android-release-version-name.mjs)
                   horoscope=true; calendar=true ;;
               esac
             done <<< "$changed_files"
@@ -174,9 +174,7 @@ jobs:
 
       - name: Allocate only the changed production app version from Cloudflare APK releases
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.app_targets.outputs.apps != '' }}
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: node scripts/next-android-release-version.mjs ${{ steps.app_targets.outputs.apps }}
+        env:\n          GITHUB_TOKEN: ${{ github.token }}\n        run: node scripts/next-android-release-version.mjs ${{ steps.app_targets.outputs.apps }}
 
       - name: Prepare production Horoscope and Calendar icons
         run: bash prepare-smv-horoscope-calendar-production-icons.sh

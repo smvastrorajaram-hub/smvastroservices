@@ -20,10 +20,11 @@ on:
         default: true
   pull_request:
     paths:
+      - "ICON/SMV ASTRO.jpg"
       - "tools/SmvProductLauncherIconGenerator.java"
       - "smvastroproduction/**"
       - "test/android-astro-pdf-native.test.mjs"
-      - "smvastroproduction/launcher/icon-master.jpg"
+      - "smvastroproduction/launcher/icon-512.png"
       - "settings.gradle"
       - "prepare-smv-astro-production-icon.sh"
       - ".github/workflows/build-smv-astro-production-apk.yml"
@@ -43,9 +44,10 @@ on:
       - "public/horoscope/offline/places/india-manifest.json"
   push:
     paths:
+      - "ICON/SMV ASTRO.jpg"
       - "tools/SmvProductLauncherIconGenerator.java"
       - "smvastroproduction/**"
-      - "smvastroproduction/launcher/icon-master.jpg"
+      - "smvastroproduction/launcher/icon-512.png"
       - "settings.gradle"
       - "prepare-smv-astro-production-icon.sh"
       - ".github/workflows/build-smv-astro-production-apk.yml"
@@ -235,9 +237,7 @@ jobs:
 
       - name: Allocate the next SMV ASTRO version from the published Cloudflare APK release
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: node scripts/next-android-release-version.mjs astro
+        env:\n          GITHUB_TOKEN: ${{ github.token }}\n        run: node scripts/next-android-release-version.mjs astro
 
       - name: Validate Firebase Android App ID and ordered version
         shell: bash
