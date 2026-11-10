@@ -30,7 +30,7 @@ test('SMV ASTRO production launcher source stays the lowercase icon folder PNG',
   assert.ok(script.includes('--content-dp 58'));
   assert.ok(helper.includes('CANVAS_DP = 108.0'));
   assert.ok(helper.includes('TARGET_DP = 58.0'));
-  assert.ok(helper.includes('54.0 <= args.content_dp <= 54.0'));
+  assert.ok(helper.includes('58.0 <= args.content_dp <= 58.0'));
   assert.ok(helper.includes('effective_dp = target_px * CANVAS_DP / CANVAS_PX'));
   assert.doesNotMatch(script, /SmvProductLauncherIconGenerator|ICON\/SMV ASTRO\.jpg/);
   assert.ok(!script.includes('public/assets/'));
