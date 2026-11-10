@@ -4,7 +4,6 @@ set -euo pipefail
 # The lowercase repository icon/ directory is the single source of truth.
 # Copy the user's existing 512x512 PNGs unchanged; never resize/recompress.
 max_bytes=300000
-generator_unused=0
 
 validate_png() {
   local source_icon="$1"
