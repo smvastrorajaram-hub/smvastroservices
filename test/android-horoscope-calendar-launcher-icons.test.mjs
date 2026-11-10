@@ -34,7 +34,7 @@ test('HOROSCOPE and CALENDAR production launcher sources remain the lowercase ic
   assert.ok(script.includes('--content-dp 58'));
   assert.ok(helper.includes('CANVAS_DP = 108.0'));
   assert.ok(helper.includes('TARGET_DP = 58.0'));
-  assert.ok(helper.includes('54.0 <= args.content_dp <= 54.0'));
+  assert.ok(helper.includes('58.0 <= args.content_dp <= 58.0'));
   assert.ok(read('smvhoroscopeproduction/src/main/AndroidManifest.xml').includes('@mipmap/smv_horoscope_launcher'));
   assert.ok(read('smvcalendarproduction/src/main/AndroidManifest.xml').includes('@mipmap/smv_calendar_launcher'));
   assert.doesNotMatch(script, /prepare-icons\.sh|SmvProductLauncherIconGenerator|ICON\/SMV/);
