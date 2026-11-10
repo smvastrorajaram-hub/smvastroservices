@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# The lowercase repository icon/ directory is the single source of truth.
-# These pre-sized PNGs are copied byte-for-byte: no resize, recompression or
-# artwork substitution is permitted in the Android production build.
+# Exact source: the existing 512x512 PNG in the lowercase repository icon/ folder.
+# No resizing, recompression, image substitution, or generic launcher resource names.
 source_icon="icon/astro_512.png"
 res="smvastroproduction/src/main/res"
 max_bytes=300000
@@ -20,6 +19,8 @@ limit = int(sys.argv[2])
 data = path.read_bytes()
 if data[:8] != b"\x89PNG\r\n\x1a\n":
     raise SystemExit(f"::error::{path} is not a valid PNG")
+if len(data) < 24:
+    raise SystemExit(f"::error::{path} has a truncated PNG header")
 width, height = struct.unpack(">II", data[16:24])
 if (width, height) != (512, 512):
     raise SystemExit(f"::error::{path} must be 512x512, found {width}x{height}")
@@ -30,24 +31,26 @@ PY
 
 mkdir -p "$res/drawable-nodpi" "$res/mipmap-nodpi" "$res/mipmap-anydpi-v26" "$res/values"
 
-# Remove stale resources produced by the previous JPEG-based icon pipeline.
+# Retire old generic ic_launcher resources so Android cannot select stale artwork.
 rm -f "$res/drawable-nodpi/ic_launcher_foreground.jpg" \
-      "$res/mipmap-nodpi/ic_launcher.jpg" \
-      "$res/mipmap-nodpi/ic_launcher_round.jpg"
+      "$res/drawable-nodpi/ic_launcher_foreground.png" \
+      "$res/mipmap-nodpi/ic_launcher.jpg" "$res/mipmap-nodpi/ic_launcher.png" \
+      "$res/mipmap-nodpi/ic_launcher_round.jpg" "$res/mipmap-nodpi/ic_launcher_round.png" \
+      "$res/mipmap-anydpi-v26/ic_launcher.xml" "$res/mipmap-anydpi-v26/ic_launcher_round.xml"
 
-# Android launcher assets are exact byte-for-byte copies of icon/astro_512.png.
-cp "$source_icon" "$res/drawable-nodpi/ic_launcher_foreground.png"
-cp "$source_icon" "$res/mipmap-nodpi/ic_launcher.png"
-cp "$source_icon" "$res/mipmap-nodpi/ic_launcher_round.png"
+# Product-specific resource names make the selected Android launcher unambiguous.
+cp "$source_icon" "$res/drawable-nodpi/smv_astro_launcher_foreground.png"
+cp "$source_icon" "$res/mipmap-nodpi/smv_astro_launcher.png"
+cp "$source_icon" "$res/mipmap-nodpi/smv_astro_launcher_round.png"
 
-cat > "$res/mipmap-anydpi-v26/ic_launcher.xml" <<'XML'
+cat > "$res/mipmap-anydpi-v26/smv_astro_launcher.xml" <<'XML'
 <?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/smv_launcher_background" />
-    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+    <foreground android:drawable="@drawable/smv_astro_launcher_foreground" />
 </adaptive-icon>
 XML
-cp "$res/mipmap-anydpi-v26/ic_launcher.xml" "$res/mipmap-anydpi-v26/ic_launcher_round.xml"
+cp "$res/mipmap-anydpi-v26/smv_astro_launcher.xml" "$res/mipmap-anydpi-v26/smv_astro_launcher_round.xml"
 cat > "$res/values/colors.xml" <<'XML'
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
@@ -56,13 +59,13 @@ cat > "$res/values/colors.xml" <<'XML'
 XML
 
 for asset in \
-  "$res/drawable-nodpi/ic_launcher_foreground.png" \
-  "$res/mipmap-nodpi/ic_launcher.png" \
-  "$res/mipmap-nodpi/ic_launcher_round.png"; do
+  "$res/drawable-nodpi/smv_astro_launcher_foreground.png" \
+  "$res/mipmap-nodpi/smv_astro_launcher.png" \
+  "$res/mipmap-nodpi/smv_astro_launcher_round.png"; do
   cmp -s "$source_icon" "$asset" || {
     echo "::error::Launcher asset differs from $source_icon: $asset"
     exit 1
   }
 done
 
-echo "PASS: SMV ASTRO production launcher resources exactly match icon/astro_512.png."
+echo "PASS: SMV ASTRO launcher manifest resources are product-specific exact copies of icon/astro_512.png."
