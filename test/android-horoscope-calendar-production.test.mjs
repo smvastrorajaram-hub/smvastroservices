@@ -16,13 +16,15 @@ test('Production Horoscope and Calendar use their own stable Play Store applicat
       module: 'smvhoroscopeproduction',
       packageName: 'in.smvastroservices.horoscope',
       host: 'horoscope.smvastroservices.in',
-      label: 'SMV HOROSCOPE'
+      label: 'SMV HOROSCOPE',
+      launcherPrefix: 'smv_horoscope'
     },
     {
       module: 'smvcalendarproduction',
       packageName: 'in.smvastroservices.calendar',
       host: 'calendar.smvastroservices.in',
-      label: 'SMV CALENDAR'
+      label: 'SMV CALENDAR',
+      launcherPrefix: 'smv_calendar'
     }
   ];
 
