@@ -61,7 +61,7 @@ test('SMV HOROSCOPE roundIcon keeps its square corners inside Android 66dp circu
   assert.ok(source.length < maxBytes);
   assert.ok(script.includes('icon/horoscope_512.png'));
   assert.ok(script.includes('tools/prepare_android_round_launcher_icon.py'));
-  assert.ok(script.includes('--roundIcon'));
+  assert.ok(script.includes('smv_horoscope_launcher_round_foreground.png'));
   assert.ok(helper.includes('TARGET_DP = 46.0'));
   assert.ok(helper.includes('SAFE_CIRCLE_DP = 66.0'));
   assert.ok(helper.includes('diagonal_dp = effective_dp * sqrt(2)'));
