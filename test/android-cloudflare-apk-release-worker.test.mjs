@@ -423,10 +423,13 @@ test('Horoscope and Calendar have independent package identities, version sequen
     worker.fetch(new Request('https://apk.example/public/android-apps/horoscope'), env),
     worker.fetch(new Request('https://apk.example/public/android-apps/calendar'), env)
   ]);
-  assert.equal((await horoscopePublic.json()).packageName, horoscopePackage);
-  assert.equal((await horoscopePublic.json()).storageProvider, 'r2');
-  assert.equal((await calendarPublic.json()).packageName, calendarPackage);
-  assert.equal((await calendarPublic.json()).storageProvider, 'r2');
+  // A Response body is single-use: parse each public response once, then assert its fields.
+  const horoscopePublicRelease = await horoscopePublic.json();
+  const calendarPublicRelease = await calendarPublic.json();
+  assert.equal(horoscopePublicRelease.packageName, horoscopePackage);
+  assert.equal(horoscopePublicRelease.storageProvider, 'r2');
+  assert.equal(calendarPublicRelease.packageName, calendarPackage);
+  assert.equal(calendarPublicRelease.storageProvider, 'r2');
 
   const horoscopeDownload = await worker.fetch(new Request(horoscopeRelease.downloadUrl), env);
   const calendarDownload = await worker.fetch(new Request(calendarRelease.downloadUrl), env);
