@@ -137,6 +137,9 @@ jobs:
           echo "modules=$modules" >> "$GITHUB_OUTPUT"
           echo "Selected production APK modules: ${modules:-none (tests only)}"
 
+      - name: Prepare production Horoscope and Calendar icons
+        run: bash prepare-smv-horoscope-calendar-production-icons.sh
+
       - name: Node 22 production app regression tests
         uses: actions/setup-node@v4
         with:
@@ -173,9 +176,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/next-android-release-version.mjs ${{ steps.app_targets.outputs.apps }}
-
-      - name: Prepare production Horoscope and Calendar icons
-        run: bash prepare-smv-horoscope-calendar-production-icons.sh
 
       - name: Validate production launcher resources are exact source PNG copies
         shell: bash
