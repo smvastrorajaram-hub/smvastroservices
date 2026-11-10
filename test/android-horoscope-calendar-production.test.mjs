@@ -103,6 +103,27 @@ test('HOROSCOPE and CALENDAR production launchers use lowercase icon PNGs scaled
   assert.ok(workflow.includes('tools/prepare_android_launcher_icons.py'));
   assert.equal(script.includes('public/horoscope/'), false);
 });
+test('Only SMV HOROSCOPE roundIcon gets a square-safe 46dp foreground', () => {
+  const script = read('prepare-smv-horoscope-round-icon.sh');
+  const helper = read('tools/prepare_android_round_launcher_icon.py');
+  const workflow = read('.github/workflows/build-smv-horoscope-calendar-production-apks.yml');
+  const manifest = read('smvhoroscopeproduction/src/main/AndroidManifest.xml');
+  const roundXml = read('smvhoroscopeproduction/src/main/res/mipmap-anydpi-v26/smv_horoscope_launcher_round.xml');
+
+  assert.ok(script.includes('icon/horoscope_512.png'));
+  assert.ok(script.includes('smv_horoscope_launcher_round_foreground.png'));
+  assert.ok(helper.includes('TARGET_DP = 46.0'));
+  assert.ok(helper.includes('SAFE_CIRCLE_DP = 66.0'));
+  assert.ok(workflow.includes('prepare-smv-horoscope-round-icon.sh|tools/prepare_android_round_launcher_icon.py'));
+  assert.ok(workflow.includes('Prepare round-mask-safe SMV HOROSCOPE roundIcon only'));
+  assert.ok(manifest.includes('android:icon="@mipmap/smv_horoscope_launcher"'));
+  assert.ok(manifest.includes('android:roundIcon="@mipmap/smv_horoscope_launcher_round"'));
+  assert.ok(roundXml.includes('@drawable/smv_horoscope_launcher_round_foreground'));
+  assert.ok(read('smvhoroscopeproduction/src/main/res/mipmap-anydpi-v26/smv_horoscope_launcher.xml').includes('@drawable/smv_horoscope_launcher_foreground'));
+  assert.ok(read('smvcalendarproduction/src/main/res/mipmap-anydpi-v26/smv_calendar_launcher_round.xml').includes('@drawable/smv_calendar_launcher_foreground'));
+  assert.ok(read('prepare-smv-horoscope-calendar-production-icons.sh').includes('copy_product_icon "icon/calendar_512.png" smvcalendarproduction smv_calendar'));
+});
+
 test('Public Horoscope and Calendar APK cards point to the verified Cloudflare release Worker', () => {
   const controller = read('public/horoscope/android-apk-download.mjs');
   const horoscopeHtml = read('public/horoscope/index.html');
