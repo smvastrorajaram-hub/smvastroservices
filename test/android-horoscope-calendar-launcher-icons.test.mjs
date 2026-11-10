@@ -86,10 +86,7 @@ test('HOROSCOPE and CALENDAR production launchers fit complete source artwork at
     '  assert legacy.size == (512, 512)',
     '  assert legacy.getpixel((0, 0)) == (255, 255, 255)',
     '  round_icon = Image.open(sys.argv[index + 2]).convert("RGB")',
-    '  if index == 1:',
-    '    assert list(legacy.getdata()) != list(round_icon.getdata())',
-    '  else:',
-    '    assert list(legacy.getdata()) == list(round_icon.getdata())'
+    '  assert list(legacy.getdata()) == list(round_icon.getdata())'
   ].join('\n');
   execFileSync('python3', ['-c', python, ...pythonArgs], { cwd: root, stdio: 'pipe' });
 });
