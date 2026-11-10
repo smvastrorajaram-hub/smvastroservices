@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ta">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+  <meta name="theme-color" content="#f8f3e9">
+  <title>SMV ASTRO — Windows Edition</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="renderer.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 48 48" role="presentation">
+          <circle cx="24" cy="22" r="16.5" class="mark-ring"/>
+          <path d="M24 8.8 27.6 18.4 37.2 22 27.6 25.6 24 35.2 20.4 25.6 10.8 22 20.4 18.4Z" class="mark-star"/>
+          <circle cx="24" cy="22" r="3.2" class="mark-core"/>
+          <path d="M15 39h18" class="mark-base"/>
+        </svg>
+      </div>
+      <div class="brand-copy">
+        <span class="brand-name">SMV ASTRO</span>
+        <span class="brand-edition">WINDOWS DESKTOP EDITION</span>
+      </div>
+    </div>
+
+    <nav class="main-nav" aria-label="SMV services">
+      <button class="nav-button is-active" type="button" data-module="home" aria-current="page">முகப்பு</button>
+      <button class="nav-button" type="button" data-module="astro">SMV ASTRO</button>
+      <button class="nav-button" type="button" data-module="horoscope">HOROSCOPE</button>
+      <button class="nav-button" type="button" data-module="calendar">CALENDAR</button>
+    </nav>
+
+    <div class="topbar-meta">
+      <span class="status-dot" aria-hidden="true"></span>
+      <span id="connection-status">இணைப்பு நிலை சரிபார்க்கப்படுகிறது</span>
+      <span id="app-version" class="version-label">v0.1.0</span>
+    </div>
+  </header>
+
+  <main class="home-screen">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="eyebrow-line"></span> ONE DESKTOP · THREE SMV SERVICES</p>
+        <h1>உங்கள் ஜோதிட சேவைகள்,<br><span>ஒரே Windows மென்பொருளில்.</span></h1>
+        <p class="hero-description">SMV ASTRO, SMV HOROSCOPE, SMV CALENDAR — ஏற்கெனவே உள்ள சேவைகளையும் உங்கள் கணக்கையும் ஒரே desktop பயன்பாட்டிலிருந்து திறக்கலாம்.</p>
+        <div class="hero-actions">
+          <button class="primary-button" type="button" data-module="astro">
+            <span>SMV ASTRO திறக்க</span>
+            <span aria-hidden="true">↗</span>
+          </button>
+          <span class="hero-note">Windows 10 / 11 · 64-bit</span>
+        </div>
+      </div>
+      <div class="hero-emblem" aria-hidden="true">
+        <div class="emblem-orbit orbit-one"></div>
+        <div class="emblem-orbit orbit-two"></div>
+        <div class="emblem-sun">
+          <svg viewBox="0 0 160 160">
+            <circle cx="80" cy="80" r="55" class="sun-outline"/>
+            <circle cx="80" cy="80" r="40" class="sun-inner"/>
+            <path d="M80 40 90 68 118 80 90 92 80 120 70 92 42 80 70 68Z" class="sun-star"/>
+            <circle cx="80" cy="80" r="8" class="sun-dot"/>
+          </svg>
+        </div>
+        <span class="emblem-caption">VEDIC ASTROLOGY</span>
+      </div>
+    </section>
+
+    <section class="section-heading">
+      <div>
+        <p class="eyebrow">YOUR SMV WORKSPACE</p>
+        <h2>சேவையைத் தேர்ந்தெடுக்கவும்</h2>
+      </div>
+      <p class="section-side-note">ஒரே app · தனித்தனி சேவைப் பகுதிகள்</p>
+    </section>
+
+    <section class="service-grid" aria-label="SMV desktop services">
+      <article class="service-card service-astro">
+        <div class="card-topline"><span class="card-number">01</span><span class="card-tag">MAIN PLATFORM</span></div>
+        <div class="service-symbol astro-symbol" aria-hidden="true">
+          <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="23"/><path d="M32 12 38 26 52 32 38 38 32 52 26 38 12 32 26 26Z"/><circle cx="32" cy="32" r="5"/></svg>
+        </div>
+        <h3>SMV ASTRO</h3>
+        <p>Customer, Astrologer, Admin dashboards மற்றும் consultation சேவைகள்.</p>
+        <div class="card-footer"><span>Services &amp; Dashboards</span><button type="button" data-module="astro" aria-label="SMV ASTRO திறக்க">திறக்க <span aria-hidden="true">→</span></button></div>
+      </article>
+
+      <article class="service-card service-horoscope">
+        <div class="card-topline"><span class="card-number">02</span><span class="card-tag">VEDIC CHARTS</span></div>
+        <div class="service-symbol horoscope-symbol" aria-hidden="true">
+          <svg viewBox="0 0 64 64"><path d="M32 8 56 32 32 56 8 32Z"/><path d="M32 8v48M8 32h48M15 15l34 34M49 15 15 49"/><circle cx="32" cy="32" r="7"/></svg>
+        </div>
+        <h3>SMV HOROSCOPE</h3>
+        <p>ஜாதகம், கிரக நிலைகள், திருமணப் பொருத்தம் மற்றும் பலன்கள்.</p>
+        <div class="card-footer"><span>Horoscope &amp; Matching</span><button type="button" data-module="horoscope" aria-label="SMV HOROSCOPE திறக்க">திறக்க <span aria-hidden="true">→</span></button></div>
+      </article>
+
+      <article class="service-card service-calendar">
+        <div class="card-topline"><span class="card-number">03</span><span class="card-tag">TAMIL PANCHANG</span></div>
+        <div class="service-symbol calendar-symbol" aria-hidden="true">
+          <svg viewBox="0 0 64 64"><rect x="10" y="14" width="44" height="40" rx="6"/><path d="M10 25h44M22 9v11M42 9v11M21 35h7M36 35h7M21 44h7M36 44h7"/></svg>
+        </div>
+        <h3>SMV CALENDAR</h3>
+        <p>தமிழ் காலண்டர், பஞ்சாங்கம், ஹோரை மற்றும் ராசி பலன்கள்.</p>
+        <div class="card-footer"><span>Calendar &amp; Panchang</span><button type="button" data-module="calendar" aria-label="SMV CALENDAR திறக்க">திறக்க <span aria-hidden="true">→</span></button></div>
+      </article>
+    </section>
+
+    <section class="info-strip">
+      <div class="info-icon" aria-hidden="true">✦</div>
+      <div>
+        <strong>உங்கள் தற்போதைய SMV கணக்குகளே தொடரும்</strong>
+        <p>இந்த desktop app ஏற்கெனவே உள்ள SMV இணையச் சேவைகளைப் பயன்படுத்துகிறது. Login, payment மற்றும் Live Call / Chat போன்ற இணையச் சேவைகளுக்கு இணைப்பு தேவை.</p>
+      </div>
+      <div class="info-pills"><span>HTTPS</span><span>Persistent session</span></div>
+    </section>
+
+    <footer class="home-footer">
+      <span>© SMV ASTRO SERVICES</span>
+      <span>Premium Vedic Astrology Experience</span>
+      <span>Windows Desktop · v0.1.0</span>
+    </footer>
+  </main>
+
+  <div class="load-error" id="load-error" role="status" aria-live="polite" hidden></div>
+</body>
+</html>
