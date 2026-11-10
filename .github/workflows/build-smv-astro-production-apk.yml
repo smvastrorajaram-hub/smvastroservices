@@ -237,7 +237,9 @@ jobs:
 
       - name: Allocate the next SMV ASTRO version from the published Cloudflare APK release
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        env:\n          GITHUB_TOKEN: ${{ github.token }}\n        run: node scripts/next-android-release-version.mjs astro
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/next-android-release-version.mjs astro
 
       - name: Validate Firebase Android App ID and ordered version
         shell: bash

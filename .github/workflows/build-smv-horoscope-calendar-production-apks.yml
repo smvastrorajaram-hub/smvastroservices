@@ -174,7 +174,9 @@ jobs:
 
       - name: Allocate only the changed production app version from Cloudflare APK releases
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.app_targets.outputs.apps != '' }}
-        env:\n          GITHUB_TOKEN: ${{ github.token }}\n        run: node scripts/next-android-release-version.mjs ${{ steps.app_targets.outputs.apps }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/next-android-release-version.mjs ${{ steps.app_targets.outputs.apps }}
 
       - name: Prepare production Horoscope and Calendar icons
         run: bash prepare-smv-horoscope-calendar-production-icons.sh
