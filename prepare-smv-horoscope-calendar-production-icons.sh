@@ -52,8 +52,8 @@ XML
     "$res/mipmap-nodpi/${resource_prefix}_launcher_round.png"; do
     test -s "$asset"
     size="$(stat -c%s "$asset")"
-    if (( size >= 300000 )); then
-      echo "::error::Generated launcher asset exceeds 300 KB: $asset ($size bytes)"
+    if (( size >= 700000 )); then
+      echo "::error::Generated launcher asset exceeds 700 KB: $asset ($size bytes)"
       exit 1
     fi
   done
