@@ -125,17 +125,20 @@ test('All three independent Service Workers share one new cache release and cach
   assert.ok(workers[0].includes("'./assets/favicon-astro.png'"));
   assert.ok(workers[0].includes("'./assets/pwa-astro-192.svg'"));
   assert.ok(workers[0].includes("'./assets/pwa-astro-512.png'"));
+  assert.ok(workers[0].includes("'./assets/pwa-astro-maskable-192.svg'"));
   assert.ok(workers[0].includes("'./assets/smv-home-logo.webp'"));
   assert.ok(workers[1].includes("'./assets/favicon-horoscope.ico'"));
   assert.ok(workers[1].includes("'./assets/favicon-horoscope.png'"));
   assert.ok(workers[1].includes("'./assets/pwa-horoscope-192.svg'"));
   assert.ok(workers[1].includes("'./assets/pwa-horoscope-512.png'"));
+  assert.ok(workers[1].includes("'./assets/pwa-horoscope-maskable-192.svg'"));
   assert.ok(workers[1].includes("'./assets/smv-horoscope-header-logo.png'"));
   assert.ok(workers[1].includes("'./assets/smv-horoscope-website.webp'"));
   assert.ok(workers[2].includes("'../assets/favicon-calendar.ico'"));
   assert.ok(workers[2].includes("'../assets/favicon-calendar.png'"));
   assert.ok(workers[2].includes("'../assets/pwa-calendar-192.svg'"));
   assert.ok(workers[2].includes("'../assets/pwa-calendar-512.png'"));
+  assert.ok(workers[2].includes("'../assets/pwa-calendar-maskable-192.svg'"));
   assert.ok(workers[2].includes("'../assets/smv-calendar-website.webp'"));
 });
 
