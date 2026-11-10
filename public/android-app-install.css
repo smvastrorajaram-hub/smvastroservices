@@ -11,7 +11,7 @@
 .smv-android-apk-copy > p:not(.smv-android-apk-eyebrow) { margin: 0; color: #51445f; font-size: 13px; line-height: 1.45; }
 .smv-android-apk-copy .smv-android-apk-status { margin-top: 6px; color: #765a27; font-size: 12px; }
 .smv-android-apk-actions { display: flex; flex: 0 0 auto; flex-direction: column; align-items: stretch; gap: 7px; min-width: 185px; }
-.smv-android-apk-download { display: block; padding: 11px 14px; border: 1px solid #24103f; border-radius: 8px; background: #24103f; color: #fff; font-size: 13px; font-weight: 800; text-align: center; text-decoration: none; }
+.smv-android-apk-download { display: block; padding: 11px 14px; border: 1px solid #d7c69f; border-radius: 8px; background: #ffffff; color: #e90046; font-size: 13px; font-weight: 800; text-align: center; text-decoration: none; }
 .smv-android-apk-upload { display: block; padding: 8px 10px; border: 1px solid #c9b77e; border-radius: 8px; color: #5a4020; font-size: 11px; font-weight: 800; text-align: center; text-decoration: none; }
 .smv-android-apk-releases { color: #5b4777; font-size: 11px; text-align: center; text-decoration: underline; }
 .smv-android-apk-download:hover, .smv-android-apk-upload:hover { filter: brightness(1.06); }
