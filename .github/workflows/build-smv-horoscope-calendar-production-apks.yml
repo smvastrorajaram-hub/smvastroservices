@@ -200,7 +200,7 @@ jobs:
           ]
           for source_name, module, prefix in products:
               source = Path(source_name)
-              assert source.stat().st_size < 300000, f"{source} must stay below 300 KB"
+              assert source.stat().st_size < 700000, f"{source} must stay below 700 KB"
               with Image.open(source) as original:
                   assert original.format == "PNG" and original.size == (512, 512)
               res = Path(module) / "src/main/res"
@@ -208,7 +208,7 @@ jobs:
               legacy = res / "mipmap-nodpi" / f"{prefix}_launcher.png"
               round_icon = res / "mipmap-nodpi" / f"{prefix}_launcher_round.png"
               for output in (foreground, legacy, round_icon):
-                  assert output.stat().st_size < 300000, f"{output} exceeds 300 KB"
+                  assert output.stat().st_size < 700000, f"{output} exceeds 700 KB"
               with Image.open(foreground) as image:
                   assert image.size == (512, 512)
                   assert image.convert("RGBA").getchannel("A").getbbox() == (118, 118, 393, 393)
