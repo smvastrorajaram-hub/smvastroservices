@@ -28,6 +28,12 @@
       "purpose": "any"
     },
     {
+      "src": "/assets/pwa-astro-maskable-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
       "src": "/assets/pwa-astro-maskable.svg",
       "sizes": "any",
       "type": "image/svg+xml",
