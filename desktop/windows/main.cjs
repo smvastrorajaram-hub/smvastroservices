@@ -295,9 +295,13 @@ async function createMainWindow() {
 
   mainWindow.on('resize', layoutRemoteView);
   mainWindow.on('closed', () => {
+    const closingRemoteView = remoteView;
     mainWindow = null;
     remoteView = null;
     remoteViewAttached = false;
+    if (closingRemoteView && !closingRemoteView.webContents.isDestroyed()) {
+      closingRemoteView.webContents.close();
+    }
   });
 
   await mainWindow.loadFile(path.join(__dirname, 'ui', 'index.html'));
