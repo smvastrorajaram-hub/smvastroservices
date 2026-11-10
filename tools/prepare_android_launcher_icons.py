@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create Android adaptive/legacy launcher resources with 57dp artwork on a 108dp canvas.
+"""Create Android adaptive/legacy launcher resources with 54dp artwork on a 108dp canvas.
 
 The source PNG in icon/ is never changed. Its complete square artwork is resized
 with aspect ratio preserved and centered on a transparent adaptive foreground
@@ -16,7 +16,7 @@ from PIL import Image
 MAX_SOURCE_BYTES = 300_000
 CANVAS_PX = 512
 CANVAS_DP = 108.0
-TARGET_DP = 57.0
+TARGET_DP = 54.0
 
 
 def png_size(path: Path) -> tuple[int, int]:
@@ -34,8 +34,8 @@ def main() -> int:
     parser.add_argument("--content-dp", type=float, default=TARGET_DP)
     args = parser.parse_args()
 
-    if not 57.0 <= args.content_dp <= 58.0:
-        raise SystemExit("ERROR: --content-dp must be between 57 and 58 dp.")
+    if not 54.0 <= args.content_dp <= 54.0:
+        raise SystemExit("ERROR: --content-dp must be 54 dp.")
     if not args.source.is_file():
         raise SystemExit(f"ERROR: approved icon source is missing: {args.source}")
     source_bytes = args.source.stat().st_size
@@ -46,8 +46,8 @@ def main() -> int:
 
     target_px = round(CANVAS_PX * args.content_dp / CANVAS_DP)
     effective_dp = target_px * CANVAS_DP / CANVAS_PX
-    if not 56.9 <= effective_dp <= 58.1:
-        raise SystemExit(f"ERROR: generated artwork size {effective_dp:.3f}dp is outside 57–58dp.")
+    if abs(effective_dp - 54.0) > 0.01:
+        raise SystemExit(f"ERROR: generated artwork size {effective_dp:.3f}dp is not exactly 54dp after pixel conversion.")
 
     with Image.open(args.source) as source_image:
         artwork = source_image.convert("RGBA").resize(
