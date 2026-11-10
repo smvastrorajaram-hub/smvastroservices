@@ -75,7 +75,7 @@ test('HOROSCOPE and CALENDAR production launchers fit complete source artwork at
   const python = [
     'from PIL import Image',
     'import sys',
-    'for index in (0, 3):',
+    'for index in (1, 4):',
     '  fg = Image.open(sys.argv[index]).convert("RGBA")',
     '  assert fg.size == (512, 512)',
     '  assert fg.getchannel("A").getbbox() == (114, 114, 398, 398)',
