@@ -16,11 +16,11 @@ function pngDimensions(file) {
 
 test('PWA manifests use the uploaded artwork, 192 variants and maskable assets', () => {
   const manifests = [
-    ['public/manifest.webmanifest','public/assets/pwa-astro'],
+    ['public/manifest.webmanifest','/assets/pwa-astro'],
     ['public/horoscope/manifest-en.webmanifest','public/horoscope/assets/pwa-horoscope'],
     ['public/horoscope/manifest-ta.webmanifest','public/horoscope/assets/pwa-horoscope'],
-    ['public/horoscope/calendar/manifest-en.webmanifest','public/horoscope/assets/pwa-calendar'],
-    ['public/horoscope/calendar/manifest-ta.webmanifest','public/horoscope/assets/pwa-calendar']
+    ['public/horoscope/calendar/manifest-en.webmanifest','/horoscope/assets/pwa-calendar'],
+    ['public/horoscope/calendar/manifest-ta.webmanifest','/horoscope/assets/pwa-calendar']
   ];
   for (const [file,prefix] of manifests) {
     const manifest = JSON.parse(read(file));
