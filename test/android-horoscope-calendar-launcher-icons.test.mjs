@@ -67,10 +67,7 @@ test('HOROSCOPE and CALENDAR production launchers fit complete source artwork at
     for (const name of [resourcePrefix + '_launcher', resourcePrefix + '_launcher_round']) {
       const xml = read(res + '/mipmap-anydpi-v26/' + name + '.xml');
       assert.ok(xml.includes('@color/smv_launcher_background'));
-      const foregroundName = module === 'smvhoroscopeproduction' && name.endsWith('_round')
-        ? '@drawable/smv_horoscope_launcher_round_foreground'
-        : '@drawable/' + resourcePrefix + '_launcher_foreground';
-      assert.ok(xml.includes(foregroundName));
+      assert.ok(xml.includes('@drawable/' + resourcePrefix + '_launcher_foreground'));
     }
     assert.ok(read(res + '/values/colors.xml').includes('<color name="smv_launcher_background">#FFFFFF</color>'));
   }
