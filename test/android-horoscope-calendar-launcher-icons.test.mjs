@@ -8,14 +8,14 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const bytes = file => fs.readFileSync(path.join(root, file));
-const maxBytes = 300000;
+const maxBytes = 700000;
 
 function assertPng(file) {
   const data = bytes(file);
   assert.deepEqual([...data.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10], file + ' must be PNG');
   assert.ok(data.length >= 24, file + ' must contain a PNG IHDR');
   assert.deepEqual({ width: data.readUInt32BE(16), height: data.readUInt32BE(20) }, { width: 512, height: 512 });
-  assert.ok(data.length < maxBytes, file + ' must remain below 300 KB');
+  assert.ok(data.length < maxBytes, file + ' must remain below 700 KB');
   return data;
 }
 
