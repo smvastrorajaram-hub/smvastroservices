@@ -3,7 +3,7 @@
    Authentication, published Firestore refresh, account data and online services stay network-only.
    Location lookup keeps its existing GeoNames + India-offline behavior.
 */
-const SMV_CACHE_RELEASE='20261110-pwa-icons-v1';
+const SMV_CACHE_RELEASE='20261110-android-apk-cards-v2';
 const OFFLINE_CACHE='smv-horoscope-offline';
 const LOCATION_CACHE='smv-shared-india-places';
 const SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE;
@@ -16,6 +16,7 @@ const CORE=[
   './v358-result-layout.css','./v359-symmetric-gutters.css',
   './manifest-en.webmanifest','./manifest-ta.webmanifest',
   './assets/pwa-horoscope-192.svg','./assets/pwa-horoscope-512.png','./assets/pwa-horoscope-maskable-192.svg','./assets/pwa-horoscope-maskable.svg',
+  './assets/android-app-icon-horoscope.svg','./assets/android-app-icon-horoscope-source.png',
   './assets/favicon-horoscope.png','./assets/favicon-horoscope.ico',
   './assets/smv-horoscope-website.webp','./assets/smv-horoscope-header-logo.png',
   './report-identity.js','./boot.mjs','./horoscope-auth.mjs','./report-store.mjs',
@@ -55,6 +56,7 @@ const CORE=[
 const REQUIRED_CORE=new Set([
   './index.html','./horoscope.css','./boot.mjs','./horoscope.js',
   './assets/pwa-horoscope-192.svg','./assets/pwa-horoscope-512.png','./assets/pwa-horoscope-maskable-192.svg','./assets/pwa-horoscope-maskable.svg',
+  './assets/android-app-icon-horoscope.svg','./assets/android-app-icon-horoscope-source.png',
   './assets/favicon-horoscope.png','./assets/favicon-horoscope.ico',
   './assets/smv-horoscope-website.webp','./assets/smv-horoscope-header-logo.png',
   './marriage-matching.js','./marriage-basic-report.mjs','./matching-timeline.mjs',

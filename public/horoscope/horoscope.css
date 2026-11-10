@@ -2918,7 +2918,7 @@ details>*{display:block!important}
 .smv-android-apk-copy>p:not(.smv-android-apk-eyebrow){margin:0;color:#51445f;font-size:13px;line-height:1.45}
 .smv-android-apk-copy .smv-android-apk-status{margin-top:6px;color:#765a27;font-size:12px}
 .smv-android-apk-actions{display:flex;flex:0 0 auto;flex-direction:column;align-items:stretch;gap:7px;min-width:185px}
-.smv-android-apk-download{display:block;padding:11px 14px;border:1px solid #24103f;border-radius:8px;background:#24103f;color:#fff;font-size:13px;font-weight:800;text-align:center;text-decoration:none}
+.smv-android-apk-download{display:block;padding:11px 14px;border:1px solid #d7c69f;border-radius:8px;background:#fff;color:#e90046;font-size:13px;font-weight:800;text-align:center;text-decoration:none}
 .smv-android-apk-download:hover{filter:brightness(1.06)}
 @media(max-width:650px){
   .smv-android-apk-section{margin:8px auto 14px;padding:0 10px}

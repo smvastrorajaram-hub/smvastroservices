@@ -41,6 +41,7 @@ test('published Horoscope and Calendar APK cards both use the public release Wor
   const publicWorkerConfig = '<script id="smv-apk-release-api-config">window.SMV_APK_RELEASE_API_URL = window.SMV_APK_RELEASE_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev";</script>';
   assert.ok(html.includes(publicWorkerConfig), 'Horoscope page must configure the public APK release Worker');
   assert.ok(calendarHtml.includes(publicWorkerConfig), 'Calendar page must configure the public APK release Worker');
-  assert.ok(html.indexOf(publicWorkerConfig) < html.indexOf('src="./android-apk-download.mjs"'));
-  assert.ok(calendarHtml.indexOf(publicWorkerConfig) < calendarHtml.indexOf('src="../android-apk-download.mjs"'));
+  // Keep the Worker configuration before the loader; its cache-busting query may change.
+  assert.ok(html.indexOf(publicWorkerConfig) < html.indexOf('android-apk-download.mjs'));
+  assert.ok(calendarHtml.indexOf(publicWorkerConfig) < calendarHtml.indexOf('android-apk-download.mjs'));
 });

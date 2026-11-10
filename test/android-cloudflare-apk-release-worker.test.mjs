@@ -325,7 +325,9 @@ test('Admin upload publishes the newer signed APK to R2 and D1 and download serv
 
   const current = await worker.fetch(new Request('https://apk.example/public/android-app'), env);
   assert.equal(current.status, 200);
-  assert.equal((await current.json()).versionCode, 1001);
+  const currentRelease = await current.json();
+  assert.equal(currentRelease.versionCode, 1001);
+  assert.equal(currentRelease.storageProvider, 'r2');
 
   const history = await worker.fetch(new Request('https://apk.example/admin/android-app/versions', {
     headers: { Authorization: 'Bearer admin-token' }
@@ -421,8 +423,13 @@ test('Horoscope and Calendar have independent package identities, version sequen
     worker.fetch(new Request('https://apk.example/public/android-apps/horoscope'), env),
     worker.fetch(new Request('https://apk.example/public/android-apps/calendar'), env)
   ]);
-  assert.equal((await horoscopePublic.json()).packageName, horoscopePackage);
-  assert.equal((await calendarPublic.json()).packageName, calendarPackage);
+  // A Response body is single-use: parse each public response once, then assert its fields.
+  const horoscopePublicRelease = await horoscopePublic.json();
+  const calendarPublicRelease = await calendarPublic.json();
+  assert.equal(horoscopePublicRelease.packageName, horoscopePackage);
+  assert.equal(horoscopePublicRelease.storageProvider, 'r2');
+  assert.equal(calendarPublicRelease.packageName, calendarPackage);
+  assert.equal(calendarPublicRelease.storageProvider, 'r2');
 
   const horoscopeDownload = await worker.fetch(new Request(horoscopeRelease.downloadUrl), env);
   const calendarDownload = await worker.fetch(new Request(calendarRelease.downloadUrl), env);
@@ -574,11 +581,11 @@ test('Homepage uses the dedicated Android APK icon/card and hides Download when 
 
   assert.ok(html.includes('id="smvPermanentAndroidAppSection"'));
   assert.ok(html.includes('id="smvPermanentApkDownload"'));
-  assert.ok(html.includes('assets/icon-192.png'));
+  assert.ok(html.includes('assets/android-app-icon-astro.svg'));
   assert.doesNotMatch(html, /smvInstallAppSection|smvInstallAppBtn|smvInstallAppHelp|smv-install-app-prompt/);
   assert.ok(html.includes('window.SMV_APK_RELEASE_API_URL = window.SMV_APK_RELEASE_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev"'));
   assert.ok(html.includes('window.SMV_APK_RELEASE_ADMIN_API_URL = window.SMV_APK_RELEASE_ADMIN_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev"'));
-  assert.ok(html.includes('android-app-install.css?v=20261110-pwa-icons-v1'));
+  assert.ok(html.includes('android-app-install.css?v=20261110-android-apk-cards-v2'));
   assert.ok(installer.includes('getInstalledRelatedApps'));
   assert.ok(installer.includes('Using Latest Version'));
   assert.ok(installer.includes("'UPDATE'"));
