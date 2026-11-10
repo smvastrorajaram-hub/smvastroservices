@@ -85,7 +85,8 @@
 
       if (heading) heading.textContent = appName + ' ' + version + ' · code ' + String(code);
       const dateLabel = uploadedAtLabel(release.uploadedAt);
-      const storage = String(release.storageProvider || 'r2').toLowerCase();
+      const storage = String(release.storageProvider || '').toLowerCase();
+      if (!['r2', 'firebase'].includes(storage)) throw new Error('APK storage metadata is unavailable.');
       if (details) details.textContent = dateLabel ? dateLabel + ' · ' + storage : storage;
       if (download) {
         download.href = url.href;
