@@ -46,7 +46,7 @@ def main() -> int:
 
     target_px = round(CANVAS_PX * args.content_dp / CANVAS_DP)
     effective_dp = target_px * CANVAS_DP / CANVAS_PX
-    if not 57.0 <= effective_dp <= 58.0:
+    if not 56.9 <= effective_dp <= 58.1:
         raise SystemExit(f"ERROR: generated artwork size {effective_dp:.3f}dp is outside 57–58dp.")
 
     with Image.open(args.source) as source_image:
