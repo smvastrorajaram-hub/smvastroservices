@@ -27,9 +27,9 @@ test('SMV ASTRO production launcher source stays the lowercase icon folder PNG',
   const helper = read('tools/prepare_android_launcher_icons.py');
   assert.ok(script.includes('source_icon="icon/astro_512.png"'));
   assert.ok(script.includes('python3 tools/prepare_android_launcher_icons.py'));
-  assert.ok(script.includes('--content-dp 54'));
+  assert.ok(script.includes('--content-dp 58'));
   assert.ok(helper.includes('CANVAS_DP = 108.0'));
-  assert.ok(helper.includes('TARGET_DP = 54.0'));
+  assert.ok(helper.includes('TARGET_DP = 58.0'));
   assert.ok(helper.includes('54.0 <= args.content_dp <= 54.0'));
   assert.ok(helper.includes('effective_dp = target_px * CANVAS_DP / CANVAS_PX'));
   assert.doesNotMatch(script, /SmvProductLauncherIconGenerator|ICON\/SMV ASTRO\.jpg/);
@@ -47,7 +47,7 @@ test('SMV ASTRO production launcher source stays the lowercase icon folder PNG',
   assert.match(workflow, /Pillow==11\.3\.0/);
 });
 
-test('SMV ASTRO production launcher artwork is centered at 54.00dp on a 108dp canvas', () => {
+test('SMV ASTRO production launcher artwork is centered at 58.01dp on a 108dp canvas', () => {
   const source = bytes(sourcePath);
   const outputs = [
     res + '/mipmap-nodpi/smv_astro_launcher.png',
@@ -67,7 +67,7 @@ test('SMV ASTRO production launcher artwork is centered at 54.00dp on a 108dp ca
     'import sys',
     'fg = Image.open(sys.argv[1]).convert("RGBA")',
     'assert fg.size == (512, 512)',
-    'assert fg.getchannel("A").getbbox() == (128, 128, 384, 384)',
+    'assert fg.getchannel("A").getbbox() == (118, 118, 393, 393)',
     'legacy = Image.open(sys.argv[2]).convert("RGB")',
     'assert legacy.size == (512, 512)',
     'assert legacy.getpixel((0, 0)) == (255, 255, 255)',
