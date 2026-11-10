@@ -214,13 +214,13 @@ function publicReleaseFromRow(row, request, includeAdminFields = false, appId = 
     versionCode: Number(row.version_code),
     downloadUrl: publicDownloadUrl(request, appId, row.version_code),
     size: Number(row.size_bytes || 0),
-    uploadedAt: Number(row.uploaded_at || 0)
+    uploadedAt: Number(row.uploaded_at || 0),
+    storageProvider: String(row.storage_provider || 'r2')
   };
   if (includeAdminFields) {
     data.sha256 = String(row.sha256 || '');
     data.certificateSha256 = String(row.certificate_sha256 || '');
     data.uploadedBy = String(row.uploaded_by || '');
-    data.storageProvider = String(row.storage_provider || 'r2');
   }
   return data;
 }
