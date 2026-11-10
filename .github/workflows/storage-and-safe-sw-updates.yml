@@ -48,8 +48,10 @@ jobs:
           node --check test/android-horoscope-calendar-production.test.mjs
           node --check test/smv-zip-brand-assets.test.mjs
           python3 -m py_compile .github/scripts/generate-brand-favicons-from-archive.py
-      - name: Generate official app and website icon variants from original SMV.zip
-        if: github.event_name == 'pull_request'
+      - name: Generate official app and website icon variants from original SMV.zip when archive is present
+        # ICON/SMV.zip is intentionally absent; do not recreate or restore it.
+        # Existing website/PWA artwork is validated from the checked-in files instead.
+        if: github.event_name == 'pull_request' && hashFiles('ICON/SMV.zip') != ''
         run: |
           python3 -m venv "$RUNNER_TEMP/smv-icons"
           "$RUNNER_TEMP/smv-icons/bin/pip" install --disable-pip-version-check --no-input Pillow==11.3.0

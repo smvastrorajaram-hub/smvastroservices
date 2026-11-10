@@ -4,48 +4,62 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const read=file=>fs.readFileSync(path.join(root,file),'utf8');
-const bytes=file=>fs.readFileSync(path.join(root,file));
-const maxBytes=300000;
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const read = file => fs.readFileSync(path.join(root, file), 'utf8');
+const bytes = file => fs.readFileSync(path.join(root, file));
+const maxBytes = 300000;
 
-function assertJpeg(file){
- const data=bytes(file);
- assert.deepEqual([...data.subarray(0,3)],[0xFF,0xD8,0xFF],file+' must be a valid JPEG');
- assert.ok(data.length>1000,file+' must contain real image data');
+function assertPng(file) {
+  const data = bytes(file);
+  assert.deepEqual([...data.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10], file + ' must be PNG');
+  assert.ok(data.length >= 24, file + ' must contain a PNG IHDR');
+  assert.deepEqual({ width: data.readUInt32BE(16), height: data.readUInt32BE(20) }, { width: 512, height: 512 });
+  assert.ok(data.length < maxBytes, file + ' must already be below 300 KB');
+  return data;
 }
 
-test('HOROSCOPE and CALENDAR production launchers use their individual uploaded ICON assets',()=>{
- assertJpeg('ICON/SMV HOROSCOPE.jpg');
- assertJpeg('ICON/SMV CALENDAR.jpg');
- const script=read('prepare-smv-horoscope-calendar-production-icons.sh');
- assert.ok(script.includes('ICON/SMV HOROSCOPE.jpg'));
- assert.ok(script.includes('ICON/SMV CALENDAR.jpg'));
- assert.ok(script.includes('copy_product_icon "ICON/SMV HOROSCOPE.jpg" smvhoroscopeproduction'));
- assert.ok(script.includes('copy_product_icon "ICON/SMV CALENDAR.jpg" smvcalendarproduction'));
- assert.ok(script.includes('SmvProductLauncherIconGenerator'));
- assert.ok(!script.includes('public/horoscope/'));
- assert.match(script,/size > 300000/);
+test('HOROSCOPE and CALENDAR production launcher inputs are the three-app lowercase icon folder PNGs', () => {
+  const sources = [
+    ['icon/horoscope_512.png', 'smvhoroscopeproduction', 'smv_horoscope'],
+    ['icon/calendar_512.png', 'smvcalendarproduction', 'smv_calendar']
+  ];
+  const script = read('prepare-smv-horoscope-calendar-production-icons.sh');
+  for (const [source, module, resourcePrefix] of sources) {
+    assertPng(source);
+    assert.ok(script.includes('copy_product_icon "' + source + '" ' + module + ' ' + resourcePrefix));
+  }
+  assert.ok(script.includes('cmp -s "$source_icon" "$asset"'));
+  assert.ok(read('smvhoroscopeproduction/src/main/AndroidManifest.xml').includes('@mipmap/smv_horoscope_launcher'));
+  assert.ok(read('smvcalendarproduction/src/main/AndroidManifest.xml').includes('@mipmap/smv_calendar_launcher'));
+  assert.doesNotMatch(script, /prepare-icons\.sh|SmvProductLauncherIconGenerator|ICON\/SMV/);
+  const workflow = read('.github/workflows/build-smv-horoscope-calendar-production-apks.yml');
+  for (const source of sources.map(item => item[0])) {
+    assert.ok(workflow.includes(source), 'production workflow must trigger for ' + source);
+  }
 });
 
-test('All three apps use the shared 512px/432px launcher generator and strict 300 KB output cap',()=>{
- const generator=read('tools/SmvProductLauncherIconGenerator.java');
- for(const marker of ['ADAPTIVE_CANVAS = 432','ADAPTIVE_ART_SIZE = 232','LEGACY_CANVAS = 512','LEGACY_ART_SIZE = 275','MAX_ASSET_BYTES = 300000','writeJpegUnderLimit','#FFFFFF']){
-  assert.ok(generator.includes(marker),'shared generator must contain '+marker);
- }
- assert.ok(generator.includes('ic_launcher_foreground.jpg'));
- assert.ok(generator.includes('ic_launcher_round.jpg'));
- assert.ok(generator.includes('300,000 bytes'));
- const workflow=read('.github/workflows/build-smv-horoscope-calendar-production-apks.yml');
- for(const marker of ['ICON/SMV HOROSCOPE.jpg','ICON/SMV CALENDAR.jpg','tools/SmvProductLauncherIconGenerator.java']){
-  assert.ok(workflow.includes(marker),'H/C workflow trigger must include '+marker);
- }
-});
-
-test('Production manifests preserve the existing icon resource names',()=>{
- for(const module of ['smvhoroscopeproduction','smvcalendarproduction']){
-  const manifest=read(module+'/src/main/AndroidManifest.xml');
-  assert.ok(manifest.includes('android:icon="@mipmap/ic_launcher"'));
-  assert.ok(manifest.includes('android:roundIcon="@mipmap/ic_launcher_round"'));
- }
+test('HOROSCOPE and CALENDAR production launcher resources are exact byte-for-byte PNG copies', () => {
+  const products = [
+    ['icon/horoscope_512.png', 'smvhoroscopeproduction', 'smv_horoscope'],
+    ['icon/calendar_512.png', 'smvcalendarproduction', 'smv_calendar']
+  ];
+  for (const [sourcePath, module, resourcePrefix] of products) {
+    const source = assertPng(sourcePath);
+    const res = module + '/src/main/res';
+    for (const target of [
+      res + '/drawable-nodpi/' + resourcePrefix + '_launcher_foreground.png',
+      res + '/mipmap-nodpi/' + resourcePrefix + '_launcher.png',
+      res + '/mipmap-nodpi/' + resourcePrefix + '_launcher_round.png'
+    ]) {
+      const actual = bytes(target);
+      assert.deepEqual(actual, source, target + ' must exactly match ' + sourcePath);
+      assert.ok(actual.length < maxBytes);
+    }
+    for (const name of [resourcePrefix + '_launcher', resourcePrefix + '_launcher_round']) {
+      const xml = read(res + '/mipmap-anydpi-v26/' + name + '.xml');
+      assert.ok(xml.includes('@color/smv_launcher_background'));
+      assert.ok(xml.includes('@drawable/' + resourcePrefix + '_launcher_foreground'));
+    }
+    assert.ok(read(res + '/values/colors.xml').includes('<color name="smv_launcher_background">#FFFFFF</color>'));
+  }
 });

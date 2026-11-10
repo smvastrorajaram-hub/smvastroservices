@@ -19,8 +19,7 @@ test('SMV ASTRO production APK rebuilds when its root UI cache or location searc
   for (const trigger of ['pull_request', 'push']) {
     const block = section(astro, trigger);
     for (const file of [
-      'ICON/SMV ASTRO.jpg',
-      'tools/SmvProductLauncherIconGenerator.java',
+      'icon/astro_512.png',
       'public/sw.js',
       'public/main-location-search.js',
       'public/question-place-search.mjs',
@@ -39,9 +38,8 @@ test('SMV HOROSCOPE and SMV CALENDAR production APKs rebuild when either scoped 
   for (const trigger of ['pull_request', 'push']) {
     const block = section(horoscopeCalendar, trigger);
     for (const file of [
-      'ICON/SMV HOROSCOPE.jpg',
-      'ICON/SMV CALENDAR.jpg',
-      'tools/SmvProductLauncherIconGenerator.java',
+      'icon/horoscope_512.png',
+      'icon/calendar_512.png',
       'public/horoscope/sw.js',
       'public/horoscope/calendar/sw.js',
       'public/horoscope/location-search-online-offline.js',

@@ -4,71 +4,60 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const read=file=>fs.readFileSync(path.join(root,file),'utf8');
-const bytes=file=>fs.readFileSync(path.join(root,file));
-const res='smvastroproduction/src/main/res';
-const maxBytes=300000;
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const read = file => fs.readFileSync(path.join(root, file), 'utf8');
+const bytes = file => fs.readFileSync(path.join(root, file));
+const sourcePath = 'icon/astro_512.png';
+const res = 'smvastroproduction/src/main/res';
+const maxBytes = 300000;
 
-function jpegDimensions(data,file){
-  assert.deepEqual([...data.subarray(0,3)],[0xFF,0xD8,0xFF],file+' must be JPEG');
-  let offset=2;
-  while(offset<data.length-9){
-    if(data[offset]!==0xFF){offset++;continue;}
-    while(data[offset]===0xFF)offset++;
-    const marker=data[offset++];
-    if(marker===0xD8||marker===0xD9||(marker>=0xD0&&marker<=0xD7))continue;
-    if(offset+2>data.length)break;
-    const length=data.readUInt16BE(offset);
-    if([0xC0,0xC1,0xC2,0xC3,0xC5,0xC6,0xC7,0xC9,0xCA,0xCB,0xCD,0xCE,0xCF].includes(marker)){
-      return {height:data.readUInt16BE(offset+3),width:data.readUInt16BE(offset+5)};
-    }
-    if(length<2)break;
-    offset+=length;
-  }
-  assert.fail(file+' must contain a readable JPEG frame header');
+function pngDimensions(data, file) {
+  assert.deepEqual([...data.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10], file + ' must be PNG');
+  assert.ok(data.length >= 24, file + ' must contain a PNG IHDR');
+  return { width: data.readUInt32BE(16), height: data.readUInt32BE(20) };
 }
 
-test('SMV ASTRO Android launcher source is the exact user-uploaded ICON file and stays separate from PWA assets',()=>{
-  const sourcePath='ICON/SMV ASTRO.jpg';
-  const source=bytes(sourcePath);
-  assert.deepEqual(jpegDimensions(source,sourcePath),{width:2048,height:2048});
-  const script=read('prepare-smv-astro-production-icon.sh');
-  assert.ok(script.includes('source_icon="ICON/SMV ASTRO.jpg"'));
-  assert.ok(script.includes('SmvProductLauncherIconGenerator'));
+test('SMV ASTRO production launcher source is the existing lowercase icon folder PNG', () => {
+  const source = bytes(sourcePath);
+  assert.deepEqual(pngDimensions(source, sourcePath), { width: 512, height: 512 });
+  assert.ok(source.length < maxBytes, 'source PNG must already be below 300 KB');
+  const script = read('prepare-smv-astro-production-icon.sh');
+  assert.ok(script.includes('source_icon="icon/astro_512.png"'));
+  assert.ok(script.includes('cp "$source_icon" "$res/mipmap-nodpi/smv_astro_launcher.png"'));
+  assert.ok(script.includes('cp "$source_icon" "$res/mipmap-nodpi/smv_astro_launcher_round.png"'));
+  assert.ok(script.includes('cmp -s "$source_icon" "$asset"'));
+  assert.doesNotMatch(script, /SmvProductLauncherIconGenerator|ICON\/SMV ASTRO\.jpg/);
   assert.ok(!script.includes('public/assets/'));
-  const workflow=read('.github/workflows/build-smv-astro-production-apk.yml');
-  for(const marker of ['ICON/SMV ASTRO.jpg','tools/SmvProductLauncherIconGenerator.java','test/android-launcher-icon.test.mjs']){
-    assert.ok(workflow.includes(marker),'ASTRO build trigger must include '+marker);
+  const manifest = read('smvastroproduction/src/main/AndroidManifest.xml');
+  assert.ok(manifest.includes('android:icon="@mipmap/smv_astro_launcher"'));
+  assert.ok(manifest.includes('android:roundIcon="@mipmap/smv_astro_launcher_round"'));
+  assert.doesNotMatch(manifest, /@mipmap\/ic_launcher/);
+  const workflow = read('.github/workflows/build-smv-astro-production-apk.yml');
+  for (const marker of [sourcePath, 'prepare-smv-astro-production-icon.sh', 'test/android-launcher-icon.test.mjs']) {
+    assert.ok(workflow.includes(marker), 'ASTRO build workflow must include ' + marker);
   }
 });
 
-test('SMV ASTRO manifest retains the existing package label and launcher resource names',()=>{
-  const manifest=read('smvastroproduction/src/main/AndroidManifest.xml');
-  assert.ok(manifest.includes('android:icon="@mipmap/ic_launcher"'));
-  assert.ok(manifest.includes('android:roundIcon="@mipmap/ic_launcher_round"'));
-  assert.ok(manifest.includes('android:label="@string/app_name"'));
-});
-
-test('SMV ASTRO generated square, round and adaptive artwork is JPEG and each file is below 300 KB',()=>{
-  const outputs=[
-    [res+'/mipmap-nodpi/ic_launcher.jpg',512],
-    [res+'/mipmap-nodpi/ic_launcher_round.jpg',512],
-    [res+'/drawable-nodpi/ic_launcher_foreground.jpg',432]
+test('SMV ASTRO production launcher resources are exact, unchanged PNG copies below 300 KB', () => {
+  const source = bytes(sourcePath);
+  const outputs = [
+    res + '/mipmap-nodpi/smv_astro_launcher.png',
+    res + '/mipmap-nodpi/smv_astro_launcher_round.png',
+    res + '/drawable-nodpi/smv_astro_launcher_foreground.png'
   ];
-  for(const [file,size] of outputs){
-    const image=bytes(file);
-    assert.ok(image.length>1000,file+' must not be empty');
-    assert.ok(image.length<=maxBytes,file+' must be at most 300,000 bytes');
-    assert.deepEqual(jpegDimensions(image,file),{width:size,height:size});
+  for (const file of outputs) {
+    const image = bytes(file);
+    assert.deepEqual(pngDimensions(image, file), { width: 512, height: 512 });
+    assert.ok(image.length < maxBytes, file + ' must be below 300 KB');
+    assert.deepEqual(image, source, file + ' must be an exact byte-for-byte copy of ' + sourcePath);
   }
 });
 
-test('SMV ASTRO adaptive XML keeps the white background and foreground file reference',()=>{
-  for(const name of ['ic_launcher','ic_launcher_round']){
-    const xml=read(res+'/mipmap-anydpi-v26/'+name+'.xml');
+test('SMV ASTRO production adaptive launcher resources retain their white background', () => {
+  for (const name of ['smv_astro_launcher', 'smv_astro_launcher_round']) {
+    const xml = read(res + '/mipmap-anydpi-v26/' + name + '.xml');
     assert.ok(xml.includes('@color/smv_launcher_background'));
-    assert.ok(xml.includes('@drawable/ic_launcher_foreground'));
+    assert.ok(xml.includes('@drawable/smv_astro_launcher_foreground'));
   }
-  assert.ok(read(res+'/values/colors.xml').includes('<color name="smv_launcher_background">#FFFFFF</color>'));
+  assert.ok(read(res + '/values/colors.xml').includes('<color name="smv_launcher_background">#FFFFFF</color>'));
 });
