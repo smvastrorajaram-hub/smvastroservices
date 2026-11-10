@@ -23,11 +23,15 @@ test('SMV ASTRO production launcher source is the existing lowercase icon folder
   assert.ok(source.length < maxBytes, 'source PNG must already be below 300 KB');
   const script = read('prepare-smv-astro-production-icon.sh');
   assert.ok(script.includes('source_icon="icon/astro_512.png"'));
-  assert.ok(script.includes('cp "$source_icon" "$res/mipmap-nodpi/ic_launcher.png"'));
-  assert.ok(script.includes('cp "$source_icon" "$res/mipmap-nodpi/ic_launcher_round.png"'));
+  assert.ok(script.includes('cp "$source_icon" "$res/mipmap-nodpi/smv_astro_launcher.png"'));
+  assert.ok(script.includes('cp "$source_icon" "$res/mipmap-nodpi/smv_astro_launcher_round.png"'));
   assert.ok(script.includes('cmp -s "$source_icon" "$asset"'));
   assert.doesNotMatch(script, /SmvProductLauncherIconGenerator|ICON\/SMV ASTRO\.jpg/);
   assert.ok(!script.includes('public/assets/'));
+  const manifest = read('smvastroproduction/src/main/AndroidManifest.xml');
+  assert.ok(manifest.includes('android:icon="@mipmap/smv_astro_launcher"'));
+  assert.ok(manifest.includes('android:roundIcon="@mipmap/smv_astro_launcher_round"'));
+  assert.doesNotMatch(manifest, /@mipmap\\/ic_launcher/);
   const workflow = read('.github/workflows/build-smv-astro-production-apk.yml');
   for (const marker of [sourcePath, 'prepare-smv-astro-production-icon.sh', 'test/android-launcher-icon.test.mjs']) {
     assert.ok(workflow.includes(marker), 'ASTRO build workflow must include ' + marker);
@@ -37,9 +41,9 @@ test('SMV ASTRO production launcher source is the existing lowercase icon folder
 test('SMV ASTRO production launcher resources are exact, unchanged PNG copies below 300 KB', () => {
   const source = bytes(sourcePath);
   const outputs = [
-    res + '/mipmap-nodpi/ic_launcher.png',
-    res + '/mipmap-nodpi/ic_launcher_round.png',
-    res + '/drawable-nodpi/ic_launcher_foreground.png'
+    res + '/mipmap-nodpi/smv_astro_launcher.png',
+    res + '/mipmap-nodpi/smv_astro_launcher_round.png',
+    res + '/drawable-nodpi/smv_astro_launcher_foreground.png'
   ];
   for (const file of outputs) {
     const image = bytes(file);
@@ -50,8 +54,8 @@ test('SMV ASTRO production launcher resources are exact, unchanged PNG copies be
 });
 
 test('SMV ASTRO production adaptive launcher resources retain their white background', () => {
-  for (const name of ['ic_launcher', 'ic_launcher_round']) {
-    const xml = read(res + '/mipmap-anydpi-v26/' + name + '.xml');
+  for (const name of ['smv_astro_launcher', 'smv_astro_launcher_round']) {
+    const xml = read(res + '/mipmap-anydpi-v26/smv_astro_launcher' + (name === 'smv_astro_launcher' ? '' : '_round') + '.xml');
     assert.ok(xml.includes('@color/smv_launcher_background'));
     assert.ok(xml.includes('@drawable/ic_launcher_foreground'));
   }
