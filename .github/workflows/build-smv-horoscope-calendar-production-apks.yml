@@ -20,12 +20,10 @@ on:
         default: true
   pull_request:
     paths:
-      - "ICON/SMV HOROSCOPE.jpg"
-      - "ICON/SMV CALENDAR.jpg"
+      - "icon/horoscope_512.png"
+      - "icon/calendar_512.png"
       - "settings.gradle"
-      - "prepare-icons.sh"
       - "prepare-smv-horoscope-calendar-production-icons.sh"
-      - "tools/SmvProductLauncherIconGenerator.java"
       - "test/android-horoscope-calendar-launcher-icons.test.mjs"
       - "smvhoroscopeproduction/**"
       - "smvcalendarproduction/**"
@@ -46,12 +44,10 @@ on:
       - "public/horoscope/offline/places/india-manifest.json"
   push:
     paths:
-      - "ICON/SMV HOROSCOPE.jpg"
-      - "ICON/SMV CALENDAR.jpg"
+      - "icon/horoscope_512.png"
+      - "icon/calendar_512.png"
       - "settings.gradle"
-      - "prepare-icons.sh"
       - "prepare-smv-horoscope-calendar-production-icons.sh"
-      - "tools/SmvProductLauncherIconGenerator.java"
       - "test/android-horoscope-calendar-launcher-icons.test.mjs"
       - "smvhoroscopeproduction/**"
       - "smvcalendarproduction/**"
@@ -120,7 +116,7 @@ jobs:
                   horoscope=true ;;
                 smvcalendarproduction/*|smvcalendar/*)
                   calendar=true ;;
-                ICON/SMV\ HOROSCOPE.jpg|ICON/SMV\ CALENDAR.jpg|settings.gradle|prepare-icons.sh|prepare-smv-horoscope-calendar-production-icons.sh|tools/SmvProductLauncherIconGenerator.java|public/horoscope/sw.js|public/horoscope/calendar/sw.js|public/horoscope/location-search-online-offline.js|public/question-place-search.mjs|public/horoscope/offline/places/place-search.mjs|public/horoscope/offline/places/india-manifest.json|scripts/next-android-release-version.mjs|scripts/normalize-android-release-version-name.mjs)
+                icon/horoscope_512.png|icon/calendar_512.png|settings.gradle|prepare-smv-horoscope-calendar-production-icons.sh|public/horoscope/sw.js|public/horoscope/calendar/sw.js|public/horoscope/location-search-online-offline.js|public/question-place-search.mjs|public/horoscope/offline/places/place-search.mjs|public/horoscope/offline/places/india-manifest.json|scripts/next-android-release-version.mjs|scripts/normalize-android-release-version-name.mjs)
                   horoscope=true; calendar=true ;;
               esac
             done <<< "$changed_files"
