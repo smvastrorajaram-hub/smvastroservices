@@ -288,7 +288,7 @@ try {
   });
   assert.equal(horoscopeBrand.text, 'SMV HOROSCOPE', 'Horoscope header must show the red SMV HOROSCOPE product title.');
   assert.equal(horoscopeBrand.logoLoaded, true, 'Horoscope header must load its dedicated product logo.');
-  assert.match(horoscopeBrand.logoSrc, /smv-horoscope-website\.webp/);
+  assert.match(horoscopeBrand.logoSrc, /smv-horoscope-header-logo\.png/);
   const visibleHoroscopeControls = horoscopeBrand.controls.filter(x => x.visible);
   assert.equal(visibleHoroscopeControls.length, 4, 'Signed-out Horoscope header must show two language and two account actions; Logout remains hidden.');
   assert.ok(Math.max(...visibleHoroscopeControls.map(x => x.width)) - Math.min(...visibleHoroscopeControls.map(x => x.width)) < 1, 'All visible signed-out Horoscope header controls must have equal width: ' + JSON.stringify(visibleHoroscopeControls));

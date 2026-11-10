@@ -14,64 +14,69 @@ function pngDimensions(file) {
   return [data.readUInt32BE(16), data.readUInt32BE(20)];
 }
 
-test('PWA manifests and image assets retain their pre-existing icon mappings', () => {
-  const astro = JSON.parse(read('public/manifest.webmanifest'));
-  assert.deepEqual(astro.icons.map(icon => [icon.src, icon.sizes, icon.purpose]), [
-    ['/assets/icon-192.png', '192x192', 'any'],
-    ['/assets/icon-512.png', '512x512', 'any']
-  ]);
-
-  const horoscopes = ['public/horoscope/manifest-en.webmanifest', 'public/horoscope/manifest-ta.webmanifest'];
-  for (const file of horoscopes) {
+test('PWA manifests use the uploaded artwork, 192 variants and maskable assets', () => {
+  const manifests = [
+    ['public/manifest.webmanifest','/assets/pwa-astro'],
+    ['public/horoscope/manifest-en.webmanifest','assets/pwa-horoscope'],
+    ['public/horoscope/manifest-ta.webmanifest','assets/pwa-horoscope'],
+    ['public/horoscope/calendar/manifest-en.webmanifest','/horoscope/assets/pwa-calendar'],
+    ['public/horoscope/calendar/manifest-ta.webmanifest','/horoscope/assets/pwa-calendar']
+  ];
+  for (const [file,prefix] of manifests) {
     const manifest = JSON.parse(read(file));
-    assert.ok(manifest.icons.length >= 2, file + ' must retain its PWA icons');
+    assert.deepEqual(manifest.icons.map(icon => [icon.src,icon.sizes,icon.type,icon.purpose]), [
+      [prefix+'-192.svg', '192x192', 'image/svg+xml', 'any'],
+      [prefix+'-512.png', '512x512', 'image/png', 'any'],
+      [prefix+'-maskable-192.svg', '192x192', 'image/svg+xml', 'maskable'],
+      [prefix+'-maskable.svg', 'any', 'image/svg+xml', 'maskable']
+    ]);
     for (const icon of manifest.icons) {
-      const target = icon.src.startsWith('/')
-        ? 'public' + icon.src
-        : 'public/horoscope/' + icon.src;
-      assert.ok(exists(target), file + ' references missing icon ' + icon.src);
+      const target = icon.src.startsWith('/') ? 'public'+icon.src : path.join(path.dirname(file),icon.src);
+      assert.ok(exists(target), file+' references missing icon '+icon.src);
     }
   }
-
-  const calendars = ['public/horoscope/calendar/manifest-en.webmanifest', 'public/horoscope/calendar/manifest-ta.webmanifest'];
-  for (const file of calendars) {
-    const manifest = JSON.parse(read(file));
-    assert.ok(manifest.icons.length >= 2, file + ' must retain its PWA icons');
-    for (const icon of manifest.icons) {
-      const target = icon.src.startsWith('/')
-        ? 'public' + icon.src
-        : 'public/horoscope/calendar/' + icon.src;
-      assert.ok(exists(target), file + ' references missing icon ' + icon.src);
-    }
-  }
-
   for (const [file,size] of [
-    ['public/assets/icon-192.png',192],['public/assets/icon-512.png',512],
-    ['public/horoscope/assets/icon-192.png',192],['public/horoscope/assets/icon-512.png',512],
-    ['public/horoscope/assets/calendar-192.png',192],['public/horoscope/assets/calendar-512.png',512]
-  ]) assert.deepEqual(pngDimensions(file),[size,size],file+' PWA artwork dimensions');
+    ['public/assets/pwa-astro-512.png',512],
+    ['public/horoscope/assets/pwa-horoscope-512.png',512],
+    ['public/horoscope/assets/pwa-calendar-512.png',512],
+    ['public/assets/favicon-astro.png',64],
+    ['public/horoscope/assets/favicon-horoscope.png',64],
+    ['public/horoscope/assets/favicon-calendar.png',64]
+  ]) assert.deepEqual(pngDimensions(file),[size,size],file+' image dimensions');
+  for (const [file,size] of [
+    ['public/assets/pwa-astro-192.svg',192],['public/assets/pwa-astro-maskable-192.svg',192],['public/assets/pwa-astro-maskable.svg',512],
+    ['public/horoscope/assets/pwa-horoscope-192.svg',192],['public/horoscope/assets/pwa-horoscope-maskable-192.svg',192],['public/horoscope/assets/pwa-horoscope-maskable.svg',512],
+    ['public/horoscope/assets/pwa-calendar-192.svg',192],['public/horoscope/assets/pwa-calendar-maskable-192.svg',192],['public/horoscope/assets/pwa-calendar-maskable.svg',512]
+  ]) {
+    const svg=read(file);
+    assert.ok(svg.includes('data:image/png;base64,'),file+' embeds the exact uploaded source');
+    assert.ok(svg.includes('width="'+size+'" height="'+size+'"'),file+' has the declared dimensions');
+  }
+  for (const file of [
+    'public/assets/pwa-astro-maskable-192.svg','public/assets/pwa-astro-maskable.svg',
+    'public/horoscope/assets/pwa-horoscope-maskable-192.svg','public/horoscope/assets/pwa-horoscope-maskable.svg',
+    'public/horoscope/assets/pwa-calendar-maskable-192.svg','public/horoscope/assets/pwa-calendar-maskable.svg'
+  ]) assert.ok(read(file).includes('x="51.2" y="51.2" width="409.6" height="409.6"'),file+' keeps artwork within the centered safe area');
 });
 
-test('Each website uses its matching original SMV WEBSITE artwork as its browser favicon', () => {
+test('Each website uses its own uploaded favicon, cache-busted manifest and touch icon', () => {
   const pages = [
-    ['public/index.html','favicon-astro'],
-    ['public/horoscope/index.html','favicon-horoscope'],
-    ['public/horoscope/calendar/index.html','favicon-calendar']
+    ['public/index.html','public/assets','favicon-astro','./assets/pwa-astro-512.png'],
+    ['public/horoscope/index.html','public/horoscope/assets','favicon-horoscope','assets/pwa-horoscope-512.png'],
+    ['public/horoscope/calendar/index.html','public/horoscope/assets','favicon-calendar','../assets/pwa-calendar-512.png']
   ];
-  for (const [page,prefix] of pages) {
-    const html=read(page);
-    const folder=page==='public/index.html'?'public/assets':'public/horoscope/assets';
-    for (const size of [16,32,64]) {
-      const file=folder+'/'+prefix+'-'+size+'.png';
-      assert.deepEqual(pngDimensions(file),[size,size],file+' favicon dimensions');
-      assert.ok(html.includes(prefix+'-'+size+'.png?v=20261107-private-chat-selected-astrologer-v5'),page+' must reference its own tab icon');
-    }
-    const ico=folder+'/'+prefix+'.ico';
-    assert.ok(exists(ico),ico+' ICO must exist');
-    assert.ok(fs.readFileSync(path.join(root,ico)).subarray(0,4).equals(Buffer.from([0,0,1,0])),ico+' must be an ICO file');
-    assert.ok(html.includes(prefix+'.ico?v=20261107-private-chat-selected-astrologer-v5'),page+' must reference its own ICO');
+  for (const [page,folder,prefix,touch] of pages) {
+    const html=read(page),png=folder+'/'+prefix+'.png',ico=folder+'/'+prefix+'.ico';
+    assert.deepEqual(pngDimensions(png),[64,64],png+' favicon dimensions');
+    assert.ok(exists(ico),ico+' ICO exists');
+    assert.ok(fs.readFileSync(path.join(root,ico)).subarray(0,4).equals(Buffer.from([0,0,1,0])),ico+' has ICO signature');
+    assert.ok(html.includes(prefix+'.png?v=20261110-pwa-icons-v1'),page+' references its own favicon PNG');
+    assert.ok(html.includes(prefix+'.ico?v=20261110-pwa-icons-v1'),page+' references its own ICO');
+    assert.ok(html.includes(touch+'?v=20261110-pwa-icons-v1'),page+' uses its matching iOS touch icon');
   }
-  assert.ok(read('public/index.html').includes('href="./manifest.webmanifest?v=20261107-private-chat-selected-astrologer-v5" rel="manifest"'));
+  assert.ok(read('public/index.html').includes('manifest.webmanifest?v=20261110-pwa-icons-v1'));
+  assert.ok(read('public/horoscope/index.html').includes('manifest-en.webmanifest?v=20261110-pwa-icons-v1'));
+  assert.ok(read('public/horoscope/calendar/index.html').includes('manifest-en.webmanifest?v=20261110-pwa-icons-v1'));
 });
 
 test('Horoscope and Calendar show their own product logos, titles and consistent headers', () => {
@@ -84,7 +89,10 @@ test('Horoscope and Calendar show their own product logos, titles and consistent
   assert.ok(astro.includes('src="./assets/smv-home-logo.webp?v=20261105-brand-header-v1"'));
   assert.ok(exists('public/horoscope/assets/smv-horoscope-website.webp'), 'Horoscope must use its dedicated product logo.');
   assert.ok(horoscope.includes('class="smv-horoscope-brand-header"'));
-  assert.ok(horoscope.includes('src="./assets/smv-horoscope-website.webp"'));
+  assert.ok(exists('public/horoscope/assets/smv-horoscope-header-logo.png'));
+  assert.deepEqual(pngDimensions('public/horoscope/assets/smv-horoscope-header-logo.png'),[1024,1024]);
+  assert.ok(horoscope.includes('src="./assets/smv-horoscope-header-logo.png?v=20261110-pwa-icons-v1"'));
+  assert.ok(horoscope.includes('smv-horoscope-website.webp'));
   assert.ok(horoscope.includes('alt="SMV HOROSCOPE logo"'));
   assert.ok(horoscope.includes('SMV HOROSCOPE'));
   assert.ok(!horoscope.includes('SMV ASTRO SERVICES</span>'));
@@ -112,12 +120,25 @@ test('Horoscope and Calendar show their own product logos, titles and consistent
 test('All three independent Service Workers share one new cache release and cache the intended website artwork', () => {
   const workers=[read('public/sw.js'),read('public/horoscope/sw.js'),read('public/horoscope/calendar/sw.js')];
   const versions=workers.map(source=>/const SMV_CACHE_RELEASE='([^']+)'/.exec(source)?.[1]);
-  assert.deepEqual(versions,['20261107-private-chat-selected-astrologer-v5','20261107-private-chat-selected-astrologer-v5','20261107-private-chat-selected-astrologer-v5']);
+  assert.deepEqual(versions,['20261110-pwa-icons-v1','20261110-pwa-icons-v1','20261110-pwa-icons-v1']);
   assert.ok(workers[0].includes("'./assets/favicon-astro.ico'"));
+  assert.ok(workers[0].includes("'./assets/favicon-astro.png'"));
+  assert.ok(workers[0].includes("'./assets/pwa-astro-192.svg'"));
+  assert.ok(workers[0].includes("'./assets/pwa-astro-512.png'"));
+  assert.ok(workers[0].includes("'./assets/pwa-astro-maskable-192.svg'"));
   assert.ok(workers[0].includes("'./assets/smv-home-logo.webp'"));
   assert.ok(workers[1].includes("'./assets/favicon-horoscope.ico'"));
+  assert.ok(workers[1].includes("'./assets/favicon-horoscope.png'"));
+  assert.ok(workers[1].includes("'./assets/pwa-horoscope-192.svg'"));
+  assert.ok(workers[1].includes("'./assets/pwa-horoscope-512.png'"));
+  assert.ok(workers[1].includes("'./assets/pwa-horoscope-maskable-192.svg'"));
+  assert.ok(workers[1].includes("'./assets/smv-horoscope-header-logo.png'"));
   assert.ok(workers[1].includes("'./assets/smv-horoscope-website.webp'"));
   assert.ok(workers[2].includes("'../assets/favicon-calendar.ico'"));
+  assert.ok(workers[2].includes("'../assets/favicon-calendar.png'"));
+  assert.ok(workers[2].includes("'../assets/pwa-calendar-192.svg'"));
+  assert.ok(workers[2].includes("'../assets/pwa-calendar-512.png'"));
+  assert.ok(workers[2].includes("'../assets/pwa-calendar-maskable-192.svg'"));
   assert.ok(workers[2].includes("'../assets/smv-calendar-website.webp'"));
 });
 

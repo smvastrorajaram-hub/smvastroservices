@@ -26,12 +26,15 @@ if(location.hostname==='smvastroservices.pages.dev'){
 <meta content="SMV ASTRO SERVICES | Astrology Services &amp; Online Horoscope" name="twitter:title"/>
 <meta content="Sri Madurai Veerayah Astro Services offers online astrology services, horoscope, Tamil horoscope, marriage matching, customer registration and astrologer registration." name="twitter:description"/>
 <meta content="https://smvastroservices.in/assets/smv-home-logo.webp?v=20261105-brand-header-v1" name="twitter:image"/>
-<link href="./manifest.webmanifest?v=20261107-private-chat-selected-astrologer-v5" rel="manifest">
-<link href="./assets/favicon-astro.ico?v=20261107-private-chat-selected-astrologer-v5" rel="icon" sizes="any"/>
-<link href="./assets/favicon-astro-16.png?v=20261107-private-chat-selected-astrologer-v5" rel="icon" sizes="16x16" type="image/png"/>
-<link href="./assets/favicon-astro-32.png?v=20261107-private-chat-selected-astrologer-v5" rel="icon" sizes="32x32" type="image/png"/>
-<link href="./assets/favicon-astro-64.png?v=20261107-private-chat-selected-astrologer-v5" rel="icon" sizes="64x64" type="image/png"/>
-<link href="./assets/icon-192.png" rel="apple-touch-icon"/>
+<link href="./manifest.webmanifest?v=20261110-pwa-icons-v1" rel="manifest">
+<link rel="icon" href="./assets/favicon-astro.ico?v=20261110-pwa-icons-v1" sizes="any" type="image/x-icon"/>
+<link rel="icon" type="image/png" sizes="64x64" href="./assets/favicon-astro.png?v=20261110-pwa-icons-v1"/>
+<link rel="apple-touch-icon" sizes="512x512" href="./assets/pwa-astro-512.png?v=20261110-pwa-icons-v1"/>
+
+
+
+
+
 <meta content="#8b1717" name="theme-color">
 <meta content="yes" name="mobile-web-app-capable">
 <meta content="yes" name="apple-mobile-web-app-capable">
@@ -39,7 +42,7 @@ if(location.hostname==='smvastroservices.pages.dev'){
 <meta content="SMV ASTRO" name="apple-mobile-web-app-title">
 <title>SMV ASTRO SERVICES | Astrology Services &amp; Online Horoscope</title>
 <meta content="Sri Madurai Veerayah Astro Services offers online astrology services, horoscope, Tamil horoscope, marriage matching, customer registration and astrologer registration." name="description"/>
-<link href="./smvastro.css?v=20261102-consult-route-cleanup-v1" rel="stylesheet"/><link href="./android-app-install.css?v=20261030-admin-apk-manager-v2" rel="stylesheet"/><link href="./smv-ui.css?v=20261105-dashboard-typography-hierarchy-v1" rel="stylesheet"/><link href="./dashboard-typography.css?v=20261105-session-state-labels-v1" rel="stylesheet"/><script src="./payment-timing.js"></script>
+<link href="./smvastro.css?v=20261102-consult-route-cleanup-v1" rel="stylesheet"/><link href="./android-app-install.css?v=20261110-pwa-icons-v1" rel="stylesheet"/><link href="./smv-ui.css?v=20261105-dashboard-typography-hierarchy-v1" rel="stylesheet"/><link href="./dashboard-typography.css?v=20261105-session-state-labels-v1" rel="stylesheet"/><script src="./payment-timing.js"></script>
 <script id="smv-v223-scoped-storage-policy">
 /* App state and offline caches are retained. Each Service Worker now owns
    cleanup of its own versioned cache namespace; never clear origin-wide storage
@@ -175,11 +178,13 @@ document.addEventListener('DOMContentLoaded', function(){
 </section>
 <section aria-labelledby="smvPermanentAndroidApkHeading" class="smv-android-apk-section" id="smvPermanentAndroidAppSection" hidden>
   <div class="smv-android-apk-card">
-    <div class="smv-android-apk-icon-wrap"><img alt="SMV ASTRO Android application icon" height="58" width="58" loading="lazy" decoding="async" src="./assets/icon-192.png"/></div>
-    <div class="smv-android-apk-copy">
-      <h2 id="smvPermanentAndroidApkHeading">SMV ASTRO Android App</h2>
-      <p id="smvPermanentApkDescription">Official signed Android application.</p>
-      <p class="smv-android-apk-status" id="smvPermanentApkStatus" role="status" aria-live="polite"></p>
+    <div class="smv-android-apk-main">
+      <div class="smv-android-apk-icon-wrap"><img alt="SMV ASTRO Android application icon" height="58" width="58" loading="lazy" decoding="async" src="./assets/icon-192.png"/></div>
+      <div class="smv-android-apk-copy">
+        <h2 id="smvPermanentAndroidApkHeading">SMV ASTRO Android App-ஐ Download செய்க</h2>
+        <p id="smvPermanentApkDescription">Official signed Android application.</p>
+        <p class="smv-android-apk-status" id="smvPermanentApkStatus" role="status" aria-live="polite"></p>
+      </div>
     </div>
     <div class="smv-android-apk-actions">
       <a class="smv-android-apk-download" id="smvPermanentApkDownload" href="#" hidden>DOWNLOAD APK</a>

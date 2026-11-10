@@ -30,7 +30,7 @@ if(location.hostname==='smvastroservices.pages.dev'){
  function language(lang){
   document.documentElement.lang=lang;
   try{localStorage.setItem('smv-calendar-language',lang)}catch(_){ }
-  if(manifest)manifest.href=`manifest-${lang}.webmanifest`;
+  if(manifest)manifest.href=`manifest-${lang}.webmanifest?v=20261110-pwa-icons-v1`;
   const span=button?.querySelector('span');
   if(span)span.textContent=lang==='ta'?'SMV CALENDAR நிறுவுக':'Install SMV CALENDAR';
   window.dispatchEvent(new CustomEvent('smv-language',{detail:lang}));
