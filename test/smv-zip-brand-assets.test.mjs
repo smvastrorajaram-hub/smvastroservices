@@ -70,13 +70,18 @@ test('Each website uses its own uploaded favicon, cache-busted manifest and touc
     assert.deepEqual(pngDimensions(png),[64,64],png+' favicon dimensions');
     assert.ok(exists(ico),ico+' ICO exists');
     assert.ok(fs.readFileSync(path.join(root,ico)).subarray(0,4).equals(Buffer.from([0,0,1,0])),ico+' has ICO signature');
-    assert.ok(html.includes(prefix+'.png?v=20261110-pwa-icons-v1'),page+' references its own favicon PNG');
-    assert.ok(html.includes(prefix+'.ico?v=20261110-pwa-icons-v1'),page+' references its own ICO');
+    const faviconVersion = prefix==='favicon-calendar' ? '20261110-calendar-favicon-v3' : '20261110-pwa-icons-v1';
+    assert.ok(html.includes(prefix+'.png?v='+faviconVersion),page+' references its own favicon PNG');
+    assert.ok(html.includes(prefix+'.ico?v='+faviconVersion),page+' references its own ICO');
     assert.ok(html.includes(touch+'?v=20261110-pwa-icons-v1'),page+' uses its matching iOS touch icon');
   }
   assert.ok(read('public/index.html').includes('manifest.webmanifest?v=20261110-pwa-icons-v1'));
   assert.ok(read('public/horoscope/index.html').includes('manifest-en.webmanifest?v=20261110-pwa-icons-v1'));
-  assert.ok(read('public/horoscope/calendar/index.html').includes('manifest-en.webmanifest?v=20261110-pwa-icons-v1'));
+  assert.ok(read('public/horoscope/calendar/index.html').includes('manifest-en.webmanifest?v=20261110-calendar-favicon-v3'));
+  assert.ok(read('public/horoscope/calendar/index.html').includes('<title>SMV CALENDAR | Tamil Panchang and Calendar</title>'));
+  assert.deepEqual(fs.readFileSync(path.join(root,'public/horoscope/assets/favicon-calendar.png')),
+    fs.readFileSync(path.join(root,'icon/fevicon/calendar.png')),
+    'Calendar favicon matches the latest icon/fevicon/calendar.png source');
 });
 
 test('Horoscope and Calendar show their own product logos, titles and consistent headers', () => {
@@ -120,7 +125,7 @@ test('Horoscope and Calendar show their own product logos, titles and consistent
 test('All three independent Service Workers share one new cache release and cache the intended website artwork', () => {
   const workers=[read('public/sw.js'),read('public/horoscope/sw.js'),read('public/horoscope/calendar/sw.js')];
   const versions=workers.map(source=>/const SMV_CACHE_RELEASE='([^']+)'/.exec(source)?.[1]);
-  assert.deepEqual(versions,['20261110-android-apk-cards-v2','20261110-android-apk-cards-v2','20261110-android-apk-cards-v2']);
+  assert.deepEqual(versions,['20261110-android-icons-calendar-favicon-seo-contrast-v3','20261110-android-icons-calendar-favicon-seo-contrast-v3','20261110-android-icons-calendar-favicon-seo-contrast-v3']);
   assert.ok(workers[0].includes("'./assets/favicon-astro.ico'"));
   assert.ok(workers[0].includes("'./assets/favicon-astro.png'"));
   assert.ok(workers[0].includes("'./assets/pwa-astro-192.svg'"));
