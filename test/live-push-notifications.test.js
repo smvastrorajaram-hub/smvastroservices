@@ -1290,7 +1290,7 @@ test('Homepage removes its PWA install banner and presents the dedicated Android
   assert.ok(installer.includes("heading.textContent = 'SMV ASTRO ' + latestName"));
   assert.ok(html.includes('Official signed Android application.'));
   assert.ok(html.indexOf('class="smv-android-apk-main"') < html.indexOf('class="smv-android-apk-actions"'));
-  assert.ok(html.includes('assets/icon-192.png'));
+  assert.ok(pwa.includes('assets/pwa-astro-512.png'));
   assert.ok(html.includes('id="adminGroupAppManagement"'));
   assert.ok(html.includes('id="adminAndroidAppFile"'));
   assert.ok(html.includes('id="adminAndroidAppUpload"'));
