@@ -134,11 +134,11 @@ test("Verified full Horoscope report continues through existing Save and PDF/Pri
 });
 
 test("All three apps use one synchronized cache release; Horoscope runtime revision is bumped", () => {
-  const expected = "20261110-android-apk-cards-v2";
+  const expected = "20261110-android-icons-calendar-favicon-seo-contrast-v3";
   const versions = workers.map(source => /const SMV_CACHE_RELEASE='([^']+)'/.exec(source)?.[1]);
   assert.deepEqual(versions, [expected, expected, expected]);
   const runtime = /const RUNTIME_REVISION='([^']+)'/.exec(workers[1])?.[1];
-  assert.equal(runtime, "v270-horoscope-single-paid-entry-theme-20261107");
+  assert.equal(runtime, "v271-android-icons-calendar-favicon-seo-contrast-20261110");
 });
 
 test("No origin-wide local storage, Cache API or IndexedDB deletion is introduced", () => {
