@@ -10,11 +10,6 @@ const bytes=file=>fs.readFileSync(path.join(root,file));
 const res='smvastroproduction/src/main/res';
 const maxBytes=300000;
 
-function pngDimensions(data,file){
-  assert.deepEqual([...data.subarray(0,8)],[0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A],file+' must be PNG');
-  return {width:data.readUInt32BE(16),height:data.readUInt32BE(20)};
-}
-
 function jpegDimensions(data,file){
   assert.deepEqual([...data.subarray(0,3)],[0xFF,0xD8,0xFF],file+' must be JPEG');
   let offset=2;
@@ -34,18 +29,16 @@ function jpegDimensions(data,file){
   assert.fail(file+' must contain a readable JPEG frame header');
 }
 
-test('SMV ASTRO Android launcher source is the module-local square master artwork and stays separate from PWA assets',()=>{
-  const sourcePath='smvastroproduction/launcher/icon-master.jpg';
+test('SMV ASTRO Android launcher source is the exact user-uploaded ICON file and stays separate from PWA assets',()=>{
+  const sourcePath='ICON/SMV ASTRO.jpg';
   const source=bytes(sourcePath);
-  const dimensions=jpegDimensions(source,sourcePath);
-  assert.equal(dimensions.width,dimensions.height);
-  assert.ok(dimensions.width>=512,sourcePath+' must retain at least 512px master artwork');
+  assert.deepEqual(jpegDimensions(source,sourcePath),{width:2048,height:2048});
   const script=read('prepare-smv-astro-production-icon.sh');
-  assert.ok(script.includes('source_icon="smvastroproduction/launcher/icon-master.jpg"'));
+  assert.ok(script.includes('source_icon="ICON/SMV ASTRO.jpg"'));
   assert.ok(script.includes('SmvProductLauncherIconGenerator'));
   assert.ok(!script.includes('public/assets/'));
   const workflow=read('.github/workflows/build-smv-astro-production-apk.yml');
-  for(const marker of ['smvastroproduction/launcher/icon-master.jpg','tools/SmvProductLauncherIconGenerator.java','test/android-launcher-icon.test.mjs']){
+  for(const marker of ['ICON/SMV ASTRO.jpg','tools/SmvProductLauncherIconGenerator.java','test/android-launcher-icon.test.mjs']){
     assert.ok(workflow.includes(marker),'ASTRO build trigger must include '+marker);
   }
 });
