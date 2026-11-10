@@ -1,0 +1,46 @@
+name: Windows Desktop Installer
+
+on:
+  pull_request:
+    paths:
+      - 'desktop/windows/**'
+      - 'test/windows-desktop-shell.test.cjs'
+      - '.github/workflows/windows-desktop-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    name: Test and package Windows x64 installer
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install desktop dependencies
+        working-directory: desktop/windows
+        run: npm install --no-audit --no-fund
+
+      - name: Run desktop shell tests
+        working-directory: desktop/windows
+        run: npm test
+
+      - name: Build Windows installer
+        working-directory: desktop/windows
+        run: npm run dist:win
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMV-ASTRO-Windows-Setup
+          path: desktop/windows/release/*.exe
+          if-no-files-found: error
+          retention-days: 14
