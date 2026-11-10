@@ -69,23 +69,29 @@ test('Existing Horoscope and Calendar QA APK modules remain test-only and keep t
   assert.match(read('smvcalendar/build.gradle'), /applicationId "in\.smvastr[o]services\.calendar\.test"/);
 });
 
-test('HOROSCOPE and CALENDAR production launchers use their matching ICON sources and compact Android JPEG resources', () => {
+test('HOROSCOPE and CALENDAR production launchers use the exact lowercase icon folder PNGs', () => {
   const script = read('prepare-smv-horoscope-calendar-production-icons.sh');
-  const generator = read('tools/SmvProductLauncherIconGenerator.java');
   const workflow = read('.github/workflows/build-smv-horoscope-calendar-production-apks.yml');
+  const sources = [
+    ['icon/horoscope_512.png', 'smvhoroscopeproduction'],
+    ['icon/calendar_512.png', 'smvcalendarproduction']
+  ];
 
-  assert.match(script, /copy_product_icon "ICON\/SMV HOROSCOPE\.jpg" smvhoroscopeproduction/);
-  assert.match(script, /copy_product_icon "ICON\/SMV CALENDAR\.jpg" smvcalendarproduction/);
-  assert.match(script, /mipmap-nodpi\/ic_launcher\.jpg/);
-  assert.match(script, /drawable-nodpi\/ic_launcher_foreground\.jpg/);
-  assert.match(script, /size > 300000/);
-  assert.match(generator, /MAX_ASSET_BYTES = 300000/);
-  assert.match(generator, /writeJpegUnderLimit/);
-  assert.match(workflow, /ICON\/SMV HOROSCOPE\.jpg/);
-  assert.match(workflow, /ICON\/SMV CALENDAR\.jpg/);
-  assert.doesNotMatch(script, /public\/(horoscope|assets)\/.*(write|rm|delete)/i);
+  for (const [source, module] of sources) {
+    const data = fs.readFileSync(path.join(root, source));
+    assert.deepEqual([...data.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+    assert.equal(data.readUInt32BE(16), 512);
+    assert.equal(data.readUInt32BE(20), 512);
+    assert.ok(data.length < 300000, source + ' must already be below 300 KB');
+    assert.ok(script.includes('copy_product_icon "' + source + '" ' + module));
+    assert.ok(workflow.includes(source));
+  }
+
+  assert.match(script, /cmp -s "\\$source_icon" "\\$asset"/);
+  assert.doesNotMatch(script, /prepare-icons\\.sh|SmvProductLauncherIconGenerator|ICON\\/SMV/);
+  assert.doesNotMatch(workflow, /ICON\\/SMV (?:ASTRO|HOROSCOPE|CALENDAR)\\.jpg/);
+  assert.doesNotMatch(script, /public\\/(?:horoscope|assets)\\/.*(?:write|rm|delete)/i);
 });
-
 test('Public Horoscope and Calendar APK cards point to the verified Cloudflare release Worker', () => {
   const controller = read('public/horoscope/android-apk-download.mjs');
   const horoscopeHtml = read('public/horoscope/index.html');
