@@ -574,11 +574,11 @@ test('Homepage uses the dedicated Android APK icon/card and hides Download when 
 
   assert.ok(html.includes('id="smvPermanentAndroidAppSection"'));
   assert.ok(html.includes('id="smvPermanentApkDownload"'));
-  assert.ok(html.includes('assets/icon-192.png'));
+  assert.ok(html.includes('assets/android-app-icon-astro.svg'));
   assert.doesNotMatch(html, /smvInstallAppSection|smvInstallAppBtn|smvInstallAppHelp|smv-install-app-prompt/);
   assert.ok(html.includes('window.SMV_APK_RELEASE_API_URL = window.SMV_APK_RELEASE_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev"'));
   assert.ok(html.includes('window.SMV_APK_RELEASE_ADMIN_API_URL = window.SMV_APK_RELEASE_ADMIN_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev"'));
-  assert.ok(html.includes('android-app-install.css?v=20261110-pwa-icons-v1'));
+  assert.ok(html.includes('android-app-install.css?v=20261110-android-apk-cards-v2'));
   assert.ok(installer.includes('getInstalledRelatedApps'));
   assert.ok(installer.includes('Using Latest Version'));
   assert.ok(installer.includes("'UPDATE'"));
