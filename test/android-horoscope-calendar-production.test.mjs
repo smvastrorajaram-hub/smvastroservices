@@ -44,8 +44,8 @@ test('Production Horoscope and Calendar use their own stable Play Store applicat
     assert.match(gradle, /SMV_ANDROID_KEY_PASSWORD/);
     assert.match(gradle, /versionName appVersionName/);
     assert.match(gradle, /versionCode appVersionCode/);
-    assert.match(manifest, /android:icon="@mipmap\/ic_launcher"/);
-    assert.match(manifest, /android:roundIcon="@mipmap\/ic_launcher_round"/);
+    assert.ok(manifest.includes('android:icon="@mipmap/' + product.launcherPrefix + '_launcher"'));
+    assert.ok(manifest.includes('android:roundIcon="@mipmap/' + product.launcherPrefix + '_launcher_round"'));
     assert.match(manifest, /android:name=".MainActivity"/);
     assert.match(activity, new RegExp('package ' + product.packageName.replaceAll('.', '\\.') + ';'));
     assert.ok(activity.includes('https://' + product.host + '/?lang=en&source=android-production'));
