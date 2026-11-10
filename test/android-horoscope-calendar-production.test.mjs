@@ -87,10 +87,12 @@ test('HOROSCOPE and CALENDAR production launchers use the exact lowercase icon f
     assert.ok(workflow.includes(source));
   }
 
-  assert.match(script, /cmp -s "\\$source_icon" "\\$asset"/);
-  assert.doesNotMatch(script, /prepare-icons\\.sh|SmvProductLauncherIconGenerator|ICON\\/SMV/);
-  assert.doesNotMatch(workflow, /ICON\\/SMV (?:ASTRO|HOROSCOPE|CALENDAR)\\.jpg/);
-  assert.doesNotMatch(script, /public\\/(?:horoscope|assets)\\/.*(?:write|rm|delete)/i);
+  assert.ok(script.includes('cmp -s "$source_icon" "$asset"'));
+  assert.equal(script.includes('prepare-icons.sh'), false);
+  assert.equal(script.includes('SmvProductLauncherIconGenerator'), false);
+  assert.equal(script.includes('ICON/SMV'), false);
+  assert.equal(workflow.includes('ICON/SMV'), false);
+  assert.equal(script.includes('public/horoscope/'), false);
 });
 test('Public Horoscope and Calendar APK cards point to the verified Cloudflare release Worker', () => {
   const controller = read('public/horoscope/android-apk-download.mjs');
