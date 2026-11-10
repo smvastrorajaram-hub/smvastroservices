@@ -7,7 +7,7 @@ const SMV_CACHE_RELEASE='20261110-android-icons-calendar-favicon-seo-contrast-v3
 const OFFLINE_CACHE='smv-horoscope-offline';
 const LOCATION_CACHE='smv-shared-india-places';
 const SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE;
-const RUNTIME_REVISION='v270-horoscope-single-paid-entry-theme-20261107';
+const RUNTIME_REVISION='v271-android-icons-calendar-favicon-seo-contrast-20261110';
 
 const CORE=[
   './','./index.html',
