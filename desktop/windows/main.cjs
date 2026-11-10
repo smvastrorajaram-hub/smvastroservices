@@ -249,7 +249,7 @@ function buildApplicationMenu() {
                 type: 'info',
                 title: 'About SMV ASTRO',
                 message: PRODUCT_NAME,
-                detail: 'Windows Desktop Edition 0.1.0\\nSMV ASTRO • SMV HOROSCOPE • SMV CALENDAR'
+                detail: 'Windows Desktop Edition 0.1.0\nSMV ASTRO • SMV HOROSCOPE • SMV CALENDAR'
               });
             }
           }
