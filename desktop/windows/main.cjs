@@ -54,6 +54,18 @@ function isTrustedSmvOrigin(value) {
   }
 }
 
+function moduleIdForUrl(value) {
+  try {
+    const hostname = new URL(value).hostname.toLowerCase();
+    if (hostname === 'smvastroservices.in' || hostname === 'www.smvastroservices.in') return 'astro';
+    if (hostname === 'horoscope.smvastroservices.in') return 'horoscope';
+    if (hostname === 'calendar.smvastroservices.in') return 'calendar';
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 function isHubRenderer(event) {
   if (!mainWindow || event.sender !== mainWindow.webContents || !event.senderFrame) return false;
   try {
@@ -149,6 +161,15 @@ async function navigateTo(moduleId) {
       }
     });
     configureRemoteWebContents(remoteView.webContents);
+    remoteView.webContents.on('did-navigate', (_event, url) => {
+      const detectedModule = moduleIdForUrl(url);
+      if (detectedModule) {
+        activeModule = detectedModule;
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('smv:active-module', activeModule);
+        }
+      }
+    });
     remoteView.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
       if (isMainFrame && errorCode !== -3 && mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('smv:load-error', {
