@@ -107,7 +107,9 @@ jobs:
             horoscope=true
             calendar=true
           elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
-            if [[ -z "$PUSH_BASE_SHA" || "$PUSH_BASE_SHA" =~ ^0+$ ]]; then
+            # Force-push/rebase events may report a before SHA that is no longer fetched.
+            # Fall back to the pushed commit's changed paths when that object is unavailable.
+            if [[ -z "$PUSH_BASE_SHA" || "$PUSH_BASE_SHA" =~ ^0+$ ]] || ! git cat-file -e "${PUSH_BASE_SHA}^{commit}" 2>/dev/null; then
               changed_files="$(git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA")"
             else
               changed_files="$(git diff --name-only "$PUSH_BASE_SHA" "$GITHUB_SHA")"

@@ -40,7 +40,7 @@
 <div class="brand">SMV ASTRO SERVICES · ASTROLOGY GUIDES</div>
 <h1>Lahiri Ayanamsa and Thirukanitham: Why Calculation Settings Matter</h1>
 <p>An introduction to sidereal zodiac calculations, ayanamsa, Thirukanitham and the input details needed for consistent horoscope results.</p>
-<p class="small">Educational guide · Published 11 November 2026 · Approximately 421 words</p>
+<p class="small">Educational guide · Published 11 November 2026</p>
 <div class="seo-actions"><a class="seo-action" href="/astrology-guides/">All Astrology Guides</a> <a class="seo-action" href="/">SMV ASTRO Home</a></div>
 </header>
 <article>
@@ -70,6 +70,12 @@
    <p>This method makes differences easier to locate. It also prevents a common mistake: changing several settings at once and then not knowing which one caused the result to move.</p></section>
 <section><h2>தமிழில் சுருக்கம்</h2>
    <p lang="ta">லஹிரி அயனாம்சம் என்பது நிராயண ராசி கணக்கீட்டில் பயன்படுத்தப்படும் ஒரு குறிப்பிட்ட அயனாம்ச முறை. திருக்கணிதம் என்பது கிரக நிலைகளை கணக்கிடும் அணுகுமுறையைக் குறிக்கிறது. இவை ஒன்றுக்கொன்று மாற்றுச் சொற்கள் அல்ல. பிறந்த நேரம், வரலாற்று நேர மண்டலம், இடத்தின் coordinates, ephemeris மற்றும் house system ஆகியவற்றை ஒரே மாதிரியாக வைத்தால்தான் இரண்டு ஜாதகக் கணக்குகளை நியாயமாக ஒப்பிட முடியும்.</p></section>
+
+<section><h2>What the current SMV calculation engine does</h2>
+<p>The published SMV calculation source sets the Lahiri sidereal mode before calculating planetary longitudes. The main calculation path uses Swiss Ephemeris data when the required ephemeris files are available and includes a Moshier fallback path. The browser-offline package uses a local WebAssembly calculation provider configured for Lahiri. These are implementation details of the current SMV software; they should not be inferred from the word “Thirukanitham” alone.</p>
+<p>The workflow is: validate the local date/time and coordinates; resolve the local-time offset; convert the local clock reading to UTC and Julian Day; calculate sidereal planetary longitudes; then derive chart labels such as Rasi, Nakshatra, Pada and Navamsa from those longitudes. The <a href="/astrology-guides/calculation-method/">SMV calculation-method guide</a> includes worked examples and the current Panchang/Dasha formulas.</p>
+<p>When comparing two calculators, compare the numeric longitude and stated ephemeris/ayanamsa settings before comparing a displayed sign or interpretation. A different ephemeris fallback or rounding policy can matter near a boundary even when both tools describe themselves as Lahiri-based.</p>
+</section>
 </article>
 <section>
 <h2>Related reading</h2>
@@ -78,6 +84,7 @@
  <li><a href="/astrology-guides/27-nakshatras/">The 27 Nakshatras</a></li>
  <li><a href="/astrology-guides/panchangam/">The Five Parts of Panchangam</a></li>
  <li><a href="/astrology-guides/lahiri-thirukanitham/">Lahiri Ayanamsa and Thirukanitham</a></li>
+ <li><a href="/astrology-guides/calculation-method/">How SMV ASTRO Calculates Charts, Nakshatra, Dasha and Panchangam</a></li>
 </ul>
 </section>
 <section>

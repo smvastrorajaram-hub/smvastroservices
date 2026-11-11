@@ -69,6 +69,9 @@ jobs:
           grep -Fq 'id="smv-adsense-domain-loader"' public/astrologer-registration/index.html
           grep -Fq "host!=='smvastroservices.in'&&host!=='www.smvastroservices.in'" public/astrologer-registration/index.html
           grep -Fq 'id="smv-adsense-domain-loader"' public/astrology-guides/index.html
+          grep -Fq "calculation-method" public/astrology-guides/index.html
+          grep -Fq "calculation-method" public/sitemap.xml
+          grep -Fq "calculation-method" public/astrology-guides/calculation-method/index.html
           grep -Fq "host!=='smvastroservices.in'&&host!=='www.smvastroservices.in'" public/astrology-guides/index.html
           grep -Fq 'id="smv-adsense-domain-loader"' public/astrology-guides/birth-chart-basics/index.html
           grep -Fq "host!=='smvastroservices.in'&&host!=='www.smvastroservices.in'" public/astrology-guides/birth-chart-basics/index.html
@@ -137,6 +140,44 @@ jobs:
           check_url "https://smvastroservices.in/ads.txt" "google.com, pub-8603281557754018, DIRECT, f08c47fec0942fa0"
           check_url "https://smvastroservices.in/ads.txt" "subdomain=horoscope.smvastroservices.in"
           check_url "https://smvastroservices.in/ads.txt" "subdomain=calendar.smvastroservices.in"
+          check_url "https://smvastroservices.in/astrology-guides/calculation-method/" "How SMV ASTRO Calculates Charts"
+
+          # Check the actual crawler-facing response, not just a normal browser fetch.
+          # All variants must resolve to the canonical HTTPS root with a plain-text 200 response.
+          check_ads_txt_crawler() {
+            local url="$1"
+            local user_agent="$2"
+            local body details status content_type final_url
+            body="$(mktemp)"
+            if ! details="$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 \
+              --user-agent "$user_agent" --header "Cache-Control: no-cache" \
+              --output "$body" --write-out '%{http_code}|%{content_type}|%{url_effective}' "$url")"; then
+              echo "::error::Crawler fetch failed for $url using $user_agent"
+              head -c 2000 "$body" || true
+              rm -f "$body"
+              exit 1
+            fi
+            IFS='|' read -r status content_type final_url <<< "$details"
+            if [ "$status" != "200" ] || [[ "$content_type" != text/plain* ]] \
+              || [ "$final_url" != "https://smvastroservices.in/ads.txt" ] \
+              || ! grep -Fxq "google.com, pub-8603281557754018, DIRECT, f08c47fec0942fa0" "$body"; then
+              echo "::error::Unexpected ads.txt response for $url using $user_agent"
+              echo "Status=$status Content-Type=$content_type Final-URL=$final_url"
+              head -c 2000 "$body" || true
+              rm -f "$body"
+              exit 1
+            fi
+            echo "PASS: $url is crawler-readable (200 text/plain) for $user_agent"
+            rm -f "$body"
+          }
+
+          for crawler in \
+            "Googlebot/2.1 (+http://www.google.com/bot.html)" \
+            "Mediapartners-Google"; do
+            check_ads_txt_crawler "https://smvastroservices.in/ads.txt" "$crawler"
+            check_ads_txt_crawler "http://smvastroservices.in/ads.txt" "$crawler"
+            check_ads_txt_crawler "https://www.smvastroservices.in/ads.txt" "$crawler"
+          done
           check_url "https://horoscope.smvastroservices.in/ads.txt" "google.com, pub-8603281557754018, DIRECT, f08c47fec0942fa0"
           check_url "https://calendar.smvastroservices.in/ads.txt" "google.com, pub-8603281557754018, DIRECT, f08c47fec0942fa0"
           check_url "https://horoscope.smvastroservices.in/" "ca-pub-8603281557754018"
