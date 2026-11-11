@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 20
     environment: production
     env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_D1_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - name: Checkout source
@@ -33,11 +33,11 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Verify Cloudflare API token
+      - name: Verify dedicated Production D1 API token
         shell: bash
         run: |
           set -euo pipefail
-          test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Missing CLOUDFLARE_API_TOKEN secret in GitHub production environment.'; exit 1; }
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Missing CLOUDFLARE_D1_API_TOKEN secret in GitHub production environment.'; exit 1; }
 
       - name: Resolve Cloudflare account from the exact Production D1 ID
         shell: bash
