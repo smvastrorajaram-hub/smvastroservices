@@ -36,6 +36,8 @@ export function normalizeWallet(raw = {}, ownerUid = '', ownerRole = '') {
     reservedBalancePaise: safePaise(raw.reservedBalancePaise),
     bonusMinutesBalance: safeMinutes(raw.bonusMinutesBalance),
     reservedBonusMinutes: safeMinutes(raw.reservedBonusMinutes),
+    bonusCreditBalancePaise: safePaise(raw.bonusCreditBalancePaise),
+    reservedBonusCreditPaise: safePaise(raw.reservedBonusCreditPaise),
     version: safePaise(raw.version),
     createdAt: raw.createdAt ?? null,
     updatedAt: raw.updatedAt ?? null

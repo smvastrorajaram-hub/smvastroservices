@@ -335,7 +335,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       adminEmails: String(env.ADMIN_AUTH_EMAILS || '').split(',')
     });
     walletIdentityService = firebaseIdentityService;
-    sharedWalletAdapter = createD1WalletAdapter({ db: env.DB });
+    sharedWalletAdapter = createD1WalletAdapter({ db: env.DB, adminWalletUid: String(env.ADMIN_WALLET_UID || env.ADMIN_UID || '') });
     if (razorpayPolicy.enabled) {
       sharedRazorpayClient = createRazorpayRestClient({ keyId: razorpayKeyId, keySecret: razorpayKeySecret });
       getRazorpayProviderVerification = createRazorpayProviderVerificationProbe({
@@ -390,10 +390,9 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
   }
   const walletSchemaReady = async () => {
     try {
-      const row = await env.DB.prepare(
-        'SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = ? LIMIT 1'
-      ).bind('shared-domain').first();
-      const ready = row?.schema_version === '0002_shared_domain_repository';
+      const schema = await inspectBackendSchema(env.DB);
+      const ready = schema.checks.walletSchema === true &&
+        schema.checks.bonusCreditWalletSchema === true;
       walletDomainSchemaReady = ready;
       return ready;
     } catch {
@@ -680,7 +679,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
 
 app.get('/healthz', async (_req, res) => {
   const schema = await inspectBackendSchema(env.DB);
-  walletDomainSchemaReady = schema.checks.sharedDomainSchema;
+  walletDomainSchemaReady = schema.checks.walletSchema;
   walletRechargeSchemaReady = schema.checks.walletRechargeSchema;
   liveSessionSchemaReady = schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;
   const firebaseConnected = await firebaseConnectivityProbe();
@@ -691,7 +690,7 @@ app.get('/healthz', async (_req, res) => {
         reason: identityProfileD1AuthorizationOpen ? 'identity_runtime_unavailable' : 'disabled' };
   d1IdentityAuthorizationReady = identityGate.ready === true;
   const backendActive = String(env.SMV_BACKEND_CLOUDFLARE_ACTIVE || 'false') === 'true';
-  const walletReadRoutesEnabled = walletReadRoutesRegistered && walletReadRouteGateOpen && schema.checks.sharedDomainSchema;
+  const walletReadRoutesEnabled = walletReadRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletSchema;
   const walletRechargeRoutesEnabled = walletRechargeRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
   const walletOfferRoutesEnabled = walletOfferRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
   const liveCallChatRoutesEnabled = liveSessionRoutesRegistered && liveSessionRoutesOpen && schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;
@@ -788,7 +787,7 @@ registerBackendReadinessRoute({
 
 app.get('/api/backend/migration-status', async (_req, res) => {
   const schema = await inspectBackendSchema(env.DB);
-  walletDomainSchemaReady = schema.checks.sharedDomainSchema;
+  walletDomainSchemaReady = schema.checks.walletSchema;
   walletRechargeSchemaReady = schema.checks.walletRechargeSchema;
   liveSessionSchemaReady = schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;
   const firebaseConnected = await firebaseConnectivityProbe();
@@ -799,7 +798,7 @@ app.get('/api/backend/migration-status', async (_req, res) => {
         reason: identityProfileD1AuthorizationOpen ? 'identity_runtime_unavailable' : 'disabled' };
   d1IdentityAuthorizationReady = identityGate.ready === true;
   const backendActive = String(env.SMV_BACKEND_CLOUDFLARE_ACTIVE || 'false') === 'true';
-  const walletReadRoutesEnabled = walletReadRoutesRegistered && walletReadRouteGateOpen && schema.checks.sharedDomainSchema;
+  const walletReadRoutesEnabled = walletReadRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletSchema;
   const walletRechargeRoutesEnabled = walletRechargeRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
   const walletOfferRoutesEnabled = walletOfferRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
   const liveSessionRoutesEnabled = liveSessionRoutesRegistered && liveSessionRoutesOpen && schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;

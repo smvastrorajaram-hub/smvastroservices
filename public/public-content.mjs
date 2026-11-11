@@ -91,7 +91,7 @@
     const knownNonCustomer=!!auth?.currentUser&&!!wallet&&wallet.userUid===auth.currentUser.uid&&wallet.ownerRole!=='customer';
     for(const row of rows){
       const balance=isCustomer?Number(wallet.availableBalancePaise||0):null;
-      const bonusMinutes=isCustomer?Math.max(0,Math.floor(Number(wallet.bonusMinutesBalance||0))):0;
+      const bonusCredit=isCustomer?Math.max(0,Math.floor(Number(wallet.bonusCreditBalancePaise||0))):0;
       for(const mode of ['call','chat']){
         const input=row.querySelector('[data-live-minutes="'+mode+'"]');
         const button=row.querySelector('[data-live-action="'+mode+'"]');
@@ -100,7 +100,7 @@
         const rate=Number(row.dataset[mode+'RatePaise']||0);
         const goodRate=Number.isSafeInteger(rate)&&rate>=100&&rate<=1000000;
         const modeEnabled=row.dataset[mode+'Enabled']==='true';
-        const max=isCustomer&&goodRate?Math.min(SMV_MAX_LIVE_MINUTES,Math.floor(balance/rate)+bonusMinutes):0;
+        const max=isCustomer&&goodRate?Math.min(SMV_MAX_LIVE_MINUTES,Math.floor((balance+bonusCredit)/rate)):0;
         input.max=String(isCustomer?Math.max(0,max):SMV_MAX_LIVE_MINUTES);
         input.dataset.maximumMinutes=String(max);
         if(!modeEnabled||!goodRate||knownNonCustomer||(isCustomer&&max<1)){
@@ -123,7 +123,7 @@
         }else if(max<1){
           note.textContent='No balance for '+(mode==='call'?'Call':'Chat')+' at '+smvLiveMoney(rate)+'/minute. Available Wallet: '+smvLiveMoney(balance)+'.';
         }else{
-          note.textContent='Available Wallet: '+smvLiveMoney(balance)+'. Maximum '+max+' minute(s) at '+smvLiveMoney(rate)+'/minute.';
+          note.textContent='Bonus Credit: '+smvLiveMoney(bonusCredit)+'. Original Wallet: '+smvLiveMoney(balance)+'. Maximum '+max+' minute(s); Bonus Credit is used first, then cash continues automatically.';
           const entered=Number(input.value);
           if(input.value!==''&&(!Number.isSafeInteger(entered)||entered<1||entered>max)){
             note.textContent+=' Enter a whole number from 1 to '+max+'.';
@@ -190,10 +190,10 @@
       const wallet=await smvFetchLiveWallet(true);
       if(!wallet||wallet.ownerRole!=='customer'||wallet.userUid!==user.uid)throw new Error('Please sign in with a Customer account to use Live Call / Live Chat.');
       const available=Number(wallet.availableBalancePaise||0);
-      const bonusMinutes=Math.max(0,Math.floor(Number(wallet.bonusMinutesBalance||0)));
-      const max=Math.min(SMV_MAX_LIVE_MINUTES,Math.floor(available/ratePaise)+bonusMinutes);
-      if(max<1)throw new Error('Wallet balance is insufficient for '+(kind==='call'?'Call':'Chat')+' at '+smvLiveMoney(ratePaise)+'/minute. Available Wallet: '+smvLiveMoney(available)+'.');
-      if(length>max)throw new Error('Maximum affordable duration for this Astrologer’s '+kind.toUpperCase()+' is '+max+' minute(s). At '+smvLiveMoney(ratePaise)+'/minute, your Wallet has '+smvLiveMoney(available)+'.');
+      const bonusCredit=Math.max(0,Math.floor(Number(wallet.bonusCreditBalancePaise||0)));
+      const max=Math.min(SMV_MAX_LIVE_MINUTES,Math.floor((available+bonusCredit)/ratePaise));
+      if(max<1)throw new Error('Wallet balance is insufficient for '+(kind==='call'?'Call':'Chat')+' at '+smvLiveMoney(ratePaise)+'/minute. Bonus Credit: '+smvLiveMoney(bonusCredit)+'; Original Wallet: '+smvLiveMoney(available)+'.');
+      if(length>max)throw new Error('Maximum affordable duration for this Astrologer’s '+kind.toUpperCase()+' is '+max+' minute(s). Bonus Credit '+smvLiveMoney(bonusCredit)+' is used first; Original Wallet '+smvLiveMoney(available)+' continues automatically.');
       const token=await user.getIdToken();
       const requestId=(window.crypto&&typeof window.crypto.randomUUID==='function')?window.crypto.randomUUID():('live-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));
       const response=await fetch(FINANCIAL_BACKEND+'/live/requests',{

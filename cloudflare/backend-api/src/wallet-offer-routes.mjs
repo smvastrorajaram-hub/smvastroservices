@@ -33,7 +33,7 @@ function publicOfferView(offer) {
     name: String(offer.name || ''),
     bannerTheme: WALLET_OFFER_THEMES.includes(offer.bannerTheme) ? offer.bannerTheme : 'auto',
     minimumRechargeAmountPaise: Number(offer.minimumRechargeAmountPaise || 0),
-    bonusMinutes: Number(offer.bonusMinutes || 0),
+    bonusCreditAmountPaise: Number(offer.bonusCreditAmountPaise || 0),
     perCustomerLimit: Number(offer.perCustomerLimit ?? 1),
     startAt: offer.startAt || null,
     endAt: offer.endAt || null,
@@ -52,7 +52,9 @@ export function registerWalletOfferRoutes({
       !identityService || typeof identityService.authenticateAuthorization !== 'function' ||
       !walletAdapter || typeof walletAdapter.listWalletOffers !== 'function' ||
       typeof walletAdapter.saveWalletOffer !== 'function' ||
-      typeof walletAdapter.deleteWalletOffer !== 'function') {
+      typeof walletAdapter.deleteWalletOffer !== 'function' ||
+      typeof walletAdapter.getPromotionalFund !== 'function' ||
+      typeof walletAdapter.allocatePromotionalFund !== 'function') {
     throw new TypeError('Wallet Offer routes require shared identity and D1 Wallet Offer methods.');
   }
 
@@ -95,6 +97,42 @@ export function registerWalletOfferRoutes({
     }
   });
 
+  app.get('/admin/promotional-fund', async (req,res) => {
+    try {
+      if (!(await isReady())) return res.status(503).set('Cache-Control','no-store').json({
+        success:false,error:'Promotional Fund storage is not ready.',code:'WALLET_SCHEMA_NOT_READY'
+      });
+      await requireAdmin(req);
+      const fund=await walletAdapter.getPromotionalFund();
+      return res.set('Cache-Control','no-store').json({success:true,fund});
+    } catch(error) {
+      return reply(res,error,'Unable to load the SMV ASTRO Promotional Fund.');
+    }
+  });
+
+  app.post('/admin/promotional-fund/allocate', async (req,res) => {
+    try {
+      if (!(await isReady())) return res.status(503).set('Cache-Control','no-store').json({
+        success:false,error:'Promotional Fund storage is not ready.',code:'WALLET_SCHEMA_NOT_READY'
+      });
+      const user=await requireAdmin(req);
+      const amountPaise=parseRupeesToPaise(req.body?.amount);
+      const idempotencyKey=textValue(req.body?.idempotencyKey,240);
+      if(!Number.isSafeInteger(amountPaise)||amountPaise<1) {
+        throw walletRechargeError('PROMOTIONAL_FUND_AMOUNT_INVALID','Enter a positive amount with up to two decimal places.',400);
+      }
+      if(!/^[A-Za-z0-9:_-]{12,240}$/.test(idempotencyKey)) {
+        throw walletRechargeError('PROMOTIONAL_FUND_IDEMPOTENCY_REQUIRED','A valid allocation request ID is required.',400);
+      }
+      const result=await walletAdapter.allocatePromotionalFund({
+        adminUid:user.uid,amountPaise,idempotencyKey,note:'Admin allocated funds for Bonus Credit offers'
+      });
+      return res.set('Cache-Control','no-store').json({success:true,...result});
+    } catch(error) {
+      return reply(res,error,'Unable to allocate the SMV ASTRO Promotional Fund.');
+    }
+  });
+
   app.post('/admin/offers/save', async (req, res) => {
     try {
       if (!(await isReady())) {
@@ -111,7 +149,7 @@ export function registerWalletOfferRoutes({
       const name = textValue(body.name, 120);
       const bannerTheme = String(body.bannerTheme || 'auto');
       const minimumRechargeAmountPaise = parseRupeesToPaise(body.minimumRechargeAmount ?? '0', { allowZero: true });
-      const bonusMinutes = Number(body.bonusMinutes);
+      const bonusCreditAmountPaise = parseRupeesToPaise(body.bonusCreditAmount);
       const perCustomerLimit = Number(body.perCustomerLimit ?? 1);
       const totalUsageLimit = Number(body.totalUsageLimit ?? 0);
       const priority = Number(body.priority ?? 0);
@@ -125,8 +163,8 @@ export function registerWalletOfferRoutes({
       if (minimumRechargeAmountPaise === null || minimumRechargeAmountPaise < 0) {
         throw walletRechargeError('WALLET_OFFER_MINIMUM_INVALID', 'Minimum recharge must be ₹0 or a positive amount with up to two decimal places.', 400);
       }
-      if (!Number.isSafeInteger(bonusMinutes) || bonusMinutes < 1 || bonusMinutes > 1440) {
-        throw walletRechargeError('WALLET_OFFER_BONUS_INVALID', 'Free minutes must be a whole number from 1 to 1,440.', 400);
+      if (!Number.isSafeInteger(bonusCreditAmountPaise) || bonusCreditAmountPaise < 1) {
+        throw walletRechargeError('WALLET_OFFER_BONUS_INVALID', 'Bonus Credit must be a positive rupee amount with up to two decimal places.', 400);
       }
       if (!Number.isSafeInteger(perCustomerLimit) || perCustomerLimit < 0 || perCustomerLimit > 10000) {
         throw walletRechargeError('WALLET_OFFER_CUSTOMER_LIMIT_INVALID', 'Per-customer limit must be 0 (unlimited) or a whole number up to 10,000.', 400);
@@ -147,7 +185,7 @@ export function registerWalletOfferRoutes({
         bannerTheme,
         enabled: body.enabled === true,
         minimumRechargeAmountPaise,
-        bonusMinutes,
+        bonusCreditPaise: bonusCreditAmountPaise,
         perCustomerLimit,
         totalUsageLimit,
         priority,
@@ -183,6 +221,7 @@ export function registerWalletOfferRoutes({
   });
 
   return Object.freeze({ paths: Object.freeze([
-    '/wallet/recharge-offers', '/admin/offers', '/admin/offers/save', '/admin/offers/delete'
+    '/wallet/recharge-offers', '/admin/offers', '/admin/offers/save', '/admin/offers/delete',
+    '/admin/promotional-fund','/admin/promotional-fund/allocate'
   ]) });
 }

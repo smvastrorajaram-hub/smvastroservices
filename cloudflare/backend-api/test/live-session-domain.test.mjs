@@ -44,17 +44,26 @@ test('promotional minutes are used before cash minutes and only paid started min
   assert.equal(at120.amountPaise,1200);
 });
 
-test('Wallet reserve checks selected duration, cash and promotional-minute balances',()=>{
+test('Wallet reserve uses Bonus Credit first and leaves legacy Free Minutes untouched',()=>{
   const result=reserveLiveWallet({
-    wallet:{availableBalancePaise:5000,reservedBalancePaise:0,bonusMinutesBalance:3,reservedBonusMinutes:0},
+    wallet:{
+      availableBalancePaise:5000,reservedBalancePaise:0,
+      bonusCreditBalancePaise:3000,reservedBonusCreditPaise:0,
+      bonusMinutesBalance:25,reservedBonusMinutes:0
+    },
     minutes:5,ratePerMinutePaise:1000
   });
+  assert.equal(result.grossRequiredPaise,5000);
+  assert.equal(result.reservedBonusCreditPaise,3000);
   assert.equal(result.reservedAmountPaise,2000);
-  assert.equal(result.reservedBonusMinutes,3);
+  assert.equal(result.reservedBonusMinutes,0);
+  assert.equal(result.bonusMinutesBalanceAfter,25);
   assert.equal(result.availableBalanceAfterPaise,3000);
   assert.equal(result.reservedBalanceAfterPaise,2000);
+  assert.equal(result.bonusCreditBalanceAfterPaise,0);
+  assert.equal(result.reservedBonusCreditAfterPaise,3000);
   assert.throws(()=>reserveLiveWallet({
-    wallet:{availableBalancePaise:1000,bonusMinutesBalance:0},
+    wallet:{availableBalancePaise:1000,bonusCreditBalancePaise:0,bonusMinutesBalance:100},
     minutes:2,ratePerMinutePaise:1000
   }),error=>error.code==='WALLET_INSUFFICIENT_BALANCE');
 });
@@ -112,6 +121,55 @@ test('legacy scheduled appointment date/time remains interpreted as India Standa
     Date.parse('2026-10-31T10:30:00+05:30')
   );
   assert.equal(scheduledAppointmentStartAtMs({preferredDate:'2026-02-30',preferredTime:'10:30'}),0);
+});
+
+test('Bonus Credit settlement uses promotional value first, charges only the cash remainder, and commissions the full service',()=>{
+  const session={
+    billingModel:'bonus_credit_v1',minutes:3,ratePerMinutePaise:1000,
+    reservedAmountPaise:1000,reservedBonusCreditPaise:2000,startedAtMs:1000,
+    astrologerCommissionPercent:20,adminCommissionPercent:80
+  };
+  const firstMinute=calculateLiveSettlement({session,nowMs:61000});
+  assert.equal(firstMinute.grossServiceAmountPaise,1000);
+  assert.equal(firstMinute.bonusCreditUsedPaise,1000);
+  assert.equal(firstMinute.bonusCreditReleasedPaise,1000);
+  assert.equal(firstMinute.chargedAmountPaise,0);
+  assert.equal(firstMinute.releasedAmountPaise,1000);
+  assert.equal(firstMinute.astrologerAmountPaise,200);
+  assert.equal(firstMinute.adminAmountPaise,800);
+
+  const secondMinute=calculateLiveSettlement({session,nowMs:121000});
+  assert.equal(secondMinute.grossServiceAmountPaise,2000);
+  assert.equal(secondMinute.bonusCreditUsedPaise,2000);
+  assert.equal(secondMinute.bonusCreditReleasedPaise,0);
+  assert.equal(secondMinute.chargedAmountPaise,0);
+  assert.equal(secondMinute.releasedAmountPaise,1000);
+  assert.equal(secondMinute.astrologerAmountPaise+secondMinute.adminAmountPaise,2000);
+
+  const thirdMinute=calculateLiveSettlement({session,nowMs:181000});
+  assert.equal(thirdMinute.grossServiceAmountPaise,3000);
+  assert.equal(thirdMinute.bonusCreditUsedPaise,2000);
+  assert.equal(thirdMinute.chargedAmountPaise,1000);
+  assert.equal(thirdMinute.releasedAmountPaise,0);
+  assert.equal(thirdMinute.astrologerAmountPaise+thirdMinute.adminAmountPaise,3000);
+  assert.equal(thirdMinute.astrologerAmountPaise,600);
+  assert.equal(thirdMinute.adminAmountPaise,2400);
+});
+
+test('Bonus Credit reserves are released when a Live session never connects',()=>{
+  const result=calculateLiveSettlement({
+    session:{
+      billingModel:'bonus_credit_v1',minutes:5,ratePerMinutePaise:1000,
+      reservedAmountPaise:2000,reservedBonusCreditPaise:3000
+    },
+    nowMs:2000
+  });
+  assert.equal(result.chargedAmountPaise,0);
+  assert.equal(result.releasedAmountPaise,2000);
+  assert.equal(result.bonusCreditUsedPaise,0);
+  assert.equal(result.bonusCreditReleasedPaise,3000);
+  assert.equal(result.astrologerAmountPaise,0);
+  assert.equal(result.adminAmountPaise,0);
 });
 
 test('session settlement releases all reserve before connection and rounds connected time upward',()=>{

@@ -28,8 +28,8 @@ function baseDeps(overrides={}) {
     async attachRechargeOrder(input){calls.push(['attach',input]);return {success:true};},
     async markRechargeOrderFailed(input){calls.push(['failed',input]);return {success:true};},
     async getRechargeForOwner(input){calls.push(['getRecharge',input]);return {rechargeId:'a'.repeat(64),customerUid:'customer-1',amountPaise:5000,status:'order_created',orderId:'order_1',customerPaymentId:'smvpy-677288'};},
-    async getWallet(){return {availableBalancePaise:5000,bonusMinutesBalance:3};},
-    async finalizeRecharge(input){calls.push(['finalize',input]);return {success:true,alreadyProcessed:false,amountPaise:5000,availableBalancePaise:5000,bonusMinutesCredited:3,bonusMinutesBalance:3,customerPaymentId:'smvpy-677288'};},
+    async getWallet(){return {availableBalancePaise:5000,bonusMinutesBalance:3,bonusCreditBalancePaise:2500};},
+    async finalizeRecharge(input){calls.push(['finalize',input]);return {success:true,alreadyProcessed:false,amountPaise:5000,availableBalancePaise:5000,bonusCreditCreditedPaise:1250,bonusCreditBalancePaise:1250,bonusCreditSkippedReason:'',customerPaymentId:'smvpy-677288'};},
     async getRechargeByOrderId(input){calls.push(['byOrder',input]);return {rechargeId:'a'.repeat(64),customerUid:'customer-1',amountPaise:5000,status:'order_created',orderId:'order_1',customerPaymentId:'smvpy-677288'};},
     async recordWebhookEvent(input){calls.push(['recordWebhook',input]);return {success:true,alreadyProcessed:false,inProgress:false,claimToken:'claim-token-1'};},
     async completeWebhookEvent(eventKey,claimToken){calls.push(['completeWebhook',{eventKey,claimToken}]);return {success:true,changed:1};},
@@ -140,8 +140,10 @@ test('verify validates signature, captures authorized payment and finalizes cash
   }),response);
   assert.equal(response.statusCode,200);
   assert.equal(response.body.verified,true);
+  assert.equal(response.body.availableBalancePaise,5000);
   assert.equal(response.body.availableBalance,50);
-  assert.equal(response.body.bonusMinutesCredited,3);
+  assert.equal(response.body.bonusCreditCreditedPaise,1250);
+  assert.equal(response.body.bonusCreditBalancePaise,1250);
   assert.equal(response.body.customerPaymentId,'smvpy-677288');
   assert.equal(state.calls.some(call=>call[0]==='capturePayment'),true);
   assert.equal(state.calls.some(call=>call[0]==='finalize'),true);

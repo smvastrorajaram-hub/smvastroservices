@@ -27,6 +27,22 @@ const REQUIRED_SCHEMA_QUERY = [
   "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_live_booking_release_pending_validate') AS live_booking_release_trigger_count,",
   "  (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = 'numeric-public-reference-ids' LIMIT 1) AS numeric_public_reference_ids_version,",
   "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'smv_domain_withdrawals_public_withdrawal_id_uq') AS public_withdrawal_id_index_count,",
+  "  (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = 'bonus-credit-wallet' LIMIT 1) AS bonus_credit_wallet_version,",
+  "  (SELECT COUNT(*) FROM pragma_table_info('smv_domain_wallets') WHERE name IN ('bonus_credit_balance_paise','reserved_bonus_credit_paise')) AS wallet_bonus_credit_columns_count,",
+  "  (SELECT COUNT(*) FROM pragma_table_info('smv_domain_wallet_ledger') WHERE name IN ('bonus_credit_delta_paise','reserved_bonus_credit_delta_paise','bonus_credit_balance_after_paise','reserved_bonus_credit_balance_after_paise')) AS wallet_ledger_bonus_credit_columns_count,",
+  "  (SELECT COUNT(*) FROM pragma_table_info('smv_domain_wallet_offers') WHERE name = 'bonus_credit_paise') AS wallet_offer_bonus_credit_columns_count,",
+  "  (SELECT COUNT(*) FROM pragma_table_info('smv_domain_offer_redemptions') WHERE name = 'bonus_credit_paise') AS offer_redemption_bonus_credit_columns_count,",
+  "  (SELECT COUNT(*) FROM pragma_table_info('smv_domain_live_sessions') WHERE name = 'reserved_bonus_credit_paise') AS live_session_bonus_credit_columns_count,",
+  "  (SELECT COUNT(*) FROM pragma_table_info('smv_domain_live_bookings') WHERE name = 'reserved_bonus_credit_paise') AS live_booking_bonus_credit_columns_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_live_session_reserve_validate') AS live_session_bonus_reserve_trigger_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_live_earning_validate') AS live_earning_bonus_credit_trigger_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_wallet_ledger_apply') AS wallet_ledger_bonus_credit_apply_trigger_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_wallet_ledger_validate') AS wallet_ledger_bonus_credit_validate_trigger_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'smv_domain_promotional_fund') AS promotional_fund_table_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'smv_domain_promotional_fund_ledger') AS promotional_fund_ledger_table_count,",
+  "  (SELECT COUNT(*) FROM smv_domain_promotional_fund WHERE fund_id='SMV_ASTRO') AS promotional_fund_seed_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_promotional_fund_ledger_validate') AS promotional_fund_validate_trigger_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_promotional_fund_ledger_apply') AS promotional_fund_apply_trigger_count,",
   "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'smv_domain_withdrawals_admin_payment_id_uq') AS admin_payment_id_index_count,",
   "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'smv_domain_wallet_recharges_customer_payment_id_uq') AS customer_payment_id_index_count"
 ].join('\n');
@@ -42,7 +58,8 @@ const MIGRATION_KEYS = [
   '0009_wallet_razorpay_payout_encryption',
   '0010_razorpay_webhook_claim_leases',
   '0011_live_booking_release_claim',
-  '0012_numeric_public_reference_ids'
+  '0012_numeric_public_reference_ids',
+  '0013_bonus_credit_wallet'
 ];
 
 function countIs(value, expected) {
@@ -69,6 +86,7 @@ function unavailableSchema(d1Binding, querySucceeded = false) {
       razorpayWebhookClaimSchema: false,
       liveBookingReleaseSchema: false,
       numericPublicReferenceIdsSchema: false,
+      bonusCreditWalletSchema: false,
       allRequiredMigrations: false
     }
   };
@@ -121,22 +139,43 @@ export async function inspectBackendSchema(db) {
         row.numeric_public_reference_ids_version === '0012_numeric_public_reference_ids' &&
         countIs(row.public_withdrawal_id_index_count, 1) &&
         countIs(row.admin_payment_id_index_count, 1) &&
-        countIs(row.customer_payment_id_index_count, 1)
+        countIs(row.customer_payment_id_index_count, 1),
+      '0013_bonus_credit_wallet':
+        row.bonus_credit_wallet_version === '0013_bonus_credit_wallet' &&
+        countIs(row.wallet_bonus_credit_columns_count, 2) &&
+        countIs(row.wallet_ledger_bonus_credit_columns_count, 4) &&
+        countIs(row.wallet_offer_bonus_credit_columns_count, 1) &&
+        countIs(row.offer_redemption_bonus_credit_columns_count, 1) &&
+        countIs(row.live_session_bonus_credit_columns_count, 1) &&
+        countIs(row.live_booking_bonus_credit_columns_count, 1) &&
+        countIs(row.live_session_bonus_reserve_trigger_count, 1) &&
+        countIs(row.live_earning_bonus_credit_trigger_count, 1) &&
+        countIs(row.wallet_ledger_bonus_credit_apply_trigger_count, 1) &&
+        countIs(row.wallet_ledger_bonus_credit_validate_trigger_count, 1) &&
+        countIs(row.promotional_fund_table_count, 1) &&
+        countIs(row.promotional_fund_ledger_table_count, 1) &&
+        countIs(row.promotional_fund_seed_count, 1) &&
+        countIs(row.promotional_fund_validate_trigger_count, 1) &&
+        countIs(row.promotional_fund_apply_trigger_count, 1)
     };
     const allRequiredMigrations = Object.values(schemaMigrations).every(Boolean);
     const checks = {
       sharedDomainSchema: schemaMigrations['0002_shared_domain_repository'],
       walletSchema: schemaMigrations['0002_shared_domain_repository'] &&
         schemaMigrations['0005_legacy_wallet_backfill'] &&
-        schemaMigrations['0009_wallet_razorpay_payout_encryption'],
-      walletRechargeSchema: schemaMigrations['0005_legacy_wallet_backfill'],
-      liveSessionSchema: schemaMigrations['0006_d1_live_wallet_settlement'],
+        schemaMigrations['0009_wallet_razorpay_payout_encryption'] &&
+        schemaMigrations['0013_bonus_credit_wallet'],
+      walletRechargeSchema: schemaMigrations['0005_legacy_wallet_backfill'] &&
+        schemaMigrations['0013_bonus_credit_wallet'],
+      liveSessionSchema: schemaMigrations['0006_d1_live_wallet_settlement'] &&
+        schemaMigrations['0013_bonus_credit_wallet'],
       identityProfileSchema: schemaMigrations['0007_identity_profile_domain'] &&
         schemaMigrations['0008_identity_profile_backfill_audit'],
       walletSecuritySchema: schemaMigrations['0009_wallet_razorpay_payout_encryption'],
       razorpayWebhookClaimSchema: schemaMigrations['0010_razorpay_webhook_claim_leases'],
       liveBookingReleaseSchema: schemaMigrations['0011_live_booking_release_claim'],
       numericPublicReferenceIdsSchema: schemaMigrations['0012_numeric_public_reference_ids'],
+      bonusCreditWalletSchema: schemaMigrations['0013_bonus_credit_wallet'],
       allRequiredMigrations
     };
 
@@ -195,7 +234,7 @@ export function registerBackendReadinessRoute({
       // Provider connectivity is an independent live check; failures remain unverified.
     }
     const walletReadRoutesEnabled = runtime.walletReadRoutesRegistered === true &&
-      runtime.walletReadRouteGateOpen === true && schema.checks.sharedDomainSchema;
+      runtime.walletReadRouteGateOpen === true && schema.checks.walletSchema;
     const walletRechargeRoutesEnabled = runtime.walletRechargeRoutesRegistered === true &&
       runtime.walletReadRouteGateOpen === true && schema.checks.walletRechargeSchema;
     const walletOfferRoutesEnabled = runtime.walletOfferRoutesRegistered === true &&
@@ -246,6 +285,7 @@ export function registerBackendReadinessRoute({
         razorpayWebhookClaimSchema: schema.checks.razorpayWebhookClaimSchema,
         liveBookingReleaseSchema: schema.checks.liveBookingReleaseSchema,
         numericPublicReferenceIdsSchema: schema.checks.numericPublicReferenceIdsSchema,
+        bonusCreditWalletSchema: schema.checks.bonusCreditWalletSchema,
         allRequiredMigrations: schema.checks.allRequiredMigrations
       },
       firebaseConnected,

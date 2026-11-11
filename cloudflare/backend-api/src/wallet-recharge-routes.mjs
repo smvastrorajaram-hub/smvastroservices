@@ -181,8 +181,11 @@ export function registerWalletRechargeRoutes({
           success: true, verified: true, alreadyCredited: true, rechargeId,
           customerPaymentId: recharge.customerPaymentId || null,
           amount: paiseToRupees(recharge.amountPaise),
+          availableBalancePaise: Number(wallet?.availableBalancePaise || 0),
           availableBalance: paiseToRupees(wallet?.availableBalancePaise || 0),
-          bonusMinutesCredited: recharge.bonusMinutesCredited,
+          bonusCreditCreditedPaise: recharge.bonusCreditPaiseCredited,
+          bonusCreditSkippedReason: recharge.bonusCreditSkippedReason,
+          bonusCreditBalancePaise: wallet?.bonusCreditBalancePaise || 0,
           bonusMinutesBalance: wallet?.bonusMinutesBalance || 0
         });
       }
@@ -214,9 +217,11 @@ export function registerWalletRechargeRoutes({
         success: true, verified: true, alreadyCredited: result.alreadyProcessed,
         rechargeId, paymentId, customerPaymentId: result.customerPaymentId || null,
         amount: paiseToRupees(result.amountPaise || view.amountPaise),
+        availableBalancePaise: Number(result.availableBalancePaise || 0),
         availableBalance: paiseToRupees(result.availableBalancePaise),
-        bonusMinutesCredited: Number(result.bonusMinutesCredited || 0),
-        bonusMinutesBalance: Number(result.bonusMinutesBalance || 0)
+        bonusCreditCreditedPaise: Number(result.bonusCreditCreditedPaise || 0),
+        bonusCreditSkippedReason: String(result.bonusCreditSkippedReason || ''),
+        bonusCreditBalancePaise: Number(result.bonusCreditBalancePaise || 0)
       });
     } catch (error) {
       return fail(res, error, 'Unable to verify Wallet recharge.');

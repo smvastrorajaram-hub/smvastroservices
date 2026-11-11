@@ -37,6 +37,10 @@ function mapLedger(row) {
     reservedBalanceAfterPaise: safePaise(row.reserved_balance_after_paise),
     bonusMinutesBalanceAfter: safeMinutes(row.bonus_minutes_balance_after),
     reservedBonusMinutesAfter: safeMinutes(row.reserved_bonus_minutes_after),
+    bonusCreditDeltaPaise: safePaise(row.bonus_credit_delta_paise),
+    reservedBonusCreditDeltaPaise: safePaise(row.reserved_bonus_credit_delta_paise),
+    bonusCreditBalanceAfterPaise: safePaise(row.bonus_credit_balance_after_paise),
+    reservedBonusCreditBalanceAfterPaise: safePaise(row.reserved_bonus_credit_balance_after_paise),
     idempotencyKey: String(row.idempotency_key),
     referenceType: row.reference_type || null,
     referenceId: row.reference_id || null,
@@ -58,6 +62,8 @@ function mapWallet(row) {
     reservedBalancePaise: row.reserved_balance_paise,
     bonusMinutesBalance: row.bonus_minutes_balance,
     reservedBonusMinutes: row.reserved_bonus_minutes,
+    bonusCreditBalancePaise: row.bonus_credit_balance_paise,
+    reservedBonusCreditPaise: row.reserved_bonus_credit_paise,
     version: row.version,
     createdAt: row.created_at_ms,
     updatedAt: row.updated_at_ms
@@ -75,6 +81,7 @@ function d1Error(error) {
   if (message.includes('WALLET_INSUFFICIENT_BALANCE')) return walletError('WALLET_INSUFFICIENT_BALANCE', 'Insufficient Wallet balance.', 409);
   if (message.includes('WALLET_RESERVED_BALANCE_MISMATCH')) return walletError('LIVE_WALLET_RESERVE_MISMATCH', 'Wallet cash reserve does not reconcile with this operation.');
   if (message.includes('WALLET_BONUS_BALANCE_MISMATCH') || message.includes('WALLET_RESERVED_BONUS_MISMATCH')) return walletError('LIVE_WALLET_RESERVE_MISMATCH', 'Wallet promotional minute reserve does not reconcile with this operation.');
+  if (message.includes('WALLET_BONUS_CREDIT_BALANCE_MISMATCH') || message.includes('WALLET_RESERVED_BONUS_CREDIT_MISMATCH')) return walletError('LIVE_WALLET_RESERVE_MISMATCH', 'Wallet Bonus Credit reserve does not reconcile with this operation.');
   if (message.includes('WALLET_BALANCE_OVERFLOW')) return walletError('WALLET_BALANCE_OVERFLOW', 'Wallet balance exceeds the supported range.');
   if (message.includes('WALLET_OWNER_ROLE_MISMATCH')) return walletError('WALLET_OWNER_ROLE_MISMATCH', 'Wallet owner role does not match the stored Wallet.');
   if (message.includes('WALLET_OFFER_TOTAL_LIMIT_REACHED')) return walletError('WALLET_OFFER_TOTAL_LIMIT_REACHED', 'This Wallet offer has reached its total redemption limit.');
@@ -88,7 +95,8 @@ function d1Error(error) {
  * triggers validate and update the wallet in the same SQLite transaction,
  * preventing a balance update from committing without its corresponding ledger.
  */
-export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalThis.crypto } = {}) {
+export function createD1WalletAdapter({ db, adminWalletUid = '', now = Date.now, cryptoImpl = globalThis.crypto } = {}) {
+  const configuredAdminWalletUid = String(adminWalletUid || '').trim();
   if (!db || typeof db.prepare !== 'function' || typeof db.batch !== 'function') {
     throw new TypeError('A Cloudflare D1 database binding is required.');
   }
@@ -165,7 +173,8 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     if (!uid) throw walletError('WALLET_OWNER_INVALID', 'Wallet owner is required.', 400);
     const row = await statement(
       `SELECT owner_uid, owner_role, currency, available_balance_paise, reserved_balance_paise,
-              bonus_minutes_balance, reserved_bonus_minutes, version, created_at_ms, updated_at_ms
+              bonus_minutes_balance, reserved_bonus_minutes,
+              bonus_credit_balance_paise,reserved_bonus_credit_paise,version,created_at_ms,updated_at_ms
        FROM ${WALLET_TABLE} WHERE owner_uid = ? LIMIT 1`,
       [uid]
     ).first();
@@ -182,11 +191,13 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
 
   async function buildLedgerRow({ ownerUid, ownerRole, type, direction, amountPaise, idempotencyKey,
     availableDeltaPaise = 0, reservedDeltaPaise = 0, bonusMinutesDelta = 0, reservedBonusMinutesDelta = 0,
+    bonusCreditDeltaPaise = 0, reservedBonusCreditDeltaPaise = 0,
     referenceType = null, referenceId = null, note = '', metadata = {}, source = null, ledgerId }) {
     const id = ledgerId || await sha256Hex(type + ':' + referenceId, cryptoImpl);
     return {
       ledgerId: id, ownerUid, ownerRole, type, direction, amountPaise,
       idempotencyKey, availableDeltaPaise, reservedDeltaPaise, bonusMinutesDelta, reservedBonusMinutesDelta,
+      bonusCreditDeltaPaise, reservedBonusCreditDeltaPaise,
       referenceType: referenceType == null ? null : String(referenceType),
       referenceId: referenceId == null ? null : String(referenceId), note: String(note || '').slice(0, 240),
       metadataJson: JSON.stringify(metadata && typeof metadata === 'object' ? metadata : {}),
@@ -200,12 +211,92 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       `INSERT INTO ${LEDGER_TABLE}
        (ledger_id, owner_uid, owner_role, currency, type, direction, amount_paise,
         available_delta_paise, reserved_delta_paise, bonus_minutes_delta, reserved_bonus_minutes_delta,
+        bonus_credit_delta_paise,reserved_bonus_credit_delta_paise,
         idempotency_key, reference_type, reference_id, note, metadata_json, status, source, created_at_ms)
-       VALUES (?, ?, ?, 'INR', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'posted', ?, ?)`,
+       VALUES (?, ?, ?, 'INR', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'posted', ?, ?)`,
       [row.ledgerId, row.ownerUid, row.ownerRole, row.type, row.direction, row.amountPaise,
        row.availableDeltaPaise, row.reservedDeltaPaise, row.bonusMinutesDelta, row.reservedBonusMinutesDelta,
+       row.bonusCreditDeltaPaise,row.reservedBonusCreditDeltaPaise,
        row.idempotencyKey, row.referenceType, row.referenceId, row.note, row.metadataJson, row.source, row.createdAtMs]
     );
+  }
+
+  async function getPromotionalFund() {
+    const row = await statement(
+      "SELECT fund_id,balance_paise,updated_at_ms FROM smv_domain_promotional_fund WHERE fund_id='SMV_ASTRO' LIMIT 1"
+    ).first();
+    const adminWallet = configuredAdminWalletUid ? await getWallet(configuredAdminWalletUid) : null;
+    return {
+      fundId: String(row?.fund_id || 'SMV_ASTRO'),
+      balancePaise: safePaise(row?.balance_paise),
+      updatedAtMs: Number(row?.updated_at_ms || 0),
+      adminWalletAvailableBalancePaise: safePaise(adminWallet?.availableBalancePaise)
+    };
+  }
+
+  async function allocatePromotionalFund({ adminUid, amountPaise, idempotencyKey, note = '' } = {}) {
+    const actor = String(adminUid || '').trim();
+    const amount = Number(amountPaise);
+    const key = String(idempotencyKey || '').trim();
+    if (!configuredAdminWalletUid || actor !== configuredAdminWalletUid) {
+      throw walletError('PROMOTIONAL_FUND_ADMIN_MISMATCH','Only the configured SMV ASTRO Admin Wallet can allocate Promotional Fund.',403);
+    }
+    if (!Number.isSafeInteger(amount) || amount < 1 || amount > Number.MAX_SAFE_INTEGER ||
+        !/^[A-Za-z0-9:_-]{12,240}$/.test(key)) {
+      throw walletError('PROMOTIONAL_FUND_ALLOCATION_INVALID','A positive paise amount and secure idempotency key are required.',400);
+    }
+    const wallet = await ensureWallet(configuredAdminWalletUid,'admin');
+    const walletKey='promotional-fund-allocation:'+key;
+    const [existingWalletLedger,existingFundLedger] = await Promise.all([
+      findLedger(configuredAdminWalletUid,walletKey),
+      statement('SELECT ledger_id,amount_paise,balance_after_paise FROM smv_domain_promotional_fund_ledger WHERE idempotency_key=? LIMIT 1',[walletKey]).first()
+    ]);
+    if(existingWalletLedger&&existingFundLedger) {
+      if(existingWalletLedger.amountPaise!==amount||safePaise(existingFundLedger.amount_paise)!==amount) {
+        throw walletError('PROMOTIONAL_FUND_IDEMPOTENCY_CONFLICT','This Promotional Fund allocation key was already used for a different amount.',409);
+      }
+      return {success:true,alreadyProcessed:true,...await getPromotionalFund()};
+    }
+    if(existingWalletLedger||existingFundLedger) {
+      throw walletError('PROMOTIONAL_FUND_LEDGER_MISMATCH','Promotional Fund allocation requires ledger reconciliation.',409);
+    }
+    if(wallet.availableBalancePaise<amount) {
+      throw walletError('PROMOTIONAL_FUND_INSUFFICIENT_ADMIN_BALANCE','Admin Wallet has insufficient available funds for this allocation.',409);
+    }
+    const timestamp=Number(now());
+    const walletRow=await buildLedgerRow({
+      ownerUid:configuredAdminWalletUid,ownerRole:'admin',
+      type:'promotional_fund_allocation',direction:'debit',amountPaise:amount,
+      idempotencyKey:walletKey,
+      ledgerId:await sha256Hex('promotional-fund-admin:'+configuredAdminWalletUid+':'+walletKey,cryptoImpl),
+      availableDeltaPaise:-amount,referenceType:'promotional_fund',referenceId:'SMV_ASTRO',
+      note:'Transferred to separate SMV ASTRO Promotional Fund',
+      metadata:{fundId:'SMV_ASTRO',actorUid:actor},source:'admin_promotional_fund'
+    });
+    const fundId=await sha256Hex('promotional-fund:'+walletKey,cryptoImpl);
+    const fundRow=statement(
+      `INSERT INTO smv_domain_promotional_fund_ledger
+       (ledger_id,entry_type,amount_paise,balance_delta_paise,idempotency_key,
+        reference_type,reference_id,actor_uid,note,created_at_ms)
+       VALUES (?,'admin_allocation',?,?,?,'admin_wallet',?,?,?,?)`,
+      [fundId,amount,amount,walletKey,configuredAdminWalletUid,actor,String(note||'Admin allocated Promotional Fund').slice(0,240),timestamp]
+    );
+    try {
+      const results=await db.batch([insertStatement(walletRow),fundRow]);
+      if(results.some(result=>result?.success===false))throw new Error('PROMOTIONAL_FUND_ALLOCATION_BATCH_INCOMPLETE');
+    } catch(error) {
+      const [walletLedger,fundLedger]=await Promise.all([
+        findLedger(configuredAdminWalletUid,walletKey),
+        statement('SELECT amount_paise FROM smv_domain_promotional_fund_ledger WHERE idempotency_key=? LIMIT 1',[walletKey]).first()
+      ]);
+      if(walletLedger&&fundLedger) {
+        if(walletLedger.amountPaise!==amount||safePaise(fundLedger.amount_paise)!==amount)
+          throw walletError('PROMOTIONAL_FUND_IDEMPOTENCY_CONFLICT','This Promotional Fund allocation key was already used for a different amount.',409);
+        return {success:true,alreadyProcessed:true,...await getPromotionalFund()};
+      }
+      throw d1Error(error);
+    }
+    return {success:true,alreadyProcessed:false,...await getPromotionalFund()};
   }
 
   async function insertOne(row) {
@@ -459,15 +550,16 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
   async function listWalletOffers({ activeOnly = false } = {}) {
     const timestamp = Number(now());
     const where = activeOnly
-      ? " WHERE enabled=1 AND (start_at_ms IS NULL OR start_at_ms<=?) AND (end_at_ms IS NULL OR end_at_ms>?) AND (total_usage_limit=0 OR used_count<total_usage_limit)"
+      ? " WHERE enabled=1 AND bonus_credit_paise>0 AND (start_at_ms IS NULL OR start_at_ms<=?) AND (end_at_ms IS NULL OR end_at_ms>?) AND (total_usage_limit=0 OR used_count<total_usage_limit)"
       : "";
     const values = activeOnly ? [timestamp, timestamp] : [];
     const result = await statement(
       "SELECT o.*, " +
       "COALESCE(o.legacy_successful_redemptions,0) + (SELECT COUNT(*) FROM smv_domain_offer_redemptions r WHERE r.offer_id=o.offer_id) AS successful_redemptions, " +
-      "COALESCE(o.legacy_total_bonus_minutes,0) + COALESCE((SELECT SUM(r.bonus_minutes) FROM smv_domain_offer_redemptions r WHERE r.offer_id=o.offer_id),0) AS total_bonus_minutes_awarded " +
+      "COALESCE(o.legacy_total_bonus_minutes,0) + COALESCE((SELECT SUM(r.bonus_minutes) FROM smv_domain_offer_redemptions r WHERE r.offer_id=o.offer_id AND COALESCE(r.bonus_credit_paise,0)=0),0) AS total_bonus_minutes_awarded, " +
+      "COALESCE((SELECT SUM(r.bonus_credit_paise) FROM smv_domain_offer_redemptions r WHERE r.offer_id=o.offer_id),0) AS total_bonus_credit_paise_awarded " +
       "FROM smv_domain_wallet_offers o" + where +
-      " ORDER BY priority DESC, bonus_minutes DESC, offer_id ASC LIMIT 100",
+      " ORDER BY priority DESC, bonus_credit_paise DESC, offer_id ASC LIMIT 100",
       values
     ).all();
     return (result?.results || []).map(row => {
@@ -476,18 +568,20 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       const date = value => value == null ? null : new Date(Number(value)).toISOString();
       return {
         id: String(row.offer_id),
-        offerType: 'wallet_recharge_bonus_minutes',
+        offerType: 'wallet_recharge_bonus_credit',
         name: String(payload.name || ''),
         bannerTheme: String(payload.bannerTheme || 'auto'),
         enabled: Number(row.enabled) === 1,
         minimumRechargeAmountPaise: safePaise(row.minimum_recharge_paise),
-        bonusMinutes: safeMinutes(row.bonus_minutes),
+        bonusCreditAmountPaise: safePaise(row.bonus_credit_paise),
+        legacyBonusMinutes: safeMinutes(row.bonus_minutes),
         perCustomerLimit: safePaise(row.per_customer_limit),
         totalUsageLimit: safePaise(row.total_usage_limit),
         priority: Number(row.priority || 0),
         usedCount: safePaise(row.used_count),
         successfulRedemptions: safePaise(row.successful_redemptions),
         totalBonusMinutesAwarded: safePaise(row.total_bonus_minutes_awarded),
+        totalBonusCreditPaiseAwarded: safePaise(row.total_bonus_credit_paise_awarded),
         startAt: date(row.start_at_ms),
         endAt: date(row.end_at_ms),
         createdAt: date(row.created_at_ms),
@@ -495,13 +589,13 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
         updatedBy: String(payload.updatedBy || '')
       };
     }).sort((a, b) =>
-      b.priority - a.priority || b.bonusMinutes - a.bonusMinutes || a.name.localeCompare(b.name)
+      b.priority - a.priority || b.bonusCreditAmountPaise - a.bonusCreditAmountPaise || a.name.localeCompare(b.name)
     );
   }
 
   async function saveWalletOffer({
     id, name, bannerTheme = 'auto', enabled = false,
-    minimumRechargeAmountPaise = 0, bonusMinutes, perCustomerLimit = 1,
+    minimumRechargeAmountPaise = 0, bonusCreditPaise, perCustomerLimit = 1,
     totalUsageLimit = 0, priority = 0, startAtMs = null, endAtMs = null,
     updatedBy = ''
   } = {}) {
@@ -509,14 +603,14 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     const offerName = String(name || '').trim();
     const theme = String(bannerTheme || 'auto');
     const minimum = Number(minimumRechargeAmountPaise);
-    const bonus = Number(bonusMinutes);
+    const bonusCredit = Number(bonusCreditPaise);
     const perCustomer = Number(perCustomerLimit);
     const total = Number(totalUsageLimit);
     const rank = Number(priority);
     const validDate = value => value == null || Number.isSafeInteger(Number(value));
     if (!/^[A-Za-z0-9_-]{1,100}$/.test(offerId) || !offerName || offerName.length > 120 ||
         !Number.isSafeInteger(minimum) || minimum < 0 ||
-        !Number.isSafeInteger(bonus) || bonus < 1 || bonus > 1440 ||
+        !Number.isSafeInteger(bonusCredit) || bonusCredit < 1 || bonusCredit > Number.MAX_SAFE_INTEGER ||
         !Number.isSafeInteger(perCustomer) || perCustomer < 0 || perCustomer > 10000 ||
         !Number.isSafeInteger(total) || total < 0 || total > 1000000 ||
         !Number.isSafeInteger(rank) || rank < -1000 || rank > 1000 ||
@@ -534,15 +628,15 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     const payload = JSON.stringify({ name: offerName, bannerTheme: theme, updatedBy: String(updatedBy || '').slice(0, 160) });
     await statement(
       "INSERT INTO smv_domain_wallet_offers " +
-      "(offer_id,enabled,minimum_recharge_paise,bonus_minutes,per_customer_limit,total_usage_limit,used_count,priority,start_at_ms,end_at_ms,payload_json,created_at_ms,updated_at_ms) " +
-      "VALUES (?,?,?,?,?,?,0,?,?,?,?,?,?) " +
+      "(offer_id,enabled,minimum_recharge_paise,bonus_minutes,bonus_credit_paise,per_customer_limit,total_usage_limit,used_count,priority,start_at_ms,end_at_ms,payload_json,created_at_ms,updated_at_ms) " +
+      "VALUES (?,?,?,?,?,?,?,0,?,?,?,?,?,?) " +
       "ON CONFLICT(offer_id) DO UPDATE SET " +
       "enabled=excluded.enabled,minimum_recharge_paise=excluded.minimum_recharge_paise," +
-      "bonus_minutes=excluded.bonus_minutes,per_customer_limit=excluded.per_customer_limit," +
+      "bonus_minutes=excluded.bonus_minutes,bonus_credit_paise=excluded.bonus_credit_paise,per_customer_limit=excluded.per_customer_limit," +
       "total_usage_limit=excluded.total_usage_limit,priority=excluded.priority," +
       "start_at_ms=excluded.start_at_ms,end_at_ms=excluded.end_at_ms," +
       "payload_json=excluded.payload_json,updated_at_ms=excluded.updated_at_ms",
-      [offerId, enabled === true ? 1 : 0, minimum, bonus, perCustomer, total, rank,
+      [offerId, enabled === true ? 1 : 0, minimum, 1, bonusCredit, perCustomer, total, rank,
        startAtMs == null ? null : Number(startAtMs), endAtMs == null ? null : Number(endAtMs),
        payload, existing ? timestamp : timestamp, timestamp]
     ).run();
@@ -597,6 +691,8 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       customerPaymentId: String(payload.customerPaymentId || '') || null,
       paidAt: Number(row.paid_at_ms || 0),
       bonusMinutesCredited: safeMinutes(payload.bonusMinutesCredited),
+      bonusCreditPaiseCredited: safePaise(payload.bonusCreditCreditedPaise),
+      bonusCreditSkippedReason: String(payload.bonusCreditSkippedReason || ''),
       offerId: payload.offerId || null,
       offerName: payload.offerName || null
     };
@@ -604,156 +700,146 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
 
   async function finalizeRecharge({ ownerUid, rechargeId, orderId, paymentId, amountPaise, currency = 'INR', source = 'payment_verification' } = {}) {
     const owner = validateWalletOwner(ownerUid, 'customer');
-    const rid = String(rechargeId || '').trim();
-    const oid = String(orderId || '').trim();
-    const pid = String(paymentId || '').trim();
+    const rid = String(rechargeId || '').trim(), oid = String(orderId || '').trim(), pid = String(paymentId || '').trim();
     const amount = Number(amountPaise);
     if (!rid || !oid || !pid || !Number.isSafeInteger(amount) || amount < 100 || String(currency).toUpperCase() !== 'INR') {
       throw walletError('WALLET_RECHARGE_INVALID', 'Wallet recharge verification data is incomplete or invalid.', 400);
     }
     await ensureWallet(owner.ownerUid, owner.ownerRole);
-    let recharge = await statement(
-      'SELECT * FROM smv_domain_wallet_recharges WHERE recharge_id=? AND customer_uid=? LIMIT 1',
-      [rid, owner.ownerUid]
-    ).first();
+    const recharge = await statement('SELECT * FROM smv_domain_wallet_recharges WHERE recharge_id=? AND customer_uid=? LIMIT 1',[rid,owner.ownerUid]).first();
     if (!recharge) throw walletError('WALLET_RECHARGE_NOT_FOUND', 'Wallet recharge record was not found.', 404);
-    let rechargePayload = {};
-    try { rechargePayload = JSON.parse(String(recharge.payload_json || '{}')); } catch {}
-    if (String(recharge.razorpay_order_id || '') !== oid) throw walletError('WALLET_ORDER_MISMATCH', 'Razorpay order does not match this Wallet recharge.', 409);
-    if (safePaise(recharge.amount_paise) !== amount) throw walletError('WALLET_AMOUNT_MISMATCH', 'Razorpay amount does not match this Wallet recharge.', 409);
-    if (String(recharge.status || '') === 'paid') {
-      if (String(recharge.razorpay_payment_id || '') !== pid) throw walletError('WALLET_RECHARGE_ALREADY_PAID', 'This Wallet recharge was paid with another payment.', 409);
-      const wallet = await getWallet(owner.ownerUid);
-      return {
-        success: true, alreadyProcessed: true, rechargeId: rid, paymentId: pid,
-        customerPaymentId: String(rechargePayload.customerPaymentId || '') || null, amountPaise: amount,
-        availableBalancePaise: wallet.availableBalancePaise,
-        bonusMinutesCredited: safeMinutes(rechargePayload.bonusMinutesCredited),
-        bonusMinutesBalance: wallet.bonusMinutesBalance
-      };
+    let rechargePayload={};try{rechargePayload=JSON.parse(String(recharge.payload_json||'{}'));}catch{}
+    if(String(recharge.razorpay_order_id||'')!==oid)throw walletError('WALLET_ORDER_MISMATCH','Razorpay order does not match this Wallet recharge.',409);
+    if(safePaise(recharge.amount_paise)!==amount)throw walletError('WALLET_AMOUNT_MISMATCH','Razorpay amount does not match this Wallet recharge.',409);
+    if(String(recharge.status||'')==='paid'){
+      if(String(recharge.razorpay_payment_id||'')!==pid)throw walletError('WALLET_RECHARGE_ALREADY_PAID','This Wallet recharge was paid with another payment.',409);
+      const current=await getWallet(owner.ownerUid);
+      return {success:true,alreadyProcessed:true,rechargeId:rid,paymentId:pid,
+        customerPaymentId:String(rechargePayload.customerPaymentId||'')||null,amountPaise:amount,
+        availableBalancePaise:current.availableBalancePaise,
+        bonusCreditCreditedPaise:safePaise(rechargePayload.bonusCreditCreditedPaise),
+        bonusCreditSkippedReason:String(rechargePayload.bonusCreditSkippedReason||''),
+        bonusCreditBalancePaise:current.bonusCreditBalancePaise};
     }
-    if (String(recharge.status || '') !== 'order_created') {
-      throw walletError('WALLET_RECHARGE_NOT_READY', 'This Wallet recharge is not ready to be credited.', 409);
-    }
-    let customerPaymentId = String(rechargePayload.customerPaymentId || '').trim();
-    if (!customerPaymentId) customerPaymentId = await createCustomerPaymentReference();
-    const cashKey = 'recharge:' + pid;
-    const bonusKey = 'recharge-bonus:' + pid;
-    const [cashLedger, bonusLedger, wallet] = await Promise.all([
-      findLedger(owner.ownerUid, cashKey),
-      findLedger(owner.ownerUid, bonusKey),
-      getWallet(owner.ownerUid)
+    if(String(recharge.status||'')!=='order_created')throw walletError('WALLET_RECHARGE_NOT_READY','This Wallet recharge is not ready to be credited.',409);
+    let customerPaymentId=String(rechargePayload.customerPaymentId||'').trim();
+    if(!customerPaymentId)customerPaymentId=await createCustomerPaymentReference();
+    const cashKey='recharge:'+pid,bonusKey='recharge-bonus-credit:'+pid,fundingKey='recharge-bonus-credit-fund:'+pid;
+    const [cashLedger,bonusLedger,fundingLedger,wallet,promotionalFund]=await Promise.all([
+      findLedger(owner.ownerUid,cashKey),findLedger(owner.ownerUid,bonusKey),
+      statement('SELECT ledger_id,amount_paise,balance_after_paise FROM smv_domain_promotional_fund_ledger WHERE idempotency_key=? LIMIT 1',[fundingKey]).first(),
+      getWallet(owner.ownerUid),getPromotionalFund()
     ]);
-    if (cashLedger || bonusLedger) throw walletError('WALLET_LEDGER_CONFLICT', 'A Wallet recharge ledger already exists and requires reconciliation.', 409);
-    const nowMs = Number(now());
-    const offersResult = await statement(
-      `SELECT o.offer_id, o.enabled, o.minimum_recharge_paise, o.bonus_minutes,
-              o.per_customer_limit, o.total_usage_limit, o.used_count, o.priority,
-              o.start_at_ms, o.end_at_ms, o.payload_json,
-              COALESCE(u.redemption_count, 0) AS customer_redemption_count
+    if(cashLedger||bonusLedger||fundingLedger)throw walletError('WALLET_LEDGER_CONFLICT','A Wallet recharge ledger already exists and requires reconciliation.',409);
+    const nowMs=Number(now());
+    const offersResult=await statement(
+      `SELECT o.offer_id,o.enabled,o.minimum_recharge_paise,o.bonus_minutes,o.bonus_credit_paise,
+              o.per_customer_limit,o.total_usage_limit,o.used_count,o.priority,o.start_at_ms,o.end_at_ms,o.payload_json,
+              COALESCE(u.redemption_count,0) AS customer_redemption_count
        FROM smv_domain_wallet_offers o
-       LEFT JOIN smv_domain_wallet_offer_redemption_usage u
-         ON u.offer_id=o.offer_id AND u.customer_uid=?
-       WHERE o.enabled=1 AND o.minimum_recharge_paise<=?
-         AND (o.start_at_ms IS NULL OR o.start_at_ms<=?)
-         AND (o.end_at_ms IS NULL OR o.end_at_ms>?)
+       LEFT JOIN smv_domain_wallet_offer_redemption_usage u ON u.offer_id=o.offer_id AND u.customer_uid=?
+       WHERE o.enabled=1 AND o.bonus_credit_paise>0 AND o.minimum_recharge_paise<=?
+         AND (o.start_at_ms IS NULL OR o.start_at_ms<=?) AND (o.end_at_ms IS NULL OR o.end_at_ms>?)
          AND (o.total_usage_limit=0 OR o.used_count<o.total_usage_limit)
          AND (o.per_customer_limit=0 OR COALESCE(u.redemption_count,0)<o.per_customer_limit)
-       ORDER BY o.priority DESC, o.bonus_minutes DESC, o.offer_id ASC LIMIT 100`,
-      [owner.ownerUid, amount, nowMs, nowMs]
+       ORDER BY o.priority DESC,o.bonus_credit_paise DESC,o.offer_id ASC LIMIT 100`,
+      [owner.ownerUid,amount,nowMs,nowMs]
     ).all();
-    const offerRows = (offersResult?.results || []).map(row => {
-      let payload = {};
-      try { payload = JSON.parse(String(row.payload_json || '{}')); } catch {}
-      return {
-        id: String(row.offer_id), offerType: 'wallet_recharge_bonus_minutes', enabled: Number(row.enabled) === 1,
-        minimumRechargeAmountPaise: Number(row.minimum_recharge_paise),
-        bonusMinutes: Number(row.bonus_minutes), perCustomerLimit: Number(row.per_customer_limit),
-        totalUsageLimit: Number(row.total_usage_limit), usedCount: Number(row.used_count),
-        priority: Number(row.priority), startAt: row.start_at_ms == null ? null : Number(row.start_at_ms),
-        endAt: row.end_at_ms == null ? null : Number(row.end_at_ms),
-        name: String(payload.name || ''), bannerTheme: String(payload.bannerTheme || 'auto')
-      };
+    const offerRows=(offersResult?.results||[]).map(row=>{
+      let payload={};try{payload=JSON.parse(String(row.payload_json||'{}'));}catch{}
+      return {id:String(row.offer_id),offerType:'wallet_recharge_bonus_credit',
+        enabled:Number(row.enabled)===1,
+        minimumRechargeAmountPaise:safePaise(row.minimum_recharge_paise),
+        bonusCreditPaise:safePaise(row.bonus_credit_paise),bonusMinutes:1,
+        perCustomerLimit:Number(row.per_customer_limit),totalUsageLimit:Number(row.total_usage_limit),
+        usedCount:Number(row.used_count),priority:Number(row.priority),
+        startAt:row.start_at_ms==null?null:Number(row.start_at_ms),
+        endAt:row.end_at_ms==null?null:Number(row.end_at_ms),
+        name:String(payload.name||''),bannerTheme:String(payload.bannerTheme||'auto')};
     });
-    const usageCounts = Object.fromEntries((offersResult?.results || []).map(row => [String(row.offer_id), Number(row.customer_redemption_count || 0)]));
-    const selectedOffer = selectRechargeBonusOffer({ offers: offerRows, amountPaise: amount, nowMs, usageCounts });
-    const bonusMinutes = selectedOffer ? Number(selectedOffer.bonusMinutes) : 0;
-    if (safePaise(wallet.availableBalancePaise) + amount > Number.MAX_SAFE_INTEGER ||
-        safeMinutes(wallet.bonusMinutesBalance) + bonusMinutes > 1_000_000) {
-      throw walletError('WALLET_BALANCE_OVERFLOW', 'Wallet balance exceeds the supported range.', 409);
+    const usageCounts=Object.fromEntries((offersResult?.results||[]).map(row=>[String(row.offer_id),Number(row.customer_redemption_count||0)]));
+    let selectedOffer=selectRechargeBonusOffer({offers:offerRows,amountPaise:amount,nowMs,usageCounts});
+    let bonusCreditCreditedPaise=0,bonusCreditSkippedReason='';
+    if(selectedOffer){
+      if(promotionalFund.balancePaise<selectedOffer.bonusCreditPaise){
+        bonusCreditSkippedReason='admin_promotional_fund_insufficient';selectedOffer=null;
+      }else bonusCreditCreditedPaise=selectedOffer.bonusCreditPaise;
     }
-    const cashRow = await buildLedgerRow({
-      owner, ...owner, type:'recharge', direction:'credit', amountPaise:amount,
-      idempotencyKey:cashKey, ledgerId:await sha256Hex('recharge:' + owner.ownerUid + ':' + pid, cryptoImpl),
-      availableDeltaPaise:amount, referenceType:'razorpay_payment', referenceId:pid,
-      note:'Wallet recharge successful', metadata:{rechargeId:rid,orderId:oid,customerPaymentId}, source
-    });
-    const batchStatements = [insertStatement(cashRow)];
-    if (selectedOffer && bonusMinutes > 0) {
-      const bonusRow = await buildLedgerRow({
-        owner, ...owner, type:'recharge_bonus_minutes', direction:'credit', amountPaise:0,
-        idempotencyKey:bonusKey, ledgerId:await sha256Hex('recharge-bonus:' + owner.ownerUid + ':' + pid, cryptoImpl),
-        bonusMinutesDelta:bonusMinutes, referenceType:'razorpay_payment', referenceId:pid,
-        note:'Wallet recharge bonus: ' + bonusMinutes + ' free Live minute(s)',
-        metadata:{rechargeId:rid,offerId:selectedOffer.id,offerName:selectedOffer.name}, source
-      });
-      batchStatements.push(insertStatement(bonusRow));
+    if(safePaise(wallet.availableBalancePaise)+amount>Number.MAX_SAFE_INTEGER||
+       safePaise(wallet.bonusCreditBalancePaise)+bonusCreditCreditedPaise>Number.MAX_SAFE_INTEGER)
+      throw walletError('WALLET_BALANCE_OVERFLOW','Wallet balance exceeds the supported range.',409);
+    const cashRow=await buildLedgerRow({...owner,type:'recharge',direction:'credit',amountPaise:amount,
+      idempotencyKey:cashKey,ledgerId:await sha256Hex('recharge:'+owner.ownerUid+':'+pid,cryptoImpl),
+      availableDeltaPaise:amount,referenceType:'razorpay_payment',referenceId:pid,
+      note:'Wallet recharge successful',metadata:{rechargeId:rid,orderId:oid,customerPaymentId},source});
+    const batchStatements=[insertStatement(cashRow)];
+    if(selectedOffer&&bonusCreditCreditedPaise>0){
+      const fundLedgerId=await sha256Hex('promotional-fund-bonus-award:'+pid,cryptoImpl);
+      const fundAward=statement(
+        `INSERT INTO smv_domain_promotional_fund_ledger
+         (ledger_id,entry_type,amount_paise,balance_delta_paise,idempotency_key,
+          reference_type,reference_id,actor_uid,note,created_at_ms)
+         VALUES (?,'bonus_credit_award',?, ?,?,'razorpay_payment',?,?,?,?)`,
+        [fundLedgerId,bonusCreditCreditedPaise,-bonusCreditCreditedPaise,fundingKey,pid,
+          'system', 'Bonus Credit award for Customer '+owner.ownerUid+' · Offer '+selectedOffer.id,nowMs]
+      );
+      const bonusRow=await buildLedgerRow({...owner,type:'recharge_bonus_credit',direction:'credit',amountPaise:bonusCreditCreditedPaise,
+        idempotencyKey:bonusKey,ledgerId:await sha256Hex('recharge-bonus-credit:'+owner.ownerUid+':'+pid,cryptoImpl),
+        bonusCreditDeltaPaise:bonusCreditCreditedPaise,referenceType:'razorpay_payment',referenceId:pid,
+        note:'Wallet recharge Bonus Credit: ₹'+(bonusCreditCreditedPaise/100).toFixed(2),
+        metadata:{rechargeId:rid,offerId:selectedOffer.id,offerName:selectedOffer.name,promotionalFundId:'SMV_ASTRO'},source});
+      batchStatements.push(fundAward,insertStatement(bonusRow));
       batchStatements.push(statement(
         `INSERT INTO smv_domain_offer_redemptions
-         (redemption_id,offer_id,customer_uid,recharge_id,amount_paise,bonus_minutes,created_at_ms)
-         VALUES (?,?,?,?,?,?,?)`,
-        [await sha256Hex('wallet-recharge-offer:' + rid + ':' + selectedOffer.id, cryptoImpl),
-         selectedOffer.id, owner.ownerUid, rid, amount, bonusMinutes, nowMs]
+         (redemption_id,offer_id,customer_uid,recharge_id,amount_paise,bonus_minutes,bonus_credit_paise,created_at_ms)
+         VALUES (?,?,?,?,?,1,?,?)`,
+        [await sha256Hex('wallet-recharge-offer:'+rid+':'+selectedOffer.id,cryptoImpl),selectedOffer.id,owner.ownerUid,rid,amount,bonusCreditCreditedPaise,nowMs]
       ));
     }
-    const payload = {
-      ...rechargePayload,
-      customerPaymentId,
-      bonusMinutesCredited: bonusMinutes,
-      offerId: selectedOffer?.id || null,
-      offerName: selectedOffer?.name || null,
-      paymentSource: String(source).slice(0, 80)
+    const payload={...rechargePayload,customerPaymentId,bonusMinutesCredited:0,bonusCreditCreditedPaise,
+      bonusCreditSkippedReason,offerId:selectedOffer?.id||null,offerName:selectedOffer?.name||null,
+      paymentSource:String(source).slice(0,80)};
+    const appendPaidTransitions=(target,payloadValue)=>{
+      target.push(statement(
+        `UPDATE smv_domain_razorpay_orders SET status='paid',payment_id=?,payload_json=?,updated_at_ms=?
+         WHERE order_id=? AND owner_uid=? AND service_name='SMV ASTRO Wallet Recharge'`,
+        [pid,JSON.stringify({rechargeId:rid}),nowMs,oid,owner.ownerUid]));
+      target.push(statement(
+        `UPDATE smv_domain_wallet_recharges SET status='paid',razorpay_payment_id=?,paid_at_ms=?,payload_json=?,updated_at_ms=?
+         WHERE recharge_id=? AND customer_uid=? AND status='order_created'`,
+        [pid,nowMs,JSON.stringify(payloadValue),nowMs,rid,owner.ownerUid]));
     };
-    // Mark the Razorpay order paid before the recharge transition. The
-    // recharge BEFORE UPDATE trigger then requires this order plus the cash
-    // ledger row, all inside the same D1 batch transaction.
-    batchStatements.push(statement(
-      `UPDATE smv_domain_razorpay_orders
-       SET status='paid', payment_id=?, payload_json=?, updated_at_ms=?
-       WHERE order_id=? AND owner_uid=? AND service_name='SMV ASTRO Wallet Recharge'`,
-      [pid, JSON.stringify({rechargeId:rid}), nowMs, oid, owner.ownerUid]
-    ));
-    batchStatements.push(statement(
-      `UPDATE smv_domain_wallet_recharges
-       SET status='paid', razorpay_payment_id=?, paid_at_ms=?, payload_json=?, updated_at_ms=?
-       WHERE recharge_id=? AND customer_uid=? AND status='order_created'`,
-      [pid, nowMs, JSON.stringify(payload), nowMs, rid, owner.ownerUid]
-    ));
-    try {
-      const results = await db.batch(batchStatements);
-      if (results.some(result => result?.success === false)) throw new Error('D1_WALLET_RECHARGE_BATCH_INCOMPLETE');
-    } catch (error) {
-      const fresh = await statement(
-        'SELECT status, razorpay_payment_id, payload_json FROM smv_domain_wallet_recharges WHERE recharge_id=? AND customer_uid=? LIMIT 1',
-        [rid, owner.ownerUid]
-      ).first();
-      if (fresh?.status === 'paid' && fresh.razorpay_payment_id === pid) {
-        const current = await getWallet(owner.ownerUid);
-        let freshPayload = {};
-        try { freshPayload = JSON.parse(String(fresh.payload_json || '{}')); } catch {}
-        return { success:true,alreadyProcessed:true,rechargeId:rid,paymentId:pid,
-          customerPaymentId:String(freshPayload.customerPaymentId || '') || null,amountPaise:amount,
-          availableBalancePaise:current.availableBalancePaise,bonusMinutesCredited:bonusMinutes,
-          bonusMinutesBalance:current.bonusMinutesBalance,offerId:selectedOffer?.id||null,offerName:selectedOffer?.name||null };
+    appendPaidTransitions(batchStatements,payload);
+    try{
+      const results=await db.batch(batchStatements);
+      if(results.some(result=>result?.success===false))throw new Error('D1_WALLET_RECHARGE_BATCH_INCOMPLETE');
+    }catch(error){
+      const fresh=await statement('SELECT status,razorpay_payment_id,payload_json FROM smv_domain_wallet_recharges WHERE recharge_id=? AND customer_uid=? LIMIT 1',[rid,owner.ownerUid]).first();
+      if(fresh?.status==='paid'&&fresh.razorpay_payment_id===pid){
+        const current=await getWallet(owner.ownerUid);let p={};try{p=JSON.parse(String(fresh.payload_json||'{}'));}catch{}
+        return {success:true,alreadyProcessed:true,rechargeId:rid,paymentId:pid,customerPaymentId:String(p.customerPaymentId||'')||null,
+          amountPaise:amount,availableBalancePaise:current.availableBalancePaise,
+          bonusCreditCreditedPaise:safePaise(p.bonusCreditCreditedPaise),bonusCreditSkippedReason:String(p.bonusCreditSkippedReason||''),
+          bonusCreditBalancePaise:current.bonusCreditBalancePaise,offerId:p.offerId||null,offerName:p.offerName||null};
       }
-      throw d1Error(error);
+      const message=String(error?.message||error||'');
+      const lostPromoRace=bonusCreditCreditedPaise>0&&(message.includes('PROMOTIONAL_FUND_INSUFFICIENT')||message.includes('WALLET_BALANCE_OVERFLOW'));
+      if(!lostPromoRace)throw d1Error(error);
+      bonusCreditCreditedPaise=0;bonusCreditSkippedReason='admin_promotional_fund_insufficient';selectedOffer=null;
+      const fallbackPayload={...rechargePayload,customerPaymentId,bonusMinutesCredited:0,bonusCreditCreditedPaise:0,
+        bonusCreditSkippedReason,offerId:null,offerName:null,paymentSource:String(source).slice(0,80)};
+      const fallback=[insertStatement(cashRow)];appendPaidTransitions(fallback,fallbackPayload);
+      const retry=await db.batch(fallback);
+      if(retry.some(result=>result?.success===false))throw new Error('D1_WALLET_RECHARGE_CASH_ONLY_RETRY_FAILED');
+      const current=await getWallet(owner.ownerUid);
+      return {success:true,alreadyProcessed:false,rechargeId:rid,paymentId:pid,customerPaymentId,amountPaise:amount,
+        availableBalancePaise:current.availableBalancePaise,bonusCreditCreditedPaise:0,bonusCreditSkippedReason,
+        bonusCreditBalancePaise:current.bonusCreditBalancePaise,offerId:null,offerName:null};
     }
-    const current = await getWallet(owner.ownerUid);
-    return {
-      success:true,alreadyProcessed:false,rechargeId:rid,paymentId:pid,customerPaymentId,amountPaise:amount,
-      availableBalancePaise:current.availableBalancePaise,bonusMinutesCredited:bonusMinutes,
-      bonusMinutesBalance:current.bonusMinutesBalance,offerId:selectedOffer?.id||null,offerName:selectedOffer?.name||null
-    };
+    const current=await getWallet(owner.ownerUid);
+    return {success:true,alreadyProcessed:false,rechargeId:rid,paymentId:pid,customerPaymentId,amountPaise:amount,
+      availableBalancePaise:current.availableBalancePaise,bonusCreditCreditedPaise,bonusCreditSkippedReason,
+      bonusCreditBalancePaise:current.bonusCreditBalancePaise,offerId:selectedOffer?.id||null,offerName:selectedOffer?.name||null};
   }
 
   async function getRechargeByOrderId(orderId) {
@@ -934,5 +1020,5 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       .slice(0,max);
   }
 
-  return Object.freeze({ ensureWallet, getWallet, postWalletEntry, createRechargeIntent, attachRechargeOrder, markRechargeOrderFailed, getRechargeForOwner, listWalletOffers, saveWalletOffer, deleteWalletOffer, finalizeRecharge, getRechargeByOrderId, markRechargePaymentFailed, recordWebhookEvent, completeWebhookEvent, releaseWebhookEvent, reserveWallet, settleReservation, listTransactions });
+  return Object.freeze({ ensureWallet, getWallet, getPromotionalFund, allocatePromotionalFund, postWalletEntry, createRechargeIntent, attachRechargeOrder, markRechargeOrderFailed, getRechargeForOwner, listWalletOffers, saveWalletOffer, deleteWalletOffer, finalizeRecharge, getRechargeByOrderId, markRechargePaymentFailed, recordWebhookEvent, completeWebhookEvent, releaseWebhookEvent, reserveWallet, settleReservation, listTransactions });
 }

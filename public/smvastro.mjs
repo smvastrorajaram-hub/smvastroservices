@@ -119,11 +119,11 @@ async function smvLoadHomeWalletRechargeOffers(force=false){
    if(result?.success!==true||!Array.isArray(result.offers))throw new Error(result?.error||'Active Wallet offers are unavailable.');
    const themeLabels={auto:'Festival Offer',generic:'Wallet Offer',pongal:'Pongal Offer',diwali:'Diwali Offer',navaratri:'Navaratri Offer',dasara:'Dasara Offer',ayudha_pooja:'Ayudha Pooja Offer',shivaratri:'Shivaratri Offer',tamil_new_year:'Tamil New Year Offer',vinayagar_chaturthi:'Vinayagar Chaturthi Offer',karthigai_deepam:'Karthigai Deepam Offer',thaipusam:'Thaipusam Offer',new_year:'New Year Offer',onam:'Onam Offer',christmas:'Christmas Offer',eid:'Eid Offer'};
    const allowedThemes=new Set(Object.keys(themeLabels));
-   const offers=result.offers.filter(o=>o&&Number.isSafeInteger(Number(o.bonusMinutes))&&Number(o.bonusMinutes)>0&&Number(o.bonusMinutes)<=1440);
+   const offers=result.offers.filter(o=>o&&Number.isSafeInteger(Number(o.bonusCreditAmountPaise))&&Number(o.bonusCreditAmountPaise)>0);
    list.innerHTML=offers.map(offer=>{
     const theme=allowedThemes.has(String(offer.bannerTheme||'auto'))?String(offer.bannerTheme||'auto'):'auto';
     const name=String(offer.name||'Wallet Recharge Bonus');
-    const minutes=Number(offer.bonusMinutes);
+    const bonusCredit=Number(offer.bonusCreditAmountPaise);
     const limit=Number(offer.perCustomerLimit||0);
     const minimum=smvHomeOfferMoney(offer.minimumRechargeAmountPaise);
     const start=smvHomeOfferWhen(offer.startAt),end=smvHomeOfferWhen(offer.endAt);
@@ -132,7 +132,7 @@ async function smvLoadHomeWalletRechargeOffers(force=false){
      '<span class="smv-wallet-offer-theme">'+escapeHtml(themeLabels[theme])+'</span>'+
      '<h3>'+escapeHtml(name)+'</h3>'+
      '<p class="smv-wallet-offer-minimum">Recharge <strong>'+escapeHtml(minimum)+'</strong> or more</p>'+
-     '<p class="smv-wallet-offer-bonus"><strong>'+minutes+'</strong> FREE Live '+(minutes===1?'Minute':'Minutes')+'</p>'+
+     '<p class="smv-wallet-offer-bonus"><strong>₹'+(bonusCredit/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+'</strong> BONUS CREDIT</p>'+
      '<p class="smv-wallet-offer-applies">Credited automatically after successful recharge verification.</p>'+
      '<p class="smv-wallet-offer-limit">'+(limit===0?'Unlimited uses per Customer':String(limit)+' use(s) per Customer')+' where eligible</p>'+
      validity+
@@ -1907,7 +1907,7 @@ function smvWalletDashboardCardHtml(){
  return '<section class="card smv-customer-wallet-card" id="smvCustomerWalletCard" style="margin-top:16px" aria-labelledby="smvWalletTitle">'+
  '<div class="grid" style="align-items:center;gap:14px"><div><span class="badge">CUSTOMER WALLET</span><h3 id="smvWalletTitle" style="margin:8px 0">My Wallet</h3><div class="small">Use your Wallet for Live Call, Live Chat and consultation charges.</div></div>'+
  '<div><div class="small">Available Balance</div><div id="smvWalletBalance" class="smv-dashboard-metric" style="font-weight:800;margin:4px 0">Loading…</div><div class="small">Reserved: <b id="smvWalletReserved">₹0.00</b></div></div></div>'+
- '<div class="smv-wallet-bonus-summary" aria-live="polite"><div><span class="small">Bonus Free Minutes Available</span><strong id="smvWalletBonusMinutes">Loading…</strong></div><div><span class="small">Reserved for active / booked sessions</span><strong id="smvWalletBonusReserved">0 minutes</strong></div><p>These promotional minutes are used before paid minutes for eligible Live Call and Live Chat sessions.</p></div>'+
+ '<div class="smv-wallet-bonus-summary" aria-live="polite"><div><span class="small">Bonus Credit Available</span><strong id="smvWalletBonusCredit">Loading…</strong></div><div><span class="small">Bonus Credit Reserved for active / booked sessions</span><strong id="smvWalletBonusCreditReserved">₹0.00</strong></div><p>Bonus Credit is applied first. When it is used up, billing continues automatically from your Original Wallet balance.</p><div class="small">Legacy Free Minutes preserved separately (not used for new sessions): <b id="smvWalletLegacyMinutes">0 minutes</b></div></div>'+
  '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px"><button class="btn" id="smvWalletRefresh" type="button">Refresh Wallet</button></div>'+
  '<form id="smvWalletRechargeForm" style="display:flex;flex-wrap:nowrap;align-items:stretch;gap:10px;margin-top:16px;width:100%;max-width:100%;box-sizing:border-box">'+
  '<label style="display:flex;flex:1 1 0%;flex-direction:column;gap:6px;min-width:0;width:50%"><b>Recharge amount (₹)</b><input id="smvWalletRechargeAmount" type="number" min="1" step="0.01" value="100" inputmode="decimal" required style="display:block;width:100%;min-width:0;height:46px;min-height:46px;max-height:46px;box-sizing:border-box"></label>'+
@@ -1956,8 +1956,9 @@ function smvWalletCurrentElements(){
   refresh:$('smvWalletRefresh'),
   balance:$('smvWalletBalance'),
   reserved:$('smvWalletReserved'),
-  bonus:$('smvWalletBonusMinutes'),
-  bonusReserved:$('smvWalletBonusReserved'),
+  bonusCredit:$('smvWalletBonusCredit'),
+  bonusCreditReserved:$('smvWalletBonusCreditReserved'),
+  legacyMinutes:$('smvWalletLegacyMinutes'),
   host:$('smvWalletTransactions')
  };
 }
@@ -1972,8 +1973,9 @@ async function smvLoadCustomerWalletOnce(uid){
  if(!initial.card||!isCurrentUser())return;
  if(initial.refresh)initial.refresh.disabled=true;
  if(initial.balance)initial.balance.textContent='Loading…';
- if(initial.bonus)initial.bonus.textContent='Loading…';
- if(initial.bonusReserved)initial.bonusReserved.textContent='Loading…';
+ if(initial.bonusCredit)initial.bonusCredit.textContent='Loading…';
+ if(initial.bonusCreditReserved)initial.bonusCreditReserved.textContent='Loading…';
+ if(initial.legacyMinutes)initial.legacyMinutes.textContent='Loading…';
  if(initial.host)initial.host.innerHTML='<div class="small">Loading transactions…</div>';
  const applyWalletSnapshot=wallet=>{
   if(!isCurrentUser())return false;
@@ -1983,10 +1985,12 @@ async function smvLoadCustomerWalletOnce(uid){
   const reservedPaise=Number.isSafeInteger(Number(wallet.reservedBalancePaise))?Number(wallet.reservedBalancePaise):Math.round(Number(wallet.reservedBalance||0)*100);
   if(current.balance)current.balance.textContent=smvWalletMoney(availablePaise);
   if(current.reserved)current.reserved.textContent=smvWalletMoney(reservedPaise);
-  const bonusMinutes=Number.isSafeInteger(Number(wallet.bonusMinutesBalance))&&Number(wallet.bonusMinutesBalance)>=0?Number(wallet.bonusMinutesBalance):0;
-  const reservedBonusMinutes=Number.isSafeInteger(Number(wallet.reservedBonusMinutes))&&Number(wallet.reservedBonusMinutes)>=0?Number(wallet.reservedBonusMinutes):0;
-  if(current.bonus)current.bonus.textContent=bonusMinutes+' '+(bonusMinutes===1?'minute':'minutes');
-  if(current.bonusReserved)current.bonusReserved.textContent=reservedBonusMinutes+' '+(reservedBonusMinutes===1?'minute':'minutes');
+  const bonusCreditPaise=Number.isSafeInteger(Number(wallet.bonusCreditBalancePaise))&&Number(wallet.bonusCreditBalancePaise)>=0?Number(wallet.bonusCreditBalancePaise):0;
+  const reservedBonusCreditPaise=Number.isSafeInteger(Number(wallet.reservedBonusCreditPaise))&&Number(wallet.reservedBonusCreditPaise)>=0?Number(wallet.reservedBonusCreditPaise):0;
+  const legacyBonusMinutes=Number.isSafeInteger(Number(wallet.bonusMinutesBalance))&&Number(wallet.bonusMinutesBalance)>=0?Number(wallet.bonusMinutesBalance):0;
+  if(current.bonusCredit)current.bonusCredit.textContent=smvWalletMoney(bonusCreditPaise);
+  if(current.bonusCreditReserved)current.bonusCreditReserved.textContent=smvWalletMoney(reservedBonusCreditPaise);
+  if(current.legacyMinutes)current.legacyMinutes.textContent=legacyBonusMinutes+' '+(legacyBonusMinutes===1?'minute':'minutes');
   return true;
  };
  try{
@@ -2014,7 +2018,13 @@ async function smvLoadCustomerWalletOnce(uid){
      const when=t.createdAt?smvDateTime(t.createdAt):'Date unavailable';
      const status=String(t.status||'posted');
      const customerPaymentId=String(t.customerPaymentId||'').trim();
-     return '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(128,128,128,.22)"><div style="min-width:0"><b>'+escapeHtml(label)+'</b><div class="small">'+escapeHtml(when)+' · '+escapeHtml(status)+'</div>'+(customerPaymentId?'<div class="small"><b>Customer Payment ID:</b> '+escapeHtml(customerPaymentId)+'</div>':'')+(t.note?'<div class="small">'+escapeHtml(t.note)+'</div>':'')+(t.balanceAfterPaise!=null?'<div class="small">Balance after: '+smvWalletMoney(t.balanceAfterPaise)+'</div>':'')+'</div><b class="smv-wallet-transaction-amount '+(credit?'success':'error')+'" style="white-space:nowrap">'+(credit?'+':'−')+smvWalletMoney(amount)+'</b></div>';
+     const bonusCreditDelta=Number.isSafeInteger(Number(t.bonusCreditDeltaPaise))?Number(t.bonusCreditDeltaPaise):0;
+     const reservedBonusCreditDelta=Number.isSafeInteger(Number(t.reservedBonusCreditDeltaPaise))?Number(t.reservedBonusCreditDeltaPaise):0;
+     const bonusCreditAfter=Number.isSafeInteger(Number(t.bonusCreditBalanceAfterPaise))?Number(t.bonusCreditBalanceAfterPaise):null;
+     const bonusDetail=(bonusCreditDelta!==0?'<div class="small">Bonus Credit change: '+(bonusCreditDelta>0?'+':'−')+smvWalletMoney(Math.abs(bonusCreditDelta))+'</div>':'')+
+      (reservedBonusCreditDelta!==0?'<div class="small">Bonus Credit reserve: '+(reservedBonusCreditDelta>0?'+':'−')+smvWalletMoney(Math.abs(reservedBonusCreditDelta))+'</div>':'')+
+      (bonusCreditAfter!==null?'<div class="small">Bonus Credit balance after: '+smvWalletMoney(bonusCreditAfter)+'</div>':'');
+     return '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(128,128,128,.22)"><div style="min-width:0"><b>'+escapeHtml(label)+'</b><div class="small">'+escapeHtml(when)+' · '+escapeHtml(status)+'</div>'+(customerPaymentId?'<div class="small"><b>Customer Payment ID:</b> '+escapeHtml(customerPaymentId)+'</div>':'')+(t.note?'<div class="small">'+escapeHtml(t.note)+'</div>':'')+(t.balanceAfterPaise!=null?'<div class="small">Original Wallet balance after: '+smvWalletMoney(t.balanceAfterPaise)+'</div>':'')+bonusDetail+'</div><b class="smv-wallet-transaction-amount '+(credit?'success':'error')+'" style="white-space:nowrap">'+(credit?'+':'−')+smvWalletMoney(amount)+'</b></div>';
     }).join(''):'<div class="empty">No Wallet transactions yet.</div>';
    }
   }catch(error){
@@ -2118,9 +2128,13 @@ function smvBindCustomerWallet({load=true}={}){
        if(!verified?.verified)throw lastVerificationError||new Error('The backend has not confirmed this payment as verified. Do not pay again; refresh Wallet or contact support.');
        requestKey=smvWalletNewRequestKey();requestAmount='';
        await smvLoadCustomerWallet({force:true});
-       const bonusMinutesCredited=Number.isSafeInteger(Number(verified.bonusMinutesCredited))&&Number(verified.bonusMinutesCredited)>0?Number(verified.bonusMinutesCredited):0;
+       const bonusCreditCreditedPaise=Number.isSafeInteger(Number(verified.bonusCreditCreditedPaise))&&Number(verified.bonusCreditCreditedPaise)>0?Number(verified.bonusCreditCreditedPaise):0;
+       const skippedReason=String(verified.bonusCreditSkippedReason||'');
        const customerPaymentId=String(verified.customerPaymentId||'').trim();
-       smvWalletSetMessage('Payment Successful — recharge verified.'+(customerPaymentId?' Customer Payment ID: '+customerPaymentId+'.':'')+' Cash Wallet balance: '+smvWalletMoney(Math.round(Number(verified.availableBalance||0)*100))+'.'+(bonusMinutesCredited?' '+bonusMinutesCredited+' bonus free minute(s) added.':' No bonus-minute offer applied.'),'success');
+       const bonusMessage=bonusCreditCreditedPaise?' Bonus Credit added: '+smvWalletMoney(bonusCreditCreditedPaise)+'.':
+        skippedReason==='admin_promotional_fund_insufficient'?' Offer met, but Bonus Credit was not applied because the Admin Promotional Fund is insufficient.':
+        skippedReason==='admin_promotional_fund_not_configured'?' Offer met, but Bonus Credit was not applied because the Promotional Fund is not configured.':' No Bonus Credit offer applied.';
+       smvWalletSetMessage('Payment Successful — recharge verified.'+(customerPaymentId?' Customer Payment ID: '+customerPaymentId+'.':'')+' Original Wallet balance: '+smvWalletMoney(Number(verified.availableBalancePaise||0))+'.'+bonusMessage,'success');
       }catch(error){
        smvWalletSetMessage('Payment returned but server verification is not confirmed: '+(error?.message||String(error))+'. Do not pay again until this transaction is checked.','error');
       }finally{verificationInProgress=false;releaseButton();}
@@ -3243,13 +3257,14 @@ async function smvRenderAdminWalletOffers(){
  ];
  card.innerHTML=[
   '<h3>Wallet Recharge Bonus Offers</h3>',
-  '<p class="small">When an Offer is ON and inside its Start / End Date window, it appears on the public Home page banner. OFF, not-yet-started, expired or fully redeemed offers are hidden. A Customer must recharge the Wallet through Razorpay at or above the minimum amount; after successful payment capture, one eligible Offer credits promotional time to My Wallet → Bonus Free Minutes. Those minutes are used before paid minutes for eligible Live Call / Live Chat sessions. Per-customer limits apply, offers do not stack, and bonus minutes are not cash.</p>',
+  '<p class="small">When an Offer is ON and within its Start / End Date window, it appears on the public Home page. After a qualifying captured recharge, Bonus Credit is awarded only when the separate Admin-funded Promotional Fund can fully back it. Bonus Credit is applied first to Live / Booked Live service value; remaining value is charged to Original Wallet. Astrologer and Admin commission are calculated on the full service value, including Bonus Credit. Bonus Credit is promotional, non-transferable and non-withdrawable. Legacy minute balances remain separate and are not converted automatically.</p>',
+  '<section class="card" style="margin:12px 0"><h4>Separate Promotional Fund</h4><p class="small">This is separate from Admin Earnings. Transfer an amount from the Admin Wallet into this fund before enabling Bonus Credit offers. Only this funded balance can pay for new Bonus Credit awards.</p><div class="grid"><div><span class="small">Promotional Fund Available</span><b id="smvPromoFundBalance">Loading…</b></div><div><span class="small">Admin Wallet Available</span><b id="smvPromoAdminWalletBalance">Loading…</b></div></div><label><b>Allocate from Admin Wallet (₹)</b><input id="smvPromoFundAmount" type="number" min="0.01" step="0.01" value="100.00"></label><div class="action-row"><button class="btn" id="smvPromoFundAllocate" type="button">ALLOCATE TO PROMOTIONAL FUND</button><button class="btn gray" id="smvPromoFundRefresh" type="button">REFRESH FUND</button></div><div id="smvPromoFundMessage" class="small" role="status" aria-live="polite"></div></section>',
   '<input id="smvWalletOfferId" type="hidden">',
   '<div class="grid">',
-  '<label><b>Offer Name</b><input id="smvWalletOfferName" maxlength="120" placeholder="Diwali Bonus Minutes"></label>',
+  '<label><b>Offer Name</b><input id="smvWalletOfferName" maxlength="120" placeholder="Diwali Bonus Credit"></label>',
   '<label><b>Festival / Theme</b><select id="smvWalletOfferTheme"></select></label>',
   '<label><b>Minimum Recharge Amount (₹)</b><input id="smvWalletOfferMinimum" type="number" min="0" step="0.01" value="0"></label>',
-  '<label><b>Bonus Free Minutes</b><input id="smvWalletOfferBonusMinutes" type="number" min="1" max="1440" step="1" value="1"></label>',
+  '<label><b>Bonus Credit Amount (₹)</b><input id="smvWalletOfferBonusCreditAmount" type="number" min="0.01" max="99999999" step="0.01" value="10.00"></label>',
   '<label><b>Maximum Redemptions per Customer (0 = unlimited)</b><input id="smvWalletOfferPerCustomerLimit" type="number" min="0" step="1" value="1"></label>',
   '<label><b>Total Redemptions (0 = unlimited)</b><input id="smvWalletOfferTotalUsageLimit" type="number" min="0" step="1" value="0"></label>',
   '<label><b>Priority (higher wins)</b><input id="smvWalletOfferPriority" type="number" min="-1000" max="1000" step="1" value="0"></label>',
@@ -3262,10 +3277,10 @@ async function smvRenderAdminWalletOffers(){
   '<div id="smvWalletOfferList"><div class="empty">Loading Wallet Offers…</div></div>'
  ].join('');
  $('smvWalletOfferTheme').innerHTML=themes.map(([value,label])=>'<option value="'+value+'">'+label+'</option>').join('');
- const formIds=['smvWalletOfferId','smvWalletOfferName','smvWalletOfferTheme','smvWalletOfferMinimum','smvWalletOfferBonusMinutes','smvWalletOfferPerCustomerLimit','smvWalletOfferTotalUsageLimit','smvWalletOfferPriority','smvWalletOfferStartAt','smvWalletOfferEndAt','smvWalletOfferEnabled'];
+ const formIds=['smvWalletOfferId','smvWalletOfferName','smvWalletOfferTheme','smvWalletOfferMinimum','smvWalletOfferBonusCreditAmount','smvWalletOfferPerCustomerLimit','smvWalletOfferTotalUsageLimit','smvWalletOfferPriority','smvWalletOfferStartAt','smvWalletOfferEndAt','smvWalletOfferEnabled'];
  const clearForm=()=>{
   $('smvWalletOfferId').value='';$('smvWalletOfferName').value='';$('smvWalletOfferTheme').value='auto';
-  $('smvWalletOfferMinimum').value='0';$('smvWalletOfferBonusMinutes').value='1';
+  $('smvWalletOfferMinimum').value='0';$('smvWalletOfferBonusCreditAmount').value='10.00';
   $('smvWalletOfferPerCustomerLimit').value='1';$('smvWalletOfferTotalUsageLimit').value='0';
   $('smvWalletOfferPriority').value='0';$('smvWalletOfferStartAt').value='';$('smvWalletOfferEndAt').value='';
   $('smvWalletOfferEnabled').value='false';
@@ -3281,7 +3296,7 @@ async function smvRenderAdminWalletOffers(){
   $('smvWalletOfferId').value=offer.id||'';$('smvWalletOfferName').value=offer.name||'';
   $('smvWalletOfferTheme').value=offer.bannerTheme||'auto';
   $('smvWalletOfferMinimum').value=(Number(offer.minimumRechargeAmountPaise||0)/100).toFixed(2);
-  $('smvWalletOfferBonusMinutes').value=Number(offer.bonusMinutes||1);
+  $('smvWalletOfferBonusCreditAmount').value=(Number(offer.bonusCreditAmountPaise||0)/100).toFixed(2);
   $('smvWalletOfferPerCustomerLimit').value=Number(offer.perCustomerLimit??1);
   $('smvWalletOfferTotalUsageLimit').value=Number(offer.totalUsageLimit||0);
   $('smvWalletOfferPriority').value=Number(offer.priority||0);
@@ -3306,13 +3321,13 @@ async function smvRenderAdminWalletOffers(){
     const theme=themes.find(row=>row[0]===offer.bannerTheme)?.[1]||'Festival';
     const hasRedemptions=Number(offer.usedCount||0)>0||Number(offer.successfulRedemptions||0)>0;
     return '<article class="card" data-wallet-offer-row="'+escapeHtml(offer.id)+'" style="margin-top:10px"><b>'+escapeHtml(offer.name||'Wallet Offer')+'</b> · '+status+
-     '<p class="small">'+escapeHtml(theme)+' · ₹'+minimum+' minimum recharge · '+Number(offer.bonusMinutes||0)+' free Live minute(s)</p>'+
+     '<p class="small">'+escapeHtml(theme)+' · ₹'+minimum+' minimum recharge · '+(Number(offer.bonusCreditAmountPaise||0)>0?'Bonus Credit ₹'+(Number(offer.bonusCreditAmountPaise)/100).toFixed(2):'Legacy Free Minutes '+Number(offer.legacyBonusMinutes||0)+' (not awarded)')+'</p>'+
      '<p class="small">Redemptions: '+escapeHtml(limit)+' · Per Customer: '+(Number(offer.perCustomerLimit||0)===0?'unlimited':Number(offer.perCustomerLimit||0))+
-     ' · Total bonus minutes: '+Number(offer.totalBonusMinutesAwarded||0)+'</p>'+
+     ' · Total Bonus Credit given: ₹'+(Number(offer.totalBonusCreditPaiseAwarded||0)/100).toFixed(2)+'</p>'+
      (offer.startAt||offer.endAt?'<p class="small">Start: '+escapeHtml(offer.startAt||'Now')+' · End: '+escapeHtml(offer.endAt||'No end date')+'</p>':'')+
-     '<div class="action-row"><button class="btn" type="button" data-wallet-offer-edit="'+escapeHtml(offer.id)+'">EDIT</button>'+
+     (Number(offer.bonusCreditAmountPaise||0)>0?'<div class="action-row"><button class="btn" type="button" data-wallet-offer-edit="'+escapeHtml(offer.id)+'">EDIT</button>'+
      '<button class="btn gray" type="button" data-wallet-offer-toggle="'+escapeHtml(offer.id)+'">'+(offer.enabled?'TURN OFF':'TURN ON')+'</button>'+
-     '<button class="btn gray" type="button" data-wallet-offer-delete="'+escapeHtml(offer.id)+'"'+(hasRedemptions?' disabled title="This Offer has redemption history. Turn it OFF to preserve the financial audit."':'')+'>'+(hasRedemptions?'DELETE UNAVAILABLE':'DELETE')+'</button></div>'+
+     '<button class="btn gray" type="button" data-wallet-offer-delete="'+escapeHtml(offer.id)+'"'+(hasRedemptions?' disabled title="This Offer has redemption history. Turn it OFF to preserve the financial audit."':'')+'>'+(hasRedemptions?'DELETE UNAVAILABLE':'DELETE')+'</button></div>':'<p class="small">Legacy minute offer. It remains OFF; prior minute balances and redemption records are preserved separately.</p>')+
      (hasRedemptions?'<p class="small">This Offer has redemption history and cannot be deleted. Use TURN OFF to stop future awards while keeping its audit history.</p>':'')+'</article>';
    }).join(''):'<div class="empty">No Wallet recharge bonus offers created yet.</div>';
    list.querySelectorAll('[data-wallet-offer-edit]').forEach(button=>button.onclick=()=>{
@@ -3326,7 +3341,7 @@ async function smvRenderAdminWalletOffers(){
      const saved=await renderApi('/admin/offers/save',{method:'POST',body:JSON.stringify({
       id:offer.id,name:offer.name,bannerTheme:offer.bannerTheme,
       minimumRechargeAmount:(Number(offer.minimumRechargeAmountPaise||0)/100),
-      bonusMinutes:Number(offer.bonusMinutes),perCustomerLimit:Number(offer.perCustomerLimit||0),
+      bonusCreditAmount:(Number(offer.bonusCreditAmountPaise||0)/100).toFixed(2),perCustomerLimit:Number(offer.perCustomerLimit||0),
       totalUsageLimit:Number(offer.totalUsageLimit||0),priority:Number(offer.priority||0),
       startAt:offer.startAt||null,endAt:offer.endAt||null,enabled:expectedEnabled
      })});
@@ -3360,13 +3375,54 @@ async function smvRenderAdminWalletOffers(){
    if(list)list.innerHTML='<div class="empty error">'+escapeHtml(error.message||String(error))+'</div>';
   }
  };
+ const fundBalance=$('smvPromoFundBalance'),adminBalance=$('smvPromoAdminWalletBalance'),fundMessage=$('smvPromoFundMessage');
+ const reloadPromotionalFund=async()=>{
+  try{
+   const result=await renderApi('/admin/promotional-fund',{method:'GET'});
+   if(result?.success!==true||!result.fund)throw new Error(result?.error||'Promotional Fund was not returned by the server.');
+   if(fundBalance)fundBalance.textContent=smvWalletMoney(Number(result.fund.balancePaise||0));
+   if(adminBalance)adminBalance.textContent=smvWalletMoney(Number(result.fund.adminWalletAvailableBalancePaise||0));
+   return result.fund;
+  }catch(error){
+   if(fundBalance)fundBalance.textContent='Unavailable';
+   if(adminBalance)adminBalance.textContent='Unavailable';
+   if(fundMessage)fundMessage.innerHTML='<span class="error">'+escapeHtml(error.message||String(error))+'</span>';
+   throw error;
+  }
+ };
+ const allocateButton=$('smvPromoFundAllocate');
+ if(allocateButton)allocateButton.onclick=async()=>{
+  const amount=$('smvPromoFundAmount').value;
+  if(!/^\d{1,9}(?:\.\d{1,2})?$/.test(String(amount||''))||Math.round(Number(amount)*100)<1){
+   if(fundMessage)fundMessage.innerHTML='<span class="error">Enter a positive allocation amount with up to two decimal places.</span>';
+   return;
+  }
+  allocateButton.disabled=true;allocateButton.textContent='ALLOCATING…';
+  if(fundMessage)fundMessage.textContent='Transferring funds from Admin Wallet to the separate Promotional Fund…';
+  try{
+   const result=await renderApi('/admin/promotional-fund/allocate',{method:'POST',body:JSON.stringify({
+    amount,idempotencyKey:'admin-promo-'+crypto.randomUUID()
+   })});
+   if(result?.success!==true||!Number.isSafeInteger(Number(result.balancePaise)))throw new Error(result?.error||'The Promotional Fund allocation was not confirmed.');
+   if(fundBalance)fundBalance.textContent=smvWalletMoney(Number(result.balancePaise));
+   if(adminBalance)adminBalance.textContent=smvWalletMoney(Number(result.adminWalletAvailableBalancePaise||0));
+   if(fundMessage)fundMessage.innerHTML='<span class="success">Allocation confirmed. Separate Promotional Fund balance: '+smvWalletMoney(Number(result.balancePaise))+'. Admin Earnings were not changed; funds were transferred from Admin Wallet available balance.</span>';
+   await reloadPromotionalFund();
+  }catch(error){
+   if(fundMessage)fundMessage.innerHTML='<span class="error">'+escapeHtml(error.message||String(error))+'</span>';
+   await reloadPromotionalFund().catch(()=>{});
+  }finally{allocateButton.disabled=false;allocateButton.textContent='ALLOCATE TO PROMOTIONAL FUND';}
+ };
+ const fundRefresh=$('smvPromoFundRefresh');
+ if(fundRefresh)fundRefresh.onclick=()=>reloadPromotionalFund().catch(()=>{});
+ await reloadPromotionalFund().catch(()=>{});
  const save=$('saveSmvWalletOfferBtn'),msg=$('smvWalletOfferMsg');
  if(save)save.onclick=async()=>{
   const payload={
    id:$('smvWalletOfferId').value.trim()||undefined,
    name:$('smvWalletOfferName').value.trim(),bannerTheme:$('smvWalletOfferTheme').value,
    minimumRechargeAmount:$('smvWalletOfferMinimum').value,
-   bonusMinutes:Number($('smvWalletOfferBonusMinutes').value),
+   bonusCreditAmount:$('smvWalletOfferBonusCreditAmount').value,
    perCustomerLimit:Number($('smvWalletOfferPerCustomerLimit').value),
    totalUsageLimit:Number($('smvWalletOfferTotalUsageLimit').value),
    priority:Number($('smvWalletOfferPriority').value),
@@ -3374,7 +3430,7 @@ async function smvRenderAdminWalletOffers(){
    enabled:$('smvWalletOfferEnabled').value==='true'
   };
   if(!payload.name){msg.innerHTML='<span class="error">Offer Name is required.</span>';return;}
-  if(!Number.isSafeInteger(payload.bonusMinutes)||payload.bonusMinutes<1||payload.bonusMinutes>1440){msg.innerHTML='<span class="error">Free minutes must be a whole number between 1 and 1,440.</span>';return;}
+  if(!/^\d{1,9}(?:\.\d{1,2})?$/.test(String(payload.bonusCreditAmount||''))||Math.round(Number(payload.bonusCreditAmount)*100)<1){msg.innerHTML='<span class="error">Enter a Bonus Credit amount greater than ₹0 with up to two decimal places.</span>';return;}
   if(!Number.isFinite(Number(payload.minimumRechargeAmount))||Number(payload.minimumRechargeAmount)<0){msg.innerHTML='<span class="error">Enter a valid minimum recharge amount.</span>';return;}
   save.disabled=true;save.textContent='SAVING…';msg.textContent='Saving Wallet recharge offer…';
   try{
@@ -3382,10 +3438,10 @@ async function smvRenderAdminWalletOffers(){
    if(!saved?.success||!saved?.id)throw new Error(saved?.error||'The server did not confirm this Offer.');
    await reloadOffers(false);
    const verified=offerRows.find(row=>row.id===saved.id);
-   if(!verified||verified.name!==payload.name||Number(verified.bonusMinutes)!==payload.bonusMinutes||
+   if(!verified||verified.name!==payload.name||Number(verified.bonusCreditAmountPaise)!==Math.round(Number(payload.bonusCreditAmount)*100)||
       Number(verified.minimumRechargeAmountPaise)!==Math.round(Number(payload.minimumRechargeAmount)*100)||
       verified.enabled!==payload.enabled)throw new Error('Offer save returned, but the saved values could not be verified by reloading the server list.');
-   msg.innerHTML='<span class="success">Offer saved and verified: '+escapeHtml(verified.name)+' · '+verified.bonusMinutes+' bonus minute(s) after a successful recharge.</span>';
+   msg.innerHTML='<span class="success">Offer saved and verified: '+escapeHtml(verified.name)+' · Bonus Credit ₹'+(Number(verified.bonusCreditAmountPaise)/100).toFixed(2)+' after a successful recharge, subject to available Admin Promotional Fund.</span>';
    clearForm();
   }catch(error){msg.innerHTML='<span class="error">Unable to save Wallet Offer: '+escapeHtml(error.message||String(error))+'</span>';}
   finally{save.disabled=false;save.textContent='SAVE OFFER';}

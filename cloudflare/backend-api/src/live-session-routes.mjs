@@ -61,7 +61,7 @@ export function registerD1LiveSessionRoutes({
     if(routesEnabled!==true||!(stagingScope||productionScope)) {
       throw httpError('LIVE_ROUTES_DISABLED','Live Call/Chat routes require the matching Firebase project and an enabled backend environment.',503);
     }
-    if(!(await isReady())) throw httpError('LIVE_SCHEMA_NOT_READY','D1 Live Session schema 0006 is not ready.',503);
+    if(!(await isReady())) throw httpError('LIVE_SCHEMA_NOT_READY','D1 Live Session 0006 and Bonus Credit Wallet 0013 schemas are not ready.',503);
   }
   function coordinator(id) {
     const namespace=env.LIVE_SESSION_COORDINATOR;

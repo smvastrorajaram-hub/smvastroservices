@@ -18,11 +18,14 @@ test('shared Wallet normalization uses integer paise and safe minute values', ()
   assert.deepEqual(wallet(), {
     ownerUid: 'customer-1', ownerRole: 'customer', currency: 'INR',
     availableBalancePaise: 10000, reservedBalancePaise: 0,
-    bonusMinutesBalance: 2, reservedBonusMinutes: 0, version: 1,
+    bonusMinutesBalance: 2, reservedBonusMinutes: 0,
+    bonusCreditBalancePaise: 0, reservedBonusCreditPaise: 0, version: 1,
     createdAt: null, updatedAt: null
   });
   assert.equal(wallet({ availableBalancePaise: -1 }).availableBalancePaise, 0);
   assert.equal(wallet({ bonusMinutesBalance: 1000001 }).bonusMinutesBalance, 0);
+  assert.equal(wallet({ bonusCreditBalancePaise: -1 }).bonusCreditBalancePaise, 0);
+  assert.equal(wallet({ bonusCreditBalancePaise: Number.MAX_SAFE_INTEGER + 1 }).bonusCreditBalancePaise, 0);
 });
 
 test('reserve uses promotional minutes first and reserves only the remaining cash value', () => {
