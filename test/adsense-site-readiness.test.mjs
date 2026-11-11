@@ -23,12 +23,12 @@ test('AdSense homepage loader is restricted to the submitted .in website', () =>
   assert.match(html, /host==='smvastroservices\.in'\s*\|\|\s*host==='www\.smvastroservices\.in'/);
   assert.match(html, /if\(!isPrimarySite\)return/);
   assert.match(html, /document\.createElement\('script'\)/);
-  assert.match(html, /pagead\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-8603281557754018/);
+  assert.match(html, /pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-8603281557754018/);
   assert.match(html, /script\.async=true/);
   assert.match(html, /script\.crossOrigin='anonymous'/);
   assert.match(html, /document\.head\.appendChild\(script\)/);
   assert.doesNotMatch(html, /if\(location\.hostname!=='smvastroservices\.pages\.dev'\)return/);
-  assert.equal((html.match(/pagead\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js/g) || []).length, 1);
+  assert.equal((html.match(/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js/g) || []).length, 1);
 });
 
 test('ads.txt, robots.txt and XML sitemap expose the expected public discovery records', () => {
