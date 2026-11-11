@@ -6,13 +6,15 @@ const IS_PAGES_DEV_HOST = self.location.hostname === 'smvastroservices.pages.dev
 const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261111-pages-dev-domain-independence-v1' : '20261111-pages-horoscope-header-css-v1';
 const SMV_LOCATION_CACHE='smv-shared-india-places';
 const APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE;
+const PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['./pages-dev-host-independence.js']:[];
 const APP_SHELL_FILES=[
   './','./index.html','./manifest.webmanifest',
   './smvastro.css','./smv-ui.css','./dashboard-typography.css',
   './android-app-install.css','./payment-timing.js','./smvastro.mjs',
   './coalesced-refresh.mjs','./razorpay-checkout-loader.mjs','./chat-moderation.js',
   './dashboard-window.js','./public-content-loader.js','./interface.js',
-  './android-app-install.js','./public-navigation.js','./pages-dev-host-independence.js',
+  './android-app-install.js','./public-navigation.js',
+  ...PAGES_DEV_HELPER_FILES,
   './main-location-search.js','./question-place-search.mjs',
   './horoscope/offline/places/place-search.mjs','./horoscope/offline/places/india-manifest.json','./horoscope/offline/places/place-display.mjs',
   './assets/pwa-astro-192.svg','./assets/pwa-astro-512.png','./assets/pwa-astro-maskable-192.svg','./assets/pwa-astro-maskable.svg',
@@ -21,6 +23,7 @@ const APP_SHELL_FILES=[
   './assets/smv-home-logo.webp'
 ];
 const REQUIRED_APP_SHELL=new Set([
+  ...PAGES_DEV_HELPER_FILES,
   './','./index.html','./manifest.webmanifest',
   './smvastro.css','./smv-ui.css','./dashboard-typography.css',
   './android-app-install.css','./payment-timing.js','./smvastro.mjs',
