@@ -32,7 +32,18 @@ function readyRow() {
     numeric_public_reference_ids_version: '0012_numeric_public_reference_ids',
     public_withdrawal_id_index_count: 1,
     admin_payment_id_index_count: 1,
-    customer_payment_id_index_count: 1
+    customer_payment_id_index_count: 1,
+    bonus_credit_wallet_version: '0013_bonus_credit_wallet',
+    wallet_bonus_credit_columns_count: 2,
+    wallet_ledger_bonus_credit_columns_count: 4,
+    wallet_offer_bonus_credit_columns_count: 1,
+    offer_redemption_bonus_credit_columns_count: 1,
+    live_session_bonus_credit_columns_count: 1,
+    live_booking_bonus_credit_columns_count: 1,
+    live_session_bonus_reserve_trigger_count: 1,
+    live_earning_bonus_credit_trigger_count: 1,
+    wallet_ledger_bonus_credit_apply_trigger_count: 1,
+    wallet_ledger_bonus_credit_validate_trigger_count: 1
   };
 }
 
@@ -63,7 +74,7 @@ function responseRecorder() {
   };
 }
 
-test('Production D1 schema readiness recognizes the current 0002-0012 migration contracts', async () => {
+test('Production D1 schema readiness recognizes the current 0002-0013 migration contracts', async () => {
   const db = dbWith(readyRow());
   const result = await inspectBackendSchema(db);
 
@@ -71,7 +82,8 @@ test('Production D1 schema readiness recognizes the current 0002-0012 migration 
   assert.equal(result.querySucceeded, true);
   assert.equal(result.ready, true);
   assert.equal(result.schemaVersion, '0002_shared_domain_repository');
-  assert.deepEqual(Object.values(result.schemaMigrations), Array(11).fill(true));
+  assert.deepEqual(Object.values(result.schemaMigrations), Array(12).fill(true));
+  assert.equal(result.checks.bonusCreditWalletSchema, true);
   assert.equal(db.calls.length, 1);
   assert.match(db.calls[0], /smv_domain_schema_meta/);
   assert.doesNotMatch(db.calls[0], /smv_wallet_schema_meta|0001_wallet_live_domain/);
@@ -107,7 +119,18 @@ test('any missing or stale required marker or schema object fails readiness clos
     row => { row.numeric_public_reference_ids_version = null; },
     row => { row.public_withdrawal_id_index_count = 0; },
     row => { row.admin_payment_id_index_count = 0; },
-    row => { row.customer_payment_id_index_count = 0; }
+    row => { row.customer_payment_id_index_count = 0; },
+    row => { row.bonus_credit_wallet_version = null; },
+    row => { row.wallet_bonus_credit_columns_count = 1; },
+    row => { row.wallet_ledger_bonus_credit_columns_count = 3; },
+    row => { row.wallet_offer_bonus_credit_columns_count = 0; },
+    row => { row.offer_redemption_bonus_credit_columns_count = 0; },
+    row => { row.live_session_bonus_credit_columns_count = 0; },
+    row => { row.live_booking_bonus_credit_columns_count = 0; },
+    row => { row.live_session_bonus_reserve_trigger_count = 0; },
+    row => { row.live_earning_bonus_credit_trigger_count = 0; },
+    row => { row.wallet_ledger_bonus_credit_apply_trigger_count = 0; },
+    row => { row.wallet_ledger_bonus_credit_validate_trigger_count = 0; }
   ]) {
     const row = readyRow();
     mutate(row);

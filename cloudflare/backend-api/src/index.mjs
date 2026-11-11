@@ -390,10 +390,16 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
   }
   const walletSchemaReady = async () => {
     try {
-      const row = await env.DB.prepare(
-        'SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = ? LIMIT 1'
-      ).bind('shared-domain').first();
-      const ready = row?.schema_version === '0002_shared_domain_repository';
+      const [sharedDomainRow,bonusCreditRow] = await Promise.all([
+        env.DB.prepare(
+          'SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = ? LIMIT 1'
+        ).bind('shared-domain').first(),
+        env.DB.prepare(
+          'SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = ? LIMIT 1'
+        ).bind('bonus-credit-wallet').first()
+      ]);
+      const ready = sharedDomainRow?.schema_version === '0002_shared_domain_repository' &&
+        bonusCreditRow?.schema_version === '0013_bonus_credit_wallet';
       walletDomainSchemaReady = ready;
       return ready;
     } catch {
@@ -691,7 +697,7 @@ app.get('/healthz', async (_req, res) => {
         reason: identityProfileD1AuthorizationOpen ? 'identity_runtime_unavailable' : 'disabled' };
   d1IdentityAuthorizationReady = identityGate.ready === true;
   const backendActive = String(env.SMV_BACKEND_CLOUDFLARE_ACTIVE || 'false') === 'true';
-  const walletReadRoutesEnabled = walletReadRoutesRegistered && walletReadRouteGateOpen && schema.checks.sharedDomainSchema;
+  const walletReadRoutesEnabled = walletReadRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletSchema;
   const walletRechargeRoutesEnabled = walletRechargeRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
   const walletOfferRoutesEnabled = walletOfferRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
   const liveCallChatRoutesEnabled = liveSessionRoutesRegistered && liveSessionRoutesOpen && schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;
@@ -799,7 +805,7 @@ app.get('/api/backend/migration-status', async (_req, res) => {
         reason: identityProfileD1AuthorizationOpen ? 'identity_runtime_unavailable' : 'disabled' };
   d1IdentityAuthorizationReady = identityGate.ready === true;
   const backendActive = String(env.SMV_BACKEND_CLOUDFLARE_ACTIVE || 'false') === 'true';
-  const walletReadRoutesEnabled = walletReadRoutesRegistered && walletReadRouteGateOpen && schema.checks.sharedDomainSchema;
+  const walletReadRoutesEnabled = walletReadRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletSchema;
   const walletRechargeRoutesEnabled = walletRechargeRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
   const walletOfferRoutesEnabled = walletOfferRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
   const liveSessionRoutesEnabled = liveSessionRoutesRegistered && liveSessionRoutesOpen && schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;
