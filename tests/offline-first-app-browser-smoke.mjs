@@ -4,7 +4,7 @@ import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 
 const origin = process.env.SMV_OFFLINE_PREVIEW_ORIGIN || 'http://127.0.0.1:4173';
-const release = '20261111-pages-dev-apk-pwa-icons-v1';
+const release = '20261111-pages-dev-adsense-content-review-v1';
 const apps = [
   {
     name: 'SMV ASTRO',
