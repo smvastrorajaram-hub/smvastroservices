@@ -56,7 +56,7 @@ import { createGoogleServiceAccountTokenProvider } from '../../../shared/backend
 import { createFirebaseAuthAdminClient, createFcmSender, registerLegacyRouteParityGapRoutes } from './legacy-route-parity-gap-routes.mjs';
 import { createFirebaseConnectivityProbe } from './firebase-connectivity-probe.mjs';
 import { inspectBackendSchema, registerBackendReadinessRoute } from './backend-readiness.mjs';
-import { resolveConfiguredAdminUids } from './admin-identity-configuration.mjs';
+import { resolveConfiguredAdminUids, resolveConfiguredAdminWalletUid } from './admin-identity-configuration.mjs';
 import { isProductionFinancialTrafficRoutingEnabled } from './production-financial-traffic-readiness.mjs';
 
 const app = express();
@@ -273,6 +273,7 @@ const walletBackfillToolsOpen = String(env.SMV_WALLET_BACKFILL_TOOLS_ENABLED || 
 const identityProfileBackfillToolsOpen = String(env.SMV_IDENTITY_PROFILE_BACKFILL_ENABLED || '').toLowerCase() === 'true';
 const identityProfileBackfillPreviewOnly = String(env.SMV_IDENTITY_PROFILE_BACKFILL_PREVIEW_ONLY || 'true').toLowerCase() !== 'false';
 const identityProfileD1AuthorizationOpen = isD1IdentityAuthorizationAllowed(env);
+const configuredAdminWalletUid = resolveConfiguredAdminWalletUid(env);
 const liveSessionRoutesOpen = String(env.SMV_LIVE_SESSION_ROUTES_ENABLED || '').toLowerCase() === 'true';
 let sharedWalletAdapter = null;
 let walletIdentityService = null;
@@ -335,7 +336,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       adminEmails: String(env.ADMIN_AUTH_EMAILS || '').split(',')
     });
     walletIdentityService = firebaseIdentityService;
-    sharedWalletAdapter = createD1WalletAdapter({ db: env.DB, adminWalletUid: String(env.ADMIN_WALLET_UID || env.ADMIN_UID || '') });
+    sharedWalletAdapter = createD1WalletAdapter({ db: env.DB, adminWalletUid: configuredAdminWalletUid });
     if (razorpayPolicy.enabled) {
       sharedRazorpayClient = createRazorpayRestClient({ keyId: razorpayKeyId, keySecret: razorpayKeySecret });
       getRazorpayProviderVerification = createRazorpayProviderVerificationProbe({
@@ -354,7 +355,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
           db: env.DB,
           walletAdapter: sharedWalletAdapter,
           firestore: firestoreAdmin,
-          adminWalletUid: String(env.ADMIN_WALLET_UID || env.ADMIN_UID || '')
+          adminWalletUid: configuredAdminWalletUid
         })
       : null;
     registerLegacyBusinessRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService, liveService: gapLiveService });
@@ -546,7 +547,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
   }
 
   if (liveSessionRoutesOpen) {
-    const adminWalletUid = String(env.ADMIN_WALLET_UID || env.ADMIN_UID || '');
+    const adminWalletUid = configuredAdminWalletUid;
     const liveService = createD1LiveSessionService({
       db: env.DB,
       walletAdapter: sharedWalletAdapter,
@@ -627,7 +628,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       app,
       identityService: walletIdentityService,
       walletAdapter: sharedWalletAdapter,
-      adminWalletUid: String(env.ADMIN_WALLET_UID || env.ADMIN_UID || ''),
+      adminWalletUid: configuredAdminWalletUid,
       isReady: walletSchemaReady
     });
     walletReadRoutesRegistered = true;
