@@ -1,0 +1,54 @@
+name: Standalone Windows Installers
+
+on:
+  pull_request:
+    paths:
+      - 'desktop/horoscope-windows/**'
+      - 'desktop/calendar-windows/**'
+      - 'test/windows-standalone-installers.test.cjs'
+      - '.github/workflows/windows-standalone-installers.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-standalone:
+    name: Test and build standalone ${{ matrix.app }} installer
+    runs-on: windows-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: HOROSCOPE
+            directory: desktop/horoscope-windows
+            artifact: SMV-HOROSCOPE-Windows-Setup
+            file: desktop/horoscope-windows/release/SMV-HOROSCOPE-Setup-0.1.0-x64.exe
+          - app: CALENDAR
+            directory: desktop/calendar-windows
+            artifact: SMV-CALENDAR-Windows-Setup
+            file: desktop/calendar-windows/release/SMV-CALENDAR-Setup-0.1.0-x64.exe
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install ${{ matrix.app }} desktop dependencies
+        working-directory: ${{ matrix.directory }}
+        run: npm install --no-audit --no-fund
+      - name: Run standalone installer regression tests
+        working-directory: ${{ matrix.directory }}
+        run: npm test
+      - name: Build standalone ${{ matrix.app }} Windows installer
+        working-directory: ${{ matrix.directory }}
+        run: npm run dist:win
+      - name: Upload standalone ${{ matrix.app }} installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.file }}
+          if-no-files-found: error
+          retention-days: 14

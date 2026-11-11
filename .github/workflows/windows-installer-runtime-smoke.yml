@@ -1,0 +1,120 @@
+name: Windows Installer Runtime Smoke Tests
+
+on:
+  pull_request:
+    paths:
+      - 'desktop/windows/**'
+      - 'desktop/horoscope-windows/**'
+      - 'desktop/calendar-windows/**'
+      - '.github/workflows/windows-installer-runtime-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install-and-launch:
+    name: Install and launch ${{ matrix.app }}
+    runs-on: windows-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: ASTRO
+            key: astro
+            directory: desktop/windows
+            installer: desktop/windows/release/SMV-ASTRO-Setup-0.1.0-x64.exe
+            executable: SMV ASTRO.exe
+          - app: HOROSCOPE
+            key: horoscope
+            directory: desktop/horoscope-windows
+            installer: desktop/horoscope-windows/release/SMV-HOROSCOPE-Setup-0.1.0-x64.exe
+            executable: SMV HOROSCOPE.exe
+          - app: CALENDAR
+            key: calendar
+            directory: desktop/calendar-windows
+            installer: desktop/calendar-windows/release/SMV-CALENDAR-Setup-0.1.0-x64.exe
+            executable: SMV CALENDAR.exe
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install desktop build dependencies
+        working-directory: ${{ matrix.directory }}
+        run: npm install --no-audit --no-fund
+
+      - name: Run desktop regression tests
+        working-directory: ${{ matrix.directory }}
+        run: npm test
+
+      - name: Build Windows installer
+        working-directory: ${{ matrix.directory }}
+        run: npm run dist:win
+
+      - name: Silently install and launch the packaged application
+        shell: pwsh
+        env:
+          APP_LABEL: ${{ matrix.app }}
+          APP_KEY: ${{ matrix.key }}
+          INSTALLER_PATH: ${{ matrix.installer }}
+          APP_EXE: ${{ matrix.executable }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $installer = Join-Path $env:GITHUB_WORKSPACE $env:INSTALLER_PATH
+          if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) {
+            throw "Installer was not produced: $installer"
+          }
+
+          $installDir = Join-Path $env:RUNNER_TEMP ("smv-runtime-" + $env:APP_KEY)
+          if (Test-Path -LiteralPath $installDir) {
+            Remove-Item -LiteralPath $installDir -Recurse -Force
+          }
+
+          $installProcess = Start-Process -FilePath $installer -ArgumentList @('/S', "/D=$installDir") -Wait -PassThru
+          if ($installProcess.ExitCode -ne 0) {
+            throw "$env:APP_LABEL installer exited with code $($installProcess.ExitCode)"
+          }
+
+          $appPath = Join-Path $installDir $env:APP_EXE
+          if (-not (Test-Path -LiteralPath $appPath -PathType Leaf)) {
+            $found = Get-ChildItem -LiteralPath $installDir -Filter '*.exe' -File -Recurse |
+              Where-Object { $_.Name -eq $env:APP_EXE } |
+              Select-Object -First 1
+            if ($null -eq $found) {
+              throw "$env:APP_LABEL executable was not found after installation."
+            }
+            $appPath = $found.FullName
+          }
+
+          $logPath = Join-Path $env:RUNNER_TEMP ("smv-" + $env:APP_KEY + "-electron.log")
+          $appProcess = Start-Process -FilePath $appPath -ArgumentList @('--enable-logging', "--log-file=$logPath") -PassThru
+          Start-Sleep -Seconds 15
+          $appProcess.Refresh()
+          if ($appProcess.HasExited) {
+            $details = if (Test-Path -LiteralPath $logPath) { Get-Content -LiteralPath $logPath -Raw } else { 'No Electron log was produced.' }
+            throw "$env:APP_LABEL exited during the launch smoke test. $details"
+          }
+
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "PASS: $env:APP_LABEL installer installed and its Windows application process remained running for 15 seconds."
+
+          # Stop the test process tree so the runner can finish cleanly.
+          & taskkill.exe /PID $appProcess.Id /T /F | Out-Null
+          if ($LASTEXITCODE -ne 0) {
+            Stop-Process -Id $appProcess.Id -Force -ErrorAction SilentlyContinue
+          }
+
+      - name: Upload Electron launch log when present
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smv-${{ matrix.key }}-runtime-log
+          path: ${{ runner.temp }}/smv-${{ matrix.key }}-electron.log
+          if-no-files-found: ignore
+          retention-days: 7
