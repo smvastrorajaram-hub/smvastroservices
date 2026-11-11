@@ -7,7 +7,7 @@ const {
   dialog,
   shell,
   session
-} = require('node:electron');
+} = require('electron');
 
 const APP_NAME = 'SMV CALENDAR';
 const APP_URL = 'https://calendar.smvastroservices.in/';
@@ -144,8 +144,6 @@ async function createMainWindow() {
   mainWindow.webContents.on('did-navigate', () => {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setTitle(APP_NAME);
   });
-  configureWebContents(mainWindow.webContents);
-
   mainWindow.once('ready-to-show', () => {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.show();
   });
