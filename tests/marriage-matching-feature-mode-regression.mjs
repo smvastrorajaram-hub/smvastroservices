@@ -146,11 +146,11 @@ yes(policy.includes('function syncHoroscopePaidEntry()'),'Horoscope has a pre-ca
 yes(html.includes('id="smvHoroscopePaidEntryEnglish"')&&html.includes('id="smvHoroscopePaidEntryTamil"'),'Both Horoscope language forms host the pre-login benefit panel');
 yes(html.includes('config.js?v=20261107-private-chat-selected-astrologer-v5'),'Access config uses its cache-busted URL');
 yes(html.includes('horoscope-form.js?v=20261107-private-chat-selected-astrologer-v5'),'Horoscope form uses its cache-busted URL');
-yes(html.includes('horoscope.css?v=20261110-android-icons-calendar-favicon-seo-contrast-v3'),'Horoscope styles use their cache-busted URL');
+yes(html.includes('horoscope.css?v=20261111-pages-horoscope-header-css-v1'),'Horoscope styles use their cache-busted URL');
 yes(html.includes('marriage-matching.js?v=20261106-basic-nakshatra-input-v1'),'Marriage Matching uses its cache-busted URL');
 
 // All three products share the marker. Existing offline/user data is not cleared.
-const marker='20261110-android-icons-calendar-favicon-seo-contrast-v3';
+const marker='20261111-pages-horoscope-header-css-v1';
 yes(workers.every(source=>source.includes(marker)),'All three Service Workers share the synchronized cache release');
 no(policy.includes('localStorage.clear('),'The policy does not clear origin-wide localStorage');
 no(policy.includes('caches.delete('),'The policy does not clear Cache Storage');
