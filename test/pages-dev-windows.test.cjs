@@ -153,24 +153,28 @@ test('Pages.dev HOROSCOPE reuses the existing header CSS without requesting a mi
   assert.match(calendarHtml, /\.\.\/horoscope\.css\?v=20261111-pages-horoscope-header-css-v1/);
 });
 
-test('all three PWA cache releases are synchronized for the Pages.dev header refresh', () => {
+test('all three PWA cache releases are synchronized for Pages.dev while the .in cache release stays unchanged', () => {
   const workers = [
     read('public/sw.js'),
     read('public/horoscope/sw.js'),
     read('public/horoscope/calendar/sw.js')
   ];
-  const releases = workers.map((worker) => {
-    const match = worker.match(/const SMV_CACHE_RELEASE='([^']+)'/);
-    assert.ok(match, 'every app service worker must declare its cache release');
-    return match[1];
+  const releases = workers.map(worker => {
+    const match = worker.match(/const SMV_CACHE_RELEASE\\s*=\\s*IS_PAGES_DEV_HOST\\s*\\?\\s*'([^']+)'\\s*:\\s*'([^']+)'/);
+    assert.ok(match, 'every app service worker must select a host-specific cache release');
+    return { pages: match[1], legacy: match[2] };
   });
-  assert.deepEqual(releases, [
+  assert.deepEqual(releases.map(item => item.pages), [
+    '20261111-pages-dev-domain-independence-v1',
+    '20261111-pages-dev-domain-independence-v1',
+    '20261111-pages-dev-domain-independence-v1'
+  ]);
+  assert.deepEqual(releases.map(item => item.legacy), [
     '20261111-pages-horoscope-header-css-v1',
     '20261111-pages-horoscope-header-css-v1',
     '20261111-pages-horoscope-header-css-v1'
   ]);
 });
-
 test('each installer creates its own 256x256 Windows icon', () => {
   for (const app of APPS) {
     const script = read(path.join(app.directory, 'scripts/prepare-icon.cjs'));
