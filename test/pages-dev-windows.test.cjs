@@ -76,6 +76,7 @@ test('all three apps explicitly use Windows desktop rendering and persistent off
     assert.match(main, /width:\s*1600/);
     assert.match(main, /height:\s*1000/);
     assert.match(main, /minWidth:\s*1100/);
+    assert.match(main, /useContentSize:\s*true/);
     assert.match(main, /Windows NT 10\.0; Win64; x64/);
     assert.match(main, /process\.versions\.chrome/);
     assert.match(main, /setUserAgent\(DESKTOP_UA/);
@@ -134,6 +135,40 @@ test('HOROSCOPE and CALENDAR workers include offline calculation engines and WAS
   assert.match(calendar, /calendar-rasi-palan\.mjs/);
   assert.match(calendar, /calendar-data\.mjs/);
   assert.match(calendar, /calendar-worker\.mjs/);
+});
+
+test('Pages.dev HOROSCOPE reuses the existing header CSS without requesting a missing layout file', () => {
+  const html = read('public/horoscope/index.html');
+  const css = read('public/horoscope/horoscope.css');
+  const worker = read('public/horoscope/sw.js');
+  const calendarHtml = read('public/horoscope/calendar/index.html');
+
+  assert.doesNotMatch(html, /header-layout\.css/i);
+  assert.match(html, /horoscope\.css\?v=20261111-pages-horoscope-header-css-v1/);
+  assert.match(html, /class="smv-horoscope-brand-header"/);
+  assert.match(html, /class="smv-horoscope-controls-row"/);
+  assert.match(css, /\.smv-horoscope-brand-header\{/);
+  assert.match(css, /\.smv-horoscope-controls-row/);
+  assert.match(worker, /['"]\.\/horoscope\.css['"]/);
+  assert.match(calendarHtml, /\.\.\/horoscope\.css\?v=20261111-pages-horoscope-header-css-v1/);
+});
+
+test('all three PWA cache releases are synchronized for the Pages.dev header refresh', () => {
+  const workers = [
+    read('public/sw.js'),
+    read('public/horoscope/sw.js'),
+    read('public/horoscope/calendar/sw.js')
+  ];
+  const releases = workers.map((worker) => {
+    const match = worker.match(/const SMV_CACHE_RELEASE='([^']+)'/);
+    assert.ok(match, 'every app service worker must declare its cache release');
+    return match[1];
+  });
+  assert.deepEqual(releases, [
+    '20261111-pages-horoscope-header-css-v1',
+    '20261111-pages-horoscope-header-css-v1',
+    '20261111-pages-horoscope-header-css-v1'
+  ]);
 });
 
 test('each installer creates its own 256x256 Windows icon', () => {
