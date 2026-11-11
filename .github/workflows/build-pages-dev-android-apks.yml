@@ -1,0 +1,191 @@
+name: Build SMV Pages.dev Permanent Android Apps
+
+on:
+  pull_request:
+    paths:
+      - "smvpagesandroid/**"
+      - "settings.gradle"
+      - "icon/astro_512.png"
+      - "icon/horoscope_512.png"
+      - "icon/calendar_512.png"
+      - "prepare-pages-dev-android-icons.sh"
+      - "tools/prepare_android_launcher_icons.py"
+      - "scripts/next-pages-android-version.mjs"
+      - "test/pages-dev-android-release.test.mjs"
+      - ".github/workflows/build-pages-dev-android-apks.yml"
+  push:
+    branches: [main]
+    paths:
+      - "smvpagesandroid/**"
+      - "settings.gradle"
+      - "icon/astro_512.png"
+      - "icon/horoscope_512.png"
+      - "icon/calendar_512.png"
+      - "prepare-pages-dev-android-icons.sh"
+      - "tools/prepare_android_launcher_icons.py"
+      - "scripts/next-pages-android-version.mjs"
+      - "test/pages-dev-android-release.test.mjs"
+      - ".github/workflows/build-pages-dev-android-apks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smv-pages-dev-permanent-android-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    env:
+      SMV_SIGNED_RELEASE: ${{ ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main') }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Verify Pages.dev Android source contracts
+        run: node --test test/pages-dev-android-release.test.mjs
+
+      - name: Prepare three independent launcher icons
+        run: bash prepare-pages-dev-android-icons.sh
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android SDK 36
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android 36 build tools
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Gradle 9.6
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.6.0"
+
+      - name: Allocate next permanent Pages.dev release version
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/next-pages-android-version.mjs
+
+      - name: Validate the shared permanent Android signing key
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+        shell: bash
+        env:
+          SMV_ANDROID_KEYSTORE_BASE64: ${{ secrets.SMV_ANDROID_KEYSTORE_BASE64 }}
+          SMV_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.SMV_ANDROID_KEYSTORE_PASSWORD }}
+          SMV_ANDROID_KEY_ALIAS: ${{ secrets.SMV_ANDROID_KEY_ALIAS }}
+          SMV_ANDROID_KEY_PASSWORD: ${{ secrets.SMV_ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          missing=""
+          for name in SMV_ANDROID_KEYSTORE_BASE64 SMV_ANDROID_KEYSTORE_PASSWORD SMV_ANDROID_KEY_ALIAS SMV_ANDROID_KEY_PASSWORD; do
+            if [[ -z "$(printenv "$name" || true)" ]]; then missing="$missing $name"; fi
+          done
+          if [[ -n "$missing" ]]; then
+            echo "::error::Missing permanent Android signing secrets:$missing"
+            exit 1
+          fi
+          if [[ "$SMV_ANDROID_KEY_ALIAS" != "smvastro-release" ]]; then
+            echo "::error::The Pages.dev apps must use the existing permanent alias smvastro-release."
+            exit 1
+          fi
+          echo "Permanent Android signing secrets are present; their values are not printed."
+
+      - name: Restore the existing permanent PKCS12 signing certificate
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+        shell: bash
+        env:
+          SMV_ANDROID_KEYSTORE_BASE64: ${{ secrets.SMV_ANDROID_KEYSTORE_BASE64 }}
+          SMV_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.SMV_ANDROID_KEYSTORE_PASSWORD }}
+          SMV_ANDROID_KEY_ALIAS: ${{ secrets.SMV_ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          set +x
+          umask 077
+          keystore_path="$RUNNER_TEMP/smv-astro-release.p12"
+          printf '%s' "$SMV_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
+          test -s "$keystore_path"
+          keytool -list -keystore "$keystore_path" -storetype PKCS12             -storepass "$SMV_ANDROID_KEYSTORE_PASSWORD" -alias "$SMV_ANDROID_KEY_ALIAS" >/dev/null
+          echo "SMV_ANDROID_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
+
+      - name: Compile Release variants without signing on pull requests
+        if: ${{ env.SMV_SIGNED_RELEASE != 'true' }}
+        run: |
+          set -euo pipefail
+          gradle --no-daemon --no-build-cache -PsmvPagesVersionName=v1.0             :smvpagesandroid:clean             :smvpagesandroid:assembleAstroRelease             :smvpagesandroid:assembleHoroscopeRelease             :smvpagesandroid:assembleCalendarRelease
+
+      - name: Build the three permanent signed Pages.dev Release APKs
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+        run: |
+          set -euo pipefail
+          gradle --no-daemon --no-build-cache             -PsmvPagesVersionName="$SMV_PAGES_ANDROID_VERSION_NAME"             :smvpagesandroid:clean             :smvpagesandroid:assembleAstroRelease             :smvpagesandroid:assembleHoroscopeRelease             :smvpagesandroid:assembleCalendarRelease
+
+      - name: Verify all APKs use the permanent certificate and their own package IDs
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="7a3be159218a38083986dec117c0bd281b3ef42bda65f2bb7b8c9946b5293401"
+          apksigner="$ANDROID_HOME/build-tools/36.0.0/apksigner"
+          aapt="$ANDROID_HOME/build-tools/36.0.0/aapt"
+          mkdir -p "$RUNNER_TEMP/pages-apks"
+          for flavor in astro horoscope calendar; do
+            apk="smvpagesandroid/build/outputs/apk/$flavor/release/smvpagesandroid-$flavor-release.apk"
+            test -s "$apk"
+            report="$("$apksigner" verify --verbose --print-certs "$apk")"
+            grep -Fq 'Verified using v2 scheme (APK Signature Scheme v2): true' <<< "$report"
+            actual="$(sed -n 's/.*Signer #1 certificate SHA-256 digest: //p' <<< "$report" | tr '[:upper:]' '[:lower:]' | tr -d ':')"
+            if [[ "$actual" != "$expected" ]]; then
+              echo "::error::$flavor APK permanent signing certificate mismatch."
+              exit 1
+            fi
+            case "$flavor" in
+              astro) package="in.smvastroservices.pages.astro"; label="SMV-ASTRO-PAGES-DEV" ;;
+              horoscope) package="in.smvastroservices.pages.horoscope"; label="SMV-HOROSCOPE-PAGES-DEV" ;;
+              calendar) package="in.smvastroservices.pages.calendar"; label="SMV-CALENDAR-PAGES-DEV" ;;
+            esac
+            badging="$("$aapt" dump badging "$apk")"
+            grep -Fq "package: name='$package'" <<< "$badging"
+            cp "$apk" "$RUNNER_TEMP/pages-apks/$label-$SMV_PAGES_ANDROID_VERSION_NAME.apk"
+            echo "PASS: $label is signed with the existing permanent certificate and package $package."
+          done
+
+      - name: Publish the three permanent Pages.dev APKs
+        if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: smv-pages-android-${{ env.SMV_PAGES_ANDROID_VERSION_NAME }}-run-${{ github.run_number }}
+          name: SMV Pages.dev Android Apps ${{ env.SMV_PAGES_ANDROID_VERSION_NAME }}
+          body: |
+            Permanent signed Android releases for the three independent Pages.dev apps.
+
+            - SMV ASTRO: https://smvastroservices.pages.dev/
+            - SMV HOROSCOPE: https://smvastroservices.pages.dev/horoscope/
+            - SMV CALENDAR: https://smvastroservices.pages.dev/horoscope/calendar/
+
+            All APKs use their own package IDs and the existing permanent SMV Android release certificate. These packages are separate from the existing .in apps.
+          files: |
+            ${{ runner.temp }}/pages-apks/SMV-ASTRO-PAGES-DEV-${{ env.SMV_PAGES_ANDROID_VERSION_NAME }}.apk
+            ${{ runner.temp }}/pages-apks/SMV-HOROSCOPE-PAGES-DEV-${{ env.SMV_PAGES_ANDROID_VERSION_NAME }}.apk
+            ${{ runner.temp }}/pages-apks/SMV-CALENDAR-PAGES-DEV-${{ env.SMV_PAGES_ANDROID_VERSION_NAME }}.apk
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
