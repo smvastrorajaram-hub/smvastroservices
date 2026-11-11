@@ -1,0 +1,164 @@
+name: Pages.dev Windows Desktop Installers
+
+on:
+  pull_request:
+    paths:
+      - 'desktop/pages-astro-windows/**'
+      - 'desktop/pages-horoscope-windows/**'
+      - 'desktop/pages-calendar-windows/**'
+      - 'public/sw.js'
+      - 'public/horoscope/index.html'
+      - 'public/horoscope/horoscope.css'
+      - 'public/horoscope/sw.js'
+      - 'public/horoscope/calendar/index.html'
+      - 'public/horoscope/calendar/sw.js'
+      - 'test/pages-dev-windows.test.cjs'
+      - '.github/scripts/windows-pages-desktop-smoke.cjs'
+      - '.github/workflows/windows-pages-dev-apps.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-install-desktop-and-offline-test:
+    name: Build, install and test Pages.dev ${{ matrix.app }}
+    runs-on: windows-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - app: ASTRO
+            key: astro
+            name: SMV ASTRO
+            directory: desktop/pages-astro-windows
+            installer: desktop/pages-astro-windows/release/SMV-ASTRO-Pages-Setup-0.1.0-x64.exe
+            executable: SMV ASTRO.exe
+            path: /
+            cache: smv-astro-shell-
+          - app: HOROSCOPE
+            key: horoscope
+            name: SMV HOROSCOPE
+            directory: desktop/pages-horoscope-windows
+            installer: desktop/pages-horoscope-windows/release/SMV-HOROSCOPE-Pages-Setup-0.1.0-x64.exe
+            executable: SMV HOROSCOPE.exe
+            path: /horoscope/
+            cache: smv-horoscope-shell-
+          - app: CALENDAR
+            key: calendar
+            name: SMV CALENDAR
+            directory: desktop/pages-calendar-windows
+            installer: desktop/pages-calendar-windows/release/SMV-CALENDAR-Pages-Setup-0.1.0-x64.exe
+            executable: SMV CALENDAR.exe
+            path: /horoscope/calendar/
+            cache: smv-calendar-forecast-assets-
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install desktop build dependencies
+        working-directory: ${{ matrix.directory }}
+        run: npm install --no-audit --no-fund
+
+      - name: Run Pages.dev, PWA and offline source regression tests
+        working-directory: ${{ matrix.directory }}
+        run: npm test
+
+      - name: Build Pages.dev Windows installer
+        working-directory: ${{ matrix.directory }}
+        run: npm run dist:win
+
+      - name: Install and launch packaged Windows application
+        shell: pwsh
+        env:
+          APP_LABEL: ${{ matrix.app }}
+          APP_KEY: ${{ matrix.key }}
+          INSTALLER_PATH: ${{ matrix.installer }}
+          APP_EXE: ${{ matrix.executable }}
+          EXPECTED_NAME: ${{ matrix.name }}
+          EXPECTED_PATH: ${{ matrix.path }}
+          CACHE_PREFIX: ${{ matrix.cache }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $installer = Join-Path $env:GITHUB_WORKSPACE $env:INSTALLER_PATH
+          if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) {
+            throw "Installer was not produced: $installer"
+          }
+
+          $installDir = Join-Path $env:RUNNER_TEMP ("smv-pages-" + $env:APP_KEY)
+          if (Test-Path -LiteralPath $installDir) {
+            Remove-Item -LiteralPath $installDir -Recurse -Force
+          }
+
+          $setup = Start-Process -FilePath $installer -ArgumentList @('/S', "/D=$installDir") -Wait -PassThru
+          if ($setup.ExitCode -ne 0) {
+            throw "$env:APP_LABEL installer exited with code $($setup.ExitCode)"
+          }
+
+          $appPath = Join-Path $installDir $env:APP_EXE
+          if (-not (Test-Path -LiteralPath $appPath -PathType Leaf)) {
+            $found = Get-ChildItem -LiteralPath $installDir -Filter '*.exe' -File -Recurse |
+              Where-Object { $_.Name -eq $env:APP_EXE } |
+              Select-Object -First 1
+            if ($null -eq $found) { throw "$env:APP_LABEL executable was not found after installation." }
+            $appPath = $found.FullName
+          }
+
+          $env:SMV_DEBUG_PORT = '9222'
+          $env:SMV_EXPECTED_PATH = $env:EXPECTED_PATH
+          $env:SMV_EXPECTED_NAME = $env:EXPECTED_NAME
+          $env:SMV_CACHE_PREFIX = $env:CACHE_PREFIX
+          $proofDir = Join-Path $env:GITHUB_WORKSPACE 'pages-dev-desktop-proof'
+          New-Item -ItemType Directory -Force -Path $proofDir | Out-Null
+          $env:SMV_SCREENSHOT_DIR = $proofDir
+
+          $logPath = Join-Path $env:RUNNER_TEMP ("smv-pages-" + $env:APP_KEY + "-electron.log")
+          $appProcess = Start-Process -FilePath $appPath -ArgumentList @(
+            '--remote-debugging-port=9222',
+            '--remote-allow-origins=*',
+            '--enable-logging',
+            "--log-file=$logPath"
+          ) -PassThru
+
+          try {
+            node (Join-Path $env:GITHUB_WORKSPACE '.github/scripts/windows-pages-desktop-smoke.cjs')
+            $proofImages = @(Get-ChildItem -LiteralPath $env:SMV_SCREENSHOT_DIR -Filter '*.png' -File)
+            if ($proofImages.Count -lt 2) { throw 'Desktop and offline proof screenshots were not created.' }
+            $appProcess.Refresh()
+            if ($appProcess.HasExited) {
+              throw "$env:APP_LABEL closed before desktop/offline validation finished."
+            }
+          } finally {
+            & taskkill.exe /PID $appProcess.Id /T /F | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+              Stop-Process -Id $appProcess.Id -Force -ErrorAction SilentlyContinue
+            }
+          }
+
+      - name: Upload Pages.dev Windows installer
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smv-pages-${{ matrix.key }}-windows-installer
+          path: ${{ matrix.installer }}
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload desktop and offline screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smv-pages-${{ matrix.key }}-desktop-offline-proof
+          path: |
+            pages-dev-desktop-proof/*.png
+            ${{ runner.temp }}/smv-pages-${{ matrix.key }}-electron.log
+          if-no-files-found: ignore
+          retention-days: 14

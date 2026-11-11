@@ -1,0 +1,51 @@
+{
+  "name": "smv-astro-pages-windows",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Standalone SMV ASTRO Pages.dev Windows desktop application.",
+  "productName": "SMV ASTRO",
+  "author": "SMV ASTRO SERVICES",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test ../../test/pages-dev-windows.test.cjs",
+    "predist:win": "node scripts/prepare-icon.cjs",
+    "dist:win": "electron-builder --win nsis --x64"
+  },
+  "devDependencies": {
+    "electron": "45.2.3",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "in.smvastroservices.pages.astro.desktop",
+    "directories": {
+      "output": "release",
+      "buildResources": "assets"
+    },
+    "files": [
+      "main.cjs",
+      "assets/smv-astro.ico",
+      "package.json"
+    ],
+    "win": {
+      "icon": "assets/smv-astro.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "SMV-ASTRO-Pages-Setup-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "SMV ASTRO"
+    }
+  }
+}
