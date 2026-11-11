@@ -1277,7 +1277,9 @@ test('Homepage exposes Pages.dev PWA install UI and retains the dedicated Androi
   const html = read('public/index.html');
   const pwa = read('public/manifest.webmanifest');
   const installer = read('public/android-app-install.js');
+  const interfaceScript = read('public/interface.js');
   assert.ok(html.includes('id="smvInstallAppSection"'));
+  assert.match(interfaceScript, /location\.hostname!=='smvastroservices\.pages\.dev'/);
   assert.ok(html.includes('id="smvInstallAppBtn"'));
   assert.ok(html.includes('id="smvInstallAppHelp"'));
   assert.match(installer, /if \(pagesDevHost\)/);
