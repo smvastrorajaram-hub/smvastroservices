@@ -134,11 +134,11 @@ test("Verified full Horoscope report continues through existing Save and PDF/Pri
 });
 
 test("All three apps use one synchronized cache release; Horoscope runtime revision is bumped", () => {
-  const expected = "20261111-pages-dev-domain-independence-v1";
+  const expected = "20261111-pages-horoscope-header-css-v1";
   const versions = workers.map(source => /const SMV_CACHE_RELEASE='([^']+)'/.exec(source)?.[1]);
   assert.deepEqual(versions, [expected, expected, expected]);
   const runtime = /const RUNTIME_REVISION='([^']+)'/.exec(workers[1])?.[1];
-  assert.equal(runtime, "v273-pages-dev-domain-independence-20261111");
+  assert.equal(runtime, "v272-pages-horoscope-header-css-20261111");
 });
 
 test("No origin-wide local storage, Cache API or IndexedDB deletion is introduced", () => {
