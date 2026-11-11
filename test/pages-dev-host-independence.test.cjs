@@ -241,11 +241,11 @@ test('Each PWA uses synchronized Pages.dev and .in cache releases for public con
   ];
   for (const source of workers) {
     assert.match(source, /const IS_PAGES_DEV_HOST\s*=/);
-    assert.match(source, /'20261111-pages-dev-adsense-content-review-v1'\s*:\s*'20261111-in-adsense-content-review-v1'/);
+    assert.match(source, /'20261111-pages-dev-pwa-install-only-v1'\s*:\s*'20261111-in-adsense-content-review-v1'/);
     assert.match(source, /PAGES_DEV_HELPER_FILES\s*=\s*IS_PAGES_DEV_HOST/);
   }
   const horoscope = workers[1];
-  assert.match(horoscope, /'v275-pages-dev-adsense-content-20261111'\s*:\s*'v273-in-adsense-content-20261111'/);
+  assert.match(horoscope, /'v276-pages-dev-pwa-install-only-20261111'\s*:\s*'v273-in-adsense-content-20261111'/);
 });
 
 test('The Pages.dev helper is cached only in Pages.dev worker scopes', () => {
