@@ -55,6 +55,9 @@ jobs:
           }
 
           check_contains 'https://smvastroservices.in/' 'google-adsense-account" content="ca-pub-8603281557754018"'
+          check_contains 'https://smvastroservices.in/astrology-guides/' 'Astrology Guides and Learning Library'
+          check_contains 'https://smvastroservices.in/astrology-guides/birth-chart-basics/' 'Understanding a Vedic Birth Chart'
+          check_contains 'https://smvastroservices.in/astrology-guides/panchangam/' 'The Five Parts of Panchangam'
           check_contains 'https://smvastroservices.in/astrology-services/' 'adsbygoogle.js?client=ca-pub-8603281557754018'
           check_contains 'https://smvastroservices.in/astrologer-registration/' 'adsbygoogle.js?client=ca-pub-8603281557754018'
           check_contains 'https://smvastroservices.in/customer-registration/' 'adsbygoogle.js?client=ca-pub-8603281557754018'
