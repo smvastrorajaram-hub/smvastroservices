@@ -19,11 +19,15 @@ async function waitForTarget() {
       const response = await fetch('http://127.0.0.1:' + PORT + '/json/list');
       if (response.ok) {
         const targets = await response.json();
-        const target = targets.find((item) =>
-          item.type === 'page' &&
-          item.webSocketDebuggerUrl &&
-          item.url.startsWith('https://smvastroservices.pages.dev')
-        );
+        const target = targets.find((item) => {
+          if (item.type !== 'page' || !item.webSocketDebuggerUrl ||
+              !item.url.startsWith('https://smvastroservices.pages.dev')) return false;
+          try {
+            return new URL(item.url).pathname === EXPECTED_PATH;
+          } catch {
+            return false;
+          }
+        });
         if (target) return target;
       }
     } catch (error) {
@@ -141,6 +145,43 @@ async function main() {
     await cdp.send('Page.enable');
     await cdp.send('Runtime.enable');
     await cdp.send('Network.enable');
+
+    // /json/list can expose a destination URL before Chromium has committed its
+    // navigation. Wait for the expected document to finish loading before
+    // touching navigator.serviceWorker (which is absent in the prior about:blank
+    // execution context).
+    const readinessDeadline = Date.now() + 90000;
+    let documentReady = null;
+    while (Date.now() < readinessDeadline) {
+      try {
+        documentReady = await cdp.evaluate(
+          '({href:location.href,readyState:document.readyState,' +
+          'secure:isSecureContext,serviceWorkerAvailable:' +
+          '(typeof navigator.serviceWorker?.getRegistrations === "function")})'
+        );
+        if (
+          documentReady.href.startsWith('https://smvastroservices.pages.dev') &&
+          new URL(documentReady.href).pathname === EXPECTED_PATH &&
+          documentReady.readyState === 'complete' &&
+          documentReady.secure &&
+          documentReady.serviceWorkerAvailable
+        ) break;
+      } catch {
+        // A navigation can replace the execution context while it commits.
+      }
+      await sleep(500);
+    }
+    if (
+      !documentReady ||
+      !documentReady.href.startsWith('https://smvastroservices.pages.dev') ||
+      new URL(documentReady.href).pathname !== EXPECTED_PATH ||
+      documentReady.readyState !== 'complete' ||
+      !documentReady.secure ||
+      !documentReady.serviceWorkerAvailable
+    ) {
+      throw new Error('Expected secure Pages.dev document and Service Worker API were not ready: ' +
+        JSON.stringify(documentReady));
+    }
 
     const initialExpression = '(async()=>{' +
       'const link=document.querySelector("link[rel=manifest]");' +
