@@ -20,16 +20,16 @@ test('AdSense homepage loader is restricted to the submitted .in website', () =>
   const html = read('public/index.html');
   assert.match(html, new RegExp('<meta\\s+name="google-adsense-account"\\s+content="' + clientId + '"'));
   assert.match(html, /id="smv-adsense-site-loader"/);
-  assert.match(html, /host==='smvastroservices\.in'\s*\|\|\s*host==='www\.smvastroservices\.in'/);
-  assert.match(html, /if\(!isPrimarySite\)return/);
-  assert.match(html, /document\.createElement\('script'\)/);
-  assert.match(html, /pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-8603281557754018/);
-  assert.match(html, /script\.async=true/);
-  assert.match(html, /script\.crossOrigin='anonymous'/);
-  assert.match(html, /document\.head\.appendChild\(script\)/);
-  const loader = html.match(/<script id="smv-adsense-site-loader">[\\s\\S]*?<\\/script>/)?.[0];
+  const loader = html.match(/<script id="smv-adsense-site-loader">[\s\S]*?<\/script>/)?.[0];
   assert.ok(loader, 'The primary-domain AdSense loader must be present.');
-  assert.doesNotMatch(loader, /pages\\.dev/i, 'The AdSense loader must not enable the Pages.dev preview host.');
+  assert.match(loader, /host==='smvastroservices\.in'\s*\|\|\s*host==='www\.smvastroservices\.in'/);
+  assert.match(loader, /if\(!isPrimarySite\)return/);
+  assert.match(loader, /document\.createElement\('script'\)/);
+  assert.match(loader, /pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-8603281557754018/);
+  assert.match(loader, /script\.async=true/);
+  assert.match(loader, /script\.crossOrigin='anonymous'/);
+  assert.match(loader, /document\.head\.appendChild\(script\)/);
+  assert.doesNotMatch(loader, /pages\.dev/i, 'The AdSense loader must not enable the Pages.dev preview host.');
   assert.equal((html.match(/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js/g) || []).length, 1);
 });
 
