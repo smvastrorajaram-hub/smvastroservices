@@ -184,6 +184,13 @@ test('Only Pages.dev HTML entry points load the host helper; Firebase account ac
   assert.doesNotMatch(read('public/horoscope/report-print.html'), /pages-dev-host-independence/);
 });
 
+test('Pages.dev printed Horoscope PDFs use the Pages.dev website host without changing .in output', () => {
+  const printScript = read('public/horoscope/report-print.js');
+  assert.match(printScript, /if\(location\.hostname==='smvastroservices\.pages\.dev'\)/);
+  assert.match(printScript, /websiteLabel\.textContent='www\.smvastroservices\.pages\.dev'/);
+  assert.match(read('public/horoscope/report-print.html'), /www\.smvastroservices\.in/);
+});
+
 test('Existing Firebase Auth and Verify email handler domains remain the dedicated .in services', () => {
   const action = read('public/auth/action.mjs');
   const verification = read('verification-email.js');
@@ -255,6 +262,14 @@ test('Cloudflare Pages serves Pages.dev-only robots and sitemap while leaving .i
   assert.match(pagesRobotsText, /Sitemap: https:\/\/smvastroservices\.pages\.dev\/sitemap\.xml/);
   assert.doesNotMatch(pagesRobotsText, /smvastroservices\.in/);
 
+  const pagesAds = await worker.fetch(
+    new Request('https://smvastroservices.pages.dev/ads.txt'), env
+  );
+  const pagesAdsText = await pagesAds.text();
+  assert.equal(pagesAds.status, 200);
+  assert.match(pagesAdsText, /google\\.com, pub-8603281557754018, DIRECT/);
+  assert.doesNotMatch(pagesAdsText, /smvastroservices\\.in/);
+
   const pagesSitemap = await worker.fetch(
     new Request('https://smvastroservices.pages.dev/sitemap.xml'), env
   );
@@ -272,6 +287,11 @@ test('Cloudflare Pages serves Pages.dev-only robots and sitemap while leaving .i
     new Request('https://smvastroservices.in/robots.txt'), env
   );
   assert.equal(await inRobots.text(), 'STATIC:/robots.txt');
+  const inAds = await worker.fetch(
+    new Request('https://smvastroservices.in/ads.txt'), env
+  );
+  assert.equal(await inAds.text(), 'STATIC:/ads.txt');
+
   const inSitemap = await worker.fetch(
     new Request('https://smvastroservices.in/sitemap.xml'), env
   );
