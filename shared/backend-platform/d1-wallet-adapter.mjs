@@ -481,7 +481,7 @@ export function createD1WalletAdapter({ db, adminWalletUid = '', now = Date.now,
       "COALESCE(o.legacy_total_bonus_minutes,0) + COALESCE((SELECT SUM(r.bonus_minutes) FROM smv_domain_offer_redemptions r WHERE r.offer_id=o.offer_id AND COALESCE(r.bonus_credit_paise,0)=0),0) AS total_bonus_minutes_awarded, " +
       "COALESCE((SELECT SUM(r.bonus_credit_paise) FROM smv_domain_offer_redemptions r WHERE r.offer_id=o.offer_id),0) AS total_bonus_credit_paise_awarded " +
       "FROM smv_domain_wallet_offers o" + where +
-      " ORDER BY priority DESC, bonus_minutes DESC, offer_id ASC LIMIT 100",
+      " ORDER BY priority DESC, bonus_credit_paise DESC, offer_id ASC LIMIT 100",
       values
     ).all();
     return (result?.results || []).map(row => {
