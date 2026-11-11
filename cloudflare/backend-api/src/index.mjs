@@ -686,7 +686,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
 
 app.get('/healthz', async (_req, res) => {
   const schema = await inspectBackendSchema(env.DB);
-  walletDomainSchemaReady = schema.checks.sharedDomainSchema;
+  walletDomainSchemaReady = schema.checks.walletSchema;
   walletRechargeSchemaReady = schema.checks.walletRechargeSchema;
   liveSessionSchemaReady = schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;
   const firebaseConnected = await firebaseConnectivityProbe();
@@ -794,7 +794,7 @@ registerBackendReadinessRoute({
 
 app.get('/api/backend/migration-status', async (_req, res) => {
   const schema = await inspectBackendSchema(env.DB);
-  walletDomainSchemaReady = schema.checks.sharedDomainSchema;
+  walletDomainSchemaReady = schema.checks.walletSchema;
   walletRechargeSchemaReady = schema.checks.walletRechargeSchema;
   liveSessionSchemaReady = schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;
   const firebaseConnected = await firebaseConnectivityProbe();
