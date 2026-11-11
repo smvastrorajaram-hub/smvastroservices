@@ -25,10 +25,10 @@ function request(body = {}, authorization = 'Bearer token') {
 function makeState(overrides = {}) {
   const calls = [];
   const offer = {
-    id: 'offer-1', offerType: 'wallet_recharge_bonus_minutes', name: 'Deepavali',
+    id: 'offer-1', offerType: 'wallet_recharge_bonus_credit', name: 'Deepavali',
     bannerTheme: 'diwali', enabled: true, minimumRechargeAmountPaise: 5000,
-    bonusMinutes: 5, perCustomerLimit: 2, totalUsageLimit: 100,
-    usedCount: 4, successfulRedemptions: 4, totalBonusMinutesAwarded: 20,
+    bonusCreditAmountPaise: 2500, legacyBonusMinutes: 5, perCustomerLimit: 2, totalUsageLimit: 100,
+    usedCount: 4, successfulRedemptions: 4, totalBonusMinutesAwarded: 20, totalBonusCreditPaiseAwarded: 10000,
     priority: 10, startAt: '2026-10-31T04:30:00.000Z', endAt: null
   };
   const walletAdapter = {
@@ -57,6 +57,8 @@ test('public Home-page route lists only active offers from D1', async () => {
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.success, true);
   assert.equal(res.body.offers[0].bannerTheme, 'diwali');
+  assert.equal(res.body.offers[0].bonusCreditAmountPaise, 2500);
+  assert.equal('bonusMinutes' in res.body.offers[0], false);
   assert.deepEqual(state.calls.find(call => call[0] === 'list')[1], { activeOnly: true });
 });
 
@@ -75,15 +77,16 @@ test('Admin can list saved offers without losing redemption counters', async () 
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.offers[0].usedCount, 4);
   assert.equal(res.body.offers[0].totalBonusMinutesAwarded, 20);
+  assert.equal(res.body.offers[0].totalBonusCreditPaiseAwarded, 10000);
   assert.deepEqual(state.calls.find(call => call[0] === 'list')[1], { activeOnly: false });
 });
 
-test('Admin save preserves the legacy Offer payload and converts datetime-local as India time', async () => {
+test('Admin saves a paise-exact Bonus Credit amount and converts datetime-local as India time', async () => {
   const state = makeState();
   const res = responseHarness();
   await state.app.handlers.get('POST /admin/offers/save')(request({
     name: 'Tamil New Year', bannerTheme: 'tamil_new_year', enabled: true,
-    minimumRechargeAmount: '25.50', bonusMinutes: 12, perCustomerLimit: 0,
+    minimumRechargeAmount: '25.50', bonusCreditAmount: '12.50', perCustomerLimit: 0,
     totalUsageLimit: 500, priority: 25,
     startAt: '2026-10-31T10:00', endAt: '2026-11-01T10:00'
   }), res);
@@ -91,6 +94,7 @@ test('Admin save preserves the legacy Offer payload and converts datetime-local 
   assert.equal(res.body.success, true);
   const save = state.calls.find(call => call[0] === 'save')[1];
   assert.equal(save.minimumRechargeAmountPaise, 2550);
+  assert.equal(save.bonusCreditPaise, 1250);
   assert.equal(save.startAtMs, Date.parse('2026-10-31T10:00:00+05:30'));
   assert.equal(save.endAtMs, Date.parse('2026-11-01T10:00:00+05:30'));
   assert.equal(save.updatedBy, 'admin-1');
@@ -99,8 +103,9 @@ test('Admin save preserves the legacy Offer payload and converts datetime-local 
 
 test('Admin save rejects unsupported Welcome theme and invalid date range', async () => {
   for (const payload of [
-    { name: 'Old welcome', bannerTheme: 'welcome', bonusMinutes: 2 },
-    { name: 'Reverse dates', bannerTheme: 'generic', bonusMinutes: 2, startAt: '2026-11-02T10:00', endAt: '2026-11-01T10:00' }
+    { name: 'Old welcome', bannerTheme: 'welcome', bonusCreditAmount: '2.00' },
+    { name: 'Missing Bonus Credit amount', bannerTheme: 'generic' },
+    { name: 'Reverse dates', bannerTheme: 'generic', bonusCreditAmount: '2.00', startAt: '2026-11-02T10:00', endAt: '2026-11-01T10:00' }
   ]) {
     const state = makeState();
     const res = responseHarness();
