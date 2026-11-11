@@ -3257,7 +3257,8 @@ async function smvRenderAdminWalletOffers(){
  ];
  card.innerHTML=[
   '<h3>Wallet Recharge Bonus Offers</h3>',
-  '<p class="small">When an Offer is ON and within its Start / End Date window, it appears on the public Home page. After a qualifying captured recharge, Bonus Credit is awarded only when the Admin Promotional Fund can fully back it. Bonus Credit is applied first to Live / Booked Live service value; remaining value is charged to Original Wallet. Astrologer and Admin commission are calculated on the full service value, including Bonus Credit. Bonus Credit is promotional, non-transferable and non-withdrawable. Legacy minute balances remain separate and are not converted automatically.</p>',
+  '<p class="small">When an Offer is ON and within its Start / End Date window, it appears on the public Home page. After a qualifying captured recharge, Bonus Credit is awarded only when the separate Admin-funded Promotional Fund can fully back it. Bonus Credit is applied first to Live / Booked Live service value; remaining value is charged to Original Wallet. Astrologer and Admin commission are calculated on the full service value, including Bonus Credit. Bonus Credit is promotional, non-transferable and non-withdrawable. Legacy minute balances remain separate and are not converted automatically.</p>',
+  '<section class="card" style="margin:12px 0"><h4>Separate Promotional Fund</h4><p class="small">This is separate from Admin Earnings. Transfer an amount from the Admin Wallet into this fund before enabling Bonus Credit offers. Only this funded balance can pay for new Bonus Credit awards.</p><div class="grid"><div><span class="small">Promotional Fund Available</span><b id="smvPromoFundBalance">Loading…</b></div><div><span class="small">Admin Wallet Available</span><b id="smvPromoAdminWalletBalance">Loading…</b></div></div><label><b>Allocate from Admin Wallet (₹)</b><input id="smvPromoFundAmount" type="number" min="0.01" step="0.01" value="100.00"></label><div class="action-row"><button class="btn" id="smvPromoFundAllocate" type="button">ALLOCATE TO PROMOTIONAL FUND</button><button class="btn gray" id="smvPromoFundRefresh" type="button">REFRESH FUND</button></div><div id="smvPromoFundMessage" class="small" role="status" aria-live="polite"></div></section>',
   '<input id="smvWalletOfferId" type="hidden">',
   '<div class="grid">',
   '<label><b>Offer Name</b><input id="smvWalletOfferName" maxlength="120" placeholder="Diwali Bonus Credit"></label>',
@@ -3374,6 +3375,47 @@ async function smvRenderAdminWalletOffers(){
    if(list)list.innerHTML='<div class="empty error">'+escapeHtml(error.message||String(error))+'</div>';
   }
  };
+ const fundBalance=$('smvPromoFundBalance'),adminBalance=$('smvPromoAdminWalletBalance'),fundMessage=$('smvPromoFundMessage');
+ const reloadPromotionalFund=async()=>{
+  try{
+   const result=await renderApi('/admin/promotional-fund',{method:'GET'});
+   if(result?.success!==true||!result.fund)throw new Error(result?.error||'Promotional Fund was not returned by the server.');
+   if(fundBalance)fundBalance.textContent=smvWalletMoney(Number(result.fund.balancePaise||0));
+   if(adminBalance)adminBalance.textContent=smvWalletMoney(Number(result.fund.adminWalletAvailableBalancePaise||0));
+   return result.fund;
+  }catch(error){
+   if(fundBalance)fundBalance.textContent='Unavailable';
+   if(adminBalance)adminBalance.textContent='Unavailable';
+   if(fundMessage)fundMessage.innerHTML='<span class="error">'+escapeHtml(error.message||String(error))+'</span>';
+   throw error;
+  }
+ };
+ const allocateButton=$('smvPromoFundAllocate');
+ if(allocateButton)allocateButton.onclick=async()=>{
+  const amount=$('smvPromoFundAmount').value;
+  if(!/^\d{1,9}(?:\.\d{1,2})?$/.test(String(amount||''))||Math.round(Number(amount)*100)<1){
+   if(fundMessage)fundMessage.innerHTML='<span class="error">Enter a positive allocation amount with up to two decimal places.</span>';
+   return;
+  }
+  allocateButton.disabled=true;allocateButton.textContent='ALLOCATING…';
+  if(fundMessage)fundMessage.textContent='Transferring funds from Admin Wallet to the separate Promotional Fund…';
+  try{
+   const result=await renderApi('/admin/promotional-fund/allocate',{method:'POST',body:JSON.stringify({
+    amount,idempotencyKey:'admin-promo-'+crypto.randomUUID()
+   })});
+   if(result?.success!==true||!Number.isSafeInteger(Number(result.balancePaise)))throw new Error(result?.error||'The Promotional Fund allocation was not confirmed.');
+   if(fundBalance)fundBalance.textContent=smvWalletMoney(Number(result.balancePaise));
+   if(adminBalance)adminBalance.textContent=smvWalletMoney(Number(result.adminWalletAvailableBalancePaise||0));
+   if(fundMessage)fundMessage.innerHTML='<span class="success">Allocation confirmed. Separate Promotional Fund balance: '+smvWalletMoney(Number(result.balancePaise))+'. Admin Earnings were not changed; funds were transferred from Admin Wallet available balance.</span>';
+   await reloadPromotionalFund();
+  }catch(error){
+   if(fundMessage)fundMessage.innerHTML='<span class="error">'+escapeHtml(error.message||String(error))+'</span>';
+   await reloadPromotionalFund().catch(()=>{});
+  }finally{allocateButton.disabled=false;allocateButton.textContent='ALLOCATE TO PROMOTIONAL FUND';}
+ };
+ const fundRefresh=$('smvPromoFundRefresh');
+ if(fundRefresh)fundRefresh.onclick=()=>reloadPromotionalFund().catch(()=>{});
+ await reloadPromotionalFund().catch(()=>{});
  const save=$('saveSmvWalletOfferBtn'),msg=$('smvWalletOfferMsg');
  if(save)save.onclick=async()=>{
   const payload={
