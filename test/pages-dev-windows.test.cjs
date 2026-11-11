@@ -160,7 +160,7 @@ test('all three PWA cache releases are synchronized for Pages.dev while the .in 
     read('public/horoscope/calendar/sw.js')
   ];
   const releases = workers.map(worker => {
-    const match = worker.match(/const SMV_CACHE_RELEASE\\s*=\\s*IS_PAGES_DEV_HOST\\s*\\?\\s*'([^']+)'\\s*:\\s*'([^']+)'/);
+    const match = worker.match(/const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/);
     assert.ok(match, 'every app service worker must select a host-specific cache release');
     return { pages: match[1], legacy: match[2] };
   });
