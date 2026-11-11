@@ -98,7 +98,7 @@ test('Admin can read the separate Promotional Fund and Admin cash balance', asyn
 test('Only Admin can allocate money to the separately funded Promotional Fund', async () => {
   const state=makeState();
   const res=responseHarness();
-  await state.app.handlers.post('POST /admin/promotional-fund/allocate')(request({
+  await state.app.handlers.get('POST /admin/promotional-fund/allocate')(request({
     amount:'125.00',idempotencyKey:'admin-promo-test-request-001'
   }),res);
   assert.equal(res.statusCode,200);
@@ -116,7 +116,7 @@ test('Customer cannot read or allocate the Promotional Fund', async () => {
   await state.app.handlers.get('GET /admin/promotional-fund')(request(),read);
   assert.equal(read.statusCode,403);
   const allocate=responseHarness();
-  await state.app.handlers.post('POST /admin/promotional-fund/allocate')(request({
+  await state.app.handlers.get('POST /admin/promotional-fund/allocate')(request({
     amount:'50.00',idempotencyKey:'admin-promo-test-request-002'
   }),allocate);
   assert.equal(allocate.statusCode,403);
@@ -127,7 +127,7 @@ test('Promotional Fund allocation rejects zero or malformed rupee amounts', asyn
   for(const amount of ['0','-10','1.001','abc']){
     const state=makeState();
     const res=responseHarness();
-    await state.app.handlers.post('POST /admin/promotional-fund/allocate')(request({
+    await state.app.handlers.get('POST /admin/promotional-fund/allocate')(request({
       amount,idempotencyKey:'admin-promo-test-request-003'
     }),res);
     assert.equal(res.statusCode,400);
