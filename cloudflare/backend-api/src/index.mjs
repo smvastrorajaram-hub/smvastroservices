@@ -390,16 +390,9 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
   }
   const walletSchemaReady = async () => {
     try {
-      const [sharedDomainRow,bonusCreditRow] = await Promise.all([
-        env.DB.prepare(
-          'SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = ? LIMIT 1'
-        ).bind('shared-domain').first(),
-        env.DB.prepare(
-          'SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = ? LIMIT 1'
-        ).bind('bonus-credit-wallet').first()
-      ]);
-      const ready = sharedDomainRow?.schema_version === '0002_shared_domain_repository' &&
-        bonusCreditRow?.schema_version === '0013_bonus_credit_wallet';
+      const schema = await inspectBackendSchema(env.DB);
+      const ready = schema.checks.walletSchema === true &&
+        schema.checks.bonusCreditWalletSchema === true;
       walletDomainSchemaReady = ready;
       return ready;
     } catch {
