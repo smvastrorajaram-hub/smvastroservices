@@ -506,3 +506,54 @@ html body #dashboardContent .smv-astrologer-dashboard{padding:0!important;margin
     animation:none;opacity:1;
   }
 }
+
+
+/* ---------- Earnings, Live and consultation date/time metadata ---------- */
+#dashboardContent .smv-live-session-dates,
+#dashboardContent .smv-live-booking-dates,
+#dashboardContent .smv-private-chat-dates,
+#dashboardContent .smv-earning-history-row .smv-history-detail{
+  display:block;
+  margin:7px 0 0;
+  font-size:var(--smv-dashboard-meta);
+  line-height:1.55;
+  font-weight:400;
+  color:#242424;
+  overflow-wrap:anywhere;
+  font-variant-numeric:tabular-nums;
+}
+#dashboardContent .smv-live-booking-dates,
+#dashboardContent .smv-live-session-dates,
+#dashboardContent .smv-private-chat-dates{
+  padding:7px 9px;
+  border-left:3px solid #c59a43;
+  border-radius:4px;
+  background:rgba(197,154,67,.08);
+}
+#dashboardContent .smv-earning-history-row{
+  padding:12px 0;
+  border-bottom:1px solid rgba(80,65,38,.16);
+}
+#dashboardContent .smv-earning-history-row .smv-history-amount{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:baseline;
+  gap:6px;
+}
+#dashboardContent .smv-earning-history-row .smv-history-amount>b{
+  font-size:var(--smv-dashboard-emphasis);
+  font-weight:750;
+  font-variant-numeric:tabular-nums;
+}
+#dashboardContent .smv-earning-history-row .smv-history-content{
+  margin-top:4px;
+  font-size:var(--smv-dashboard-support);
+  line-height:1.5;
+  overflow-wrap:anywhere;
+}
+@media(max-width:480px){
+  #dashboardContent .smv-live-session-dates,
+  #dashboardContent .smv-live-booking-dates,
+  #dashboardContent .smv-private-chat-dates,
+  #dashboardContent .smv-earning-history-row .smv-history-detail{line-height:1.6;}
+}

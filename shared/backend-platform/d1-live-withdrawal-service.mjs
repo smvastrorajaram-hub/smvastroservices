@@ -14,6 +14,37 @@ function moneyPaise(value) {
   const paise=Math.round(amount*100);
   return Number.isSafeInteger(paise)?paise:0;
 }
+function optionalMoneyPaise(value) {
+  if(value===null||value===undefined||String(value).trim()==='')return null;
+  const amount=Number(value);
+  if(!Number.isFinite(amount)||amount<0)return null;
+  const paise=Math.round(amount*100);
+  return Number.isSafeInteger(paise)?paise:null;
+}
+function timestampMillis(value) {
+  if(value&&typeof value.toMillis==='function')return Number(value.toMillis())||0;
+  if(value&&typeof value.toDate==='function')return value.toDate().getTime()||0;
+  if(value instanceof Date)return value.getTime()||0;
+  if(value&&typeof value==='object'&&(value.seconds??value._seconds)!=null) {
+    const seconds=Number(value.seconds??value._seconds),nanos=Number(value.nanoseconds??value._nanoseconds??0);
+    return Number.isFinite(seconds)?seconds*1000+(Number.isFinite(nanos)?nanos:0)/1e6:0;
+  }
+  if(value===null||value===undefined||value==='')return 0;
+  const parsed=typeof value==='number'?value:Date.parse(String(value));
+  return Number.isFinite(parsed)?parsed:0;
+}
+function timestampIso(value) {
+  const millis=timestampMillis(value);
+  return millis>0?new Date(millis).toISOString():null;
+}
+function optionalPercent(...values) {
+  for(const value of values) {
+    if(value===null||value===undefined||String(value).trim()==='')continue;
+    const number=Number(value);
+    if(Number.isFinite(number)&&number>=0&&number<=100)return number;
+  }
+  return null;
+}
 function withdrawalError(code,message,status=409) {
   return walletError(code,message,status);
 }
@@ -102,85 +133,56 @@ export function createD1WithdrawalService({db,firestore,now=Date.now,cryptoImpl=
 
   async function queryLegacyEarnings(uid) {
     const [questions,privateConsultations]=await Promise.all([
-      firestore.runQuery({
-        collectionPath:'smv_questions',
-        filters:[
-          {field:'astrologerId',op:'==',value:uid},
-          {field:'status',op:'==',value:'answered'},
-          {field:'commissionStatus',op:'==',value:'credited'}
-        ],
-        limit:1000
-      }),
-      firestore.runQuery({
-        collectionPath:'smv_private_consultations',
-        filters:[
-          {field:'astrologerId',op:'==',value:uid},
-          {field:'commissionStatus',op:'==',value:'credited'}
-        ],
-        limit:1000
-      })
+      firestore.runQuery({collectionPath:'smv_questions',filters:[{field:'astrologerId',op:'==',value:uid},{field:'status',op:'==',value:'answered'},{field:'commissionStatus',op:'==',value:'credited'}],limit:1000}),
+      firestore.runQuery({collectionPath:'smv_private_consultations',filters:[{field:'astrologerId',op:'==',value:uid},{field:'commissionStatus',op:'==',value:'credited'}],limit:1000})
     ]);
-    if(questions.length>=1000||privateConsultations.length>=1000) {
-      throw withdrawalError(
-        'WITHDRAWAL_LEGACY_EARNINGS_PAGE_LIMIT',
-        'Historical earnings exceed one safe Firestore query page. Complete the legacy earnings backfill before requesting a withdrawal.',
-        503
-      );
-    }
-    let questionPaise=0,privatePaise=0;
+    if(questions.length>=1000||privateConsultations.length>=1000) throw withdrawalError('WITHDRAWAL_LEGACY_EARNINGS_PAGE_LIMIT','Historical earnings exceed one safe Firestore query page. Complete the legacy earnings backfill before requesting a withdrawal.',503);
+    let questionPaise=0,privatePaise=0;const ledger=[];
     for(const row of questions) {
       const data=row.data||{};
-      questionPaise+=moneyPaise(data.astrologerCommissionAmount??data.commissionAmount??0);
+      const commissionPaise=moneyPaise(data.astrologerCommissionAmount??data.commissionAmount??data.astrologerCreditedAmount??data.astrologerAmount??0);
+      questionPaise+=commissionPaise;
+      const grossPaise=optionalMoneyPaise(data.grossAmount??data.amount??data.paymentAmount??data.chatPrice);
+      const storedAdminPaise=optionalMoneyPaise(data.adminCommissionAmount??data.adminCreditedAmount);
+      const adminPaise=storedAdminPaise!==null?storedAdminPaise:(grossPaise!==null?Math.max(0,grossPaise-commissionPaise):null);
+      const privateChat=data.privateChat===true&&String(data.questionType||'')==='private_chat';
+      const commissionPercent=optionalPercent(data.commissionPercent,data.commissionRate,data.astrologerCommissionPercent);
+      const adminCommissionPercent=optionalPercent(data.adminCommissionPercent,commissionPercent===null?null:100-commissionPercent);
+      const creditedAt=data.commissionCreditedAt||data.customerAnswerViewedAt||data.customerViewedAt||data.answerApprovedAt||data.adminAnswerApprovedAt||data.updatedAt||data.createdAt||data.paidAt||data.paymentRecordedAt;
+      ledger.push({id:String(row.id||''),source:privateChat?'private_chat':'public_question',sourceLabel:privateChat?'Private Chat':'Question',question:String(data.question||(privateChat?'Private Chat':'Consultation')),commission:commissionPaise/100,grossAmount:grossPaise===null?null:grossPaise/100,adminCommission:adminPaise===null?null:adminPaise/100,commissionPercent,adminCommissionPercent,date:timestampIso(creditedAt)});
     }
     for(const row of privateConsultations) {
-      const data=row.data||{};
-      privatePaise+=moneyPaise(data.astrologerCreditedAmount??data.astrologerAmount??0);
+      const data=row.data||{};const commissionPaise=moneyPaise(data.astrologerCreditedAmount??data.astrologerAmount??0);privatePaise+=commissionPaise;
+      const grossPaise=optionalMoneyPaise(data.grossAmount??data.amount??data.chatPrice??data.paymentAmount);
+      const storedAdminPaise=optionalMoneyPaise(data.adminCommissionAmount??data.adminCreditedAmount);
+      const adminPaise=storedAdminPaise!==null?storedAdminPaise:(grossPaise!==null?Math.max(0,grossPaise-commissionPaise):null);
+      const commissionPercent=optionalPercent(data.commissionPercent,data.astrologerCommissionPercent,data.commissionRate);
+      const adminCommissionPercent=optionalPercent(data.adminCommissionPercent,commissionPercent===null?null:100-commissionPercent);
+      const creditedAt=data.commissionCreditedAt||data.customerViewedAt||data.customerAnswerViewedAt||data.answerApprovedAt||data.updatedAt||data.createdAt||data.paidAt||data.paymentRecordedAt;
+      ledger.push({id:String(row.id||''),source:'private_consultation',sourceLabel:'Private Consultation',question:String(data.question||'Private Consultation'),commission:commissionPaise/100,grossAmount:grossPaise===null?null:grossPaise/100,adminCommission:adminPaise===null?null:adminPaise/100,commissionPercent,adminCommissionPercent,date:timestampIso(creditedAt)});
     }
     const totalEarnedPaise=questionPaise+privatePaise;
-    if(!Number.isSafeInteger(totalEarnedPaise)) throw withdrawalError('WITHDRAWAL_EARNINGS_INVALID','Historical earnings total is outside the supported range.',503);
+    if(!Number.isSafeInteger(totalEarnedPaise))throw withdrawalError('WITHDRAWAL_EARNINGS_INVALID','Historical earnings total is outside the supported range.',503);
+    ledger.sort((a,b)=>timestampMillis(b.date)-timestampMillis(a.date));
     const timestamp=Number(now());
-    await statement(
-      `INSERT INTO smv_domain_legacy_earning_snapshots
-       (astrologer_uid,total_earned_paise,question_count,private_consultation_count,source_update_time_ms,updated_at_ms)
-       VALUES (?,?,?,?,?,?)
-       ON CONFLICT(astrologer_uid) DO UPDATE SET
-         total_earned_paise=excluded.total_earned_paise,
-         question_count=excluded.question_count,
-         private_consultation_count=excluded.private_consultation_count,
-         source_update_time_ms=excluded.source_update_time_ms,
-         updated_at_ms=excluded.updated_at_ms`,
-      [uid,totalEarnedPaise,questions.length,privateConsultations.length,timestamp,timestamp]
-    ).run();
-    return {questionPaise,privatePaise,questionCount:questions.length,privateConsultationCount:privateConsultations.length,totalEarnedPaise};
+    await statement(`INSERT INTO smv_domain_legacy_earning_snapshots (astrologer_uid,total_earned_paise,question_count,private_consultation_count,source_update_time_ms,updated_at_ms) VALUES (?,?,?,?,?,?) ON CONFLICT(astrologer_uid) DO UPDATE SET total_earned_paise=excluded.total_earned_paise,question_count=excluded.question_count,private_consultation_count=excluded.private_consultation_count,source_update_time_ms=excluded.source_update_time_ms,updated_at_ms=excluded.updated_at_ms`,[uid,totalEarnedPaise,questions.length,privateConsultations.length,timestamp,timestamp]).run();
+    return {questionPaise,privatePaise,questionCount:questions.length,privateConsultationCount:privateConsultations.length,totalEarnedPaise,ledger};
   }
 
   async function overview(uid,{refreshLegacy=true}={}) {
     const owner=String(uid||'').trim();
     if(!/^[A-Za-z0-9_-]{1,160}$/.test(owner)) throw withdrawalError('WITHDRAWAL_ASTROLOGER_REQUIRED','Astrologer ID is required.',400);
     const legacy=refreshLegacy?await queryLegacyEarnings(owner):null;
-    const [earned,withdrawals,snapshot]=await Promise.all([
-      first(
-        `SELECT COALESCE(SUM(astrologer_amount_paise),0) AS amount
-         FROM smv_domain_earnings WHERE astrologer_uid=? AND status='credited'`,
-        [owner]
-      ),
-      all(
-        `SELECT * FROM smv_domain_withdrawals WHERE astrologer_uid=? ORDER BY created_at_ms DESC LIMIT 1000`,
-        [owner]
-      ),
+    const [earned,withdrawalTotals,withdrawals,snapshot]=await Promise.all([
+      first(`SELECT COALESCE(SUM(astrologer_amount_paise),0) AS amount FROM smv_domain_earnings WHERE astrologer_uid=? AND status='credited'`,[owner]),
+      first(`SELECT COALESCE(SUM(amount_paise),0) AS amount, COALESCE(MAX(created_at_ms),0) AS latest_created_at_ms FROM smv_domain_withdrawals WHERE astrologer_uid=? AND status IN ('pending','processing','paid')`,[owner]),
+      all(`SELECT * FROM smv_domain_withdrawals WHERE astrologer_uid=? ORDER BY created_at_ms DESC LIMIT 100`,[owner]),
       first('SELECT total_earned_paise FROM smv_domain_legacy_earning_snapshots WHERE astrologer_uid=?',[owner])
     ]);
-    const d1Earned=safePaise(earned?.amount);
-    const legacyEarned=safePaise(snapshot?.total_earned_paise);
-    const totalEarned=d1Earned+legacyEarned;
+    const d1Earned=safePaise(earned?.amount),legacyEarned=safePaise(snapshot?.total_earned_paise),totalEarned=d1Earned+legacyEarned;
+    const reserved=safePaise(withdrawalTotals?.amount),latestWithdrawalMs=Math.max(0,Number(withdrawalTotals?.latest_created_at_ms||0));
+    if(!Number.isSafeInteger(totalEarned)||!Number.isSafeInteger(reserved))throw withdrawalError('WITHDRAWAL_EARNINGS_INVALID','Earnings or withdrawal totals are outside the supported range.',503);
     const rows=(withdrawals?.results||[]).map(mapWithdrawal);
-    let reserved=0,latestWithdrawalMs=0;
-    for(const row of rows) {
-      if(['pending','processing','paid'].includes(row.status.toLowerCase())) {
-        reserved+=row.amountPaise;
-        latestWithdrawalMs=Math.max(latestWithdrawalMs,row.createdAtMs);
-      }
-    }
     const available=Math.max(0,totalEarned-reserved);
     const timestamp=Number(now());
     const cooldownUntil=latestWithdrawalMs?latestWithdrawalMs+SEVEN_DAYS_MS:0;
@@ -335,15 +337,12 @@ export function createD1WithdrawalService({db,firestore,now=Date.now,cryptoImpl=
         [String(uid)]
       )
     ]);
-    const ledger=(liveRows.results||[]).map(row=>{
-      const payload=readJson(row.payload_json);
-      return {
-        id:String(payload.sessionId||row.reference_id||row.earning_id),
-        question:String(payload.question||('Live '+String(payload.mode||'chat').toUpperCase())),
-        commission:safePaise(row.astrologer_amount_paise)/100,
-        date:Number(row.created_at_ms||0)?new Date(Number(row.created_at_ms)).toISOString():null
-      };
+    const liveLedger=(liveRows.results||[]).map(row=>{
+      const payload=readJson(row.payload_json),mode=String(payload.mode||'chat').toUpperCase();
+      const booked=!!payload.bookingId||String(payload.origin||'')==='accepted_booking';
+      return {id:String(payload.sessionId||row.reference_id||row.earning_id),source:booked?'live_booking':'live_session',sourceLabel:booked?'Live Booking':'Live Session',question:String(payload.question||((booked?'Booked Live ':'Live ')+mode)),commission:safePaise(row.astrologer_amount_paise)/100,grossAmount:safePaise(row.gross_amount_paise)/100,adminCommission:safePaise(row.admin_amount_paise)/100,commissionPercent:optionalPercent(payload.commissionPercent,payload.astrologerCommissionPercent),adminCommissionPercent:optionalPercent(payload.adminCommissionPercent),date:timestampIso(row.created_at_ms)};
     });
+    const ledger=[...(summary.legacyEarnings?.ledger||[]),...liveLedger].sort((a,b)=>timestampMillis(b.date)-timestampMillis(a.date)).slice(0,50);
     const withdrawals=(withdrawalRows.results||[]).map(row=>{
       const item=mapWithdrawal(row);
       const payload=readJson(row.payload_json);

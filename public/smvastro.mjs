@@ -470,6 +470,11 @@ async function openAstrologerRegistration(){
 }
 function smvDateTime(value){ try { if(value==null || value==='') return '—'; let d=null; if(value instanceof Date) d=value; else if(typeof value?.toDate==='function') d=value.toDate(); else if(typeof value==='object' && value){ const sec=value.seconds ?? value._seconds; const ns=value.nanoseconds ?? value._nanoseconds ?? 0; if(sec!=null) d=new Date(Number(sec)*1000+Math.floor(Number(ns)/1e6)); else if(value.timestamp) return smvDateTime(value.timestamp); else if(value.date) return smvDateTime(value.date); else if(value.value) return smvDateTime(value.value); } if(!d) d=new Date(value); if(Number.isNaN(d.getTime())) return '—'; return d.toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'}); } catch(e){ return '—'; } }
 function smvDateSortMs(value){ try { if(value==null||value==='')return 0; if(typeof value?.toMillis==='function')return Number(value.toMillis())||0; if(typeof value?.toDate==='function')return value.toDate().getTime()||0; if(value instanceof Date)return value.getTime()||0; if(typeof value==='object'&&value){const sec=value.seconds??value._seconds;const ns=value.nanoseconds??value._nanoseconds??0;if(sec!=null)return Number(sec)*1000+Math.floor(Number(ns)/1e6);if(value.timestamp!=null)return smvDateSortMs(value.timestamp);if(value.date!=null)return smvDateSortMs(value.date);if(value.value!=null)return smvDateSortMs(value.value);} const n=typeof value==='number'?value:Date.parse(String(value));return Number.isFinite(n)?n:0;}catch(_e){return 0;} }
+function smvIstDateTime(value){const ms=smvDateSortMs(value);if(!ms)return '—';try{return new Date(ms).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});}catch(_e){return '—';}}
+function smvPrivateChatDateSummary(q={}){return [['Submitted',q.questionSubmittedAt||q.createdAt],['Payment verified',q.paidAt||q.paymentRecordedAt],['Astrologer assigned',q.astrologerAssignedAt],['Answer submitted',q.answerSubmittedAt],['Commission credited',q.commissionCreditedAt||q.customerAnswerViewedAt],['Answer available',q.answerAvailableAt]].filter(item=>item[1]).map(item=>item[0]+': '+smvIstDateTime(item[1])).join(' · ');}
+function smvLiveSessionDateSummary(s={}){return [['Created',s.createdAt],['Accepted',s.acceptedAt],['Started',s.startedAt],['Ended',s.endedAt]].filter(item=>item[1]).map(item=>item[0]+' Date & Time: '+smvIstDateTime(item[1])).join(' · ');}
+function smvLiveBookingDateSummary(b={}){return [['Created',b.createdAt],['Accepted',b.acceptedAt],['Expires',b.expiresAt],['Ended',b.endedAt]].filter(item=>item[1]).map(item=>item[0]+' Date & Time: '+smvIstDateTime(item[1])).join(' · ');}
+function smvScheduledBookingDateSummary(a={}){return [['Requested',a.createdAt],['Responded',a.respondedAt],['Updated',a.updatedAt]].filter(item=>item[1]).map(item=>item[0]+' Date & Time: '+smvIstDateTime(item[1])).join(' · ');}
 function smvDashboardActivityMs(item={}){return smvDateSortMs(item.paymentRecordedAt||item.paidAt||item.paymentUpdatedAt||item.commissionCreditedAt||item.customerViewedAt||item.answerApprovedAt||item.answerSubmittedAt||item.adminQuestionApprovedAt||item.questionApprovedAt||item.requestedAt||item.date||item.updatedAt||item.createdAt||item.submittedAt);}
 function smvDashboardData(item){try{return typeof item?.data==='function'?(item.data()||{}):(item||{});}catch(_e){return {};}}
 function smvSortDashboardDesc(items){return (Array.isArray(items)?items:[]).slice().sort((a,b)=>smvDashboardActivityMs(smvDashboardData(b))-smvDashboardActivityMs(smvDashboardData(a)));}
@@ -1567,7 +1572,7 @@ function smvPrivateChatTimelineHtml(q){
  ].filter(item=>item[1]);
  if(!rows.length)return '';
  return '<details class="smv-private-chat-timeline"><summary>Question / Answer / Approval / Refund — Dates &amp; Times</summary>'+
-  rows.map(item=>'<div class="small"><b>'+escapeHtml(item[0])+':</b> '+escapeHtml(smvDateTime(item[1]))+'</div>').join('')+'</details>';
+  rows.map(item=>'<div class="small"><b>'+escapeHtml(item[0])+':</b> '+escapeHtml(smvIstDateTime(item[1]))+'</div>').join('')+'</details>';
 }
 function smvPrivateChatRefundReferencesHtml(q){
  const refs=[['Razorpay Refund ID',q.refundId],['Refund Payment ID',q.refundPaymentId],['Bank RRN',q.refundRrn],['Bank ARN',q.refundArn],['Bank UTR',q.refundUtr],['Bank Reference',q.refundBankReference]].filter(item=>item[1]);
@@ -1647,7 +1652,7 @@ async function smvLoadCustomerPrivateChatQuestions(){
     (paid&&q.status!=='answered'&&!rejected?'<p class="small success">Astrologer Answer is expected within 24 hours. If no answer arrives, Admin can allocate another approved Astrologer.</p>':'')+
     (retry?'<button class="btn" type="button" data-private-chat-retry="'+escapeHtml(id)+'">RETRY PAYMENT ₹'+Number(q.amount||0).toFixed(2)+'</button>':'')+
     (answerReady?'<div class="action-row"><button class="btn" type="button" data-private-chat-answer="'+escapeHtml(id)+'">VIEW ASTROLOGER ANSWER</button></div><div class="card hidden" data-private-chat-answer-box style="margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(q.answer)+'</div>'+reviewHtml:'')+
-    smvPrivateChatRefundReferencesHtml(q)+smvPrivateChatTimelineHtml(q)+
+    smvPrivateChatRefundReferencesHtml(q)+'<p class="small smv-private-chat-dates"><b>Dates &amp; Times (IST):</b> '+escapeHtml(smvPrivateChatDateSummary(q)||'—')+'</p>'+smvPrivateChatTimelineHtml(q)+
     '<p class="small" data-private-chat-message role="status" aria-live="polite"></p></article>';
   }).join(''):'<div class="empty">No Private Chat questions have been submitted yet.</div>';
   if(!host.dataset.smvBound){
@@ -1772,6 +1777,7 @@ async function smvLoadAstrologerPrivateChatQuestions(){
     '<p><b>Question ID:</b> '+escapeHtml(id)+'</p><p><b>Payment ID:</b> '+escapeHtml(q.customerPaymentId||'—')+'</p>'+
     '<p><b>Question:</b> <span style="white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(q.question||'')+'</span></p>'+
     '<p><b>Status:</b> <strong>'+escapeHtml(smvPrivateChatStatusLabel(q))+'</strong></p>'+
+    '<p class="small smv-private-chat-dates"><b>Dates &amp; Times (IST):</b> '+escapeHtml(smvPrivateChatDateSummary(q)||'—')+'</p>'+
     smvPrivateChatTimelineHtml(q)+
     (q.answerRejectionReason?'<p class="small error"><b>Admin revision note:</b> '+escapeHtml(q.answerRejectionReason)+'</p>':'')+
     '<p class="small">Admin minimum answer length: <b>'+minimum+' words</b></p>'+action+'</article>';
@@ -2353,7 +2359,7 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
         <div id="smvLiveDashboardMount" style="margin-top:12px"></div>
       </div>
     </div>
-    <div class="card"><h3>Total Earnings</h3><p><span id="smvAstroTotalEarnings" class="smv-earnings-total smv-dashboard-metric">Loading…</span></p><p><span class="smv-summary-label">Total Withdrawal:</span> <span id="smvAstroTotalWithdrawal" class="smv-summary-value">Loading…</span></p><p><span class="smv-summary-label">Available to Withdraw:</span> <span id="smvAstroAvailableWithdrawal" class="smv-summary-value">Loading…</span></p><p><span class="smv-summary-label">Minimum withdrawal:</span> <span id="smvAstroMinimumWithdrawal" class="smv-summary-value">₹300.00</span></p><div id="smvAstroWithdrawalStatus" class="small" aria-live="polite">Checking withdrawal eligibility…</div><button class="btn smv-withdraw-btn is-red" id="withdrawBtn" type="button" disabled>WITHDRAW</button></div>
+    <div class="card"><h3>Total Earnings</h3><p><span id="smvAstroTotalEarnings" class="smv-earnings-total smv-dashboard-metric">Loading…</span></p><p class="small">Lifetime credited commission from Live / Booking, Questions, Private Chat and Private Consultation.</p><p><span class="smv-summary-label">Paid / Reserved Withdrawals:</span> <span id="smvAstroTotalWithdrawal" class="smv-summary-value">Loading…</span></p><p><span class="smv-summary-label">Available to Withdraw:</span> <span id="smvAstroAvailableWithdrawal" class="smv-summary-value">Loading…</span></p><p><span class="smv-summary-label">Minimum withdrawal:</span> <span id="smvAstroMinimumWithdrawal" class="smv-summary-value">₹300.00</span></p><div id="smvAstroWithdrawalStatus" class="small" aria-live="polite">Checking withdrawal eligibility…</div><button class="btn smv-withdraw-btn is-red" id="withdrawBtn" type="button" disabled>WITHDRAW</button></div>
    </div>
    <div class="card" id="astroProfileDescriptionCard" style="margin-top:16px">
      <h3>Profile Description</h3>
@@ -2367,7 +2373,7 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
           <div id="astroProfileDescriptionMsg" class="small"></div>`
        : `<div class="empty smv-profile-edit-disabled">Profile description editing is currently disabled by Admin.</div>`}
    </div>
-   <div class="card" style="margin-top:16px"><h3>Earnings History</h3><div id="smvAstroEarningsHistory" class="small" aria-live="polite">Loading earnings history…</div><div class="withdrawal-history-section" style="margin-top:14px;padding-top:10px;border-top:1px solid #eee"><h4 style="margin:0 0 8px">Withdrawal History</h4><div id="smvAstroWithdrawalHistory" class="small" aria-live="polite">Loading withdrawal history…</div></div></div>
+   <div class="card" style="margin-top:16px"><h3>Recent Earnings History</h3><p class="small">Latest credited entries across Live, Bookings, Questions and Private consultations. Lifetime Total Earnings includes all credited records.</p><div id="smvAstroEarningsHistory" class="small" aria-live="polite">Loading earnings history…</div><div class="withdrawal-history-section" style="margin-top:14px;padding-top:10px;border-top:1px solid #eee"><h4 style="margin:0 0 8px">Withdrawal History</h4><div id="smvAstroWithdrawalHistory" class="small" aria-live="polite">Loading withdrawal history…</div></div></div>
 <div class="card" style="margin-top:16px"><h3>Payment Method</h3><p class="small">Your bank/UPI details are private. Full details are not displayed again.</p><button class="btn gray" id="changePayoutBtn2">Change Payment Method</button></div></div>`;
     const profileDescriptionSubmit=$('astroSubmitProfileDescription');
   if(profileDescriptionSubmit){
@@ -2578,28 +2584,17 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
     // Do not silently fall back to a stale Firebase collection when this API fails.
     const withdrawalItems=Array.isArray(epRemote?.withdrawals)?epRemote.withdrawals:[];
     const withdrawalHistoryAvailable=!!epRemote;
+    if(!epRemote||!Number.isFinite(Number(epRemote.totalEarnings))||!Number.isFinite(Number(epRemote.totalWithdrawals))||!Number.isFinite(Number(epRemote.availableToWithdraw))) throw new Error('The earnings service did not return complete authoritative totals.');
     withdrawalSnap={docs:withdrawalItems.map(w=>({id:String(w.id||''),data:()=>w}))};
-    totalEarnings=Number(epRemote?.totalEarnings||0);
-    ledger=smvSortDashboardDesc(Array.isArray(epRemote?.ledger)?epRemote.ledger:[]);
-    reservedWithdrawals=0;
-    totalWithdrawals=0;
-    latestWithdrawalAt=null;
-    withdrawalSnap.docs.forEach(d=>{
-     const w=d.data()||{};
-     const st=String(w.status||'pending').toLowerCase();
-     const amount=Number(w.amount||0);
-     if(['pending','processing','paid'].includes(st)){
-      reservedWithdrawals+=amount;
-      totalWithdrawals+=amount;
-      const raw=w.createdAt||w.requestedAt||w.paidAt||null;
-      const ms=smvDateSortMs(raw);
-      if(ms&&(!latestWithdrawalAt||ms>latestWithdrawalAt))latestWithdrawalAt=ms;
-     }
-    });
-    availableToWithdraw=epRemote?Math.max(0,Math.round((totalEarnings-reservedWithdrawals)*100)/100):0;
-    withdrawalCooldownActive=!!latestWithdrawalAt&&(Date.now()-latestWithdrawalAt<WITHDRAWAL_COOLDOWN_MS);
-    withdrawalEligible=!!epRemote&&availableToWithdraw>=minimumWithdrawal&&!withdrawalCooldownActive;
-    withdrawalCooldownEndsAt=withdrawalCooldownActive?latestWithdrawalAt+WITHDRAWAL_COOLDOWN_MS:null;
+    totalEarnings=Number(epRemote.totalEarnings);
+    ledger=Array.isArray(epRemote.ledger)?epRemote.ledger.slice():[];
+    totalWithdrawals=Number(epRemote.totalWithdrawals);
+    reservedWithdrawals=totalWithdrawals;
+    availableToWithdraw=Math.max(0,Number(epRemote.availableToWithdraw));
+    latestWithdrawalAt=smvDateSortMs(epRemote.latestWithdrawalAt)||null;
+    withdrawalCooldownActive=epRemote.withdrawalCooldownActive===true;
+    withdrawalCooldownEndsAt=smvDateSortMs(epRemote.withdrawalCooldownEndsAt)||null;
+    withdrawalEligible=epRemote.withdrawalEligible===true&&availableToWithdraw>=minimumWithdrawal&&!withdrawalCooldownActive;
     ep={totalEarnings,totalWithdrawals,availableToWithdraw,minimumWithdrawal,withdrawalCooldownActive,withdrawalCooldownEndsAt,withdrawalEligible,ledger};
     if(!active()||!$('smvAstroTotalEarnings'))return;
     const earningsTotalNode=$('smvAstroTotalEarnings');
@@ -2636,8 +2631,15 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
     const earningsHistoryNode=$('smvAstroEarningsHistory');
     if(earningsHistoryNode){
      earningsHistoryNode.innerHTML=epRemote
-      ?(ledger.length?ledger.slice(0,50).map(x=>'<div class="smv-history-row" style="padding:10px 0;border-bottom:1px solid #eee"><div class="smv-history-amount"><b>₹'+Number(x.commission||0).toFixed(2)+'</b> · <span class="success">Earning Credited</span></div><div class="smv-history-content">'+escapeHtml(x.question||'Consultation')+'</div><div class="smv-history-detail"><b>Date & Time:</b> '+escapeHtml(smvDateTime(x.date))+'</div><div class="smv-history-detail"><b>Session / Booking ID:</b> '+escapeHtml(x.id||'')+'</div></div>').join('')
-        :'<div class="empty">No credited earnings yet.</div>')
+      ?(ledger.length?ledger.slice(0,50).map(x=>{
+        const details=[];
+        if(x.grossAmount!==null&&x.grossAmount!==undefined)details.push('Gross: ₹'+Number(x.grossAmount||0).toFixed(2));
+        if(x.commissionPercent!==null&&x.commissionPercent!==undefined)details.push('Astrologer rate: '+Number(x.commissionPercent).toFixed(2).replace(/\.00$/,'')+'%');
+        details.push('Astrologer credited: ₹'+Number(x.commission||0).toFixed(2));
+        if(x.adminCommission!==null&&x.adminCommission!==undefined)details.push('Admin share: ₹'+Number(x.adminCommission||0).toFixed(2));
+        if(x.adminCommissionPercent!==null&&x.adminCommissionPercent!==undefined)details.push('Admin rate: '+Number(x.adminCommissionPercent).toFixed(2).replace(/\.00$/,'')+'%');
+        return '<article class="smv-history-row smv-earning-history-row"><div class="smv-history-amount"><b>₹'+Number(x.commission||0).toFixed(2)+'</b> · <span class="success">Earning Credited</span></div><div class="smv-history-content"><b>'+escapeHtml(x.sourceLabel||'Consultation')+':</b> '+escapeHtml(x.question||'Consultation')+'</div><div class="smv-history-detail">'+escapeHtml(details.join(' · '))+'</div><div class="smv-history-detail"><b>Date &amp; Time (IST):</b> '+escapeHtml(smvIstDateTime(x.date))+'</div><div class="smv-history-detail"><b>Reference ID:</b> '+escapeHtml(x.id||'—')+'</div></article>';
+       }).join(''):'<div class="empty">No credited earnings yet.</div>')+'<p class="small">Showing up to 50 of the most recent credited entries. Total Earnings includes all credited records.</p>'
       :'<div class="empty">Earnings history is temporarily unavailable.</div>';
     }
     const withdrawalHistoryNode=$('smvAstroWithdrawalHistory');
@@ -5354,7 +5356,7 @@ function smvLiveHandleEvent(ev){
   else if(ev.replayed!==true&&['preparing','connecting','active'].includes(s.state)&&s.astrologerUid===currentUser?.uid&&!smvLiveRingSuppressedIds.has(String(s.id||'')))smvLiveOpenSession(s,null,false);
   else if(ev.replayed!==true&&['preparing','ringing','connecting','active'].includes(s.state)&&s.customerUid===currentUser?.uid&&!smvLiveRingSuppressedIds.has(String(s.id||'')))smvLiveOpenSession(s,null,false);
  }else if(ev.type==='live.session.ended'){
-  const s=ev.session;if(s)smvLiveUpdateDashboardSessionStatus(s);if(s&&s.id===smvLivePanelSessionId){smvLiveApplySession(s);const result=$('smvLiveSessionResult');if(result)result.textContent=smvLiveSessionEndedMessage(s,ev.wallet);loadDashboard(window.__smvCurrentRole||null,true,true).catch(()=>{});}
+  const s=ev.session;if(s)smvLiveUpdateDashboardSessionStatus(s);if(s&&s.id===smvLivePanelSessionId){smvLiveApplySession(s);const result=$('smvLiveSessionResult');if(result)result.textContent=smvLiveSessionEndedMessage(s,ev.wallet);if(String(window.__smvCurrentRole||'').toLowerCase()!=='astrologer')loadDashboard(window.__smvCurrentRole||null,true,true).catch(()=>{});}
  }else if(ev.type==='live.chat.message'&&ev.message?.sessionId===smvLivePanelSessionId){
   if($('smvLiveMessages')){const ms=Date.parse(ev.message.createdAt||'');if(Number.isFinite(ms))smvLiveMessageSinceMs=Math.max(smvLiveMessageSinceMs,ms);smvLiveAppendMessage(ev.message);}
  }else if(ev.type==='live.call.signal'&&ev.signal?.sessionId===smvLivePanelSessionId){
@@ -5450,6 +5452,7 @@ function smvLiveStartEventStream(){
   }
  })();
 }
+window.addEventListener('smv:astrologer-earnings-updated',()=>{if(!currentUser||String(window.__smvCurrentRole||'').toLowerCase()!=='astrologer'||smvInternalView!=='dashboard')return;loadDashboard('astrologer',true,true).catch(error=>console.warn('Astrologer Earnings History refresh after Live settlement failed:',error?.message||error));});
 function smvLiveDashboardSessionStatusLabel(session){
  const state=String(session?.state||session?.status||'');
  if(state==='active'){
@@ -5470,6 +5473,7 @@ function smvLiveUpdateDashboardSessionStatus(session){
  const previous=smvLiveDashboardSessionsById.get(id)||{};
  const current=smvLiveMergeSessionState(previous,{...session,id});
  smvLiveDashboardSessionsById.set(id,current);
+ if(current.state==='ended'&&String(previous.state||'')!=='ended'&&String(current.astrologerUid||'')===String(currentUser?.uid||''))window.dispatchEvent(new Event('smv:astrologer-earnings-updated'));
  // Wallet settlement may be reported by the recovery poll after the session modal
  // was closed. Refresh on the authoritative terminal transition, not only in the modal.
  if(current.state==='ended'&&String(previous.state||'')!=='ended'&&String(current.customerUid||'')===String(currentUser?.uid||'')){
@@ -5501,6 +5505,9 @@ function smvLiveUpdateDashboardSessionStatus(session){
   const liveDot=article?.querySelector('[data-live-presence-dot]');
   const closedDot=article?.querySelector('[data-live-window-dot]');
   const windowStatus=article?.querySelector('[data-live-window-status]');
+  let sessionDates=article?.querySelector('[data-live-session-dates]');
+  if(article&&!sessionDates){sessionDates=document.createElement('p');sessionDates.className='small smv-live-session-dates';sessionDates.dataset.liveSessionDates=id;const firstMeta=article.querySelector('.smv-live-session-meta');if(firstMeta)firstMeta.before(sessionDates);}
+  if(sessionDates)sessionDates.textContent=smvLiveSessionDateSummary(current)||'Session dates & times unavailable';
   const running=['ringing','preparing','connecting','active'].includes(String(current.state||''));
   const ended=String(current.state||'')==='ended';
   const windowClosed=ended||smvLiveDismissedSessionIds.has(id);
@@ -5671,7 +5678,7 @@ function smvLiveRenderScheduledBookings(appointments){
   }else if(status==='waiting_for_online'){
    buttons='<p class="small" style="margin-top:8px">This appointment was moved to the Live queue because the session could not start immediately. Check Pending Bookings above and accept the queued request after going Online.</p>';
   }
-  return '<article class="card" style="margin:8px 0;min-width:0;overflow-wrap:anywhere"><div class="smv-live-booking-kind">'+modeLabel+'</div><h4 class="smv-live-booking-id" style="margin:6px 0">'+escapeHtml(a.bookingId||'Booking')+'</h4><p class="small smv-live-booking-detail"><b>Customer:</b> '+escapeHtml(a.name||'Customer')+'</p><p class="small smv-live-booking-detail"><b>Preferred date/time (IST):</b> '+escapeHtml(String(a.preferredDate||'')+' '+String(a.preferredTime||''))+'</p><p class="small smv-live-booking-detail"><b>Duration:</b> '+Number(a.scheduledMinutes||5)+' minute(s) · <b>Status:</b> '+escapeHtml(stateText(a))+'</p>'+(isChat&&a.question?'<div class="small" style="white-space:pre-wrap;overflow-wrap:anywhere"><b>Previous Chat Question:</b> '+escapeHtml(a.question)+'</div>':'')+(birth.birthDate||birth.birthTime||birth.birthPlace?'<p class="small smv-live-booking-detail"><b>Birth details:</b> '+escapeHtml([birth.birthDate,birth.birthTime,birth.birthPlace].filter(Boolean).join(' · '))+'</p>':'')+(a.notes?'<p class="small smv-live-booking-detail" style="white-space:pre-wrap;overflow-wrap:anywhere"><b>Notes:</b> '+escapeHtml(a.notes)+'</p>':'')+buttons+'</article>';
+  return '<article class="card" style="margin:8px 0;min-width:0;overflow-wrap:anywhere"><div class="smv-live-booking-kind">'+modeLabel+'</div><h4 class="smv-live-booking-id" style="margin:6px 0">'+escapeHtml(a.bookingId||'Booking')+'</h4><p class="small smv-live-booking-detail"><b>Customer:</b> '+escapeHtml(a.name||'Customer')+'</p><p class="small smv-live-booking-detail"><b>Preferred date/time (IST):</b> '+escapeHtml(String(a.preferredDate||'')+' '+String(a.preferredTime||''))+'</p><p class="small smv-live-booking-dates">'+escapeHtml(smvScheduledBookingDateSummary(a)||'Booking date &amp; time unavailable')+'</p><p class="small smv-live-booking-detail"><b>Duration:</b> '+Number(a.scheduledMinutes||5)+' minute(s) · <b>Status:</b> '+escapeHtml(stateText(a))+'</p>'+(isChat&&a.question?'<div class="small" style="white-space:pre-wrap;overflow-wrap:anywhere"><b>Previous Chat Question:</b> '+escapeHtml(a.question)+'</div>':'')+(birth.birthDate||birth.birthTime||birth.birthPlace?'<p class="small smv-live-booking-detail"><b>Birth details:</b> '+escapeHtml([birth.birthDate,birth.birthTime,birth.birthPlace].filter(Boolean).join(' · '))+'</p>':'')+(a.notes?'<p class="small smv-live-booking-detail" style="white-space:pre-wrap;overflow-wrap:anywhere"><b>Notes:</b> '+escapeHtml(a.notes)+'</p>':'')+buttons+'</article>';
  }).join('');
  smvLiveScheduleBookingTransitionRefresh(appointments,'astrologer');
  host.querySelectorAll('[data-scheduled-respond]').forEach(btn=>btn.onclick=async()=>{
@@ -5745,7 +5752,7 @@ async function smvLiveLoadScheduledAppointments(){
 function smvLiveRenderBookings(bookings){
  const host=$('smvLiveBookings');if(!host)return;
  if(!bookings.length){host.innerHTML='<p class="small">No pending Live Call / Chat bookings.</p>';return;}
- host.innerHTML=bookings.map(b=>'<article class="card" style="margin:8px 0"><b>'+escapeHtml(String(b.mode||'chat').toUpperCase())+' · '+Number(b.minutes||1)+' min</b><p class="small">Booking status: '+escapeHtml(b.status||'pending')+' · Maximum selected cost: '+smvLiveMoney(Number(b.ratePerMinutePaise||0)*Number(b.minutes||1))+'</p><div class="action-row"><button class="btn" type="button" data-live-booking-accept="'+escapeHtml(b.id)+'">ACCEPT BOOKING</button><button class="btn gray" type="button" data-live-booking-reject="'+escapeHtml(b.id)+'">REJECT BOOKING</button></div></article>').join('');
+ host.innerHTML=bookings.map(b=>'<article class="card" style="margin:8px 0"><b>'+escapeHtml(String(b.mode||'chat').toUpperCase())+' · '+Number(b.minutes||1)+' min</b><p class="small">Booking status: '+escapeHtml(b.status||'pending')+' · Maximum selected cost: '+smvLiveMoney(Number(b.ratePerMinutePaise||0)*Number(b.minutes||1))+'</p><p class="small smv-live-booking-dates">'+escapeHtml(smvLiveBookingDateSummary(b)||'Date &amp; Time unavailable')+'</p><div class="action-row"><button class="btn" type="button" data-live-booking-accept="'+escapeHtml(b.id)+'">ACCEPT BOOKING</button><button class="btn gray" type="button" data-live-booking-reject="'+escapeHtml(b.id)+'">REJECT BOOKING</button></div></article>').join('');
  host.querySelectorAll('[data-live-booking-accept]').forEach(btn=>btn.onclick=async()=>{
   btn.disabled=true;
   try{const r=await renderApi('/live/bookings/'+encodeURIComponent(btn.dataset.liveBookingAccept)+'/accept',{method:'POST',body:JSON.stringify({})});if(r.session)smvLiveOpenSession(r.session,r.wallet,false);await smvLivePollSessions();}
@@ -5761,7 +5768,7 @@ function smvLiveRenderBookings(bookings){
 function smvLiveRenderCustomerBookings(bookings){
  const host=$('smvLiveCustomerBookings');if(!host)return;
  if(!bookings.length){host.innerHTML='<p class="small">No Live Call / Chat bookings yet.</p>';return;}
- host.innerHTML=bookings.map(b=>'<article class="card smv-live-booking-card" style="margin:8px 0"><b class="smv-live-session-mode">'+escapeHtml(String(b.mode||'chat').toUpperCase())+' · '+Number(b.minutes||1)+' minute(s)</b><p class="small smv-live-booking-detail">Astrologer: '+escapeHtml(b.astrologerName||'Astrologer')+' · <b>Status:</b> '+escapeHtml(b.status||'pending')+'</p><p class="small smv-live-session-meta"><b>Selected maximum cost:</b> '+smvLiveMoney(Number(b.ratePerMinutePaise||0)*Number(b.minutes||1))+' · <b>Charged:</b> '+smvLiveMoney(b.actualChargePaise)+' · <b>Released:</b> '+smvLiveMoney(b.releasedAmountPaise)+'</p>'+(b.status==='pending'?'<button class="btn gray" type="button" data-live-booking-cancel="'+escapeHtml(b.id)+'">CANCEL BOOKING</button>':'')+'</article>').join('');
+ host.innerHTML=bookings.map(b=>'<article class="card smv-live-booking-card" style="margin:8px 0"><b class="smv-live-session-mode">'+escapeHtml(String(b.mode||'chat').toUpperCase())+' · '+Number(b.minutes||1)+' minute(s)</b><p class="small smv-live-booking-detail">Astrologer: '+escapeHtml(b.astrologerName||'Astrologer')+' · <b>Status:</b> '+escapeHtml(b.status||'pending')+'</p><p class="small smv-live-booking-dates">'+escapeHtml(smvLiveBookingDateSummary(b)||'Date &amp; Time unavailable')+'</p><p class="small smv-live-session-meta"><b>Selected maximum cost:</b> '+smvLiveMoney(Number(b.ratePerMinutePaise||0)*Number(b.minutes||1))+' · <b>Charged:</b> '+smvLiveMoney(b.actualChargePaise)+' · <b>Released:</b> '+smvLiveMoney(b.releasedAmountPaise)+'</p>'+(b.status==='pending'?'<button class="btn gray" type="button" data-live-booking-cancel="'+escapeHtml(b.id)+'">CANCEL BOOKING</button>':'')+'</article>').join('');
  host.querySelectorAll('[data-live-booking-cancel]').forEach(btn=>btn.onclick=async()=>{if(!confirm('Cancel this pending Live booking?'))return;btn.disabled=true;try{await renderApi('/live/bookings/'+encodeURIComponent(btn.dataset.liveBookingCancel)+'/cancel',{method:'POST',body:JSON.stringify({})});await smvLivePollSessions();}catch(e){smvLiveShowError(e);btn.disabled=false;}});
 }
 function smvLiveNormalizeScheduledAppointments(appointments,sessions){
@@ -5804,6 +5811,7 @@ function smvLiveRenderCustomerScheduledBookings(appointments){
   return '<article class="card smv-live-booking-card" style="margin:8px 0;overflow-wrap:anywhere"><b class="smv-live-booking-kind">'+mode+' BOOKING</b><span class="smv-live-booking-id"> · '+escapeHtml(a.bookingId||a.id||'')+'</span>'+
    '<p class="small smv-live-booking-detail">Astrologer: '+escapeHtml(a.astrologerName||'Astrologer')+'</p>'+
    '<p class="small smv-live-booking-detail">Scheduled time (IST): '+escapeHtml(String(a.preferredDate||'')+' '+String(a.preferredTime||''))+'</p>'+
+   '<p class="small smv-live-booking-dates">'+escapeHtml(smvScheduledBookingDateSummary(a)||'Date &amp; Time unavailable')+'</p>'+
    '<p class="small smv-live-booking-detail">Duration: '+Number(a.scheduledMinutes||5)+' minute(s)</p>'+
    '<p class="small smv-live-booking-detail">Status: <b>'+escapeHtml(describe(a))+'</b></p>'+
    (a.liveSessionId&&status==='in_progress'?'<button class="btn" type="button" data-customer-scheduled-open="'+escapeHtml(a.liveSessionId)+'">OPEN LIVE '+mode+'</button>':'')+
