@@ -97,6 +97,11 @@ document.addEventListener('DOMContentLoaded', function(){
   document.head.appendChild(script);
 })();
 </script>
+<script id="smv-pages-dev-host-isolation-loader">
+if(location.hostname==='smvastroservices.pages.dev'||location.hostname.endsWith('.smvastroservices.pages.dev')){
+  document.write('<script defer src="/pages-dev-host-independence.js?v=20261111-pages-host-isolation-v1"><\/script>');
+}
+</script>
 </head>
 <body class="smv-v12-theme">
 <div class="smv-master-top"><div class="smv-master-topin"><span>Guided by Ancient Wisdom   |   Empowering Your Future</span></div></div>

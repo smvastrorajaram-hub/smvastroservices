@@ -90,11 +90,22 @@ test("The same no-export report policy covers both Horoscope and Marriage Matchi
 });
 
 test("All three apps use one synchronized cache release; Horoscope runtime revision is bumped", () => {
-  const expected = "20261111-pages-horoscope-header-css-v1";
-  const versions = workers.map(source => /const SMV_CACHE_RELEASE='([^']+)'/.exec(source)?.[1]);
-  assert.deepEqual(versions, [expected, expected, expected]);
-  const runtime = /const RUNTIME_REVISION='([^']+)'/.exec(workers[1])?.[1];
-  assert.equal(runtime, "v272-pages-horoscope-header-css-20261111");
+  const versions = workers.map(source => /const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(source));
+  assert.ok(versions.every(Boolean));
+  assert.deepEqual(versions.map(match => match[1]), [
+    "20261111-pages-dev-domain-independence-v1",
+    "20261111-pages-dev-domain-independence-v1",
+    "20261111-pages-dev-domain-independence-v1"
+  ]);
+  assert.deepEqual(versions.map(match => match[2]), [
+    "20261111-pages-horoscope-header-css-v1",
+    "20261111-pages-horoscope-header-css-v1",
+    "20261111-pages-horoscope-header-css-v1"
+  ]);
+  const runtime = /const RUNTIME_REVISION\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(workers[1]);
+  assert.ok(runtime);
+  assert.equal(runtime[1], "v273-pages-dev-domain-independence-20261111");
+  assert.equal(runtime[2], "v272-pages-horoscope-header-css-20261111");
 });
 
 test("No origin-wide browser data or Cache API clearing is introduced", () => {

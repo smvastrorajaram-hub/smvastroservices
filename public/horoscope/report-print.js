@@ -117,6 +117,11 @@
     root.querySelectorAll('.transit-panchang-grid').forEach(e=>{if(!e.textContent.trim()&&!e.querySelector('img,svg,table,.transit-card'))e.remove();});
   }
   populatePremiumCover(report,root,tamil);
+  // Pages.dev has its own public origin. Keep the .in report cover unchanged.
+  if(location.hostname==='smvastroservices.pages.dev'){
+   const websiteLabel=document.querySelector('.smv-cover-contact span:first-child b');
+   if(websiteLabel)websiteLabel.textContent='www.smvastroservices.pages.dev';
+  }
   document.title=reportPdfTitle(report);
   root.querySelectorAll('script,style,link,iframe,object,embed,form,meta,base,button,input,.smv-manual-save-actions,.horoscope-export-actions,.smv-horoscope-pay-gate').forEach(e=>e.remove());
   root.querySelectorAll('*').forEach(e=>{for(const a of [...e.attributes])if(/^on/i.test(a.name)||['href','xlink:href','srcset','action','formaction','contenteditable'].includes(a.name))e.removeAttribute(a.name);});
