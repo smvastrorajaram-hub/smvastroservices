@@ -108,7 +108,7 @@ export async function inspectBackendSchema(db) {
     const row = await db.prepare(REQUIRED_SCHEMA_QUERY).first();
     if (!row || typeof row !== 'object') return unavailableSchema(true, true);
 
-    let bonusCreditRow = null;
+    let bonusCreditRow = {};
     let bonusCreditSchemaQuerySucceeded = false;
     try {
       const candidate = await db.prepare(BONUS_CREDIT_SCHEMA_QUERY).first();
