@@ -13,15 +13,15 @@ const deferred = attrs => /\bdefer\b/i.test(attrs);
 test('external classic scripts no longer block HTML parsing', () => {
   const blocking = tags.filter(attrs => source(attrs) && !modules(attrs) && !asyncScript(attrs) && !deferred(attrs)).map(source);
   assert.deepEqual(blocking, []);
-  const loader = html.match(/<script id="smv-adsense-domain-loader">[\\s\\S]*?<\\/script>/)?.[0];
+  const loader = html.match(/<script id="smv-adsense-domain-loader">[\s\S]*?<\/script>/)?.[0];
   assert.ok(loader, 'Horoscope AdSense loader must remain present.');
-  assert.match(loader, /host!=='horoscope\\.smvastroservices\\.in'/);
-  assert.match(loader, /if\\(host!=='horoscope\\.smvastroservices\\.in'\\)return/);
-  assert.match(loader, /script\\.async=true/);
-  assert.match(loader, /script\\.src='https:\\/\\/pagead2\\.googlesyndication\\.com\\/pagead\\/js\\/adsbygoogle\\.js\\?client=ca-pub-8603281557754018'/);
-  assert.match(calendarHtml, /id="smv-adsense-domain-loader"/);
-  assert.match(calendarHtml, /host!=='calendar\\.smvastroservices\\.in'/);
-  assert.match(calendarHtml, /script\\.async=true/);
+  assert.ok(loader.includes("if(host!=='horoscope.smvastroservices.in')return"));
+  assert.ok(loader.includes('script.async=true'));
+  assert.ok(loader.includes("script.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8603281557754018'"));
+  const calendarLoader = calendarHtml.match(/<script id="smv-adsense-domain-loader">[\s\S]*?<\/script>/)?.[0];
+  assert.ok(calendarLoader, 'Calendar AdSense loader must remain present.');
+  assert.ok(calendarLoader.includes("if(host!=='calendar.smvastroservices.in')return"));
+  assert.ok(calendarLoader.includes('script.async=true'));
 });
 
 test('legacy scripts retain document order when deferred', () => {
