@@ -89,12 +89,15 @@ document.addEventListener('DOMContentLoaded', function(){
 (()=> {
   const host=String(location.hostname||'').toLowerCase();
   const isPrimarySite=host==='smvastroservices.in'||host==='www.smvastroservices.in';
-  const isPagesPreview=host==='smvastroservices.pages.dev'||host.endsWith('.smvastroservices.pages.dev');
-  if(!isPrimarySite&&!isPagesPreview)return;
+  /* AdSense is requested only for the domain submitted for approval. */
+  if(!isPrimarySite)return;
   if(document.querySelector('script[data-smv-adsense]'))return;
-  /* Write the standard AdSense loader while the parser is still in <head>.
-     Pages.dev remains a preview host; the registered .in domain is enabled too. */
-  document.write('<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8603281557754018" crossorigin="anonymous" data-smv-adsense="1"><\\/script>');
+  const script=document.createElement('script');
+  script.async=true;
+  script.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8603281557754018';
+  script.crossOrigin='anonymous';
+  script.setAttribute('data-smv-adsense','1');
+  document.head.appendChild(script);
 })();
 </script>
 <script id="smv-pages-dev-host-isolation-loader">
