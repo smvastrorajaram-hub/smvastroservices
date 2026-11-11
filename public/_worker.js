@@ -16,7 +16,7 @@ const SITEMAP_PATHS = Object.freeze([
 
 function pagesRobots() {
   return new Response(
-    'User-agent: *\\nAllow: /\\n\\nSitemap: https://' + PAGES_DEV_HOST + '/sitemap.xml\\n',
+    'User-agent: *\nAllow: /\n\nSitemap: https://' + PAGES_DEV_HOST + '/sitemap.xml\n',
     {
       status: 200,
       headers: {
@@ -32,11 +32,11 @@ function pagesSitemap() {
   const lastmod = new Date().toISOString().slice(0, 10);
   const urls = SITEMAP_PATHS.map(path =>
     '  <url><loc>https://' + PAGES_DEV_HOST + path + '</loc><lastmod>' + lastmod + '</lastmod></url>'
-  ).join('\\n');
+  ).join('\n');
   return new Response(
-    '<?xml version="1.0" encoding="UTF-8"?>\\n' +
-    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\\n' +
-    urls + '\\n</urlset>\\n',
+    '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+    urls + '\n</urlset>\n',
     {
       status: 200,
       headers: {
