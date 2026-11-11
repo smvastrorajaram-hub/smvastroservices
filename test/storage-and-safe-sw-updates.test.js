@@ -120,7 +120,7 @@ test('All three app workers bump Pages.dev together and preserve the existing .i
     read('public/horoscope/calendar/sw.js')
   ];
   const releases = workers.map(source => {
-    const match = /const SMV_CACHE_RELEASE\\s*=\\s*IS_PAGES_DEV_HOST\\s*\\?\\s*'([^']+)'\\s*:\\s*'([^']+)'/.exec(source);
+    const match = /const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(source);
     assert.ok(match, 'Every app worker must select a host-specific SMV_CACHE_RELEASE');
     return { pages: match[1], legacy: match[2] };
   });
