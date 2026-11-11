@@ -226,3 +226,62 @@ test('The origin isolation change does not clear user data or origin-wide browse
   assert.doesNotMatch(helperAndPages, /indexedDB\.deleteDatabase\s*\(/);
   assert.doesNotMatch(helperAndPages, /caches\.delete\s*\(/);
 });
+
+
+test('Cloudflare Pages serves Pages.dev-only robots and sitemap while leaving .in on its original static files', async () => {
+  const workerSource = read('public/_worker.js');
+  const workerModuleUrl = 'data:text/javascript;base64,' +
+    Buffer.from(workerSource, 'utf8').toString('base64');
+  const { default: worker } = await import(workerModuleUrl);
+  const assetRequests = [];
+  const env = {
+    ASSETS: {
+      async fetch(request) {
+        assetRequests.push(new URL(request.url).origin + new URL(request.url).pathname);
+        return new Response('STATIC:' + new URL(request.url).pathname, {
+          status: 200,
+          headers: { 'Content-Type': 'text/plain' }
+        });
+      }
+    }
+  };
+
+  const pagesRobots = await worker.fetch(
+    new Request('https://smvastroservices.pages.dev/robots.txt'), env
+  );
+  const pagesRobotsText = await pagesRobots.text();
+  assert.equal(pagesRobots.status, 200);
+  assert.match(pagesRobots.headers.get('content-type'), /text\/plain/);
+  assert.match(pagesRobotsText, /Sitemap: https:\/\/smvastroservices\.pages\.dev\/sitemap\.xml/);
+  assert.doesNotMatch(pagesRobotsText, /smvastroservices\.in/);
+
+  const pagesSitemap = await worker.fetch(
+    new Request('https://smvastroservices.pages.dev/sitemap.xml'), env
+  );
+  const pagesSitemapText = await pagesSitemap.text();
+  assert.equal(pagesSitemap.status, 200);
+  assert.match(pagesSitemap.headers.get('content-type'), /application\/xml/);
+  assert.match(pagesSitemapText, /https:\/\/smvastroservices\.pages\.dev\//);
+  assert.doesNotMatch(pagesSitemapText, /smvastroservices\.in/);
+  for (const route of ['/','/horoscope/','/horoscope/calendar/','/privacy.html','/terms.html']) {
+    assert.ok(pagesSitemapText.includes('https://smvastroservices.pages.dev' + route),
+      'Pages.dev sitemap must include ' + route);
+  }
+
+  const inRobots = await worker.fetch(
+    new Request('https://smvastroservices.in/robots.txt'), env
+  );
+  assert.equal(await inRobots.text(), 'STATIC:/robots.txt');
+  const inSitemap = await worker.fetch(
+    new Request('https://smvastroservices.in/sitemap.xml'), env
+  );
+  assert.equal(await inSitemap.text(), 'STATIC:/sitemap.xml');
+  assert.ok(assetRequests.includes('https://smvastroservices.in/robots.txt'));
+  assert.ok(assetRequests.includes('https://smvastroservices.in/sitemap.xml'));
+
+  const pagesHead = await worker.fetch(
+    new Request('https://smvastroservices.pages.dev/robots.txt', { method: 'HEAD' }), env
+  );
+  assert.equal(pagesHead.status, 200);
+  assert.equal(await pagesHead.text(), '');
+});
