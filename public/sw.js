@@ -2,7 +2,7 @@
    HTML/CSS/JS presentation is network-first and retained for offline reopening.
    Authentication, account data, APIs, payments and consultation operations stay network-only.
    Location search keeps its existing independent online/offline cache. */
-const SMV_CACHE_RELEASE='20261111-pages-horoscope-header-css-v1';
+const SMV_CACHE_RELEASE='20261111-pages-dev-domain-independence-v1';
 const SMV_LOCATION_CACHE='smv-shared-india-places';
 const APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE;
 const APP_SHELL_FILES=[
@@ -11,7 +11,7 @@ const APP_SHELL_FILES=[
   './android-app-install.css','./payment-timing.js','./smvastro.mjs',
   './coalesced-refresh.mjs','./razorpay-checkout-loader.mjs','./chat-moderation.js',
   './dashboard-window.js','./public-content-loader.js','./interface.js',
-  './android-app-install.js','./public-navigation.js',
+  './android-app-install.js','./public-navigation.js','./pages-dev-host-independence.js',
   './main-location-search.js','./question-place-search.mjs',
   './horoscope/offline/places/place-search.mjs','./horoscope/offline/places/india-manifest.json','./horoscope/offline/places/place-display.mjs',
   './assets/pwa-astro-192.svg','./assets/pwa-astro-512.png','./assets/pwa-astro-maskable-192.svg','./assets/pwa-astro-maskable.svg',
