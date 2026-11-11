@@ -267,7 +267,7 @@ test('Cloudflare Pages serves Pages.dev-only robots and sitemap while leaving .i
   );
   const pagesAdsText = await pagesAds.text();
   assert.equal(pagesAds.status, 200);
-  assert.match(pagesAdsText, /google\\.com, pub-8603281557754018, DIRECT/);
+  assert.equal(pagesAdsText, 'google.com, pub-8603281557754018, DIRECT, f08c47fec0942fa0\n');
   assert.doesNotMatch(pagesAdsText, /smvastroservices\\.in/);
 
   const pagesSitemap = await worker.fetch(
