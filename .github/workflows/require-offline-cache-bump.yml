@@ -29,6 +29,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Validate AdSense ownership wiring and public guide content
+        run: node --test test/adsense-site-readiness.test.mjs
       - name: Verify all three cache namespaces are bumped together
         shell: bash
         env:
