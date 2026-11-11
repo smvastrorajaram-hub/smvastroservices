@@ -1043,7 +1043,7 @@ app.get("/astrologer/appointments", async (req,res)=>{
         name:String(a.name||""),
         preferredDate:String(a.preferredDate||""),preferredTime:String(a.preferredTime||""),
         question:String(a.question||""),notes:String(a.notes||""),birthDetails:a.birthDetails||null,
-        status:missed?'missed':String(a.status||"new"),bookingStatus,missedReason:missed?'astrologer_not_connected_within_grace':String(a.missedReason||''),notes:String(a.notes||''),scheduledMinutes:Number(a.scheduledMinutes||5),liveSessionId:String(a.liveSessionId||""),createdAt:a.createdAt||null
+        status:missed?'missed':String(a.status||"new"),bookingStatus,missedReason:missed?'astrologer_not_connected_within_grace':String(a.missedReason||''),notes:String(a.notes||''),scheduledMinutes:Number(a.scheduledMinutes||5),liveSessionId:String(a.liveSessionId||""),createdAt:a.createdAt||null,respondedAt:a.respondedAt||null,updatedAt:a.updatedAt||null
       };
     }).sort((a,b)=>{
       const time=v=>typeof v?.toMillis==="function"?v.toMillis():Date.parse(v||"")||0;
@@ -1079,7 +1079,7 @@ app.get("/customer/appointments", async (req,res)=>{
         scheduledMinutes:Number(a.scheduledMinutes||5),
         bookingStatus,status:missed?'missed':String(a.status||"new"),missedReason:missed?'astrologer_not_connected_within_grace':String(a.missedReason||''),notes:String(a.notes||''),
         liveSessionId:String(a.liveSessionId||""),liveBookingId:String(a.liveBookingId||""),
-        createdAt:a.createdAt||null
+        createdAt:a.createdAt||null,respondedAt:a.respondedAt||null,updatedAt:a.updatedAt||null
       };
     }).filter(a=>["scheduled_call_request","scheduled_chat_request"].includes(a.bookingKind))
       .sort((a,b)=>{

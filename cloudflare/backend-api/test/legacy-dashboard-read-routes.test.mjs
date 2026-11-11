@@ -41,7 +41,7 @@ test('Astrologer appointment read is UID-scoped and applies the IST two-minute m
     }
   });
   firestore.runQuery=async options=>[
-    {id:'late',data:{bookingStatus:'accepted',preferredDate:'2026-01-01',preferredTime:'10:00',createdAt:'2026-01-01T00:00:00Z'}},
+    {id:'late',data:{bookingStatus:'accepted',preferredDate:'2026-01-01',preferredTime:'10:00',createdAt:'2026-01-01T00:00:00Z',respondedAt:'2026-01-01T00:05:00Z',updatedAt:'2026-01-01T00:06:00Z'}},
     {id:'active',data:{bookingStatus:'accepted',liveSessionId:'live-1'}}
   ];
   registerLegacyDashboardReadRoutes({
@@ -55,6 +55,8 @@ test('Astrologer appointment read is UID-scoped and applies the IST two-minute m
   assert.equal(res.body.appointments[0].bookingStatus,'missed_by_astrologer');
   assert.equal(res.body.appointments[0].missedReason,'astrologer_not_connected_within_grace');
   assert.equal(res.body.appointments[1].bookingStatus,'accepted');
+  assert.equal(res.body.appointments[0].respondedAt,'2026-01-01T00:05:00Z');
+  assert.equal(res.body.appointments[0].updatedAt,'2026-01-01T00:06:00Z');
 });
 
 test('Customer appointments require Customer role and filter only scheduled Call/Chat kinds', async () => {

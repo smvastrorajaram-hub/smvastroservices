@@ -15,11 +15,11 @@ function fixture({now=Date.parse('2026-10-31T10:00:00Z'),payoutEncryptionKey=TES
   const firestore={
     async runQuery(query) {
       if(query.collectionPath==='smv_questions') return [
-        {id:'q-1',data:{astrologerCommissionAmount:150,status:'answered',commissionStatus:'credited'}},
-        {id:'q-2',data:{commissionAmount:50,status:'answered',commissionStatus:'credited'}}
+        {id:'q-1',data:{question:'Public question',amount:300,astrologerCommissionAmount:150,adminCommissionAmount:150,commissionPercent:50,adminCommissionPercent:50,status:'answered',commissionStatus:'credited',commissionCreditedAt:'2026-10-30T10:00:00.000Z'}},
+        {id:'q-2',data:{question:'Private Chat',privateChat:true,questionType:'private_chat',amount:100,commissionAmount:50,adminCommissionAmount:50,commissionPercent:50,adminCommissionPercent:50,status:'answered',commissionStatus:'credited',commissionCreditedAt:'2026-10-29T10:00:00.000Z'}}
       ];
       if(query.collectionPath==='smv_private_consultations') return [
-        {id:'pc-1',data:{astrologerCreditedAmount:100,commissionStatus:'credited'}}
+        {id:'pc-1',data:{question:'Private consultation',chatPrice:200,astrologerCreditedAmount:100,adminCommissionAmount:100,commissionPercent:50,adminCommissionPercent:50,commissionStatus:'credited',customerViewedAt:'2026-10-28T10:00:00.000Z'}}
       ];
       return [];
     },
@@ -68,6 +68,10 @@ function fixture({now=Date.parse('2026-10-31T10:00:00Z'),payoutEncryptionKey=TES
         },
         async first() {
           if(sql.includes('SUM(astrologer_amount_paise)')) return {amount:50000};
+          if(sql.includes('SUM(amount_paise)')&&sql.includes('FROM smv_domain_withdrawals')) {
+            const active=[...withdrawals.values()].filter(row=>String(row.astrologer_uid)===String(values[0])&&['pending','processing','paid'].includes(String(row.status)));
+            return {amount:active.reduce((sum,row)=>sum+Number(row.amount_paise||0),0),latest_created_at_ms:active.reduce((max,row)=>Math.max(max,Number(row.created_at_ms||0)),0)};
+          }
           if(sql.includes('FROM smv_domain_legacy_earning_snapshots')) return snapshots.get(String(values[0]))||null;
           if(sql.includes("withdrawalId') = ?")) {
             return [...withdrawals.values()].find(row=>{try{return JSON.parse(row.payload_json).withdrawalId===String(values[0]);}catch{return false;}})||null;
@@ -96,11 +100,13 @@ function fixture({now=Date.parse('2026-10-31T10:00:00Z'),payoutEncryptionKey=TES
                 legacy_private_payout_json:legacy.private_payout_json||null
               };
             });
-            return {results:rows};
+            const limitMatch=sql.match(/LIMIT (\d+)/i);
+            return {results:limitMatch?rows.slice(0,Number(limitMatch[1])):rows};
           }
           if(sql.includes('FROM smv_domain_earnings')) return {results:[{
-            earning_id:'live-1',reference_id:'session-1',source_type:'live_session',
-            astrologer_amount_paise:10000,created_at_ms:now,payload_json:'{"mode":"call"}'
+            earning_id:'live-1',reference_id:'session-1',source_type:'live_session',gross_amount_paise:50000,
+            astrologer_amount_paise:10000,admin_amount_paise:40000,created_at_ms:now,
+            payload_json:'{"mode":"call","commissionPercent":20,"adminCommissionPercent":80}'
           }]};
           return {results:[]};
         }
@@ -146,6 +152,7 @@ test('withdrawal overview merges credited legacy earnings and D1 Live earnings',
   assert.equal(summary.availableToWithdraw,800);
   assert.equal(summary.minimumWithdrawal,300);
   assert.equal(summary.withdrawalEligible,true);
+  assert.equal(summary.totalWithdrawalsPaise,0);
   assert.equal(f.snapshots.get('astro-1').question_count,2);
   assert.equal(f.snapshots.get('astro-1').private_consultation_count,1);
 });
@@ -233,7 +240,34 @@ test('Admin can process, pay and safely retry a withdrawal; payout snapshot rema
   const dashboard=await f.service.getEarningsDashboard('astro-1');
   assert.equal(dashboard.withdrawals[0].processingAt,new Date(Date.UTC(2026,9,31,10,0,0)).toISOString());
   assert.equal(dashboard.withdrawals[0].paidAt,new Date(Date.UTC(2026,9,31,10,0,0)).toISOString());
+  assert.equal(dashboard.totalEarnings,800);
+  assert.equal(dashboard.ledger.length,4);
+  assert.deepEqual(dashboard.ledger.map(item=>item.sourceLabel),['Live Session','Question','Private Chat','Private Consultation']);
+  assert.equal(dashboard.ledger[0].grossAmount,500);
+  assert.equal(dashboard.ledger[0].commission,100);
+  assert.equal(dashboard.ledger[0].adminCommission,400);
+  assert.equal(dashboard.ledger[0].commissionPercent,20);
+  assert.equal(dashboard.ledger[0].adminCommissionPercent,80);
+  assert.equal(dashboard.ledger[1].commission,150);
+  assert.equal(dashboard.ledger[2].commission,50);
+  assert.equal(dashboard.ledger[3].commission,100);
+  assert.equal(dashboard.ledger[1].date,'2026-10-30T10:00:00.000Z');
+  assert.equal(dashboard.ledger[2].date,'2026-10-29T10:00:00.000Z');
+  assert.equal(dashboard.ledger[3].date,'2026-10-28T10:00:00.000Z');
   const details=await f.service.getPrivatePayout('uuid-1');
   assert.equal(details.payout.accountNumber,'123456789');
   assert.match(created.withdrawalId,/^smvwt-[0-9]{6}$/);
+});
+
+test('withdrawal totals aggregate all paid and reserved records beyond the recent-history page',async()=>{
+  const f=fixture();
+  for(let i=0;i<1200;i++)f.withdrawals.set('old-'+i,{
+    withdrawal_id:'old-'+i,astrologer_uid:'astro-1',amount_paise:50,status:'paid',
+    created_at_ms:Date.parse('2026-10-31T10:00:00Z')-i,payload_json:'{}',updated_at_ms:0
+  });
+  const summary=await f.service.overview('astro-1');
+  assert.equal(summary.totalEarnings,800);
+  assert.equal(summary.totalWithdrawals,600);
+  assert.equal(summary.availableToWithdraw,200);
+  assert.equal(summary.withdrawals.length,100);
 });

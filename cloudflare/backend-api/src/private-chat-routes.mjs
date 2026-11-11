@@ -35,14 +35,14 @@ const CUSTOMER_FIELDS=[
   'questionId','questionType','privateChat','customerName','question','amount',
   'status','paymentStatus','allocationStatus','customerPaymentId','astrologerId',
   'astrologerName','answer','answerSubmittedAt','answerAvailableAt','createdAt',
-  'updatedAt','refundStatus','refundId','refundAmount','refundPaymentId','refundRrn','refundArn','refundUtr','refundBankReference','refundRequestedAt','refundCreatedAt','refundSyncedAt','refundProcessedAt','refundFailedAt','refundError','refundReason','paidAt','paymentRecordedAt','questionSubmittedAt','adminQuestionApprovedAt','adminQuestionRejectedAt','answerSubmittedAt','answerApprovedAt','answerAvailableAt','lastAnswerRejectedAt','customerAnswerViewedAt','reviewed','reviewSubmittedAt'
+  'updatedAt','commissionCreditedAt','refundStatus','refundId','refundAmount','refundPaymentId','refundRrn','refundArn','refundUtr','refundBankReference','refundRequestedAt','refundCreatedAt','refundSyncedAt','refundProcessedAt','refundFailedAt','refundError','refundReason','paidAt','paymentRecordedAt','questionSubmittedAt','adminQuestionApprovedAt','adminQuestionRejectedAt','answerSubmittedAt','answerApprovedAt','answerAvailableAt','lastAnswerRejectedAt','customerAnswerViewedAt','reviewed','reviewSubmittedAt'
 ];
 const ASTROLOGER_FIELDS=[
   'questionId','questionType','privateChat','customerName','birthDetails',
   'birthDate','birthTime','birthPlace','birthGender','question','amount',
   'status','paymentStatus','allocationStatus','customerPaymentId',
   'astrologerId','astrologerName','answer','answerMinWords','answerSubmittedAt',
-  'answerAvailableAt','answerRejectionReason','createdAt','updatedAt','paidAt','paymentRecordedAt','questionSubmittedAt','astrologerAssignedAt','astrologerReassignedAt','adminQuestionApprovedAt','adminQuestionRejectedAt','answerApprovedAt','lastAnswerRejectedAt'
+  'answerAvailableAt','answerRejectionReason','createdAt','updatedAt','commissionCreditedAt','customerAnswerViewedAt','paidAt','paymentRecordedAt','questionSubmittedAt','astrologerAssignedAt','astrologerReassignedAt','adminQuestionApprovedAt','adminQuestionRejectedAt','answerApprovedAt','lastAnswerRejectedAt'
 ];
 const ADMIN_FIELDS=[
   ...ASTROLOGER_FIELDS,'requestedAstrologerId','requestedAstrologerName','refundStatus','refundId','refundAmount','refundPaymentId','refundRrn','refundArn','refundUtr','refundBankReference','refundReason','refundError','refundRequestedAt','refundCreatedAt','refundSyncedAt','refundProcessedAt','refundFailedAt',

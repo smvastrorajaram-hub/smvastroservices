@@ -115,7 +115,9 @@ export function registerLegacyDashboardReadRoutes({ app, firestore, identityServ
           missedReason: missed ? 'astrologer_not_connected_within_grace' : String(a.missedReason || ''),
           scheduledMinutes: Number(a.scheduledMinutes || 5),
           liveSessionId: String(a.liveSessionId || ''),
-          createdAt: a.createdAt || null
+          createdAt: a.createdAt || null,
+          respondedAt: a.respondedAt || null,
+          updatedAt: a.updatedAt || null
         };
       }).sort((left, right) => millis(right.createdAt) - millis(left.createdAt));
       return res.set('Cache-Control', 'no-store').json({ success: true, appointments });
@@ -153,7 +155,9 @@ export function registerLegacyDashboardReadRoutes({ app, firestore, identityServ
           notes: String(a.notes || ''),
           liveSessionId: String(a.liveSessionId || ''),
           liveBookingId: String(a.liveBookingId || ''),
-          createdAt: a.createdAt || null
+          createdAt: a.createdAt || null,
+          respondedAt: a.respondedAt || null,
+          updatedAt: a.updatedAt || null
         };
       }).filter(item => ['scheduled_call_request', 'scheduled_chat_request'].includes(item.bookingKind))
         .sort((left, right) => millis(right.createdAt) - millis(left.createdAt));
