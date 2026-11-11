@@ -27,6 +27,12 @@ const REQUIRED_SCHEMA_QUERY = [
   "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_live_booking_release_pending_validate') AS live_booking_release_trigger_count,",
   "  (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = 'numeric-public-reference-ids' LIMIT 1) AS numeric_public_reference_ids_version,",
   "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'smv_domain_withdrawals_public_withdrawal_id_uq') AS public_withdrawal_id_index_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'smv_domain_withdrawals_admin_payment_id_uq') AS admin_payment_id_index_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'smv_domain_wallet_recharges_customer_payment_id_uq') AS customer_payment_id_index_count"
+].join('\n');
+
+const BONUS_CREDIT_SCHEMA_QUERY = [
+  "SELECT",
   "  (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = 'bonus-credit-wallet' LIMIT 1) AS bonus_credit_wallet_version,",
   "  (SELECT COUNT(*) FROM pragma_table_info('smv_domain_wallets') WHERE name IN ('bonus_credit_balance_paise','reserved_bonus_credit_paise')) AS wallet_bonus_credit_columns_count,",
   "  (SELECT COUNT(*) FROM pragma_table_info('smv_domain_wallet_ledger') WHERE name IN ('bonus_credit_delta_paise','reserved_bonus_credit_delta_paise','bonus_credit_balance_after_paise','reserved_bonus_credit_balance_after_paise')) AS wallet_ledger_bonus_credit_columns_count,",
@@ -42,9 +48,7 @@ const REQUIRED_SCHEMA_QUERY = [
   "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'smv_domain_promotional_fund_ledger') AS promotional_fund_ledger_table_count,",
   "  (SELECT COUNT(*) FROM smv_domain_promotional_fund WHERE fund_id='SMV_ASTRO') AS promotional_fund_seed_count,",
   "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_promotional_fund_ledger_validate') AS promotional_fund_validate_trigger_count,",
-  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_promotional_fund_ledger_apply') AS promotional_fund_apply_trigger_count,",
-  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'smv_domain_withdrawals_admin_payment_id_uq') AS admin_payment_id_index_count,",
-  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'smv_domain_wallet_recharges_customer_payment_id_uq') AS customer_payment_id_index_count"
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_promotional_fund_ledger_apply') AS promotional_fund_apply_trigger_count"
 ].join('\n');
 
 const MIGRATION_KEYS = [
@@ -87,6 +91,7 @@ function unavailableSchema(d1Binding, querySucceeded = false) {
       liveBookingReleaseSchema: false,
       numericPublicReferenceIdsSchema: false,
       bonusCreditWalletSchema: false,
+      bonusCreditSchemaQuerySucceeded: false,
       allRequiredMigrations: false
     }
   };
@@ -102,6 +107,19 @@ export async function inspectBackendSchema(db) {
   try {
     const row = await db.prepare(REQUIRED_SCHEMA_QUERY).first();
     if (!row || typeof row !== 'object') return unavailableSchema(true, true);
+
+    let bonusCreditRow = {};
+    let bonusCreditSchemaQuerySucceeded = false;
+    try {
+      const candidate = await db.prepare(BONUS_CREDIT_SCHEMA_QUERY).first();
+      if (candidate && typeof candidate === 'object') {
+        bonusCreditRow = candidate;
+        bonusCreditSchemaQuerySucceeded = true;
+      }
+    } catch {
+      // 0013 may not be applied yet. Keep 0002-0012 results intact and fail
+      // only the Bonus Credit-dependent routes until its schema is available.
+    }
 
     const schemaMigrations = {
       '0002_shared_domain_repository':
@@ -141,22 +159,22 @@ export async function inspectBackendSchema(db) {
         countIs(row.admin_payment_id_index_count, 1) &&
         countIs(row.customer_payment_id_index_count, 1),
       '0013_bonus_credit_wallet':
-        row.bonus_credit_wallet_version === '0013_bonus_credit_wallet' &&
-        countIs(row.wallet_bonus_credit_columns_count, 2) &&
-        countIs(row.wallet_ledger_bonus_credit_columns_count, 4) &&
-        countIs(row.wallet_offer_bonus_credit_columns_count, 1) &&
-        countIs(row.offer_redemption_bonus_credit_columns_count, 1) &&
-        countIs(row.live_session_bonus_credit_columns_count, 1) &&
-        countIs(row.live_booking_bonus_credit_columns_count, 1) &&
-        countIs(row.live_session_bonus_reserve_trigger_count, 1) &&
-        countIs(row.live_earning_bonus_credit_trigger_count, 1) &&
-        countIs(row.wallet_ledger_bonus_credit_apply_trigger_count, 1) &&
-        countIs(row.wallet_ledger_bonus_credit_validate_trigger_count, 1) &&
-        countIs(row.promotional_fund_table_count, 1) &&
-        countIs(row.promotional_fund_ledger_table_count, 1) &&
-        countIs(row.promotional_fund_seed_count, 1) &&
-        countIs(row.promotional_fund_validate_trigger_count, 1) &&
-        countIs(row.promotional_fund_apply_trigger_count, 1)
+        bonusCreditRow.bonus_credit_wallet_version === '0013_bonus_credit_wallet' &&
+        countIs(bonusCreditRow.wallet_bonus_credit_columns_count, 2) &&
+        countIs(bonusCreditRow.wallet_ledger_bonus_credit_columns_count, 4) &&
+        countIs(bonusCreditRow.wallet_offer_bonus_credit_columns_count, 1) &&
+        countIs(bonusCreditRow.offer_redemption_bonus_credit_columns_count, 1) &&
+        countIs(bonusCreditRow.live_session_bonus_credit_columns_count, 1) &&
+        countIs(bonusCreditRow.live_booking_bonus_credit_columns_count, 1) &&
+        countIs(bonusCreditRow.live_session_bonus_reserve_trigger_count, 1) &&
+        countIs(bonusCreditRow.live_earning_bonus_credit_trigger_count, 1) &&
+        countIs(bonusCreditRow.wallet_ledger_bonus_credit_apply_trigger_count, 1) &&
+        countIs(bonusCreditRow.wallet_ledger_bonus_credit_validate_trigger_count, 1) &&
+        countIs(bonusCreditRow.promotional_fund_table_count, 1) &&
+        countIs(bonusCreditRow.promotional_fund_ledger_table_count, 1) &&
+        countIs(bonusCreditRow.promotional_fund_seed_count, 1) &&
+        countIs(bonusCreditRow.promotional_fund_validate_trigger_count, 1) &&
+        countIs(bonusCreditRow.promotional_fund_apply_trigger_count, 1)
     };
     const allRequiredMigrations = Object.values(schemaMigrations).every(Boolean);
     const checks = {
@@ -176,12 +194,14 @@ export async function inspectBackendSchema(db) {
       liveBookingReleaseSchema: schemaMigrations['0011_live_booking_release_claim'],
       numericPublicReferenceIdsSchema: schemaMigrations['0012_numeric_public_reference_ids'],
       bonusCreditWalletSchema: schemaMigrations['0013_bonus_credit_wallet'],
+      bonusCreditSchemaQuerySucceeded,
       allRequiredMigrations
     };
 
     return {
       d1Binding: true,
       querySucceeded: true,
+      bonusCreditSchemaQuerySucceeded,
       ready: allRequiredMigrations,
       schemaVersion: row.shared_domain_version || null,
       sharedDomainSchemaVersion: row.shared_domain_version || null,
@@ -286,6 +306,7 @@ export function registerBackendReadinessRoute({
         liveBookingReleaseSchema: schema.checks.liveBookingReleaseSchema,
         numericPublicReferenceIdsSchema: schema.checks.numericPublicReferenceIdsSchema,
         bonusCreditWalletSchema: schema.checks.bonusCreditWalletSchema,
+        bonusCreditSchemaQuerySucceeded: schema.bonusCreditSchemaQuerySucceeded,
         allRequiredMigrations: schema.checks.allRequiredMigrations
       },
       firebaseConnected,

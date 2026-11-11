@@ -52,7 +52,7 @@ function readyRow() {
   };
 }
 
-function dbWith(row, { fail = false } = {}) {
+function dbWith(row, { fail = false, bonusCreditFail = false } = {}) {
   const calls = [];
   return {
     calls,
@@ -61,6 +61,9 @@ function dbWith(row, { fail = false } = {}) {
       return {
         async first() {
           if (fail) throw new Error('D1 read failed');
+          if (bonusCreditFail && /smv_domain_promotional_fund|bonus-credit-wallet/.test(sql)) {
+            throw new Error('no such table: smv_domain_promotional_fund');
+          }
           return row;
         }
       };
@@ -89,8 +92,10 @@ test('Production D1 schema readiness recognizes the current 0002-0013 migration 
   assert.equal(result.schemaVersion, '0002_shared_domain_repository');
   assert.deepEqual(Object.values(result.schemaMigrations), Array(12).fill(true));
   assert.equal(result.checks.bonusCreditWalletSchema, true);
-  assert.equal(db.calls.length, 1);
+  assert.equal(db.calls.length, 2);
   assert.match(db.calls[0], /smv_domain_schema_meta/);
+  assert.doesNotMatch(db.calls[0], /smv_domain_promotional_fund|bonus-credit-wallet/);
+  assert.match(db.calls[1], /smv_domain_promotional_fund/);
   assert.doesNotMatch(db.calls[0], /smv_wallet_schema_meta|0001_wallet_live_domain/);
 });
 
@@ -104,6 +109,22 @@ test('schema and migration status are read from D1 on every request, never a cac
 
   assert.equal(next.ready, false);
   assert.equal(next.schemaMigrations['0011_live_booking_release_claim'], false);
+  assert.equal(db.calls.length, 4);
+});
+
+test('a missing 0013 Bonus Credit schema does not mask valid 0002-0012 migration evidence', async () => {
+  const db = dbWith(readyRow(), { bonusCreditFail: true });
+  const result = await inspectBackendSchema(db);
+
+  assert.equal(result.d1Binding, true);
+  assert.equal(result.querySucceeded, true);
+  assert.equal(result.bonusCreditSchemaQuerySucceeded, false);
+  assert.equal(result.ready, false);
+  for (const key of Object.keys(result.schemaMigrations).filter(key => key !== '0013_bonus_credit_wallet')) {
+    assert.equal(result.schemaMigrations[key], true, key + ' should remain visible when only 0013 is missing');
+  }
+  assert.equal(result.schemaMigrations['0013_bonus_credit_wallet'], false);
+  assert.equal(result.checks.bonusCreditWalletSchema, false);
   assert.equal(db.calls.length, 2);
 });
 

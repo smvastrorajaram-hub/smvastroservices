@@ -10,3 +10,16 @@ export function resolveConfiguredAdminUids(env = {}) {
   ];
   return [...new Set(values.map(value => String(value || '').trim()).filter(Boolean))];
 }
+
+
+/**
+ * Resolve the single Admin identity that owns the promotional-fund source Wallet.
+ * An explicit ADMIN_WALLET_UID wins. Otherwise only a unique configured Admin
+ * is safe; multiple Admins require an explicit primary wallet owner.
+ */
+export function resolveConfiguredAdminWalletUid(env = {}) {
+  const explicit = String(env.ADMIN_WALLET_UID || '').trim();
+  if (explicit) return explicit;
+  const configured = resolveConfiguredAdminUids(env);
+  return configured.length === 1 ? configured[0] : '';
+}

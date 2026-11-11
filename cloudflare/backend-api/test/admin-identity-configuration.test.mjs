@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveConfiguredAdminUids } from '../src/admin-identity-configuration.mjs';
+import { resolveConfiguredAdminUids, resolveConfiguredAdminWalletUid } from '../src/admin-identity-configuration.mjs';
 
 test('configured Admin UID allowlist includes the dedicated Production binding', () => {
   assert.deepEqual(
@@ -20,5 +20,34 @@ test('configured Admin UID allowlist preserves legacy single-UID binding and ign
       SMV_CONFIGURED_ADMIN_UIDS: ''
     }),
     ['legacy-single-admin']
+  );
+});
+
+
+test('Bonus Credit Promotional Fund resolves the unique configured Production Admin Wallet', () => {
+  assert.equal(
+    resolveConfiguredAdminWalletUid({
+      SMV_CONFIGURED_ADMIN_UIDS: 'TwjeEIFS3Zcf1SxboLZoujm91Ky2'
+    }),
+    'TwjeEIFS3Zcf1SxboLZoujm91Ky2'
+  );
+});
+
+test('an explicit ADMIN_WALLET_UID takes precedence over the Admin allowlist', () => {
+  assert.equal(
+    resolveConfiguredAdminWalletUid({
+      ADMIN_WALLET_UID: 'primary-admin-wallet',
+      SMV_CONFIGURED_ADMIN_UIDS: 'other-admin'
+    }),
+    'primary-admin-wallet'
+  );
+});
+
+test('multiple configured Admins fail closed without an explicit Promotional Fund owner', () => {
+  assert.equal(
+    resolveConfiguredAdminWalletUid({
+      SMV_CONFIGURED_ADMIN_UIDS: 'admin-one,admin-two'
+    }),
+    ''
   );
 });
