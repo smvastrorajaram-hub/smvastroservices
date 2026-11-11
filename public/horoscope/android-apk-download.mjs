@@ -4,6 +4,16 @@
   'use strict';
   const horoscopeCard = document.getElementById('smvHoroscopeAndroidApkSection');
   const calendarCard = document.getElementById('smvCalendarAndroidApkSection');
+  const isPagesDevHost = location.hostname === 'smvastroservices.pages.dev' ||
+    location.hostname.endsWith('.smvastroservices.pages.dev');
+  if (isPagesDevHost) {
+    for (const section of [horoscopeCard, calendarCard]) {
+      if (!section) continue;
+      section.hidden = true;
+      section.setAttribute('aria-hidden', 'true');
+    }
+    return;
+  }
   const card = horoscopeCard || calendarCard;
   if (!card) return;
 

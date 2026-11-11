@@ -127,6 +127,7 @@ test('APK manager API limits public polling and Admin upload attempts', () => {
 test('Website APK manager only exposes download/update controls and hides native app management', () => {
   const html = read('public/index.html');
   const installer = read('public/android-app-install.js');
+  const interfaceScript = read('public/interface.js');
   const server = read('server.js');
   const manifest = JSON.parse(read('public/manifest.webmanifest'));
   const assetLinks = JSON.parse(read('public/.well-known/assetlinks.json'));
@@ -141,7 +142,11 @@ test('Website APK manager only exposes download/update controls and hides native
   assert.equal(installer.includes('releases/new'), false);
   assert.ok(html.includes('id="smvPermanentAndroidAppSection"'));
   assert.ok(html.includes('id="smvPermanentApkDownload"'));
-  assert.equal(html.includes('id="smvInstallAppSection"'), false);
+  assert.ok(html.includes('id="smvInstallAppSection"'));
+  assert.ok(html.includes('id="smvInstallAppBtn"'));
+  assert.ok(html.includes('src="./assets/pwa-astro-512.png"'));
+  assert.match(installer, /if \(pagesDevHost\)/);
+  assert.match(interfaceScript, /location\.hostname!=='smvastroservices\.pages\.dev'/);
   assert.ok(installer.includes('DOWNLOAD APK'));
   assert.ok(installer.includes('Using Latest Version'));
   assert.ok(installer.includes("'UPDATE'"));

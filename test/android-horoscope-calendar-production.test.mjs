@@ -118,8 +118,8 @@ test('Public Horoscope and Calendar APK cards point to the verified Cloudflare r
   assert.ok(calendarHtml.indexOf(publicApiConfig) < calendarHtml.indexOf('../android-apk-download.mjs'));
   assert.ok(horoscopeHtml.includes('smvHoroscopeAndroidApkSection'));
   assert.ok(calendarHtml.includes('smvCalendarAndroidApkSection'));
-  assert.ok(!horoscopeHtml.includes('id="smvHoroscopeInstallArea"') && !horoscopeHtml.includes('id="installApp"'));
-  assert.ok(!calendarHtml.includes('id="smvCalendarInstallArea"') && !calendarHtml.includes('id="calInstall"'));
+  assert.ok(horoscopeHtml.includes('id="smvHoroscopeInstallArea"') && horoscopeHtml.includes('id="installApp"'));
+  assert.ok(calendarHtml.includes('id="smvCalendarInstallArea"') && calendarHtml.includes('id="calInstall"'));
   assert.ok(horoscopeHtml.includes('rel="manifest"'));
   assert.ok(horoscopeHtml.includes('pwa.js'));
   assert.ok(calendarHtml.includes('calendar-pwa.mjs'));
@@ -161,11 +161,12 @@ test('Admin Dashboard exposes separate upload, version history, refresh and dele
   assert.match(frontend, /current published version cannot be deleted/i);
 });
 
-test('Horoscope and Calendar public pages use signed APK downloads instead of PWA install buttons', () => {
+test('Horoscope and Calendar expose independent Pages.dev PWA install controls while retaining .in APK cards', () => {
   const horoscope = read('public/horoscope/index.html');
   const calendar = read('public/horoscope/calendar/index.html');
   const daily = read('public/horoscope/daily-calendar.mjs');
   const apkController = read('public/horoscope/android-apk-download.mjs');
+  const astroApkController = read('public/android-app-install.js');
   assert.ok(apkController.includes('release.versionName'));
   assert.ok(apkController.includes('release.versionCode'));
   assert.ok(apkController.includes("heading.textContent = appName;"));
@@ -179,13 +180,19 @@ test('Horoscope and Calendar public pages use signed APK downloads instead of PW
   assert.ok(calendar.includes('id="smvCalendarAndroidApkSection"'));
   assert.ok(horoscope.includes('android-apk-download.mjs'));
   assert.ok(calendar.includes('../android-apk-download.mjs'));
-  assert.equal(horoscope.includes('id="smvHoroscopeInstallArea"'), false);
-  assert.equal(horoscope.includes('id="installApp"'), false);
-  assert.equal(calendar.includes('id="smvCalendarInstallArea"'), false);
-  assert.equal(calendar.includes('id="calInstall"'), false);
-  assert.doesNotMatch(daily, /class="cal-app-link"/);
-  assert.match(daily, /cal-download-app-link/);
-  assert.match(daily, /smvCalendarAndroidApkSection/);
+  assert.ok(horoscope.includes('id="smvHoroscopeInstallArea"'));
+  assert.ok(horoscope.includes('id="installApp"'));
+  assert.ok(horoscope.includes('src="./assets/pwa-horoscope-512.png"'));
+  assert.ok(calendar.includes('id="smvCalendarInstallArea"'));
+  assert.ok(calendar.includes('id="calInstall"'));
+  assert.ok(calendar.includes('src="../assets/pwa-calendar-192.svg"'));
+  assert.match(horoscopePwa, /installUiEnabled=location\.hostname!=='horoscope\.smvastroservices\.in'/);
+  assert.match(calendarPwa, /installUiEnabled=location\.hostname!=='calendar\.smvastroservices\.in'/);
+  assert.match(astroApkController, /if \(pagesDevHost\)/);
+  assert.match(apkController, /if \(isPagesDevHost\)/);
+  assert.match(daily, /const pagesDevHost=location\.hostname==='smvastroservices\.pages\.dev'/);
+  assert.match(daily, /calendarAppPage&&pagesDevHost\?' hidden aria-hidden="true"':''/);
+  assert.match(daily, /if\(calendarAppPage&&!pagesDevHost\)/);
   assert.match(apkController, /public\/android-apps\/\' \+ appId/);
   assert.match(apkController, /in\.smvastroservices\.horoscope/);
   assert.match(apkController, /in\.smvastroservices\.calendar/);

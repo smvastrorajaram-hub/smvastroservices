@@ -4,11 +4,11 @@
    Location lookup keeps its existing GeoNames + India-offline behavior.
 */
 const IS_PAGES_DEV_HOST = self.location.hostname === 'smvastroservices.pages.dev' || self.location.hostname.endsWith('.smvastroservices.pages.dev') || self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
-const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261111-pages-dev-pwa-install-only-v1' : '20261111-in-adsense-content-review-v1';
+const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261111-pages-dev-pwa-install-ui-v2' : '20261111-in-pwa-install-ui-v2';
 const OFFLINE_CACHE='smv-horoscope-offline';
 const LOCATION_CACHE='smv-shared-india-places';
 const SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE;
-const RUNTIME_REVISION = IS_PAGES_DEV_HOST ? 'v276-pages-dev-pwa-install-only-20261111' : 'v273-in-adsense-content-20261111';
+const RUNTIME_REVISION = IS_PAGES_DEV_HOST ? 'v277-pages-dev-pwa-install-ui-20261111' : 'v274-in-pwa-install-ui-20261111';
 const PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['../pages-dev-host-independence.js','../pages-dev-apk-pwa-icons.js']:[];
 
 const CORE=[

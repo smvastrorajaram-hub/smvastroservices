@@ -95,6 +95,14 @@ if(location.hostname==='smvastroservices.pages.dev'){
 <nav class="calendar-language-switch" aria-label="Calendar language"><button id="calTamil" lang="ta" type="button">தமிழ்</button><button id="calEnglish" lang="en" type="button">English</button></nav>
 </div>
 </header>
+<section class="calendar-install" id="smvCalendarInstallArea" aria-label="Install SMV CALENDAR" hidden>
+  <div class="calendar-install-inner">
+    <h2>Install SMV CALENDAR</h2>
+    <p>Install SMV CALENDAR on your phone and open it from your Home Screen.</p>
+    <button id="calInstall" type="button"><img src="../assets/pwa-calendar-192.svg" width="32" height="32" alt=""><span>Install SMV CALENDAR</span></button>
+    <p id="calInstallStatus" role="status" aria-live="polite"></p>
+  </div>
+</section>
 <main class="calendar-page-shell"><section id="smvDailyCalendar" aria-label="Daily Calendar"></section></main>
 <section aria-labelledby="smvCalendarAndroidApkHeading" class="smv-android-apk-section" id="smvCalendarAndroidApkSection" aria-label="SMV CALENDAR Android app download">
   <div class="smv-android-apk-card">

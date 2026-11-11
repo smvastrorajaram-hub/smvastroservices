@@ -14,7 +14,7 @@ if(location.hostname==='smvastroservices.pages.dev'){
  // CSS state on html so a newly inserted link cannot reappear after install.
  const style=document.createElement('style');
  style.id='smv-v354-pages-calendar-install-style';
- style.textContent='html:not(.smv-v354-calendar-install-offered) #smvCalendarInstallArea,html:not(.smv-v354-calendar-install-offered) .cal-app-link{display:none!important}';
+ style.textContent='html:not(.smv-v354-calendar-install-offered) #smvCalendarInstallArea,#smvDailyCalendar .cal-download-app-link{display:none!important}';
  document.head.appendChild(style);
  const hide=()=>{
   document.documentElement.classList.remove('smv-v354-calendar-install-offered');
@@ -82,6 +82,7 @@ if(location.hostname==='smvastroservices.pages.dev'){
 let installPrompt=window.__smvCalendarInstallPrompt||null;
 const params=new URLSearchParams(location.search);
 const installArea=document.getElementById('smvCalendarInstallArea');
+const installUiEnabled=location.hostname!=='calendar.smvastroservices.in';
 const installButton=document.getElementById('calInstall');
 const installStatus=document.getElementById('calInstallStatus');
 const manifest=document.getElementById('calendarManifest');
@@ -91,7 +92,7 @@ const ta=()=>document.documentElement.lang==='ta';
 const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
 const setStatus=(en,tamil)=>{if(installStatus)installStatus.textContent=ta()?tamil:en};
 const appLink=()=>document.querySelector('.cal-app-link');
-const show=()=>{if(installArea)installArea.hidden=false;appLink()?.removeAttribute('hidden');};
+const show=()=>{if(!installUiEnabled){hide();return;}if(installArea)installArea.hidden=false;appLink()?.removeAttribute('hidden');};
 const hide=()=>{if(installArea)installArea.hidden=true;appLink()?.setAttribute('hidden','');};
 function setStored(key,value){try{value?localStorage.setItem(key,'1'):localStorage.removeItem(key)}catch{}}
 function stored(key){try{return localStorage.getItem(key)==='1'}catch{return false}}

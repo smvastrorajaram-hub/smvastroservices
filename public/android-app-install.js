@@ -20,6 +20,13 @@
     element.style.display = 'none';
   }
 
+  const pagesDevHost = location.hostname === 'smvastroservices.pages.dev' ||
+    location.hostname.endsWith('.smvastroservices.pages.dev');
+  if (pagesDevHost) {
+    hide(section);
+    return;
+  }
+
   if (nativeApp) {
     hide(section);
     return;

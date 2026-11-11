@@ -3,12 +3,9 @@
   document.addEventListener('input',event=>{if(event.target.closest?.('#dashboard,#admin'))event.target.setAttribute('data-smv-dirty','1');});
   document.addEventListener('change',event=>{if(event.target.closest?.('#dashboard,#admin'))event.target.setAttribute('data-smv-dirty','1');});
   const section=document.getElementById('smvInstallAppSection');
-  const mode=window.matchMedia('(display-mode: standalone)');
-  const full=window.matchMedia('(display-mode: fullscreen)');
-  let installed=false;
-  function syncInstall(){if(section)section.hidden=installed||mode.matches||full.matches||navigator.standalone===true;}
-  syncInstall();mode.addEventListener?.('change',syncInstall);full.addEventListener?.('change',syncInstall);
-  window.addEventListener('appinstalled',()=>{installed=true;syncInstall();});
+  // The Pages.dev native-install controller owns visibility after Chrome offers
+  // beforeinstallprompt. Keep the PWA section off every .in/custom production host.
+  if(section && location.hostname!=='smvastroservices.pages.dev') section.hidden=true;
   // Home owns the banner. Its parent visibility also hides it on internal routes.
   // Admin quick links are owned by smvastro.mjs so background dashboard refreshes
   // can preserve/re-anchor them without MutationObserver or duplicate DOM builders.
