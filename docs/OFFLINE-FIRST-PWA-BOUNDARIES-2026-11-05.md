@@ -10,7 +10,7 @@ This is not an offline conversion of backend services. It is a static UI and det
 
 ## Current synchronized cache release
 
-The three app workers select their release marker by hostname. On `smvastroservices.pages.dev`, all three use `SMV_CACHE_RELEASE=20261111-pages-dev-apk-pwa-icons-v1`; on the existing `.in` hosts, all three retain `SMV_CACHE_RELEASE=20261111-pages-horoscope-header-css-v1`. Their cache namespaces remain independent. The CI guard requires public-source changes to bump the Pages.dev release on all three workers together while preserving the existing `.in` release marker.
+The three app workers select a synchronized release marker by hostname. The Pages.dev host uses `SMV_CACHE_RELEASE=20261111-pages-dev-adsense-content-review-v1`; the main `.in` host uses `SMV_CACHE_RELEASE=20261111-in-adsense-content-review-v1`. The three application cache namespaces remain independent. A Pages.dev-only change bumps the Pages.dev marker across all three workers; a public `.in` content or homepage change also bumps the `.in` marker across all three workers.
 
 The production Android apps are remote-site WebViews, not bundled offline HTML packages. All three native WebViews now explicitly use `WebSettings.LOAD_DEFAULT` and configure Android's Service Worker runtime with `LOAD_DEFAULT` and network loads enabled. The hosted Service Worker then refreshes static UI files on successful online requests and serves the last cached UI/calculation assets offline. A web-only UI change is therefore delivered to the installed Android apps through their respective origin's updated Service Worker; an APK rebuild is needed when native Android code itself changes.
 
@@ -46,6 +46,6 @@ A user must open each app online after deployment and let the one-time India loc
 - Do not clear origin-wide localStorage, sessionStorage, IndexedDB or Cache API storage.
 - Do not force-reload an open form/report/session during worker activation.
 - Never call Android `WebView.clearCache()`, `localStorage.clear()`, `sessionStorage.clear()` or origin-wide Cache API deletion to force an update.
-- On future public website/PWA source changes, bump the Pages.dev `SMV_CACHE_RELEASE` across all three workers together; keep the `.in` release marker unchanged unless an explicitly approved `.in` change requires its own cache bump. The required CI guard enforces this separation.
+- For future public website/PWA source changes, bump the Pages.dev `SMV_CACHE_RELEASE` across all three workers together. When a change also updates the `.in` homepage, sitemap or public content, bump the `.in` marker across all three workers too. Keep Pages.dev-only changes from needlessly changing the `.in` marker. The required CI guard enforces this separation.
 - Keep every non-GET request outside the cache path.
 - Bypass same-origin online-only API/account/financial routes even when they use GET.
