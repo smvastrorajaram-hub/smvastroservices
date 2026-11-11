@@ -31,6 +31,7 @@ jobs:
         run: |
           node --input-type=module --check < public/_worker.js
           node --check public/pages-dev-host-independence.js
+          node --check public/pages-dev-apk-pwa-icons.js
           node --check public/sw.js
           node --check public/horoscope/sw.js
           node --check public/horoscope/calendar/sw.js

@@ -4,12 +4,12 @@
    Location lookup keeps its existing GeoNames + India-offline behavior.
 */
 const IS_PAGES_DEV_HOST = self.location.hostname === 'smvastroservices.pages.dev' || self.location.hostname.endsWith('.smvastroservices.pages.dev') || self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
-const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261111-pages-dev-domain-independence-v1' : '20261111-pages-horoscope-header-css-v1';
+const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261111-pages-dev-apk-pwa-icons-v1' : '20261111-pages-horoscope-header-css-v1';
 const OFFLINE_CACHE='smv-horoscope-offline';
 const LOCATION_CACHE='smv-shared-india-places';
 const SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE;
-const RUNTIME_REVISION = IS_PAGES_DEV_HOST ? 'v273-pages-dev-domain-independence-20261111' : 'v272-pages-horoscope-header-css-20261111';
-const PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['../pages-dev-host-independence.js']:[];
+const RUNTIME_REVISION = IS_PAGES_DEV_HOST ? 'v274-pages-dev-apk-pwa-icons-20261111' : 'v272-pages-horoscope-header-css-20261111';
+const PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['../pages-dev-host-independence.js','../pages-dev-apk-pwa-icons.js']:[];
 
 const CORE=[
   './','./index.html',

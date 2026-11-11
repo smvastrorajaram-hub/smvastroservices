@@ -207,11 +207,11 @@ test('Each PWA gives Pages.dev a new cache release while preserving the exact ex
   ];
   for (const source of workers) {
     assert.match(source, /const IS_PAGES_DEV_HOST\s*=/);
-    assert.match(source, /'20261111-pages-dev-domain-independence-v1'\s*:\s*'20261111-pages-horoscope-header-css-v1'/);
+    assert.match(source, /'20261111-pages-dev-apk-pwa-icons-v1'\s*:\s*'20261111-pages-horoscope-header-css-v1'/);
     assert.match(source, /PAGES_DEV_HELPER_FILES\s*=\s*IS_PAGES_DEV_HOST/);
   }
   const horoscope = workers[1];
-  assert.match(horoscope, /'v273-pages-dev-domain-independence-20261111'\s*:\s*'v272-pages-horoscope-header-css-20261111'/);
+  assert.match(horoscope, /'v274-pages-dev-apk-pwa-icons-20261111'\s*:\s*'v272-pages-horoscope-header-css-20261111'/);
 });
 
 test('The Pages.dev helper is cached only in Pages.dev worker scopes', () => {
@@ -220,9 +220,9 @@ test('The Pages.dev helper is cached only in Pages.dev worker scopes', () => {
     read('public/horoscope/sw.js'),
     read('public/horoscope/calendar/sw.js')
   ];
-  assert.ok(workers[0].includes("PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['./pages-dev-host-independence.js']:[]"));
-  assert.ok(workers[1].includes("PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['../pages-dev-host-independence.js']:[]"));
-  assert.ok(workers[2].includes("PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['../../pages-dev-host-independence.js']:[]"));
+  assert.ok(workers[0].includes("PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['./pages-dev-host-independence.js','./pages-dev-apk-pwa-icons.js']:[]"));
+  assert.ok(workers[1].includes("PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['../pages-dev-host-independence.js','../pages-dev-apk-pwa-icons.js']:[]"));
+  assert.ok(workers[2].includes("PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['../../pages-dev-host-independence.js','../../pages-dev-apk-pwa-icons.js']:[]"));
 });
 
 test('The origin isolation change does not clear user data or origin-wide browser caches', () => {
@@ -304,4 +304,84 @@ test('Cloudflare Pages serves Pages.dev-only robots and sitemap while leaving .i
   );
   assert.equal(pagesHead.status, 200);
   assert.equal(await pagesHead.text(), '');
+});
+
+
+test('Pages.dev APK download cards use the corresponding 512px PWA manifest icon while .in retains native APK icons', () => {
+  const source = read('public/pages-dev-apk-pwa-icons.js');
+  const cards = [
+    {
+      selector: '#smvPermanentAndroidAppSection .smv-android-apk-icon-wrap img',
+      page: 'public/index.html',
+      native: './assets/android-app-icon-astro-source.png?v=20261110-icon-png-v3',
+      src: '/assets/pwa-astro-512.png',
+      manifests: [['public/manifest.webmanifest', '/manifest.webmanifest']]
+    },
+    {
+      selector: '#smvHoroscopeAndroidApkSection .smv-android-apk-icon-wrap img',
+      page: 'public/horoscope/index.html',
+      native: 'assets/android-app-icon-horoscope-source.png?v=20261110-icon-png-v3',
+      src: '/horoscope/assets/pwa-horoscope-512.png',
+      manifests: [
+        ['public/horoscope/manifest-en.webmanifest', '/horoscope/manifest-en.webmanifest'],
+        ['public/horoscope/manifest-ta.webmanifest', '/horoscope/manifest-ta.webmanifest']
+      ]
+    },
+    {
+      selector: '#smvCalendarAndroidApkSection .smv-android-apk-icon-wrap img',
+      page: 'public/horoscope/calendar/index.html',
+      native: '../assets/android-app-icon-calendar-source.png?v=20261110-icon-png-v3',
+      src: '/horoscope/assets/pwa-calendar-512.png',
+      manifests: [
+        ['public/horoscope/calendar/manifest-en.webmanifest', '/horoscope/calendar/manifest-en.webmanifest'],
+        ['public/horoscope/calendar/manifest-ta.webmanifest', '/horoscope/calendar/manifest-ta.webmanifest']
+      ]
+    }
+  ];
+
+  const makeImage = native => ({
+    src: native,
+    alt: 'Native Android application icon',
+    srcset: 'native-1x.png 1x',
+    dataset: {},
+    setAttribute(name, value) { this[name] = String(value); },
+    removeAttribute(name) { if (name === 'srcset') this.srcset = ''; }
+  });
+
+  const pagesImages = new Map(cards.map(card => [card.selector, makeImage(card.native)]));
+  vm.runInNewContext(source, {
+    window: { location: { hostname: 'smvastroservices.pages.dev' } },
+    document: { querySelector: selector => pagesImages.get(selector) || null }
+  });
+
+  const legacyImages = new Map(cards.map(card => [card.selector, makeImage(card.native)]));
+  vm.runInNewContext(source, {
+    window: { location: { hostname: 'smvastroservices.in' } },
+    document: { querySelector: selector => legacyImages.get(selector) || null }
+  });
+
+  for (const card of cards) {
+    const image = pagesImages.get(card.selector);
+    assert.equal(image.src, card.src, card.page + ' must use its PWA manifest icon on Pages.dev');
+    assert.equal(image.dataset.smvPagesDevPwaIcon, '1');
+    assert.equal(image.alt.includes('PWA'), true);
+    assert.equal(image.srcset, '', 'A native srcset must not override the PWA icon');
+
+    const legacy = legacyImages.get(card.selector);
+    assert.equal(legacy.src, card.native, card.page + ' must retain the original native APK icon on .in');
+    assert.equal(legacy.dataset.smvPagesDevPwaIcon, undefined);
+
+    const html = read(card.page);
+    assert.ok(html.includes('id="smv-pages-dev-pwa-apk-icon-loader"'));
+    assert.ok(html.includes("if(location.hostname==='smvastroservices.pages.dev')"));
+    assert.ok(html.includes('src="' + card.native + '"'), 'Source HTML must keep the original native APK icon.');
+
+    for (const [manifestFile, manifestPath] of card.manifests) {
+      const manifest = JSON.parse(read(manifestFile));
+      const icon = manifest.icons.find(item => item.sizes === '512x512' && item.purpose === 'any');
+      assert.ok(icon, manifestFile + ' must expose its 512px any-purpose PWA icon');
+      const actualPath = new URL(icon.src, new URL(manifestPath, 'https://smvastroservices.pages.dev')).pathname;
+      assert.equal(actualPath, card.src, manifestFile + ' icon must match the APK card PWA icon.');
+    }
+  }
 });

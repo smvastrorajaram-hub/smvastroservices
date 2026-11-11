@@ -10,7 +10,7 @@ This is not an offline conversion of backend services. It is a static UI and det
 
 ## Current synchronized cache release
 
-The three app workers select their release marker by hostname. On `smvastroservices.pages.dev`, all three use `SMV_CACHE_RELEASE=20261111-pages-dev-domain-independence-v1`; on the existing `.in` hosts, all three retain `SMV_CACHE_RELEASE=20261111-pages-horoscope-header-css-v1`. Their cache namespaces remain independent. The CI guard requires public-source changes to bump the Pages.dev release on all three workers together while preserving the existing `.in` release marker.
+The three app workers select their release marker by hostname. On `smvastroservices.pages.dev`, all three use `SMV_CACHE_RELEASE=20261111-pages-dev-apk-pwa-icons-v1`; on the existing `.in` hosts, all three retain `SMV_CACHE_RELEASE=20261111-pages-horoscope-header-css-v1`. Their cache namespaces remain independent. The CI guard requires public-source changes to bump the Pages.dev release on all three workers together while preserving the existing `.in` release marker.
 
 The production Android apps are remote-site WebViews, not bundled offline HTML packages. All three native WebViews now explicitly use `WebSettings.LOAD_DEFAULT` and configure Android's Service Worker runtime with `LOAD_DEFAULT` and network loads enabled. The hosted Service Worker then refreshes static UI files on successful online requests and serves the last cached UI/calculation assets offline. A web-only UI change is therefore delivered to the installed Android apps through their respective origin's updated Service Worker; an APK rebuild is needed when native Android code itself changes.
 
