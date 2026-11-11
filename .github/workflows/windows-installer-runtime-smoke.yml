@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   install-and-launch:
-    name: Install and launch \${{ matrix.app }}
+    name: Install and launch ${{ matrix.app }}
     runs-on: windows-latest
     timeout-minutes: 45
     strategy:
@@ -47,24 +47,24 @@ jobs:
           node-version: 24
 
       - name: Install desktop build dependencies
-        working-directory: \${{ matrix.directory }}
+        working-directory: ${{ matrix.directory }}
         run: npm install --no-audit --no-fund
 
       - name: Run desktop regression tests
-        working-directory: \${{ matrix.directory }}
+        working-directory: ${{ matrix.directory }}
         run: npm test
 
       - name: Build Windows installer
-        working-directory: \${{ matrix.directory }}
+        working-directory: ${{ matrix.directory }}
         run: npm run dist:win
 
       - name: Silently install and launch the packaged application
         shell: pwsh
         env:
-          APP_LABEL: \${{ matrix.app }}
-          APP_KEY: \${{ matrix.key }}
-          INSTALLER_PATH: \${{ matrix.installer }}
-          APP_EXE: \${{ matrix.executable }}
+          APP_LABEL: ${{ matrix.app }}
+          APP_KEY: ${{ matrix.key }}
+          INSTALLER_PATH: ${{ matrix.installer }}
+          APP_EXE: ${{ matrix.executable }}
         run: |
           $ErrorActionPreference = 'Stop'
           $installer = Join-Path $env:GITHUB_WORKSPACE $env:INSTALLER_PATH
@@ -114,7 +114,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: smv-\${{ matrix.key }}-runtime-log
-          path: \${{ runner.temp }}/smv-\${{ matrix.key }}-electron.log
+          name: smv-${{ matrix.key }}-runtime-log
+          path: ${{ runner.temp }}/smv-${{ matrix.key }}-electron.log
           if-no-files-found: ignore
           retention-days: 7
