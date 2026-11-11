@@ -26,8 +26,10 @@ async function openFullyMigratedLocalD1() {
     try {
       db = new DatabaseSync(file);
       const marker = db.prepare("SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key='live-booking-release-guard'").get();
+      const bonusCredit = db.prepare("SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key='bonus-credit-wallet'").get();
       const encrypted = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='smv_domain_withdrawal_payouts_encrypted'").get();
-      if (marker?.schema_version === '0011_live_booking_release_claim' && encrypted) {
+      if (marker?.schema_version === '0011_live_booking_release_claim' &&
+          bonusCredit?.schema_version === '0013_bonus_credit_wallet' && encrypted) {
         db.exec('PRAGMA busy_timeout=10000');
         return { db, file };
       }
@@ -40,6 +42,7 @@ async function openFullyMigratedLocalD1() {
 const TABLES = [
   'smv_domain_schema_meta',
   'smv_domain_wallets','smv_domain_wallet_ledger','smv_domain_wallet_recharges',
+  'smv_domain_promotional_fund','smv_domain_promotional_fund_ledger',
   'smv_domain_wallet_offers','smv_domain_offer_usage','smv_domain_wallet_offer_redemption_usage',
   'smv_domain_offer_redemptions','smv_domain_notification_inbox',
   'smv_domain_live_sessions','smv_domain_live_bookings','smv_domain_live_messages','smv_domain_live_signals',
@@ -87,7 +90,8 @@ const TRIGGERS = [
   'smv_domain_live_signal_validate','smv_domain_live_session_terminal_immutable',
   'smv_domain_live_booking_reserve_validate','smv_domain_live_session_booking_transfer_validate',
   'smv_domain_live_booking_accept_validate','smv_domain_live_booking_release_validate',
-  'smv_domain_live_booking_release_pending_validate'
+  'smv_domain_live_booking_release_pending_validate',
+  'smv_domain_promotional_fund_ledger_validate','smv_domain_promotional_fund_ledger_apply'
 ];
 
 test('local D1 contains every required Wallet, Live, Earnings, Withdrawal and Identity/Profile table, index and trigger', async () => {
@@ -111,7 +115,8 @@ test('local D1 contains every required Wallet, Live, Earnings, Withdrawal and Id
       ['live-sessions','0006_d1_live_wallet_settlement'],
       ['identity-profiles','0008_identity_profile_backfill_audit'],
       ['wallet-security','0009_wallet_razorpay_payout_encryption'],
-      ['live-booking-release-guard','0011_live_booking_release_claim']
+      ['live-booking-release-guard','0011_live_booking_release_claim'],
+      ['bonus-credit-wallet','0013_bonus_credit_wallet']
     ]) assert.equal(markers.get(key), version, 'schema marker ' + key);
     assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
     assert.ok(tables.has('smv_domain_withdrawal_payouts'), 'legacy plaintext table retained for read-only compatibility');
