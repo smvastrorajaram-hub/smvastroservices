@@ -1,4 +1,4 @@
-const SMV_CACHE_RELEASE='20261110-android-icons-calendar-favicon-seo-contrast-v3';
+const SMV_CACHE_RELEASE='20261111-pages-horoscope-header-css-v1';
 const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE;
 const LOCATION_CACHE='smv-shared-india-places';
 const CORE=[
