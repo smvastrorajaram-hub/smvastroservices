@@ -678,16 +678,16 @@ export function createD1LiveSessionService({
     }));
     if(safePaise(settlement.bonusCreditUsedPaise)>0) ledger.push(await buildLedger({
       ownerUid:session.customerUid,type:'live_session_bonus_credit_used',direction:'debit',
-      amountPaise:0,reservedBonusCreditDeltaPaise:-safePaise(settlement.bonusCreditUsedPaise),
+      amountPaise:safePaise(settlement.bonusCreditUsedPaise),reservedBonusCreditDeltaPaise:-safePaise(settlement.bonusCreditUsedPaise),
       idempotencyKey:'live-session-bonus-credit-used:'+id,referenceType,referenceId:id,
-      note:'Bonus Credit used for Live '+session.mode
+      note:'Bonus Credit used for Live '+session.mode+' · ₹'+(safePaise(settlement.bonusCreditUsedPaise)/100).toFixed(2)
     }));
     if(safePaise(settlement.bonusCreditReleasedPaise)>0) ledger.push(await buildLedger({
       ownerUid:session.customerUid,type:'live_session_bonus_credit_release',direction:'credit',
-      amountPaise:0,bonusCreditDeltaPaise:safePaise(settlement.bonusCreditReleasedPaise),
+      amountPaise:safePaise(settlement.bonusCreditReleasedPaise),bonusCreditDeltaPaise:safePaise(settlement.bonusCreditReleasedPaise),
       reservedBonusCreditDeltaPaise:-safePaise(settlement.bonusCreditReleasedPaise),
       idempotencyKey:'live-session-bonus-credit-release:'+id,referenceType,referenceId:id,
-      note:'Unused Bonus Credit returned to Wallet'
+      note:'Unused Bonus Credit returned to Wallet · ₹'+(safePaise(settlement.bonusCreditReleasedPaise)/100).toFixed(2)
     }));
     if(settlement.bonusMinutesReleased>0) ledger.push(await buildLedger({
       ownerUid:session.customerUid,type:'live_session_bonus_minutes_release',direction:'credit',
@@ -802,10 +802,10 @@ export function createD1LiveSessionService({
     }));
     if(safePaise(booking.reservedBonusCreditPaise)>0) ledger.push(await buildLedger({
       ownerUid:booking.customerUid,type:'live_booking_bonus_credit_release',direction:'credit',
-      amountPaise:0,bonusCreditDeltaPaise:safePaise(booking.reservedBonusCreditPaise),
+      amountPaise:safePaise(booking.reservedBonusCreditPaise),bonusCreditDeltaPaise:safePaise(booking.reservedBonusCreditPaise),
       reservedBonusCreditDeltaPaise:-safePaise(booking.reservedBonusCreditPaise),
       idempotencyKey:'live-booking-bonus-credit-release:'+id,referenceType:'live_booking',referenceId:id,
-      note:'Unused Bonus Credit released for Live '+booking.mode+' booking'
+      note:'Unused Bonus Credit released for Live '+booking.mode+' booking · ₹'+(safePaise(booking.reservedBonusCreditPaise)/100).toFixed(2)
     }));
     if(booking.reservedBonusMinutes>0) ledger.push(await buildLedger({
       ownerUid:booking.customerUid,type:'live_booking_bonus_release',direction:'credit',

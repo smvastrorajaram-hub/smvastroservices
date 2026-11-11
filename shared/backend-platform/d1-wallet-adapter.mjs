@@ -706,10 +706,10 @@ export function createD1WalletAdapter({ db, adminWalletUid = '', now = Date.now,
         availableDeltaPaise:-bonusCreditCreditedPaise,referenceType:'razorpay_payment',referenceId:pid,
         note:'Promotional fund reserved for Customer Bonus Credit',
         metadata:{rechargeId:rid,customerUid:owner.ownerUid,offerId:selectedOffer.id,offerName:selectedOffer.name},source});
-      const bonusRow=await buildLedgerRow({...owner,type:'recharge_bonus_credit',direction:'credit',amountPaise:0,
+      const bonusRow=await buildLedgerRow({...owner,type:'recharge_bonus_credit',direction:'credit',amountPaise:bonusCreditCreditedPaise,
         idempotencyKey:bonusKey,ledgerId:await sha256Hex('recharge-bonus-credit:'+owner.ownerUid+':'+pid,cryptoImpl),
         bonusCreditDeltaPaise:bonusCreditCreditedPaise,referenceType:'razorpay_payment',referenceId:pid,
-        note:'Wallet recharge Bonus Credit: '+(bonusCreditCreditedPaise/100).toFixed(2),
+        note:'Wallet recharge Bonus Credit: ₹'+(bonusCreditCreditedPaise/100).toFixed(2),
         metadata:{rechargeId:rid,offerId:selectedOffer.id,offerName:selectedOffer.name,adminFundingWalletUid:configuredAdminWalletUid},source});
       batchStatements.push(insertStatement(fundingRow),insertStatement(bonusRow));
       batchStatements.push(statement(

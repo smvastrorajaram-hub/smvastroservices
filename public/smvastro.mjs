@@ -2018,7 +2018,13 @@ async function smvLoadCustomerWalletOnce(uid){
      const when=t.createdAt?smvDateTime(t.createdAt):'Date unavailable';
      const status=String(t.status||'posted');
      const customerPaymentId=String(t.customerPaymentId||'').trim();
-     return '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(128,128,128,.22)"><div style="min-width:0"><b>'+escapeHtml(label)+'</b><div class="small">'+escapeHtml(when)+' · '+escapeHtml(status)+'</div>'+(customerPaymentId?'<div class="small"><b>Customer Payment ID:</b> '+escapeHtml(customerPaymentId)+'</div>':'')+(t.note?'<div class="small">'+escapeHtml(t.note)+'</div>':'')+(t.balanceAfterPaise!=null?'<div class="small">Balance after: '+smvWalletMoney(t.balanceAfterPaise)+'</div>':'')+'</div><b class="smv-wallet-transaction-amount '+(credit?'success':'error')+'" style="white-space:nowrap">'+(credit?'+':'−')+smvWalletMoney(amount)+'</b></div>';
+     const bonusCreditDelta=Number.isSafeInteger(Number(t.bonusCreditDeltaPaise))?Number(t.bonusCreditDeltaPaise):0;
+     const reservedBonusCreditDelta=Number.isSafeInteger(Number(t.reservedBonusCreditDeltaPaise))?Number(t.reservedBonusCreditDeltaPaise):0;
+     const bonusCreditAfter=Number.isSafeInteger(Number(t.bonusCreditBalanceAfterPaise))?Number(t.bonusCreditBalanceAfterPaise):null;
+     const bonusDetail=(bonusCreditDelta!==0?'<div class="small">Bonus Credit change: '+(bonusCreditDelta>0?'+':'−')+smvWalletMoney(Math.abs(bonusCreditDelta))+'</div>':'')+
+      (reservedBonusCreditDelta!==0?'<div class="small">Bonus Credit reserve: '+(reservedBonusCreditDelta>0?'+':'−')+smvWalletMoney(Math.abs(reservedBonusCreditDelta))+'</div>':'')+
+      (bonusCreditAfter!==null?'<div class="small">Bonus Credit balance after: '+smvWalletMoney(bonusCreditAfter)+'</div>':'');
+     return '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(128,128,128,.22)"><div style="min-width:0"><b>'+escapeHtml(label)+'</b><div class="small">'+escapeHtml(when)+' · '+escapeHtml(status)+'</div>'+(customerPaymentId?'<div class="small"><b>Customer Payment ID:</b> '+escapeHtml(customerPaymentId)+'</div>':'')+(t.note?'<div class="small">'+escapeHtml(t.note)+'</div>':'')+(t.balanceAfterPaise!=null?'<div class="small">Original Wallet balance after: '+smvWalletMoney(t.balanceAfterPaise)+'</div>':'')+bonusDetail+'</div><b class="smv-wallet-transaction-amount '+(credit?'success':'error')+'" style="white-space:nowrap">'+(credit?'+':'−')+smvWalletMoney(amount)+'</b></div>';
     }).join(''):'<div class="empty">No Wallet transactions yet.</div>';
    }
   }catch(error){
