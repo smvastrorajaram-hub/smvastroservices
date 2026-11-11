@@ -178,12 +178,12 @@ test('all three PWA cache releases are synchronized for Pages.dev and .in conten
   assert.deepEqual(releases.map(item => item.pages), [
     '20261111-pages-dev-pwa-install-ui-v2',
     '20261111-pages-dev-pwa-install-ui-v2',
-    '20261111-pages-dev-pwa-install-only-v1'
+    '20261111-pages-dev-pwa-install-ui-v2'
   ]);
   assert.deepEqual(releases.map(item => item.legacy), [
     '20261111-in-pwa-install-ui-v2',
     '20261111-in-pwa-install-ui-v2',
-    '20261111-in-adsense-content-review-v1'
+    '20261111-in-pwa-install-ui-v2'
   ]);
 });
 test('each installer creates its own 256x256 Windows icon', () => {
