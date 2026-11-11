@@ -57,6 +57,14 @@ jobs:
       - name: Verify Pages.dev Android source contracts
         run: node --test test/pages-dev-android-release.test.mjs
 
+      - name: Python 3.12 for launcher artwork
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pinned Pillow image processing dependency
+        run: python -m pip install --disable-pip-version-check --no-input "Pillow==11.3.0"
+
       - name: Prepare three independent launcher icons
         run: bash prepare-pages-dev-android-icons.sh
 
@@ -123,20 +131,20 @@ jobs:
           keystore_path="$RUNNER_TEMP/smv-astro-release.p12"
           printf '%s' "$SMV_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
           test -s "$keystore_path"
-          keytool -list -keystore "$keystore_path" -storetype PKCS12             -storepass "$SMV_ANDROID_KEYSTORE_PASSWORD" -alias "$SMV_ANDROID_KEY_ALIAS" >/dev/null
+          keytool -list -keystore "$keystore_path" -storetype PKCS12 -storepass "$SMV_ANDROID_KEYSTORE_PASSWORD" -alias "$SMV_ANDROID_KEY_ALIAS" >/dev/null
           echo "SMV_ANDROID_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
 
       - name: Compile Release variants without signing on pull requests
         if: ${{ env.SMV_SIGNED_RELEASE != 'true' }}
         run: |
           set -euo pipefail
-          gradle --no-daemon --no-build-cache -PsmvPagesVersionName=v1.0             :smvpagesandroid:clean             :smvpagesandroid:assembleAstroRelease             :smvpagesandroid:assembleHoroscopeRelease             :smvpagesandroid:assembleCalendarRelease
+          gradle --no-daemon --no-build-cache -PsmvPagesVersionName=v1.0 :smvpagesandroid:clean :smvpagesandroid:assembleAstroRelease :smvpagesandroid:assembleHoroscopeRelease :smvpagesandroid:assembleCalendarRelease
 
       - name: Build the three permanent signed Pages.dev Release APKs
         if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
         run: |
           set -euo pipefail
-          gradle --no-daemon --no-build-cache             -PsmvPagesVersionName="$SMV_PAGES_ANDROID_VERSION_NAME"             :smvpagesandroid:clean             :smvpagesandroid:assembleAstroRelease             :smvpagesandroid:assembleHoroscopeRelease             :smvpagesandroid:assembleCalendarRelease
+          gradle --no-daemon --no-build-cache -PsmvPagesVersionName="$SMV_PAGES_ANDROID_VERSION_NAME" :smvpagesandroid:clean :smvpagesandroid:assembleAstroRelease :smvpagesandroid:assembleHoroscopeRelease :smvpagesandroid:assembleCalendarRelease
 
       - name: Verify all APKs use the permanent certificate and their own package IDs
         if: ${{ env.SMV_SIGNED_RELEASE == 'true' }}
