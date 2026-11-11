@@ -144,13 +144,13 @@ test('Pages.dev HOROSCOPE reuses the existing header CSS without requesting a mi
   const calendarHtml = read('public/horoscope/calendar/index.html');
 
   assert.doesNotMatch(html, /header-layout\.css/i);
-  assert.match(html, /horoscope\.css\?v=20261111-pages-horoscope-header-css-v1/);
+  assert.match(html, /horoscope\.css\?v=20261111-pages-dev-domain-independence-v1/);
   assert.match(html, /class="smv-horoscope-brand-header"/);
   assert.match(html, /class="smv-horoscope-controls-row"/);
   assert.match(css, /\.smv-horoscope-brand-header\{/);
   assert.match(css, /\.smv-horoscope-controls-row/);
   assert.match(worker, /['"]\.\/horoscope\.css['"]/);
-  assert.match(calendarHtml, /\.\.\/horoscope\.css\?v=20261111-pages-horoscope-header-css-v1/);
+  assert.match(calendarHtml, /\.\.\/horoscope\.css\?v=20261111-pages-dev-domain-independence-v1/);
 });
 
 test('all three PWA cache releases are synchronized for the Pages.dev header refresh', () => {
@@ -165,9 +165,9 @@ test('all three PWA cache releases are synchronized for the Pages.dev header ref
     return match[1];
   });
   assert.deepEqual(releases, [
-    '20261111-pages-horoscope-header-css-v1',
-    '20261111-pages-horoscope-header-css-v1',
-    '20261111-pages-horoscope-header-css-v1'
+    '20261111-pages-dev-domain-independence-v1',
+    '20261111-pages-dev-domain-independence-v1',
+    '20261111-pages-dev-domain-independence-v1'
   ]);
 });
 
