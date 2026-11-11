@@ -1,4 +1,4 @@
-name: AdSense Cloudflare Pages production smoke
+name: AdSense Site Ownership and Pages Production Smoke
 
 on:
   workflow_dispatch:
@@ -6,6 +6,15 @@ on:
     paths:
       - "public/ads.txt"
       - "public/index.html"
+      - "public/astrology-guides/**"
+      - "public/astrology-services/**"
+      - "public/tamil-horoscope/**"
+      - "public/marriage-matching/**"
+      - "public/customer-registration/**"
+      - "public/astrologer-registration/**"
+      - "public/sitemap.html"
+      - "public/sitemap.xml"
+      - "test/adsense-site-readiness.test.mjs"
       - "public/smvastro.css"
       - "mobile/**"
       - "scripts/optimize_mobile_folder_assets.py"
@@ -17,6 +26,15 @@ on:
     paths:
       - "public/ads.txt"
       - "public/index.html"
+      - "public/astrology-guides/**"
+      - "public/astrology-services/**"
+      - "public/tamil-horoscope/**"
+      - "public/marriage-matching/**"
+      - "public/customer-registration/**"
+      - "public/astrologer-registration/**"
+      - "public/sitemap.html"
+      - "public/sitemap.xml"
+      - "test/adsense-site-readiness.test.mjs"
       - "public/horoscope/ads.txt"
       - "public/horoscope/calendar/ads.txt"
       - "public/horoscope/index.html"
@@ -32,16 +50,47 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify Pages-host-only AdSense configuration
+      - name: Verify registered .in AdSense configuration
         shell: bash
         run: |
           set -euo pipefail
           grep -Fq '<meta name="google-adsense-account" content="ca-pub-8603281557754018">' public/index.html
-          grep -Fq 'smv-pages-dev-adsense-loader' public/index.html
-          grep -Fq "if(location.hostname!=='smvastroservices.pages.dev')return;" public/index.html
-          grep -Fq 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8603281557754018' public/index.html
+          grep -Fq 'smv-adsense-site-loader' public/index.html
+          grep -Fq "host==='smvastroservices.in'||host==='www.smvastroservices.in'" public/index.html
+          grep -Fq 'if(!isPrimarySite)return;' public/index.html
+          grep -Fq 'id="smv-adsense-domain-loader"' public/astrology-services/index.html
+          grep -Fq "host!=='smvastroservices.in'&&host!=='www.smvastroservices.in'" public/astrology-services/index.html
+          grep -Fq 'id="smv-adsense-domain-loader"' public/tamil-horoscope/index.html
+          grep -Fq "host!=='smvastroservices.in'&&host!=='www.smvastroservices.in'" public/tamil-horoscope/index.html
+          grep -Fq 'id="smv-adsense-domain-loader"' public/marriage-matching/index.html
+          grep -Fq "host!=='smvastroservices.in'&&host!=='www.smvastroservices.in'" public/marriage-matching/index.html
+          grep -Fq 'id="smv-adsense-domain-loader"' public/customer-registration/index.html
+          grep -Fq "host!=='smvastroservices.in'&&host!=='www.smvastroservices.in'" public/customer-registration/index.html
+          grep -Fq 'id="smv-adsense-domain-loader"' public/astrologer-registration/index.html
+          grep -Fq "host!=='smvastroservices.in'&&host!=='www.smvastroservices.in'" public/astrologer-registration/index.html
+          grep -Fq 'id="smv-adsense-domain-loader"' public/astrology-guides/index.html
+          grep -Fq "host!=='smvastroservices.in'&&host!=='www.smvastroservices.in'" public/astrology-guides/index.html
+          grep -Fq 'id="smv-adsense-domain-loader"' public/astrology-guides/birth-chart-basics/index.html
+          grep -Fq "host!=='smvastroservices.in'&&host!=='www.smvastroservices.in'" public/astrology-guides/birth-chart-basics/index.html
+          grep -Fq 'id="smv-adsense-domain-loader"' public/astrology-guides/twelve-houses/index.html
+          grep -Fq "host!=='smvastroservices.in'&&host!=='www.smvastroservices.in'" public/astrology-guides/twelve-houses/index.html
+          grep -Fq 'id="smv-adsense-domain-loader"' public/astrology-guides/27-nakshatras/index.html
+          grep -Fq "host!=='smvastroservices.in'&&host!=='www.smvastroservices.in'" public/astrology-guides/27-nakshatras/index.html
+          grep -Fq 'id="smv-adsense-domain-loader"' public/astrology-guides/panchangam/index.html
+          grep -Fq "host!=='smvastroservices.in'&&host!=='www.smvastroservices.in'" public/astrology-guides/panchangam/index.html
+          grep -Fq 'id="smv-adsense-domain-loader"' public/astrology-guides/lahiri-thirukanitham/index.html
+          grep -Fq "host!=='smvastroservices.in'&&host!=='www.smvastroservices.in'" public/astrology-guides/lahiri-thirukanitham/index.html
+          grep -Fq 'id="smv-adsense-domain-loader"' public/astrology-guides/marriage-porutham/index.html
+          grep -Fq "host!=='smvastroservices.in'&&host!=='www.smvastroservices.in'" public/astrology-guides/marriage-porutham/index.html
+          grep -Fq 'id="smv-adsense-domain-loader"' public/astrology-guides/dasha-bhukti/index.html
+          grep -Fq "host!=='smvastroservices.in'&&host!=='www.smvastroservices.in'" public/astrology-guides/dasha-bhukti/index.html
+          grep -Fq 'id="smv-adsense-domain-loader"' public/astrology-guides/graha-drishti/index.html
+          grep -Fq "host!=='smvastroservices.in'&&host!=='www.smvastroservices.in'" public/astrology-guides/graha-drishti/index.html
+          grep -Fq "host!=='horoscope.smvastroservices.in'" public/horoscope/index.html
+          grep -Fq "host!=='calendar.smvastroservices.in'" public/horoscope/calendar/index.html
+          ! grep -R -E '<script[^>]+src="https://pagead2\.googlesyndication\.com/pagead/js/adsbygoogle\.js' public --include='*.html'
           grep -Fq 'google.com, pub-8603281557754018, DIRECT, f08c47fec0942fa0' public/ads.txt
-          echo "PASS: publisher ID is preserved and the extra loader is host-restricted to smvastroservices.pages.dev"
+          echo "PASS: AdSense requests are host-gated to the registered .in sites; no preview-host direct script tags remain"
 
   production-smoke:
     if: github.event_name != 'pull_request'
@@ -82,7 +131,9 @@ jobs:
 
           check_url "https://smvastroservices.pages.dev/ads.txt" "google.com, pub-8603281557754018, DIRECT, f08c47fec0942fa0"
           check_url "https://smvastroservices.pages.dev/" "google-adsense-account\" content=\"ca-pub-8603281557754018"
-          check_url "https://smvastroservices.pages.dev/" "smv-pages-dev-adsense-loader"
+          check_url "https://smvastroservices.pages.dev/" "smv-adsense-site-loader"
+          check_url "https://smvastroservices.in/" "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8603281557754018"
+          check_url "https://smvastroservices.in/sitemap.xml" "astrology-guides/birth-chart-basics/"
           check_url "https://smvastroservices.in/ads.txt" "google.com, pub-8603281557754018, DIRECT, f08c47fec0942fa0"
           check_url "https://smvastroservices.in/ads.txt" "subdomain=horoscope.smvastroservices.in"
           check_url "https://smvastroservices.in/ads.txt" "subdomain=calendar.smvastroservices.in"

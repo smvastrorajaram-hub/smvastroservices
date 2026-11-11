@@ -85,15 +85,18 @@ document.addEventListener('DOMContentLoaded', function(){
 <script defer="" src="./main-location-search.js?v=20261105-offline-location-pack-v1"></script>
 </meta></meta></meta></meta></meta></link><meta name="google-adsense-account" content="ca-pub-8603281557754018">
 
-<script id="smv-pages-dev-adsense-loader">
+<script id="smv-adsense-site-loader">
 (()=> {
-  if(location.hostname!=='smvastroservices.pages.dev')return;
-  if(document.querySelector('script[data-smv-pages-dev-adsense]'))return;
+  const host=String(location.hostname||'').toLowerCase();
+  const isPrimarySite=host==='smvastroservices.in'||host==='www.smvastroservices.in';
+  /* AdSense is requested only for the domain submitted for approval. */
+  if(!isPrimarySite)return;
+  if(document.querySelector('script[data-smv-adsense]'))return;
   const script=document.createElement('script');
   script.async=true;
   script.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8603281557754018';
   script.crossOrigin='anonymous';
-  script.setAttribute('data-smv-pages-dev-adsense','1');
+  script.setAttribute('data-smv-adsense','1');
   document.head.appendChild(script);
 })();
 </script>
@@ -165,6 +168,7 @@ if(location.hostname==='smvastroservices.pages.dev'){
 <a class="smv-master-service" data-smv-route="consult" href="./?view=consult" aria-label="Browse Astrologer List and profiles"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/service-icons.png" style="width:417.3913%;left:-157.6087%;top:-13.0435%"/></span><strong>Astrologer List</strong><span>Browse approved astrologer profiles, languages, availability, existing prices and Reviews &amp; Ratings.</span></a>
 <a class="smv-master-service" href="https://horoscope.smvastroservices.in/" rel="noopener" target="_blank"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/service-icons.png" style="width:417.3913%;left:-29.0761%;top:-138.8587%"/></span><strong>Create Horoscope</strong><span>Accurate Vedic calculations with detailed analysis.</span></a>
 <a class="smv-master-service" href="#publicBlogs"><span aria-hidden="true" class="smv24-icon"><img alt="" loading="lazy" src="assets/service-icons.png" style="width:417.3913%;left:-286.6848%;top:-138.8587%"/></span><strong>Read Our Blog</strong><span>Insights, remedies and astrology knowledge.</span></a>
+<a class="smv-master-service" href="/astrology-guides/"><span aria-hidden="true" class="smv24-icon">📚</span><strong>Astrology Guides</strong><span>Read detailed educational guides about birth charts, Nakshatras, Panchangam and traditional calculation methods.</span></a>
 </div>
 <section aria-labelledby="smvProductsStoreTitle" class="smv-products-store-section" id="smv-products-store-section">
   <p class="smv-products-store-kicker">THE OFFICIAL ONLINE STORE</p>

@@ -199,7 +199,7 @@ test('Existing Firebase Auth and Verify email handler domains remain the dedicat
   assert.match(verification, /parsed\.origin !== 'https:\/\/verify\.smvastroservices\.in'/);
 });
 
-test('Each PWA gives Pages.dev a new cache release while preserving the exact existing .in cache release', () => {
+test('Each PWA uses synchronized Pages.dev and .in cache releases for public content updates', () => {
   const workers = [
     read('public/sw.js'),
     read('public/horoscope/sw.js'),
@@ -207,11 +207,11 @@ test('Each PWA gives Pages.dev a new cache release while preserving the exact ex
   ];
   for (const source of workers) {
     assert.match(source, /const IS_PAGES_DEV_HOST\s*=/);
-    assert.match(source, /'20261111-pages-dev-apk-pwa-icons-v1'\s*:\s*'20261111-pages-horoscope-header-css-v1'/);
+    assert.match(source, /'20261111-pages-dev-adsense-content-review-v1'\s*:\s*'20261111-in-adsense-content-review-v1'/);
     assert.match(source, /PAGES_DEV_HELPER_FILES\s*=\s*IS_PAGES_DEV_HOST/);
   }
   const horoscope = workers[1];
-  assert.match(horoscope, /'v274-pages-dev-apk-pwa-icons-20261111'\s*:\s*'v272-pages-horoscope-header-css-20261111'/);
+  assert.match(horoscope, /'v275-pages-dev-adsense-content-20261111'\s*:\s*'v273-in-adsense-content-20261111'/);
 });
 
 test('The Pages.dev helper is cached only in Pages.dev worker scopes', () => {
