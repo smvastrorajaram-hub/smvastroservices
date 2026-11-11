@@ -12,6 +12,10 @@ const workers = [
   'public/horoscope/calendar/sw.js'
 ];
 const publicSourceChanged = [...changed].some(path => path.startsWith('public/'));
+const inHostSourceChanged = changed.has('public/index.html')
+  || changed.has('public/sitemap.xml')
+  || changed.has('public/sitemap.html')
+  || [...changed].some(path => path.startsWith('public/astrology-guides/'));
 if (!publicSourceChanged) {
   console.log('PASS: No public website/PWA source changed; no cache-version bump is required.');
   process.exit(0);
@@ -42,10 +46,15 @@ assert.equal(new Set(releases.map(item => item.legacy)).size, 1,
   'ASTRO, HOROSCOPE and CALENDAR must preserve one synchronized .in cache release marker.');
 const previous = workers.map(baseRelease);
 for (let i = 0; i < workers.length; i++) {
-  assert.notEqual(releases[i].pages, previous[i].legacy,
+  assert.notEqual(releases[i].pages, previous[i].pages,
     workers[i] + ' must bump the Pages.dev cache release for this public-source change.');
-  assert.equal(releases[i].legacy, previous[i].legacy,
-    workers[i] + ' must preserve the existing .in cache release.');
+  if (inHostSourceChanged) {
+    assert.notEqual(releases[i].legacy, previous[i].legacy,
+      workers[i] + ' must bump the .in cache release when .in pages/content change.');
+  } else {
+    assert.equal(releases[i].legacy, previous[i].legacy,
+      workers[i] + ' must preserve the .in cache release when the change is Pages.dev-only.');
+  }
 }
 const expectedCacheNames = [
   "APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE",
@@ -56,4 +65,4 @@ for (let i = 0; i < workers.length; i++) {
   const source = readFileSync(workers[i], 'utf8');
   assert.ok(source.includes(expectedCacheNames[i]), workers[i] + ' must derive its own cache namespace from SMV_CACHE_RELEASE.');
 }
-console.log('PASS: Pages.dev cache release ' + releases[0].pages + ' is synchronized across all three apps; .in keeps ' + releases[0].legacy + '.');
+console.log('PASS: Pages.dev cache release ' + releases[0].pages + ' is synchronized across all three apps; .in cache release ' + releases[0].legacy + (inHostSourceChanged ? ' was also bumped for .in content.' : ' was preserved for a Pages.dev-only change.') );
