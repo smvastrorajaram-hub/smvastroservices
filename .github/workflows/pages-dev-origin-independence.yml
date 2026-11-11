@@ -1,0 +1,38 @@
+name: Pages.dev Host Independence Audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/**'
+      - 'test/pages-dev-host-independence.test.cjs'
+      - '.github/workflows/pages-dev-origin-independence.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'public/**'
+      - 'test/pages-dev-host-independence.test.cjs'
+      - '.github/workflows/pages-dev-origin-independence.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pages-dev-host-isolation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check Pages.dev helper and scoped Service Worker syntax
+        run: |
+          node --check public/pages-dev-host-independence.js
+          node --check public/sw.js
+          node --check public/horoscope/sw.js
+          node --check public/horoscope/calendar/sw.js
+          node --check test/pages-dev-host-independence.test.cjs
+      - name: Verify Pages.dev-only routing and preserved .in Auth/Verify
+        run: node --test test/pages-dev-host-independence.test.cjs
