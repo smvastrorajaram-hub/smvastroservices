@@ -106,3 +106,37 @@ test('All three app service workers use synchronized new cache releases without 
   assert.deepEqual(releases.map(match => match[1]), Array(3).fill('20261111-pages-dev-adsense-content-review-v1'));
   assert.deepEqual(releases.map(match => match[2]), Array(3).fill('20261111-in-adsense-content-review-v1'));
 });
+
+
+test('All public AdSense pages are host-gated; Pages.dev previews cannot request the AdSense library', () => {
+  const mainDomainPages = [
+    'public/astrology-services/index.html',
+    'public/tamil-horoscope/index.html',
+    'public/marriage-matching/index.html',
+    'public/customer-registration/index.html',
+    'public/astrologer-registration/index.html',
+    'public/astrology-guides/index.html',
+    ...guideSlugs.map(slug => 'public/astrology-guides/' + slug + '/index.html')
+  ];
+  for (const path of mainDomainPages) {
+    const html = read(path);
+    const loader = html.match(/<script id="smv-adsense-domain-loader">[\s\S]*?<\/script>/)?.[0];
+    assert.ok(loader, path + ' must contain a dedicated AdSense loader.');
+    assert.match(loader, /host!=='smvastroservices\.in'&&host!=='www\.smvastroservices\.in'/);
+    assert.match(loader, /if\(host!=='smvastroservices\.in'&&host!=='www\.smvastroservices\.in'\)return/);
+    assert.match(loader, /document\.createElement\('script'\)/);
+    assert.match(loader, /script\.src='https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-8603281557754018'/);
+    assert.doesNotMatch(html, /<script async src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js/i);
+  }
+
+  for (const [path,host] of [
+    ['public/horoscope/index.html','horoscope.smvastroservices.in'],
+    ['public/horoscope/calendar/index.html','calendar.smvastroservices.in']
+  ]) {
+    const html = read(path);
+    const loader = html.match(/<script id="smv-adsense-domain-loader">[\s\S]*?<\/script>/)?.[0];
+    assert.ok(loader, path + ' must contain a dedicated AdSense loader.');
+    assert.ok(loader.includes("if(host!=='" + host + "')return"), path + ' must be restricted to its canonical host.');
+    assert.doesNotMatch(html, /<script async src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js/i);
+  }
+});
