@@ -63,7 +63,7 @@ test('Astrologer Earnings History does not silently read stale Firebase withdraw
   const start=frontend.indexOf('// Earnings and withdrawals share the D1 financial source after cutover.');
   assert.ok(start>=0,'D1 earnings display path exists');
   const section=frontend.slice(start,start+8000);
-  assert.ok(section.includes('epRemote?.ledger'));
+  assert.ok(section.includes('Array.isArray(epRemote.ledger)'));
   assert.ok(section.includes('epRemote?.withdrawals'));
   assert.ok(!section.includes("getDocs(query(collection(db,'smv_withdrawals'"));
   assert.ok(section.includes("earningsTotalNode.textContent='Unavailable'"));
@@ -87,7 +87,7 @@ test('Astrologer lifetime totals use authoritative backend aggregates, not the r
 });
 
 test('D1 earnings history merges credited Live, Booking, Question, Private Chat and Private Consultation rows',()=>{
-  for(const token of ['summary.legacyEarnings?.ledger','liveLedger',"sourceLabel:'Private Chat'","sourceLabel:'Private Consultation'",'.slice(0,50)']) assert.ok(earningsService.includes(token),token);
+  for(const token of ['summary.legacyEarnings?.ledger','liveLedger',"privateChat?'Private Chat':'Question'","sourceLabel:'Private Consultation'",'.slice(0,50)']) assert.ok(earningsService.includes(token),token);
   assert.ok(frontend.includes('Recent Earnings History'));
 });
 
