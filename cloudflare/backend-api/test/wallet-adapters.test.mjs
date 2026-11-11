@@ -33,6 +33,7 @@ class FakeD1 {
       if (!this.wallets.has(uid)) this.wallets.set(uid, {
         owner_uid: uid, owner_role: role, currency: 'INR', available_balance_paise: 0,
         reserved_balance_paise: 0, bonus_minutes_balance: 0, reserved_bonus_minutes: 0,
+        bonus_credit_balance_paise: 0, reserved_bonus_credit_paise: 0,
         version: 1, created_at_ms: created, updated_at_ms: updated
       });
       return { success: true, meta: { changes: 1 } };
@@ -52,7 +53,8 @@ class FakeD1 {
     }
     if (sql.startsWith('INSERT INTO smv_domain_wallet_ledger')) {
       const [ledgerId, uid, role, type, direction, amount, availableDelta, reservedDelta,
-        bonusDelta, reservedBonusDelta, key, referenceType, referenceId, note, metadataJson, source, createdAt] = values;
+        bonusDelta, reservedBonusDelta, bonusCreditDelta, reservedBonusCreditDelta,
+        key, referenceType, referenceId, note, metadataJson, source, createdAt] = values;
       const wallet = this.wallets.get(uid);
       if (!wallet) throw new Error('WALLET_OWNER_NOT_FOUND');
       if (wallet.owner_role !== role) throw new Error('WALLET_OWNER_ROLE_MISMATCH');
@@ -63,18 +65,25 @@ class FakeD1 {
         available_balance_paise: wallet.available_balance_paise + availableDelta,
         reserved_balance_paise: wallet.reserved_balance_paise + reservedDelta,
         bonus_minutes_balance: wallet.bonus_minutes_balance + bonusDelta,
-        reserved_bonus_minutes: wallet.reserved_bonus_minutes + reservedBonusDelta
+        reserved_bonus_minutes: wallet.reserved_bonus_minutes + reservedBonusDelta,
+        bonus_credit_balance_paise: wallet.bonus_credit_balance_paise + bonusCreditDelta,
+        reserved_bonus_credit_paise: wallet.reserved_bonus_credit_paise + reservedBonusCreditDelta
       };
       if (next.available_balance_paise < 0) throw new Error('WALLET_INSUFFICIENT_BALANCE');
       if (next.reserved_balance_paise < 0) throw new Error('WALLET_RESERVED_BALANCE_MISMATCH');
       if (next.bonus_minutes_balance < 0 || next.reserved_bonus_minutes < 0) throw new Error('WALLET_BONUS_BALANCE_MISMATCH');
+      if (next.bonus_credit_balance_paise < 0) throw new Error('WALLET_BONUS_CREDIT_BALANCE_MISMATCH');
+      if (next.reserved_bonus_credit_paise < 0) throw new Error('WALLET_RESERVED_BONUS_CREDIT_MISMATCH');
       Object.assign(wallet, next, { version: wallet.version + 1, updated_at_ms: createdAt });
       const row = {
         ledger_id: ledgerId, owner_uid: uid, owner_role: role, currency: 'INR', type, direction,
         amount_paise: amount, available_delta_paise: availableDelta, reserved_delta_paise: reservedDelta,
         bonus_minutes_delta: bonusDelta, reserved_bonus_minutes_delta: reservedBonusDelta,
+        bonus_credit_delta_paise: bonusCreditDelta,reserved_bonus_credit_delta_paise:reservedBonusCreditDelta,
         balance_after_paise: next.available_balance_paise, reserved_balance_after_paise: next.reserved_balance_paise,
         bonus_minutes_balance_after: next.bonus_minutes_balance, reserved_bonus_minutes_after: next.reserved_bonus_minutes,
+        bonus_credit_balance_after_paise: next.bonus_credit_balance_paise,
+        reserved_bonus_credit_balance_after_paise: next.reserved_bonus_credit_paise,
         idempotency_key: key, reference_type: referenceType, reference_id: referenceId, note,
         metadata_json: metadataJson, status: 'posted', source, created_at_ms: createdAt
       };

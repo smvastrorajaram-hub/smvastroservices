@@ -81,7 +81,8 @@ test('Admin Wallet reads use the configured shared Admin wallet owner UID', asyn
     async ensureWallet(uid, role) {
       assert.equal(uid, 'admin-master-wallet');
       assert.equal(role, 'admin');
-      return { availableBalancePaise:0,reservedBalancePaise:0,bonusMinutesBalance:0,reservedBonusMinutes:0 };
+      return { availableBalancePaise:0,reservedBalancePaise:0,bonusMinutesBalance:0,reservedBonusMinutes:0,
+        bonusCreditBalancePaise:0,reservedBonusCreditPaise:0 };
     },
     async listTransactions() { return []; }
   };
@@ -97,10 +98,13 @@ test('Wallet transaction reads cap limit and return safe ledger view fields', as
   const identityService = { async authenticateAuthorization() { return { uid:'customer-2', role:'customer' }; } };
   let limitSeen;
   const walletAdapter = {
-    async ensureWallet() { return { availableBalancePaise:5000,reservedBalancePaise:0,bonusMinutesBalance:1,reservedBonusMinutes:0 }; },
+    async ensureWallet() { return { availableBalancePaise:5000,reservedBalancePaise:0,bonusMinutesBalance:1,reservedBonusMinutes:0,
+      bonusCreditBalancePaise:2750,reservedBonusCreditPaise:500 }; },
     async listTransactions(uid, limit) {
       assert.equal(uid, 'customer-2'); limitSeen=limit;
-      return [{ id:'ledger-1',type:'recharge',direction:'credit',status:'posted',amountPaise:5000,balanceAfterPaise:5000,reservedBalanceAfterPaise:0,bonusMinutesBalanceAfter:1,customerPaymentId:'smvpy-677288',createdAt:1000 }];
+      return [{ id:'ledger-1',type:'recharge',direction:'credit',status:'posted',amountPaise:5000,balanceAfterPaise:5000,reservedBalanceAfterPaise:0,bonusMinutesBalanceAfter:1,
+        bonusCreditDeltaPaise:2750,reservedBonusCreditDeltaPaise:500,bonusCreditBalanceAfterPaise:2750,reservedBonusCreditBalanceAfterPaise:500,
+        customerPaymentId:'smvpy-677288',createdAt:1000 }];
     }
   };
   registerWalletReadRoutes({ app, identityService, walletAdapter });
@@ -109,6 +113,9 @@ test('Wallet transaction reads cap limit and return safe ledger view fields', as
   assert.equal(limitSeen,100);
   assert.equal(res.body.transactions[0].amount,50);
   assert.equal(res.body.transactions[0].customerPaymentId,'smvpy-677288');
+  assert.equal(res.body.transactions[0].bonusCreditDeltaPaise,2750);
+  assert.equal(res.body.wallet.bonusCreditBalancePaise,2750);
+  assert.equal(res.body.wallet.reservedBonusCreditPaise,500);
   assert.equal(res.body.transactions[0].createdAt,'1970-01-01T00:00:01.000Z');
 });
 
