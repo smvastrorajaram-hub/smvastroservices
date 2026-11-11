@@ -27,7 +27,9 @@ test('AdSense homepage loader is restricted to the submitted .in website', () =>
   assert.match(html, /script\.async=true/);
   assert.match(html, /script\.crossOrigin='anonymous'/);
   assert.match(html, /document\.head\.appendChild\(script\)/);
-  assert.doesNotMatch(html, /if\(location\.hostname!=='smvastroservices\.pages\.dev'\)return/);
+  const loader = html.match(/<script id="smv-adsense-site-loader">[\\s\\S]*?<\\/script>/)?.[0];
+  assert.ok(loader, 'The primary-domain AdSense loader must be present.');
+  assert.doesNotMatch(loader, /pages\\.dev/i, 'The AdSense loader must not enable the Pages.dev preview host.');
   assert.equal((html.match(/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js/g) || []).length, 1);
 });
 
