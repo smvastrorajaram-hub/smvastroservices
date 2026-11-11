@@ -1,8 +1,8 @@
 const IS_PAGES_DEV_HOST = self.location.hostname === 'smvastroservices.pages.dev' || self.location.hostname.endsWith('.smvastroservices.pages.dev') || self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
-const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261111-pages-dev-domain-independence-v1' : '20261111-pages-horoscope-header-css-v1';
+const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261111-pages-dev-apk-pwa-icons-v1' : '20261111-pages-horoscope-header-css-v1';
 const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE;
 const LOCATION_CACHE='smv-shared-india-places';
-const PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['../../pages-dev-host-independence.js']:[];
+const PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['../../pages-dev-host-independence.js','../../pages-dev-apk-pwa-icons.js']:[];
 const CORE=[
  './','./index.html','./admin.html',...PAGES_DEV_HELPER_FILES,'./rasi-palan-periods.mjs','./calendar-pwa.mjs','./manifest-en.webmanifest','./manifest-ta.webmanifest',
  '../assets/favicon-calendar.png','../assets/favicon-calendar.ico',

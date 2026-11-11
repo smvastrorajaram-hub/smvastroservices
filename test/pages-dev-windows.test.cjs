@@ -165,9 +165,9 @@ test('all three PWA cache releases are synchronized for Pages.dev while the .in 
     return { pages: match[1], legacy: match[2] };
   });
   assert.deepEqual(releases.map(item => item.pages), [
-    '20261111-pages-dev-domain-independence-v1',
-    '20261111-pages-dev-domain-independence-v1',
-    '20261111-pages-dev-domain-independence-v1'
+    '20261111-pages-dev-apk-pwa-icons-v1',
+    '20261111-pages-dev-apk-pwa-icons-v1',
+    '20261111-pages-dev-apk-pwa-icons-v1'
   ]);
   assert.deepEqual(releases.map(item => item.legacy), [
     '20261111-pages-horoscope-header-css-v1',
