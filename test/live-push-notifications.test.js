@@ -1273,13 +1273,14 @@ test('Live Call SSE replay cursor advances only after a WebRTC signal is process
   assert.ok(handler.includes('smvLiveSignalSinceMs=Math.max(smvLiveSignalSinceMs,ms)'));
 });
 
-test('Homepage removes its PWA install banner and presents the dedicated Android APK card', () => {
+test('Homepage exposes Pages.dev PWA install UI and retains the dedicated Android APK card', () => {
   const html = read('public/index.html');
   const pwa = read('public/manifest.webmanifest');
   const installer = read('public/android-app-install.js');
-  assert.equal(html.includes('id="smvInstallAppSection"'), false);
-  assert.equal(html.includes('id="smvInstallAppBtn"'), false);
-  assert.equal(html.includes('id="smvInstallAppHelp"'), false);
+  assert.ok(html.includes('id="smvInstallAppSection"'));
+  assert.ok(html.includes('id="smvInstallAppBtn"'));
+  assert.ok(html.includes('id="smvInstallAppHelp"'));
+  assert.match(installer, /if \(pagesDevHost\)/);
   assert.equal(html.includes('smv-install-app-prompt'), false);
   assert.ok(html.includes('id="smvPermanentAndroidAppSection"'));
   assert.ok(html.includes('id="smvPermanentApkDownload"'));

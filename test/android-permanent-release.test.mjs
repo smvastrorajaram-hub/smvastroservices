@@ -141,7 +141,10 @@ test('Website APK manager only exposes download/update controls and hides native
   assert.equal(installer.includes('releases/new'), false);
   assert.ok(html.includes('id="smvPermanentAndroidAppSection"'));
   assert.ok(html.includes('id="smvPermanentApkDownload"'));
-  assert.equal(html.includes('id="smvInstallAppSection"'), false);
+  assert.ok(html.includes('id="smvInstallAppSection"'));
+  assert.ok(html.includes('id="smvInstallAppBtn"'));
+  assert.ok(html.includes('src="./assets/pwa-astro-512.png"'));
+  assert.match(installer, /if \(pagesDevHost\)/);
   assert.ok(installer.includes('DOWNLOAD APK'));
   assert.ok(installer.includes('Using Latest Version'));
   assert.ok(installer.includes("'UPDATE'"));

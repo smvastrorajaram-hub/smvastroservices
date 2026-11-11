@@ -16,8 +16,8 @@ for (const id of ['smvHoroscopeControls', 'smvHoroscopeAuth', 'languageTamil', '
   'english-horoscope', 'tamil-horoscope', 'smvMarriageMatching', 'smvHoroscopeAndroidApkSection']) assert.ok(html.includes('id="' + id + '"'), 'missing preserved feature/control: ' + id);
 assert.ok(html.includes('id="smvHoroscopeAndroidApkSection"'), 'Horoscope must expose the signed APK download card');
 assert.ok(html.includes('./android-apk-download.mjs'), 'Horoscope must load the public APK metadata controller');
-assert.equal(html.includes('id="smvHoroscopeInstallArea"'), false, 'old PWA install card must be replaced');
-assert.equal(html.includes('id="installApp"'), false, 'old PWA install button must be removed');
+assert.ok(html.includes('id="smvHoroscopeInstallArea"'), 'Horoscope must expose its dedicated PWA install card');
+assert.ok(html.includes('id="installApp"'), 'Horoscope must expose its PWA Install App button');
 assert.ok(html.includes('rel="manifest"'), 'the Horoscope web manifest is retained');
 assert.ok(html.includes('pwa.js'), 'the Horoscope offline service-worker module is retained');
 for (const file of ['public/horoscope/header-layout.css', 'public/horoscope/assets/hero-desktop.png',

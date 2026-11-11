@@ -118,8 +118,8 @@ test('Public Horoscope and Calendar APK cards point to the verified Cloudflare r
   assert.ok(calendarHtml.indexOf(publicApiConfig) < calendarHtml.indexOf('../android-apk-download.mjs'));
   assert.ok(horoscopeHtml.includes('smvHoroscopeAndroidApkSection'));
   assert.ok(calendarHtml.includes('smvCalendarAndroidApkSection'));
-  assert.ok(!horoscopeHtml.includes('id="smvHoroscopeInstallArea"') && !horoscopeHtml.includes('id="installApp"'));
-  assert.ok(!calendarHtml.includes('id="smvCalendarInstallArea"') && !calendarHtml.includes('id="calInstall"'));
+  assert.ok(horoscopeHtml.includes('id="smvHoroscopeInstallArea"') && horoscopeHtml.includes('id="installApp"'));
+  assert.ok(calendarHtml.includes('id="smvCalendarInstallArea"') && calendarHtml.includes('id="calInstall"'));
   assert.ok(horoscopeHtml.includes('rel="manifest"'));
   assert.ok(horoscopeHtml.includes('pwa.js'));
   assert.ok(calendarHtml.includes('calendar-pwa.mjs'));
