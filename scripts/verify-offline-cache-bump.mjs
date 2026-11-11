@@ -30,10 +30,10 @@ if (changedPublic.length === astroDashboardAssets.length &&
     changedPublic.every((path, index) => path === astroDashboardAssets[index])) {
   const html = readFileSync('public/index.html', 'utf8');
   const previousHtml = execFileSync('git', ['show', baseRef + ':public/index.html'], { encoding: 'utf8' });
-  const currentJs = /smvastro\\.mjs\\?v=([^"']+)/.exec(html)?.[1] || '';
-  const previousJs = /smvastro\\.mjs\\?v=([^"']+)/.exec(previousHtml)?.[1] || '';
-  const currentCss = /dashboard-typography\\.css\\?v=([^"']+)/.exec(html)?.[1] || '';
-  const previousCss = /dashboard-typography\\.css\\?v=([^"']+)/.exec(previousHtml)?.[1] || '';
+  const currentJs = /smvastro\.mjs\?v=([^"']+)/.exec(html)?.[1] || '';
+  const previousJs = /smvastro\.mjs\?v=([^"']+)/.exec(previousHtml)?.[1] || '';
+  const currentCss = /dashboard-typography\.css\?v=([^"']+)/.exec(html)?.[1] || '';
+  const previousCss = /dashboard-typography\.css\?v=([^"']+)/.exec(previousHtml)?.[1] || '';
   assert.ok(currentJs && currentCss, 'ASTRO index.html must version both dashboard assets.');
   assert.notEqual(currentJs, previousJs, 'SMV ASTRO dashboard module URL must be cache-busted.');
   assert.notEqual(currentCss, previousCss, 'SMV ASTRO dashboard typography URL must be cache-busted.');
