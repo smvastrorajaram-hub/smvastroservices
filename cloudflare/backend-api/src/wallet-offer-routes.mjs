@@ -33,7 +33,7 @@ function publicOfferView(offer) {
     name: String(offer.name || ''),
     bannerTheme: WALLET_OFFER_THEMES.includes(offer.bannerTheme) ? offer.bannerTheme : 'auto',
     minimumRechargeAmountPaise: Number(offer.minimumRechargeAmountPaise || 0),
-    bonusMinutes: Number(offer.bonusMinutes || 0),
+    bonusCreditAmountPaise: Number(offer.bonusCreditAmountPaise || 0),
     perCustomerLimit: Number(offer.perCustomerLimit ?? 1),
     startAt: offer.startAt || null,
     endAt: offer.endAt || null,
@@ -111,7 +111,7 @@ export function registerWalletOfferRoutes({
       const name = textValue(body.name, 120);
       const bannerTheme = String(body.bannerTheme || 'auto');
       const minimumRechargeAmountPaise = parseRupeesToPaise(body.minimumRechargeAmount ?? '0', { allowZero: true });
-      const bonusMinutes = Number(body.bonusMinutes);
+      const bonusCreditAmountPaise = parseRupeesToPaise(body.bonusCreditAmount);
       const perCustomerLimit = Number(body.perCustomerLimit ?? 1);
       const totalUsageLimit = Number(body.totalUsageLimit ?? 0);
       const priority = Number(body.priority ?? 0);
@@ -125,8 +125,8 @@ export function registerWalletOfferRoutes({
       if (minimumRechargeAmountPaise === null || minimumRechargeAmountPaise < 0) {
         throw walletRechargeError('WALLET_OFFER_MINIMUM_INVALID', 'Minimum recharge must be ₹0 or a positive amount with up to two decimal places.', 400);
       }
-      if (!Number.isSafeInteger(bonusMinutes) || bonusMinutes < 1 || bonusMinutes > 1440) {
-        throw walletRechargeError('WALLET_OFFER_BONUS_INVALID', 'Free minutes must be a whole number from 1 to 1,440.', 400);
+      if (!Number.isSafeInteger(bonusCreditAmountPaise) || bonusCreditAmountPaise < 1) {
+        throw walletRechargeError('WALLET_OFFER_BONUS_INVALID', 'Bonus Credit must be a positive rupee amount with up to two decimal places.', 400);
       }
       if (!Number.isSafeInteger(perCustomerLimit) || perCustomerLimit < 0 || perCustomerLimit > 10000) {
         throw walletRechargeError('WALLET_OFFER_CUSTOMER_LIMIT_INVALID', 'Per-customer limit must be 0 (unlimited) or a whole number up to 10,000.', 400);
@@ -147,7 +147,7 @@ export function registerWalletOfferRoutes({
         bannerTheme,
         enabled: body.enabled === true,
         minimumRechargeAmountPaise,
-        bonusMinutes,
+        bonusCreditPaise: bonusCreditAmountPaise,
         perCustomerLimit,
         totalUsageLimit,
         priority,

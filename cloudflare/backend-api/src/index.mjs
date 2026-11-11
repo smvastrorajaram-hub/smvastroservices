@@ -335,7 +335,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       adminEmails: String(env.ADMIN_AUTH_EMAILS || '').split(',')
     });
     walletIdentityService = firebaseIdentityService;
-    sharedWalletAdapter = createD1WalletAdapter({ db: env.DB });
+    sharedWalletAdapter = createD1WalletAdapter({ db: env.DB, adminWalletUid: String(env.ADMIN_WALLET_UID || env.ADMIN_UID || '') });
     if (razorpayPolicy.enabled) {
       sharedRazorpayClient = createRazorpayRestClient({ keyId: razorpayKeyId, keySecret: razorpayKeySecret });
       getRazorpayProviderVerification = createRazorpayProviderVerificationProbe({
