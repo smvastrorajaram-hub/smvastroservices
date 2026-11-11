@@ -132,8 +132,8 @@ test('HOROSCOPE and CALENDAR workers include offline calculation engines and WAS
   assert.match(calendar, /daily-calendar\.mjs/);
   assert.match(calendar, /offline\/vendor\/wasm\/swisseph\.wasm/);
   assert.match(calendar, /calendar-rasi-palan\.mjs/);
-  assert.match(calendar, /calendar-data\\.mjs/);
-  assert.match(calendar, /calendar-worker\\.mjs/);
+  assert.match(calendar, /calendar-data\.mjs/);
+  assert.match(calendar, /calendar-worker\.mjs/);
 });
 
 test('each installer creates its own 256x256 Windows icon', () => {
