@@ -141,7 +141,7 @@ test('local D1 transfers Admin cash into a separate Promotional Fund and never s
   const { sqlite } = await openMigratedLocalD1();
   const nowMs=Date.now();
   const adminUid=id('promo_admin'),customerUid=id('promo_customer');
-  const offerId=id('promo_offer');
+  let offerId='';
   const allocationKey='promo-allocation-'+webcrypto.randomUUID();
   const paymentIds=[id('promo_payment'),id('promo_payment')];
   const orderIds=[id('promo_order'),id('promo_order')];
@@ -166,10 +166,11 @@ test('local D1 transfers Admin cash into a separate Promotional Fund and never s
     assert.equal(duplicateAllocation.balancePaise,2500);
 
     const offer=await adapter.saveWalletOffer({
-      id:offerId,name:'Local Bonus Credit Fund Test',bannerTheme:'generic',enabled:true,
+      name:'Local Bonus Credit Fund Test',bannerTheme:'generic',enabled:true,
       minimumRechargeAmountPaise:1000,bonusCreditPaise:2500,
       perCustomerLimit:0,totalUsageLimit:0,priority:5,updatedBy:adminUid
     });
+    offerId=offer.id;
     assert.equal(offer.bonusCreditAmountPaise,2500);
 
     async function capturedRecharge(index){
