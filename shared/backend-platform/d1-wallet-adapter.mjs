@@ -279,7 +279,7 @@ export function createD1WalletAdapter({ db, adminWalletUid = '', now = Date.now,
        (ledger_id,entry_type,amount_paise,balance_delta_paise,idempotency_key,
         reference_type,reference_id,actor_uid,note,created_at_ms)
        VALUES (?,'admin_allocation',?,?,?,'admin_wallet',?,?,?,?)`,
-      [fundId,amount,amount,walletKey,configuredAdminWalletUid,String(note||'Admin allocated Promotional Fund').slice(0,240),timestamp]
+      [fundId,amount,amount,walletKey,configuredAdminWalletUid,actor,String(note||'Admin allocated Promotional Fund').slice(0,240),timestamp]
     );
     try {
       const results=await db.batch([insertStatement(walletRow),fundRow]);
