@@ -18,6 +18,8 @@ function element(tag, attributes = {}, textContent = '') {
     childElementCount: 0,
     textContent,
     dataset: {},
+    hidden: false,
+    style: { display: '' },
     rel: attrs.get('rel') || '',
     hasAttribute(name) { return attrs.has(name); },
     getAttribute(name) { return attrs.has(name) ? attrs.get(name) : null; },
@@ -39,6 +41,11 @@ function element(tag, attributes = {}, textContent = '') {
 
 function runHelper(hostname, elements) {
   const document = {
+    getElementById(id) { return elements.find(item => item.getAttribute('id') === id) || null; },
+    querySelector(selector) {
+      if (!selector.startsWith('#')) return null;
+      return elements.find(item => item.getAttribute('id') === selector.slice(1)) || null;
+    },
     documentElement: {
       nodeType: 9,
       querySelectorAll() { return elements; }
@@ -58,6 +65,33 @@ function runHelper(hostname, elements) {
   vm.runInNewContext(helper, { window, document, URL, MutationObserver });
   return elements;
 }
+
+
+test('Pages.dev hides all three Android APK download cards while .in keeps them visible', () => {
+  const ids = ['smvPermanentAndroidAppSection','smvHoroscopeAndroidApkSection','smvCalendarAndroidApkSection'];
+  const makeSection = id => element('section', { id });
+  const pagesSections = ids.map(makeSection);
+  runHelper('smvastroservices.pages.dev', pagesSections);
+  for (const section of pagesSections) {
+    assert.equal(section.hidden, true);
+    assert.equal(section.hasAttribute('hidden'), true);
+    assert.equal(section.getAttribute('aria-hidden'), 'true');
+    assert.equal(section.style.display, 'none');
+  }
+
+  const legacySections = ids.map(makeSection);
+  runHelper('smvastroservices.in', legacySections);
+  for (const section of legacySections) {
+    assert.equal(section.hidden, false);
+    assert.equal(section.hasAttribute('hidden'), false);
+    assert.equal(section.hasAttribute('aria-hidden'), false);
+    assert.equal(section.style.display, '');
+  }
+
+  assert.match(read('public/interface.js'), /beforeinstallprompt/);
+  assert.match(read('public/horoscope/pwa.js'), /beforeinstallprompt/);
+  assert.match(read('public/horoscope/calendar/calendar-pwa.mjs'), /beforeinstallprompt/);
+});
 
 test('Pages.dev rewrites all three website domains to the matching Pages.dev routes', () => {
   const rootLink = element('a', {
@@ -207,11 +241,11 @@ test('Each PWA uses synchronized Pages.dev and .in cache releases for public con
   ];
   for (const source of workers) {
     assert.match(source, /const IS_PAGES_DEV_HOST\s*=/);
-    assert.match(source, /'20261111-pages-dev-adsense-content-review-v1'\s*:\s*'20261111-in-adsense-content-review-v1'/);
+    assert.match(source, /'20261111-pages-dev-pwa-install-only-v1'\s*:\s*'20261111-in-adsense-content-review-v1'/);
     assert.match(source, /PAGES_DEV_HELPER_FILES\s*=\s*IS_PAGES_DEV_HOST/);
   }
   const horoscope = workers[1];
-  assert.match(horoscope, /'v275-pages-dev-adsense-content-20261111'\s*:\s*'v273-in-adsense-content-20261111'/);
+  assert.match(horoscope, /'v276-pages-dev-pwa-install-only-20261111'\s*:\s*'v273-in-adsense-content-20261111'/);
 });
 
 test('The Pages.dev helper is cached only in Pages.dev worker scopes', () => {

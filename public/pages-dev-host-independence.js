@@ -9,6 +9,20 @@
   const hostname=String(window.location.hostname||'').toLowerCase();
   if(hostname!=='smvastroservices.pages.dev'&&!hostname.endsWith('.smvastroservices.pages.dev'))return;
 
+  const APK_SECTION_IDS=[
+    'smvPermanentAndroidAppSection',
+    'smvHoroscopeAndroidApkSection',
+    'smvCalendarAndroidApkSection'
+  ];
+  for(const id of APK_SECTION_IDS){
+    const section=document.getElementById?.(id)||document.querySelector?.('#'+id);
+    if(!section)continue;
+    section.hidden=true;
+    section.setAttribute('hidden','');
+    section.setAttribute('aria-hidden','true');
+    if(section.style)section.style.display='none';
+  }
+
   const origin=window.location.origin;
   const ROOT_HOSTS=new Set(['smvastroservices.in','www.smvastroservices.in']);
   const HOROSCOPE_HOST='horoscope.smvastroservices.in';

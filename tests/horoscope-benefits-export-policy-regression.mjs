@@ -93,9 +93,9 @@ test("All three apps use one synchronized cache release; Horoscope runtime revis
   const versions = workers.map(source => /const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(source));
   assert.ok(versions.every(Boolean));
   assert.deepEqual(versions.map(match => match[1]), [
-    "20261111-pages-dev-adsense-content-review-v1",
-    "20261111-pages-dev-adsense-content-review-v1",
-    "20261111-pages-dev-adsense-content-review-v1"
+    "20261111-pages-dev-pwa-install-only-v1",
+    "20261111-pages-dev-pwa-install-only-v1",
+    "20261111-pages-dev-pwa-install-only-v1"
   ]);
   assert.deepEqual(versions.map(match => match[2]), [
     "20261111-in-adsense-content-review-v1",
@@ -104,7 +104,7 @@ test("All three apps use one synchronized cache release; Horoscope runtime revis
   ]);
   const runtime = /const RUNTIME_REVISION\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(workers[1]);
   assert.ok(runtime);
-  assert.equal(runtime[1], "v275-pages-dev-adsense-content-20261111");
+  assert.equal(runtime[1], "v276-pages-dev-pwa-install-only-20261111");
   assert.equal(runtime[2], "v273-in-adsense-content-20261111");
 });
 
