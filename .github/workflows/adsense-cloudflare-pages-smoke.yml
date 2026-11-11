@@ -1,4 +1,4 @@
-name: AdSense Cloudflare Pages production smoke
+name: AdSense Site Ownership and Pages Production Smoke
 
 on:
   workflow_dispatch:
@@ -32,16 +32,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify Pages-host-only AdSense configuration
+      - name: Verify registered .in AdSense configuration
         shell: bash
         run: |
           set -euo pipefail
           grep -Fq '<meta name="google-adsense-account" content="ca-pub-8603281557754018">' public/index.html
-          grep -Fq 'smv-pages-dev-adsense-loader' public/index.html
-          grep -Fq "if(location.hostname!=='smvastroservices.pages.dev')return;" public/index.html
+          grep -Fq 'smv-adsense-site-loader' public/index.html
+          grep -Fq "host==='smvastroservices.in'||host==='www.smvastroservices.in'" public/index.html
+          grep -Fq 'if(!isPrimarySite)return;' public/index.html
           grep -Fq 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8603281557754018' public/index.html
           grep -Fq 'google.com, pub-8603281557754018, DIRECT, f08c47fec0942fa0' public/ads.txt
-          echo "PASS: publisher ID is preserved and the extra loader is host-restricted to smvastroservices.pages.dev"
+          echo "PASS: publisher ID is preserved and the AdSense loader is restricted to the registered .in website"
 
   production-smoke:
     if: github.event_name != 'pull_request'
@@ -82,7 +83,9 @@ jobs:
 
           check_url "https://smvastroservices.pages.dev/ads.txt" "google.com, pub-8603281557754018, DIRECT, f08c47fec0942fa0"
           check_url "https://smvastroservices.pages.dev/" "google-adsense-account\" content=\"ca-pub-8603281557754018"
-          check_url "https://smvastroservices.pages.dev/" "smv-pages-dev-adsense-loader"
+          check_url "https://smvastroservices.pages.dev/" "smv-adsense-site-loader"
+          check_url "https://smvastroservices.in/" "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8603281557754018"
+          check_url "https://smvastroservices.in/sitemap.xml" "astrology-guides/birth-chart-basics/"
           check_url "https://smvastroservices.in/ads.txt" "google.com, pub-8603281557754018, DIRECT, f08c47fec0942fa0"
           check_url "https://smvastroservices.in/ads.txt" "subdomain=horoscope.smvastroservices.in"
           check_url "https://smvastroservices.in/ads.txt" "subdomain=calendar.smvastroservices.in"
