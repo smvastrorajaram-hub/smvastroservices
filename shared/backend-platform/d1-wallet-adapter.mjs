@@ -255,7 +255,7 @@ export function createD1WalletAdapter({ db, adminWalletUid = '', now = Date.now,
       if(existingWalletLedger.amountPaise!==amount||safePaise(existingFundLedger.amount_paise)!==amount) {
         throw walletError('PROMOTIONAL_FUND_IDEMPOTENCY_CONFLICT','This Promotional Fund allocation key was already used for a different amount.',409);
       }
-      return {success:true,alreadyProcessed:true,...await getPromotionalFund(),adminWalletAvailableBalancePaise:wallet.availableBalancePaise};
+      return {success:true,alreadyProcessed:true,...await getPromotionalFund()};
     }
     if(existingWalletLedger||existingFundLedger) {
       throw walletError('PROMOTIONAL_FUND_LEDGER_MISMATCH','Promotional Fund allocation requires ledger reconciliation.',409);

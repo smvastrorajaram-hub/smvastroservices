@@ -43,7 +43,12 @@ function readyRow() {
     live_session_bonus_reserve_trigger_count: 1,
     live_earning_bonus_credit_trigger_count: 1,
     wallet_ledger_bonus_credit_apply_trigger_count: 1,
-    wallet_ledger_bonus_credit_validate_trigger_count: 1
+    wallet_ledger_bonus_credit_validate_trigger_count: 1,
+    promotional_fund_table_count: 1,
+    promotional_fund_ledger_table_count: 1,
+    promotional_fund_seed_count: 1,
+    promotional_fund_validate_trigger_count: 1,
+    promotional_fund_apply_trigger_count: 1
   };
 }
 
@@ -130,7 +135,12 @@ test('any missing or stale required marker or schema object fails readiness clos
     row => { row.live_session_bonus_reserve_trigger_count = 0; },
     row => { row.live_earning_bonus_credit_trigger_count = 0; },
     row => { row.wallet_ledger_bonus_credit_apply_trigger_count = 0; },
-    row => { row.wallet_ledger_bonus_credit_validate_trigger_count = 0; }
+    row => { row.wallet_ledger_bonus_credit_validate_trigger_count = 0; },
+    row => { row.promotional_fund_table_count = 0; },
+    row => { row.promotional_fund_ledger_table_count = 0; },
+    row => { row.promotional_fund_seed_count = 0; },
+    row => { row.promotional_fund_validate_trigger_count = 0; },
+    row => { row.promotional_fund_apply_trigger_count = 0; }
   ]) {
     const row = readyRow();
     mutate(row);

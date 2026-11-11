@@ -38,6 +38,11 @@ const REQUIRED_SCHEMA_QUERY = [
   "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_live_earning_validate') AS live_earning_bonus_credit_trigger_count,",
   "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_wallet_ledger_apply') AS wallet_ledger_bonus_credit_apply_trigger_count,",
   "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_wallet_ledger_validate') AS wallet_ledger_bonus_credit_validate_trigger_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'smv_domain_promotional_fund') AS promotional_fund_table_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'smv_domain_promotional_fund_ledger') AS promotional_fund_ledger_table_count,",
+  "  (SELECT COUNT(*) FROM smv_domain_promotional_fund WHERE fund_id='SMV_ASTRO') AS promotional_fund_seed_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_promotional_fund_ledger_validate') AS promotional_fund_validate_trigger_count,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_promotional_fund_ledger_apply') AS promotional_fund_apply_trigger_count,",
   "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'smv_domain_withdrawals_admin_payment_id_uq') AS admin_payment_id_index_count,",
   "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'smv_domain_wallet_recharges_customer_payment_id_uq') AS customer_payment_id_index_count"
 ].join('\n');
@@ -146,7 +151,12 @@ export async function inspectBackendSchema(db) {
         countIs(row.live_session_bonus_reserve_trigger_count, 1) &&
         countIs(row.live_earning_bonus_credit_trigger_count, 1) &&
         countIs(row.wallet_ledger_bonus_credit_apply_trigger_count, 1) &&
-        countIs(row.wallet_ledger_bonus_credit_validate_trigger_count, 1)
+        countIs(row.wallet_ledger_bonus_credit_validate_trigger_count, 1) &&
+        countIs(row.promotional_fund_table_count, 1) &&
+        countIs(row.promotional_fund_ledger_table_count, 1) &&
+        countIs(row.promotional_fund_seed_count, 1) &&
+        countIs(row.promotional_fund_validate_trigger_count, 1) &&
+        countIs(row.promotional_fund_apply_trigger_count, 1)
     };
     const allRequiredMigrations = Object.values(schemaMigrations).every(Boolean);
     const checks = {
