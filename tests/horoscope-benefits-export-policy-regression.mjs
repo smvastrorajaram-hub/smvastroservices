@@ -93,19 +93,19 @@ test("All three apps use one synchronized cache release; Horoscope runtime revis
   const versions = workers.map(source => /const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(source));
   assert.ok(versions.every(Boolean));
   assert.deepEqual(versions.map(match => match[1]), [
-    "20261111-pages-dev-guides-home-hide-v1",
-    "20261111-pages-dev-guides-home-hide-v1",
-    "20261111-pages-dev-guides-home-hide-v1"
+    "20261111-pages-dev-guides-sitemap-v1",
+    "20261111-pages-dev-guides-sitemap-v1",
+    "20261111-pages-dev-guides-sitemap-v1"
   ]);
   assert.deepEqual(versions.map(match => match[2]), [
-    "20261111-in-guides-home-hide-v1",
-    "20261111-in-guides-home-hide-v1",
-    "20261111-in-guides-home-hide-v1"
+    "20261111-in-guides-sitemap-v1",
+    "20261111-in-guides-sitemap-v1",
+    "20261111-in-guides-sitemap-v1"
   ]);
   const runtime = /const RUNTIME_REVISION\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(workers[1]);
   assert.ok(runtime);
-  assert.equal(runtime[1], "v278-pages-dev-guides-home-hide-20261111");
-  assert.equal(runtime[2], "v275-in-guides-home-hide-20261111");
+  assert.equal(runtime[1], "v279-pages-dev-guides-sitemap-20261111");
+  assert.equal(runtime[2], "v276-in-guides-sitemap-20261111");
 });
 
 test("No origin-wide browser data or Cache API clearing is introduced", () => {
