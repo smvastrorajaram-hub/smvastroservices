@@ -13,11 +13,16 @@ const guideSlugs = [
   'lahiri-thirukanitham',
   'marriage-porutham',
   'dasha-bhukti',
-  'graha-drishti'
+  'graha-drishti',
+  'calculation-method'
 ];
 
 test('AdSense homepage loader is restricted to the submitted .in website', () => {
   const html = read('public/index.html');
+  const head = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i)?.[1] || '';
+  assert.match(head, /<meta name="google-adsense-account" content="ca-pub-8603281557754018">/);
+  assert.equal((head.match(/<meta name="google-adsense-account"/g) || []).length, 1, 'The ownership meta must appear exactly once in the homepage head.');
+  assert.doesNotMatch(head, /<\/meta>|<\/link>/i, 'The homepage head must not contain end tags for HTML void elements.');
   assert.match(html, new RegExp('<meta\\s+name="google-adsense-account"\\s+content="' + clientId + '"'));
   assert.match(html, /id="smv-adsense-site-loader"/);
   const loader = html.match(/<script id="smv-adsense-site-loader">[\s\S]*?<\/script>/)?.[0];
@@ -43,11 +48,12 @@ test('ads.txt, robots.txt and XML sitemap expose the expected public discovery r
 
   const sitemap = read('public/sitemap.xml');
   const urls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]);
-  assert.ok(urls.length >= 17, 'Sitemap should include the guides and all public information pages.');
+  assert.ok(urls.length >= 19, 'Sitemap should include the calculation guide, other guides and all public information pages.');
   assert.equal(new Set(urls).size, urls.length, 'Sitemap URLs must be unique.');
   for (const url of [
     'https://smvastroservices.in/',
     'https://smvastroservices.in/astrology-guides/',
+    'https://smvastroservices.in/astrology-guides/calculation-method/',
     'https://smvastroservices.in/astrology-services/',
     'https://smvastroservices.in/tamil-horoscope/',
     'https://smvastroservices.in/marriage-matching/',
@@ -97,14 +103,25 @@ test('All three app service workers use synchronized new cache releases without 
     read('public/horoscope/calendar/sw.js')
   ];
   for (const source of workers) {
-    assert.match(source, /20261111-pages-dev-pwa-install-ui-v2/);
-    assert.match(source, /20261111-in-pwa-install-ui-v2/);
+    assert.match(source, /20261111-pages-dev-adsense-method-content-v2/);
+    assert.match(source, /20261111-in-adsense-method-content-v2/);
     assert.doesNotMatch(source, /localStorage\.clear\(|sessionStorage\.clear\(|WebView\.clearCache\(/);
   }
   const releases = workers.map(source => source.match(/SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/));
   assert.ok(releases.every(Boolean));
-  assert.deepEqual(releases.map(match => match[1]), Array(3).fill('20261111-pages-dev-pwa-install-ui-v2'));
-  assert.deepEqual(releases.map(match => match[2]), Array(3).fill('20261111-in-pwa-install-ui-v2'));
+  assert.deepEqual(releases.map(match => match[1]), Array(3).fill('20261111-pages-dev-adsense-method-content-v2'));
+  assert.deepEqual(releases.map(match => match[2]), Array(3).fill('20261111-in-adsense-method-content-v2'));
+});
+
+
+test('Calculation-method guide publishes source-grounded examples and transparent limitations', () => {
+  const html = read('public/astrology-guides/calculation-method/index.html');
+  assert.match(html, /45°30′/);
+  assert.match(html, /2,115 Savana days/);
+  assert.match(html, /Tithi segment/);
+  assert.match(html, /automated drafting assistance/);
+  assert.match(html, /SMV ASTRO source repository/);
+  assert.match(html, /Vara implementation note/);
 });
 
 

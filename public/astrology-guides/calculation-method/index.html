@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How SMV ASTRO Calculates Charts, Nakshatra, Dasha and Panchangam | SMV ASTRO SERVICES</title>
+<meta name="description" content="A transparent technical guide to SMV ASTRO's Lahiri sidereal calculation flow, time-zone handling, Nakshatra and pada divisions, Vimshottari Dasha balance and Panchangam formulas.">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<link rel="canonical" href="https://smvastroservices.in/astrology-guides/calculation-method/">
+<link rel="stylesheet" href="/seo-landing.css">
+<link rel="stylesheet" href="/smv-ui.css">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="SMV ASTRO SERVICES">
+<meta property="og:title" content="How SMV ASTRO Calculates Charts, Nakshatra, Dasha and Panchangam">
+<meta property="og:description" content="A transparent technical guide to the calculation steps and worked examples used by SMV ASTRO.">
+<meta property="og:url" content="https://smvastroservices.in/astrology-guides/calculation-method/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="How SMV ASTRO Calculates Charts, Nakshatra, Dasha and Panchangam">
+<meta name="twitter:description" content="A transparent technical guide to the calculation steps and worked examples used by SMV ASTRO.">
+<meta name="google-adsense-account" content="ca-pub-8603281557754018">
+<script id="smv-adsense-domain-loader">
+(()=> {
+  const host=String(location.hostname||'').toLowerCase();
+  if(host!=='smvastroservices.in'&&host!=='www.smvastroservices.in')return;
+  if(document.querySelector('script[data-smv-adsense]'))return;
+  const script=document.createElement('script');
+  script.async=true;
+  script.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8603281557754018';
+  script.crossOrigin='anonymous';
+  script.setAttribute('data-smv-adsense','1');
+  document.head.appendChild(script);
+})();
+</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"How SMV ASTRO Calculates Charts, Nakshatra, Dasha and Panchangam","description":"A transparent technical guide to SMV ASTRO's Lahiri sidereal calculation flow, time-zone handling, Nakshatra and pada divisions, Vimshottari Dasha balance and Panchangam formulas.","datePublished":"2026-11-11","dateModified":"2026-11-11","inLanguage":"en","mainEntityOfPage":"https://smvastroservices.in/astrology-guides/calculation-method/","publisher":{"@type":"Organization","name":"SMV ASTRO SERVICES","url":"https://smvastroservices.in/"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"SMV ASTRO SERVICES","item":"https://smvastroservices.in/"},{"@type":"ListItem","position":2,"name":"Astrology Guides","item":"https://smvastroservices.in/astrology-guides/"},{"@type":"ListItem","position":3,"name":"How SMV ASTRO Calculates Charts, Nakshatra, Dasha and Panchangam","item":"https://smvastroservices.in/astrology-guides/calculation-method/"}]}</script>
+</head>
+<body class="smv-seo-page">
+<main class="seo-page">
+<header>
+<div class="brand">SMV ASTRO SERVICES · CALCULATION METHOD</div>
+<h1>How SMV ASTRO Calculates Charts, Nakshatra, Dasha and Panchangam</h1>
+<p>This page documents the calculation steps used by the published SMV HOROSCOPE and SMV CALENDAR software. It is intended to help readers understand the inputs, formulas and conventions behind a displayed result—not simply accept a label without knowing how it was obtained.</p>
+<p class="small">Technical guide · Published 11 November 2026 · Publisher: SMV ASTRO SERVICES</p>
+<div class="seo-actions"><a class="seo-action" href="/astrology-guides/">All Astrology Guides</a> <a class="seo-action" href="/">SMV ASTRO Home</a> <a class="seo-action" href="https://horoscope.smvastroservices.in/">Open SMV HOROSCOPE</a></div>
+</header>
+<article>
+<section>
+<h2>1. Start with complete birth inputs</h2>
+<p>A chart calculation starts with the recorded local birth date and clock time, together with the birthplace's latitude, longitude and time-zone treatment. A town name alone is not the astronomical input: the engine needs coordinates. The historical civil-time offset matters because local clock rules have changed in some places and years.</p>
+<p>SMV's calculation flow validates the date, time and coordinate ranges, resolves the local-time offset supplied for the selected place, converts the local clock reading to UTC, and then obtains Julian Day values for the astronomical calculation. Readers comparing two reports should keep the original local date, local time, coordinates and time-zone offset together.</p>
+<p>The IANA Time Zone Database explains why historical local-time rules should be resolved by location and date rather than assuming that a present-day UTC offset applied in every year. <a href="https://www.iana.org/time-zones" target="_blank" rel="noopener">IANA Time Zone Database</a>.</p>
+</section>
+<section>
+<h2>2. Calculate sidereal planetary positions</h2>
+<p>The SMV calculation source sets the sidereal mode to Lahiri before calculating planetary longitudes. The main engine uses Swiss Ephemeris data when the required files are available and has a Moshier fallback path when they are not. The browser-offline calculation package uses a local WebAssembly provider configured for Lahiri sidereal calculations. The engine reports its calculation mode; the exact numerical result can depend on the available ephemeris data and the submitted inputs.</p>
+<p>Lahiri is an ayanamsa choice: it defines the reference offset used to express longitudes in the sidereal zodiac. It is not the same thing as the house system, a language setting, or an interpretation rule. The term “Thirukanitham” is used in contemporary Tamil astrology discussions for computed approaches, but that label alone does not identify every software implementation detail. This page documents the SMV implementation rather than claiming that every historical school uses identical procedures.</p>
+<p>For technical reference, see the <a href="https://www.astro.com/swisseph/swephprg.htm" target="_blank" rel="noopener">Swiss Ephemeris programmer documentation</a> and the published <a href="https://github.com/smvastrorajaram-hub/smvastroservices" target="_blank" rel="noopener">SMV ASTRO source repository</a>.</p>
+</section>
+<section>
+<h2>3. Convert a sidereal longitude into Rasi, Nakshatra and Pada</h2>
+<p>After a sidereal longitude is calculated, SMV normalises it to the 0°–360° zodiac circle. Each of the twelve Rasis spans 30°. The 27 Nakshatras divide the same circle into equal spans of 13°20′ (360° ÷ 27), and each Nakshatra has four padas of 3°20′ (360° ÷ 108). The Moon's sidereal longitude is used to identify the birth Nakshatra and pada.</p>
+<div class="guide-note"><strong>Worked example — Moon at 45°30′ sidereal longitude</strong><br>
+Rohini begins at 40°00′ and ends at 53°20′. The Moon is therefore 5°30′ inside Rohini. Pada 1 spans 40°00′–43°20′ and Pada 2 spans 43°20′–46°40′. A longitude of 45°30′ falls in <strong>Rohini, Pada 2</strong>. This is a mathematical illustration using the engine's equal-division rule, not a real person's birth chart.</div>
+<p>When a longitude lies close to a Nakshatra or pada boundary, small changes in birth time, time-zone handling, coordinates or ayanamsa can move the result into the adjacent division. A useful report should let a reader check the submitted inputs and the calculation convention.</p>
+</section>
+<section>
+<h2>4. How the Vimshottari Dasha balance is derived</h2>
+<p>The SMV Dasha calculation identifies the Moon's Nakshatra lord, measures how far the Moon has progressed through that Nakshatra, and calculates the unelapsed portion of the lord's traditional period. The Vimshottari sequence used by the engine is Ketu 7, Venus 20, Sun 6, Moon 10, Mars 7, Rahu 18, Jupiter 16, Saturn 19 and Mercury 17 years, totalling 120 years.</p>
+<p>The current SMV date calculation uses a 360-day Savana year for Dasha date arithmetic. This convention is important when comparing start and end dates with a calculator that uses a different year-length convention.</p>
+<div class="guide-note"><strong>Worked example — same illustrative Moon longitude, 45°30′</strong><br>
+The Moon is 5.5° into Rohini, whose lord is the Moon. Rohini spans 13°20′ (13⅓°). Progress through the Nakshatra = 5.5 ÷ 13⅓ = 0.4125. The remaining fraction = 1 − 0.4125 = 0.5875. The Moon's Vimshottari period is 10 years, so the remaining balance is 10 × 0.5875 = <strong>5.875 Savana years</strong>, or 5.875 × 360 = <strong>2,115 Savana days</strong> under this implementation's date convention. This demonstrates the arithmetic only; it does not predict an event or describe an actual person's chart.</div>
+<p>Bhukti (Antardasha) periods are subdivisions within the major Dasha. The period lord must be interpreted with its sign, house ownership, placement, strength and the rest of the chart; a single Dasha label is not a complete prediction.</p>
+</section>
+<section>
+<h2>5. Panchangam formulas used by the calculation</h2>
+<p>The calculation uses the Sun's and Moon's sidereal longitudes. Let <em>S</em> be the Sun's longitude and <em>M</em> the Moon's longitude, with angular values normalised to 0°–360°:</p>
+<ul>
+<li><strong>Tithi segment:</strong> floor(((M − S) mod 360°) ÷ 12°) + 1. Each tithi occupies 12° of Sun–Moon elongation.</li>
+<li><strong>Karana segment index:</strong> floor(((M − S) mod 360°) ÷ 6°). Each karana occupies half a tithi, or 6°; its traditional name depends on the repeating karana sequence.</li>
+<li><strong>Yoga segment:</strong> floor(((M + S) mod 360°) ÷ (360° ÷ 27)) + 1. Each yoga occupies 13°20′ of the combined longitude.</li>
+<li><strong>Nakshatra and Pada:</strong> the Moon's sidereal longitude is divided into 27 equal Nakshatra spans and four equal padas per span.</li>
+</ul>
+<div class="guide-note"><strong>Worked example — Sun at 10°, Moon at 43°</strong><br>
+Elongation = 43° − 10° = 33°. The Tithi segment is floor(33 ÷ 12) + 1 = <strong>3</strong>. The Karana segment index is floor(33 ÷ 6) = <strong>5</strong>, which is the 30°–36° interval. The combined longitude is 53°; the Yoga segment is floor(53 ÷ 13⅓) + 1 = <strong>4</strong>. These are formula demonstrations, not an almanac entry for a specific date and place.</div>
+<p><strong>Vara implementation note:</strong> the current SMV Panchang calculation assigns the weekday from the selected civil calendar date. Some traditional Panchangam conventions assign the day using sunrise. Do not assume that every festival-specific sunrise or observance rule is applied by the weekday label alone. Sunrise and local day-part information are calculated separately using the selected location.</p>
+</section>
+<section>
+<h2>6. How to compare two reports fairly</h2>
+<ol>
+<li>Use the same birth date and the most reliable recorded local time.</li>
+<li>Use the same birthplace coordinates and the correct historical time-zone offset.</li>
+<li>Compare the ayanamsa and whether each engine used Swiss Ephemeris or its stated fallback.</li>
+<li>Compare the raw sidereal longitudes before comparing Rasi, Nakshatra, Pada or Dasha labels.</li>
+<li>Compare the house system separately; a planetary longitude and a bhava framework are different calculation layers.</li>
+<li>For Panchangam, compare the date, location, Sun/Moon longitudes and whether a source shows the running element or the value at a prescribed time.</li>
+</ol>
+<p>If a result differs, identify which input or convention differs before deciding that a calculator is wrong. Avoid changing several settings at once.</p>
+</section>
+<section>
+<h2>Publisher, method and limitations</h2>
+<p><strong>Publisher:</strong> SMV ASTRO SERVICES. This technical explanation was prepared with automated drafting assistance and checked against the published calculation-source implementation. It is a software-method note, not a claim that an individual astrologer has reviewed a personal chart or endorsed a prediction. For a correction to the documented software behavior, contact <a href="mailto:smvastroservices@gmail.com">smvastroservices@gmail.com</a>.</p>
+<p>Astrological interpretations are traditional and vary by school. These formulas explain how specified labels and dates are derived by the current software; they do not establish that astrology scientifically predicts events. Results are not guarantees and should not replace qualified medical, legal, financial or other professional advice.</p>
+</section>
+<section>
+<h2>தமிழில் சுருக்கம்</h2>
+<p lang="ta">SMV ASTRO கணக்கீட்டில் பிறந்த தேதி, உள்ளூர் நேரம், பிறந்த இடத்தின் அட்சரேகை–தீர்க்கரேகை மற்றும் நேர மண்டலத்தைப் பயன்படுத்தி UTC/Julian Day கணக்கீடு செய்யப்படுகிறது. நிராயண கிரக நிலைகளுக்கு லஹிரி அயனாம்சம் பயன்படுத்தப்படுகிறது. 360° வட்டம் 27 நட்சத்திரங்களாகப் பிரிக்கப்படுகிறது; ஒவ்வொரு நட்சத்திரமும் 13°20′, ஒவ்வொரு பாதமும் 3°20′. விம்சோத்தரி தசை இருப்பு சந்திரன் நட்சத்திரத்தில் எவ்வளவு நகர்ந்துள்ளது என்பதை வைத்து கணக்கிடப்படுகிறது; இந்த மென்பொருளின் தசை தேதி கணக்கீட்டில் 360 நாள் சாவன ஆண்டு பயன்படுத்தப்படுகிறது. பஞ்சாங்கத்தில் திதி சூரியன்–சந்திரன் நீளவித்தியாசத்தையும், யோகம் அவற்றின் நீளங்களின் கூட்டுத்தொகையையும் அடிப்படையாகக் கொண்டது.</p>
+</section>
+</article>
+<section>
+<h2>Related reading</h2>
+<ul>
+<li><a href="/astrology-guides/27-nakshatras/">The 27 Nakshatras: Birth Stars, Padas and the Moon</a></li>
+<li><a href="/astrology-guides/panchangam/">The Five Parts of Panchangam</a></li>
+<li><a href="/astrology-guides/dasha-bhukti/">Dasha and Bhukti in Vedic Astrology</a></li>
+<li><a href="/astrology-guides/lahiri-thirukanitham/">Lahiri Ayanamsa and Thirukanitham</a></li>
+</ul>
+</section>
+<footer><a href="/astrology-guides/">Astrology Guides</a> · <a href="/">SMV ASTRO SERVICES Home</a> · <a href="/privacy.html">Privacy Policy</a> · <a href="/terms.html">Terms &amp; Conditions</a></footer>
+</main>
+</body>
+</html>

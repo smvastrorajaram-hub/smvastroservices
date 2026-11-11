@@ -40,7 +40,7 @@
 <div class="brand">SMV ASTRO SERVICES · ASTROLOGY GUIDES</div>
 <h1>The Five Parts of Panchangam: Tithi, Vara, Nakshatra, Yoga and Karana</h1>
 <p>Understand the five Panchangam limbs and why their end times depend on the Sun, Moon, location and the chosen day convention.</p>
-<p class="small">Educational guide · Published 11 November 2026 · Approximately 446 words</p>
+<p class="small">Educational guide · Published 11 November 2026</p>
 <div class="seo-actions"><a class="seo-action" href="/astrology-guides/">All Astrology Guides</a> <a class="seo-action" href="/">SMV ASTRO Home</a></div>
 </header>
 <article>
@@ -52,7 +52,7 @@
     <thead><tr><th>Element</th><th>What it describes</th><th>How it changes</th></tr></thead>
     <tbody>
      <tr><td>Tithi</td><td>A lunar day based on the angular separation of the Sun and Moon</td><td>Each tithi spans 12 degrees of their relative longitude; it can begin or end at any local clock time</td></tr>
-     <tr><td>Vara</td><td>The weekday in the local calendar</td><td>It follows the day boundary used by the almanac, commonly linked to sunrise in traditional Panchangam practice</td></tr>
+     <tr><td>Vara</td><td>The weekday label for the selected civil date</td><td>SMV currently derives this label from the selected Gregorian date; traditional sunrise-based day conventions are a separate rule</td></tr>
      <tr><td>Nakshatra</td><td>The Nakshatra occupied by the Moon</td><td>It changes when the Moon crosses the next sidereal Nakshatra boundary</td></tr>
      <tr><td>Yoga</td><td>A division derived from the sum of the Sun's and Moon's longitudes</td><td>It changes when that combined longitude crosses the next 13°20′ division</td></tr>
      <tr><td>Karana</td><td>Half of a tithi</td><td>One karana spans 6 degrees of the Sun–Moon separation; the sequence follows a traditional repeating pattern</td></tr>
@@ -66,6 +66,22 @@
    <p>When checking a calendar result, verify the city, coordinates, local date and displayed time zone. If the page provides the transition time in local time, compare it with a second source using the same location before assuming there is a calculation error.</p></section>
 <section><h2>தமிழில் சுருக்கம்</h2>
    <p lang="ta">பஞ்சாங்கத்தின் ஐந்து அங்கங்கள் திதி, வாரம், நட்சத்திரம், யோகம், கரணம். இவை அனைத்தும் ஒரே நேரத்தில் மாறுவதில்லை. திதி அல்லது நட்சத்திரம் சூரிய உதயத்திற்கு முன்போ பின்னரோ மாறலாம். ஆகவே நகரம், அட்சரேகை, தீர்க்கரேகை, நேர மண்டலம் மற்றும் அன்றைய பஞ்சாங்கம் எந்த நேரத்தை அடிப்படையாகக் காட்டுகிறது என்பதைச் சரிபார்க்க வேண்டும்.</p></section>
+
+<section><h2>Check the angular calculation with a worked example</h2>
+<p>The SMV Panchang calculation uses the Sun and Moon sidereal longitudes. Let S be the Sun's longitude and M the Moon's longitude, each expressed from 0° to 360°:</p>
+<ul>
+<li><strong>Tithi:</strong> floor(((M − S) mod 360°) ÷ 12°) + 1.</li>
+<li><strong>Karana interval:</strong> floor(((M − S) mod 360°) ÷ 6°); each interval is half a tithi.</li>
+<li><strong>Yoga:</strong> floor(((M + S) mod 360°) ÷ 13°20′) + 1.</li>
+<li><strong>Nakshatra:</strong> divide the Moon's longitude into 27 equal spans of 13°20′; divide the current span into four 3°20′ padas.</li>
+</ul>
+<div class="guide-note"><strong>Example:</strong> let S = 10° and M = 43°. Their elongation is 33°. The tithi segment is floor(33 ÷ 12) + 1 = <strong>3</strong>. The Karana interval index is floor(33 ÷ 6) = <strong>5</strong>, corresponding to the 30°–36° interval. The combined longitude is 53°, so the Yoga segment is floor(53 ÷ 13⅓) + 1 = <strong>4</strong>. This is a formula demonstration, not a calendar entry for a real date or location.</div>
+<p>The calculation finds transition times by evaluating the relevant solar/lunar longitude state around the selected instant and narrowing the interval where the segment changes. Therefore, the transition time is dependent on the selected date, time zone and coordinates; an example with round longitudes does not specify an actual transition clock time.</p>
+</section>
+<section><h2>How SMV assigns Vara and sunrise information</h2>
+<p>The current SMV Panchang calculation derives Vara from the weekday of the selected Gregorian civil date. Sunrise and sunset are calculated separately using the selected location and are used for local day-part information. Traditional Panchangam systems may assign a ritual day by sunrise or apply additional observance-specific rules. The weekday label alone should not be treated as a complete festival or muhurta decision.</p>
+<p>To compare SMV results with another almanac, first match the location, date, time-zone offset and displayed instant. Then compare the Sun/Moon longitudes, tithi, yoga and Nakshatra boundaries. See the <a href="/astrology-guides/calculation-method/">SMV calculation-method guide</a> for the formulas and full technical flow.</p>
+</section>
 </article>
 <section>
 <h2>Related reading</h2>
@@ -74,6 +90,7 @@
  <li><a href="/astrology-guides/27-nakshatras/">The 27 Nakshatras</a></li>
  <li><a href="/astrology-guides/panchangam/">The Five Parts of Panchangam</a></li>
  <li><a href="/astrology-guides/lahiri-thirukanitham/">Lahiri Ayanamsa and Thirukanitham</a></li>
+ <li><a href="/astrology-guides/calculation-method/">How SMV ASTRO Calculates Charts, Nakshatra, Dasha and Panchangam</a></li>
 </ul>
 </section>
 <section>
