@@ -2,8 +2,9 @@ const IS_PAGES_DEV_HOST = self.location.hostname === 'smvastroservices.pages.dev
 const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261111-pages-dev-domain-independence-v1' : '20261111-pages-horoscope-header-css-v1';
 const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE;
 const LOCATION_CACHE='smv-shared-india-places';
+const PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['../../pages-dev-host-independence.js']:[];
 const CORE=[
- './','./index.html','./admin.html','../../pages-dev-host-independence.js','./rasi-palan-periods.mjs','./calendar-pwa.mjs','./manifest-en.webmanifest','./manifest-ta.webmanifest',
+ './','./index.html','./admin.html',...PAGES_DEV_HELPER_FILES,'./rasi-palan-periods.mjs','./calendar-pwa.mjs','./manifest-en.webmanifest','./manifest-ta.webmanifest',
  '../assets/favicon-calendar.png','../assets/favicon-calendar.ico',
  '../assets/smv-calendar-website.webp',
  '../daily-calendar.mjs','../daily-calendar.css','../calendar-rasi-palan.mjs','../calendar-rasi-palan.css','../calendar-rasi-palan-rules.mjs','../calendar-theme.css','../calendar-data.mjs','../calendar-worker.mjs','../horoscope.js','../horoscope.css','../location-search-online-offline.js',
@@ -16,7 +17,7 @@ const CORE=[
 ];
 function fixed(url,r){const h=new Headers(r.headers),p=new URL(url,self.location.origin).pathname.toLowerCase();if(/\.m?js$/.test(p))h.set('Content-Type','text/javascript; charset=utf-8');if(/\.webmanifest$/.test(p))h.set('Content-Type','application/manifest+json; charset=utf-8');if(/\.json$/.test(p))h.set('Content-Type','application/json; charset=utf-8');if(/\.wasm$/.test(p))h.set('Content-Type','application/wasm');if(/\.data$/.test(p))h.set('Content-Type','application/octet-stream');return new Response(r.clone().body,{status:r.status,statusText:r.statusText,headers:h});}
 const REQUIRED_CORE = new Set([
- './index.html','./admin.html','../../pages-dev-host-independence.js','./calendar-pwa.mjs',
+ ...PAGES_DEV_HELPER_FILES,'./index.html','./admin.html','./calendar-pwa.mjs',
  '../assets/pwa-calendar-192.svg','../assets/pwa-calendar-512.png','../assets/pwa-calendar-maskable-192.svg','../assets/pwa-calendar-maskable.svg',
  '../assets/android-app-icon-calendar.svg','../assets/android-app-icon-calendar-source.png',
  '../android-apk-download.mjs','../android-apk-icons.css',
