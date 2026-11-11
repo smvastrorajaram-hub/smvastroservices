@@ -228,6 +228,50 @@ BEGIN
   ) THEN RAISE(ABORT,'LIVE_BOOKING_RELEASE_NOT_PENDING') END;
 END;
 
+-- Booking release must reconcile the new rupee Bonus Credit reserve as well as cash/minute legacy fields.
+DROP TRIGGER IF EXISTS smv_domain_live_booking_release_validate;
+CREATE TRIGGER smv_domain_live_booking_release_validate
+BEFORE UPDATE OF status,wallet_reservation_state ON smv_domain_live_bookings
+WHEN OLD.wallet_reservation_state='reserved'
+ AND NEW.status IN ('cancelled','rejected','expired')
+ AND NEW.wallet_reservation_state='released'
+BEGIN
+  SELECT CASE WHEN COALESCE((
+    SELECT SUM(l.reserved_delta_paise) FROM smv_domain_wallet_ledger l
+    WHERE l.owner_uid=NEW.customer_uid AND l.reference_id=NEW.booking_id AND l.reference_type='live_booking'
+  ),0)<>0 THEN RAISE(ABORT,'LIVE_BOOKING_CASH_RESERVE_NOT_RELEASED') END;
+  SELECT CASE WHEN COALESCE((
+    SELECT SUM(l.reserved_bonus_minutes_delta) FROM smv_domain_wallet_ledger l
+    WHERE l.owner_uid=NEW.customer_uid AND l.reference_id=NEW.booking_id AND l.reference_type='live_booking'
+  ),0)<>0 THEN RAISE(ABORT,'LIVE_BOOKING_BONUS_RESERVE_NOT_RELEASED') END;
+  SELECT CASE WHEN COALESCE((
+    SELECT SUM(l.reserved_bonus_credit_delta_paise) FROM smv_domain_wallet_ledger l
+    WHERE l.owner_uid=NEW.customer_uid AND l.reference_id=NEW.booking_id AND l.reference_type='live_booking'
+  ),0)<>0 THEN RAISE(ABORT,'LIVE_BOOKING_BONUS_CREDIT_RESERVE_NOT_RELEASED') END;
+END;
+
+-- For new Bonus Credit sessions, Earnings gross is total service value; cash charge is only the Customer-funded portion.
+-- Legacy sessions retain the previous actual_charge_paise gross comparison.
+DROP TRIGGER IF EXISTS smv_domain_live_earning_validate;
+CREATE TRIGGER smv_domain_live_earning_validate
+BEFORE INSERT ON smv_domain_earnings
+WHEN NEW.source_type='live_session'
+ AND COALESCE(json_extract(NEW.payload_json,'$.migrationSource'),'')<>'legacy_import'
+BEGIN
+  SELECT CASE WHEN NOT EXISTS (
+    SELECT 1 FROM smv_domain_live_sessions s
+    WHERE s.session_id=NEW.reference_id
+      AND s.astrologer_uid=NEW.astrologer_uid
+      AND s.customer_uid=NEW.customer_uid
+      AND s.state='ended'
+      AND COALESCE(CAST(json_extract(s.payload_json,'$.actualServiceAmountPaise') AS INTEGER),s.actual_charge_paise)=NEW.gross_amount_paise
+      AND json_extract(s.payload_json,'$.astrologerCommissionPaise')=NEW.astrologer_amount_paise
+      AND json_extract(s.payload_json,'$.adminCommissionPaise')=NEW.admin_amount_paise
+  ) THEN RAISE(ABORT,'LIVE_EARNING_SESSION_SETTLEMENT_MISMATCH') END;
+  SELECT CASE WHEN NEW.gross_amount_paise<>NEW.astrologer_amount_paise+NEW.admin_amount_paise
+    THEN RAISE(ABORT,'LIVE_EARNING_COMMISSION_MISMATCH') END;
+END;
+
 INSERT INTO smv_domain_schema_meta(schema_key,schema_version,applied_at_ms)
 VALUES ('bonus-credit-wallet','0013_bonus_credit_wallet',CAST(strftime('%s','now') AS INTEGER)*1000)
 ON CONFLICT(schema_key) DO UPDATE SET schema_version=excluded.schema_version,applied_at_ms=excluded.applied_at_ms;
