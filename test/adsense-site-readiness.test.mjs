@@ -23,6 +23,7 @@ test('AdSense homepage loader is restricted to the submitted .in website', () =>
   assert.match(head, /<meta name="google-adsense-account" content="ca-pub-8603281557754018">/);
   assert.equal((head.match(/<meta name="google-adsense-account"/g) || []).length, 1, 'The ownership meta must appear exactly once in the homepage head.');
   assert.doesNotMatch(head, /<\/meta>|<\/link>/i, 'The homepage head must not contain end tags for HTML void elements.');
+  assert.equal(html.includes('href="/astrology-guides/"'), false, 'The public homepage must not expose the guide library; guides remain discoverable through the sitemaps.');
   assert.match(html, new RegExp('<meta\\s+name="google-adsense-account"\\s+content="' + clientId + '"'));
   assert.match(html, /id="smv-adsense-site-loader"/);
   const loader = html.match(/<script id="smv-adsense-site-loader">[\s\S]*?<\/script>/)?.[0];
@@ -50,6 +51,8 @@ test('ads.txt, robots.txt and XML sitemap expose the expected public discovery r
   const urls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]);
   assert.ok(urls.length >= 19, 'Sitemap should include the calculation guide, other guides and all public information pages.');
   assert.equal(new Set(urls).size, urls.length, 'Sitemap URLs must be unique.');
+  const htmlSitemap = read('public/sitemap.html');
+  assert.ok(htmlSitemap.includes('href="/astrology-guides/"'), 'The HTML sitemap must retain the guide library entry.');
   for (const url of [
     'https://smvastroservices.in/',
     'https://smvastroservices.in/astrology-guides/',
@@ -73,6 +76,8 @@ test('Every guide is a substantial standalone HTML article with metadata and int
   assert.match(directory, /<title>Astrology Guides and Learning Library/);
   assert.match(directory, /CollectionPage/);
   assert.match(directory, /ItemList/);
+  assert.ok(directory.includes('body.smv-seo-page .seo-page .guide-card h2') && directory.includes('color:#563713!important'), 'Guide card headings must use high-contrast dark text on the light card background.');
+  assert.ok(directory.includes('body.smv-seo-page .seo-page .guide-card p') && directory.includes('color:#40362b!important'), 'Guide card summaries must use readable dark text on the light card background.');
   for (const slug of guideSlugs) {
     const path = 'public/astrology-guides/' + slug + '/index.html';
     const html = read(path);
@@ -103,14 +108,14 @@ test('All three app service workers use synchronized new cache releases without 
     read('public/horoscope/calendar/sw.js')
   ];
   for (const source of workers) {
-    assert.match(source, /20261111-pages-dev-adsense-method-content-v2/);
-    assert.match(source, /20261111-in-adsense-method-content-v2/);
+    assert.match(source, /20261111-pages-dev-guides-home-hide-v1/);
+    assert.match(source, /20261111-in-guides-home-hide-v1/);
     assert.doesNotMatch(source, /localStorage\.clear\(|sessionStorage\.clear\(|WebView\.clearCache\(/);
   }
   const releases = workers.map(source => source.match(/SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/));
   assert.ok(releases.every(Boolean));
-  assert.deepEqual(releases.map(match => match[1]), Array(3).fill('20261111-pages-dev-adsense-method-content-v2'));
-  assert.deepEqual(releases.map(match => match[2]), Array(3).fill('20261111-in-adsense-method-content-v2'));
+  assert.deepEqual(releases.map(match => match[1]), Array(3).fill('20261111-pages-dev-guides-home-hide-v1'));
+  assert.deepEqual(releases.map(match => match[2]), Array(3).fill('20261111-in-guides-home-hide-v1'));
 });
 
 

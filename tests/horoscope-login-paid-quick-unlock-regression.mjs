@@ -137,19 +137,19 @@ test("All three apps use one synchronized cache release; Horoscope runtime revis
   const versions = workers.map(source => /const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(source));
   assert.ok(versions.every(Boolean));
   assert.deepEqual(versions.map(match => match[1]), [
-    "20261111-pages-dev-adsense-method-content-v2",
-    "20261111-pages-dev-adsense-method-content-v2",
-    "20261111-pages-dev-adsense-method-content-v2"
+    "20261111-pages-dev-guides-home-hide-v1",
+    "20261111-pages-dev-guides-home-hide-v1",
+    "20261111-pages-dev-guides-home-hide-v1"
   ]);
   assert.deepEqual(versions.map(match => match[2]), [
-    "20261111-in-adsense-method-content-v2",
-    "20261111-in-adsense-method-content-v2",
-    "20261111-in-adsense-method-content-v2"
+    "20261111-in-guides-home-hide-v1",
+    "20261111-in-guides-home-hide-v1",
+    "20261111-in-guides-home-hide-v1"
   ]);
   const runtime = /const RUNTIME_REVISION\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(workers[1]);
   assert.ok(runtime);
-  assert.equal(runtime[1], "v277-pages-dev-adsense-method-content-20261111");
-  assert.equal(runtime[2], "v274-in-adsense-method-content-20261111");
+  assert.equal(runtime[1], "v278-pages-dev-guides-home-hide-20261111");
+  assert.equal(runtime[2], "v275-in-guides-home-hide-20261111");
 });
 
 test("No origin-wide local storage, Cache API or IndexedDB deletion is introduced", () => {

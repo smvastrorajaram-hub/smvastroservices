@@ -241,11 +241,11 @@ test('Each PWA uses synchronized Pages.dev and .in cache releases for public con
   ];
   for (const source of workers) {
     assert.match(source, /const IS_PAGES_DEV_HOST\s*=/);
-    assert.match(source, /'20261111-pages-dev-adsense-method-content-v2'\s*:\s*'20261111-in-adsense-method-content-v2'/);
+    assert.match(source, /'20261111-pages-dev-guides-home-hide-v1'\s*:\s*'20261111-in-guides-home-hide-v1'/);
     assert.match(source, /PAGES_DEV_HELPER_FILES\s*=\s*IS_PAGES_DEV_HOST/);
   }
   const horoscope = workers[1];
-  assert.match(horoscope, /'v277-pages-dev-adsense-method-content-20261111'\s*:\s*'v274-in-adsense-method-content-20261111'/);
+  assert.match(horoscope, /'v278-pages-dev-guides-home-hide-20261111'\s*:\s*'v275-in-guides-home-hide-20261111'/);
 });
 
 test('The Pages.dev helper is cached only in Pages.dev worker scopes', () => {
@@ -260,6 +260,8 @@ test('The Pages.dev helper is cached only in Pages.dev worker scopes', () => {
 });
 
 test('The origin isolation change does not clear user data or origin-wide browser caches', () => {
+  const homepage = read('public/index.html');
+  assert.equal(homepage.includes('href="/astrology-guides/"'), false, 'The shared homepage must not expose the Guides card on .in or Pages.dev.');
   const helperAndPages = helper + read('public/index.html') +
     read('public/horoscope/index.html') + read('public/horoscope/calendar/index.html');
   assert.doesNotMatch(helperAndPages, /localStorage\.clear\s*\(/);
