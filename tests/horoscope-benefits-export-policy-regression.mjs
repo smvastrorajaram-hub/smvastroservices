@@ -104,8 +104,8 @@ test("All three apps use one synchronized cache release; Horoscope runtime revis
   ]);
   const runtime = /const RUNTIME_REVISION\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(workers[1]);
   assert.ok(runtime);
-  assert.equal(runtime[1], "v277-pages-dev-adsense-method-content-20261111");
-  assert.equal(runtime[2], "v274-in-adsense-method-content-20261111");
+  assert.equal(runtime[1], "v278-pages-dev-guides-home-hide-20261111");
+  assert.equal(runtime[2], "v275-in-guides-home-hide-20261111");
 });
 
 test("No origin-wide browser data or Cache API clearing is introduced", () => {
