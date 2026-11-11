@@ -29,6 +29,7 @@ jobs:
           node-version: '22'
       - name: Check Pages.dev helper and scoped Service Worker syntax
         run: |
+          node --input-type=module --check < public/_worker.js
           node --check public/pages-dev-host-independence.js
           node --check public/sw.js
           node --check public/horoscope/sw.js
