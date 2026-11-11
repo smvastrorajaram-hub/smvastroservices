@@ -9,6 +9,7 @@ const OFFLINE_CACHE='smv-horoscope-offline';
 const LOCATION_CACHE='smv-shared-india-places';
 const SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE;
 const RUNTIME_REVISION = IS_PAGES_DEV_HOST ? 'v273-pages-dev-domain-independence-20261111' : 'v272-pages-horoscope-header-css-20261111';
+const PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['../pages-dev-host-independence.js']:[];
 
 const CORE=[
   './','./index.html',
@@ -21,7 +22,7 @@ const CORE=[
   './assets/favicon-horoscope.png','./assets/favicon-horoscope.ico',
   './android-apk-download.mjs','./android-apk-icons.css',
   './assets/smv-horoscope-website.webp','./assets/smv-horoscope-header-logo.png',
-  '../pages-dev-host-independence.js','./report-identity.js','./boot.mjs','./horoscope-auth.mjs','./report-store.mjs',
+  ...PAGES_DEV_HELPER_FILES,'./report-identity.js','./boot.mjs','./horoscope-auth.mjs','./report-store.mjs',
   './chart-style.js','./config.js','./d9-reading.js','./marriage-matching.js',
   './marriage-basic-report.mjs','./matching-timeline.mjs','./d1-15-year-reading.mjs',
   './report-print.js','./report-print.css','./report-cover-dynamic.js','./report-cover-professional.css',
@@ -56,7 +57,8 @@ const CORE=[
 ];
 
 const REQUIRED_CORE=new Set([
-  './index.html','../pages-dev-host-independence.js','./horoscope.css','./boot.mjs','./horoscope.js',
+  ...PAGES_DEV_HELPER_FILES,
+  './index.html','./horoscope.css','./boot.mjs','./horoscope.js',
   './assets/pwa-horoscope-192.svg','./assets/pwa-horoscope-512.png','./assets/pwa-horoscope-maskable-192.svg','./assets/pwa-horoscope-maskable.svg',
   './assets/android-app-icon-horoscope.svg','./assets/android-app-icon-horoscope-source.png',
   './assets/favicon-horoscope.png','./assets/favicon-horoscope.ico',
