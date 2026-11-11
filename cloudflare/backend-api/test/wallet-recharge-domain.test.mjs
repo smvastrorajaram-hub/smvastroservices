@@ -12,7 +12,7 @@ import {
 
 const offer=(id,priority,bonus,overrides={})=>({
   id,offerType:WALLET_RECHARGE_OFFER_TYPE,enabled:true,
-  minimumRechargeAmountPaise:1000,bonusMinutes:bonus,
+  minimumRechargeAmountPaise:1000,bonusCreditPaise:bonus,
   perCustomerLimit:2,totalUsageLimit:10,usedCount:0,
   priority,name:id,...overrides
 });
@@ -35,9 +35,12 @@ test('Recharge intent classification protects idempotency against changed amount
   assert.equal(classifyRechargeIntent({status:'order_created',storedAmountPaise:5000,requestedAmountPaise:6000}),'amount_conflict');
 });
 
-test('Recharge offer eligibility checks minimum amount, start/end time and usage limits',()=>{
+test('Bonus Credit offer eligibility checks positive paise amount, minimum, dates and usage limits',()=>{
   const base=offer('offer-1',10,5,{startAt:1000,endAt:2000});
   assert.equal(rechargeOfferMatches(base,{amountPaise:5000,nowMs:1500,redemptionCount:0}),true);
+  assert.equal(rechargeOfferMatches({...base,offerType:'wallet_recharge_bonus_minutes'},{amountPaise:5000,nowMs:1500}),false);
+  assert.equal(rechargeOfferMatches({...base,bonusCreditPaise:0},{amountPaise:5000,nowMs:1500}),false);
+  assert.equal(rechargeOfferMatches({...base,bonusCreditPaise:Number.MAX_SAFE_INTEGER+1},{amountPaise:5000,nowMs:1500}),false);
   assert.equal(rechargeOfferMatches(base,{amountPaise:500,nowMs:1500,redemptionCount:0}),false);
   assert.equal(rechargeOfferMatches(base,{amountPaise:5000,nowMs:999,redemptionCount:0}),false);
   assert.equal(rechargeOfferMatches(base,{amountPaise:5000,nowMs:2000,redemptionCount:0}),false);
@@ -45,7 +48,7 @@ test('Recharge offer eligibility checks minimum amount, start/end time and usage
   assert.equal(rechargeOfferMatches(offer('customer',1,2,{perCustomerLimit:1}),{amountPaise:5000,redemptionCount:1}),false);
 });
 
-test('Offer selection follows Admin priority then bonus minutes then stable name ordering',()=>{
+test('Offer selection follows Admin priority then Bonus Credit amount then stable name ordering',()=>{
   const selected=selectRechargeBonusOffer({
     offers:[
       offer('low',1,10),

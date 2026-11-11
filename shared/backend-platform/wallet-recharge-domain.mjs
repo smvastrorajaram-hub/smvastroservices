@@ -1,4 +1,4 @@
-export const WALLET_RECHARGE_OFFER_TYPE = 'wallet_recharge_bonus_minutes';
+export const WALLET_RECHARGE_OFFER_TYPE = 'wallet_recharge_bonus_credit';
 export const WALLET_OFFER_THEMES = Object.freeze([
   'auto','generic','pongal','diwali','navaratri','dasara','ayudha_pooja','shivaratri',
   'tamil_new_year','vinayagar_chaturthi','karthigai_deepam','thaipusam','new_year',
@@ -54,14 +54,14 @@ export function offerDateMilliseconds(value) {
 export function rechargeOfferMatches(offer, { amountPaise, nowMs = Date.now(), redemptionCount = 0 } = {}) {
   if (!offer || offer.offerType !== WALLET_RECHARGE_OFFER_TYPE || offer.enabled !== true) return false;
   const amount = Number(amountPaise);
-  const bonus = Number(offer.bonusMinutes);
+  const bonus = Number(offer.bonusCreditPaise);
   const minimum = Number(offer.minimumRechargeAmountPaise ?? 0);
   const used = Number(offer.usedCount ?? 0);
   const totalLimit = Number(offer.totalUsageLimit ?? 0);
   const perCustomerLimit = Number(offer.perCustomerLimit ?? 1);
   const usedByCustomer = Number(redemptionCount);
   if (!Number.isSafeInteger(amount) || amount < 100 ||
-      !Number.isSafeInteger(bonus) || bonus < 1 || bonus > 1440 ||
+      !Number.isSafeInteger(bonus) || bonus < 1 || bonus > Number.MAX_SAFE_INTEGER ||
       !Number.isSafeInteger(minimum) || minimum < 0 || amount < minimum ||
       !Number.isSafeInteger(used) || used < 0 ||
       !Number.isSafeInteger(totalLimit) || totalLimit < 0 ||
@@ -86,7 +86,7 @@ export function selectRechargeBonusOffer({ offers, amountPaise, nowMs = Date.now
   );
   candidates.sort((a,b) =>
     Number(b.priority || 0) - Number(a.priority || 0) ||
-    Number(b.bonusMinutes || 0) - Number(a.bonusMinutes || 0) ||
+    Number(b.bonusCreditPaise || 0) - Number(a.bonusCreditPaise || 0) ||
     String(a.name || a.id || '').localeCompare(String(b.name || b.id || ''))
   );
   return candidates.length ? candidates[0] : null;
