@@ -221,6 +221,84 @@ export function createD1WalletAdapter({ db, adminWalletUid = '', now = Date.now,
     );
   }
 
+  async function getPromotionalFund() {
+    const row = await statement(
+      "SELECT fund_id,balance_paise,updated_at_ms FROM smv_domain_promotional_fund WHERE fund_id='SMV_ASTRO' LIMIT 1"
+    ).first();
+    const adminWallet = configuredAdminWalletUid ? await getWallet(configuredAdminWalletUid) : null;
+    return {
+      fundId: String(row?.fund_id || 'SMV_ASTRO'),
+      balancePaise: safePaise(row?.balance_paise),
+      updatedAtMs: Number(row?.updated_at_ms || 0),
+      adminWalletAvailableBalancePaise: safePaise(adminWallet?.availableBalancePaise)
+    };
+  }
+
+  async function allocatePromotionalFund({ adminUid, amountPaise, idempotencyKey, note = '' } = {}) {
+    const actor = String(adminUid || '').trim();
+    const amount = Number(amountPaise);
+    const key = String(idempotencyKey || '').trim();
+    if (!configuredAdminWalletUid || actor !== configuredAdminWalletUid) {
+      throw walletError('PROMOTIONAL_FUND_ADMIN_MISMATCH','Only the configured SMV ASTRO Admin Wallet can allocate Promotional Fund.',403);
+    }
+    if (!Number.isSafeInteger(amount) || amount < 1 || amount > Number.MAX_SAFE_INTEGER ||
+        !/^[A-Za-z0-9:_-]{12,240}$/.test(key)) {
+      throw walletError('PROMOTIONAL_FUND_ALLOCATION_INVALID','A positive paise amount and secure idempotency key are required.',400);
+    }
+    const wallet = await ensureWallet(configuredAdminWalletUid,'admin');
+    const walletKey='promotional-fund-allocation:'+key;
+    const [existingWalletLedger,existingFundLedger] = await Promise.all([
+      findLedger(configuredAdminWalletUid,walletKey),
+      statement('SELECT ledger_id,amount_paise,balance_after_paise FROM smv_domain_promotional_fund_ledger WHERE idempotency_key=? LIMIT 1',[walletKey]).first()
+    ]);
+    if(existingWalletLedger&&existingFundLedger) {
+      if(existingWalletLedger.amountPaise!==amount||safePaise(existingFundLedger.amount_paise)!==amount) {
+        throw walletError('PROMOTIONAL_FUND_IDEMPOTENCY_CONFLICT','This Promotional Fund allocation key was already used for a different amount.',409);
+      }
+      return {success:true,alreadyProcessed:true,...await getPromotionalFund(),adminWalletAvailableBalancePaise:wallet.availableBalancePaise};
+    }
+    if(existingWalletLedger||existingFundLedger) {
+      throw walletError('PROMOTIONAL_FUND_LEDGER_MISMATCH','Promotional Fund allocation requires ledger reconciliation.',409);
+    }
+    if(wallet.availableBalancePaise<amount) {
+      throw walletError('PROMOTIONAL_FUND_INSUFFICIENT_ADMIN_BALANCE','Admin Wallet has insufficient available funds for this allocation.',409);
+    }
+    const timestamp=Number(now());
+    const walletRow=await buildLedgerRow({
+      ownerUid:configuredAdminWalletUid,ownerRole:'admin',
+      type:'promotional_fund_allocation',direction:'debit',amountPaise:amount,
+      idempotencyKey:walletKey,
+      ledgerId:await sha256Hex('promotional-fund-admin:'+configuredAdminWalletUid+':'+walletKey,cryptoImpl),
+      availableDeltaPaise:-amount,referenceType:'promotional_fund',referenceId:'SMV_ASTRO',
+      note:'Transferred to separate SMV ASTRO Promotional Fund',
+      metadata:{fundId:'SMV_ASTRO',actorUid:actor},source:'admin_promotional_fund'
+    });
+    const fundId=await sha256Hex('promotional-fund:'+walletKey,cryptoImpl);
+    const fundRow=statement(
+      `INSERT INTO smv_domain_promotional_fund_ledger
+       (ledger_id,entry_type,amount_paise,balance_delta_paise,idempotency_key,
+        reference_type,reference_id,actor_uid,note,created_at_ms)
+       VALUES (?,'admin_allocation',?,?,?,'admin_wallet',?,?,?,?)`,
+      [fundId,amount,amount,walletKey,configuredAdminWalletUid,String(note||'Admin allocated Promotional Fund').slice(0,240),timestamp]
+    );
+    try {
+      const results=await db.batch([insertStatement(walletRow),fundRow]);
+      if(results.some(result=>result?.success===false))throw new Error('PROMOTIONAL_FUND_ALLOCATION_BATCH_INCOMPLETE');
+    } catch(error) {
+      const [walletLedger,fundLedger]=await Promise.all([
+        findLedger(configuredAdminWalletUid,walletKey),
+        statement('SELECT amount_paise FROM smv_domain_promotional_fund_ledger WHERE idempotency_key=? LIMIT 1',[walletKey]).first()
+      ]);
+      if(walletLedger&&fundLedger) {
+        if(walletLedger.amountPaise!==amount||safePaise(fundLedger.amount_paise)!==amount)
+          throw walletError('PROMOTIONAL_FUND_IDEMPOTENCY_CONFLICT','This Promotional Fund allocation key was already used for a different amount.',409);
+        return {success:true,alreadyProcessed:true,...await getPromotionalFund()};
+      }
+      throw d1Error(error);
+    }
+    return {success:true,alreadyProcessed:false,...await getPromotionalFund()};
+  }
+
   async function insertOne(row) {
     try {
       await insertStatement(row).run();
@@ -647,10 +725,10 @@ export function createD1WalletAdapter({ db, adminWalletUid = '', now = Date.now,
     let customerPaymentId=String(rechargePayload.customerPaymentId||'').trim();
     if(!customerPaymentId)customerPaymentId=await createCustomerPaymentReference();
     const cashKey='recharge:'+pid,bonusKey='recharge-bonus-credit:'+pid,fundingKey='recharge-bonus-credit-fund:'+pid;
-    const [cashLedger,bonusLedger,fundingLedger,wallet]=await Promise.all([
+    const [cashLedger,bonusLedger,fundingLedger,wallet,promotionalFund]=await Promise.all([
       findLedger(owner.ownerUid,cashKey),findLedger(owner.ownerUid,bonusKey),
-      configuredAdminWalletUid?findLedger(configuredAdminWalletUid,fundingKey):Promise.resolve(null),
-      getWallet(owner.ownerUid)
+      statement('SELECT ledger_id,amount_paise,balance_after_paise FROM smv_domain_promotional_fund_ledger WHERE idempotency_key=? LIMIT 1',[fundingKey]).first(),
+      getWallet(owner.ownerUid),getPromotionalFund()
     ]);
     if(cashLedger||bonusLedger||fundingLedger)throw walletError('WALLET_LEDGER_CONFLICT','A Wallet recharge ledger already exists and requires reconciliation.',409);
     const nowMs=Number(now());
@@ -680,16 +758,11 @@ export function createD1WalletAdapter({ db, adminWalletUid = '', now = Date.now,
     });
     const usageCounts=Object.fromEntries((offersResult?.results||[]).map(row=>[String(row.offer_id),Number(row.customer_redemption_count||0)]));
     let selectedOffer=selectRechargeBonusOffer({offers:offerRows,amountPaise:amount,nowMs,usageCounts});
-    let bonusCreditCreditedPaise=0,bonusCreditSkippedReason='',adminWallet=null;
+    let bonusCreditCreditedPaise=0,bonusCreditSkippedReason='';
     if(selectedOffer){
-      if(!configuredAdminWalletUid||configuredAdminWalletUid===owner.ownerUid){
-        bonusCreditSkippedReason='admin_promotional_fund_not_configured';selectedOffer=null;
-      }else{
-        adminWallet=await ensureWallet(configuredAdminWalletUid,'admin');
-        if(adminWallet.availableBalancePaise<selectedOffer.bonusCreditPaise){
-          bonusCreditSkippedReason='admin_promotional_fund_insufficient';selectedOffer=null;
-        }else bonusCreditCreditedPaise=selectedOffer.bonusCreditPaise;
-      }
+      if(promotionalFund.balancePaise<selectedOffer.bonusCreditPaise){
+        bonusCreditSkippedReason='admin_promotional_fund_insufficient';selectedOffer=null;
+      }else bonusCreditCreditedPaise=selectedOffer.bonusCreditPaise;
     }
     if(safePaise(wallet.availableBalancePaise)+amount>Number.MAX_SAFE_INTEGER||
        safePaise(wallet.bonusCreditBalancePaise)+bonusCreditCreditedPaise>Number.MAX_SAFE_INTEGER)
@@ -699,19 +772,22 @@ export function createD1WalletAdapter({ db, adminWalletUid = '', now = Date.now,
       availableDeltaPaise:amount,referenceType:'razorpay_payment',referenceId:pid,
       note:'Wallet recharge successful',metadata:{rechargeId:rid,orderId:oid,customerPaymentId},source});
     const batchStatements=[insertStatement(cashRow)];
-    if(selectedOffer&&bonusCreditCreditedPaise>0&&adminWallet){
-      const fundingRow=await buildLedgerRow({ownerUid:configuredAdminWalletUid,ownerRole:'admin',
-        type:'recharge_bonus_credit_funding',direction:'debit',amountPaise:bonusCreditCreditedPaise,
-        idempotencyKey:fundingKey,ledgerId:await sha256Hex('recharge-bonus-credit-fund:'+configuredAdminWalletUid+':'+pid,cryptoImpl),
-        availableDeltaPaise:-bonusCreditCreditedPaise,referenceType:'razorpay_payment',referenceId:pid,
-        note:'Promotional fund reserved for Customer Bonus Credit',
-        metadata:{rechargeId:rid,customerUid:owner.ownerUid,offerId:selectedOffer.id,offerName:selectedOffer.name},source});
+    if(selectedOffer&&bonusCreditCreditedPaise>0){
+      const fundLedgerId=await sha256Hex('promotional-fund-bonus-award:'+pid,cryptoImpl);
+      const fundAward=statement(
+        `INSERT INTO smv_domain_promotional_fund_ledger
+         (ledger_id,entry_type,amount_paise,balance_delta_paise,idempotency_key,
+          reference_type,reference_id,actor_uid,note,created_at_ms)
+         VALUES (?,'bonus_credit_award',?, ?,?,'razorpay_payment',?,?,?,?)`,
+        [fundLedgerId,bonusCreditCreditedPaise,-bonusCreditCreditedPaise,fundingKey,pid,
+          'system', 'Bonus Credit award for Customer '+owner.ownerUid+' · Offer '+selectedOffer.id,nowMs]
+      );
       const bonusRow=await buildLedgerRow({...owner,type:'recharge_bonus_credit',direction:'credit',amountPaise:bonusCreditCreditedPaise,
         idempotencyKey:bonusKey,ledgerId:await sha256Hex('recharge-bonus-credit:'+owner.ownerUid+':'+pid,cryptoImpl),
         bonusCreditDeltaPaise:bonusCreditCreditedPaise,referenceType:'razorpay_payment',referenceId:pid,
         note:'Wallet recharge Bonus Credit: ₹'+(bonusCreditCreditedPaise/100).toFixed(2),
-        metadata:{rechargeId:rid,offerId:selectedOffer.id,offerName:selectedOffer.name,adminFundingWalletUid:configuredAdminWalletUid},source});
-      batchStatements.push(insertStatement(fundingRow),insertStatement(bonusRow));
+        metadata:{rechargeId:rid,offerId:selectedOffer.id,offerName:selectedOffer.name,promotionalFundId:'SMV_ASTRO'},source});
+      batchStatements.push(fundAward,insertStatement(bonusRow));
       batchStatements.push(statement(
         `INSERT INTO smv_domain_offer_redemptions
          (redemption_id,offer_id,customer_uid,recharge_id,amount_paise,bonus_minutes,bonus_credit_paise,created_at_ms)
@@ -746,7 +822,7 @@ export function createD1WalletAdapter({ db, adminWalletUid = '', now = Date.now,
           bonusCreditBalancePaise:current.bonusCreditBalancePaise,offerId:p.offerId||null,offerName:p.offerName||null};
       }
       const message=String(error?.message||error||'');
-      const lostPromoRace=bonusCreditCreditedPaise>0&&(message.includes('WALLET_INSUFFICIENT_BALANCE')||message.includes('WALLET_BALANCE_OVERFLOW'));
+      const lostPromoRace=bonusCreditCreditedPaise>0&&(message.includes('PROMOTIONAL_FUND_INSUFFICIENT')||message.includes('WALLET_BALANCE_OVERFLOW'));
       if(!lostPromoRace)throw d1Error(error);
       bonusCreditCreditedPaise=0;bonusCreditSkippedReason='admin_promotional_fund_insufficient';selectedOffer=null;
       const fallbackPayload={...rechargePayload,customerPaymentId,bonusMinutesCredited:0,bonusCreditCreditedPaise:0,
@@ -943,5 +1019,5 @@ export function createD1WalletAdapter({ db, adminWalletUid = '', now = Date.now,
       .slice(0,max);
   }
 
-  return Object.freeze({ ensureWallet, getWallet, postWalletEntry, createRechargeIntent, attachRechargeOrder, markRechargeOrderFailed, getRechargeForOwner, listWalletOffers, saveWalletOffer, deleteWalletOffer, finalizeRecharge, getRechargeByOrderId, markRechargePaymentFailed, recordWebhookEvent, completeWebhookEvent, releaseWebhookEvent, reserveWallet, settleReservation, listTransactions });
+  return Object.freeze({ ensureWallet, getWallet, getPromotionalFund, allocatePromotionalFund, postWalletEntry, createRechargeIntent, attachRechargeOrder, markRechargeOrderFailed, getRechargeForOwner, listWalletOffers, saveWalletOffer, deleteWalletOffer, finalizeRecharge, getRechargeByOrderId, markRechargePaymentFailed, recordWebhookEvent, completeWebhookEvent, releaseWebhookEvent, reserveWallet, settleReservation, listTransactions });
 }
