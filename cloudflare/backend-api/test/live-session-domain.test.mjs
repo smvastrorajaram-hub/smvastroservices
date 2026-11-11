@@ -160,8 +160,7 @@ test('Bonus Credit reserves are released when a Live session never connects',()=
   const result=calculateLiveSettlement({
     session:{
       billingModel:'bonus_credit_v1',minutes:5,ratePerMinutePaise:1000,
-      reservedAmountPaise:2000,reservedBonusCreditPaise:3000,
-      astrologerCommissionPercent:20,adminCommissionPercent:80
+      reservedAmountPaise:2000,reservedBonusCreditPaise:3000
     },
     nowMs:2000
   });

@@ -228,9 +228,11 @@ export function calculateLiveSettlement({session,nowMs=Date.now()}={}) {
       throw walletError('LIVE_BILLING_CALCULATION_FAILED','Bonus Credit and cash reserves do not cover the calculated service value.',500);
     }
     const releasedAmountPaise=reservedAmountPaise-chargedAmountPaise;
-    const commission=splitLiveCommission(grossServiceAmountPaise,{
-      astroPercent:s.astrologerCommissionPercent,adminPercent:s.adminCommissionPercent
-    });
+    const commission=grossServiceAmountPaise===0
+      ? {astroPercent:0,adminPercent:0,astrologerAmountPaise:0,adminAmountPaise:0}
+      : splitLiveCommission(grossServiceAmountPaise,{
+        astroPercent:s.astrologerCommissionPercent,adminPercent:s.adminCommissionPercent
+      });
     return {
       billingModel:'bonus_credit_v1',elapsedMs:Math.floor(elapsedMs),
       billableMinutes:totalBillableMinutes,totalBillableMinutes,
