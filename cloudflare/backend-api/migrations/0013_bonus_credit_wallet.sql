@@ -272,6 +272,54 @@ BEGIN
     THEN RAISE(ABORT,'LIVE_EARNING_COMMISSION_MISMATCH') END;
 END;
 
+-- A separately funded promotional pool. Ordinary Admin Earnings remain untouched until the Admin explicitly allocates money.
+CREATE TABLE IF NOT EXISTS smv_domain_promotional_fund (
+  fund_id TEXT PRIMARY KEY CHECK (fund_id='SMV_ASTRO'),
+  balance_paise INTEGER NOT NULL DEFAULT 0 CHECK (balance_paise BETWEEN 0 AND 9007199254740991),
+  updated_at_ms INTEGER NOT NULL
+);
+INSERT OR IGNORE INTO smv_domain_promotional_fund(fund_id,balance_paise,updated_at_ms)
+VALUES ('SMV_ASTRO',0,CAST(strftime('%s','now') AS INTEGER)*1000);
+
+CREATE TABLE IF NOT EXISTS smv_domain_promotional_fund_ledger (
+  ledger_id TEXT PRIMARY KEY,
+  entry_type TEXT NOT NULL CHECK (entry_type IN ('admin_allocation','bonus_credit_award')),
+  amount_paise INTEGER NOT NULL CHECK (amount_paise>0 AND amount_paise<=9007199254740991),
+  balance_delta_paise INTEGER NOT NULL CHECK (balance_delta_paise<>0),
+  balance_after_paise INTEGER,
+  idempotency_key TEXT NOT NULL UNIQUE,
+  reference_type TEXT,
+  reference_id TEXT,
+  actor_uid TEXT NOT NULL,
+  note TEXT NOT NULL DEFAULT '',
+  created_at_ms INTEGER NOT NULL
+);
+
+CREATE TRIGGER smv_domain_promotional_fund_ledger_validate
+BEFORE INSERT ON smv_domain_promotional_fund_ledger
+BEGIN
+  SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM smv_domain_promotional_fund WHERE fund_id='SMV_ASTRO')
+    THEN RAISE(ABORT,'PROMOTIONAL_FUND_NOT_INITIALIZED') END;
+  SELECT CASE WHEN (SELECT balance_paise+NEW.balance_delta_paise FROM smv_domain_promotional_fund WHERE fund_id='SMV_ASTRO')<0
+    THEN RAISE(ABORT,'PROMOTIONAL_FUND_INSUFFICIENT') END;
+  SELECT CASE WHEN (SELECT balance_paise+NEW.balance_delta_paise FROM smv_domain_promotional_fund WHERE fund_id='SMV_ASTRO')>9007199254740991
+    THEN RAISE(ABORT,'PROMOTIONAL_FUND_OVERFLOW') END;
+  SELECT CASE WHEN (NEW.entry_type='admin_allocation' AND NEW.balance_delta_paise<>NEW.amount_paise)
+    OR (NEW.entry_type='bonus_credit_award' AND NEW.balance_delta_paise<>-NEW.amount_paise)
+    THEN RAISE(ABORT,'PROMOTIONAL_FUND_ENTRY_MISMATCH') END;
+END;
+
+CREATE TRIGGER smv_domain_promotional_fund_ledger_apply
+AFTER INSERT ON smv_domain_promotional_fund_ledger
+BEGIN
+  UPDATE smv_domain_promotional_fund
+  SET balance_paise=balance_paise+NEW.balance_delta_paise,updated_at_ms=NEW.created_at_ms
+  WHERE fund_id='SMV_ASTRO';
+  UPDATE smv_domain_promotional_fund_ledger
+  SET balance_after_paise=(SELECT balance_paise FROM smv_domain_promotional_fund WHERE fund_id='SMV_ASTRO')
+  WHERE ledger_id=NEW.ledger_id;
+END;
+
 INSERT INTO smv_domain_schema_meta(schema_key,schema_version,applied_at_ms)
 VALUES ('bonus-credit-wallet','0013_bonus_credit_wallet',CAST(strftime('%s','now') AS INTEGER)*1000)
 ON CONFLICT(schema_key) DO UPDATE SET schema_version=excluded.schema_version,applied_at_ms=excluded.applied_at_ms;
