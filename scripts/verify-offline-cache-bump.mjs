@@ -20,23 +20,32 @@ if (!publicSourceChanged) {
 const missing = workers.filter(path => !changed.has(path));
 assert.deepEqual(missing, [], 'Every public website/PWA change must update all three app service workers. Missing: ' + missing.join(', '));
 
+function releasePair(source, path) {
+  const scoped = /const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(source);
+  if (scoped) return { pages: scoped[1], legacy: scoped[2] };
+  const single = /const SMV_CACHE_RELEASE='([^']+)'/.exec(source);
+  assert.ok(single, path + ' must declare SMV_CACHE_RELEASE');
+  return { pages: single[1], legacy: single[1] };
+}
 function currentRelease(path) {
-  const source = readFileSync(path, 'utf8');
-  const match = /const SMV_CACHE_RELEASE='([^']+)'/.exec(source);
-  assert.ok(match, path + ' must declare SMV_CACHE_RELEASE');
-  return match[1];
+  return releasePair(readFileSync(path, 'utf8'), path);
 }
 function baseRelease(path) {
   const source = execFileSync('git', ['show', baseRef + ':' + path], { encoding: 'utf8' });
-  const match = /const SMV_CACHE_RELEASE='([^']+)'/.exec(source);
-  return match ? match[1] : '';
+  return releasePair(source, path);
 }
 
 const releases = workers.map(currentRelease);
-assert.equal(new Set(releases).size, 1, 'ASTRO, HOROSCOPE and CALENDAR must use one synchronized cache release marker.');
+assert.equal(new Set(releases.map(item => item.pages)).size, 1,
+  'ASTRO, HOROSCOPE and CALENDAR must use one synchronized Pages.dev cache release marker.');
+assert.equal(new Set(releases.map(item => item.legacy)).size, 1,
+  'ASTRO, HOROSCOPE and CALENDAR must preserve one synchronized .in cache release marker.');
 const previous = workers.map(baseRelease);
 for (let i = 0; i < workers.length; i++) {
-  assert.notEqual(releases[i], previous[i], workers[i] + ' must bump SMV_CACHE_RELEASE for this public-source change.');
+  assert.notEqual(releases[i].pages, previous[i].legacy,
+    workers[i] + ' must bump the Pages.dev cache release for this public-source change.');
+  assert.equal(releases[i].legacy, previous[i].legacy,
+    workers[i] + ' must preserve the existing .in cache release.');
 }
 const expectedCacheNames = [
   "APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE",
@@ -47,4 +56,4 @@ for (let i = 0; i < workers.length; i++) {
   const source = readFileSync(workers[i], 'utf8');
   assert.ok(source.includes(expectedCacheNames[i]), workers[i] + ' must derive its own cache namespace from SMV_CACHE_RELEASE.');
 }
-console.log('PASS: Every public-source change updates all three independent app caches with synchronized release ' + releases[0] + '.');
+console.log('PASS: Pages.dev cache release ' + releases[0].pages + ' is synchronized across all three apps; .in keeps ' + releases[0].legacy + '.');
