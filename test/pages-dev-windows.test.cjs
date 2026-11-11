@@ -99,13 +99,24 @@ test('each Pages.dev PWA manifest has its own install name and scope', () => {
 
 test('the Pages.dev source exposes Chrome install and registers each scoped service worker', () => {
   const root = read('public/index.html');
+  const horoscopeHtml = read('public/horoscope/index.html');
+  const calendarHtml = read('public/horoscope/calendar/index.html');
   const horoscope = read('public/horoscope/pwa.js');
   const calendar = read('public/horoscope/calendar/calendar-pwa.mjs');
   assert.match(root, /smvastroservices\.pages\.dev/);
+  assert.match(root, /id="smvInstallAppSection"/);
+  assert.match(root, /id="smvInstallAppBtn"/);
+  assert.match(root, /src="\.\/assets\/pwa-astro-512\.png"/);
   assert.match(root, /navigator\.serviceWorker\.register\('\.\/sw\.js'/);
+  assert.match(horoscopeHtml, /id="smvHoroscopeInstallArea"/);
+  assert.match(horoscopeHtml, /id="installApp"/);
+  assert.match(horoscopeHtml, /src="\.\/assets\/pwa-horoscope-512\.png"/);
   assert.match(horoscope, /smvastroservices\.pages\.dev/);
   assert.match(horoscope, /beforeinstallprompt/);
   assert.match(horoscope, /navigator\.serviceWorker\.register\('\.\/sw\.js'/);
+  assert.match(calendarHtml, /id="smvCalendarInstallArea"/);
+  assert.match(calendarHtml, /id="calInstall"/);
+  assert.match(calendarHtml, /src="\.\.\/assets\/pwa-calendar-192\.svg"/);
   assert.match(calendar, /smvastroservices\.pages\.dev/);
   assert.match(calendar, /beforeinstallprompt/);
   assert.match(calendar, /navigator\.serviceWorker\.register\('\.\/sw\.js'/);
@@ -165,13 +176,13 @@ test('all three PWA cache releases are synchronized for Pages.dev and .in conten
     return { pages: match[1], legacy: match[2] };
   });
   assert.deepEqual(releases.map(item => item.pages), [
-    '20261111-pages-dev-pwa-install-only-v1',
-    '20261111-pages-dev-pwa-install-only-v1',
+    '20261111-pages-dev-pwa-install-ui-v2',
+    '20261111-pages-dev-pwa-install-ui-v2',
     '20261111-pages-dev-pwa-install-only-v1'
   ]);
   assert.deepEqual(releases.map(item => item.legacy), [
-    '20261111-in-adsense-content-review-v1',
-    '20261111-in-adsense-content-review-v1',
+    '20261111-in-pwa-install-ui-v2',
+    '20261111-in-pwa-install-ui-v2',
     '20261111-in-adsense-content-review-v1'
   ]);
 });

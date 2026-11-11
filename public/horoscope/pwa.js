@@ -73,10 +73,11 @@ const status=document.getElementById('installStatus');
 const manifest=document.getElementById('appManifest');
 let deferred=window.__smvHoroscopeInstallPrompt||null;
 const installedKey='smv-horoscope-pwa-installed-v1';
+const installUiEnabled=location.hostname!=='horoscope.smvastroservices.in';
 const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
 const setStatus=t=>{if(status)status.textContent=t||''};
 const hide=()=>{if(area)area.hidden=true;};
-const show=()=>{if(area)area.hidden=false;};
+const show=()=>{if(!installUiEnabled){hide();return;}if(area)area.hidden=false;};
 function storedInstalled(){try{return localStorage.getItem(installedKey)==='1'}catch{return false}}
 function markInstalled(v){try{v?localStorage.setItem(installedKey,'1'):localStorage.removeItem(installedKey)}catch{}}
 function currentLang(){return document.documentElement.lang==='ta'?'ta':'en'}
