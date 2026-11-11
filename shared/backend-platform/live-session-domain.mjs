@@ -67,8 +67,12 @@ export function reserveLiveWallet({wallet,minutes,ratePerMinutePaise}={}) {
   }
   const reserved=safePaise(wallet?.reservedBalancePaise);
   const reservedBonus=safeMinutes(wallet?.reservedBonusMinutes);
-  if(!Number.isSafeInteger(reserved+reservedAmountPaise)||!Number.isSafeInteger(reservedBonus+reservedBonusMinutes)||
-     reserved+reservedAmountPaise>Number.MAX_SAFE_INTEGER||reservedBonus+reservedBonusMinutes>1_000_000) {
+  const reservedBonusCredit=safePaise(wallet?.reservedBonusCreditPaise);
+  if(!Number.isSafeInteger(grossRequiredPaise)||!Number.isSafeInteger(reserved+reservedAmountPaise)||
+     !Number.isSafeInteger(reservedBonus+reservedBonusMinutes)||
+     !Number.isSafeInteger(reservedBonusCredit+reservedBonusCreditPaise)||
+     reserved+reservedAmountPaise>Number.MAX_SAFE_INTEGER||reservedBonus+reservedBonusMinutes>1_000_000||
+     reservedBonusCredit+reservedBonusCreditPaise>Number.MAX_SAFE_INTEGER) {
     throw walletError('WALLET_BALANCE_OVERFLOW','Wallet reserve exceeds the supported balance range.');
   }
   return {
