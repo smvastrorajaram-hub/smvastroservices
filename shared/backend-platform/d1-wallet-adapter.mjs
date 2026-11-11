@@ -748,6 +748,7 @@ export function createD1WalletAdapter({ db, adminWalletUid = '', now = Date.now,
     const offerRows=(offersResult?.results||[]).map(row=>{
       let payload={};try{payload=JSON.parse(String(row.payload_json||'{}'));}catch{}
       return {id:String(row.offer_id),offerType:'wallet_recharge_bonus_credit',
+        enabled:Number(row.enabled)===1,
         minimumRechargeAmountPaise:safePaise(row.minimum_recharge_paise),
         bonusCreditPaise:safePaise(row.bonus_credit_paise),bonusMinutes:1,
         perCustomerLimit:Number(row.per_customer_limit),totalUsageLimit:Number(row.total_usage_limit),
