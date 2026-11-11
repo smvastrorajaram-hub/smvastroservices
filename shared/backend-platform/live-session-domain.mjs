@@ -52,10 +52,11 @@ export function reserveLiveWallet({wallet,minutes,ratePerMinutePaise}={}) {
      !Number.isSafeInteger(rate)||rate<100||rate>1_000_000) {
     throw walletError('LIVE_PRICE_INVALID','Session duration or Astrologer per-minute rate is invalid.',400);
   }
-  const bonusAvailable=safeMinutes(wallet?.bonusMinutesBalance);
-  const reservedBonusMinutes=Math.min(length,bonusAvailable);
-  const cashMinutes=length-reservedBonusMinutes;
-  const reservedAmountPaise=cashMinutes*rate;
+  const grossRequiredPaise=length*rate;
+  const bonusAvailable=safePaise(wallet?.bonusCreditBalancePaise);
+  const reservedBonusCreditPaise=Math.min(grossRequiredPaise,bonusAvailable);
+  const reservedAmountPaise=grossRequiredPaise-reservedBonusCreditPaise;
+  const reservedBonusMinutes=0;
   const available=safePaise(wallet?.availableBalancePaise);
   if(!Number.isSafeInteger(reservedAmountPaise)||available<reservedAmountPaise) {
     throw walletError('WALLET_INSUFFICIENT_BALANCE','Insufficient Wallet balance for the selected duration.',409,{
@@ -73,10 +74,14 @@ export function reserveLiveWallet({wallet,minutes,ratePerMinutePaise}={}) {
   return {
     reservedAmountPaise,
     reservedBonusMinutes,
+    reservedBonusCreditPaise,
+    grossRequiredPaise,
     availableBalanceAfterPaise:available-reservedAmountPaise,
     reservedBalanceAfterPaise:reserved+reservedAmountPaise,
-    bonusMinutesBalanceAfter:bonusAvailable-reservedBonusMinutes,
-    reservedBonusMinutesAfter:reservedBonus+reservedBonusMinutes
+    bonusMinutesBalanceAfter:safeMinutes(wallet?.bonusMinutesBalance),
+    reservedBonusMinutesAfter:reservedBonus,
+    bonusCreditBalanceAfterPaise:bonusAvailable-reservedBonusCreditPaise,
+    reservedBonusCreditAfterPaise:safePaise(wallet?.reservedBonusCreditPaise)+reservedBonusCreditPaise
   };
 }
 
@@ -206,6 +211,32 @@ export function calculateLiveSettlement({session,nowMs=Date.now()}={}) {
   const s=session||{};
   const startedAt=Number(s.startedAtMs??s.startedAt??0);
   const elapsedMs=startedAt>0?Math.max(0,Number(nowMs)-startedAt):0;
+  if(String(s.billingModel||'')==='bonus_credit_v1') {
+    const totalBillableMinutes=billableMinutesForElapsedMs(elapsedMs,Number(s.minutes||1));
+    if(totalBillableMinutes===null) throw walletError('LIVE_BILLING_CALCULATION_FAILED','Unable to calculate the Live Session duration safely.',500);
+    const grossServiceAmountPaise=startedAt>0?totalBillableMinutes*safePaise(s.ratePerMinutePaise):0;
+    const reservedBonusCreditPaise=safePaise(s.reservedBonusCreditPaise);
+    const bonusCreditUsedPaise=Math.min(grossServiceAmountPaise,reservedBonusCreditPaise);
+    const bonusCreditReleasedPaise=reservedBonusCreditPaise-bonusCreditUsedPaise;
+    const chargedAmountPaise=grossServiceAmountPaise-bonusCreditUsedPaise;
+    const reservedAmountPaise=safePaise(s.reservedAmountPaise);
+    if(!Number.isSafeInteger(grossServiceAmountPaise)||chargedAmountPaise>reservedAmountPaise) {
+      throw walletError('LIVE_BILLING_CALCULATION_FAILED','Bonus Credit and cash reserves do not cover the calculated service value.',500);
+    }
+    const releasedAmountPaise=reservedAmountPaise-chargedAmountPaise;
+    const commission=splitLiveCommission(grossServiceAmountPaise,{
+      astroPercent:s.astrologerCommissionPercent,adminPercent:s.adminCommissionPercent
+    });
+    return {
+      billingModel:'bonus_credit_v1',elapsedMs:Math.floor(elapsedMs),
+      billableMinutes:totalBillableMinutes,totalBillableMinutes,
+      grossServiceAmountPaise,commissionableAmountPaise:grossServiceAmountPaise,
+      bonusCreditUsedPaise,bonusCreditReleasedPaise,
+      reservedBonusCreditPaise,chargedAmountPaise,releasedAmountPaise,
+      reservedAmountPaise,freeMinutesUsed:0,reservedBonusMinutes:0,bonusMinutesReleased:0,
+      ...commission
+    };
+  }
   const reservedBonusMinutes=safeMinutes(s.reservedBonusMinutes);
   const pricing=calculateLiveSessionCharge({
     elapsedMs,
@@ -255,6 +286,7 @@ export function mapLiveSessionRow(row) {
     appointmentId:String(row.appointment_id||payload.appointmentId||''),
     reservedAmountPaise:safePaise(row.reserved_amount_paise),
     reservedBonusMinutes:safeMinutes(row.reserved_bonus_minutes),
+    reservedBonusCreditPaise:safePaise(row.reserved_bonus_credit_paise),
     actualChargePaise:safePaise(row.actual_charge_paise),
     startedAtMs:Number(row.started_at_ms||payload.startedAtMs||0),
     endedAtMs:Number(row.ended_at_ms||payload.endedAtMs||0),
@@ -278,6 +310,7 @@ export function mapLiveBookingRow(row) {
     walletReservationState:String(row.wallet_reservation_state||'none'),
     reservedAmountPaise:safePaise(row.reserved_amount_paise),
     reservedBonusMinutes:safeMinutes(row.reserved_bonus_minutes),
+    reservedBonusCreditPaise:safePaise(row.reserved_bonus_credit_paise),
     expiresAtMs:Number(row.expires_at_ms||0),
     createdAtMs:Number(row.created_at_ms||0),
     updatedAtMs:Number(row.updated_at_ms||0)
