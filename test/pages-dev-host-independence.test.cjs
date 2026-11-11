@@ -314,7 +314,23 @@ test('Cloudflare Pages serves Pages.dev-only robots and sitemap while leaving .i
   assert.match(pagesSitemap.headers.get('content-type'), /application\/xml/);
   assert.match(pagesSitemapText, /https:\/\/smvastroservices\.pages\.dev\//);
   assert.doesNotMatch(pagesSitemapText, /smvastroservices\.in/);
-  for (const route of ['/','/horoscope/','/horoscope/calendar/','/privacy.html','/terms.html']) {
+  for (const route of [
+    '/',
+    '/horoscope/',
+    '/horoscope/calendar/',
+    '/astrology-guides/',
+    '/astrology-guides/birth-chart-basics/',
+    '/astrology-guides/twelve-houses/',
+    '/astrology-guides/27-nakshatras/',
+    '/astrology-guides/panchangam/',
+    '/astrology-guides/lahiri-thirukanitham/',
+    '/astrology-guides/marriage-porutham/',
+    '/astrology-guides/dasha-bhukti/',
+    '/astrology-guides/graha-drishti/',
+    '/astrology-guides/calculation-method/',
+    '/privacy.html',
+    '/terms.html'
+  ]) {
     assert.ok(pagesSitemapText.includes('https://smvastroservices.pages.dev' + route),
       'Pages.dev sitemap must include ' + route);
   }
