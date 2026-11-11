@@ -2041,8 +2041,8 @@ async function smvLoadCustomerWalletOnce(uid){
   const current=smvWalletCurrentElements();
   if(current.balance)current.balance.textContent='Unavailable';
   if(current.reserved)current.reserved.textContent='—';
-  if(current.bonus)current.bonus.textContent='—';
-  if(current.bonusReserved)current.bonusReserved.textContent='—';
+  if(current.bonusCredit)current.bonusCredit.textContent='—';
+  if(current.bonusCreditReserved)current.bonusCreditReserved.textContent='—';
   if(current.host)current.host.innerHTML='<div class="small">Wallet transactions are temporarily unavailable. Refresh to retry.</div>';
   smvWalletSetMessage('Unable to load Wallet balance: '+(error?.message||String(error)),'error');
  }finally{
