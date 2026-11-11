@@ -241,11 +241,11 @@ test('Each PWA uses synchronized Pages.dev and .in cache releases for public con
   ];
   for (const source of workers) {
     assert.match(source, /const IS_PAGES_DEV_HOST\s*=/);
-    assert.match(source, /'20261111-pages-dev-guides-home-hide-v1'\s*:\s*'20261111-in-guides-home-hide-v1'/);
+    assert.match(source, /'20261111-pages-dev-guides-sitemap-v2'\s*:\s*'20261111-in-guides-home-hide-v1'/);
     assert.match(source, /PAGES_DEV_HELPER_FILES\s*=\s*IS_PAGES_DEV_HOST/);
   }
   const horoscope = workers[1];
-  assert.match(horoscope, /'v278-pages-dev-guides-home-hide-20261111'\s*:\s*'v275-in-guides-home-hide-20261111'/);
+  assert.match(horoscope, /'v280-pages-dev-guides-sitemap-20261111'\s*:\s*'v275-in-guides-home-hide-20261111'/);
 });
 
 test('The Pages.dev helper is cached only in Pages.dev worker scopes', () => {
@@ -314,7 +314,23 @@ test('Cloudflare Pages serves Pages.dev-only robots and sitemap while leaving .i
   assert.match(pagesSitemap.headers.get('content-type'), /application\/xml/);
   assert.match(pagesSitemapText, /https:\/\/smvastroservices\.pages\.dev\//);
   assert.doesNotMatch(pagesSitemapText, /smvastroservices\.in/);
-  for (const route of ['/','/horoscope/','/horoscope/calendar/','/privacy.html','/terms.html']) {
+  for (const route of [
+    '/',
+    '/horoscope/',
+    '/horoscope/calendar/',
+    '/astrology-guides/',
+    '/astrology-guides/birth-chart-basics/',
+    '/astrology-guides/twelve-houses/',
+    '/astrology-guides/27-nakshatras/',
+    '/astrology-guides/panchangam/',
+    '/astrology-guides/lahiri-thirukanitham/',
+    '/astrology-guides/marriage-porutham/',
+    '/astrology-guides/dasha-bhukti/',
+    '/astrology-guides/graha-drishti/',
+    '/astrology-guides/calculation-method/',
+    '/privacy.html',
+    '/terms.html'
+  ]) {
     assert.ok(pagesSitemapText.includes('https://smvastroservices.pages.dev' + route),
       'Pages.dev sitemap must include ' + route);
   }
