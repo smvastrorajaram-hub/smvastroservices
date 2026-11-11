@@ -35,14 +35,15 @@ async function openMigratedLocalD1() {
       sqlite = new DatabaseSync(file);
       const table = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='smv_domain_live_sessions'").all();
       const guard = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='trigger' AND name=?").get(RELEASE_GUARD);
-      if (table.length && guard) {
+      const bonusFund = sqlite.prepare("SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key='bonus-credit-wallet'").get();
+      if (table.length && guard && bonusFund?.schema_version==='0013_bonus_credit_wallet') {
         sqlite.exec('PRAGMA busy_timeout=10000');
         return { sqlite, file };
       }
       sqlite.close();
     } catch { try { sqlite?.close(); } catch {} }
   }
-  throw new Error('No ephemeral Wrangler local D1 with migration 0011 was found. Apply all migrations with Wrangler --local; never use remote/Production D1.');
+  throw new Error('No ephemeral Wrangler local D1 with migrations 0011 and 0013 was found. Apply all migrations with Wrangler --local; never use remote/Production D1.');
 }
 
 function makeD1Binding(sqlite) {
@@ -135,6 +136,102 @@ function cleanupFixture(sqlite, options = {}) {
     throw error;
   }
 }
+
+test('local D1 transfers Admin cash into a separate Promotional Fund and never spends Admin Earnings on Bonus Credit awards', async () => {
+  const { sqlite } = await openMigratedLocalD1();
+  const nowMs=Date.now();
+  const adminUid=id('promo_admin'),customerUid=id('promo_customer');
+  const offerId=id('promo_offer');
+  const allocationKey='promo-allocation-'+webcrypto.randomUUID();
+  const paymentIds=[id('promo_payment'),id('promo_payment')];
+  const orderIds=[id('promo_order'),id('promo_order')];
+  const rechargeIds=[];
+  const originalFund=Number(sqlite.prepare("SELECT balance_paise FROM smv_domain_promotional_fund WHERE fund_id='SMV_ASTRO'").get()?.balance_paise||0);
+  const adminStartingBalance=5000;
+  const adapter=createD1WalletAdapter({
+    db:makeD1Binding(sqlite),adminWalletUid:adminUid,now:()=>nowMs,cryptoImpl:webcrypto
+  });
+  try {
+    seedWallet(sqlite,adminUid,'admin',adminStartingBalance,0,nowMs);
+    await adapter.ensureWallet(customerUid,'customer');
+    const allocated=await adapter.allocatePromotionalFund({
+      adminUid,amountPaise:2500,idempotencyKey:allocationKey,note:'Local D1 Bonus Credit invariant'
+    });
+    assert.equal(allocated.balancePaise,2500,'only the explicit allocation enters the promotional fund');
+    assert.equal(allocated.adminWalletAvailableBalancePaise,2500,'allocation reduces Admin available cash exactly once');
+    const duplicateAllocation=await adapter.allocatePromotionalFund({
+      adminUid,amountPaise:2500,idempotencyKey:allocationKey,note:'Local D1 Bonus Credit invariant'
+    });
+    assert.equal(duplicateAllocation.alreadyProcessed,true,'allocation idempotency prevents a second transfer');
+    assert.equal(duplicateAllocation.balancePaise,2500);
+
+    const offer=await adapter.saveWalletOffer({
+      id:offerId,name:'Local Bonus Credit Fund Test',bannerTheme:'generic',enabled:true,
+      minimumRechargeAmountPaise:1000,bonusCreditPaise:2500,
+      perCustomerLimit:0,totalUsageLimit:0,priority:5,updatedBy:adminUid
+    });
+    assert.equal(offer.bonusCreditAmountPaise,2500);
+
+    async function capturedRecharge(index){
+      const intent=await adapter.createRechargeIntent({
+        ownerUid:customerUid,ownerRole:'customer',amountPaise:10000,
+        idempotencyKey:'promo-recharge-'+index+'-'+webcrypto.randomUUID()
+      });
+      rechargeIds.push(intent.rechargeId);
+      await adapter.attachRechargeOrder({
+        ownerUid:customerUid,rechargeId:intent.rechargeId,
+        orderId:orderIds[index],amountPaise:10000
+      });
+      return adapter.finalizeRecharge({
+        ownerUid:customerUid,rechargeId:intent.rechargeId,
+        orderId:orderIds[index],paymentId:paymentIds[index],
+        amountPaise:10000,source:'local_d1_promotional_fund_test'
+      });
+    }
+
+    const first=await capturedRecharge(0);
+    assert.equal(first.bonusCreditCreditedPaise,2500,'first eligible recharge receives funded Bonus Credit');
+    assert.equal(first.bonusCreditBalancePaise,2500);
+    assert.equal((await adapter.getPromotionalFund()).balancePaise,0,'fund is debited by exactly the awarded bonus amount');
+
+    const second=await capturedRecharge(1);
+    assert.equal(second.bonusCreditCreditedPaise,0,'unfunded offer does not mint Bonus Credit');
+    assert.equal(second.bonusCreditSkippedReason,'admin_promotional_fund_insufficient');
+    assert.equal(second.availableBalancePaise,20000,'captured recharge cash is still credited when promotional funds are empty');
+    assert.equal(second.bonusCreditBalancePaise,2500,'previously issued Customer Bonus Credit remains untouched');
+
+    const adminAfter=await adapter.getWallet(adminUid);
+    assert.equal(adminAfter.availableBalancePaise,2500,'Bonus Credit awards do not debit Admin Earnings a second time');
+    assert.equal((await adapter.getPromotionalFund()).adminWalletAvailableBalancePaise,2500);
+    const allocationEntries=sqlite.prepare(
+      "SELECT COUNT(*) AS count FROM smv_domain_promotional_fund_ledger WHERE idempotency_key=?"
+    ).get('promotional-fund-allocation:'+allocationKey);
+    assert.equal(Number(allocationEntries.count),1);
+    const awards=sqlite.prepare(
+      "SELECT COUNT(*) AS count FROM smv_domain_promotional_fund_ledger WHERE entry_type='bonus_credit_award' AND reference_id=?"
+    ).get(paymentIds[0]);
+    assert.equal(Number(awards.count),1);
+  } finally {
+    sqlite.exec('BEGIN IMMEDIATE');
+    try {
+      sqlite.prepare("DELETE FROM smv_domain_wallet_offer_redemption_usage WHERE offer_id=?").run(offerId);
+      sqlite.prepare("DELETE FROM smv_domain_offer_redemptions WHERE offer_id=?").run(offerId);
+      sqlite.prepare("DELETE FROM smv_domain_wallet_offers WHERE offer_id=?").run(offerId);
+      for(const orderId of orderIds)sqlite.prepare("DELETE FROM smv_domain_razorpay_orders WHERE order_id=?").run(orderId);
+      for(const rechargeId of rechargeIds)sqlite.prepare("DELETE FROM smv_domain_wallet_recharges WHERE recharge_id=?").run(rechargeId);
+      sqlite.prepare("DELETE FROM smv_domain_promotional_fund_ledger WHERE idempotency_key=?").run('promotional-fund-allocation:'+allocationKey);
+      for(const paymentId of paymentIds)sqlite.prepare("DELETE FROM smv_domain_promotional_fund_ledger WHERE reference_id=?").run(paymentId);
+      sqlite.prepare("DELETE FROM smv_domain_wallet_ledger WHERE owner_uid IN (?,?)").run(adminUid,customerUid);
+      sqlite.prepare("DELETE FROM smv_domain_wallets WHERE owner_uid IN (?,?)").run(adminUid,customerUid);
+      sqlite.prepare("UPDATE smv_domain_promotional_fund SET balance_paise=?,updated_at_ms=? WHERE fund_id='SMV_ASTRO'").run(originalFund,Date.now());
+      sqlite.exec('COMMIT');
+    } catch(error) {
+      sqlite.exec('ROLLBACK');
+      throw error;
+    }
+    sqlite.close();
+  }
+});
 
 test('local D1 enforces per-Astrologer Live capacity under independent concurrent writers', async () => {
   const { sqlite, file: dbPath } = await openMigratedLocalD1();
