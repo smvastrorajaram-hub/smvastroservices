@@ -176,14 +176,14 @@ test('all three PWA cache releases are synchronized for Pages.dev and .in conten
     return { pages: match[1], legacy: match[2] };
   });
   assert.deepEqual(releases.map(item => item.pages), [
-    '20261111-pages-dev-guides-sitemap-v1',
-    '20261111-pages-dev-guides-sitemap-v1',
-    '20261111-pages-dev-guides-sitemap-v1'
+    '20261111-pages-dev-guides-sitemap-v2',
+    '20261111-pages-dev-guides-sitemap-v2',
+    '20261111-pages-dev-guides-sitemap-v2'
   ]);
   assert.deepEqual(releases.map(item => item.legacy), [
-    '20261111-in-guides-sitemap-v1',
-    '20261111-in-guides-sitemap-v1',
-    '20261111-in-guides-sitemap-v1'
+    '20261111-in-guides-home-hide-v1',
+    '20261111-in-guides-home-hide-v1',
+    '20261111-in-guides-home-hide-v1'
   ]);
 });
 test('each installer creates its own 256x256 Windows icon', () => {
