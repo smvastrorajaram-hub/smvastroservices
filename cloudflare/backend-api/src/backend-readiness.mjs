@@ -26,6 +26,7 @@ const REQUIRED_SCHEMA_QUERY = [
   "  (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = 'live-booking-release-guard' LIMIT 1) AS live_booking_release_version,",
   "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'smv_domain_live_booking_release_pending_validate') AS live_booking_release_trigger_count,",
   "  (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = 'numeric-public-reference-ids' LIMIT 1) AS numeric_public_reference_ids_version,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'smv_domain_withdrawals_public_withdrawal_id_uq') AS public_withdrawal_id_index_count,",
   "  (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = 'bonus-credit-wallet' LIMIT 1) AS bonus_credit_wallet_version,",
   "  (SELECT COUNT(*) FROM pragma_table_info('smv_domain_wallets') WHERE name IN ('bonus_credit_balance_paise','reserved_bonus_credit_paise')) AS wallet_bonus_credit_columns_count,",
   "  (SELECT COUNT(*) FROM pragma_table_info('smv_domain_wallet_ledger') WHERE name IN ('bonus_credit_delta_paise','reserved_bonus_credit_delta_paise','bonus_credit_balance_after_paise','reserved_bonus_credit_balance_after_paise')) AS wallet_ledger_bonus_credit_columns_count,",
