@@ -124,7 +124,7 @@ test('Horoscope and Calendar show their own product logos, titles and consistent
 
 test('All three independent Service Workers share one new cache release and cache the intended website artwork', () => {
   const workers=[read('public/sw.js'),read('public/horoscope/sw.js'),read('public/horoscope/calendar/sw.js')];
-  const versions=workers.map(source=>/const SMV_CACHE_RELEASE\\s*=\\s*IS_PAGES_DEV_HOST\\s*\\?\\s*'([^']+)'\\s*:\\s*'([^']+)'/.exec(source));
+  const versions=workers.map(source=>/const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(source));
   assert.ok(versions.every(Boolean),'Each app worker selects a Pages.dev and legacy cache release.');
   assert.deepEqual(versions.map(match=>match[1]),['20261111-pages-dev-domain-independence-v1','20261111-pages-dev-domain-independence-v1','20261111-pages-dev-domain-independence-v1']);
   assert.deepEqual(versions.map(match=>match[2]),['20261111-pages-horoscope-header-css-v1','20261111-pages-horoscope-header-css-v1','20261111-pages-horoscope-header-css-v1']);
