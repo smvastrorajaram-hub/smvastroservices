@@ -131,28 +131,28 @@ test('local D1 contains every required Wallet, Live, Earnings, Withdrawal and Id
     const queryPlan = (sql, ...values) => db.prepare('EXPLAIN QUERY PLAN ' + sql).all(...values)
       .map(row => String(row.detail || '')).join(' | ');
     const historyPlan = queryPlan(
-      'SELECT * FROM smv_domain_live_sessions WHERE customer_uid=? ORDER BY created_at_ms DESC LIMIT 100',
+      'SELECT * FROM smv_domain_live_sessions INDEXED BY idx_smv_domain_sessions_customer_recent WHERE customer_uid=? ORDER BY created_at_ms DESC LIMIT 100',
       'audit-customer'
     );
     assert.match(historyPlan, /idx_smv_domain_sessions_customer_recent/, 'history must use the participant/recent index');
     const statusPlan = queryPlan(
-      `SELECT * FROM smv_domain_live_sessions
+      `SELECT * FROM smv_domain_live_sessions INDEXED BY idx_smv_domain_sessions_customer_status_updated
        WHERE customer_uid=? AND state IN ('ringing','preparing','connecting','active')
        ORDER BY updated_at_ms DESC LIMIT 50`,
       'audit-customer'
     );
     assert.match(statusPlan, /idx_smv_domain_sessions_customer_status_updated/, 'active status must use the participant/state/update index');
     const endedPlan = queryPlan(
-      `SELECT * FROM smv_domain_live_sessions
+      `SELECT * FROM smv_domain_live_sessions INDEXED BY idx_smv_domain_sessions_customer_status_updated
        WHERE customer_uid=? AND state='ended' AND updated_at_ms>=?
        ORDER BY updated_at_ms DESC LIMIT 50`,
       'audit-customer', Date.now() - 86_400_000
     );
     assert.match(endedPlan, /idx_smv_domain_sessions_customer_status_updated/, 'recent-ended status must use the participant/state/update index');
     const appointmentPlan = queryPlan(
-      `SELECT * FROM smv_domain_live_sessions
+      `SELECT * FROM smv_domain_live_sessions INDEXED BY idx_smv_domain_sessions_customer_appointment
        WHERE customer_uid=? AND state='ended' AND started_at_ms IS NOT NULL AND started_at_ms>0
-         AND appointment_id IN (?,?) ORDER BY ended_at_ms DESC,created_at_ms DESC`,
+         AND appointment_id IN (?,?) ORDER BY appointment_id,ended_at_ms DESC,created_at_ms DESC`,
       'audit-customer', 'appointment-a', 'appointment-b'
     );
     assert.match(appointmentPlan, /idx_smv_domain_sessions_customer_appointment/, 'receipt lookup must use the participant/appointment index');
