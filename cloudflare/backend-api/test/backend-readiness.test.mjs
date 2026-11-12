@@ -93,7 +93,7 @@ test('Production D1 schema readiness recognizes the current 0002-0013 migration 
   assert.equal(result.querySucceeded, true);
   assert.equal(result.ready, true);
   assert.equal(result.schemaVersion, '0002_shared_domain_repository');
-  assert.deepEqual(Object.values(result.schemaMigrations), Array(12).fill(true));
+  assert.deepEqual(Object.values(result.schemaMigrations), Array(13).fill(true));
   assert.equal(result.checks.bonusCreditWalletSchema, true);
   assert.equal(db.calls.length, 2);
   assert.match(db.calls[0], /smv_domain_schema_meta/);
