@@ -278,3 +278,32 @@ test('D1 completed appointment lookup is participant-scoped and only returns con
     /valid signed-in Customer or Astrologer/
   );
 });
+
+ 
+test('Live status query is participant-scoped, bounded and excludes old ended history',async()=>{
+  const calls=[];
+  const db={
+    prepare(sql){return{bind(...values){return{
+      async all(){calls.push({sql,values});return{results:[]};},
+      async first(){return null;},
+      async run(){return{meta:{changes:1}};}
+    };}};},
+    async batch(){return{success:true};}
+  };
+  const service=createD1LiveSessionService({
+    db,
+    walletAdapter:{async ensureWallet(){return{};},async getWallet(){return{};}},
+    firestore:{async getDocument(){return{exists:false,data:null};}},
+    cryptoImpl:globalThis.crypto,
+    now:()=>1_800_000_000_000
+  });
+  const sessions=await service.listSessionStatus({uid:'customer-1',role:'customer'});
+  assert.deepEqual(sessions,[]);
+  assert.equal(calls.length,1);
+  assert.match(calls[0].sql,/customer_uid=\?/);
+  assert.match(calls[0].sql,/state IN \('ringing','preparing','connecting','active'\)/);
+  assert.match(calls[0].sql,/state='ended' AND updated_at_ms>=\?/);
+  assert.match(calls[0].sql,/ORDER BY updated_at_ms DESC LIMIT 50/);
+  assert.deepEqual(calls[0].values,['customer-1','customer-1',1_799_913_600_000]);
+  await assert.rejects(service.listSessionStatus({uid:'customer-1',role:'admin'}),/Live Session login is required/);
+});

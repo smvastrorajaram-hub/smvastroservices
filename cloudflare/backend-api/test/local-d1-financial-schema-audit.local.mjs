@@ -27,16 +27,18 @@ async function openFullyMigratedLocalD1() {
       db = new DatabaseSync(file);
       const marker = db.prepare("SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key='live-booking-release-guard'").get();
       const bonusCredit = db.prepare("SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key='bonus-credit-wallet'").get();
+      const queryIndexes = db.prepare("SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key='live-session-query-indexes'").get();
       const encrypted = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='smv_domain_withdrawal_payouts_encrypted'").get();
       if (marker?.schema_version === '0011_live_booking_release_claim' &&
-          bonusCredit?.schema_version === '0013_bonus_credit_wallet' && encrypted) {
+          bonusCredit?.schema_version === '0013_bonus_credit_wallet' &&
+          queryIndexes?.schema_version === '0014_live_session_query_indexes' && encrypted) {
         db.exec('PRAGMA busy_timeout=10000');
         return { db, file };
       }
       db.close();
     } catch { try { db?.close(); } catch {} }
   }
-  throw new Error('No fully migrated ephemeral Wrangler D1 (0002–0011) was found. Apply migrations with --local only; this audit never opens a remote database.');
+  throw new Error('No fully migrated ephemeral Wrangler D1 (0002–0014) was found. Apply migrations with --local only; this audit never opens a remote database.');
 }
 
 const TABLES = [
@@ -68,6 +70,9 @@ const INDEXES = [
   'idx_smv_domain_event_outbox_pending','idx_smv_domain_request_idempotency_expiry',
   'idx_smv_domain_offer_redemptions_offer_created','idx_smv_domain_offer_redemptions_customer_offer',
   'idx_smv_domain_live_sessions_astro_state_created','idx_smv_domain_live_sessions_customer_state_created',
+  'idx_smv_domain_sessions_customer_recent','idx_smv_domain_sessions_astrologer_recent',
+  'idx_smv_domain_sessions_customer_status_updated','idx_smv_domain_sessions_astrologer_status_updated',
+  'idx_smv_domain_sessions_customer_appointment','idx_smv_domain_sessions_astrologer_appointment',
   'idx_smv_domain_live_bookings_expiry','idx_smv_domain_earnings_astrologer_created',
   'idx_smv_domain_earnings_source_reference','idx_smv_domain_live_connections_deadline',
   'idx_smv_domain_razorpay_orders_idempotency','idx_smv_domain_notification_inbox_state',
@@ -116,9 +121,42 @@ test('local D1 contains every required Wallet, Live, Earnings, Withdrawal and Id
       ['identity-profiles','0008_identity_profile_backfill_audit'],
       ['wallet-security','0009_wallet_razorpay_payout_encryption'],
       ['live-booking-release-guard','0011_live_booking_release_claim'],
-      ['bonus-credit-wallet','0013_bonus_credit_wallet']
+      ['bonus-credit-wallet','0013_bonus_credit_wallet'],
+      ['live-session-query-indexes','0014_live_session_query_indexes']
     ]) assert.equal(markers.get(key), version, 'schema marker ' + key);
     assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
+
+    // Verify SQLite's real query planner selects the participant indexes used by
+    // bounded Dashboard polling, recent history and scheduled receipt lookups.
+    const queryPlan = (sql, ...values) => db.prepare('EXPLAIN QUERY PLAN ' + sql).all(...values)
+      .map(row => String(row.detail || '')).join(' | ');
+    const historyPlan = queryPlan(
+      'SELECT * FROM smv_domain_live_sessions INDEXED BY idx_smv_domain_sessions_customer_recent WHERE customer_uid=? ORDER BY created_at_ms DESC LIMIT 100',
+      'audit-customer'
+    );
+    assert.match(historyPlan, /idx_smv_domain_sessions_customer_recent/, 'history must use the participant/recent index');
+    const statusPlan = queryPlan(
+      `SELECT * FROM smv_domain_live_sessions INDEXED BY idx_smv_domain_sessions_customer_status_updated
+       WHERE customer_uid=? AND state IN ('ringing','preparing','connecting','active')
+       ORDER BY updated_at_ms DESC LIMIT 50`,
+      'audit-customer'
+    );
+    assert.match(statusPlan, /idx_smv_domain_sessions_customer_status_updated/, 'active status must use the participant/state/update index');
+    const endedPlan = queryPlan(
+      `SELECT * FROM smv_domain_live_sessions INDEXED BY idx_smv_domain_sessions_customer_status_updated
+       WHERE customer_uid=? AND state='ended' AND updated_at_ms>=?
+       ORDER BY updated_at_ms DESC LIMIT 50`,
+      'audit-customer', Date.now() - 86_400_000
+    );
+    assert.match(endedPlan, /idx_smv_domain_sessions_customer_status_updated/, 'recent-ended status must use the participant/state/update index');
+    const appointmentPlan = queryPlan(
+      `SELECT * FROM smv_domain_live_sessions INDEXED BY idx_smv_domain_sessions_customer_appointment
+       WHERE customer_uid=? AND state='ended' AND started_at_ms IS NOT NULL AND started_at_ms>0
+         AND appointment_id IN (?,?) ORDER BY appointment_id,ended_at_ms DESC,created_at_ms DESC`,
+      'audit-customer', 'appointment-a', 'appointment-b'
+    );
+    assert.match(appointmentPlan, /idx_smv_domain_sessions_customer_appointment/, 'receipt lookup must use the participant/appointment index');
+
     assert.ok(tables.has('smv_domain_withdrawal_payouts'), 'legacy plaintext table retained for read-only compatibility');
   } finally { db.close(); }
 });

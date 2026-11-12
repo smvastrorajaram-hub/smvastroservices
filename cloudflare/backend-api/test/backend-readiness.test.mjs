@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import {
+  createBackendSchemaInspector,
   inspectBackendSchema,
   registerBackendReadinessRoute
 } from '../src/backend-readiness.mjs';
@@ -33,6 +34,8 @@ function readyRow() {
     public_withdrawal_id_index_count: 1,
     admin_payment_id_index_count: 1,
     customer_payment_id_index_count: 1,
+    live_session_query_indexes_version: '0014_live_session_query_indexes',
+    live_session_query_indexes_count: 6,
     bonus_credit_wallet_version: '0013_bonus_credit_wallet',
     wallet_bonus_credit_columns_count: 2,
     wallet_ledger_bonus_credit_columns_count: 4,
@@ -90,13 +93,48 @@ test('Production D1 schema readiness recognizes the current 0002-0013 migration 
   assert.equal(result.querySucceeded, true);
   assert.equal(result.ready, true);
   assert.equal(result.schemaVersion, '0002_shared_domain_repository');
-  assert.deepEqual(Object.values(result.schemaMigrations), Array(12).fill(true));
+  assert.deepEqual(Object.values(result.schemaMigrations), Array(13).fill(true));
   assert.equal(result.checks.bonusCreditWalletSchema, true);
   assert.equal(db.calls.length, 2);
   assert.match(db.calls[0], /smv_domain_schema_meta/);
   assert.doesNotMatch(db.calls[0], /smv_domain_promotional_fund|bonus-credit-wallet/);
   assert.match(db.calls[1], /smv_domain_promotional_fund/);
   assert.doesNotMatch(db.calls[0], /smv_wallet_schema_meta|0001_wallet_live_domain/);
+});
+
+test('schema inspector coalesces concurrent probes and reuses a bounded successful result', async () => {
+  let clock = 1000;
+  let prepareCalls = 0;
+  const db = {
+    prepare() {
+      prepareCalls += 1;
+      return { async first() { return readyRow(); } };
+    }
+  };
+  const inspect = createBackendSchemaInspector({ db, ttlMs: 500, errorTtlMs: 100, now: () => clock });
+  const [first, concurrent] = await Promise.all([inspect(), inspect()]);
+  assert.equal(first.ready, true);
+  assert.equal(concurrent.ready, true);
+  assert.equal(prepareCalls, 2, 'one probe pair is shared by concurrent requests');
+  await inspect();
+  assert.equal(prepareCalls, 2, 'the result is reused inside the TTL');
+  clock += 500;
+  await inspect();
+  assert.equal(prepareCalls, 4, 'the cache refreshes after its bounded TTL');
+});
+
+test('schema inspector briefly caches D1 errors instead of retrying on every request', async () => {
+  let prepareCalls = 0;
+  const inspect = createBackendSchemaInspector({
+    db: { prepare() { prepareCalls += 1; return { async first() { throw new Error('D1 quota exhausted'); } }; } },
+    ttlMs: 1000,
+    errorTtlMs: 250
+  });
+  const first = await inspect();
+  const second = await inspect();
+  assert.equal(first.querySucceeded, false);
+  assert.equal(second.querySucceeded, false);
+  assert.equal(prepareCalls, 1, 'a D1 failure is not hammered by every incoming request');
 });
 
 test('schema and migration status are read from D1 on every request, never a cached boolean', async () => {
@@ -264,6 +302,47 @@ test('GET /api/backend/readiness derives selected Production financial routing f
   assert.equal(response.body.walletPayoutEncryptionConfigured, true);
   assert.equal(response.body.walletPayoutEncryptionReady, true);
   assert.equal(response.body.checks.numericPublicReferenceIdsSchema, true);
+});
+
+test('missing optional Live query indexes do not block core D1 readiness but keep Live routes closed', async () => {
+  const handlers = new Map();
+  const app = { get(path, handler) { handlers.set('GET ' + path, handler); } };
+  const response = responseRecorder();
+  const row = readyRow();
+  row.live_session_query_indexes_version = null;
+  row.live_session_query_indexes_count = 0;
+
+  registerBackendReadinessRoute({
+    app,
+    db: dbWith(row),
+    firebaseConnectivityProbe: async () => true,
+    getRuntimeState: () => ({
+      environment: 'production',
+      backendActive: true,
+      walletReadRoutesRegistered: true,
+      walletRechargeRoutesRegistered: true,
+      walletOfferRoutesRegistered: true,
+      walletReadRouteGateOpen: true,
+      liveSessionRoutesRegistered: true,
+      liveSessionRoutesOpen: true,
+      walletPayoutEncryptionConfigured: true,
+      walletRechargeMode: 'live',
+      identityProfileD1AuthorizationOpen: true,
+      razorpayPolicy: { enabled: true, mode: 'live', reason: 'production_live_mode_explicitly_enabled' },
+      razorpayKeyId: 'rzp_live_key',
+      razorpayKeySecret: 'configured',
+      razorpayWebhookSecret: 'configured'
+    }),
+    getIdentityGate: async () => ({ enabled: true, ready: true, reason: 'fresh_start_approved' }),
+    getRazorpayVerification: async () => ({ connected: true, connectionVerified: true })
+  });
+
+  await handlers.get('GET /api/backend/readiness')({}, response);
+
+  assert.equal(response.body.ready, true, 'the required 0002-0013 foundation remains ready');
+  assert.equal(response.body.schemaMigrations['0014_live_session_query_indexes'], false);
+  assert.equal(response.body.checks.liveSessionQueryIndexes, false);
+  assert.equal(response.body.liveCallChatRoutesEnabled, true, 'existing Live routes remain ready while the optional query-index migration is unapplied');
 });
 
 test('GET /api/backend/readiness returns 503 for incomplete Production schema', async () => {

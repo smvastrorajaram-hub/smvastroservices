@@ -103,11 +103,14 @@ export function createD1LiveSessionService({
     if(!actor||!ownerField) throw liveError('LIVE_APPOINTMENT_SCOPE_INVALID','A valid signed-in Customer or Astrologer is required.',400);
     const ids=[...new Set((Array.isArray(appointmentIds)?appointmentIds:[]).map(checkSessionId).filter(Boolean))].slice(0,100);
     if(!ids.length) return Object.create(null);
+    const index=role==='astrologer'
+      ?'idx_smv_domain_sessions_astrologer_appointment'
+      :'idx_smv_domain_sessions_customer_appointment';
     const rows=await all(
-      `SELECT * FROM ${SESSION_TABLE}
+      `SELECT * FROM ${SESSION_TABLE} INDEXED BY ${index}
        WHERE ${ownerField}=? AND state='ended' AND started_at_ms IS NOT NULL AND started_at_ms>0
          AND appointment_id IN (${ids.map(()=>'?').join(',')})
-       ORDER BY ended_at_ms DESC,created_at_ms DESC`,
+       ORDER BY appointment_id,ended_at_ms DESC,created_at_ms DESC`,
       [actor,...ids]
     );
     const byAppointment=Object.create(null);
@@ -117,6 +120,27 @@ export function createD1LiveSessionService({
       if(appointmentId&&!byAppointment[appointmentId]) byAppointment[appointmentId]=sessionView(session);
     }
     return byAppointment;
+  }
+  async function listSessionStatus({uid,role}={}) {
+    const actor=checkUid(uid);
+    const field=role==='astrologer'?'astrologer_uid':role==='customer'?'customer_uid':'';
+    if(!actor||!field) throw liveError('LIVE_ROLE_REQUIRED','Live Session login is required.',403);
+    const recentEndedAfterMs=Number(now())-24*60*60*1000;
+    const index=role==='astrologer'
+      ?'idx_smv_domain_sessions_astrologer_status_updated'
+      :'idx_smv_domain_sessions_customer_status_updated';
+    const rows=await all(
+      `SELECT * FROM (
+         SELECT * FROM ${SESSION_TABLE} INDEXED BY ${index}
+         WHERE ${field}=? AND state IN ('ringing','preparing','connecting','active')
+         UNION ALL
+         SELECT * FROM ${SESSION_TABLE} INDEXED BY ${index}
+         WHERE ${field}=? AND state='ended' AND updated_at_ms>=?
+       ) AS recent_sessions
+       ORDER BY updated_at_ms DESC LIMIT 50`,
+      [actor,actor,recentEndedAfterMs]
+    );
+    return (rows.results||[]).map(row=>sessionView(mapLiveSessionRow(row)));
   }
   async function getBooking(id) {
     const row=await first('SELECT * FROM '+BOOKING_TABLE+' WHERE booking_id=? LIMIT 1',[id]);
@@ -1093,8 +1117,12 @@ export function createD1LiveSessionService({
     const actor=checkUid(uid);
     if(!actor) throw liveError('LIVE_ROLE_REQUIRED','Live Session login is required.',403);
     const field=role==='astrologer'?'astrologer_uid':'customer_uid';
+    const index=role==='astrologer'
+      ?'idx_smv_domain_sessions_astrologer_recent'
+      :'idx_smv_domain_sessions_customer_recent';
     const rows=await all(
-      `SELECT * FROM ${SESSION_TABLE} WHERE ${field}=? ORDER BY created_at_ms DESC LIMIT 100`,
+      `SELECT * FROM ${SESSION_TABLE} INDEXED BY ${index}
+       WHERE ${field}=? ORDER BY created_at_ms DESC LIMIT 100`,
       [actor]
     );
     return (rows.results||[]).map(row=>sessionView(mapLiveSessionRow(row)));
@@ -1135,7 +1163,7 @@ export function createD1LiveSessionService({
   return Object.freeze({
     createRequest,acceptBooking,acceptSession,rejectSession,readySession,endSession,setConnection,isApprovedAstrologer,
     rejectBooking,cancelBooking,sendMessage,listMessages,signal,listSignals,
-    listSessions,listBookings,listCustomerBookings,getSessionForParticipant,listEndedSessionsForAppointments,processDeadline,expireBooking,
+    listSessions,listSessionStatus,listBookings,listCustomerBookings,getSessionForParticipant,listEndedSessionsForAppointments,processDeadline,expireBooking,
     getPricing,getCommission,saveSetting,getAstrologerAvailability,updateAstrologerAvailability
   });
 }

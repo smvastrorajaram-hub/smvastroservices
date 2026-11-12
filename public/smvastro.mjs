@@ -5429,7 +5429,7 @@ function smvLiveStartFallbackPolling(){
  if(smvLiveEventStreamConnected||!currentUser||!auth?.currentUser||currentUser.uid!==auth.currentUser.uid)return;
  // Recovery-only pollers: a healthy SSE stream already carries session, booking,
  // chat-message and WebRTC-signal events, so running both transports wastes reads.
- if(!smvLiveDashboardTimer)smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions(true).catch(()=>{}),2500);
+ if(!smvLiveDashboardTimer)smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions(true).catch(()=>{}),5000);
  const session=smvLiveCurrentSession,id=smvLivePanelSessionId;
  if(!session||!id||session.state==='ended')return;
  if(session.mode==='call'&&!smvLiveSignalTimer)smvLiveSignalTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollSignals(id).catch(()=>{});},1800);
@@ -5657,7 +5657,7 @@ async function smvLivePollSessions(statusOnly=false){
  if(smvLivePollBusy){smvLivePollRefreshRequested=true;return;}
  smvLivePollBusy=true;
  try{
-  const list=await renderApi('/live/sessions',{method:'GET',timeoutMs:12000});
+  const list=await renderApi(statusOnly?'/live/sessions/status':'/live/sessions',{method:'GET',timeoutMs:12000});
   for(const session of list.sessions||[]){smvLiveUpdateDashboardSessionStatus(session);
    if(session.state==='ringing'&&session.astrologerUid===currentUser.uid&&role==='astrologer'&&smvLivePanelSessionId!==session.id){smvLiveStartRingtone(session.id);smvLiveOpenSession(session,null,true);}
    else if(session.id===smvLivePanelSessionId){if(session.state!=='ringing'&&smvLiveRingCurrentId===String(session.id||''))smvLiveStopRingtone();smvLiveApplySession(session);}

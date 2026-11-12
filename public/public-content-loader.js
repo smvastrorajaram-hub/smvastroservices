@@ -5,7 +5,7 @@
  */
 (function(){
   'use strict';
-  const MODULE_URL='./public-content.mjs?v=20261112-astro-live-receipt-native-print-v2';
+  const MODULE_URL='./public-content.mjs?v=20261112-d1-read-optimization-5000-customers-v1';
   let pending=null;
   function isConsultVisible(){
     const target=document.getElementById('consult');

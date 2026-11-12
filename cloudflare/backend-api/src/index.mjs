@@ -55,11 +55,12 @@ import { registerCustomerAnswerCreditRoute } from './customer-answer-credit-rout
 import { createGoogleServiceAccountTokenProvider } from '../../../shared/backend-platform/google-service-account-token.mjs';
 import { createFirebaseAuthAdminClient, createFcmSender, registerLegacyRouteParityGapRoutes } from './legacy-route-parity-gap-routes.mjs';
 import { createFirebaseConnectivityProbe } from './firebase-connectivity-probe.mjs';
-import { inspectBackendSchema, registerBackendReadinessRoute } from './backend-readiness.mjs';
+import { createBackendSchemaInspector, registerBackendReadinessRoute } from './backend-readiness.mjs';
 import { resolveConfiguredAdminUids, resolveConfiguredAdminWalletUid } from './admin-identity-configuration.mjs';
 import { isProductionFinancialTrafficRoutingEnabled } from './production-financial-traffic-readiness.mjs';
 
 const app = express();
+const inspectSchema = createBackendSchemaInspector({ db: env.DB, ttlMs: 30_000, errorTtlMs: 30_000 });
 const verifyFirebaseIdToken = createFirebaseIdTokenVerifier();
 const firebaseFirestore = createFirebaseFirestoreRestClient();
 let firebaseConnectivityProbe = async () => false;
@@ -359,7 +360,11 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       : null;
     registerLegacyDashboardReadRoutes({
       app, firestore: firestoreAdmin, identityService: walletIdentityService,
-      liveService: liveSessionRoutesOpen ? gapLiveService : null
+      liveService: liveSessionRoutesOpen ? gapLiveService : null,
+      isLiveReady: async () => {
+        const schema = await inspectSchema();
+        return schema.checks.liveSessionSchema === true && schema.checks.walletSecuritySchema === true;
+      }
     });
     registerLegacyBusinessRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService, liveService: gapLiveService });
     registerAdminAstrologerProfileRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
@@ -394,7 +399,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
   }
   const walletSchemaReady = async () => {
     try {
-      const schema = await inspectBackendSchema(env.DB);
+      const schema = await inspectSchema();
       const ready = schema.checks.walletSchema === true &&
         schema.checks.bonusCreditWalletSchema === true;
       walletDomainSchemaReady = ready;
@@ -406,62 +411,25 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
   };
 
   const checkWalletRechargeSchemaReady = async () => {
-    if (!(await walletSchemaReady())) return false;
-    try {
-      const row = await env.DB.prepare(
-        'SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = ? LIMIT 1'
-      ).bind('wallet-recharges').first();
-      walletRechargeSchemaReady = row?.schema_version === '0005_legacy_wallet_backfill';
-      return walletRechargeSchemaReady;
-    } catch {
-      walletRechargeSchemaReady = false;
-      return false;
-    }
+    const schema = await inspectSchema();
+    walletRechargeSchemaReady = schema.checks.walletRechargeSchema === true;
+    return walletRechargeSchemaReady;
   };
   const checkWalletBackfillSchemaReady = async () => {
-    if (!(await walletSchemaReady())) return false;
-    try {
-      const row = await env.DB.prepare(
-        'SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = ? LIMIT 1'
-      ).bind('wallet-recharges').first();
-      return row?.schema_version === '0005_legacy_wallet_backfill';
-    } catch {
-      return false;
-    }
+    const schema = await inspectSchema();
+    return schema.checks.walletRechargeSchema === true;
   };
 
   const checkIdentityProfileBackfillSchemaReady = async () => {
-    try {
-      const row = await env.DB.prepare(
-        'SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = ? LIMIT 1'
-      ).bind('identity-profiles').first();
-      return row?.schema_version === '0008_identity_profile_backfill_audit';
-    } catch {
-      return false;
-    }
+    const schema = await inspectSchema();
+    return schema.checks.identityProfileSchema === true;
   };
 
   const checkLiveSessionSchemaReady = async () => {
-    if (!(await walletSchemaReady())) return false;
-    try {
-      const [sessionSchema,payoutSecuritySchema] = await Promise.all([
-        env.DB.prepare(
-          'SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = ? LIMIT 1'
-        ).bind('live-sessions').first(),
-        env.DB.prepare(
-          'SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = ? LIMIT 1'
-        ).bind('wallet-security').first()
-      ]);
-      // Live/Booking/Withdrawal share this route group. Do not register it
-      // until the encrypted payout snapshot table's migration is present.
-      liveSessionSchemaReady =
-        sessionSchema?.schema_version === '0006_d1_live_wallet_settlement' &&
-        payoutSecuritySchema?.schema_version === '0009_wallet_razorpay_payout_encryption';
-      return liveSessionSchemaReady;
-    } catch {
-      liveSessionSchemaReady = false;
-      return false;
-    }
+    const schema = await inspectSchema();
+    liveSessionSchemaReady = schema.checks.liveSessionSchema === true &&
+      schema.checks.walletSecuritySchema === true;
+    return liveSessionSchemaReady;
   };
 
   // Register the remaining active legacy API contracts only after the staging
@@ -682,7 +650,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
 }
 
 app.get('/healthz', async (_req, res) => {
-  const schema = await inspectBackendSchema(env.DB);
+  const schema = await inspectSchema();
   walletDomainSchemaReady = schema.checks.walletSchema;
   walletRechargeSchemaReady = schema.checks.walletRechargeSchema;
   liveSessionSchemaReady = schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;
@@ -697,7 +665,8 @@ app.get('/healthz', async (_req, res) => {
   const walletReadRoutesEnabled = walletReadRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletSchema;
   const walletRechargeRoutesEnabled = walletRechargeRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
   const walletOfferRoutesEnabled = walletOfferRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
-  const liveCallChatRoutesEnabled = liveSessionRoutesRegistered && liveSessionRoutesOpen && schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;
+  const liveCallChatRoutesEnabled = liveSessionRoutesRegistered && liveSessionRoutesOpen &&
+    schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;
   const razorpayCredentialsConfigured = razorpayPolicy.enabled && !!razorpayKeyId && !!razorpayKeySecret && !!razorpayWebhookSecret;
   const productionFinancialTrafficRoutingEnabled = isProductionFinancialTrafficRoutingEnabled({
     environment: String(env.SMV_ENVIRONMENT || 'unknown'),
@@ -757,6 +726,7 @@ app.get('/healthz', async (_req, res) => {
 registerBackendReadinessRoute({
   app,
   db: env.DB,
+  inspectSchema,
   firebaseConnectivityProbe,
   getRazorpayVerification: () => getRazorpayProviderVerification(),
   getRuntimeState: () => ({
@@ -793,7 +763,7 @@ registerBackendReadinessRoute({
 });
 
 app.get('/api/backend/migration-status', async (_req, res) => {
-  const schema = await inspectBackendSchema(env.DB);
+  const schema = await inspectSchema();
   walletDomainSchemaReady = schema.checks.walletSchema;
   walletRechargeSchemaReady = schema.checks.walletRechargeSchema;
   liveSessionSchemaReady = schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;
@@ -808,7 +778,9 @@ app.get('/api/backend/migration-status', async (_req, res) => {
   const walletReadRoutesEnabled = walletReadRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletSchema;
   const walletRechargeRoutesEnabled = walletRechargeRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
   const walletOfferRoutesEnabled = walletOfferRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
-  const liveSessionRoutesEnabled = liveSessionRoutesRegistered && liveSessionRoutesOpen && schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;
+  const liveSessionRoutesEnabled = liveSessionRoutesRegistered && liveSessionRoutesOpen &&
+    schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema &&
+    schema.checks.liveSessionQueryIndexes;
   const razorpayCredentialsConfigured = razorpayPolicy.enabled && !!razorpayKeyId && !!razorpayKeySecret && !!razorpayWebhookSecret;
   const productionFinancialTrafficRoutingEnabled = isProductionFinancialTrafficRoutingEnabled({
     environment: String(env.SMV_ENVIRONMENT || 'unknown'),

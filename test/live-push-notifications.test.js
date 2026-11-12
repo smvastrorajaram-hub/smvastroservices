@@ -228,8 +228,8 @@ test('Live Chat uses canonical mode/state and native visibility instead of a cha
   assert.equal(frontend.includes('smvLiveApplyChatLayout'), false, 'Chat visibility must not depend on a second dynamic layout mutator');
   assert.equal(frontend.includes('smv-live-chat-active'), false, 'no chat-only modal class should be toggled by JavaScript');
   assert.equal(css.includes('.smv-live-chat-active'), false, 'Chat must not depend on a special CSS override block');
-  assert.ok(html.includes('smvastro.css?v=20261112-astro-live-receipt-native-print-v2'));
-  assert.ok(html.includes('smvastro.mjs?v=20261112-astro-live-receipt-native-print-v2'));
+  assert.ok(html.includes('smvastro.css?v=20261112-d1-read-optimization-5000-customers-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261112-d1-read-optimization-5000-customers-v1'));
 });
 
 test('Live Chat connected confirmation requires a rendered message pane and does not open a separate Chat window', () => {
@@ -289,8 +289,9 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('if(smvLiveEventStreamConnected||!currentUser'));
   assert.ok(frontend.includes('smvLiveEventStreamConnected=true;'));
   assert.ok(frontend.includes('smvLiveStopFallbackPolling();'));
-  assert.ok(frontend.includes('smvLivePollSessions(true).catch(()=>{}),2500'));
+  assert.ok(frontend.includes('smvLivePollSessions(true).catch(()=>{}),5000'), 'recovery-only status polling is rate-limited to one request every five seconds');
   assert.ok(frontend.includes('async function smvLivePollSessions(statusOnly=false)'));
+  assert.ok(frontend.includes("renderApi(statusOnly?'/live/sessions/status':'/live/sessions'"), 'Recovery polling uses the bounded status-only D1 route, not the 100-session history route');
   assert.ok(frontend.includes('if(statusOnly)return;'), 'Fallback status reconciliation avoids unnecessary booking reads');
   assert.ok(frontend.includes("'/live/events?after='+encodeURIComponent(String(after))"));
   assert.ok(frontend.includes("'smv-live-event-cursor:'+owner"));
@@ -302,7 +303,7 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('smvLiveStartCustomerPendingStatusPoll(s.id);'));
   assert.ok(frontend.includes('setInterval(()=>void reconcile(),2500)'));
   assert.ok(frontend.includes('Astrologer Generating Horoscope · '));
-  assert.ok(html.includes('smvastro.mjs?v=20261112-astro-live-receipt-native-print-v2'));
+  assert.ok(html.includes('smvastro.mjs?v=20261112-d1-read-optimization-5000-customers-v1'));
 });
 
 test('Live Chat recovers a missed connecting-to-active event while SSE remains connected', () => {
@@ -349,7 +350,7 @@ test('Customer and Astrologer Dashboard open without Dashboard-wide loading or q
   assert.equal(frontend.includes('Loading your dashboard...'), false);
   assert.ok(!frontend.includes("because Firebase could not be read."));
   assert.ok(!frontend.includes("Dashboard is open. Astrologer profile and data"));
-  assert.ok(html.includes('smvastro.mjs?v=20261112-astro-live-receipt-native-print-v2'));
+  assert.ok(html.includes('smvastro.mjs?v=20261112-d1-read-optimization-5000-customers-v1'));
 });
 
 test('Explicit login keeps the fast role shell mounted and does not hide/reopen Dashboard', () => {
@@ -393,7 +394,7 @@ test('Astrologer Dashboard keeps one heading and parallelizes its first profile 
   assert.ok(dashboard.includes('const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null;'));
   assert.ok(dashboard.includes('astrologerProfileResult=profileResult;'));
   assert.ok(!dashboard.includes("const a=await withTimeout(\n     getDoc(doc(db,'smv_astrologers',currentUser.uid))"));
-  assert.ok(html.includes('smvastro.mjs?v=20261112-astro-live-receipt-native-print-v2'));
+  assert.ok(html.includes('smvastro.mjs?v=20261112-d1-read-optimization-5000-customers-v1'));
 });
 
 test('Astrologer Dashboard renders its main UI before earnings and withdrawal history resolve', () => {
@@ -413,7 +414,7 @@ test('Astrologer Dashboard renders its main UI before earnings and withdrawal hi
   assert.ok(dashboard.includes('id="smvAstroEarningsHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalStatus"'));
-  assert.ok(html.includes('smvastro.mjs?v=20261112-astro-live-receipt-native-print-v2'));
+  assert.ok(html.includes('smvastro.mjs?v=20261112-d1-read-optimization-5000-customers-v1'));
 });
 
 test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
@@ -1218,7 +1219,7 @@ test('Live Session and Customer Chat state is recovered from replay before curre
   const frontend = read('public/smvastro.mjs');
   assert.ok(frontend.includes('function smvLiveReadEventCursor(uid){'));
   assert.ok(frontend.includes('function smvLiveSaveEventCursor(uid,value,reset=false){'));
-  assert.ok(frontend.includes('smvLivePollSessions(true).catch(()=>{}),2500'));
+  assert.ok(frontend.includes('smvLivePollSessions(true).catch(()=>{}),5000'));
   assert.ok(frontend.includes("if(chatArea)chatArea.hidden=!smvLiveChatIsActive(s);"));
   assert.ok(frontend.includes("smvLiveUpdateDashboardSessionStatus(s);"));
 });

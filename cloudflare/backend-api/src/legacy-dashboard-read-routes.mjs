@@ -50,7 +50,7 @@ function sendError(res, error, message) {
 }
 
 /** UID-scoped Customer/Astrologer and Admin dashboard read contracts. */
-export function registerLegacyDashboardReadRoutes({ app, firestore, identityService, liveService = null, now = Date.now } = {}) {
+export function registerLegacyDashboardReadRoutes({ app, firestore, identityService, liveService = null, isLiveReady = async () => true, now = Date.now } = {}) {
   if (!app || typeof app.get !== 'function' ||
       !firestore || typeof firestore.getDocument !== 'function' || typeof firestore.runQuery !== 'function' ||
       !identityService || typeof identityService.authenticateAuthorization !== 'function') {
@@ -136,7 +136,7 @@ export function registerLegacyDashboardReadRoutes({ app, firestore, identityServ
         limit: 100
       });
       let endedSessionsByAppointment = Object.create(null);
-      if (liveService && typeof liveService.listEndedSessionsForAppointments === 'function' && documents.length) {
+      if (liveService && typeof liveService.listEndedSessionsForAppointments === 'function' && documents.length && await isLiveReady()) {
         try {
           endedSessionsByAppointment = await liveService.listEndedSessionsForAppointments({
             appointmentIds: documents.map(document => document.id), uid, role: 'customer'
