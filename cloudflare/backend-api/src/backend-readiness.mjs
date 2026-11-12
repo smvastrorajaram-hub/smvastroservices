@@ -303,7 +303,7 @@ export function registerBackendReadinessRoute({
       runtime.walletReadRouteGateOpen === true && schema.checks.walletRechargeSchema;
     const liveCallChatRoutesEnabled = runtime.liveSessionRoutesRegistered === true &&
       runtime.liveSessionRoutesOpen === true && schema.checks.liveSessionSchema &&
-      schema.checks.walletSecuritySchema;
+      schema.checks.walletSecuritySchema && schema.checks.liveSessionQueryIndexes;
     const razorpayCredentialsConfigured = razorpayPolicy.enabled === true &&
       !!runtime.razorpayKeyId && !!runtime.razorpayKeySecret && !!runtime.razorpayWebhookSecret;
     const walletPayoutEncryptionReady = runtime.walletPayoutEncryptionConfigured === true &&
