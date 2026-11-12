@@ -4414,10 +4414,10 @@ html body #smv24-footer .smv24-footer-top .smv24-brand h2{
 /* Festival SVG Wallet offer banners — shown above the existing offer cards and recharge controls. */
 .smv-wallet-offer-svg-banners[hidden]{display:none}
 .smv-wallet-offer-svg-banners{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px;margin:0 0 16px;min-width:0}
-.smv-wallet-offer-svg-banner{display:flex;align-items:center;gap:14px;width:100%;min-width:0;padding:12px;border:1px solid #d9b879;border-radius:18px;background:linear-gradient(120deg,#fff7df,#fffdf5 58%,#f7edff);color:#24103f;-webkit-text-fill-color:#24103f;text-align:left;font:inherit;cursor:pointer;box-shadow:0 5px 17px rgba(55,29,76,.08);transition:transform .16s ease,box-shadow .16s ease}
+.smv-wallet-offer-svg-banner{display:flex;align-items:center;gap:14px;width:100%;min-width:0;padding:12px;border:1px solid #d7c8ec;border-radius:18px;background:#fff;color:#24103f;-webkit-text-fill-color:#24103f;text-align:left;font:inherit;cursor:pointer;box-shadow:0 4px 14px rgba(36,16,63,.06);transition:transform .16s ease,box-shadow .16s ease}
 .smv-wallet-offer-svg-banner:hover{transform:translateY(-2px);box-shadow:0 9px 22px rgba(55,29,76,.13)}
 .smv-wallet-offer-svg-banner:focus-visible{outline:3px solid #6f36a8;outline-offset:3px}
-.smv-wallet-offer-svg-banner-art{display:grid;place-items:center;flex:0 0 84px;width:84px;height:84px;border-radius:14px;background:rgba(255,255,255,.82);overflow:hidden}
+.smv-wallet-offer-svg-banner-art{display:grid;place-items:center;flex:0 0 84px;width:84px;height:84px;border-radius:14px;background:#fff;overflow:hidden}
 .smv-wallet-offer-svg-banner-art img{display:block;width:100%;height:100%;object-fit:contain}
 .smv-wallet-offer-svg-banner-copy{display:grid;gap:4px;min-width:0}
 .smv-wallet-offer-svg-banner-copy strong{font-size:1.04rem;line-height:1.25;overflow-wrap:anywhere}
