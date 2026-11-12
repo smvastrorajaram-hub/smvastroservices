@@ -15,7 +15,7 @@ test('existing Home Wallet offer cards remain intact with SVG banners mounted ab
   const svgMount = html.indexOf('id="smvWalletOfferSvgBanners"');
   const existingCards = html.indexOf('id="smvWalletOfferBannerItems"');
   assert.ok(svgMount >= 0 && existingCards > svgMount, 'SVG banner mount must precede the existing Offer cards');
-  assert.ok(frontend.includes("return '<article class=" + "'smv-wallet-offer-card'"), 'Existing offer-card renderer remains present');
+  assert.ok(frontend.includes("'<article class=\"smv-wallet-offer-card\""), 'Existing offer-card renderer remains present');
   assert.ok(frontend.includes("const targets=['smvWalletOfferSvgBanners','smvCustomerWalletOfferBanners']"));
   assert.ok(frontend.includes("smvRenderWalletOfferSvgBanners(offers,themeLabels)"));
 });
