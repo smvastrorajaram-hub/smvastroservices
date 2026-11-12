@@ -5429,7 +5429,7 @@ function smvLiveStartFallbackPolling(){
  if(smvLiveEventStreamConnected||!currentUser||!auth?.currentUser||currentUser.uid!==auth.currentUser.uid)return;
  // Recovery-only pollers: a healthy SSE stream already carries session, booking,
  // chat-message and WebRTC-signal events, so running both transports wastes reads.
- if(!smvLiveDashboardTimer)smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions(true).catch(()=>{}),2500);
+ if(!smvLiveDashboardTimer)smvLiveDashboardTimer=setInterval(()=>smvLivePollSessions(true).catch(()=>{}),5000);
  const session=smvLiveCurrentSession,id=smvLivePanelSessionId;
  if(!session||!id||session.state==='ended')return;
  if(session.mode==='call'&&!smvLiveSignalTimer)smvLiveSignalTimer=setInterval(()=>{if(smvLivePanelSessionId===id&&smvLiveCurrentSession?.state!=='ended')smvLivePollSignals(id).catch(()=>{});},1800);
