@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createD1LiveSessionService } from '../../../shared/backend-platform/d1-live-session-service.mjs';
 import {
   parseRupeesToPaise,
   billableMinutesForElapsedMs,
@@ -218,4 +219,62 @@ test('Live booking row preserves the Customer birth details for the assigned Ast
   assert.deepEqual(booking.birthDetails,{
     birthDate:'1990-01-02',birthTime:'08:30',birthPlace:'Perambalur',birthGender:'Female'
   });
+});
+
+
+test('D1 completed appointment lookup is participant-scoped and only returns connected ended sessions',async()=>{
+  const calls=[];
+  const sessionRows=[
+    {
+      session_id:'live-chat-session-1',customer_uid:'customer-1',astrologer_uid:'astro-1',
+      mode:'chat',state:'ended',appointment_id:'appointment-chat-1',
+      reserved_amount_paise:500,reserved_bonus_minutes:0,reserved_bonus_credit_paise:0,
+      actual_charge_paise:500,started_at_ms:1000,ended_at_ms:2000,
+      created_at_ms:900,updated_at_ms:2000,payload_json:JSON.stringify({minutes:1,ratePerMinutePaise:500})
+    },
+    {
+      session_id:'live-call-session-1',customer_uid:'customer-1',astrologer_uid:'astro-1',
+      mode:'call',state:'ended',appointment_id:'appointment-call-1',
+      reserved_amount_paise:800,reserved_bonus_minutes:0,reserved_bonus_credit_paise:0,
+      actual_charge_paise:800,started_at_ms:3000,ended_at_ms:4000,
+      created_at_ms:2900,updated_at_ms:4000,payload_json:JSON.stringify({minutes:1,ratePerMinutePaise:800})
+    }
+  ];
+  const db={
+    prepare(sql){
+      return {bind(...values){
+        return {
+          async all(){calls.push({sql,values});return {results:sessionRows};},
+          async first(){return null;},
+          async run(){return {meta:{changes:1}};}
+        };
+      }};
+    },
+    async batch(){return {success:true};}
+  };
+  const service=createD1LiveSessionService({
+    db,
+    walletAdapter:{async ensureWallet(){return {};},async getWallet(){return {}; }},
+    firestore:{async getDocument(){return {exists:false,data:null};}},
+    cryptoImpl:globalThis.crypto
+  });
+  const sessions=await service.listEndedSessionsForAppointments({
+    appointmentIds:['appointment-chat-1','appointment-call-1','not-owned'],
+    uid:'customer-1',role:'customer'
+  });
+  assert.deepEqual(Object.keys(sessions).sort(),['appointment-call-1','appointment-chat-1']);
+  assert.equal(sessions['appointment-chat-1'].id,'live-chat-session-1');
+  assert.equal(sessions['appointment-chat-1'].state,'ended');
+  assert.equal(sessions['appointment-call-1'].id,'live-call-session-1');
+  assert.equal(calls.length,1);
+  assert.match(calls[0].sql,/customer_uid=\?/);
+  assert.match(calls[0].sql,/state='ended'/);
+  assert.match(calls[0].sql,/started_at_ms IS NOT NULL AND started_at_ms>0/);
+  assert.match(calls[0].sql,/appointment_id IN \(\?,\?,\?\)/);
+  assert.equal(calls[0].values[0],'customer-1');
+  assert.deepEqual(calls[0].values.slice(1),['appointment-chat-1','appointment-call-1','not-owned']);
+  await assert.rejects(
+    service.listEndedSessionsForAppointments({appointmentIds:['appointment-chat-1'],uid:'customer-1',role:'admin'}),
+    /valid signed-in Customer or Astrologer/
+  );
 });
