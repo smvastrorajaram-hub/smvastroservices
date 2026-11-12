@@ -732,8 +732,13 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       }
       const message=String(error?.message||error||'');
       const bonusCreditLimitReached=bonusCreditCreditedPaise>0&&message.includes('WALLET_BALANCE_OVERFLOW');
-      if(!bonusCreditLimitReached)throw d1Error(error);
-      bonusCreditCreditedPaise=0;bonusCreditSkippedReason='bonus_credit_balance_limit';selectedOffer=null;
+      const offerBecameIneligible=bonusCreditCreditedPaise>0&&[
+        'WALLET_OFFER_TOTAL_LIMIT_REACHED','WALLET_OFFER_CUSTOMER_LIMIT_REACHED','WALLET_OFFER_NOT_ELIGIBLE'
+      ].some(code=>message.includes(code));
+      if(!bonusCreditLimitReached&&!offerBecameIneligible)throw d1Error(error);
+      bonusCreditCreditedPaise=0;
+      bonusCreditSkippedReason=bonusCreditLimitReached?'bonus_credit_balance_limit':'offer_limit_reached_during_recharge';
+      selectedOffer=null;
       const fallbackPayload={...rechargePayload,customerPaymentId,bonusMinutesCredited:0,bonusCreditCreditedPaise:0,
         bonusCreditSkippedReason,offerId:null,offerName:null,paymentSource:String(source).slice(0,80)};
       const fallback=[insertStatement(cashRow)];appendPaidTransitions(fallback,fallbackPayload);
