@@ -130,12 +130,28 @@ test('shared UI stylesheet must not override hero and content headings with pale
   assert.ok(contrastRatio('#20170f','#fff8e7') >= 15, 'hero and content heading contrast must exceed WCAG AA');
 });
 
+test('desktop Homepage CTA buttons match the Mobile colours and remain equal in size', () => {
+  const start=css.indexOf('@media (min-width: 900px){\\nhtml body.smv-v12-theme #home .smv33-scene');
+  const end=css.indexOf('\\n}\\n.smv-location-wrap',start);
+  assert.ok(start>=0 && end>start, 'desktop Homepage hero media block should exist');
+  const desktop=css.slice(start,end);
+  assert.ok(desktop.includes('.smv33-actions{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:10px;margin-top:12px;max-width:470px}'));
+  assert.ok(desktop.includes('flex:0 1 230px;'));
+  assert.ok(desktop.includes('width:230px;max-width:100%;min-width:0;min-height:42px;'));
+  assert.ok(desktop.includes('.smv33-actions .ask{color:#fff;border-color:#e50055;background:linear-gradient(135deg,#e90058,#d90048)}'));
+  assert.ok(desktop.includes('.smv33-actions .horoscope{color:#20324a;border-color:#75461a;background:rgba(255,250,240,.9)}'));
+  assert.doesNotMatch(desktop, /smv33-actions a\\{background:rgb\\(237,0,84\\)/);
+  const mobile=css.slice(css.indexOf('html body.smv-v12-theme #home .smv33-actions .ask{', end), css.indexOf('html body.smv-v12-theme #home .smv33-trust{', end));
+  assert.ok(mobile.includes('background:linear-gradient(135deg,#e90058,#d90048)'));
+  assert.ok(mobile.includes('background:rgba(255,250,240,.9)'));
+});
+
 test('main page cache versions point to the audited theme assets', () => {
-  assert.ok(html.includes('smvastro.css?v=20261112-wallet-offer-white-background-v1'));
+  assert.ok(html.includes('smvastro.css?v=20261112-homepage-desktop-cta-colors-v1'));
   assert.ok(html.includes('android-app-install.css?v=20261110-icon-png-v3'));
   assert.ok(html.includes('smv-ui.css?v=20261105-dashboard-typography-hierarchy-v1'));
   assert.ok(html.includes('dashboard-typography.css?v=20261111-earnings-ledger-accuracy-v1'));
-  assert.ok(html.includes('smvastro.mjs?v=20261112-wallet-offer-white-background-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261112-homepage-desktop-cta-colors-v1'));
   assert.ok(html.includes('android-app-install.js?v=20261110-icon-png-v3'));
   assert.ok(html.includes('public-content-loader.js?v=20261107-private-chat-selected-astrologer-v5'));
   assert.doesNotMatch(html, /<script[^>]+src=["'][^"']*public-content\.mjs/);
