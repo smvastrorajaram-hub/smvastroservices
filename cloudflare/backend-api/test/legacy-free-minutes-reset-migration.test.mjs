@@ -67,7 +67,7 @@ function makeDatabase() {
       WHERE ledger_id=NEW.ledger_id;
     END;
     INSERT INTO smv_domain_wallets VALUES
-      ('customer-with-legacy','customer',27500,1000,1530,0,4200,300,5,1),
+      ('customer-with-legacy','customer',27500,1000,1530,4,4200,300,5,1),
       ('customer-zero','customer',8000,0,0,0,0,0,1,1),
       ('astrologer-legacy','astrologer',9900,0,12,0,0,0,2,1);
   `);
@@ -83,7 +83,7 @@ test('0014 resets available Customer Legacy Free Minutes through an auditable le
     assert.equal(customer.bonus_minutes_balance, 0);
     assert.equal(customer.available_balance_paise, 27500);
     assert.equal(customer.reserved_balance_paise, 1000);
-    assert.equal(customer.reserved_bonus_minutes, 0);
+    assert.equal(customer.reserved_bonus_minutes, 4, 'legacy minutes already reserved for any pending session stay reserved');
     assert.equal(customer.bonus_credit_balance_paise, 4200);
     assert.equal(customer.reserved_bonus_credit_paise, 300);
 
