@@ -342,7 +342,7 @@ test('missing optional Live query indexes do not block core D1 readiness but kee
   assert.equal(response.body.ready, true, 'the required 0002-0013 foundation remains ready');
   assert.equal(response.body.schemaMigrations['0014_live_session_query_indexes'], false);
   assert.equal(response.body.checks.liveSessionQueryIndexes, false);
-  assert.equal(response.body.liveCallChatRoutesEnabled, false, 'only Live routes wait for the optional query-index migration');
+  assert.equal(response.body.liveCallChatRoutesEnabled, true, 'existing Live routes remain ready while the optional query-index migration is unapplied');
 });
 
 test('GET /api/backend/readiness returns 503 for incomplete Production schema', async () => {
