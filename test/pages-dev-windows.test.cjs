@@ -176,14 +176,14 @@ test('all three PWA cache releases are synchronized for Pages.dev and .in conten
     return { pages: match[1], legacy: match[2] };
   });
   assert.deepEqual(releases.map(item => item.pages), [
-    '20261112-wallet-offer-white-background-pages-v1',
-    '20261112-wallet-offer-white-background-pages-v1',
-    '20261112-wallet-offer-white-background-pages-v1'
+    '20261112-horoscope-result-styles-lazy-pages-v1',
+    '20261112-horoscope-result-styles-lazy-pages-v1',
+    '20261112-horoscope-result-styles-lazy-pages-v1'
   ]);
   assert.deepEqual(releases.map(item => item.legacy), [
-    '20261112-wallet-offer-white-background-in-v1',
-    '20261112-wallet-offer-white-background-in-v1',
-    '20261112-wallet-offer-white-background-in-v1'
+    '20261112-horoscope-result-styles-lazy-in-v1',
+    '20261112-horoscope-result-styles-lazy-in-v1',
+    '20261112-horoscope-result-styles-lazy-in-v1'
   ]);
 });
 test('each installer creates its own 256x256 Windows icon', () => {
