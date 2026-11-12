@@ -1,0 +1,46 @@
+name: Horoscope and Marriage Narrative Quality Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/horoscope/integrated.js'
+      - 'public/horoscope/d1-human-narrative.js'
+      - 'public/horoscope/matching-timeline.mjs'
+      - 'public/horoscope/marriage-matching.js'
+      - 'tests/horoscope-marriage-narrative-quality-regression.mjs'
+      - '.github/workflows/horoscope-marriage-narrative-quality.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'public/horoscope/integrated.js'
+      - 'public/horoscope/d1-human-narrative.js'
+      - 'public/horoscope/matching-timeline.mjs'
+      - 'public/horoscope/marriage-matching.js'
+      - 'tests/horoscope-marriage-narrative-quality-regression.mjs'
+      - '.github/workflows/horoscope-marriage-narrative-quality.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  narrative-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check narrative engine syntax
+        run: |
+          node --check public/horoscope/integrated.js
+          node --check public/horoscope/d1-human-narrative.js
+          node --check public/horoscope/matching-timeline.mjs
+          node --check public/horoscope/marriage-matching.js
+          node --check tests/horoscope-marriage-narrative-quality-regression.mjs
+      - name: Run narrative quality regressions
+        run: node --test tests/horoscope-marriage-narrative-quality-regression.mjs
+      - name: Run existing Marriage Matching regressions
+        run: node tests/marriage-matching-feature-mode-regression.mjs
