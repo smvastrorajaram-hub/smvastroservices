@@ -8,3 +8,4 @@ This file exists only to trigger and observe the Git-connected Cloudflare Worker
 - Wrangler configuration changed: no
 - Production resources changed: no
 - Intended action: do not merge this probe PR.
+- PR-branch push trigger: updated after PR #468 was opened to exercise the Preview-on-PR-branch-push path.
