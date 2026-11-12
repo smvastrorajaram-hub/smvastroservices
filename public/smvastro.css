@@ -3289,9 +3289,10 @@ html body.smv-v12-theme #home .smv33-kicker{margin:0 0 13px;color:#20170f!import
 html body.smv-v12-theme #home .smv33-copy h1{font-size:clamp(32px,3.7vw,54px);line-height:1.07;margin:0 0 15px;color:#30251b;font-weight:800;text-shadow:none}
 html body.smv-v12-theme #home .smv33-copy h1 span{color:#6b4b1e;font-weight:800}
 html body.smv-v12-theme #home .smv33-copy p{font-size:clamp(15px,1.22vw,18px);line-height:1.5;margin:0 0 12px;color:#30251b;text-shadow:none;max-width:100%}
-html body.smv-v12-theme #home .smv33-actions{gap:10px;margin-top:12px}
-html body.smv-v12-theme #home .smv33-actions a{background:rgb(237,0,84);color:#fff;font-size:13px;min-height:44px;padding:10px 12px;text-shadow:none;box-shadow:none}
-html body.smv-v12-theme #home .smv33-actions .horoscope{background:rgba(255,250,240,.9);color:#20324a;border:1px solid #75461a}
+html body.smv-v12-theme #home .smv33-actions{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:10px;margin-top:12px;max-width:470px}
+html body.smv-v12-theme #home .smv33-actions a{display:flex;flex:0 1 230px;align-items:center;justify-content:center;gap:5px;width:230px;max-width:100%;min-width:0;min-height:42px;padding:9px 12px;border:1px solid #efcf86;border-radius:12px;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.15;font-weight:800;text-align:center;text-decoration:none;box-shadow:0 5px 14px rgba(0,0,0,.12);text-shadow:none;white-space:nowrap}
+html body.smv-v12-theme #home .smv33-actions .ask{color:#fff;border-color:#e50055;background:linear-gradient(135deg,#e90058,#d90048)}
+html body.smv-v12-theme #home .smv33-actions .horoscope{color:#20324a;border-color:#75461a;background:rgba(255,250,240,.9)}
 html body.smv-v12-theme #home .smv33-trust{color:#30251b;font-size:clamp(11px,.8vw,13px);line-height:1.4;font-weight:800;margin-top:15px;gap:10px 16px;text-shadow:none}
 }
 .smv-location-wrap:where(:not(.smv-css-island,.smv-css-island *)){position:relative!important}
