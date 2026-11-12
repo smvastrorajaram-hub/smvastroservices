@@ -5657,7 +5657,7 @@ async function smvLivePollSessions(statusOnly=false){
  if(smvLivePollBusy){smvLivePollRefreshRequested=true;return;}
  smvLivePollBusy=true;
  try{
-  const list=await renderApi('/live/sessions',{method:'GET',timeoutMs:12000});
+  const list=await renderApi(statusOnly?'/live/sessions/status':'/live/sessions',{method:'GET',timeoutMs:12000});
   for(const session of list.sessions||[]){smvLiveUpdateDashboardSessionStatus(session);
    if(session.state==='ringing'&&session.astrologerUid===currentUser.uid&&role==='astrologer'&&smvLivePanelSessionId!==session.id){smvLiveStartRingtone(session.id);smvLiveOpenSession(session,null,true);}
    else if(session.id===smvLivePanelSessionId){if(session.state!=='ringing'&&smvLiveRingCurrentId===String(session.id||''))smvLiveStopRingtone();smvLiveApplySession(session);}
