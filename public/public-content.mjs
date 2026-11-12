@@ -150,6 +150,7 @@
       '<label style="display:grid;gap:3px;color:#2d1919"><b>Customer Name</b><input id="smvLiveBirthCustomerName" maxlength="100" required value="'+esc(customerName)+'" style="width:100%;box-sizing:border-box;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;-webkit-text-fill-color:#2d1919;background:#fffaf0;border:1px solid #b9a17b;border-radius:8px"></label>'+
       '<label style="display:grid;gap:6px;color:#2d1919"><b>Date of Birth</b><input id="smvLiveBirthDate" type="date" max="'+maxDate+'" required style="width:100%;box-sizing:border-box;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;-webkit-text-fill-color:#2d1919;background:#fffaf0;border:1px solid #b9a17b;border-radius:8px"></label>'+
       '<label style="display:grid;gap:6px;color:#2d1919"><b>Time of Birth</b><input id="smvLiveBirthTime" type="time" required style="width:100%;box-sizing:border-box;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;-webkit-text-fill-color:#2d1919;background:#fffaf0;border:1px solid #b9a17b;border-radius:8px"></label>'+
+      '<label style="display:grid;gap:6px;color:#2d1919"><b>Gender</b><select id="smvLiveBirthGender" required style="width:100%;box-sizing:border-box;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;-webkit-text-fill-color:#2d1919;background:#fffaf0;border:1px solid #b9a17b;border-radius:8px"><option value="">Select Gender</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></label>'+
       '<label style="display:grid;gap:6px;color:#2d1919"><b>Birth Place</b><input id="smvLiveBirthPlace" type="text" maxlength="200" autocomplete="off" inputmode="search" placeholder="Search city, town or place" required style="width:100%;box-sizing:border-box;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;-webkit-text-fill-color:#2d1919;background:#fffaf0;border:1px solid #b9a17b;border-radius:8px"></label>'+
       '<input id="smvLiveBirthLatitude" type="hidden"><input id="smvLiveBirthLongitude" type="hidden">'+
       '<p class="small" style="margin:0;color:#62483b;-webkit-text-fill-color:#62483b">Choose a place from the suggestions when available. If online search is unavailable, you can enter the place manually.</p>'+
@@ -161,9 +162,9 @@
     import('./question-place-search.mjs?v=20261026-livechat-scroll-place-black-v2').then(({bindQuestionPlaceSearch})=>bindQuestionPlaceSearch(place,{latId:'smvLiveBirthLatitude',lonId:'smvLiveBirthLongitude'})).catch(error=>console.warn('Live Session birth-place search is unavailable:',error));
     $('smvLiveBirthForm').onsubmit=async event=>{
       event.preventDefault();
-      const birthDetails={birthDate:String($('smvLiveBirthDate')?.value||''),birthTime:String($('smvLiveBirthTime')?.value||''),birthPlace:String(place?.value||'').trim(),birthLatitude:String(lat?.value||place?.dataset.latitude||''),birthLongitude:String(lon?.value||place?.dataset.longitude||''),birthTimezone:String(place?.dataset.timezone||'')};
+      const birthDetails={birthDate:String($('smvLiveBirthDate')?.value||''),birthTime:String($('smvLiveBirthTime')?.value||''),birthGender:String($('smvLiveBirthGender')?.value||''),birthPlace:String(place?.value||'').trim(),birthLatitude:String(lat?.value||place?.dataset.latitude||''),birthLongitude:String(lon?.value||place?.dataset.longitude||''),birthTimezone:String(place?.dataset.timezone||'')};
       const customerName=String($('smvLiveBirthCustomerName')?.value||'').trim();
-      if(!customerName||!birthDetails.birthDate||!birthDetails.birthTime||!birthDetails.birthPlace){if(message)message.textContent='Enter Customer name, date/time of birth and birth place to continue.';return;}
+      if(!customerName||!birthDetails.birthDate||!birthDetails.birthTime||!birthDetails.birthGender||!birthDetails.birthPlace){if(message)message.textContent='Enter Customer name, date/time of birth, gender and birth place to continue.';return;}
       if(birthDetails.birthDate>maxDate){if(message)message.textContent='Date of Birth cannot be in the future.';return;}
       if(submit){submit.disabled=true;submit.textContent='SAVING DETAILS…';}
       if(message)message.textContent='Saving birth details securely…';
@@ -199,7 +200,7 @@
       const response=await fetch(FINANCIAL_BACKEND+'/live/requests',{
         method:'POST',cache:'no-store',
         headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',Accept:'application/json'},
-        body:JSON.stringify({astrologerId:String(astrologer.id||''),mode:kind,minutes:length,requestId,customerName:String(birthDetails?.customerName||user.displayName||'').trim(),birthDetails:{birthDate:String(birthDetails?.birthDate||''),birthTime:String(birthDetails?.birthTime||''),birthPlace:String(birthDetails?.birthPlace||'').trim(),birthLatitude:String(birthDetails?.birthLatitude||''),birthLongitude:String(birthDetails?.birthLongitude||''),birthTimezone:String(birthDetails?.birthTimezone||'')}})
+        body:JSON.stringify({astrologerId:String(astrologer.id||''),mode:kind,minutes:length,requestId,customerName:String(birthDetails?.customerName||user.displayName||'').trim(),birthDetails:{birthDate:String(birthDetails?.birthDate||''),birthTime:String(birthDetails?.birthTime||''),birthGender:String(birthDetails?.birthGender||''),birthPlace:String(birthDetails?.birthPlace||'').trim(),birthLatitude:String(birthDetails?.birthLatitude||''),birthLongitude:String(birthDetails?.birthLongitude||''),birthTimezone:String(birthDetails?.birthTimezone||'')}})
       });
       let result={};try{result=await response.json();}catch(_){}
       if(!response.ok||result.success!==true){
@@ -413,6 +414,7 @@
           <label style="display:block;min-width:0;color:#2d1919"><b>Time of Birth</b><input id="smvCallBookingBirthTime" name="birthTime" type="time" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:2px;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fffaf0;border:1px solid #b9a17b;border-radius:8px"></label>
         </div>
         <label style="display:block;min-width:0;color:#2d1919"><b>Birth Place (search and select)</b><input id="smvCallBookingBirthPlace" name="birthPlace" type="text" maxlength="200" autocomplete="off" inputmode="search" placeholder="Search city, town or place" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:2px;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fffaf0;border:1px solid #b9a17b;border-radius:8px"></label>
+        <label style="display:block;min-width:0;color:#2d1919"><b>Gender</b><select id="smvCallBookingGender" name="birthGender" required style="display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:2px;min-height:36px;padding:6px 8px;font-size:14px;line-height:1.2;color:#2d1919;background:#fffaf0;border:1px solid #b9a17b;border-radius:8px"><option value="">Select Gender</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></label>
         <input id="smvCallBookingBirthLatitude" type="hidden" value="">
         <input id="smvCallBookingBirthLongitude" type="hidden" value="">
         <p class="small" style="color:#6b6257;-webkit-text-fill-color:#6b6257;margin:0">Type at least two characters and choose a place from the suggestions. If location search is unavailable, enter the place manually.</p>
@@ -452,6 +454,7 @@
             birthDate:String($('smvCallBookingBirthDate')?.value||''),
             birthTime:String($('smvCallBookingBirthTime')?.value||''),
             birthPlace:String($('smvCallBookingBirthPlace')?.value||'').trim(),
+            birthGender:String($('smvCallBookingGender')?.value||''),
             birthLatitude:String($('smvCallBookingBirthLatitude')?.value||birthPlaceInput?.dataset.latitude||''),
             birthLongitude:String($('smvCallBookingBirthLongitude')?.value||birthPlaceInput?.dataset.longitude||''),
             birthTimezone:String(birthPlaceInput?.dataset.timezone||''),

@@ -46,6 +46,7 @@ const baseBody={
   birthDate:'1990-01-01',
   birthTime:'10:30',
   birthPlace:'Perambalur',
+  birthGender:'Female',
   birthLatitude:'11.23',
   birthLongitude:'78.88',
   birthTimezone:'Asia/Kolkata'
@@ -69,6 +70,7 @@ test('scheduled Call booking validates Customer, approved Astrologer, enabled mo
  assert.equal(appointment.data.pricePerMinute,15);
  assert.equal(appointment.data.paymentStatus,'not_started');
  assert.equal(appointment.data.bookingStatus,'requested');
+ assert.equal(appointment.data.birthDetails.birthGender,'Female');
 });
 
 test('scheduled Chat booking requires Chat enabled and configured per-minute rate',async()=>{
@@ -91,7 +93,8 @@ test('invalid schedule, DOB, birth coordinates and duration fail before transact
    {...baseBody,preferredDate:'2026-02-30'},
    {...baseBody,birthDate:'2030-01-01'},
    {...baseBody,birthLatitude:'91'},
-   {...baseBody,scheduledMinutes:1441}
+   {...baseBody,scheduledMinutes:1441},
+   {...baseBody,birthGender:'Invalid'}
  ];
  for(const body of cases){
    const app=harness(),firestore=fixture({docs:{

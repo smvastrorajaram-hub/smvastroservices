@@ -205,16 +205,17 @@ test('Live sessions require valid DOB/time/place before the two-minute-fifteen-s
   assert.equal(PREPARATION_DURATION_MS, 135_000);
   assert.equal(CHAT_ACCEPT_TIMEOUT_MS, 300_000); // Chat remains available for acceptance; Call timeout is unchanged.
   assert.deepEqual(validateLiveBirthDetails({
-    birthDate: '1990-05-21', birthTime: '14:35', birthPlace: 'Chennai',
+    birthDate: '1990-05-21', birthTime: '14:35', birthPlace: 'Chennai', birthGender:'Female',
     birthLatitude: '13.0827', birthLongitude: '80.2707', birthTimezone: 'Asia/Kolkata'
   }), {
-    birthDate: '1990-05-21', birthTime: '14:35', birthPlace: 'Chennai',
+    birthDate: '1990-05-21', birthTime: '14:35', birthPlace: 'Chennai', birthGender:'Female',
     birthLatitude: 13.0827, birthLongitude: 80.2707, birthTimezone: 'Asia/Kolkata'
   });
-  assert.throws(() => validateLiveBirthDetails({birthDate:'2050-01-01',birthTime:'10:00',birthPlace:'Chennai'}), /future/i);
-  assert.throws(() => validateLiveBirthDetails({birthDate:'1990-02-31',birthTime:'10:00',birthPlace:'Chennai'}), /Date of Birth/i);
-  assert.throws(() => validateLiveBirthDetails({birthDate:'1990-01-01',birthTime:'25:00',birthPlace:'Chennai'}), /Time of Birth/i);
-  assert.throws(() => validateLiveBirthDetails({birthDate:'1990-01-01',birthTime:'10:00',birthPlace:'x'}), /Birth Place/i);
+  assert.throws(() => validateLiveBirthDetails({birthDate:'2050-01-01',birthTime:'10:00',birthPlace:'Chennai',birthGender:'Male'}), /future/i);
+  assert.throws(() => validateLiveBirthDetails({birthDate:'1990-02-31',birthTime:'10:00',birthPlace:'Chennai',birthGender:'Male'}), /Date of Birth/i);
+  assert.throws(() => validateLiveBirthDetails({birthDate:'1990-01-01',birthTime:'25:00',birthPlace:'Chennai',birthGender:'Male'}), /Time of Birth/i);
+  assert.throws(() => validateLiveBirthDetails({birthDate:'1990-01-01',birthTime:'10:00',birthPlace:'Chennai',birthGender:'Invalid'}), /Gender/i);
+  assert.throws(() => validateLiveBirthDetails({birthDate:'1990-01-01',birthTime:'10:00',birthPlace:'x',birthGender:'Male'}), /Birth Place/i);
 });
 
 test('Live Call and Chat commission splits follow the Admin percentage and default safely', () => {

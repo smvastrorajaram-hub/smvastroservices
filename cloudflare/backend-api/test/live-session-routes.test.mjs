@@ -67,7 +67,7 @@ function fixture(overrides={}) {
     async rejectSession(input){calls.push({service:'rejectSession',input});return {success:true,session:{id:input.sessionId,customerUid:'customer-1',astrologerUid:input.astrologerUid,state:'ended'}};},
     async acceptSession(input){calls.push({service:'acceptSession',input});return {success:true,session:{id:input.sessionId,customerUid:'customer-1',astrologerUid:input.astrologerUid,state:'preparing',preparationUntil:'2026-10-31T10:02:15Z'}};},
     async readySession(input){calls.push({service:'readySession',input});return {success:true,started:false,session:{id:input.sessionId,customerUid:'customer-1',astrologerUid:'astro-1',state:'connecting',mode:'call',connectingAt:'2026-10-31T10:00:00Z',minutes:5}};},
-    async sendMessage(input){return {success:true,message:{id:'msg-1',sessionId:input.sessionId,senderUid:input.senderUid,text:input.text,createdAt:'2026-10-31T10:00:00Z'},recipientUid:'astro-1'};},
+    async sendMessage(input){if(overrides.messageError)throw overrides.messageError;return {success:true,message:{id:'msg-1',sessionId:input.sessionId,senderUid:input.senderUid,text:input.text,createdAt:'2026-10-31T10:00:00Z'},recipientUid:'astro-1'};},
     async signal(input){return {success:true,signalId:'sig-1',recipientUid:'astro-1'};},
     async getCommission(){return overrides.commission||{astroPercent:20,adminPercent:80};},
     async saveSetting(id,payload,uid){calls.push({service:'saveSetting',id,payload,uid});return {...payload,updatedBy:uid,updatedAtMs:123};}
@@ -137,10 +137,11 @@ test('Customer can create a Live request and a durable ring timer is scheduled',
   const f=fixture(),res=responseHarness();
   await f.app.handlers.get('POST /live/requests')(req({
     astrologerId:'astro-1',mode:'call',minutes:5,requestId:'request-0001',
-    customerName:'Customer',birthDetails:{birthDate:'2000-01-01',birthTime:'10:00',birthPlace:'Madurai'}
+    customerName:'Customer',birthDetails:{birthDate:'2000-01-01',birthTime:'10:00',birthPlace:'Madurai',birthGender:'Female'}
   }),res);
   assert.equal(res.statusCode,200);
   assert.equal(res.body.kind,'session');
+  assert.equal(f.calls.find(x=>x.service==='createRequest').input.birthDetails.birthGender,'Female');
   assert.ok(f.calls.some(x=>String(x.url||'').includes('/schedule')&&x.body.deadlines[0].type==='ring_timeout'));
   assert.ok(f.calls.some(x=>String(x.url||'').includes('/publish')&&x.body.type==='live.session.request'));
 });
@@ -267,6 +268,21 @@ test('Admin withdrawal actions are routed through the D1 withdrawal service',asy
     assert.equal(res.statusCode,200,path);
     assert.ok(f.calls.some(x=>x.service===method),method);
   }
+});
+
+test('Expired Live Chat message fallback publishes the committed ended state to both participants',async()=>{
+  const ended={id:'session-1',customerUid:'customer-1',astrologerUid:'astro-1',mode:'chat',state:'ended',minutes:1};
+  const f=fixture({
+    messageError:Object.assign(new Error('The Live Chat duration has ended.'),{code:'LIVE_SESSION_ENDED',httpStatus:409}),
+    sessions:[ended]
+  });
+  const res=responseHarness();
+  await f.app.handlers.get('POST /live/sessions/:id/messages')(req({text:'hello'}),res);
+  assert.equal(res.statusCode,409);
+  const events=f.calls.filter(call=>String(call.url||'').includes('live-user-hub.internal/publish')&&call.body?.type==='live.session.ended');
+  assert.equal(events.length,2,'Both Customer and Astrologer receive the terminal session event.');
+  assert.deepEqual(events.map(call=>call.body.data.session.state),['ended','ended']);
+  assert.ok(f.calls.some(call=>String(call.url||'').includes('/cancel-deadline')),'Stale deadlines are cancelled after expiry reconciliation.');
 });
 
 test('Admin commission GET requires the Admin role and reads the D1 commission setting',async()=>{

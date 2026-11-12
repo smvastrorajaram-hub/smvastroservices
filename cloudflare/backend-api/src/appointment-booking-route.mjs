@@ -92,6 +92,7 @@ export function registerAppointmentBookingRoute({
       const birthDate = String(body.birthDate || '').trim();
       const birthTime = String(body.birthTime || '').trim();
       const birthPlace = String(body.birthPlace || '').trim();
+      const birthGender = String(body.birthGender || '').trim();
       const birthLatitudeRaw = String(body.birthLatitude || '').trim();
       const birthLongitudeRaw = String(body.birthLongitude || '').trim();
       const birthTimezone = String(body.birthTimezone || '').trim();
@@ -105,6 +106,9 @@ export function registerAppointmentBookingRoute({
         return res.status(400).set('Cache-Control', 'no-store').json({
           error: 'Please fill all required appointment fields.'
         });
+      }
+      if (hasAstrologerId && !['Male', 'Female', 'Other'].includes(birthGender)) {
+        return res.status(400).set('Cache-Control', 'no-store').json({ error: 'Choose Male, Female or Other for Customer Gender.' });
       }
       if (hasAstrologerId && !astrologerId) {
         return res.status(400).set('Cache-Control', 'no-store').json({
@@ -223,7 +227,7 @@ export function registerAppointmentBookingRoute({
             ? { chatPricePerMinute: pricePerMinute, ...(question ? { question } : {}) }
             : { callPricePerMinute: pricePerMinute }),
           birthDetails: {
-            birthDate, birthTime, birthPlace,
+            birthDate, birthTime, birthPlace, birthGender,
             birthLatitude: coordinates.latitude,
             birthLongitude: coordinates.longitude,
             birthTimezone

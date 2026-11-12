@@ -33,7 +33,7 @@ test('homepage sections, footer and header use the cream surface with readable t
   assert.match(css, /\.smv-master-footer:where\(\:not\(\.smv-css-island,\.smv-css-island \*\)\)\{[^}]*background:#fff8e7!important/i);
   assert.match(css, /\.smv-master-footer p:where\([^}]*color:#30251b!important/i);
   assert.match(css, /#smvPremiumHeaderV9:where\(\:not\(\.hidden\)\)\{[^}]*background:#fff8e7/i);
-  assert.match(css, /html :is\(#smv-v15-header-root, body\.smv-v12-theme\) #smvPremiumHeaderV9 \.smv9-menu > :is\(a, button[^}]*color:#30251b!important/i);
+  assert.match(css, /html :is\(#smv-v15-header-root, body\.smv-v12-theme\) #smvPremiumHeaderV9 \.smv9-menu > :is\(a, button[^}]*color:#fff!important/i);
   assert.match(css, /#smv24-footer a\{color:#30251b;text-decoration:none\}/);
   assert.match(css, /html body #smv24-footer \.smv26-links a\{[^}]*color:#30251b!important[^}]*font:600 16px/i);
   assert.match(css, /html body #smv24-footer \.smv24-brand p\{[^}]*color:#30251b!important/i);
@@ -159,6 +159,12 @@ test('Customer Dashboard CTA uses its own component layout and Desktop Header bu
   const desktopHeaderEnd=css.indexOf('\n}\n\n/* Footer uses',desktopHeaderStart);
   assert.ok(desktopHeaderStart>=0 && desktopHeaderEnd>desktopHeaderStart, 'Desktop premium Header media block should exist');
   const desktopHeader=css.slice(desktopHeaderStart,desktopHeaderEnd);
+  const legacyHeaderStart=css.indexOf('/* Desktop Header labels remain white;');
+  const legacyHeaderEnd=css.indexOf('\nhtml :is(#smv-v15-icon-root',legacyHeaderStart);
+  assert.ok(legacyHeaderStart>=0&&legacyHeaderEnd>legacyHeaderStart,'The high-specificity Desktop Header reset remains explicit.');
+  const legacyHeader=css.slice(legacyHeaderStart,legacyHeaderEnd);
+  assert.ok(legacyHeader.includes('color:#fff!important;')&&legacyHeader.includes('-webkit-text-fill-color:#fff!important;'));
+  assert.doesNotMatch(legacyHeader,/color:#30251b!important|-webkit-text-fill-color:#30251b!important/);
   assert.ok(desktopHeader.includes('background:#74172a!important;'), 'Desktop Header buttons retain the burgundy surface');
   assert.ok(desktopHeader.includes('border:1px solid #f2d48b!important;'), 'Desktop Header buttons retain the gold border');
   assert.ok(desktopHeader.includes('color:#fff!important;'), 'Desktop Header button labels use pure white');
@@ -169,14 +175,14 @@ test('Customer Dashboard CTA uses its own component layout and Desktop Header bu
 });
 
 test('main page cache versions point to the audited theme assets', () => {
-  assert.ok(html.includes('smvastro.css?v=20261112-customer-dashboard-source-ui-v2'));
+  assert.ok(html.includes('smvastro.css?v=20261112-live-chat-receipt-gender-v1'));
   assert.ok(html.includes('android-app-install.css?v=20261110-icon-png-v3'));
   assert.ok(html.includes('smv-ui.css?v=20261112-customer-dashboard-source-ui-v2'));
   assert.ok(html.includes('dashboard-typography.css?v=20261111-earnings-ledger-accuracy-v1'));
-  assert.ok(html.includes('smvastro.mjs?v=20261112-customer-dashboard-source-ui-v2'));
+  assert.ok(html.includes('smvastro.mjs?v=20261112-live-chat-receipt-gender-v1'));
   assert.ok(html.includes('android-app-install.js?v=20261110-icon-png-v3'));
-  assert.ok(html.includes('public-content-loader.js?v=20261107-private-chat-selected-astrologer-v5'));
+  assert.ok(html.includes('public-content-loader.js?v=20261112-live-chat-receipt-gender-v1'));
   assert.doesNotMatch(html, /<script[^>]+src=["'][^"']*public-content\.mjs/);
   const lazyLoader = read('../public/public-content-loader.js');
-  assert.ok(lazyLoader.includes('public-content.mjs?v=20261107-private-chat-selected-astrologer-v5'));
+  assert.ok(lazyLoader.includes('public-content.mjs?v=20261112-live-chat-receipt-gender-v1'));
 });
