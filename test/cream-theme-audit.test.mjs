@@ -130,12 +130,35 @@ test('shared UI stylesheet must not override hero and content headings with pale
   assert.ok(contrastRatio('#20170f','#fff8e7') >= 15, 'hero and content heading contrast must exceed WCAG AA');
 });
 
+test('Customer Dashboard consultation CTA is compact on Desktop and Desktop Header uses the Mobile button colours', () => {
+  const desktopHomeStart=css.indexOf('@media (min-width: 900px){\nhtml body.smv-v12-theme #home .smv33-scene');
+  const desktopHomeEnd=css.indexOf('\n}\n.smv-location-wrap',desktopHomeStart);
+  assert.ok(desktopHomeStart>=0 && desktopHomeEnd>desktopHomeStart, 'desktop hero media block should exist');
+  const desktopHome=css.slice(desktopHomeStart,desktopHomeEnd);
+  assert.ok(desktopHome.includes('.smv33-actions{gap:10px;margin-top:12px}'), 'Homepage CTA sizing must return to its pre-PR layout');
+  assert.ok(desktopHome.includes('.smv33-actions a{background:rgb(237,0,84);color:#fff;font-size:13px;min-height:44px;padding:10px 12px;text-shadow:none;box-shadow:none}'));
+  assert.doesNotMatch(desktopHome, /flex:0 1 230px|smv33-actions .ask\{color:#fff;border-color:#e50055/);
+  assert.ok(desktopHome.includes('#dashboardContent #smvCustomerBookChatCard #smvCustomerBookChat{display:inline-flex!important;flex:0 0 auto!important;'));
+  assert.ok(desktopHome.includes('max-width:230px!important;min-height:42px!important;padding:9px 14px!important;font-family:Arial,Helvetica,sans-serif!important;font-size:13px!important;'));
+  assert.ok(appSource.includes('id="smvCustomerBookChat"'), 'Customer Dashboard must keep its own consultation button target');
+
+  const desktopHeaderStart=css.indexOf('@media (min-width: 900px){\n  html body.smv-v12-theme #smvPremiumHeaderV9:where');
+  const desktopHeaderEnd=css.indexOf('\n}\n\n/* Footer uses',desktopHeaderStart);
+  assert.ok(desktopHeaderStart>=0 && desktopHeaderEnd>desktopHeaderStart, 'Desktop premium Header media block should exist');
+  const desktopHeader=css.slice(desktopHeaderStart,desktopHeaderEnd);
+  assert.ok(desktopHeader.includes('background:#74172a!important;'), 'Desktop ordinary Header buttons must use the Mobile burgundy');
+  assert.ok(desktopHeader.includes('border:1px solid #f2d48b!important;'), 'Desktop Header buttons must use the Mobile gold border');
+  assert.ok(desktopHeader.includes('background:#ffd66b!important;'), 'Desktop active Header button must retain the Mobile yellow state');
+  assert.ok(desktopHeader.includes('color:#5c1122!important;'), 'Desktop active Header button text must match Mobile');
+  assert.doesNotMatch(desktopHeader, /rgba\(5,20,54,\.72\)/, 'the washed navy colour must be removed from Desktop Header buttons');
+});
+
 test('main page cache versions point to the audited theme assets', () => {
-  assert.ok(html.includes('smvastro.css?v=20261112-wallet-offer-white-background-v1'));
+  assert.ok(html.includes('smvastro.css?v=20261112-homepage-desktop-cta-colors-v1'));
   assert.ok(html.includes('android-app-install.css?v=20261110-icon-png-v3'));
   assert.ok(html.includes('smv-ui.css?v=20261105-dashboard-typography-hierarchy-v1'));
   assert.ok(html.includes('dashboard-typography.css?v=20261111-earnings-ledger-accuracy-v1'));
-  assert.ok(html.includes('smvastro.mjs?v=20261112-wallet-offer-white-background-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261112-homepage-desktop-cta-colors-v1'));
   assert.ok(html.includes('android-app-install.js?v=20261110-icon-png-v3'));
   assert.ok(html.includes('public-content-loader.js?v=20261107-private-chat-selected-astrologer-v5'));
   assert.doesNotMatch(html, /<script[^>]+src=["'][^"']*public-content\.mjs/);
