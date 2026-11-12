@@ -1192,7 +1192,7 @@ test('Private Chat continues to display Gender without changing its existing flo
   const frontend=read('smvastro.mjs');
   const routes=read('cloudflare/backend-api/src/private-chat-routes.mjs');
   assert.ok(frontend.includes("const birthGender=q.birthGender||q.birthDetails?.birthGender||'';"), 'Existing Private Chat Astrologer card keeps the Gender label/value.');
-  assert.ok(frontend.includes('birthGender}</div>'), 'Private Chat card renders the existing Gender field.');
+  assert.ok(frontend.includes('escapeHtml(birthGender)}</div>'), 'Private Chat card renders the existing Gender field.');
   assert.ok(routes.includes("'birthGender'"), 'Private Chat Astrologer response already includes Gender in its field allowlist.');
 });
 
