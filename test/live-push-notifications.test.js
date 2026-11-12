@@ -1449,3 +1449,42 @@ test('Android notification opens reuse one Recents task and root Back keeps SMV 
   assert.ok(back.includes('moveTaskToBack(true)'), 'root Back backgrounds the task instead of finishing MainActivity');
   assert.ok(activity.includes('webView.loadUrl(resolveStartUrl(intent))'), 'notification intent still routes the exact live session into the WebView');
 });
+
+
+test('Astrologer Live Call/Chat and booking cards display Customer birth Gender; Private Chat display remains intact', () => {
+  const frontend=read('public/smvastro.mjs');
+  const panelStart=frontend.indexOf('function smvLivePanelHtml(s,incoming){');
+  const panelEnd=frontend.indexOf('async function smvLivePrintReceipt(',panelStart);
+  const panel=frontend.slice(panelStart,panelEnd);
+  assert.ok(panel.includes('s.birthDetails.birthGender'));
+  assert.ok(panel.includes("'Gender: '+s.birthDetails.birthGender"));
+
+  const scheduledStart=frontend.indexOf('function smvLiveRenderScheduledBookings(appointments){');
+  const scheduledEnd=frontend.indexOf('async function smvLiveLoadScheduledAppointments()',scheduledStart);
+  const scheduled=frontend.slice(scheduledStart,scheduledEnd);
+  assert.ok(scheduled.includes('birth.birthGender'));
+  assert.ok(scheduled.includes("'Gender: '+birth.birthGender"));
+
+  const queueStart=frontend.indexOf('function smvLiveRenderBookings(bookings){');
+  const queueEnd=frontend.indexOf('function smvLiveRenderCustomerBookings(bookings){',queueStart);
+  const queue=frontend.slice(queueStart,queueEnd);
+  assert.ok(queue.includes('b.birthDetails.birthGender'));
+  assert.ok(queue.includes("'Gender: '+b.birthDetails.birthGender"));
+  assert.ok(queue.includes('b.customerName'));
+
+  const d1=read('shared/backend-platform/d1-live-session-service.mjs');
+  const d1Start=d1.indexOf('function bookingView(booking)');
+  const d1End=d1.indexOf('function appointmentEndedStatus(session)',d1Start);
+  const d1BookingView=d1.slice(d1Start,d1End);
+  assert.ok(d1BookingView.includes('customerName:safeName(d.customerName)'));
+  assert.ok(d1BookingView.includes('birthGender:String(d.birthDetails.birthGender||\'\')'));
+
+  const legacy=read('live-session-service.js');
+  const legacyStart=legacy.indexOf('function safeBookingView(id, d)');
+  const legacyEnd=legacy.indexOf('async function listBookings(',legacyStart);
+  const legacyBookingView=legacy.slice(legacyStart,legacyEnd);
+  assert.ok(legacyBookingView.includes('birthGender: String(d.birthDetails.birthGender || \'\')'));
+
+  // Private Chat already renders the saved Gender. Keep this path unchanged.
+  assert.ok(frontend.includes('[birth.birthDate,birth.birthTime,birth.birthPlace,birth.birthGender].filter(Boolean).join(\' · \')'));
+});
