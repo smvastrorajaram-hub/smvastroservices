@@ -99,7 +99,10 @@ jobs:
             '0008_identity_profile_backfill_audit',
             '0009_wallet_razorpay_payout_encryption',
             '0010_razorpay_webhook_claim_leases',
-            '0011_live_booking_release_claim'
+            '0011_live_booking_release_claim',
+            '0012_numeric_public_reference_ids',
+            '0013_bonus_credit_wallet',
+            '0014_live_session_query_indexes'
           ];
           const failed = [];
           if (health.ok !== true || health.environment !== 'production') failed.push('Production Worker health/environment');
@@ -165,7 +168,7 @@ jobs:
             console.error('Production readiness audit FAILED:', failed.join('; '));
             process.exit(1);
           }
-          console.log('PASS: all 10 Production D1 migration contracts are present.');
+          console.log('PASS: all 13 Production D1 migration contracts are present.');
           console.log('PASS: Worker, D1, Firebase Project 1 identity and Razorpay Live readiness checks passed.');
           console.log('PASS: selected Cloudflare Wallet, Recharge, Offers and Live/Booking financial routes are enabled.');
           console.log('PASS: productionFinancialTrafficRoutingEnabled=true; whole-backend productionTrafficEnabled=false.');
