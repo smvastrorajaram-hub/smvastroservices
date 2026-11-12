@@ -162,6 +162,8 @@ export function validateLiveBirthDetails(input={},nowMs=Date.now()) {
   const birthDate=String(d.birthDate||'').trim();
   const birthTime=String(d.birthTime||'').trim();
   const birthPlace=String(d.birthPlace||'').trim();
+  const birthGender=String(d.birthGender||'').trim();
+  if(!['Male','Female','Other'].includes(birthGender)) throw walletError('LIVE_BIRTH_GENDER_INVALID','Choose Male, Female or Other for Customer Gender.',400);
   if(!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)||
      !Number.isFinite(Date.parse(birthDate+'T00:00:00Z'))||
      new Date(Date.parse(birthDate+'T00:00:00Z')).toISOString().slice(0,10)!==birthDate) {
@@ -187,7 +189,7 @@ export function validateLiveBirthDetails(input={},nowMs=Date.now()) {
     }
   }
   return {
-    birthDate,birthTime,birthPlace,birthLatitude,birthLongitude,
+    birthDate,birthTime,birthPlace,birthGender,birthLatitude,birthLongitude,
     birthTimezone:String(d.birthTimezone||'').trim().slice(0,100)
   };
 }
