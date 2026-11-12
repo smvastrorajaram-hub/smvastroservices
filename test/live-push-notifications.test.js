@@ -1154,7 +1154,11 @@ test('Print/Save is exposed only for ended sessions and Chat print retrieves the
   assert.ok(frontend.includes("const receipt=$('smvLiveDownloadReceipt');if(receipt)receipt.hidden=s.state!=='ended';"));
   assert.ok(frontend.includes("async function smvLiveBuildReceiptDocument(session)"));
   assert.ok(frontend.includes("async function smvLiveShowEndedReceipt(session)"));
-  assert.ok(frontend.includes('sandbox="allow-scripts allow-modals"'));
+  assert.ok(frontend.includes("async function smvLiveOpenReceiptPage(session)"));
+  assert.ok(frontend.includes("window.location.assign('/live-session-receipt.html?session='+encodeURIComponent(id));"));
+  assert.ok(frontend.includes("sessionStorage.setItem('smv_live_receipt_'+id,bill);"));
+  assert.ok(!frontend.includes('<iframe title="SMV ASTRO Live Session Bill"'), 'Live receipt is a full page, not a sandboxed iframe modal.');
+  assert.ok(frontend.includes('id="smvLiveReceiptPrint" type="button" onclick="window.SMVAstroNativePdf?window.SMVAstroNativePdf.viewPdf():window.print()"'));
   assert.ok(frontend.includes("function smvLiveQueueEndedReceipt(session)"));
   assert.ok(frontend.includes("if(s.state!=='ended')throw new Error('The Bill is available after the Live Session ends.');"));
   assert.ok(frontend.includes("renderApi('/live/sessions/'+encodeURIComponent(String(s.id||s.sessionId||''))+'/messages'"));
@@ -1166,12 +1170,30 @@ test('Print/Save is exposed only for ended sessions and Chat print retrieves the
 });
 
 
-test('Live Call/Chat and scheduled booking forms require and submit Customer Gender', () => {
+test('Live Call/Chat and Book Call/Chat Astrologer views render stored Customer Birth Details including Gender', () => {
   const source=read('public/public-content.mjs');
+  const frontend=read('public/smvastro.mjs');
+  const d1=read('shared/backend-platform/d1-live-session-service.mjs');
+  const legacy=read('live-session-service.js');
+  const appointmentRead=read('cloudflare/backend-api/src/legacy-dashboard-read-routes.mjs');
   assert.ok(source.includes('id="smvLiveBirthGender" required'));
   assert.ok(source.includes("birthGender:String($('smvLiveBirthGender')?.value||'')"));
   assert.ok(source.includes('id="smvCallBookingGender" name="birthGender" required'));
   assert.ok(source.includes("birthGender:String($('smvCallBookingGender')?.value||'')"));
+  assert.ok(frontend.includes("smvLiveBirthDetailsHtml(s.birthDetails,'Customer Birth Details')"), 'Live Call / Chat panel displays Gender.');
+  assert.ok(frontend.includes("smvLiveBirthDetailsHtml(birth,'Customer Birth Details')"), 'Book Call / Chat card displays Gender.');
+  assert.ok(frontend.includes("smvLiveBirthDetailsHtml(b.birthDetails,'Customer Birth Details')"), 'Queued Live Call / Chat card displays Gender.');
+  assert.ok(d1.includes("birthGender:String(d.birthDetails.birthGender||'')"), 'D1 queued booking view returns Gender to the Astrologer.');
+  assert.ok(legacy.includes("birthGender: String(d.birthDetails.birthGender || '')"), 'Legacy queued booking view returns Gender to the Astrologer.');
+  assert.ok(appointmentRead.includes('birthDetails: a.birthDetails || null'), 'Scheduled booking read retains the nested Gender field.');
+});
+
+test('Private Chat continues to display Gender without changing its existing flow', () => {
+  const frontend=read('smvastro.mjs');
+  const routes=read('cloudflare/backend-api/src/private-chat-routes.mjs');
+  assert.ok(frontend.includes("const birthGender=q.birthGender||q.birthDetails?.birthGender||'';"), 'Existing Private Chat Astrologer card keeps the Gender label/value.');
+  assert.ok(frontend.includes('birthGender}</div>'), 'Private Chat card renders the existing Gender field.');
+  assert.ok(routes.includes("'birthGender'"), 'Private Chat Astrologer response already includes Gender in its field allowlist.');
 });
 
 test('Live Session SSE cleanup is tied to the response lifecycle, not normal request completion', () => {
