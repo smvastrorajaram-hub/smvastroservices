@@ -416,6 +416,15 @@ export function registerD1LiveSessionRoutes({
     } catch(error) { return replyError(res,error,'Unable to load Live Sessions.'); }
   });
 
+  app.get('/live/sessions/:id',async(req,res)=>{
+    try {
+      await assertReady();
+      const user=await requireRole(req,['customer','astrologer']);
+      const session=await liveService.getSessionForParticipant({sessionId:req.params.id,uid:user.uid});
+      return res.set('Cache-Control','no-store').json({success:true,session});
+    } catch(error) { return replyError(res,error,'Unable to load this Live Session receipt.'); }
+  });
+
   app.get('/live/bookings/pending',async(req,res)=>{
     try {
       await assertReady();
