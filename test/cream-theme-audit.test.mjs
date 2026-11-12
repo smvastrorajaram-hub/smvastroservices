@@ -175,14 +175,14 @@ test('Customer Dashboard CTA uses its own component layout and Desktop Header bu
 });
 
 test('main page cache versions point to the audited theme assets', () => {
-  assert.ok(html.includes('smvastro.css?v=20261112-live-chat-receipt-gender-v1'));
+  assert.ok(html.includes('smvastro.css?v=20261112-astro-birth-gender-session-receipt-v1'));
   assert.ok(html.includes('android-app-install.css?v=20261110-icon-png-v3'));
   assert.ok(html.includes('smv-ui.css?v=20261112-customer-dashboard-source-ui-v2'));
   assert.ok(html.includes('dashboard-typography.css?v=20261111-earnings-ledger-accuracy-v1'));
-  assert.ok(html.includes('smvastro.mjs?v=20261112-live-chat-receipt-gender-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261112-astro-birth-gender-session-receipt-v1'));
   assert.ok(html.includes('android-app-install.js?v=20261110-icon-png-v3'));
-  assert.ok(html.includes('public-content-loader.js?v=20261112-live-chat-receipt-gender-v1'));
+  assert.ok(html.includes('public-content-loader.js?v=20261112-astro-birth-gender-session-receipt-v1'));
   assert.doesNotMatch(html, /<script[^>]+src=["'][^"']*public-content\.mjs/);
   const lazyLoader = read('../public/public-content-loader.js');
-  assert.ok(lazyLoader.includes('public-content.mjs?v=20261112-live-chat-receipt-gender-v1'));
+  assert.ok(lazyLoader.includes('public-content.mjs?v=20261112-astro-birth-gender-session-receipt-v1'));
 });
