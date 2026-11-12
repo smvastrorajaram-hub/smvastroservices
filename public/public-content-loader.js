@@ -5,7 +5,7 @@
  */
 (function(){
   'use strict';
-  const MODULE_URL='./public-content.mjs?v=20261107-private-chat-selected-astrologer-v5';
+  const MODULE_URL='./public-content.mjs?v=20261112-live-chat-receipt-gender-v1';
   let pending=null;
   function isConsultVisible(){
     const target=document.getElementById('consult');
