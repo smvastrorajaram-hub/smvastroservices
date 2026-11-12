@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import {
+  createBackendSchemaInspector,
   inspectBackendSchema,
   registerBackendReadinessRoute
 } from '../src/backend-readiness.mjs';
@@ -33,6 +34,8 @@ function readyRow() {
     public_withdrawal_id_index_count: 1,
     admin_payment_id_index_count: 1,
     customer_payment_id_index_count: 1,
+    live_session_query_indexes_version: '0014_live_session_query_indexes',
+    live_session_query_indexes_count: 6,
     bonus_credit_wallet_version: '0013_bonus_credit_wallet',
     wallet_bonus_credit_columns_count: 2,
     wallet_ledger_bonus_credit_columns_count: 4,
@@ -97,6 +100,41 @@ test('Production D1 schema readiness recognizes the current 0002-0013 migration 
   assert.doesNotMatch(db.calls[0], /smv_domain_promotional_fund|bonus-credit-wallet/);
   assert.match(db.calls[1], /smv_domain_promotional_fund/);
   assert.doesNotMatch(db.calls[0], /smv_wallet_schema_meta|0001_wallet_live_domain/);
+});
+
+test('schema inspector coalesces concurrent probes and reuses a bounded successful result', async () => {
+  let clock = 1000;
+  let prepareCalls = 0;
+  const db = {
+    prepare() {
+      prepareCalls += 1;
+      return { async first() { return readyRow(); } };
+    }
+  };
+  const inspect = createBackendSchemaInspector({ db, ttlMs: 500, errorTtlMs: 100, now: () => clock });
+  const [first, concurrent] = await Promise.all([inspect(), inspect()]);
+  assert.equal(first.ready, true);
+  assert.equal(concurrent.ready, true);
+  assert.equal(prepareCalls, 2, 'one probe pair is shared by concurrent requests');
+  await inspect();
+  assert.equal(prepareCalls, 2, 'the result is reused inside the TTL');
+  clock += 500;
+  await inspect();
+  assert.equal(prepareCalls, 4, 'the cache refreshes after its bounded TTL');
+});
+
+test('schema inspector briefly caches D1 errors instead of retrying on every request', async () => {
+  let prepareCalls = 0;
+  const inspect = createBackendSchemaInspector({
+    db: { prepare() { prepareCalls += 1; return { async first() { throw new Error('D1 quota exhausted'); } }; } },
+    ttlMs: 1000,
+    errorTtlMs: 250
+  });
+  const first = await inspect();
+  const second = await inspect();
+  assert.equal(first.querySucceeded, false);
+  assert.equal(second.querySucceeded, false);
+  assert.equal(prepareCalls, 1, 'a D1 failure is not hammered by every incoming request');
 });
 
 test('schema and migration status are read from D1 on every request, never a cached boolean', async () => {
