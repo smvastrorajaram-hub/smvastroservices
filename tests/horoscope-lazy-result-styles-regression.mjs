@@ -9,7 +9,8 @@ const [html,rootWorker,horoscopeWorker,calendarWorker]=await Promise.all([
   read('../public/horoscope/sw.js'),
   read('../public/horoscope/calendar/sw.js')
 ]);
-const release='20261112-horoscope-result-styles-lazy-v1';
+const releasePages='20261112-horoscope-result-styles-lazy-pages-v1';
+const releaseIn='20261112-horoscope-result-styles-lazy-in-v1';
 const deferred=[
   'chart-style.css',
   'horoscope-readings.css',
@@ -62,8 +63,12 @@ test('all deferred styles remain pre-cached and required for offline Horoscope r
   for(const file of deferred){
     assert.ok(horoscopeWorker.includes("'./"+file+"'"),file+' remains in the Horoscope shell precache');
   }
+  const requiredStart=horoscopeWorker.indexOf('const REQUIRED_CORE=new Set([');
+  const requiredEnd=horoscopeWorker.indexOf(']);',requiredStart);
+  const required=horoscopeWorker.slice(requiredStart,requiredEnd);
+  assert.ok(requiredStart>=0&&requiredEnd>requiredStart,'offline required-asset manifest exists');
   for(const file of deferred){
-    assert.ok(horoscopeWorker.includes("'./"+file+"'"),file+' remains in the offline-required assets');
+    assert.ok(required.includes("'./"+file+"'"),file+' is required for a complete offline report shell');
   }
   assert.match(horoscopeWorker,/cache\.match\(req,\{ignoreSearch:true\}\)/,
     'versioned lazy CSS URLs can reuse the query-independent offline precache');
@@ -71,10 +76,10 @@ test('all deferred styles remain pre-cached and required for offline Horoscope r
 
 test('Astro, Horoscope and Calendar service workers share the synchronized cache release',()=>{
   for(const [name,worker] of [['Astro',rootWorker],['Horoscope',horoscopeWorker],['Calendar',calendarWorker]]){
-    assert.ok(worker.includes("'"+release+"'"),name+' Pages.dev cache release is synchronized');
-    assert.ok(worker.includes("'"+release+"'"),name+' .in cache release is synchronized');
+    assert.ok(worker.includes("'"+releasePages+"'"),name+' Pages.dev cache release is synchronized');
+    assert.ok(worker.includes("'"+releaseIn+"'"),name+' .in cache release is synchronized');
   }
-  assert.match(rootWorker,/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '20261112-horoscope-result-styles-lazy-v1' : '20261112-horoscope-result-styles-lazy-v1'/);
-  assert.match(horoscopeWorker,/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '20261112-horoscope-result-styles-lazy-v1' : '20261112-horoscope-result-styles-lazy-v1'/);
-  assert.match(calendarWorker,/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '20261112-horoscope-result-styles-lazy-v1' : '20261112-horoscope-result-styles-lazy-v1'/);
+  assert.match(rootWorker,/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '20261112-horoscope-result-styles-lazy-pages-v1' : '20261112-horoscope-result-styles-lazy-in-v1'/);
+  assert.match(horoscopeWorker,/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '20261112-horoscope-result-styles-lazy-pages-v1' : '20261112-horoscope-result-styles-lazy-pages-v1'/);
+  assert.match(calendarWorker,/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '20261112-horoscope-result-styles-lazy-pages-v1' : '20261112-horoscope-result-styles-lazy-pages-v1'/);
 });
