@@ -125,6 +125,38 @@ test('local D1 contains every required Wallet, Live, Earnings, Withdrawal and Id
       ['live-session-query-indexes','0014_live_session_query_indexes']
     ]) assert.equal(markers.get(key), version, 'schema marker ' + key);
     assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
+
+    // Verify SQLite's real query planner selects the participant indexes used by
+    // bounded Dashboard polling, recent history and scheduled receipt lookups.
+    const queryPlan = (sql, ...values) => db.prepare('EXPLAIN QUERY PLAN ' + sql).all(...values)
+      .map(row => String(row.detail || '')).join(' | ');
+    const historyPlan = queryPlan(
+      'SELECT * FROM smv_domain_live_sessions WHERE customer_uid=? ORDER BY created_at_ms DESC LIMIT 100',
+      'audit-customer'
+    );
+    assert.match(historyPlan, /idx_smv_domain_sessions_customer_recent/, 'history must use the participant/recent index');
+    const statusPlan = queryPlan(
+      `SELECT * FROM smv_domain_live_sessions
+       WHERE customer_uid=? AND state IN ('ringing','preparing','connecting','active')
+       ORDER BY updated_at_ms DESC LIMIT 50`,
+      'audit-customer'
+    );
+    assert.match(statusPlan, /idx_smv_domain_sessions_customer_status_updated/, 'active status must use the participant/state/update index');
+    const endedPlan = queryPlan(
+      `SELECT * FROM smv_domain_live_sessions
+       WHERE customer_uid=? AND state='ended' AND updated_at_ms>=?
+       ORDER BY updated_at_ms DESC LIMIT 50`,
+      'audit-customer', Date.now() - 86_400_000
+    );
+    assert.match(endedPlan, /idx_smv_domain_sessions_customer_status_updated/, 'recent-ended status must use the participant/state/update index');
+    const appointmentPlan = queryPlan(
+      `SELECT * FROM smv_domain_live_sessions
+       WHERE customer_uid=? AND state='ended' AND started_at_ms IS NOT NULL AND started_at_ms>0
+         AND appointment_id IN (?,?) ORDER BY ended_at_ms DESC,created_at_ms DESC`,
+      'audit-customer', 'appointment-a', 'appointment-b'
+    );
+    assert.match(appointmentPlan, /idx_smv_domain_sessions_customer_appointment/, 'receipt lookup must use the participant/appointment index');
+
     assert.ok(tables.has('smv_domain_withdrawal_payouts'), 'legacy plaintext table retained for read-only compatibility');
   } finally { db.close(); }
 });
