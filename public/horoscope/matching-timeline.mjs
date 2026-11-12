@@ -21,7 +21,7 @@ if(!young&&d9h)t+=ta?`புக்தி அதிபதி D9-ல் ${d9h}-ஆ
 t+=ta?`பிறப்பு ஆதாரம்: தசை அதிபதி ${m.house}-ஆம் பாவம்; புக்தி அதிபதி ${a.house}-ஆம் பாவம், ${a.owned.join('/')} பாவங்களுக்கு அதிபதி.`:`Natal basis: MD lord house ${m.house}; AD lord house ${a.house}, ruling houses ${a.owned.join('/')}.`;return t;}
 const active=(ps,s,e)=>ps.filter(p=>p.from<e&&p.to>s).map(p=>({...p,from:p.from<s?s:p.from,to:p.to>e?e:p.to}));
 function transitText(c,y,ta){const moon=(c.planets||[]).find(p=>D.key(p.name)==='Moon'),ms=D.signOf(moon),ls=D.signOf(c.lagna),out=[];if(ms===null||ls===null)return [ta?'கோச்சார ஒப்பீட்டிற்கு சந்திரன்/லக்னத் தரவு போதவில்லை.':'Moon/ascendant data is incomplete for transit comparison.'];
-for(const k of ['Jupiter','Saturn','Rahu','Ketu']){const s=y.pos[k].sign,h=D.house(s,ls),mh=D.house(s,ms),area=areasAt(c,y.from,ta)[h-1],fav=(k==='Jupiter'?[2,5,7,9,11]:[3,6,11]).includes(mh),n=D.name(k,ta);let verb;
+for(const k of ['Jupiter','Saturn','Rahu','Ketu']){const s=y?.pos?.[k]?.sign;if(!Number.isInteger(s)||s<0||s>11)continue;const h=D.house(s,ls),mh=D.house(s,ms),area=areasAt(c,y.from,ta)[h-1],fav=(k==='Jupiter'?[2,5,7,9,11]:[3,6,11]).includes(mh),n=D.name(k,ta);let verb;
 if(ta)verb=k==='Jupiter'?(fav?'வழிகாட்டல், ஒப்புதல் அல்லது புதிய வாய்ப்பின் மூலம் முன்னேற்றம் காண இடமளிக்கலாம்':'எதிர்பார்ப்பையும் நடைமுறையில் கிடைக்கும் ஆதரவையும் ஒப்பிட்டுப் பார்க்க வைக்கலாம்'):k==='Saturn'?(fav?'தொடர்ந்து மேற்கொள்ளும் முயற்சியை ஒழுங்குபடுத்தி நிலையான முன்னேற்றம் தரும் சூழலாகலாம்':'பொறுப்பு, தாமதம் அல்லது நேரக் கட்டுப்பாட்டை அதிகம் உணர வைக்கலாம்'):k==='Rahu'?'வழக்கத்திற்கு மாறான விருப்பம் அல்லது புதிய சூழலை அறிமுகப்படுத்தலாம்; உறுதியற்ற தகவலால் இருவரும் வேறு முடிவுக்கு செல்லாதபடி தெளிவு தேவை':'முன்னர் முக்கியமாகத் தோன்றிய ஒன்றின் மீதான ஆர்வத்தை குறைத்து முன்னுரிமையை மறுபரிசீலிக்க வைக்கலாம்; அமைதியை அக்கறையின்மையாக மற்றவர் புரிந்துகொள்ளாதபடி பேச வேண்டும்';
 else verb=k==='Jupiter'?(fav?'may open progress through guidance, agreement or opportunity':'may ask you to compare expectations with support actually available'):k==='Saturn'?(fav?'may support progress through consistent effort':'may make duties, delays or limits on time more noticeable'):k==='Rahu'?'may introduce an unfamiliar option; verify information together before committing':'may change priorities or reduce interest in an old aim; explain this so silence is not mistaken for indifference';
 out.push(ta?`${n} ${area} தொடர்பாக ${verb}. ${y.date} கணிக்கப்பட்ட இடைத் தேதி: ${(ta?ZTA:ZEN)[s]}, லக்னத்திற்கு ${h}, சந்திரனுக்கு ${mh}-ஆம் பாவம்.`:`${n} ${verb} in ${area}. Calculated midpoint ${y.date}: ${ZEN[s]}, house ${h} from the ascendant and ${mh} from the Moon.`);}
@@ -48,6 +48,7 @@ export function render(b,g,data,language){const ta=language!=='en',sections=[],l
  const transitRows=transitText(c,y,ta),signatures=transitStateKeys(c,y,ta);
  const visibleTransit=transitRows.filter((line,index)=>{
   if(!signatures.length){
+   for(const planet of ['Jupiter','Saturn','Rahu','Ketu'])lastTransitState.delete(`${label}|${planet}`);
    const missing=`${label}|incomplete-transit`;
    if(lastTransitState.has(missing))return false;
    lastTransitState.set(missing,'shown');
