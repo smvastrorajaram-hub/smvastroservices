@@ -304,6 +304,47 @@ test('GET /api/backend/readiness derives selected Production financial routing f
   assert.equal(response.body.checks.numericPublicReferenceIdsSchema, true);
 });
 
+test('missing optional Live query indexes do not block core D1 readiness but keep Live routes closed', async () => {
+  const handlers = new Map();
+  const app = { get(path, handler) { handlers.set('GET ' + path, handler); } };
+  const response = responseRecorder();
+  const row = readyRow();
+  row.live_session_query_indexes_version = null;
+  row.live_session_query_indexes_count = 0;
+
+  registerBackendReadinessRoute({
+    app,
+    db: dbWith(row),
+    firebaseConnectivityProbe: async () => true,
+    getRuntimeState: () => ({
+      environment: 'production',
+      backendActive: true,
+      walletReadRoutesRegistered: true,
+      walletRechargeRoutesRegistered: true,
+      walletOfferRoutesRegistered: true,
+      walletReadRouteGateOpen: true,
+      liveSessionRoutesRegistered: true,
+      liveSessionRoutesOpen: true,
+      walletPayoutEncryptionConfigured: true,
+      walletRechargeMode: 'live',
+      identityProfileD1AuthorizationOpen: true,
+      razorpayPolicy: { enabled: true, mode: 'live', reason: 'production_live_mode_explicitly_enabled' },
+      razorpayKeyId: 'rzp_live_key',
+      razorpayKeySecret: 'configured',
+      razorpayWebhookSecret: 'configured'
+    }),
+    getIdentityGate: async () => ({ enabled: true, ready: true, reason: 'fresh_start_approved' }),
+    getRazorpayVerification: async () => ({ connected: true, connectionVerified: true })
+  });
+
+  await handlers.get('GET /api/backend/readiness')({}, response);
+
+  assert.equal(response.body.ready, true, 'the required 0002-0013 foundation remains ready');
+  assert.equal(response.body.schemaMigrations['0014_live_session_query_indexes'], false);
+  assert.equal(response.body.checks.liveSessionQueryIndexes, false);
+  assert.equal(response.body.liveCallChatRoutesEnabled, false, 'only Live routes wait for the optional query-index migration');
+});
+
 test('GET /api/backend/readiness returns 503 for incomplete Production schema', async () => {
   const handlers = new Map();
   const app = { get(path, handler) { handlers.set('GET ' + path, handler); } };
