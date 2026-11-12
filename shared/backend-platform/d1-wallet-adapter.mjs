@@ -680,9 +680,11 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     let selectedOffer=selectRechargeBonusOffer({offers:offerRows,amountPaise:amount,nowMs,usageCounts});
     let bonusCreditCreditedPaise=selectedOffer?selectedOffer.bonusCreditPaise:0;
     let bonusCreditSkippedReason='';
-    if(safePaise(wallet.availableBalancePaise)+amount>Number.MAX_SAFE_INTEGER||
-       safePaise(wallet.bonusCreditBalancePaise)+bonusCreditCreditedPaise>Number.MAX_SAFE_INTEGER)
+    if(safePaise(wallet.availableBalancePaise)+amount>Number.MAX_SAFE_INTEGER)
       throw walletError('WALLET_BALANCE_OVERFLOW','Wallet balance exceeds the supported range.',409);
+    if(safePaise(wallet.bonusCreditBalancePaise)+bonusCreditCreditedPaise>Number.MAX_SAFE_INTEGER){
+      bonusCreditCreditedPaise=0;bonusCreditSkippedReason='bonus_credit_balance_limit';selectedOffer=null;
+    }
     const cashRow=await buildLedgerRow({...owner,type:'recharge',direction:'credit',amountPaise:amount,
       idempotencyKey:cashKey,ledgerId:await sha256Hex('recharge:'+owner.ownerUid+':'+pid,cryptoImpl),
       availableDeltaPaise:amount,referenceType:'razorpay_payment',referenceId:pid,
@@ -926,5 +928,5 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       .slice(0,max);
   }
 
-  return Object.freeze({ ensureWallet, getWallet, getPromotionalFund, allocatePromotionalFund, postWalletEntry, createRechargeIntent, attachRechargeOrder, markRechargeOrderFailed, getRechargeForOwner, listWalletOffers, saveWalletOffer, deleteWalletOffer, finalizeRecharge, getRechargeByOrderId, markRechargePaymentFailed, recordWebhookEvent, completeWebhookEvent, releaseWebhookEvent, reserveWallet, settleReservation, listTransactions });
+  return Object.freeze({ ensureWallet, getWallet, postWalletEntry, createRechargeIntent, attachRechargeOrder, markRechargeOrderFailed, getRechargeForOwner, listWalletOffers, saveWalletOffer, deleteWalletOffer, finalizeRecharge, getRechargeByOrderId, markRechargePaymentFailed, recordWebhookEvent, completeWebhookEvent, releaseWebhookEvent, reserveWallet, settleReservation, listTransactions });
 }
