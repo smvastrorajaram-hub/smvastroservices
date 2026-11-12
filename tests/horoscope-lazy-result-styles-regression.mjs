@@ -52,7 +52,8 @@ test('Marriage Matching loads its report CSS before the matching script',()=>{
   assert.ok(start>=0,'Marriage Matching lazy entry point exists');
   const loader=html.slice(start,start+2600);
   const styleReady=loader.indexOf('window.__smvEnsureMarriageReportStyles?.()');
-  assert.ok(loader.includes('chart-style.css'), 'Matching retains chart layout styles');
+  assert.ok(html.includes('chart-style.css?v=20261112-lazy-result-styles-v1'), 'Chart layout CSS is deferred from the document head');
+  assert.ok(html.includes('...resultStyles'), 'Matching waits for the complete deferred report style set');
   const matchingScript=loader.indexOf("sc.src='marriage-matching.js");
   assert.ok(styleReady>=0&&matchingScript>styleReady,
     'matching styles and calculation engines are awaited before appending the matching script');
@@ -81,6 +82,6 @@ test('Astro, Horoscope and Calendar service workers share the synchronized cache
     assert.ok(worker.includes("'"+releaseIn+"'"),name+' .in cache release is synchronized');
   }
   assert.match(rootWorker,/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '20261112-horoscope-result-styles-lazy-pages-v1' : '20261112-horoscope-result-styles-lazy-in-v1'/);
-  assert.match(horoscopeWorker,/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '20261112-horoscope-result-styles-lazy-pages-v1' : '20261112-horoscope-result-styles-lazy-pages-v1'/);
-  assert.match(calendarWorker,/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '20261112-horoscope-result-styles-lazy-pages-v1' : '20261112-horoscope-result-styles-lazy-pages-v1'/);
+  assert.match(horoscopeWorker,/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '20261112-horoscope-result-styles-lazy-pages-v1' : '20261112-horoscope-result-styles-lazy-in-v1'/);
+  assert.match(calendarWorker,/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '20261112-horoscope-result-styles-lazy-pages-v1' : '20261112-horoscope-result-styles-lazy-in-v1'/);
 });
