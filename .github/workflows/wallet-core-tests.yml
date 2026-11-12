@@ -9,6 +9,7 @@ on:
       - 'live-session-service.js'
       - 'test/live-session-service.test.js'
       - 'test/live-push-notifications.test.js'
+      - 'test/wallet-offer-svg-banner.test.mjs'
       - 'test/legacy-consultation-route-removal.test.cjs'
       - 'api-security.js'
       - 'test/api-security.test.js'
@@ -63,6 +64,7 @@ on:
       - 'public/main-location-search.js'
       - 'public/question-place-search.mjs'
       - 'public/public-navigation.js'
+      - 'test/wallet-offer-svg-banner.test.mjs'
       - '.github/workflows/wallet-core-tests.yml'
 
       - 'server.js'
@@ -101,6 +103,7 @@ jobs:
           node --check live-session-service.js
           node --check test/live-session-service.test.js
           node --check test/live-push-notifications.test.js
+          node --check test/wallet-offer-svg-banner.test.mjs
           node --check test/legacy-consultation-route-removal.test.cjs
           node --check api-security.js
           node --check test/api-security.test.js
@@ -136,3 +139,5 @@ jobs:
         run: npm run test:live-session
       - name: Run cream theme regression tests
         run: node --test test/cream-theme-audit.test.mjs
+      - name: Run Wallet offer SVG banner and Legacy UI regression tests
+        run: node --test test/wallet-offer-svg-banner.test.mjs

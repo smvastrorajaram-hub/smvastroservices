@@ -94,6 +94,7 @@ function smvApiBackend(path) {
 const BACKEND=RAZORPAY_BACKEND_URL; window.SMV_BACKEND_URL=RAZORPAY_BACKEND_URL;
 
 let smvHomeWalletOffersFetchedAt=0, smvHomeWalletOffersRequest=null;
+let smvCurrentWalletRechargeOffers=[];
 function smvHomeOfferMoney(minimumPaise){
  const paise=Math.max(100,Number.isSafeInteger(Number(minimumPaise))?Number(minimumPaise):0);
  return '₹'+(paise/100).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2});
@@ -105,11 +106,25 @@ function smvHomeOfferWhen(value){
  const millis=Date.parse(raw);
  return Number.isFinite(millis)?new Date(millis).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
 }
+function smvRenderWalletOfferSvgBanners(offers,themeLabels){
+ const targets=['smvWalletOfferSvgBanners','smvCustomerWalletOfferBanners'];
+ const allowed=new Set(['generic','pongal','diwali','navaratri','dasara','ayudha_pooja','shivaratri','tamil_new_year','vinayagar_chaturthi','karthigai_deepam','thaipusam','new_year','onam','christmas','eid']);
+ const rows=(Array.isArray(offers)?offers:[]).filter(offer=>offer&&Number(offer.bonusCreditAmountPaise)>0);
+ const html=rows.map(offer=>{
+  const rawTheme=String(offer.bannerTheme||'auto'),theme=rawTheme==='auto'?'generic':(allowed.has(rawTheme)?rawTheme:'generic');
+  const name=String(offer.name||'Wallet Recharge Offer'),bonus=Number(offer.bonusCreditAmountPaise),minimum=smvHomeOfferMoney(offer.minimumRechargeAmountPaise);
+  const label=themeLabels?.[rawTheme]||themeLabels?.[theme]||(theme.replace(/_/g,' ')+' Offer');
+  return '<button class="smv-wallet-offer-svg-banner" type="button" data-smv-wallet-recharge-banner aria-label="Open Customer Wallet to use '+escapeHtml(name)+'">'+
+   '<span class="smv-wallet-offer-svg-banner-art"><img src="./assets/offers/'+theme+'.svg" alt="" loading="lazy" decoding="async" width="160" height="160"></span>'+
+   '<span class="smv-wallet-offer-svg-banner-copy"><span class="smv-wallet-offer-svg-banner-kicker">'+escapeHtml(label)+'</span><strong>'+escapeHtml(name)+'</strong><span class="smv-wallet-offer-svg-banner-bonus">₹'+(bonus/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' BONUS CREDIT</span><span class="smv-wallet-offer-svg-banner-action">Minimum recharge '+escapeHtml(minimum)+' · Tap to recharge</span></span></button>';
+ }).join('');
+ targets.forEach(id=>{const host=document.getElementById(id);if(!host)return;host.innerHTML=html;host.hidden=!html;});
+}
 async function smvLoadHomeWalletRechargeOffers(force=false){
  const banner=document.getElementById('smvWalletOffersBanner');
  const list=document.getElementById('smvWalletOfferBannerItems');
  if(!banner||!list)return;
- if(!force&&Date.now()-smvHomeWalletOffersFetchedAt<30000)return;
+ if(!force&&Date.now()-smvHomeWalletOffersFetchedAt<30000){smvRenderWalletOfferSvgBanners(smvCurrentWalletRechargeOffers,{auto:'Festival Offer',generic:'Wallet Offer'});return;}
  if(smvHomeWalletOffersRequest)return smvHomeWalletOffersRequest;
  smvHomeWalletOffersRequest=(async()=>{
   try{
@@ -120,6 +135,8 @@ async function smvLoadHomeWalletRechargeOffers(force=false){
    const themeLabels={auto:'Festival Offer',generic:'Wallet Offer',pongal:'Pongal Offer',diwali:'Diwali Offer',navaratri:'Navaratri Offer',dasara:'Dasara Offer',ayudha_pooja:'Ayudha Pooja Offer',shivaratri:'Shivaratri Offer',tamil_new_year:'Tamil New Year Offer',vinayagar_chaturthi:'Vinayagar Chaturthi Offer',karthigai_deepam:'Karthigai Deepam Offer',thaipusam:'Thaipusam Offer',new_year:'New Year Offer',onam:'Onam Offer',christmas:'Christmas Offer',eid:'Eid Offer'};
    const allowedThemes=new Set(Object.keys(themeLabels));
    const offers=result.offers.filter(o=>o&&Number.isSafeInteger(Number(o.bonusCreditAmountPaise))&&Number(o.bonusCreditAmountPaise)>0);
+   smvCurrentWalletRechargeOffers=offers;
+   smvRenderWalletOfferSvgBanners(offers,themeLabels);
    list.innerHTML=offers.map(offer=>{
     const theme=allowedThemes.has(String(offer.bannerTheme||'auto'))?String(offer.bannerTheme||'auto'):'auto';
     const name=String(offer.name||'Wallet Recharge Bonus');
@@ -142,6 +159,7 @@ async function smvLoadHomeWalletRechargeOffers(force=false){
    smvHomeWalletOffersFetchedAt=Date.now();
   }catch(error){
    banner.hidden=true;
+   smvCurrentWalletRechargeOffers=[];smvRenderWalletOfferSvgBanners([],{});
    console.warn('Home Wallet Offers are not available:',error?.message||error);
   }finally{
    smvHomeWalletOffersRequest=null;
@@ -251,6 +269,7 @@ async function renderPublicApi(path, options={}){
 }
 const ADMIN_UID = IS_SMV_PHASE1_STAGING ? "" : "TwjeEIFS3Zcf1SxboLZoujm91Ky2";
 let currentUser=null, selectedAstro=null, pendingAfterLogin=null;
+let pendingWalletRechargeNavigation=false;
 let smvRegistrationInProgress=false; // V200: prevent auth listener from signing out a just-created unverified registration before secure profile setup finishes.
 let smvVerificationResendInProgress=false; // Preserve the unverified auth session only while its explicit verification request is running.
 let smvNavigationEpoch=0;
@@ -299,6 +318,37 @@ function smvShowRoleNav(){
   document.querySelectorAll('header a[href="#home"], header a[href="#contact"], header a[href="#services"], #contactNav').forEach(el=>showElement(el));
   smvSyncHeaderAuthNav(auth?.currentUser||currentUser);
 }
+function smvFocusWalletRecharge(){
+ const card=$('smvCustomerWalletCard'),form=$('smvWalletRechargeForm'),amount=$('smvWalletRechargeAmount');
+ if(!card||!form)return false;
+ card.scrollIntoView({behavior:'smooth',block:'start'});
+ requestAnimationFrame(()=>{form.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>{if(amount){amount.focus({preventScroll:true});amount.select?.();}},220);});
+ return true;
+}
+function smvCompleteWalletRechargeNavigation(role){
+ if(!pendingWalletRechargeNavigation)return;
+ pendingWalletRechargeNavigation=false;
+ if(String(role||'').toLowerCase()!=='customer'){smvNotice('Customer Login Required','Wallet offers can be used only with a Customer account. Please log out and sign in with your Customer ID to continue.','!');return;}
+ let attempts=0;
+ const focus=()=>{if(smvFocusWalletRecharge())return;if(++attempts<12){setTimeout(focus,250);return;}smvNotice('Customer Wallet','The Wallet recharge section is still loading. Open Dashboard → My Wallet and try again.','!');};
+ setTimeout(focus,80);
+}
+function smvOpenWalletRechargeDestination(){
+ const user=auth?.currentUser||currentUser;
+ if(!user){pendingWalletRechargeNavigation=true;openAuth('login');return;}
+ const role=String(window.__smvCurrentRole||dashboardReadyRole||smvCachedDashboardRole(user.uid)||'').toLowerCase();
+ if(role&&role!=='customer'){smvNotice('Customer Login Required','This Wallet offer is available only to a Customer account. Please log out and sign in with your Customer ID.','!');return;}
+ pendingWalletRechargeNavigation=true;
+ if(role==='customer'&&smvInternalView==='dashboard'&&dashboardReadyUid===user.uid&&!$('dashboard')?.classList.contains('hidden')&&smvFocusWalletRecharge()){pendingWalletRechargeNavigation=false;return;}
+ const dashboardButton=$('dashLink');
+ if(dashboardButton){dashboardButton.click();return;}
+ smvNotice('Customer Dashboard','Sign in with a Customer account, then open Dashboard → My Wallet to recharge.','!');
+}
+document.addEventListener('click',event=>{
+ const banner=event.target.closest?.('[data-smv-wallet-recharge-banner]');
+ if(!banner)return;
+ event.preventDefault();event.stopPropagation();smvOpenWalletRechargeDestination();
+},true);
 
 let smvInternalView="home";
 function smvEnterInternalView(view,push=true){
@@ -550,7 +600,9 @@ $("contentNav")?.addEventListener("click",(e)=>{
         hideHomeSurface(); hideDashboardPublicSections(); show('dashboard'); show('dashboardContent');
         setHeaderRoleLabel(dashboardReadyRole||window.__smvCurrentRole||'customer'); smvShowRoleNav();
         try{history.replaceState({smvView:'dashboard'},'', '#dashboard');}catch(_e){}
-        touchSession(); armIdleTimer(); return;
+        touchSession(); armIdleTimer();
+        if(pendingWalletRechargeNavigation)smvCompleteWalletRechargeNavigation(dashboardReadyRole||window.__smvCurrentRole||cachedRole);
+        return;
       }
       if(smvInternalView==='admin' && !$("admin")?.classList.contains('hidden') && await isAdminAccount(user)){
         hideHomeSurface(); show('admin'); setHeaderRoleLabel('admin'); smvShowRoleNav();
@@ -595,6 +647,7 @@ $("contentNav")?.addEventListener("click",(e)=>{
         }
         smvEnterInternalView("dashboard",true); go("dashboard");
         await loadDashboard(role);
+        smvCompleteWalletRechargeNavigation(role);
       }
     }catch(err){
       console.error("Role dashboard navigation failed:",err);
@@ -1204,6 +1257,7 @@ async function submitAuth(mode){
 
     pendingAfterLogin=null;
     if(goToAdmin || adminUser){
+      smvCompleteWalletRechargeNavigation("admin");
       hide("dashboard"); hide("dashboardContent"); hide("dashLink"); hide("adminLink");
       pendingAfterLogin=null;
       if(adminUser){
@@ -1243,7 +1297,7 @@ async function submitAuth(mode){
       smvShowRoleNav();
       smvEnterInternalView("dashboard",true);
       go("dashboard");
-      loadDashboard(role).catch(err=>console.warn("Login dashboard load skipped:",err));
+      loadDashboard(role).then(()=>smvCompleteWalletRechargeNavigation(role)).catch(err=>{console.warn("Login dashboard load skipped:",err);smvCompleteWalletRechargeNavigation(role);});
     }
     return;
   }
@@ -1907,7 +1961,8 @@ function smvWalletDashboardCardHtml(){
  return '<section class="card smv-customer-wallet-card" id="smvCustomerWalletCard" style="margin-top:16px" aria-labelledby="smvWalletTitle">'+
  '<div class="grid" style="align-items:center;gap:14px"><div><span class="badge">CUSTOMER WALLET</span><h3 id="smvWalletTitle" style="margin:8px 0">My Wallet</h3><div class="small">Use your Wallet for Live Call, Live Chat and consultation charges.</div></div>'+
  '<div><div class="small">Available Balance</div><div id="smvWalletBalance" class="smv-dashboard-metric" style="font-weight:800;margin:4px 0">Loading…</div><div class="small">Reserved: <b id="smvWalletReserved">₹0.00</b></div></div></div>'+
- '<div class="smv-wallet-bonus-summary" aria-live="polite"><div><span class="small">Bonus Credit Available</span><strong id="smvWalletBonusCredit">Loading…</strong></div><div><span class="small">Bonus Credit Reserved for active / booked sessions</span><strong id="smvWalletBonusCreditReserved">₹0.00</strong></div><p>Bonus Credit is applied first. When it is used up, billing continues automatically from your Original Wallet balance.</p><div class="small">Legacy Free Minutes preserved separately (not used for new sessions): <b id="smvWalletLegacyMinutes">0 minutes</b></div></div>'+
+ '<div class="smv-wallet-offer-svg-banners" id="smvCustomerWalletOfferBanners" aria-label="Active festival Wallet offers" hidden></div>'+
+ '<div class="smv-wallet-bonus-summary" aria-live="polite"><div><span class="small">Bonus Credit Available</span><strong id="smvWalletBonusCredit">Loading…</strong></div><div><span class="small">Bonus Credit Reserved for active / booked sessions</span><strong id="smvWalletBonusCreditReserved">₹0.00</strong></div><p>Bonus Credit is applied first. When it is used up, billing continues automatically from your Original Wallet balance.</p></div>'+
  '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px"><button class="btn" id="smvWalletRefresh" type="button">Refresh Wallet</button></div>'+
  '<form id="smvWalletRechargeForm" style="display:flex;flex-wrap:nowrap;align-items:stretch;gap:10px;margin-top:16px;width:100%;max-width:100%;box-sizing:border-box">'+
  '<label style="display:flex;flex:1 1 0%;flex-direction:column;gap:6px;min-width:0;width:50%"><b>Recharge amount (₹)</b><input id="smvWalletRechargeAmount" type="number" min="1" step="0.01" value="100" inputmode="decimal" required style="display:block;width:100%;min-width:0;height:46px;min-height:46px;max-height:46px;box-sizing:border-box"></label>'+
@@ -1926,6 +1981,7 @@ function smvRenderFastDashboardShell(roleValue=''){
   smvBindCustomerPrivateChat();
   void smvLoadCustomerPrivateChatQuestions();
   smvBindCustomerWallet({load:false});
+  void smvLoadHomeWalletRechargeOffers().catch(()=>{});
   return;
  }
  if(role==='astrologer'){
@@ -1958,7 +2014,7 @@ function smvWalletCurrentElements(){
   reserved:$('smvWalletReserved'),
   bonusCredit:$('smvWalletBonusCredit'),
   bonusCreditReserved:$('smvWalletBonusCreditReserved'),
-  legacyMinutes:$('smvWalletLegacyMinutes'),
+  
   host:$('smvWalletTransactions')
  };
 }
@@ -1975,7 +2031,7 @@ async function smvLoadCustomerWalletOnce(uid){
  if(initial.balance)initial.balance.textContent='Loading…';
  if(initial.bonusCredit)initial.bonusCredit.textContent='Loading…';
  if(initial.bonusCreditReserved)initial.bonusCreditReserved.textContent='Loading…';
- if(initial.legacyMinutes)initial.legacyMinutes.textContent='Loading…';
+ 
  if(initial.host)initial.host.innerHTML='<div class="small">Loading transactions…</div>';
  const applyWalletSnapshot=wallet=>{
   if(!isCurrentUser())return false;
@@ -1987,10 +2043,10 @@ async function smvLoadCustomerWalletOnce(uid){
   if(current.reserved)current.reserved.textContent=smvWalletMoney(reservedPaise);
   const bonusCreditPaise=Number.isSafeInteger(Number(wallet.bonusCreditBalancePaise))&&Number(wallet.bonusCreditBalancePaise)>=0?Number(wallet.bonusCreditBalancePaise):0;
   const reservedBonusCreditPaise=Number.isSafeInteger(Number(wallet.reservedBonusCreditPaise))&&Number(wallet.reservedBonusCreditPaise)>=0?Number(wallet.reservedBonusCreditPaise):0;
-  const legacyBonusMinutes=Number.isSafeInteger(Number(wallet.bonusMinutesBalance))&&Number(wallet.bonusMinutesBalance)>=0?Number(wallet.bonusMinutesBalance):0;
+  
   if(current.bonusCredit)current.bonusCredit.textContent=smvWalletMoney(bonusCreditPaise);
   if(current.bonusCreditReserved)current.bonusCreditReserved.textContent=smvWalletMoney(reservedBonusCreditPaise);
-  if(current.legacyMinutes)current.legacyMinutes.textContent=legacyBonusMinutes+' '+(legacyBonusMinutes===1?'minute':'minutes');
+  
   return true;
  };
  try{
@@ -2686,6 +2742,7 @@ let astroStatus=String(ad.status||data.status||'pending').toLowerCase();
    smvBindCustomerPrivateChat();
    void smvLoadCustomerPrivateChatQuestions();
    smvBindCustomerWallet({load:false});
+   void smvLoadHomeWalletRechargeOffers().catch(()=>{});
    // The fast shell only binds handlers. Load real balance/minutes after this
    // final Customer Dashboard DOM has mounted, so the request updates live nodes.
    void smvLoadCustomerWallet();
@@ -3257,7 +3314,7 @@ async function smvRenderAdminWalletOffers(){
  ];
  card.innerHTML=[
   '<h3>Wallet Recharge Bonus Offers</h3>',
-  '<p class="small">When an Offer is ON and within its Start / End Date window, it appears on the public Home page. After a qualifying recharge is successfully verified, the configured Bonus Credit Amount is added directly to the Customer Wallet when the minimum recharge, validity and usage-limit conditions are met. Bonus Credit is applied first to eligible Live / Booked Live service value; remaining value is charged to Original Wallet. Astrologer and Admin commission are calculated on the full service value, including Bonus Credit. Bonus Credit is promotional, non-transferable and non-withdrawable. Legacy minute balances remain separate and are not converted automatically.</p>',
+  '<p class="small">When an Offer is ON and within its Start / End Date window, it appears on the public Home page. After a qualifying recharge is successfully verified, the configured Bonus Credit Amount is added directly to the Customer Wallet when the minimum recharge, validity and usage-limit conditions are met. Bonus Credit is applied first to eligible Live / Booked Live service value; remaining value is charged to Original Wallet. Astrologer and Admin commission are calculated on the full service value, including Bonus Credit. Bonus Credit is promotional, non-transferable and non-withdrawable. Existing wallet funds and Bonus Credit remain separate; Bonus Credit is never converted into cash.</p>',
   '<input id="smvWalletOfferId" type="hidden">',
   '<div class="grid">',
   '<label><b>Offer Name</b><input id="smvWalletOfferName" maxlength="120" placeholder="Diwali Bonus Credit"></label>',
@@ -3320,13 +3377,13 @@ async function smvRenderAdminWalletOffers(){
     const theme=themes.find(row=>row[0]===offer.bannerTheme)?.[1]||'Festival';
     const hasRedemptions=Number(offer.usedCount||0)>0||Number(offer.successfulRedemptions||0)>0;
     return '<article class="card" data-wallet-offer-row="'+escapeHtml(offer.id)+'" style="margin-top:10px"><b>'+escapeHtml(offer.name||'Wallet Offer')+'</b> · '+status+
-     '<p class="small">'+escapeHtml(theme)+' · ₹'+minimum+' minimum recharge · '+(Number(offer.bonusCreditAmountPaise||0)>0?'Bonus Credit ₹'+(Number(offer.bonusCreditAmountPaise)/100).toFixed(2):'Legacy Free Minutes '+Number(offer.legacyBonusMinutes||0)+' (not awarded)')+'</p>'+
+     '<p class="small">'+escapeHtml(theme)+' · ₹'+minimum+' minimum recharge · '+(Number(offer.bonusCreditAmountPaise||0)>0?'Bonus Credit ₹'+(Number(offer.bonusCreditAmountPaise)/100).toFixed(2):'Archived legacy Offer — disabled')+'</p>'+
      '<p class="small">Redemptions: '+escapeHtml(limit)+' · Per Customer: '+(Number(offer.perCustomerLimit||0)===0?'unlimited':Number(offer.perCustomerLimit||0))+
      ' · Total Bonus Credit given: ₹'+(Number(offer.totalBonusCreditPaiseAwarded||0)/100).toFixed(2)+'</p>'+
      (offer.startAt||offer.endAt?'<p class="small">Start: '+escapeHtml(offer.startAt||'Now')+' · End: '+escapeHtml(offer.endAt||'No end date')+'</p>':'')+
      (Number(offer.bonusCreditAmountPaise||0)>0?'<div class="action-row"><button class="btn" type="button" data-wallet-offer-edit="'+escapeHtml(offer.id)+'">EDIT</button>'+
      '<button class="btn gray" type="button" data-wallet-offer-toggle="'+escapeHtml(offer.id)+'">'+(offer.enabled?'TURN OFF':'TURN ON')+'</button>'+
-     '<button class="btn gray" type="button" data-wallet-offer-delete="'+escapeHtml(offer.id)+'"'+(hasRedemptions?' disabled title="This Offer has redemption history. Turn it OFF to preserve the financial audit."':'')+'>'+(hasRedemptions?'DELETE UNAVAILABLE':'DELETE')+'</button></div>':'<p class="small">Legacy minute offer. It remains OFF; prior minute balances and redemption records are preserved separately.</p>')+
+     '<button class="btn gray" type="button" data-wallet-offer-delete="'+escapeHtml(offer.id)+'"'+(hasRedemptions?' disabled title="This Offer has redemption history. Turn it OFF to preserve the financial audit."':'')+'>'+(hasRedemptions?'DELETE UNAVAILABLE':'DELETE')+'</button></div>':'<p class="small">Archived legacy Offer. It remains OFF; historical redemption records are retained.</p>')+
      (hasRedemptions?'<p class="small">This Offer has redemption history and cannot be deleted. Use TURN OFF to stop future awards while keeping its audit history.</p>':'')+'</article>';
    }).join(''):'<div class="empty">No Wallet recharge bonus offers created yet.</div>';
    list.querySelectorAll('[data-wallet-offer-edit]').forEach(button=>button.onclick=()=>{

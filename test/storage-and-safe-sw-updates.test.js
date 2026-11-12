@@ -37,7 +37,7 @@ test('Horoscope Service Worker does not force-reload open report/form tabs and p
 test('main SMV ASTRO caches only the offline UI shell while leaving online-only routes and Horoscope scope isolated', () => {
   const sw = read('public/sw.js');
   assert.ok(sw.includes("APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE"));
-  assert.ok(sw.includes("SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261112-bonus-credit-direct-award-pages-v1' : '20261112-bonus-credit-direct-award-in-v1'"));
+  assert.ok(sw.includes("SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261112-legacy-free-minutes-reset-svg-offer-banners-pages-v1' : '20261112-legacy-free-minutes-reset-svg-offer-banners-in-v1'"));
   assert.ok(sw.includes('APP_SHELL_FILES'));
   for (const icon of ['./assets/pwa-astro-192.svg','./assets/pwa-astro-512.png','./assets/pwa-astro-maskable-192.svg','./assets/pwa-astro-maskable.svg','./assets/favicon-astro.png','./assets/favicon-astro.ico']) {
     assert.ok(sw.includes(icon), 'SMV ASTRO must precache its manifest icon/favicon: '+icon);
@@ -58,7 +58,7 @@ test('main SMV ASTRO caches only the offline UI shell while leaving online-only 
 test('Horoscope precaches its UI and required local calculation/WASM assets without caching online services', () => {
   const sw = read('public/horoscope/sw.js');
   assert.ok(sw.includes("SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE"));
-  assert.ok(sw.includes("SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261112-bonus-credit-direct-award-pages-v1' : '20261112-bonus-credit-direct-award-in-v1'"));
+  assert.ok(sw.includes("SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261112-legacy-free-minutes-reset-svg-offer-banners-pages-v1' : '20261112-legacy-free-minutes-reset-svg-offer-banners-in-v1'"));
   assert.ok(sw.includes("OFFLINE_CACHE='smv-horoscope-offline'"));
   assert.ok(sw.includes("LOCATION_CACHE='smv-shared-india-places'"));
   assert.ok(sw.includes('prefetchIndiaPlaceShards'));
@@ -86,7 +86,7 @@ test('Horoscope precaches its UI and required local calculation/WASM assets with
 test('Calendar keeps its offline UI/WASM precache and India shard migration while bypassing online-only API routes', () => {
   const sw = read('public/horoscope/calendar/sw.js');
   assert.ok(sw.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"));
-  assert.ok(sw.includes("SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261112-bonus-credit-direct-award-pages-v1' : '20261112-bonus-credit-direct-award-in-v1'"));
+  assert.ok(sw.includes("SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261112-legacy-free-minutes-reset-svg-offer-banners-pages-v1' : '20261112-legacy-free-minutes-reset-svg-offer-banners-in-v1'"));
   assert.ok(sw.includes('const REQUIRED_CORE = new Set(['));
   assert.ok(sw.includes('await preserveCachedIndiaPlaces(target)'));
   assert.ok(sw.includes("LOCATION_CACHE='smv-shared-india-places'"));
@@ -125,14 +125,14 @@ test('All three app workers bump Pages.dev and .in cache releases together for p
     return { pages: match[1], legacy: match[2] };
   });
   assert.deepEqual(releases.map(item => item.pages), [
-    '20261112-bonus-credit-direct-award-pages-v1',
-    '20261112-bonus-credit-direct-award-pages-v1',
-    '20261112-bonus-credit-direct-award-pages-v1'
+    '20261112-legacy-free-minutes-reset-svg-offer-banners-pages-v1',
+    '20261112-legacy-free-minutes-reset-svg-offer-banners-pages-v1',
+    '20261112-legacy-free-minutes-reset-svg-offer-banners-pages-v1'
   ]);
   assert.deepEqual(releases.map(item => item.legacy), [
-    '20261112-bonus-credit-direct-award-in-v1',
-    '20261112-bonus-credit-direct-award-in-v1',
-    '20261112-bonus-credit-direct-award-in-v1'
+    '20261112-legacy-free-minutes-reset-svg-offer-banners-in-v1',
+    '20261112-legacy-free-minutes-reset-svg-offer-banners-in-v1',
+    '20261112-legacy-free-minutes-reset-svg-offer-banners-in-v1'
   ]);
   assert.ok(workers[0].includes("APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE"));
   assert.ok(workers[0].includes("'./assets/android-app-icon-astro-source.png'"), 'ASTRO directly precaches its launcher PNG');
