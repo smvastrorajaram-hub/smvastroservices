@@ -62,7 +62,7 @@ jobs:
               ready='true'
               break
             fi
-            echo 'Production Worker has not yet converged to the expected deployed code and 0013 schema.'
+            echo 'Production Worker has not yet converged to the expected deployed code, 0013 schema and 0014 query indexes.'
             sleep 5
           done
           if [ "$ready" != 'true' ]; then
