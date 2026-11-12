@@ -89,6 +89,14 @@ export function createD1LiveSessionService({
     const row=await first('SELECT * FROM '+SESSION_TABLE+' WHERE session_id=? LIMIT 1',[id]);
     return mapLiveSessionRow(row);
   }
+  async function getSessionForParticipant({sessionId,uid}={}) {
+    const id=checkSessionId(sessionId),actor=checkUid(uid);
+    if(!id||!actor) throw liveError('LIVE_SESSION_ID_REQUIRED','Live Session ID and login are required.',400);
+    const session=await getSession(id);
+    if(!session) throw liveError('LIVE_SESSION_NOT_FOUND','Live session was not found.',404);
+    if(session.customerUid!==actor&&session.astrologerUid!==actor) throw liveError('LIVE_SESSION_FORBIDDEN','This Live Session belongs to another account.',403);
+    return sessionView(session);
+  }
   async function getBooking(id) {
     const row=await first('SELECT * FROM '+BOOKING_TABLE+' WHERE booking_id=? LIMIT 1',[id]);
     return mapLiveBookingRow(row);
@@ -1106,7 +1114,7 @@ export function createD1LiveSessionService({
   return Object.freeze({
     createRequest,acceptBooking,acceptSession,rejectSession,readySession,endSession,setConnection,isApprovedAstrologer,
     rejectBooking,cancelBooking,sendMessage,listMessages,signal,listSignals,
-    listSessions,listBookings,listCustomerBookings,processDeadline,expireBooking,
+    listSessions,listBookings,listCustomerBookings,getSessionForParticipant,processDeadline,expireBooking,
     getPricing,getCommission,saveSetting,getAstrologerAvailability,updateAstrologerAvailability
   });
 }

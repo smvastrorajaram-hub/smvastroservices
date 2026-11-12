@@ -137,14 +137,14 @@ test("All three apps use one synchronized cache release; Horoscope runtime revis
   const versions = workers.map(source => /const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(source));
   assert.ok(versions.every(Boolean));
   assert.deepEqual(versions.map(match => match[1]), [
-    "20261112-astro-birth-gender-session-receipt-pages-v1",
-    "20261112-astro-birth-gender-session-receipt-pages-v1",
-    "20261112-astro-birth-gender-session-receipt-pages-v1"
+    "20261112-astro-live-receipt-native-print-pages-v2",
+    "20261112-astro-live-receipt-native-print-pages-v2",
+    "20261112-astro-live-receipt-native-print-pages-v2"
   ]);
   assert.deepEqual(versions.map(match => match[2]), [
-    "20261112-astro-birth-gender-session-receipt-in-v1",
-    "20261112-astro-birth-gender-session-receipt-in-v1",
-    "20261112-astro-birth-gender-session-receipt-in-v1"
+    "20261112-astro-live-receipt-native-print-in-v2",
+    "20261112-astro-live-receipt-native-print-in-v2",
+    "20261112-astro-live-receipt-native-print-in-v2"
   ]);
   const runtime = /const RUNTIME_REVISION\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(workers[1]);
   assert.ok(runtime);

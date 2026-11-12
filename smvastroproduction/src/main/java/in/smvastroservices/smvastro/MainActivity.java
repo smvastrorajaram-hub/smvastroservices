@@ -236,6 +236,25 @@ public class MainActivity extends Activity {
         public void downloadPdf() {
             runOnUiThread(() -> openAstroNativePdf(true));
         }
+
+        @JavascriptInterface
+        public void viewLiveReceiptPdf() {
+            runOnUiThread(() -> openAstroLiveReceiptPdf(false));
+        }
+
+        @JavascriptInterface
+        public void downloadLiveReceiptPdf() {
+            runOnUiThread(() -> openAstroLiveReceiptPdf(true));
+        }
+    }
+
+    private void openAstroLiveReceiptPdf(boolean download) {
+        String currentUrl = webView == null ? null : webView.getUrl();
+        if (!isAstroLiveReceiptPageUrl(currentUrl)) {
+            Toast.makeText(this, "Open a trusted SMV ASTRO Live Session receipt before creating its PDF.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        openAstroNativePdf(download);
     }
 
     private void openAstroNativePdf(boolean download) {

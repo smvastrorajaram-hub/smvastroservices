@@ -701,6 +701,11 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
     return { id: sessionId, data };
   }
 
+  async function getSessionForParticipant(sessionId, uid) {
+    const loaded = await loadSessionForParticipant(sessionId, uid);
+    return liveSessionSafeView(loaded.id, loaded.data);
+  }
+
   async function reserveInTransaction(tx, { uid, mode, minutes, rate, walletSnapshot, sessionId, reservationType = 'live_session' }) {
     const wallet = walletSnapshot && walletSnapshot.exists ? (walletSnapshot.data() || {}) : {};
     const available = safePaise(wallet.availableBalancePaise);
@@ -2149,6 +2154,15 @@ async function rejectOrCancel(sessionId, user, reason) {
     } catch (error) { return replyError(res, error, 'Unable to load Live Sessions.'); }
   });
 
+  app.get('/live/sessions/:id', async (req, res) => {
+    const auth = await requireRole(req, res, ['customer', 'astrologer']);
+    if (!auth) return;
+    try {
+      const session = await getSessionForParticipant(req.params.id, auth.user.uid);
+      return res.set('Cache-Control', 'no-store').json({ success: true, session });
+    } catch (error) { return replyError(res, error, 'Unable to load this Live Session receipt.'); }
+  });
+
   app.get('/live/bookings/pending', async (req, res) => {
     const auth = await requireRole(req, res, ['astrologer']);
     if (!auth) return;
@@ -2312,7 +2326,7 @@ async function rejectOrCancel(sessionId, user, reason) {
   ensurePricingDocument().catch(error => console.warn('[Live Session] Pricing defaults were not persisted yet:', error?.message || error));
   restoreTimers().catch(() => {});
 
-  return { createRequest, acceptBooking, rejectBooking, cancelBooking, acceptSession, readySession, endSession, sendMessage, signal, listSessions, listBookings, listCustomerBookings, notifyAstrologerPush };
+  return { createRequest, acceptBooking, rejectBooking, cancelBooking, acceptSession, readySession, endSession, sendMessage, signal, listSessions, getSessionForParticipant, listBookings, listCustomerBookings, notifyAstrologerPush };
 }
 
 function registerLiveSessionRoutes(options) {

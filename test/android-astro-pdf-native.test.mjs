@@ -18,6 +18,8 @@ test('SMV ASTRO PDF route guard matches the real redirected report URL and prese
   assert.ok(astro.includes("webView.addJavascriptInterface(new NativePdfBridge(), \"SMVAstroNativePdf\")"), "ASTRO native PDF bridge is installed");
   assert.ok(astro.includes("@JavascriptInterface\n        public void viewPdf()"), "View PDF native action remains");
   assert.ok(astro.includes("@JavascriptInterface\n        public void downloadPdf()"), "Download PDF native action remains");
+  assert.ok(astro.includes("@JavascriptInterface\n        public void viewLiveReceiptPdf()"), "Live receipt has a versioned native print entry point.");
+  assert.ok(astro.includes("@JavascriptInterface\n        public void downloadLiveReceiptPdf()"), "Live receipt download has a dedicated native entry point.");
   assert.ok(astro.includes("\"horoscope.smvastroservices.in\".equals(host)"), "Only the canonical Horoscope host is accepted");
   assert.ok(astro.includes("\"/report-print.html\".equals(path)"), "Canonical saved-report route is accepted");
   assert.ok(astro.includes("ownsHost(host)"), "Legacy own-host route remains explicitly supported");
@@ -65,8 +67,9 @@ test('SMV ASTRO Live Session ended receipt opens the trusted Android native Prin
   assert.ok(livePage.includes('live-session-receipt.mjs'));
   assert.ok(liveLoader.includes("sessionStorage.getItem(key)||''"));
   assert.ok(liveLoader.includes('document.write(receipt)'));
-  assert.ok(frontend.includes('window.SMVAstroNativePdf.viewPdf()'), 'The page invokes the already-installed native PDF bridge.');
+  assert.ok(frontend.includes("typeof b.viewLiveReceiptPdf===&quot;function&quot;"), 'The page invokes only the dedicated Live receipt native bridge, preventing older Horoscope-only APKs from receiving a misrouted call.');
   assert.ok(astro.includes('isAstroHoroscopePrintPageUrl(currentUrl)'), 'The existing Horoscope native PDF route remains supported.');
+  assert.ok(astro.includes('private void openAstroLiveReceiptPdf(boolean download)'), 'The Live receipt bridge enforces its own exact-path guard before opening PrintManager.');
 });
 test('SMV ASTRO Android mobile and print layouts format charts and wide tables', () => {
   assert.match(reportPage, /report-print\.css/);

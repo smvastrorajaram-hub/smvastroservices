@@ -59,6 +59,7 @@ function fixture(overrides={}) {
     async rejectBooking(input){calls.push({service:'rejectBooking',input});return {success:true,booking:{id:input.bookingId,customerUid:'customer-1',astrologerUid:input.astrologerUid,status:'rejected'}};},
     async acceptBooking(input){calls.push({service:'acceptBooking',input});return {success:true,session:{id:input.bookingId,customerUid:'customer-1',astrologerUid:input.astrologerUid,mode:'chat',state:'preparing',preparationUntil:'2026-10-31T10:02:15Z'}};},
     async listSessions(){return overrides.sessions||[];},
+    async getSessionForParticipant(input){calls.push({service:'getSessionForParticipant',input});return overrides.session||{id:'session-1',customerUid:'customer-1',astrologerUid:'astro-1',mode:'chat',state:'ended'};},
     async setConnection(input){calls.push({service:'setConnection',input});return {
       success:true,sessionId:input.sessionId,uid:input.uid,connected:input.connected,
       generation:2,deadlineAtMs:input.connected?0:Date.parse('2026-10-31T10:00:20Z')
@@ -401,4 +402,16 @@ test('New Cloudflare booking alerts use the booking ID and FCM failure cannot un
   assert.equal(sent[0].payload.data.mode,'chat');
   assert.equal(sent[0].payload.dataOnly,true,'native Android bookings must use a data-only FCM message');
   assert.equal(sent[0].payload.title,'New Live Chat Booking');
+});
+
+
+test('Live Session detail route returns only the authenticated participant receipt snapshot',async()=>{
+  const f=fixture({session:{id:'session-1',customerUid:'customer-1',astrologerUid:'astro-1',mode:'chat',state:'ended'}});
+  const res=responseHarness();
+  await f.app.handlers.get('GET /live/sessions/:id')(req({},'customer','session-1'),res);
+  assert.equal(res.statusCode,200);
+  assert.equal(res.body.success,true);
+  assert.equal(res.body.session.id,'session-1');
+  assert.equal(res.body.session.state,'ended');
+  assert.deepEqual(f.calls.find(x=>x.service==='getSessionForParticipant').input,{sessionId:'session-1',uid:'customer-1'});
 });

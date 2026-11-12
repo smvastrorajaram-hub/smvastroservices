@@ -5,7 +5,7 @@
  */
 (function(){
   'use strict';
-  const MODULE_URL='./public-content.mjs?v=20261112-astro-birth-gender-session-receipt-v1';
+  const MODULE_URL='./public-content.mjs?v=20261112-astro-live-receipt-native-print-v2';
   let pending=null;
   function isConsultVisible(){
     const target=document.getElementById('consult');
