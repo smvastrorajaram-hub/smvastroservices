@@ -183,7 +183,12 @@ export async function inspectBackendSchema(db) {
         row.live_session_query_indexes_version === '0014_live_session_query_indexes' &&
         countIs(row.live_session_query_indexes_count, 6)
     };
-    const allRequiredMigrations = Object.values(schemaMigrations).every(Boolean);
+    // 0014 is an optional Live query-performance gate. It must not block
+    // unrelated Wallet/Recharge financial readiness while that additive index
+    // migration is pending. Live routes check it independently below.
+    const allRequiredMigrations = MIGRATION_KEYS
+      .filter(key => key !== '0014_live_session_query_indexes')
+      .every(key => schemaMigrations[key] === true);
     const checks = {
       sharedDomainSchema: schemaMigrations['0002_shared_domain_repository'],
       walletSchema: schemaMigrations['0002_shared_domain_repository'] &&
