@@ -360,7 +360,8 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       : null;
     registerLegacyDashboardReadRoutes({
       app, firestore: firestoreAdmin, identityService: walletIdentityService,
-      liveService: liveSessionRoutesOpen ? gapLiveService : null
+      liveService: liveSessionRoutesOpen ? gapLiveService : null,
+      isLiveReady: async () => (await inspectSchema()).checks.liveSessionQueryIndexes === true
     });
     registerLegacyBusinessRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService, liveService: gapLiveService });
     registerAdminAstrologerProfileRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
