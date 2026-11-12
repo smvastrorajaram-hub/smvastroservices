@@ -1228,7 +1228,7 @@ app.post("/appointment-booking", express.json({ limit: "20kb" }), async (req, re
         pricePerMinute:Math.round(pricePerMinute*100)/100,
         priceUnit:"per_minute",bookingKind:type==="Chat Consultation"?"scheduled_chat_request":"scheduled_call_request",
         ...(type==="Call Consultation"?{callPricePerMinute:Math.round(pricePerMinute*100)/100}:{chatPricePerMinute:Math.round(pricePerMinute*100)/100,...(question?{question}:{})}),
-        birthDetails:{birthDate,birthTime,birthPlace,birthLatitude,birthLongitude,birthTimezone}
+        birthDetails:{birthDate,birthTime,birthPlace,birthGender,birthLatitude,birthLongitude,birthTimezone}
       };
     }
     const bookingId = await nextBookingId();
