@@ -160,7 +160,7 @@ test('Customer Dashboard CTA uses its own component layout and Desktop Header bu
   assert.ok(desktopHeaderStart>=0 && desktopHeaderEnd>desktopHeaderStart, 'Desktop premium Header media block should exist');
   const desktopHeader=css.slice(desktopHeaderStart,desktopHeaderEnd);
   const legacyHeaderStart=css.indexOf('/* Desktop Header labels remain white;');
-  const legacyHeaderEnd=css.indexOf('\\nhtml :is(#smv-v15-icon-root',legacyHeaderStart);
+  const legacyHeaderEnd=css.indexOf('\nhtml :is(#smv-v15-icon-root',legacyHeaderStart);
   assert.ok(legacyHeaderStart>=0&&legacyHeaderEnd>legacyHeaderStart,'The high-specificity Desktop Header reset remains explicit.');
   const legacyHeader=css.slice(legacyHeaderStart,legacyHeaderEnd);
   assert.ok(legacyHeader.includes('color:#fff!important;')&&legacyHeader.includes('-webkit-text-fill-color:#fff!important;'));
