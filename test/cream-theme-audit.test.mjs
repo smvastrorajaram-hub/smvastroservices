@@ -132,7 +132,7 @@ test('shared UI stylesheet must not override hero and content headings with pale
 
 test('Customer Dashboard consultation CTA is compact on Desktop and Desktop Header uses the Mobile button colours', () => {
   const desktopHomeStart=css.indexOf('@media (min-width: 900px){\nhtml body.smv-v12-theme #home .smv33-scene');
-  const desktopHomeEnd=css.indexOf('\n}.smv-location-wrap',desktopHomeStart);
+  const desktopHomeEnd=css.indexOf('\n}\n.smv-location-wrap',desktopHomeStart);
   assert.ok(desktopHomeStart>=0 && desktopHomeEnd>desktopHomeStart, 'desktop hero media block should exist');
   const desktopHome=css.slice(desktopHomeStart,desktopHomeEnd);
   assert.ok(desktopHome.includes('.smv33-actions{gap:10px;margin-top:12px}'), 'Homepage CTA sizing must return to its pre-PR layout');
