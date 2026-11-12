@@ -1158,7 +1158,10 @@ test('Print/Save is exposed only for ended sessions and Chat print retrieves the
   assert.ok(frontend.includes("window.location.assign('/live-session-receipt.html?session='+encodeURIComponent(id));"));
   assert.ok(frontend.includes("sessionStorage.setItem('smv_live_receipt_'+id,bill);"));
   assert.ok(!frontend.includes('<iframe title="SMV ASTRO Live Session Bill"'), 'Live receipt is a full page, not a sandboxed iframe modal.');
-  assert.ok(frontend.includes('id="smvLiveReceiptPrint" type="button" onclick="window.SMVAstroNativePdf?window.SMVAstroNativePdf.viewPdf():window.print()"'));
+  assert.ok(frontend.includes("typeof b.viewLiveReceiptPdf==='function'"), 'Live Receipt must use a dedicated Android bridge, not the Horoscope viewPdf method.');
+  assert.ok(frontend.includes("data-customer-scheduled-receipt=\"'+escapeHtml(a.liveSessionId)+'\""), 'Completed scheduled bookings have a distinct receipt action.');
+  assert.ok(frontend.includes("renderApi('/live/sessions/'+encodeURIComponent(id),{method:'GET',timeoutMs:12000})"), 'The receipt action fetches the exact session record rather than reopening the live panel.');
+  assert.ok(frontend.includes('await smvLiveOpenReceiptPage(session);'), 'A completed booking opens the authoritative receipt page directly.');
   assert.ok(frontend.includes("function smvLiveQueueEndedReceipt(session)"));
   assert.ok(frontend.includes("if(s.state!=='ended')throw new Error('The Bill is available after the Live Session ends.');"));
   assert.ok(frontend.includes("renderApi('/live/sessions/'+encodeURIComponent(String(s.id||s.sessionId||''))+'/messages'"));
