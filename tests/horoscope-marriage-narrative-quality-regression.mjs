@@ -8,6 +8,7 @@ const integratedSource=read('../public/horoscope/integrated.js');
 const d1NarrativeSource=read('../public/horoscope/d1-human-narrative.js');
 const matchingSource=read('../public/horoscope/marriage-matching.js');
 const timelineSource=read('../public/horoscope/matching-timeline.mjs');
+const workers=[read('../public/sw.js'),read('../public/horoscope/sw.js'),read('../public/horoscope/calendar/sw.js')];
 
 function loadIntegratedRenderer(){
   const context={
@@ -76,4 +77,14 @@ test('Marriage Matching repeated generic chart factors are displayed once per pe
   assert.match(matchingSource,/mm281PairOutcome\(B,G,item,age\.young,b,g,seenEvidence\)/);
 });
 
-console.log(JSON.stringify({pass:true,checks:5,scope:'narrative output only; no astrological calculation changes'}));
+
+test('SMV ASTRO, HOROSCOPE and CALENDAR cache releases stay synchronized for both host variants',()=>{
+  const pages="'20261112-narrative-quality-pages-v1'";
+  const main="'20261112-narrative-quality-in-v1'";
+  for(const worker of workers){
+    assert.ok(worker.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? "+pages+" : "+main+";"),
+      'each app worker carries matching Pages.dev and .in narrative release markers');
+  }
+});
+
+console.log(JSON.stringify({pass:true,checks:6,scope:'narrative output only; no astrological calculation changes'}));
