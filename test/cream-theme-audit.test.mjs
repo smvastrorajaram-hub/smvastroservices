@@ -130,20 +130,27 @@ test('shared UI stylesheet must not override hero and content headings with pale
   assert.ok(contrastRatio('#20170f','#fff8e7') >= 15, 'hero and content heading contrast must exceed WCAG AA');
 });
 
-test('desktop Homepage CTA buttons match the Mobile colours and remain equal in size', () => {
-  const start=css.indexOf('@media (min-width: 900px){\nhtml body.smv-v12-theme #home .smv33-scene');
-  const end=css.indexOf('\n}\n.smv-location-wrap',start);
-  assert.ok(start>=0 && end>start, 'desktop Homepage hero media block should exist');
-  const desktop=css.slice(start,end);
-  assert.ok(desktop.includes('.smv33-actions{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:10px;margin-top:12px;max-width:470px}'));
-  assert.ok(desktop.includes('flex:0 1 230px;'));
-  assert.ok(desktop.includes('width:230px;max-width:100%;min-width:0;min-height:42px;'));
-  assert.ok(desktop.includes('.smv33-actions .ask{color:#fff;border-color:#e50055;background:linear-gradient(135deg,#e90058,#d90048)}'));
-  assert.ok(desktop.includes('.smv33-actions .horoscope{color:#20324a;border-color:#75461a;background:rgba(255,250,240,.9)}'));
-  assert.doesNotMatch(desktop, /smv33-actions a\{background:rgb\(237,0,84\)/);
-  const mobile=css.slice(css.indexOf('html body.smv-v12-theme #home .smv33-actions .ask{', end), css.indexOf('html body.smv-v12-theme #home .smv33-trust{', end));
-  assert.ok(mobile.includes('background:linear-gradient(135deg,#e90058,#d90048)'));
-  assert.ok(mobile.includes('background:rgba(255,250,240,.9)'));
+test('Customer Dashboard consultation CTA is compact on Desktop and Desktop Header uses the Mobile button colours', () => {
+  const desktopHomeStart=css.indexOf('@media (min-width: 900px){\nhtml body.smv-v12-theme #home .smv33-scene');
+  const desktopHomeEnd=css.indexOf('\n}.smv-location-wrap',desktopHomeStart);
+  assert.ok(desktopHomeStart>=0 && desktopHomeEnd>desktopHomeStart, 'desktop hero media block should exist');
+  const desktopHome=css.slice(desktopHomeStart,desktopHomeEnd);
+  assert.ok(desktopHome.includes('.smv33-actions{gap:10px;margin-top:12px}'), 'Homepage CTA sizing must return to its pre-PR layout');
+  assert.ok(desktopHome.includes('.smv33-actions a{background:rgb(237,0,84);color:#fff;font-size:13px;min-height:44px;padding:10px 12px;text-shadow:none;box-shadow:none}'));
+  assert.doesNotMatch(desktopHome, /flex:0 1 230px|smv33-actions .ask\{color:#fff;border-color:#e50055/);
+  assert.ok(desktopHome.includes('#dashboardContent #smvCustomerBookChatCard #smvCustomerBookChat{display:inline-flex!important;flex:0 0 auto!important;'));
+  assert.ok(desktopHome.includes('max-width:230px!important;min-height:42px!important;padding:9px 14px!important;font-family:Arial,Helvetica,sans-serif!important;font-size:13px!important;'));
+  assert.ok(appSource.includes('id="smvCustomerBookChat"'), 'Customer Dashboard must keep its own consultation button target');
+
+  const desktopHeaderStart=css.indexOf('@media (min-width: 900px){\n  html body.smv-v12-theme #smvPremiumHeaderV9:where');
+  const desktopHeaderEnd=css.indexOf('\n}\n\n/* Footer uses',desktopHeaderStart);
+  assert.ok(desktopHeaderStart>=0 && desktopHeaderEnd>desktopHeaderStart, 'Desktop premium Header media block should exist');
+  const desktopHeader=css.slice(desktopHeaderStart,desktopHeaderEnd);
+  assert.ok(desktopHeader.includes('background:#74172a!important;'), 'Desktop ordinary Header buttons must use the Mobile burgundy');
+  assert.ok(desktopHeader.includes('border:1px solid #f2d48b!important;'), 'Desktop Header buttons must use the Mobile gold border');
+  assert.ok(desktopHeader.includes('background:#ffd66b!important;'), 'Desktop active Header button must retain the Mobile yellow state');
+  assert.ok(desktopHeader.includes('color:#5c1122!important;'), 'Desktop active Header button text must match Mobile');
+  assert.doesNotMatch(desktopHeader, /rgba\(5,20,54,\.72\)/, 'the washed navy colour must be removed from Desktop Header buttons');
 });
 
 test('main page cache versions point to the audited theme assets', () => {
