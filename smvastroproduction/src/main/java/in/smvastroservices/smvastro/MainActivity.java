@@ -211,6 +211,21 @@ public class MainActivity extends Activity {
         }
     }
 
+    private boolean isAstroLiveReceiptPageUrl(String rawUrl) {
+        if (rawUrl == null) return false;
+        try {
+            Uri uri = Uri.parse(rawUrl);
+            int port = uri.getPort();
+            String host = lower(uri.getHost());
+            String path = uri.getPath();
+            return "https".equals(lower(uri.getScheme()))
+                    && (port == -1 || port == 443)
+                    && ownsHost(host)
+                    && "/live-session-receipt.html".equals(path);
+        } catch (RuntimeException ignored) {
+            return false;
+        }
+    }
     private final class NativePdfBridge {
         @JavascriptInterface
         public void viewPdf() {
@@ -224,8 +239,11 @@ public class MainActivity extends Activity {
     }
 
     private void openAstroNativePdf(boolean download) {
-        if (webView == null || !isAstroHoroscopePrintPageUrl(webView.getUrl())) {
-            Toast.makeText(this, "Open a saved SMV ASTRO Horoscope report before creating its PDF.", Toast.LENGTH_LONG).show();
+        String currentUrl = webView == null ? null : webView.getUrl();
+        boolean horoscopeReport = isAstroHoroscopePrintPageUrl(currentUrl);
+        boolean liveReceipt = isAstroLiveReceiptPageUrl(currentUrl);
+        if (!horoscopeReport && !liveReceipt) {
+            Toast.makeText(this, "Open a trusted SMV ASTRO receipt or Horoscope report before creating its PDF.", Toast.LENGTH_LONG).show();
             return;
         }
         PrintManager printManager = (PrintManager) getSystemService(Context.PRINT_SERVICE);
@@ -233,23 +251,26 @@ public class MainActivity extends Activity {
             Toast.makeText(this, "Android PDF print service is unavailable on this device.", Toast.LENGTH_LONG).show();
             return;
         }
-        String jobName = download ? "SMV ASTRO Horoscope PDF Download" : "SMV ASTRO Horoscope PDF View";
+        String jobName = liveReceipt
+                ? (download ? "SMV ASTRO Live Session Receipt Download" : "SMV ASTRO Live Session Receipt")
+                : (download ? "SMV ASTRO Horoscope PDF Download" : "SMV ASTRO Horoscope PDF View");
+        String resolutionId = liveReceipt ? "smv_astro_live_receipt_pdf" : "smv_astro_horoscope_pdf";
+        String resolutionLabel = liveReceipt ? "SMV ASTRO Live Session Receipt" : "SMV ASTRO Horoscope PDF";
         try {
             PrintAttributes attributes = new PrintAttributes.Builder()
                     .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
-                    .setResolution(new PrintAttributes.Resolution("smv_astro_horoscope_pdf", "SMV ASTRO Horoscope PDF", 300, 300))
+                    .setResolution(new PrintAttributes.Resolution(resolutionId, resolutionLabel, 300, 300))
                     .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
                     .build();
             printManager.print(jobName, webView.createPrintDocumentAdapter(jobName), attributes);
             String message = download
-                    ? "PDF preview opened. Choose ‘Save as PDF’ to save the report on your device."
+                    ? "PDF preview opened. Choose ‘Save as PDF’ to save it on your device."
                     : "PDF preview opened. You can review it or choose ‘Save as PDF’.";
             Toast.makeText(this, message, Toast.LENGTH_LONG).show();
         } catch (RuntimeException ex) {
-            Toast.makeText(this, "Could not create the Horoscope PDF: " + ex.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Could not create the SMV ASTRO PDF: " + ex.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
-
     private void configureAstroPdfActions(WebView view, String url) {
         if (view == null || !isAstroHoroscopePrintPageUrl(url)) return;
         String script = "(function(){try{" +
