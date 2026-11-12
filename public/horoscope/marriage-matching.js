@@ -1568,7 +1568,7 @@ function mm335TransitLink(b,g,topic){
  return T(`On the calculated transit snapshot ${chosen.date}, house ${topic} is contacted by ${who}. This is an aspect/placement observation; combine with the actual Dasha and natal promise before interpreting life events.`,
  `கணிக்கப்பட்ட கோச்சார இடைத் தேதி ${chosen.date} அன்று ${topic}-ஆம் பாவத்துடன் தொடர்பு: ${who}. இது இருப்பிடம்/பார்வை சார்ந்த காலச் சுட்டி மட்டுமே; பிறப்பு ஜாதக ஆதாரமும் தசை–புக்தியும் இணங்காமல் நிகழ்வு உறுதி செய்யப்படாது.`);
 }
-function mm335PersonEvidence(r,who){
+function mm335PersonEvidence(r,who,seen){
  const ta=lang()==='ta',life=MM335_HOUSE_LINKS[r.pos-1],domain=MM335_TOPIC_EFFECT[r.entry.n-1];
  if(!life)return '';
  const intro=ta?`${who} ஜாதகத்தில் ${mmPlanetText(r.lord)} ${r.pos}-ஆம் பாவத்தில் உள்ளதால், ${domain[0]} பற்றிய செயல்பாடு ${life[0]} வழியாக முன்னிலையாகலாம்.`:
@@ -1585,7 +1585,14 @@ function mm335PersonEvidence(r,who){
  }
  if(r.supporters.length)factors.push(ta?`குரு/சுக்கிரன் சார்ந்த சுபப் பார்வை (${r.supporters.map(mmPlanetText).join(', ')}) சமரசத்திற்கு ஆதரவாகலாம்.`:`Supporting aspect(s) from ${r.supporters.map(mmPlanetText).join(', ')} can ease coordination.`);
  if(r.hard.length)factors.push(ta?`${r.hard.map(mmPlanetText).join(', ')} பார்வை காரணமாக அழுத்தம் அல்லது அவசர முடிவுகளில் கூடுதல் நிதானம் தேவைப்படலாம்.`:`Challenging aspect(s) from ${r.hard.map(mmPlanetText).join(', ')} can make rushed decisions more difficult.`);
- return [intro,...factors].join(' ');
+ const uniqueFactors=factors.filter(f=>{
+  const key=f.normalize('NFKC').toLocaleLowerCase().replace(/\s+/g,' ').trim();
+  if(!seen)return true;
+  if(seen.has(key))return false;
+  seen.add(key);
+  return true;
+ });
+ return [intro,...uniqueFactors].join(' ');
 }
 function mm335HousePeriod(c,lord){
  // Only calculated AD windows beginning/overlapping the NEXT 15 years;
@@ -1598,10 +1605,10 @@ function mm335HousePeriod(c,lord){
   return p?`${p.label} ${mmIsoDate(p.a)} → ${mmIsoDate(p.b)}`:'';
  }catch{return '';}
 }
-function mm281PairOutcome(B,G,entry,young,b,g){if(!B||!G||young)return '';
+function mm281PairOutcome(B,G,entry,young,b,g,seenEvidence={}){if(!B||!G||young)return '';
  if(!Number.isInteger(B.pos)||!Number.isInteger(G.pos))return T('A house-lord position is missing in one chart; no comparative life event or dasha claim is assigned.','ஒருவரின் பாவாதிபதி இருப்பிடம் கிடைக்கவில்லை; இதற்கு தனிப்பட்ட வாழ்க்கை நிகழ்வோ தசைக் காலமோ ஊகிக்கப்படவில்லை.');
  const ta=lang()==='ta',focus=MM335_TOPIC_EFFECT[entry.n-1],bride=T('Bride','பெண்'),groom=T('Groom','ஆண்');
- const first=mm335PersonEvidence(B,bride),second=mm335PersonEvidence(G,groom);
+ const first=mm335PersonEvidence(B,bride,seenEvidence.bride),second=mm335PersonEvidence(G,groom,seenEvidence.groom);
  const samePos=B.pos===G.pos,meanA=MM335_HOUSE_LINKS[B.pos-1],meanG=MM335_HOUSE_LINKS[G.pos-1];
  const bridge=ta?
  (samePos?`இருவருக்கும் ${focus[0]} சம்பந்தமான முடிவுகள் ${meanA[0]} வழியாக முன்னிலையாகின்றன. ஒரே பாவத் தொடர்பு இருப்பதால் இயல்பாகவே ஒரே குணம் என்று கருதக்கூடாது; இருவரின் கிரகபலமும் பார்வைகளும் எந்த விதமாக உள்ளன என்பதே ஒற்றுமையின் அளவை மாற்றும்.`:
@@ -1620,8 +1627,8 @@ function mm281PairOutcome(B,G,entry,young,b,g){if(!B||!G||young)return '';
  return [first,second,bridge,scene,balanced,timing,transit].filter(Boolean).join(' ');
 }
 function mm281TopicBook(b,g){let html=`<section class="mm-person-result mm-v281-topic-book"><h2>${T('Twelve D1 life-area readings and direct couple comparison','D1 அடிப்படையில் 12 வாழ்க்கைப் பலன்கள் — இருவர் ஒற்றுமை ஆய்வு')}</h2><p class="mm-note">${T('Each result uses the respective D1 house, its lord, position, natural significator, occupancy and Graha aspects. This is a traditional reading, not a determination of personality.','ஒவ்வொரு தலைப்பும் அதற்குரிய D1 பாவம், பாவாதிபதி, இருப்பிடம், இயற்கைக் காரகன், ஆக்கிரமிப்பு மற்றும் கிரகப் பார்வைகளின் அடிப்படையில் தனித்தனியாக ஆராயப்படுகிறது.')}</p>`;
- const age=mm281AgeNote(b,g);
- for(const item of MM281_SUBJECTS){const B=mm281Row(b,item),G=mm281Row(g,item),state=age.young?{id:'deferred',name:T('No marriage judgment for a minor','சிறுவருக்கு திருமண ஒற்றுமைத் தீர்ப்பு வழங்கப்படாது')}:mm281Status(B,G);html+=`<article class="mm-v281-topic" data-mm-v281-topic="${item.n}"><h3>${item.n}. ${esc(T(item.en,item.ta))}</h3><div class="mm-v281-people"><section><h4>${T('Bride — detailed D1 reading','பெண் — விரிவான D1 பலன்')}</h4><p class="mm-v281-evidence">${esc(mm281Evidence(B))}</p><p>${esc(mm281Narrative(B))}</p></section><section><h4>${T('Groom — detailed D1 reading','ஆண் — விரிவான D1 பலன்')}</h4><p class="mm-v281-evidence">${esc(mm281Evidence(G))}</p><p>${esc(mm281Narrative(G))}</p></section></div><div class="mm-v281-verdict" data-mm-v281-status="${state.id}"><b>${T('Conclusion for this topic','இந்தத் தலைப்பின் இறுதி ஒற்றுமை முடிவு')}: ${esc(state.name)}</b><p>${B&&G?esc(T(`Bride lord ${mmPlanetText(B.lord)} in house ${B.pos}; groom lord ${mmPlanetText(G.lord)} in house ${G.pos}.`, `பெண்ணின் பாவாதிபதி ${mmPlanetText(B.lord)} ${B.pos}-ஆம் பாவத்தில்; ஆணின் பாவாதிபதி ${mmPlanetText(G.lord)} ${G.pos}-ஆம் பாவத்தில்.`))+' ':''}${esc(T(item.pair[1],item.pair[0]))} ${esc(mm281PairOutcome(B,G,item,age.young,b,g))}${age.young?' '+T('This is not a present marital judgment for a minor.','இது சிறுவருக்கான தற்போதைய திருமண முடிவு அல்ல.'):''}</p></div></article>`;}
+ const age=mm281AgeNote(b,g),seenEvidence={bride:new Set(),groom:new Set()};
+ for(const item of MM281_SUBJECTS){const B=mm281Row(b,item),G=mm281Row(g,item),state=age.young?{id:'deferred',name:T('No marriage judgment for a minor','சிறுவருக்கு திருமண ஒற்றுமைத் தீர்ப்பு வழங்கப்படாது')}:mm281Status(B,G);html+=`<article class="mm-v281-topic" data-mm-v281-topic="${item.n}"><h3>${item.n}. ${esc(T(item.en,item.ta))}</h3><div class="mm-v281-people"><section><h4>${T('Bride — detailed D1 reading','பெண் — விரிவான D1 பலன்')}</h4><p class="mm-v281-evidence">${esc(mm281Evidence(B))}</p><p>${esc(mm281Narrative(B))}</p></section><section><h4>${T('Groom — detailed D1 reading','ஆண் — விரிவான D1 பலன்')}</h4><p class="mm-v281-evidence">${esc(mm281Evidence(G))}</p><p>${esc(mm281Narrative(G))}</p></section></div><div class="mm-v281-verdict" data-mm-v281-status="${state.id}"><b>${T('Conclusion for this topic','இந்தத் தலைப்பின் இறுதி ஒற்றுமை முடிவு')}: ${esc(state.name)}</b><p>${B&&G?esc(T(`Bride lord ${mmPlanetText(B.lord)} in house ${B.pos}; groom lord ${mmPlanetText(G.lord)} in house ${G.pos}.`, `பெண்ணின் பாவாதிபதி ${mmPlanetText(B.lord)} ${B.pos}-ஆம் பாவத்தில்; ஆணின் பாவாதிபதி ${mmPlanetText(G.lord)} ${G.pos}-ஆம் பாவத்தில்.`))+' ':''}${esc(T(item.pair[1],item.pair[0]))} ${esc(mm281PairOutcome(B,G,item,age.young,b,g,seenEvidence))}${age.young?' '+T('This is not a present marital judgment for a minor.','இது சிறுவருக்கான தற்போதைய திருமண முடிவு அல்ல.'):''}</p></div></article>`;}
  return html+'</section>';
 }
 const MM281_PERSONALITY=[
