@@ -1730,6 +1730,16 @@ async function rejectOrCancel(sessionId, user, reason) {
       actualChargePaise: safePaise(d.actualChargePaise),
       releasedAmountPaise: safePaise(d.releasedAmountPaise),
       endReason: String(d.endReason || ''), sessionId: String(d.sessionId || ''),
+      customerName: String(d.customerName || 'Customer'),
+      birthDetails: d.birthDetails && typeof d.birthDetails === 'object' ? {
+        birthDate: String(d.birthDetails.birthDate || ''),
+        birthTime: String(d.birthDetails.birthTime || ''),
+        birthPlace: String(d.birthDetails.birthPlace || ''),
+        birthGender: String(d.birthDetails.birthGender || ''),
+        birthLatitude: String(d.birthDetails.birthLatitude || ''),
+        birthLongitude: String(d.birthDetails.birthLongitude || ''),
+        birthTimezone: String(d.birthDetails.birthTimezone || '')
+      } : null,
       createdAt: timestampMillis(d.createdAt) ? new Date(timestampMillis(d.createdAt)).toISOString() : null,
       acceptedAt: timestampMillis(d.acceptedAt) ? new Date(timestampMillis(d.acceptedAt)).toISOString() : null,
       expiresAt: timestampMillis(d.expiresAt) ? new Date(timestampMillis(d.expiresAt)).toISOString() : null,
