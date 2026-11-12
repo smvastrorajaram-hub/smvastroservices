@@ -153,6 +153,25 @@ test('Admin appointment and review reads use bounded query limits', async () => 
 });
 
 
+test('Customer appointment read skips D1 reconciliation until Live query indexes are ready', async () => {
+  const app=harness();
+  const firestore=firestoreFixture({queries:{smv_appointments:[
+    {id:'appointment-chat-1',data:{bookingKind:'scheduled_chat_request',type:'Chat Consultation',bookingStatus:'accepted',status:'accepted'}}
+  ]}});
+  let reconciliationCalls=0;
+  registerLegacyDashboardReadRoutes({
+    app,firestore,
+    liveService:{async listEndedSessionsForAppointments(){reconciliationCalls+=1;return{};}},
+    isLiveReady:async()=>false,
+    identityService:{async authenticateAuthorization(){return{uid:'cus-1',role:'customer'};}}
+  });
+  const res=response();
+  await app.handlers.get('GET /customer/appointments')(req(),res);
+  assert.equal(res.statusCode,200);
+  assert.equal(reconciliationCalls,0);
+  assert.equal(res.body.appointments[0].bookingStatus,'accepted');
+});
+
 test('Customer scheduled Call and Chat reads reconcile the completed D1 Live Session ID', async () => {
   const app=harness();
   const firestore=firestoreFixture({queries:{smv_appointments:[
