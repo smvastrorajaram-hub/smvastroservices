@@ -348,7 +348,6 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     registerAdminAccessRoute({ app, identityService: walletIdentityService });
     registerAccountRoleRoute({ app, identityService: walletIdentityService, firestore: firestoreAdmin });
     registerLegacyReadRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService, androidPackageName: String(env.SMV_ANDROID_PACKAGE || 'in.smvastroservices.smvastro') });
-    registerLegacyDashboardReadRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerLegacyQuizReadRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     gapLiveService = env.DB && sharedWalletAdapter
       ? createD1LiveSessionService({
@@ -358,6 +357,10 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
           adminWalletUid: configuredAdminWalletUid
         })
       : null;
+    registerLegacyDashboardReadRoutes({
+      app, firestore: firestoreAdmin, identityService: walletIdentityService,
+      liveService: liveSessionRoutesOpen ? gapLiveService : null
+    });
     registerLegacyBusinessRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService, liveService: gapLiveService });
     registerAdminAstrologerProfileRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerLegacyQuizWriteRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });

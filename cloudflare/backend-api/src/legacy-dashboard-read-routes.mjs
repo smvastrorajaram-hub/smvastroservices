@@ -50,7 +50,7 @@ function sendError(res, error, message) {
 }
 
 /** UID-scoped Customer/Astrologer and Admin dashboard read contracts. */
-export function registerLegacyDashboardReadRoutes({ app, firestore, identityService, now = Date.now } = {}) {
+export function registerLegacyDashboardReadRoutes({ app, firestore, identityService, liveService = null, now = Date.now } = {}) {
   if (!app || typeof app.get !== 'function' ||
       !firestore || typeof firestore.getDocument !== 'function' || typeof firestore.runQuery !== 'function' ||
       !identityService || typeof identityService.authenticateAuthorization !== 'function') {
@@ -135,9 +135,20 @@ export function registerLegacyDashboardReadRoutes({ app, firestore, identityServ
         filters: [{ field: 'customerUid', op: '==', value: uid }],
         limit: 100
       });
+      let endedSessionsByAppointment = Object.create(null);
+      if (liveService && typeof liveService.listEndedSessionsForAppointments === 'function' && documents.length) {
+        try {
+          endedSessionsByAppointment = await liveService.listEndedSessionsForAppointments({
+            appointmentIds: documents.map(document => document.id), uid, role: 'customer'
+          });
+        } catch (error) {
+          console.warn('[Dashboard] Completed scheduled Live Session reconciliation deferred:', error?.message || error);
+        }
+      }
       const appointments = documents.map(document => {
         const a = document.data || {};
-        const bookingStatus = scheduledBookingStatus(a, now());
+        const completedSession = endedSessionsByAppointment?.[document.id] || null;
+        const bookingStatus = completedSession ? 'completed' : scheduledBookingStatus(a, now());
         const missed = bookingStatus === 'missed_by_astrologer';
         return {
           id: document.id,
@@ -150,10 +161,11 @@ export function registerLegacyDashboardReadRoutes({ app, firestore, identityServ
           preferredTime: String(a.preferredTime || ''),
           scheduledMinutes: Number(a.scheduledMinutes || 5),
           bookingStatus,
-          status: missed ? 'missed' : String(a.status || 'new'),
+          status: completedSession ? 'completed' : (missed ? 'missed' : String(a.status || 'new')),
           missedReason: missed ? 'astrologer_not_connected_within_grace' : String(a.missedReason || ''),
           notes: String(a.notes || ''),
-          liveSessionId: String(a.liveSessionId || ''),
+          liveSessionId: String(completedSession?.id || a.liveSessionId || ''),
+          liveEndedAt: completedSession?.endedAt || a.liveEndedAt || null,
           liveBookingId: String(a.liveBookingId || ''),
           createdAt: a.createdAt || null,
           respondedAt: a.respondedAt || null,

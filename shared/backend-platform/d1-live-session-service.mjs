@@ -97,6 +97,27 @@ export function createD1LiveSessionService({
     if(session.customerUid!==actor&&session.astrologerUid!==actor) throw liveError('LIVE_SESSION_FORBIDDEN','This Live Session belongs to another account.',403);
     return sessionView(session);
   }
+  async function listEndedSessionsForAppointments({appointmentIds,uid,role='customer'}={}) {
+    const actor=checkUid(uid);
+    const ownerField=role==='astrologer'?'astrologer_uid':role==='customer'?'customer_uid':'';
+    if(!actor||!ownerField) throw liveError('LIVE_APPOINTMENT_SCOPE_INVALID','A valid signed-in Customer or Astrologer is required.',400);
+    const ids=[...new Set((Array.isArray(appointmentIds)?appointmentIds:[]).map(checkSessionId).filter(Boolean))].slice(0,100);
+    if(!ids.length) return Object.create(null);
+    const rows=await all(
+      `SELECT * FROM ${SESSION_TABLE}
+       WHERE ${ownerField}=? AND state='ended' AND started_at_ms IS NOT NULL AND started_at_ms>0
+         AND appointment_id IN (${ids.map(()=>'?').join(',')})
+       ORDER BY ended_at_ms DESC,created_at_ms DESC`,
+      [actor,...ids]
+    );
+    const byAppointment=Object.create(null);
+    for(const row of rows.results||[]) {
+      const session=mapLiveSessionRow(row);
+      const appointmentId=String(session?.appointmentId||'');
+      if(appointmentId&&!byAppointment[appointmentId]) byAppointment[appointmentId]=sessionView(session);
+    }
+    return byAppointment;
+  }
   async function getBooking(id) {
     const row=await first('SELECT * FROM '+BOOKING_TABLE+' WHERE booking_id=? LIMIT 1',[id]);
     return mapLiveBookingRow(row);
@@ -1114,7 +1135,7 @@ export function createD1LiveSessionService({
   return Object.freeze({
     createRequest,acceptBooking,acceptSession,rejectSession,readySession,endSession,setConnection,isApprovedAstrologer,
     rejectBooking,cancelBooking,sendMessage,listMessages,signal,listSignals,
-    listSessions,listBookings,listCustomerBookings,getSessionForParticipant,processDeadline,expireBooking,
+    listSessions,listBookings,listCustomerBookings,getSessionForParticipant,listEndedSessionsForAppointments,processDeadline,expireBooking,
     getPricing,getCommission,saveSetting,getAstrologerAvailability,updateAstrologerAvailability
   });
 }
