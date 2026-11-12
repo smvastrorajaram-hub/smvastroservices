@@ -1219,7 +1219,7 @@ test('Live Session and Customer Chat state is recovered from replay before curre
   const frontend = read('public/smvastro.mjs');
   assert.ok(frontend.includes('function smvLiveReadEventCursor(uid){'));
   assert.ok(frontend.includes('function smvLiveSaveEventCursor(uid,value,reset=false){'));
-  assert.ok(frontend.includes('smvLivePollSessions(true).catch(()=>{}),2500'));
+  assert.ok(frontend.includes('smvLivePollSessions(true).catch(()=>{}),5000'));
   assert.ok(frontend.includes("if(chatArea)chatArea.hidden=!smvLiveChatIsActive(s);"));
   assert.ok(frontend.includes("smvLiveUpdateDashboardSessionStatus(s);"));
 });
