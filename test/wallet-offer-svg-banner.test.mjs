@@ -81,6 +81,7 @@ test('existing offer SVG assets are precached across the synchronized SMV app re
 test('Homepage and Customer Wallet SVG offer banners share a clean white background', () => {
   assert.ok(css.includes('#dashboardContent button:not(.smv-wallet-offer-svg-banner):where('), 'dashboard theme button colours exclude the special offer button');
   assert.ok(css.includes('#dashboard button:not(.smv-wallet-offer-svg-banner):where('), 'dashboard theme button styles exclude the special offer button');
+  assert.ok(css.includes('html body :is(#admin, #dashboard) button:not(.smv-wallet-offer-svg-banner):where('), 'the later high-specificity Dashboard colour rule also excludes the Offer banner');
   const bannerStart = css.indexOf('.smv-wallet-offer-svg-banner{');
   const bannerEnd = css.indexOf('}', bannerStart);
   assert.ok(bannerStart >= 0 && bannerEnd > bannerStart, 'Shared SVG banner style exists');

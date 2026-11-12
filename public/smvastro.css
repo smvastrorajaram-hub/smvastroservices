@@ -2458,7 +2458,7 @@ html body:where(:not(.smv-css-island,.smv-css-island *)){line-height:1.65;backgr
 html body :is(#admin, #dashboard) .card:where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:22px 0!important;margin-bottom:10px!important}
 html body :is(#admin, #dashboard) :is(h2, h3):not(.admin-dashboard-title):where(:not(.smv-css-island,.smv-css-island *)){color:#e6c782!important;font-family:Georgia,"Noto Sans Tamil",serif!important;letter-spacing:-.015em!important}
 html body :is(#admin, #dashboard) button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-plain-text-action):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn):not(.smv-customer-payment-btn):not(.smv-customer-book-chat-action):where(:not(.smv-css-island,.smv-css-island *)), html body :is(#admin, #dashboard) :is(input, select, textarea):where(:not(.smv-css-island,.smv-css-island *)){min-height:44px!important;border-radius:6px!important}
-html body :is(#admin, #dashboard) button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-plain-text-action):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn):not(.smv-customer-payment-btn):where(:not(.smv-css-island,.smv-css-island *)){background:#48206F!important;color:#fff0fc!important;border:1px solid rgba(223,189,115,.60)!important;box-shadow:none!important;white-space:normal!important;border-radius:0!important;-webkit-text-fill-color:#fff0fc!important;border-color:rgba(223,189,115,.68)}
+html body :is(#admin, #dashboard) button:not(.smv-wallet-offer-svg-banner):where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-plain-text-action):not(.smv-v170-collapse-btn):not(.smv-v172-collapse-btn):not(.smv-customer-payment-btn):where(:not(.smv-css-island,.smv-css-island *)){background:#48206F!important;color:#fff0fc!important;border:1px solid rgba(223,189,115,.60)!important;box-shadow:none!important;white-space:normal!important;border-radius:0!important;-webkit-text-fill-color:#fff0fc!important;border-color:rgba(223,189,115,.68)}
 html body :is(#admin, #dashboard) button:where(:not(.smv-compact-control):not(.smv-admin-shortcut)):not(.smv-plain-text-action):disabled:where(:not(.smv-css-island,.smv-css-island *)){opacity:0.6!important;cursor:wait}
 html body :is(#admin, #dashboard) input:where(:not(.smv-css-island,.smv-css-island *)), html body :is(#admin, #dashboard) select:where(:not(.smv-css-island,.smv-css-island *)), html body :is(#admin, #dashboard) textarea:where(:not(.smv-css-island,.smv-css-island *)){width:100%;box-sizing:border-box;background:#fff8e7!important;color:#30251b!important;border:1px solid rgba(223,189,115,.35)!important;padding:10px!important;border-radius:0!important;-webkit-text-fill-color:#30251b!important;caret-color:#30251b!important;border-color:rgba(223,189,115,.45)}
 html body :is(#admin, #dashboard) label{display:block}
@@ -4131,7 +4131,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     margin:0!important;
     padding:0!important;
     overflow:hidden!important;
-    background-color:#fff!important;
+    background-color:#fff8e7!important;
     background-image:none!important;
     background-size:100vw auto!important;
     background-position:center top!important;
@@ -4278,7 +4278,7 @@ html body #admin button.smv-admin-shortcut:hover,html body #admin button.smv-adm
     padding:0!important;
     border:0!important;
     border-radius:0!important;
-    background-color:#fff!important;
+    background-color:#fff8e7!important;
     background-image:none!important;
     background-size:100% 100%,100vw auto!important;
     background-position:center top,center calc(0px - 152px)!important;

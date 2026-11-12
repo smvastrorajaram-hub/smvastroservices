@@ -163,8 +163,9 @@ test('Customer Dashboard CTA uses its own component layout and Desktop Header bu
   assert.ok(desktopHeader.includes('border:1px solid #f2d48b!important;'), 'Desktop Header buttons retain the gold border');
   assert.ok(desktopHeader.includes('color:#fff!important;'), 'Desktop Header button labels use pure white');
   assert.ok(desktopHeader.includes('-webkit-text-fill-color:#fff!important;'), 'Desktop Header button labels render white in WebKit');
+  assert.ok(desktopHeader.includes('background-color:#fff8e7!important;'), 'Desktop Header surface retains its original cream background');
   assert.ok(desktopHeader.includes('background:#5c1122!important;'), 'Active button uses a darker burgundy for readable white text');
-  assert.doesNotMatch(desktopHeader, /color:#fff8e7|-webkit-text-fill-color:#fff8e7|background:#ffd66b|color:#5c1122|-webkit-text-fill-color:#5c1122/, 'cream/yellow/dark text styling is removed from Desktop Header buttons');
+  assert.doesNotMatch(desktopHeader, /(?<!background-)color:#fff8e7|-webkit-text-fill-color:#fff8e7|background:#ffd66b|color:#5c1122|-webkit-text-fill-color:#5c1122/, 'Header buttons use white text without the prior yellow/dark active styling');
 });
 
 test('main page cache versions point to the audited theme assets', () => {
