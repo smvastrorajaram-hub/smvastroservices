@@ -28,7 +28,9 @@ const REQUIRED_SCHEMA_QUERY = [
   "  (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = 'numeric-public-reference-ids' LIMIT 1) AS numeric_public_reference_ids_version,",
   "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'smv_domain_withdrawals_public_withdrawal_id_uq') AS public_withdrawal_id_index_count,",
   "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'smv_domain_withdrawals_admin_payment_id_uq') AS admin_payment_id_index_count,",
-  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'smv_domain_wallet_recharges_customer_payment_id_uq') AS customer_payment_id_index_count"
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'smv_domain_wallet_recharges_customer_payment_id_uq') AS customer_payment_id_index_count,",
+  "  (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key = 'live-session-query-indexes' LIMIT 1) AS live_session_query_indexes_version,",
+  "  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name IN ('idx_smv_domain_sessions_customer_recent','idx_smv_domain_sessions_astrologer_recent','idx_smv_domain_sessions_customer_status_updated','idx_smv_domain_sessions_astrologer_status_updated','idx_smv_domain_sessions_customer_appointment','idx_smv_domain_sessions_astrologer_appointment')) AS live_session_query_indexes_count"
 ].join('\n');
 
 const BONUS_CREDIT_SCHEMA_QUERY = [
@@ -63,7 +65,8 @@ const MIGRATION_KEYS = [
   '0010_razorpay_webhook_claim_leases',
   '0011_live_booking_release_claim',
   '0012_numeric_public_reference_ids',
-  '0013_bonus_credit_wallet'
+  '0013_bonus_credit_wallet',
+  '0014_live_session_query_indexes'
 ];
 
 function countIs(value, expected) {
@@ -91,6 +94,7 @@ function unavailableSchema(d1Binding, querySucceeded = false) {
       liveBookingReleaseSchema: false,
       numericPublicReferenceIdsSchema: false,
       bonusCreditWalletSchema: false,
+      liveSessionQueryIndexes: false,
       bonusCreditSchemaQuerySucceeded: false,
       allRequiredMigrations: false
     }
@@ -174,7 +178,10 @@ export async function inspectBackendSchema(db) {
         countIs(bonusCreditRow.promotional_fund_ledger_table_count, 1) &&
         countIs(bonusCreditRow.promotional_fund_seed_count, 1) &&
         countIs(bonusCreditRow.promotional_fund_validate_trigger_count, 1) &&
-        countIs(bonusCreditRow.promotional_fund_apply_trigger_count, 1)
+        countIs(bonusCreditRow.promotional_fund_apply_trigger_count, 1),
+      '0014_live_session_query_indexes':
+        row.live_session_query_indexes_version === '0014_live_session_query_indexes' &&
+        countIs(row.live_session_query_indexes_count, 6)
     };
     const allRequiredMigrations = Object.values(schemaMigrations).every(Boolean);
     const checks = {
@@ -194,6 +201,7 @@ export async function inspectBackendSchema(db) {
       liveBookingReleaseSchema: schemaMigrations['0011_live_booking_release_claim'],
       numericPublicReferenceIdsSchema: schemaMigrations['0012_numeric_public_reference_ids'],
       bonusCreditWalletSchema: schemaMigrations['0013_bonus_credit_wallet'],
+      liveSessionQueryIndexes: schemaMigrations['0014_live_session_query_indexes'],
       bonusCreditSchemaQuerySucceeded,
       allRequiredMigrations
     };
@@ -214,16 +222,50 @@ export async function inspectBackendSchema(db) {
   }
 }
 
+/**
+ * Reuse the expensive schema contract probe for a short, bounded period and
+ * collapse concurrent requests within one Worker isolate into a single D1 read.
+ * The pure inspectBackendSchema() remains uncached for deterministic unit tests.
+ */
+export function createBackendSchemaInspector({
+  db,
+  ttlMs = 30_000,
+  errorTtlMs = 30_000,
+  now = Date.now
+} = {}) {
+  let cached = null;
+  let expiresAt = 0;
+  let inFlight = null;
+
+  return async function inspectCachedBackendSchema() {
+    const current = Number(now());
+    if (cached && current < expiresAt) return cached;
+    if (inFlight) return inFlight;
+
+    const pending = inspectBackendSchema(db).then(result => {
+      cached = result;
+      const ttl = result?.querySucceeded === true ? ttlMs : errorTtlMs;
+      expiresAt = Number(now()) + Math.max(0, Number(ttl) || 0);
+      return result;
+    }).finally(() => {
+      if (inFlight === pending) inFlight = null;
+    });
+    inFlight = pending;
+    return pending;
+  };
+}
+
 export function registerBackendReadinessRoute({
   app,
   db,
+  inspectSchema = null,
   firebaseConnectivityProbe = async () => false,
   getRuntimeState = () => ({}),
   getIdentityGate = async () => ({ enabled: false, ready: false, reason: 'disabled' }),
   getRazorpayVerification = async () => ({ connected: false, connectionVerified: false, checkedAt: null })
 }) {
   app.get('/api/backend/readiness', async (_req, res) => {
-    const schema = await inspectBackendSchema(db);
+    const schema = await (typeof inspectSchema === 'function' ? inspectSchema() : inspectBackendSchema(db));
     let firebaseConnected = false;
     try {
       firebaseConnected = (await firebaseConnectivityProbe()) === true;
@@ -306,6 +348,7 @@ export function registerBackendReadinessRoute({
         liveBookingReleaseSchema: schema.checks.liveBookingReleaseSchema,
         numericPublicReferenceIdsSchema: schema.checks.numericPublicReferenceIdsSchema,
         bonusCreditWalletSchema: schema.checks.bonusCreditWalletSchema,
+        liveSessionQueryIndexes: schema.checks.liveSessionQueryIndexes,
         bonusCreditSchemaQuerySucceeded: schema.bonusCreditSchemaQuerySucceeded,
         allRequiredMigrations: schema.checks.allRequiredMigrations
       },
