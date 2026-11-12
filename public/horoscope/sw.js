@@ -58,7 +58,8 @@ const CORE=[
 
 const REQUIRED_CORE=new Set([
   ...PAGES_DEV_HELPER_FILES,
-  './index.html','./horoscope.css','./boot.mjs','./horoscope.js',
+  './index.html','./horoscope.css','./chart-style.css','./marriage-basic-report.css',
+  './horoscope-readings.css','./v358-result-layout.css','./boot.mjs','./horoscope.js',
   './assets/pwa-horoscope-192.svg','./assets/pwa-horoscope-512.png','./assets/pwa-horoscope-maskable-192.svg','./assets/pwa-horoscope-maskable.svg',
   './assets/android-app-icon-horoscope.svg','./assets/android-app-icon-horoscope-source.png',
   './assets/favicon-horoscope.png','./assets/favicon-horoscope.ico',
