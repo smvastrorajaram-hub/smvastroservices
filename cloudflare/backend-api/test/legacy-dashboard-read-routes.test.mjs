@@ -151,3 +151,40 @@ test('Admin appointment and review reads use bounded query limits', async () => 
   assert.equal(firestore.queryCalls[0].limit,200);
   assert.equal(firestore.queryCalls[1].limit,50);
 });
+
+
+test('Customer scheduled Call and Chat reads reconcile the completed D1 Live Session ID', async () => {
+  const app=harness();
+  const firestore=firestoreFixture({queries:{smv_appointments:[
+    {id:'appointment-chat-1',data:{bookingKind:'scheduled_chat_request',type:'Chat Consultation',bookingStatus:'accepted',status:'accepted'}},
+    {id:'appointment-call-1',data:{bookingKind:'scheduled_call_request',type:'Call Consultation',bookingStatus:'accepted',status:'accepted'}},
+    {id:'legacy-appointment',data:{bookingKind:'appointment',bookingStatus:'requested'}}
+  ]}});
+  const lookups=[];
+  const liveService={
+    async listEndedSessionsForAppointments(input){
+      lookups.push(input);
+      return {
+        'appointment-chat-1':{id:'live-chat-session-1',state:'ended',startedAt:'2026-11-04T05:00:00.000Z',endedAt:'2026-11-04T05:02:00.000Z'},
+        'appointment-call-1':{id:'live-call-session-1',state:'ended',startedAt:'2026-11-04T06:00:00.000Z',endedAt:'2026-11-04T06:03:00.000Z'}
+      };
+    }
+  };
+  registerLegacyDashboardReadRoutes({
+    app,firestore,liveService,
+    identityService:{async authenticateAuthorization(){return {uid:'cus-1',role:'customer'};}}
+  });
+  const res=response();
+  await app.handlers.get('GET /customer/appointments')(req(),res);
+  assert.equal(res.statusCode,200);
+  assert.equal(res.body.appointments.length,2);
+  assert.deepEqual(res.body.appointments.map(item=>({
+    id:item.id,status:item.status,bookingStatus:item.bookingStatus,liveSessionId:item.liveSessionId,liveEndedAt:item.liveEndedAt
+  })),[
+    {id:'appointment-chat-1',status:'completed',bookingStatus:'completed',liveSessionId:'live-chat-session-1',liveEndedAt:'2026-11-04T05:02:00.000Z'},
+    {id:'appointment-call-1',status:'completed',bookingStatus:'completed',liveSessionId:'live-call-session-1',liveEndedAt:'2026-11-04T06:03:00.000Z'}
+  ]);
+  assert.deepEqual(lookups,[{
+    appointmentIds:['appointment-chat-1','appointment-call-1','legacy-appointment'],uid:'cus-1',role:'customer'
+  }]);
+});
