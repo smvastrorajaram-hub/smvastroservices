@@ -291,6 +291,7 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('smvLiveStopFallbackPolling();'));
   assert.ok(frontend.includes('smvLivePollSessions(true).catch(()=>{}),2500'));
   assert.ok(frontend.includes('async function smvLivePollSessions(statusOnly=false)'));
+  assert.ok(frontend.includes("renderApi(statusOnly?'/live/sessions/status':'/live/sessions'"), 'Recovery polling uses the bounded status-only D1 route, not the 100-session history route');
   assert.ok(frontend.includes('if(statusOnly)return;'), 'Fallback status reconciliation avoids unnecessary booking reads');
   assert.ok(frontend.includes("'/live/events?after='+encodeURIComponent(String(after))"));
   assert.ok(frontend.includes("'smv-live-event-cursor:'+owner"));
