@@ -1154,7 +1154,17 @@ function bookingView(booking) {
     endReason:String(d.endReason||''),sessionId:String(d.sessionId||''),
     createdAt:iso(d.createdAtMs),acceptedAt:iso(d.acceptedAtMs),
     expiresAt:iso(d.expiresAtMs),endedAt:iso(d.endedAtMs),
-    customerUid:String(d.customerUid||'')
+    customerUid:String(d.customerUid||''),
+    customerName:safeName(d.customerName)||'Customer',
+    birthDetails:d.birthDetails&&typeof d.birthDetails==='object'?{
+      birthDate:String(d.birthDetails.birthDate||''),
+      birthTime:String(d.birthDetails.birthTime||''),
+      birthPlace:String(d.birthDetails.birthPlace||''),
+      birthGender:String(d.birthDetails.birthGender||''),
+      birthLatitude:String(d.birthDetails.birthLatitude||''),
+      birthLongitude:String(d.birthDetails.birthLongitude||''),
+      birthTimezone:String(d.birthDetails.birthTimezone||'')
+    }:null
   };
 }
 function appointmentEndedStatus(session) {
