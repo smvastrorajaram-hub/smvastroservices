@@ -85,7 +85,7 @@ function smvApiBackend(path) {
   // Only APIs already registered in the Cloudflare Worker are routed here.
   // Firebase login/token, public-ID lookup, Customer/Astrologer registration,
   // Horoscope/Calendar and APIs awaiting Cloudflare parity stay on their existing backend.
-  const cloudflareRoute = /^\/(?:wallet(?:\/|$)|live\/(?:requests|sessions|bookings|pricing|ice-config|events|scheduled-appointments|push)(?:\/|$)|appointment-booking(?:\/|$)|test-razorpay(?:\/|$)|admin-data(?:\/|$)|admin\/(?:appointments|astrologers-data|settings-data|questions-data|reviews-data|dashboard-touch|wallet\/transactions|withdrawals-data|withdrawal-payout|withdrawal-mark-processing|withdrawal-reject|withdrawal-mark-paid|promotional-fund(?:\/allocate)?|offers|content|android-app|approve-astrologer|reject-astrologer|payout-change-status|appointment-status|set-open-workflow|approve-question|reallocate-question|edit-question|takeover-answer|astrologer-languages|astrologer-pricing|astrologer-profile-permission|astrologer-profile-description|astrologer-auto-approval\/settings|astrologer-quiz\/(?:questions(?:\/delete)?|load-defaults|sync-google-form)|live\/(?:pricing|commission))(?:\/|$)|astrologer\/(?:appointments|availability|change-payout|earnings|open-questions|qualification-config|sync-approval|withdrawal-request|edit-answer|claim-question)(?:\/|$)|customer\/(?:appointments|reviews|submit-review|consultations|mark-answer-viewed)(?:\/|$)|public\/(?:astrologers(?:\/[A-Za-z0-9_-]+\/reviews)?|content|android-app|push-config)(?:\/|$)|google-form\/astrologer-quiz-config(?:\/|$)|webhooks\/google-form\/astrologer-qualification(?:\/|$)|submit-answer(?:\/|$))/.test(pathname);
+  const cloudflareRoute = /^\/(?:wallet(?:\/|$)|live\/(?:requests|sessions|bookings|pricing|ice-config|events|scheduled-appointments|push)(?:\/|$)|appointment-booking(?:\/|$)|test-razorpay(?:\/|$)|admin-data(?:\/|$)|admin\/(?:appointments|astrologers-data|settings-data|questions-data|reviews-data|dashboard-touch|wallet\/transactions|withdrawals-data|withdrawal-payout|withdrawal-mark-processing|withdrawal-reject|withdrawal-mark-paid|offers|content|android-app|approve-astrologer|reject-astrologer|payout-change-status|appointment-status|set-open-workflow|approve-question|reallocate-question|edit-question|takeover-answer|astrologer-languages|astrologer-pricing|astrologer-profile-permission|astrologer-profile-description|astrologer-auto-approval\/settings|astrologer-quiz\/(?:questions(?:\/delete)?|load-defaults|sync-google-form)|live\/(?:pricing|commission))(?:\/|$)|astrologer\/(?:appointments|availability|change-payout|earnings|open-questions|qualification-config|sync-approval|withdrawal-request|edit-answer|claim-question)(?:\/|$)|customer\/(?:appointments|reviews|submit-review|consultations|mark-answer-viewed)(?:\/|$)|public\/(?:astrologers(?:\/[A-Za-z0-9_-]+\/reviews)?|content|android-app|push-config)(?:\/|$)|google-form\/astrologer-quiz-config(?:\/|$)|webhooks\/google-form\/astrologer-qualification(?:\/|$)|submit-answer(?:\/|$))/.test(pathname);
   return window.SMV_CLOUDFLARE_FINANCIAL_API_ENABLED === true && cloudflareRoute
     ? CLOUDFLARE_FINANCIAL_BACKEND_URL
     : RAZORPAY_BACKEND_URL;
@@ -2132,8 +2132,8 @@ function smvBindCustomerWallet({load=true}={}){
        const skippedReason=String(verified.bonusCreditSkippedReason||'');
        const customerPaymentId=String(verified.customerPaymentId||'').trim();
        const bonusMessage=bonusCreditCreditedPaise?' Bonus Credit added: '+smvWalletMoney(bonusCreditCreditedPaise)+'.':
-        skippedReason==='admin_promotional_fund_insufficient'?' Offer met, but Bonus Credit was not applied because the Admin Promotional Fund is insufficient.':
-        skippedReason==='admin_promotional_fund_not_configured'?' Offer met, but Bonus Credit was not applied because the Promotional Fund is not configured.':' No Bonus Credit offer applied.';
+        skippedReason==='bonus_credit_balance_limit'?' Bonus Credit was not applied because the Customer Bonus Credit balance limit was reached.':
+        skippedReason?' Bonus Credit was not applied for this recharge.':' No Bonus Credit offer applied.';
        smvWalletSetMessage('Payment Successful — recharge verified.'+(customerPaymentId?' Customer Payment ID: '+customerPaymentId+'.':'')+' Original Wallet balance: '+smvWalletMoney(Number(verified.availableBalancePaise||0))+'.'+bonusMessage,'success');
       }catch(error){
        smvWalletSetMessage('Payment returned but server verification is not confirmed: '+(error?.message||String(error))+'. Do not pay again until this transaction is checked.','error');
@@ -3257,8 +3257,7 @@ async function smvRenderAdminWalletOffers(){
  ];
  card.innerHTML=[
   '<h3>Wallet Recharge Bonus Offers</h3>',
-  '<p class="small">When an Offer is ON and within its Start / End Date window, it appears on the public Home page. After a qualifying captured recharge, Bonus Credit is awarded only when the separate Admin-funded Promotional Fund can fully back it. Bonus Credit is applied first to Live / Booked Live service value; remaining value is charged to Original Wallet. Astrologer and Admin commission are calculated on the full service value, including Bonus Credit. Bonus Credit is promotional, non-transferable and non-withdrawable. Legacy minute balances remain separate and are not converted automatically.</p>',
-  '<section class="card" style="margin:12px 0"><h4>Separate Promotional Fund</h4><p class="small">This is separate from Admin Earnings. Transfer an amount from the Admin Wallet into this fund before enabling Bonus Credit offers. Only this funded balance can pay for new Bonus Credit awards.</p><div class="grid"><div><span class="small">Promotional Fund Available</span><b id="smvPromoFundBalance">Loading…</b></div><div><span class="small">Admin Wallet Available</span><b id="smvPromoAdminWalletBalance">Loading…</b></div></div><label><b>Allocate from Admin Wallet (₹)</b><input id="smvPromoFundAmount" type="number" min="0.01" step="0.01" value="100.00"></label><div class="action-row"><button class="btn" id="smvPromoFundAllocate" type="button">ALLOCATE TO PROMOTIONAL FUND</button><button class="btn gray" id="smvPromoFundRefresh" type="button">REFRESH FUND</button></div><div id="smvPromoFundMessage" class="small" role="status" aria-live="polite"></div></section>',
+  '<p class="small">When an Offer is ON and within its Start / End Date window, it appears on the public Home page. After a qualifying recharge is successfully verified, the configured Bonus Credit Amount is added directly to the Customer Wallet when the minimum recharge, validity and usage-limit conditions are met. Bonus Credit is applied first to eligible Live / Booked Live service value; remaining value is charged to Original Wallet. Astrologer and Admin commission are calculated on the full service value, including Bonus Credit. Bonus Credit is promotional, non-transferable and non-withdrawable. Legacy minute balances remain separate and are not converted automatically.</p>',
   '<input id="smvWalletOfferId" type="hidden">',
   '<div class="grid">',
   '<label><b>Offer Name</b><input id="smvWalletOfferName" maxlength="120" placeholder="Diwali Bonus Credit"></label>',
@@ -3375,47 +3374,6 @@ async function smvRenderAdminWalletOffers(){
    if(list)list.innerHTML='<div class="empty error">'+escapeHtml(error.message||String(error))+'</div>';
   }
  };
- const fundBalance=$('smvPromoFundBalance'),adminBalance=$('smvPromoAdminWalletBalance'),fundMessage=$('smvPromoFundMessage');
- const reloadPromotionalFund=async()=>{
-  try{
-   const result=await renderApi('/admin/promotional-fund',{method:'GET'});
-   if(result?.success!==true||!result.fund)throw new Error(result?.error||'Promotional Fund was not returned by the server.');
-   if(fundBalance)fundBalance.textContent=smvWalletMoney(Number(result.fund.balancePaise||0));
-   if(adminBalance)adminBalance.textContent=smvWalletMoney(Number(result.fund.adminWalletAvailableBalancePaise||0));
-   return result.fund;
-  }catch(error){
-   if(fundBalance)fundBalance.textContent='Unavailable';
-   if(adminBalance)adminBalance.textContent='Unavailable';
-   if(fundMessage)fundMessage.innerHTML='<span class="error">'+escapeHtml(error.message||String(error))+'</span>';
-   throw error;
-  }
- };
- const allocateButton=$('smvPromoFundAllocate');
- if(allocateButton)allocateButton.onclick=async()=>{
-  const amount=$('smvPromoFundAmount').value;
-  if(!/^\d{1,9}(?:\.\d{1,2})?$/.test(String(amount||''))||Math.round(Number(amount)*100)<1){
-   if(fundMessage)fundMessage.innerHTML='<span class="error">Enter a positive allocation amount with up to two decimal places.</span>';
-   return;
-  }
-  allocateButton.disabled=true;allocateButton.textContent='ALLOCATING…';
-  if(fundMessage)fundMessage.textContent='Transferring funds from Admin Wallet to the separate Promotional Fund…';
-  try{
-   const result=await renderApi('/admin/promotional-fund/allocate',{method:'POST',body:JSON.stringify({
-    amount,idempotencyKey:'admin-promo-'+crypto.randomUUID()
-   })});
-   if(result?.success!==true||!Number.isSafeInteger(Number(result.balancePaise)))throw new Error(result?.error||'The Promotional Fund allocation was not confirmed.');
-   if(fundBalance)fundBalance.textContent=smvWalletMoney(Number(result.balancePaise));
-   if(adminBalance)adminBalance.textContent=smvWalletMoney(Number(result.adminWalletAvailableBalancePaise||0));
-   if(fundMessage)fundMessage.innerHTML='<span class="success">Allocation confirmed. Separate Promotional Fund balance: '+smvWalletMoney(Number(result.balancePaise))+'. Admin Earnings were not changed; funds were transferred from Admin Wallet available balance.</span>';
-   await reloadPromotionalFund();
-  }catch(error){
-   if(fundMessage)fundMessage.innerHTML='<span class="error">'+escapeHtml(error.message||String(error))+'</span>';
-   await reloadPromotionalFund().catch(()=>{});
-  }finally{allocateButton.disabled=false;allocateButton.textContent='ALLOCATE TO PROMOTIONAL FUND';}
- };
- const fundRefresh=$('smvPromoFundRefresh');
- if(fundRefresh)fundRefresh.onclick=()=>reloadPromotionalFund().catch(()=>{});
- await reloadPromotionalFund().catch(()=>{});
  const save=$('saveSmvWalletOfferBtn'),msg=$('smvWalletOfferMsg');
  if(save)save.onclick=async()=>{
   const payload={
@@ -3441,7 +3399,7 @@ async function smvRenderAdminWalletOffers(){
    if(!verified||verified.name!==payload.name||Number(verified.bonusCreditAmountPaise)!==Math.round(Number(payload.bonusCreditAmount)*100)||
       Number(verified.minimumRechargeAmountPaise)!==Math.round(Number(payload.minimumRechargeAmount)*100)||
       verified.enabled!==payload.enabled)throw new Error('Offer save returned, but the saved values could not be verified by reloading the server list.');
-   msg.innerHTML='<span class="success">Offer saved and verified: '+escapeHtml(verified.name)+' · Bonus Credit ₹'+(Number(verified.bonusCreditAmountPaise)/100).toFixed(2)+' after a successful recharge, subject to available Admin Promotional Fund.</span>';
+   msg.innerHTML='<span class="success">Offer saved and verified: '+escapeHtml(verified.name)+' · Bonus Credit ₹'+(Number(verified.bonusCreditAmountPaise)/100).toFixed(2)+' after a qualifying successful recharge.</span>';
    clearForm();
   }catch(error){msg.innerHTML='<span class="error">Unable to save Wallet Offer: '+escapeHtml(error.message||String(error))+'</span>';}
   finally{save.disabled=false;save.textContent='SAVE OFFER';}

@@ -52,9 +52,7 @@ export function registerWalletOfferRoutes({
       !identityService || typeof identityService.authenticateAuthorization !== 'function' ||
       !walletAdapter || typeof walletAdapter.listWalletOffers !== 'function' ||
       typeof walletAdapter.saveWalletOffer !== 'function' ||
-      typeof walletAdapter.deleteWalletOffer !== 'function' ||
-      typeof walletAdapter.getPromotionalFund !== 'function' ||
-      typeof walletAdapter.allocatePromotionalFund !== 'function') {
+      typeof walletAdapter.deleteWalletOffer !== 'function') {
     throw new TypeError('Wallet Offer routes require shared identity and D1 Wallet Offer methods.');
   }
 
@@ -94,42 +92,6 @@ export function registerWalletOfferRoutes({
       return res.set('Cache-Control', 'no-store').json({ success: true, offers: offers || [] });
     } catch (error) {
       return reply(res, error, 'Unable to load Wallet recharge offers.');
-    }
-  });
-
-  app.get('/admin/promotional-fund', async (req,res) => {
-    try {
-      if (!(await isReady())) return res.status(503).set('Cache-Control','no-store').json({
-        success:false,error:'Promotional Fund storage is not ready.',code:'WALLET_SCHEMA_NOT_READY'
-      });
-      await requireAdmin(req);
-      const fund=await walletAdapter.getPromotionalFund();
-      return res.set('Cache-Control','no-store').json({success:true,fund});
-    } catch(error) {
-      return reply(res,error,'Unable to load the SMV ASTRO Promotional Fund.');
-    }
-  });
-
-  app.post('/admin/promotional-fund/allocate', async (req,res) => {
-    try {
-      if (!(await isReady())) return res.status(503).set('Cache-Control','no-store').json({
-        success:false,error:'Promotional Fund storage is not ready.',code:'WALLET_SCHEMA_NOT_READY'
-      });
-      const user=await requireAdmin(req);
-      const amountPaise=parseRupeesToPaise(req.body?.amount);
-      const idempotencyKey=textValue(req.body?.idempotencyKey,240);
-      if(!Number.isSafeInteger(amountPaise)||amountPaise<1) {
-        throw walletRechargeError('PROMOTIONAL_FUND_AMOUNT_INVALID','Enter a positive amount with up to two decimal places.',400);
-      }
-      if(!/^[A-Za-z0-9:_-]{12,240}$/.test(idempotencyKey)) {
-        throw walletRechargeError('PROMOTIONAL_FUND_IDEMPOTENCY_REQUIRED','A valid allocation request ID is required.',400);
-      }
-      const result=await walletAdapter.allocatePromotionalFund({
-        adminUid:user.uid,amountPaise,idempotencyKey,note:'Admin allocated funds for Bonus Credit offers'
-      });
-      return res.set('Cache-Control','no-store').json({success:true,...result});
-    } catch(error) {
-      return reply(res,error,'Unable to allocate the SMV ASTRO Promotional Fund.');
     }
   });
 
@@ -221,7 +183,6 @@ export function registerWalletOfferRoutes({
   });
 
   return Object.freeze({ paths: Object.freeze([
-    '/wallet/recharge-offers', '/admin/offers', '/admin/offers/save', '/admin/offers/delete',
-    '/admin/promotional-fund','/admin/promotional-fund/allocate'
+    '/wallet/recharge-offers', '/admin/offers', '/admin/offers/save', '/admin/offers/delete'
   ]) });
 }
