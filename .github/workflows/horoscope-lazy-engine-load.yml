@@ -5,7 +5,11 @@ on:
     branches: [main]
     paths:
       - 'public/horoscope/index.html'
+      - 'public/sw.js'
+      - 'public/horoscope/sw.js'
+      - 'public/horoscope/calendar/sw.js'
       - 'tests/horoscope-lazy-engine-load-regression.mjs'
+      - 'tests/horoscope-lazy-result-styles-regression.mjs'
       - '.github/workflows/horoscope-lazy-engine-load.yml'
   push:
     branches: [main]
@@ -30,4 +34,5 @@ jobs:
       - name: Check regression source and lazy-load dependency order
         run: |
           node --check tests/horoscope-lazy-engine-load-regression.mjs
-          node --test tests/horoscope-lazy-engine-load-regression.mjs
+          node --check tests/horoscope-lazy-result-styles-regression.mjs
+          node --test tests/horoscope-lazy-engine-load-regression.mjs tests/horoscope-lazy-result-styles-regression.mjs
