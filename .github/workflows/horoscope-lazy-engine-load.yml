@@ -15,7 +15,11 @@ on:
     branches: [main]
     paths:
       - 'public/horoscope/index.html'
+      - 'public/sw.js'
+      - 'public/horoscope/sw.js'
+      - 'public/horoscope/calendar/sw.js'
       - 'tests/horoscope-lazy-engine-load-regression.mjs'
+      - 'tests/horoscope-lazy-result-styles-regression.mjs'
       - '.github/workflows/horoscope-lazy-engine-load.yml'
   workflow_dispatch:
 
