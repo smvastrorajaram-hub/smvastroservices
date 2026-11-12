@@ -361,7 +361,10 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     registerLegacyDashboardReadRoutes({
       app, firestore: firestoreAdmin, identityService: walletIdentityService,
       liveService: liveSessionRoutesOpen ? gapLiveService : null,
-      isLiveReady: async () => (await inspectSchema()).checks.liveSessionQueryIndexes === true
+      isLiveReady: async () => {
+        const schema = await inspectSchema();
+        return schema.checks.liveSessionSchema === true && schema.checks.walletSecuritySchema === true;
+      }
     });
     registerLegacyBusinessRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService, liveService: gapLiveService });
     registerAdminAstrologerProfileRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
@@ -425,8 +428,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
   const checkLiveSessionSchemaReady = async () => {
     const schema = await inspectSchema();
     liveSessionSchemaReady = schema.checks.liveSessionSchema === true &&
-      schema.checks.walletSecuritySchema === true &&
-      schema.checks.liveSessionQueryIndexes === true;
+      schema.checks.walletSecuritySchema === true;
     return liveSessionSchemaReady;
   };
 
@@ -664,8 +666,7 @@ app.get('/healthz', async (_req, res) => {
   const walletRechargeRoutesEnabled = walletRechargeRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
   const walletOfferRoutesEnabled = walletOfferRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
   const liveCallChatRoutesEnabled = liveSessionRoutesRegistered && liveSessionRoutesOpen &&
-    schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema &&
-    schema.checks.liveSessionQueryIndexes;
+    schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;
   const razorpayCredentialsConfigured = razorpayPolicy.enabled && !!razorpayKeyId && !!razorpayKeySecret && !!razorpayWebhookSecret;
   const productionFinancialTrafficRoutingEnabled = isProductionFinancialTrafficRoutingEnabled({
     environment: String(env.SMV_ENVIRONMENT || 'unknown'),
