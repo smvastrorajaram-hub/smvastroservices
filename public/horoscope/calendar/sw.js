@@ -1,5 +1,5 @@
 const IS_PAGES_DEV_HOST = self.location.hostname === 'smvastroservices.pages.dev' || self.location.hostname.endsWith('.smvastroservices.pages.dev') || self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
-const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261112-homepage-desktop-cta-colors-pages-v1' : '20261112-homepage-desktop-cta-colors-in-v1';
+const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261112-customer-dashboard-source-ui-pages-v2' : '20261112-customer-dashboard-source-ui-in-v2';
 const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE;
 const LOCATION_CACHE='smv-shared-india-places';
 const PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['../../pages-dev-host-independence.js','../../pages-dev-apk-pwa-icons.js']:[];

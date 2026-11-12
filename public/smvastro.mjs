@@ -1938,8 +1938,8 @@ async function smvLoadAdminPrivateChat(){
 
 function smvCustomerBookingChatCardHtml(){
  return '<section class="card smv-customer-book-chat" id="smvCustomerBookChatCard" style="margin-top:16px" aria-labelledby="smvCustomerBookChatTitle">'+
- '<div class="grid" style="align-items:center;gap:14px"><div><span class="badge">CONSULTATION</span><h3 id="smvCustomerBookChatTitle" style="margin:8px 0">Consult an Astrologer</h3><p>Browse approved astrologers, compare each Astrologer’s Call and Chat rates per minute, and consult using your Wallet balance.</p></div>'+
- '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" id="smvCustomerBookChat" type="button">CONSULT AN ASTROLOGER</button></div></div></section>';
+ '<div class="smv-customer-book-chat-layout"><div class="smv-customer-book-chat-copy"><span class="badge">CONSULTATION</span><h3 id="smvCustomerBookChatTitle" style="margin:8px 0">Consult an Astrologer</h3><p>Browse approved astrologers, compare each Astrologer’s Call and Chat rates per minute, and consult using your Wallet balance.</p></div>'+
+ '<div class="smv-customer-book-chat-actions"><button class="btn smv-customer-book-chat-action" id="smvCustomerBookChat" type="button">CONSULT AN ASTROLOGER</button></div></div></section>';
 }
 function smvBindCustomerBookingChat(){
  const button=$('smvCustomerBookChat');

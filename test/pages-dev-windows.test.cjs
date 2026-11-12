@@ -176,14 +176,14 @@ test('all three PWA cache releases are synchronized for Pages.dev and .in conten
     return { pages: match[1], legacy: match[2] };
   });
   assert.deepEqual(releases.map(item => item.pages), [
-    '20261112-homepage-desktop-cta-colors-pages-v1',
-    '20261112-homepage-desktop-cta-colors-pages-v1',
-    '20261112-homepage-desktop-cta-colors-pages-v1'
+    '20261112-customer-dashboard-source-ui-pages-v2',
+    '20261112-customer-dashboard-source-ui-pages-v2',
+    '20261112-customer-dashboard-source-ui-pages-v2'
   ]);
   assert.deepEqual(releases.map(item => item.legacy), [
-    '20261112-homepage-desktop-cta-colors-in-v1',
-    '20261112-homepage-desktop-cta-colors-in-v1',
-    '20261112-homepage-desktop-cta-colors-in-v1'
+    '20261112-customer-dashboard-source-ui-in-v2',
+    '20261112-customer-dashboard-source-ui-in-v2',
+    '20261112-customer-dashboard-source-ui-in-v2'
   ]);
 });
 test('each installer creates its own 256x256 Windows icon', () => {

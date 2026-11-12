@@ -261,6 +261,15 @@ body.smv-v12-theme .action-row{gap:var(--smv207-space-2)!important;align-items:c
   line-height:1.25!important;font-weight:750!important;
 }
 #dashboardContent :where(.card,.stat),#admin :where(.card,.stat,.admin-content-row){min-width:0}
+
+/* Customer Dashboard consultation card: semantic layout independent of generic .grid rules. */
+.smv-customer-book-chat-layout{display:grid;grid-template-columns:minmax(0,1fr);align-items:center;gap:14px}
+.smv-customer-book-chat-copy{min-width:0}
+.smv-customer-book-chat-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+@media (min-width:900px){
+  #dashboardContent .smv-customer-book-chat-layout{grid-template-columns:minmax(0,1fr) auto}
+  #dashboardContent #smvCustomerBookChat{display:inline-flex;flex:0 0 auto;align-items:center;justify-content:center;box-sizing:border-box;width:max-content;min-width:0;max-width:230px;height:42px;min-height:42px;padding:9px 14px;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.15;white-space:nowrap}
+}
 #dashboardContent :where(label),#admin :where(label){
   font-size:var(--smv-dashboard-label)!important;font-weight:600!important;line-height:1.4!important;
 }
