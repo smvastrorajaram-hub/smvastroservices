@@ -45,19 +45,18 @@ test('Implemented non-Auth SMV ASTRO dashboard APIs share the Cloudflare Worker 
   assert.ok(!resolver.includes('api\\/locations'));
 });
 
-test('Admin Promotional Fund read and allocation APIs route to the Cloudflare Worker',()=>{
+test('Promotional Fund endpoints are excluded while Admin Wallet Offer APIs remain Cloudflare-routed',()=>{
   const start=frontend.indexOf('function smvApiBackend(');
   const end=frontend.indexOf('const BACKEND=',start);
   const resolver=frontend.slice(start,end);
   const declaration=resolver.indexOf('const cloudflareRoute = ');
   const matchEnd=resolver.indexOf('.test(pathname);',declaration);
-  assert.ok(declaration>=0&&matchEnd>declaration,'Cloudflare route matcher exists');
   const literal=resolver.slice(declaration+'const cloudflareRoute = '.length,matchEnd).trim();
-  assert.ok(literal.startsWith('/')&&literal.endsWith('/'),'Cloudflare route matcher is a regex literal');
   const matcher=new RegExp(literal.slice(1,-1));
-  assert.equal(matcher.test('/admin/promotional-fund'),true,'Promotional Fund read must use Cloudflare');
-  assert.equal(matcher.test('/admin/promotional-fund/allocate'),true,'Promotional Fund allocation must use Cloudflare');
-  assert.equal(matcher.test('/admin/promotional-fund-extra'),false,'Unrelated Admin paths must not be captured');
+  assert.equal(matcher.test('/admin/promotional-fund'),false);
+  assert.equal(matcher.test('/admin/promotional-fund/allocate'),false);
+  assert.equal(matcher.test('/admin/offers'),true);
+  assert.equal(matcher.test('/admin/offers/save'),true);
 });
 
 test('Admin Processing, Reject and Paid operations all use D1 withdrawal mutation endpoints only',()=>{

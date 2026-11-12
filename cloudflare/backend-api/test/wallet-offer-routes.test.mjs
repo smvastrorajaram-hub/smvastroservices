@@ -34,9 +34,7 @@ function makeState(overrides = {}) {
   const walletAdapter = {
     async listWalletOffers(options) { calls.push(['list', options]); return [offer]; },
     async saveWalletOffer(input) { calls.push(['save', input]); return { ...offer, ...input, id: input.id || 'new-offer' }; },
-    async deleteWalletOffer(id) { calls.push(['delete', id]); return { success: true, id }; },
-    async getPromotionalFund() { calls.push(['fund-read']); return {fundId:'SMV_ASTRO',balancePaise:25000,adminWalletAvailableBalancePaise:90000}; },
-    async allocatePromotionalFund(input) { calls.push(['fund-allocate',input]); return {success:true,alreadyProcessed:false,fundId:'SMV_ASTRO',balancePaise:37500,adminWalletAvailableBalancePaise:77500}; }
+    async deleteWalletOffer(id) { calls.push(['delete', id]); return { success: true, id }; }
   };
   const identityService = {
     async authenticateAuthorization(header) {
@@ -83,56 +81,12 @@ test('Admin can list saved offers without losing redemption counters', async () 
   assert.deepEqual(state.calls.find(call => call[0] === 'list')[1], { activeOnly: false });
 });
 
-test('Admin can read the separate Promotional Fund and Admin cash balance', async () => {
+test('Admin Offer routes do not expose a separate Promotional Fund workflow',()=>{
   const state=makeState();
-  const res=responseHarness();
-  await state.app.handlers.get('GET /admin/promotional-fund')(request(),res);
-  assert.equal(res.statusCode,200);
-  assert.equal(res.body.success,true);
-  assert.equal(res.body.fund.balancePaise,25000);
-  assert.equal(res.body.fund.adminWalletAvailableBalancePaise,90000);
-  assert.ok(state.calls.some(call=>call[0]==='auth'));
-  assert.ok(state.calls.some(call=>call[0]==='fund-read'));
-});
-
-test('Only Admin can allocate money to the separately funded Promotional Fund', async () => {
-  const state=makeState();
-  const res=responseHarness();
-  await state.app.handlers.get('POST /admin/promotional-fund/allocate')(request({
-    amount:'125.00',idempotencyKey:'admin-promo-test-request-001'
-  }),res);
-  assert.equal(res.statusCode,200);
-  assert.equal(res.body.success,true);
-  assert.equal(res.body.balancePaise,37500);
-  const call=state.calls.find(item=>item[0]==='fund-allocate');
-  assert.equal(call[1].adminUid,'admin-1');
-  assert.equal(call[1].amountPaise,12500);
-  assert.equal(call[1].idempotencyKey,'admin-promo-test-request-001');
-});
-
-test('Customer cannot read or allocate the Promotional Fund', async () => {
-  const state=makeState({user:{uid:'customer-1',role:'customer',isAdmin:false}});
-  const read=responseHarness();
-  await state.app.handlers.get('GET /admin/promotional-fund')(request(),read);
-  assert.equal(read.statusCode,403);
-  const allocate=responseHarness();
-  await state.app.handlers.get('POST /admin/promotional-fund/allocate')(request({
-    amount:'50.00',idempotencyKey:'admin-promo-test-request-002'
-  }),allocate);
-  assert.equal(allocate.statusCode,403);
-  assert.equal(state.calls.some(call=>call[0]==='fund-allocate'),false);
-});
-
-test('Promotional Fund allocation rejects zero or malformed rupee amounts', async () => {
-  for(const amount of ['0','-10','1.001','abc']){
-    const state=makeState();
-    const res=responseHarness();
-    await state.app.handlers.get('POST /admin/promotional-fund/allocate')(request({
-      amount,idempotencyKey:'admin-promo-test-request-003'
-    }),res);
-    assert.equal(res.statusCode,400);
-    assert.equal(state.calls.some(call=>call[0]==='fund-allocate'),false);
-  }
+  assert.equal(state.app.handlers.has('GET /admin/offers'),true);
+  assert.equal(state.app.handlers.has('POST /admin/offers/save'),true);
+  assert.equal(state.app.handlers.has('GET /admin/promotional-fund'),false);
+  assert.equal(state.app.handlers.has('POST /admin/promotional-fund/allocate'),false);
 });
 
 test('Admin saves a paise-exact Bonus Credit amount and converts datetime-local as India time', async () => {
