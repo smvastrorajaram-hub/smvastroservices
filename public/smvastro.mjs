@@ -1981,6 +1981,7 @@ function smvRenderFastDashboardShell(roleValue=''){
   smvBindCustomerPrivateChat();
   void smvLoadCustomerPrivateChatQuestions();
   smvBindCustomerWallet({load:false});
+  void smvLoadHomeWalletRechargeOffers().catch(()=>{});
   return;
  }
  if(role==='astrologer'){
