@@ -51,9 +51,9 @@ function html(r){if(r?.v311?.status!=='ready')return old?.html?.(r)||'';
   const chunks=String(value||'').match(/[^.!?।]+(?:[.!?।]+|$)/gu)||[];
   const fresh=[];
   for(const raw of chunks){
-   const sentence=raw.trim(),norm=sentence.normalize('NFKC').toLocaleLowerCase().replace(/[“”\"'‘’]/g,'').replace(/[\\s.,;:!?।॥]+/g,' ').trim();
+   const sentence=raw.trim(),norm=sentence.normalize('NFKC').toLocaleLowerCase().replace(/[“”\"'‘’]/g,'').replace(/[\s.,;:!?।॥]+/g,' ').trim();
    if(!norm)continue;
-   const words=(norm.match(/[\\p{L}\\p{N}]+/gu)||[]);
+   const words=(norm.match(/[\p{L}\p{N}]+/gu)||[]);
    // Preserve safety/uncertainty statements wherever they apply. Deduplicate
    // only substantial repeated narrative sentences across the complete report.
    const caution=/(?:உறுதி|உறுதியாக|மருத்துவ|மரணம்|ஆயுள்|மலட்டுத்தன்மை|குழந்தைப்பேறு|தீர்மானிக்க|நிர்ணயிக்க|நிகழ்வு உறுதி|guarantee|certain|medical|death|lifespan|fertility|should not|not establish|not predict|does not establish|cannot determine|not be treated)/i.test(sentence);
