@@ -67,7 +67,7 @@ test('SMV ASTRO Live Session ended receipt opens the trusted Android native Prin
   assert.ok(livePage.includes('live-session-receipt.mjs'));
   assert.ok(liveLoader.includes("sessionStorage.getItem(key)||''"));
   assert.ok(liveLoader.includes('document.write(receipt)'));
-  assert.ok(frontend.includes("typeof b.viewLiveReceiptPdf==='function'"), 'The page invokes only the dedicated Live receipt native bridge, preventing older Horoscope-only APKs from receiving a misrouted call.');
+  assert.ok(frontend.includes("typeof b.viewLiveReceiptPdf===&quot;function&quot;"), 'The page invokes only the dedicated Live receipt native bridge, preventing older Horoscope-only APKs from receiving a misrouted call.');
   assert.ok(astro.includes('isAstroHoroscopePrintPageUrl(currentUrl)'), 'The existing Horoscope native PDF route remains supported.');
   assert.ok(astro.includes('private void openAstroLiveReceiptPdf(boolean download)'), 'The Live receipt bridge enforces its own exact-path guard before opening PrintManager.');
 });
