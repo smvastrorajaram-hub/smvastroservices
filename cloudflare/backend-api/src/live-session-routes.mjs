@@ -600,14 +600,35 @@ export function registerD1LiveSessionRoutes({
   });
 
   app.post('/live/sessions/:id/messages',async(req,res)=>{
+    let user=null;
     try {
       await assertReady();
-      const user=await requireRole(req,['customer','astrologer']);
+      user=await requireRole(req,['customer','astrologer']);
       const result=await liveService.sendMessage({sessionId:req.params.id,senderUid:user.uid,text:req.body?.text});
       await publish(result.recipientUid,'live.chat.message',result.message.id,{message:result.message});
       await publish(user.uid,'live.chat.message',result.message.id,{message:result.message});
       return res.set('Cache-Control','no-store').json({success:true,message:result.message});
-    } catch(error) { return replyError(res,error,'Unable to send the Live Chat message.'); }
+    } catch(error) {
+      // D1 settles an expired session before sendMessage returns LIVE_SESSION_ENDED.
+      // Publish that committed terminal state to both users here as well as from the
+      // Durable Object alarm; otherwise the Chat composer is disabled but the panel
+      // remains visible until another event happens to reconcile the ended state.
+      if(user&&['LIVE_SESSION_ENDED','LIVE_SESSION_NOT_ACTIVE'].includes(String(error?.code||''))){
+        try{
+          const sessions=await liveService.listSessions({uid:user.uid,role:user.role});
+          const ended=(sessions||[]).find(session=>
+            String(session.id||session.sessionId||'')===String(req.params.id||'')&&String(session.state||'')==='ended'
+          );
+          if(ended){
+            await cancelAll(req.params.id);
+            await publishSession(ended);
+          }
+        }catch(reconcileError){
+          console.warn('[Live Session] Expired Chat terminal-state publish deferred:',reconcileError?.message||reconcileError);
+        }
+      }
+      return replyError(res,error,'Unable to send the Live Chat message.');
+    }
   });
 
   app.get('/live/sessions/:id/messages',async(req,res)=>{
