@@ -59,6 +59,7 @@ function fixture(overrides={}) {
     async rejectBooking(input){calls.push({service:'rejectBooking',input});return {success:true,booking:{id:input.bookingId,customerUid:'customer-1',astrologerUid:input.astrologerUid,status:'rejected'}};},
     async acceptBooking(input){calls.push({service:'acceptBooking',input});return {success:true,session:{id:input.bookingId,customerUid:'customer-1',astrologerUid:input.astrologerUid,mode:'chat',state:'preparing',preparationUntil:'2026-10-31T10:02:15Z'}};},
     async listSessions(){return overrides.sessions||[];},
+    async listSessionStatus(input){calls.push({service:'listSessionStatus',input});return overrides.statusSessions||[];},
     async getSessionForParticipant(input){calls.push({service:'getSessionForParticipant',input});return overrides.session||{id:'session-1',customerUid:'customer-1',astrologerUid:'astro-1',mode:'chat',state:'ended'};},
     async setConnection(input){calls.push({service:'setConnection',input});return {
       success:true,sessionId:input.sessionId,uid:input.uid,connected:input.connected,
@@ -404,6 +405,17 @@ test('New Cloudflare booking alerts use the booking ID and FCM failure cannot un
   assert.equal(sent[0].payload.title,'New Live Chat Booking');
 });
 
+
+test('Live status polling uses the authenticated participant and returns only the bounded status snapshot',async()=>{
+  const statusSessions=[{id:'session-active-1',state:'active',customerUid:'customer-1'}];
+  const f=fixture({statusSessions});
+  const res=responseHarness();
+  await f.app.handlers.get('GET /live/sessions/status')(req({},'customer'),res);
+  assert.equal(res.statusCode,200);
+  assert.deepEqual(res.body.sessions,statusSessions);
+  assert.deepEqual(f.calls.find(x=>x.service==='listSessionStatus').input,{uid:'customer-1',role:'customer'});
+  assert.equal(res.headers['Cache-Control'],'no-store');
+});
 
 test('Live Session detail route returns only the authenticated participant receipt snapshot',async()=>{
   const f=fixture({session:{id:'session-1',customerUid:'customer-1',astrologerUid:'astro-1',mode:'chat',state:'ended'}});
