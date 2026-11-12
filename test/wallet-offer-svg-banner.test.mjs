@@ -72,7 +72,7 @@ test('existing offer SVG assets are precached across the synchronized SMV app re
   for (const theme of themes) {
     assert.ok(worker.includes("'./assets/offers/" + theme + ".svg'"), theme + ' SVG must be part of the main app cache');
   }
-  const release = '20261112-astro-live-receipt-native-print-';
+  const release = '20261112-d1-read-optimization-5000-customers-';
   assert.ok(worker.includes(release + 'pages-v2') && worker.includes(release + 'in-v2'));
   assert.ok(horoscopeWorker.includes(release + 'pages-v2') && horoscopeWorker.includes(release + 'in-v2'));
   assert.ok(calendarWorker.includes(release + 'pages-v2') && calendarWorker.includes(release + 'in-v2'));
