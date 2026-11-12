@@ -241,7 +241,7 @@ test('Each PWA uses synchronized Pages.dev and .in cache releases for public con
   ];
   for (const source of workers) {
     assert.match(source, /const IS_PAGES_DEV_HOST\s*=/);
-    assert.match(source, /'20261112-homepage-desktop-cta-colors-pages-v1'\s*:\s*'20261112-homepage-desktop-cta-colors-in-v1'/);
+    assert.match(source, /'20261112-customer-dashboard-source-ui-pages-v2'\s*:\s*'20261112-customer-dashboard-source-ui-in-v2'/);
     assert.match(source, /PAGES_DEV_HELPER_FILES\s*=\s*IS_PAGES_DEV_HOST/);
   }
   const horoscope = workers[1];

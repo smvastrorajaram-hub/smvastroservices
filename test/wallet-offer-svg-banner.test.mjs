@@ -72,13 +72,15 @@ test('existing offer SVG assets are precached across the synchronized SMV app re
   for (const theme of themes) {
     assert.ok(worker.includes("'./assets/offers/" + theme + ".svg'"), theme + ' SVG must be part of the main app cache');
   }
-  const release = '20261112-homepage-desktop-cta-colors-';
-  assert.ok(worker.includes(release + 'pages-v1') && worker.includes(release + 'in-v1'));
-  assert.ok(horoscopeWorker.includes(release + 'pages-v1') && horoscopeWorker.includes(release + 'in-v1'));
-  assert.ok(calendarWorker.includes(release + 'pages-v1') && calendarWorker.includes(release + 'in-v1'));
+  const release = '20261112-customer-dashboard-source-ui-';
+  assert.ok(worker.includes(release + 'pages-v2') && worker.includes(release + 'in-v2'));
+  assert.ok(horoscopeWorker.includes(release + 'pages-v2') && horoscopeWorker.includes(release + 'in-v2'));
+  assert.ok(calendarWorker.includes(release + 'pages-v2') && calendarWorker.includes(release + 'in-v2'));
   assert.ok(css.includes('.smv-wallet-offer-svg-banner'));
 });
 test('Homepage and Customer Wallet SVG offer banners share a clean white background', () => {
+  assert.ok(css.includes('#dashboardContent button:not(.smv-wallet-offer-svg-banner):where('), 'dashboard theme button colours exclude the special offer button');
+  assert.ok(css.includes('#dashboard button:not(.smv-wallet-offer-svg-banner):where('), 'dashboard theme button styles exclude the special offer button');
   const bannerStart = css.indexOf('.smv-wallet-offer-svg-banner{');
   const bannerEnd = css.indexOf('}', bannerStart);
   assert.ok(bannerStart >= 0 && bannerEnd > bannerStart, 'Shared SVG banner style exists');
