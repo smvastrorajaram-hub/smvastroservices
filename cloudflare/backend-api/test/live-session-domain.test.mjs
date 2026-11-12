@@ -12,7 +12,8 @@ import {
   liveRequestCanStartNow,
   validateLiveBirthDetails,
   scheduledAppointmentStartAtMs,
-  calculateLiveSettlement
+  calculateLiveSettlement,
+  mapLiveBookingRow
 } from '../../../shared/backend-platform/live-session-domain.mjs';
 
 test('Rupee prices convert to exact integer paise and reject malformed prices',()=>{
@@ -200,4 +201,21 @@ test('session settlement releases all reserve before connection and rounds conne
   assert.equal(longer.releasedAmountPaise,2000);
   assert.equal(longer.astrologerAmountPaise,400);
   assert.equal(longer.adminAmountPaise,1600);
+});
+
+test('Live booking row preserves the Customer birth details for the assigned Astrologer',()=>{
+  const booking=mapLiveBookingRow({
+    booking_id:'live-booking-1',customer_uid:'customer-1',astrologer_uid:'astro-1',
+    mode:'chat',status:'pending',wallet_reservation_state:'reserved',
+    reserved_amount_paise:2500,reserved_bonus_minutes:0,reserved_bonus_credit_paise:0,
+    expires_at_ms:2000,created_at_ms:1000,updated_at_ms:1000,
+    payload_json:JSON.stringify({
+      customerName:'Customer One',
+      birthDetails:{birthDate:'1990-01-02',birthTime:'08:30',birthPlace:'Perambalur',birthGender:'Female'}
+    })
+  });
+  assert.equal(booking.customerName,'Customer One');
+  assert.deepEqual(booking.birthDetails,{
+    birthDate:'1990-01-02',birthTime:'08:30',birthPlace:'Perambalur',birthGender:'Female'
+  });
 });
