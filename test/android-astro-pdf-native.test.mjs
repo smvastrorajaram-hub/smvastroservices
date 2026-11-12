@@ -51,6 +51,23 @@ test('SMV ASTRO PDF preview and Save as PDF use Android A4 Print Framework', () 
   assert.match(astro, /Choose ‘Save as PDF’/);
 });
 
+test('SMV ASTRO Live Session ended receipt opens the trusted Android native Print page', () => {
+  const livePage = read('public/live-session-receipt.html');
+  const liveLoader = read('public/live-session-receipt.mjs');
+  const frontend = read('public/smvastro.mjs');
+  assert.match(astro, /private boolean isAstroLiveReceiptPageUrl\(String rawUrl\)/);
+  assert.ok(astro.includes('"/live-session-receipt.html".equals(path)'), 'Only the dedicated receipt route is accepted by the native bridge.');
+  assert.match(astro, /boolean liveReceipt = isAstroLiveReceiptPageUrl\(currentUrl\)/);
+  assert.match(astro, /SMV ASTRO Live Session Receipt/);
+  assert.match(astro, /webView\.createPrintDocumentAdapter\(jobName\)/);
+  assert.ok(frontend.includes("window.location.assign('/live-session-receipt.html?session='+encodeURIComponent(id));"));
+  assert.ok(frontend.includes("sessionStorage.setItem('smv_live_receipt_'+id,bill);"));
+  assert.ok(livePage.includes('live-session-receipt.mjs'));
+  assert.ok(liveLoader.includes("sessionStorage.getItem(key)||''"));
+  assert.ok(liveLoader.includes('document.write(receipt)'));
+  assert.ok(frontend.includes('window.SMVAstroNativePdf.viewPdf()'), 'The page invokes the already-installed native PDF bridge.');
+  assert.ok(astro.includes('isAstroHoroscopePrintPageUrl(currentUrl)'), 'The existing Horoscope native PDF route remains supported.');
+});
 test('SMV ASTRO Android mobile and print layouts format charts and wide tables', () => {
   assert.match(reportPage, /report-print\.css/);
   assert.match(astro, /@media screen and \(max-width:720px\)/);

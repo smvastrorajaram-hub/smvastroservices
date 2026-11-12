@@ -228,8 +228,8 @@ test('Live Chat uses canonical mode/state and native visibility instead of a cha
   assert.equal(frontend.includes('smvLiveApplyChatLayout'), false, 'Chat visibility must not depend on a second dynamic layout mutator');
   assert.equal(frontend.includes('smv-live-chat-active'), false, 'no chat-only modal class should be toggled by JavaScript');
   assert.equal(css.includes('.smv-live-chat-active'), false, 'Chat must not depend on a special CSS override block');
-  assert.ok(html.includes('smvastro.css?v=20261112-live-chat-receipt-gender-v1'));
-  assert.ok(html.includes('smvastro.mjs?v=20261112-live-chat-receipt-gender-v1'));
+  assert.ok(html.includes('smvastro.css?v=20261112-astro-birth-gender-session-receipt-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261112-astro-birth-gender-session-receipt-v1'));
 });
 
 test('Live Chat connected confirmation requires a rendered message pane and does not open a separate Chat window', () => {
@@ -302,7 +302,7 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('smvLiveStartCustomerPendingStatusPoll(s.id);'));
   assert.ok(frontend.includes('setInterval(()=>void reconcile(),2500)'));
   assert.ok(frontend.includes('Astrologer Generating Horoscope · '));
-  assert.ok(html.includes('smvastro.mjs?v=20261112-live-chat-receipt-gender-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261112-astro-birth-gender-session-receipt-v1'));
 });
 
 test('Live Chat recovers a missed connecting-to-active event while SSE remains connected', () => {
@@ -349,7 +349,7 @@ test('Customer and Astrologer Dashboard open without Dashboard-wide loading or q
   assert.equal(frontend.includes('Loading your dashboard...'), false);
   assert.ok(!frontend.includes("because Firebase could not be read."));
   assert.ok(!frontend.includes("Dashboard is open. Astrologer profile and data"));
-  assert.ok(html.includes('smvastro.mjs?v=20261112-live-chat-receipt-gender-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261112-astro-birth-gender-session-receipt-v1'));
 });
 
 test('Explicit login keeps the fast role shell mounted and does not hide/reopen Dashboard', () => {
@@ -393,7 +393,7 @@ test('Astrologer Dashboard keeps one heading and parallelizes its first profile 
   assert.ok(dashboard.includes('const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null;'));
   assert.ok(dashboard.includes('astrologerProfileResult=profileResult;'));
   assert.ok(!dashboard.includes("const a=await withTimeout(\n     getDoc(doc(db,'smv_astrologers',currentUser.uid))"));
-  assert.ok(html.includes('smvastro.mjs?v=20261112-live-chat-receipt-gender-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261112-astro-birth-gender-session-receipt-v1'));
 });
 
 test('Astrologer Dashboard renders its main UI before earnings and withdrawal history resolve', () => {
@@ -413,7 +413,7 @@ test('Astrologer Dashboard renders its main UI before earnings and withdrawal hi
   assert.ok(dashboard.includes('id="smvAstroEarningsHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalStatus"'));
-  assert.ok(html.includes('smvastro.mjs?v=20261112-live-chat-receipt-gender-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261112-astro-birth-gender-session-receipt-v1'));
 });
 
 test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
@@ -1154,7 +1154,11 @@ test('Print/Save is exposed only for ended sessions and Chat print retrieves the
   assert.ok(frontend.includes("const receipt=$('smvLiveDownloadReceipt');if(receipt)receipt.hidden=s.state!=='ended';"));
   assert.ok(frontend.includes("async function smvLiveBuildReceiptDocument(session)"));
   assert.ok(frontend.includes("async function smvLiveShowEndedReceipt(session)"));
-  assert.ok(frontend.includes('sandbox="allow-scripts allow-modals"'));
+  assert.ok(frontend.includes("async function smvLiveOpenReceiptPage(session)"));
+  assert.ok(frontend.includes("window.location.assign('/live-session-receipt.html?session='+encodeURIComponent(id));"));
+  assert.ok(frontend.includes("sessionStorage.setItem('smv_live_receipt_'+id,bill);"));
+  assert.ok(!frontend.includes('<iframe title="SMV ASTRO Live Session Bill"'), 'Live receipt is a full page, not a sandboxed iframe modal.');
+  assert.ok(frontend.includes('id="smvLiveReceiptPrint" type="button" onclick="window.SMVAstroNativePdf?window.SMVAstroNativePdf.viewPdf():window.print()"'));
   assert.ok(frontend.includes("function smvLiveQueueEndedReceipt(session)"));
   assert.ok(frontend.includes("if(s.state!=='ended')throw new Error('The Bill is available after the Live Session ends.');"));
   assert.ok(frontend.includes("renderApi('/live/sessions/'+encodeURIComponent(String(s.id||s.sessionId||''))+'/messages'"));
@@ -1166,12 +1170,30 @@ test('Print/Save is exposed only for ended sessions and Chat print retrieves the
 });
 
 
-test('Live Call/Chat and scheduled booking forms require and submit Customer Gender', () => {
+test('Live Call/Chat and Book Call/Chat Astrologer views render stored Customer Birth Details including Gender', () => {
   const source=read('public/public-content.mjs');
+  const frontend=read('public/smvastro.mjs');
+  const d1=read('shared/backend-platform/d1-live-session-service.mjs');
+  const legacy=read('live-session-service.js');
+  const appointmentRead=read('cloudflare/backend-api/src/legacy-dashboard-read-routes.mjs');
   assert.ok(source.includes('id="smvLiveBirthGender" required'));
   assert.ok(source.includes("birthGender:String($('smvLiveBirthGender')?.value||'')"));
   assert.ok(source.includes('id="smvCallBookingGender" name="birthGender" required'));
   assert.ok(source.includes("birthGender:String($('smvCallBookingGender')?.value||'')"));
+  assert.ok(frontend.includes("smvLiveBirthDetailsHtml(s.birthDetails,'Customer Birth Details')"), 'Live Call / Chat panel displays Gender.');
+  assert.ok(frontend.includes("smvLiveBirthDetailsHtml(birth,'Customer Birth Details')"), 'Book Call / Chat card displays Gender.');
+  assert.ok(frontend.includes("smvLiveBirthDetailsHtml(b.birthDetails,'Customer Birth Details')"), 'Queued Live Call / Chat card displays Gender.');
+  assert.ok(d1.includes("birthGender:String(d.birthDetails.birthGender||'')"), 'D1 queued booking view returns Gender to the Astrologer.');
+  assert.ok(legacy.includes("birthGender: String(d.birthDetails.birthGender || '')"), 'Legacy queued booking view returns Gender to the Astrologer.');
+  assert.ok(appointmentRead.includes('birthDetails: a.birthDetails || null'), 'Scheduled booking read retains the nested Gender field.');
+});
+
+test('Private Chat continues to display Gender without changing its existing flow', () => {
+  const frontend=read('smvastro.mjs');
+  const routes=read('cloudflare/backend-api/src/private-chat-routes.mjs');
+  assert.ok(frontend.includes("const birthGender=q.birthGender||q.birthDetails?.birthGender||'';"), 'Existing Private Chat Astrologer card keeps the Gender label/value.');
+  assert.ok(frontend.includes('escapeHtml(birthGender)}</div>'), 'Private Chat card renders the existing Gender field.');
+  assert.ok(routes.includes("'birthGender'"), 'Private Chat Astrologer response already includes Gender in its field allowlist.');
 });
 
 test('Live Session SSE cleanup is tied to the response lifecycle, not normal request completion', () => {

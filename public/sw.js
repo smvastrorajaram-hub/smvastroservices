@@ -3,7 +3,7 @@
    Authentication, account data, APIs, payments and consultation operations stay network-only.
    Location search keeps its existing independent online/offline cache. */
 const IS_PAGES_DEV_HOST = self.location.hostname === 'smvastroservices.pages.dev' || self.location.hostname.endsWith('.smvastroservices.pages.dev') || self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
-const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261112-live-chat-receipt-gender-pages-v1' : '20261112-live-chat-receipt-gender-in-v1';
+const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261112-astro-birth-gender-session-receipt-pages-v1' : '20261112-astro-birth-gender-session-receipt-in-v1';
 const SMV_LOCATION_CACHE='smv-shared-india-places';
 const APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE;
 const PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['./pages-dev-host-independence.js','./pages-dev-apk-pwa-icons.js']:[];
@@ -16,7 +16,7 @@ const WALLET_OFFER_SVG_ASSETS=[
 const APP_SHELL_FILES=[
   './','./index.html','./manifest.webmanifest',
   './smvastro.css','./smv-ui.css','./dashboard-typography.css',
-  './android-app-install.css','./payment-timing.js','./smvastro.mjs',
+  './android-app-install.css','./payment-timing.js','./smvastro.mjs','./live-session-receipt.html','./live-session-receipt.mjs',
   './coalesced-refresh.mjs','./razorpay-checkout-loader.mjs','./chat-moderation.js',
   './dashboard-window.js','./public-content-loader.js','./interface.js',
   './android-app-install.js','./public-navigation.js',
@@ -34,7 +34,7 @@ const REQUIRED_APP_SHELL=new Set([
   ...WALLET_OFFER_SVG_ASSETS,
   './','./index.html','./manifest.webmanifest',
   './smvastro.css','./smv-ui.css','./dashboard-typography.css',
-  './android-app-install.css','./payment-timing.js','./smvastro.mjs',
+  './android-app-install.css','./payment-timing.js','./smvastro.mjs','./live-session-receipt.html','./live-session-receipt.mjs',
   './dashboard-window.js','./public-content-loader.js','./interface.js',
   './android-app-install.js','./public-navigation.js',
   './coalesced-refresh.mjs','./razorpay-checkout-loader.mjs','./chat-moderation.js',

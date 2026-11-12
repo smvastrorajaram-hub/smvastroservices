@@ -1723,6 +1723,13 @@ async function rejectOrCancel(sessionId, user, reason) {
     return {
       id: String(id), mode: String(d.mode || ''), minutes: Number(d.minutes || 0),
       status: String(d.status || ''), astrologerName: String(d.astrologerName || 'Astrologer'),
+      customerName: String(d.customerName || 'Customer'),
+      birthDetails: d.birthDetails && typeof d.birthDetails === 'object' ? {
+        birthDate: String(d.birthDetails.birthDate || ''),
+        birthTime: String(d.birthDetails.birthTime || ''),
+        birthPlace: String(d.birthDetails.birthPlace || ''),
+        birthGender: String(d.birthDetails.birthGender || '')
+      } : null,
       ratePerMinutePaise: safePaise(d.ratePerMinutePaise),
       reservedAmountPaise: safePaise(d.reservedAmountPaise),
       reservedBonusMinutes: safeMinutes(d.reservedBonusMinutes),
