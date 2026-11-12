@@ -1152,14 +1152,27 @@ test('Live session startup retries active timer restoration after transient Fire
 test('Print/Save is exposed only for ended sessions and Chat print retrieves the saved transcript', () => {
   const frontend = read('public/smvastro.mjs');
   assert.ok(frontend.includes("const receipt=$('smvLiveDownloadReceipt');if(receipt)receipt.hidden=s.state!=='ended';"));
+  assert.ok(frontend.includes("async function smvLiveBuildReceiptDocument(session)"));
+  assert.ok(frontend.includes("async function smvLiveShowEndedReceipt(session)"));
+  assert.ok(frontend.includes('sandbox="allow-scripts allow-modals"'));
+  assert.ok(frontend.includes("function smvLiveQueueEndedReceipt(session)"));
   assert.ok(frontend.includes("if(s.state!=='ended')throw new Error('The Bill is available after the Live Session ends.');"));
   assert.ok(frontend.includes("renderApi('/live/sessions/'+encodeURIComponent(String(s.id||s.sessionId||''))+'/messages'"));
   assert.ok(frontend.includes("historyLoadWarning='Server history could not be refreshed. The transcript below includes messages already loaded in this session.';"));
   const applyStart=frontend.indexOf('function smvLiveApplySession(session){');
   const applyEnd=frontend.indexOf('\nfunction ',applyStart+10);
   assert.ok(frontend.slice(applyStart,applyEnd).includes('smvLiveCloseMedia();smvLiveClearTransport();'));
+  assert.ok(frontend.slice(applyStart,applyEnd).includes('smvLiveQueueEndedReceipt(s);'),'Ended transition automatically opens the PDF receipt view for both participants.');
 });
 
+
+test('Live Call/Chat and scheduled booking forms require and submit Customer Gender', () => {
+  const source=read('public/public-content.mjs');
+  assert.ok(source.includes('id="smvLiveBirthGender" required'));
+  assert.ok(source.includes("birthGender:String($('smvLiveBirthGender')?.value||'')"));
+  assert.ok(source.includes('id="smvCallBookingGender" name="birthGender" required'));
+  assert.ok(source.includes("birthGender:String($('smvCallBookingGender')?.value||'')"));
+});
 
 test('Live Session SSE cleanup is tied to the response lifecycle, not normal request completion', () => {
   const service = read('live-session-service.js');
