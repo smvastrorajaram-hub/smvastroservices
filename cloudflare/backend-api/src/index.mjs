@@ -424,7 +424,8 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
   const checkLiveSessionSchemaReady = async () => {
     const schema = await inspectSchema();
     liveSessionSchemaReady = schema.checks.liveSessionSchema === true &&
-      schema.checks.walletSecuritySchema === true;
+      schema.checks.walletSecuritySchema === true &&
+      schema.checks.liveSessionQueryIndexes === true;
     return liveSessionSchemaReady;
   };
 
@@ -661,7 +662,9 @@ app.get('/healthz', async (_req, res) => {
   const walletReadRoutesEnabled = walletReadRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletSchema;
   const walletRechargeRoutesEnabled = walletRechargeRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
   const walletOfferRoutesEnabled = walletOfferRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
-  const liveCallChatRoutesEnabled = liveSessionRoutesRegistered && liveSessionRoutesOpen && schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;
+  const liveCallChatRoutesEnabled = liveSessionRoutesRegistered && liveSessionRoutesOpen &&
+    schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema &&
+    schema.checks.liveSessionQueryIndexes;
   const razorpayCredentialsConfigured = razorpayPolicy.enabled && !!razorpayKeyId && !!razorpayKeySecret && !!razorpayWebhookSecret;
   const productionFinancialTrafficRoutingEnabled = isProductionFinancialTrafficRoutingEnabled({
     environment: String(env.SMV_ENVIRONMENT || 'unknown'),
@@ -773,7 +776,9 @@ app.get('/api/backend/migration-status', async (_req, res) => {
   const walletReadRoutesEnabled = walletReadRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletSchema;
   const walletRechargeRoutesEnabled = walletRechargeRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
   const walletOfferRoutesEnabled = walletOfferRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
-  const liveSessionRoutesEnabled = liveSessionRoutesRegistered && liveSessionRoutesOpen && schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;
+  const liveSessionRoutesEnabled = liveSessionRoutesRegistered && liveSessionRoutesOpen &&
+    schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema &&
+    schema.checks.liveSessionQueryIndexes;
   const razorpayCredentialsConfigured = razorpayPolicy.enabled && !!razorpayKeyId && !!razorpayKeySecret && !!razorpayWebhookSecret;
   const productionFinancialTrafficRoutingEnabled = isProductionFinancialTrafficRoutingEnabled({
     environment: String(env.SMV_ENVIRONMENT || 'unknown'),
