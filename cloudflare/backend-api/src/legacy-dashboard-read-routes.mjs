@@ -161,7 +161,7 @@ export function registerLegacyDashboardReadRoutes({ app, firestore, identityServ
           preferredTime: String(a.preferredTime || ''),
           scheduledMinutes: Number(a.scheduledMinutes || 5),
           bookingStatus,
-          status: missed ? 'missed' : String(a.status || 'new'),
+          status: completedSession ? 'completed' : (missed ? 'missed' : String(a.status || 'new')),
           missedReason: missed ? 'astrologer_not_connected_within_grace' : String(a.missedReason || ''),
           notes: String(a.notes || ''),
           liveSessionId: String(completedSession?.id || a.liveSessionId || ''),
