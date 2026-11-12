@@ -160,6 +160,7 @@ const computed = [];
 const chartSignatures = new Set();
 const pindaPanelSignatures = new Set();
 const d1NarrativeSignatures = {ta:new Set(),en:new Set()};
+const d1NarrativeDuplicateCounts = {ta:0,en:0};
 const bvrPindaSignatures = new Set();
 const cgPindaSignatures = new Set();
 const cgMethodCounts = {};
@@ -316,8 +317,26 @@ for (const birth of [...maleBirths,...femaleBirths]) {
     ok(narrative.topics.every(topic=>topic.paragraphs?.length>0&&
       topic.paragraphs.every(p=>typeof p.text==='string'&&p.text.length>=20)),
       language+' live D1 narrative contains readable paragraphs for '+birth.name);
+    const seenSentences=new Set();
+    let duplicateSentences=0;
+    for(const topic of narrative.topics){
+      for(const paragraph of topic.paragraphs){
+        const parts=String(paragraph.text).match(/[^.!?।॥]+(?:[.!?।॥]+|$)/gu)||[];
+        for(const raw of parts){
+          const sentence=raw.trim(),key=sentence.normalize('NFKC').toLocaleLowerCase()
+            .replace(/[“”"'‘’]/g,'').replace(/[\s.,;:!?।॥]+/g,' ').trim();
+          const words=key.match(/[\p{L}\p{N}]+/gu)||[];
+          const caution=/(?:உறுதி|உறுதியாக|மருத்துவ|மரணம்|ஆயுள்|மலட்டுத்தன்மை|குழந்தைப்பேறு|தீர்மானிக்க|நிகழ்வு உறுதி|guarantee|certain|medical|death|lifespan|fertility|should not|not establish|not predict|does not establish|cannot determine)/i.test(sentence);
+          if(key.length<45||words.length<5||caution)continue;
+          if(seenSentences.has(key))duplicateSentences++;
+          else seenSentences.add(key);
+        }
+      }
+    }
+    d1NarrativeDuplicateCounts[language]+=duplicateSentences;
+    eq(duplicateSentences,0,language+' D1 narrative does not repeat a substantial sentence across its 12 life areas for '+birth.name);
     d1NarrativeSignatures[language].add(narrative.topics.map(topic=>
-      topic.paragraphs.map(p=>p.text).join(' ')).join('\\n'));
+      topic.paragraphs.map(p=>p.text).join(' ')).join('\\\\n'));
   }
 
   const pindaPanel = result.advanced?.v5?.sodhyaPinda;
@@ -698,6 +717,7 @@ const summary = {
     publishedAdminRuleRootCause:predictionRulesEmpty?'public/horoscope/prediction-rules-published.js sets SMVPUBLISHED_PREDICTION_RULES to an empty array; reviewed owner-published rule content is absent from this channel.':null,
     d1NarrativeLiveCharts:150,languages:['ta','en'],
     distinctTamilNarratives:d1NarrativeSignatures.ta.size,distinctEnglishNarratives:d1NarrativeSignatures.en.size,
+    repeatedSentenceCounts:{...d1NarrativeDuplicateCounts},
     expertReviewedAstrologerQuality:'NOT_CERTIFIED_BY_AUTOMATED_VARIABILITY_TEST',
     classicalSourceCertification:'PARTIAL: Chapter XIV UNKNOWN evidence and independent source numerical oracles remain documented blockers.'
   },
