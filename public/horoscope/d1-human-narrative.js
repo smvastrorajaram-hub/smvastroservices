@@ -340,7 +340,22 @@ function humanIntro(x,lang) {
 }
 function tone(score){return score==='support'?'support':score==='pressure'?'pressure':'mixed';}
 function textJoin(...pieces){return pieces.filter(Boolean).join(' ').replace(/\s+/g,' ').trim();}
-function addV(out,seen,txt,house,evidence){const p=textJoin(txt);if(!p||seen.has(p))return;seen.add(p);out.push({house,text:p,evidence});}
+function addV(out,seen,txt,house,evidence){
+ const source=textJoin(txt);if(!source)return;
+ const chunks=source.match(/[^.!?।॥]+(?:[.!?।॥]+|$)/gu)||[source],fresh=[];
+ for(const raw of chunks){
+  const sentence=raw.trim(),key=sentence.normalize('NFKC').toLocaleLowerCase().replace(/[“”"'‘’]/g,'').replace(/[\s.,;:!?।॥]+/g,' ').trim();
+  if(!key)continue;
+  const words=key.match(/[\p{L}\p{N}]+/gu)||[];
+  const caution=/(?:உறுதி|உறுதியாக|மருத்துவ|மரணம்|ஆயுள்|மலட்டுத்தன்மை|குழந்தைப்பேறு|தீர்மானிக்க|நிகழ்வு உறுதி|guarantee|certain|medical|death|lifespan|fertility|should not|not establish|not predict|does not establish|cannot determine)/i.test(sentence);
+  const eligible=key.length>=45&&words.length>=5&&!caution;
+  if(eligible&&seen.has(key))continue;
+  if(eligible)seen.add(key);
+  fresh.push(sentence);
+ }
+ const text=fresh.join(' ').trim();
+ if(text)out.push({house,text,evidence});
+}
 function topInfluences(h){const weighted=[...h.occupants.map(key=>({key,weight:3,kind:'occupant'})),...h.aspects.map(key=>({key,weight:2,kind:'aspect'})),{key:h.lord,weight:1,kind:'lord'}];const uniq=new Map();for(const x of weighted)if(!uniq.has(x.key))uniq.set(x.key,x);return [...uniq.values()].sort((a,b)=>b.weight-a.weight||KEY_ORDER.indexOf(a.key)-KEY_ORDER.indexOf(b.key));}
 // Editorial grouping keeps one lived idea per paragraph instead of one tiny
 // paragraph per fixed data fragment. All underlying evidence remains attached.
@@ -372,10 +387,10 @@ function groupParagraphs(para,personality){
 function compileV288(d,lang='ta',options={}) {
  const ta=lang!=='en',impact=ta?IMPACT_TA:IMPACT_EN,ctx=ta?CONTEXT_TA:CONTEXT_EN,focus=ta?FOCUS_TA:FOCUS_EN,bodyText=ta?BODY_TA:BODY_EN;
  const rising=ta?RISING_TA:RISING_EN,signStyles=ta?SIGN_STYLE_TA:SIGN_STYLE_EN,planetTraits=ta?PLANET_TA:PLANET_EN,results=ta?RESULTS_TA:RESULTS_EN;
- const topics=[],allHouses=Array.from({length:12},(_,i)=>i+1);
+ const topics=[],allHouses=Array.from({length:12},(_,i)=>i+1),reportSeen=new Set();
  const selected=(key,i)=>impact[i][KEY_ORDER.indexOf(key)];
  for(let i=0;i<12;i++){
-  const h=d.houses[i],lord=d.planets[h.lord],strength=state(d,i+1,options),infl=topInfluences(h),seen=new Set(),para=[];
+  const h=d.houses[i],lord=d.planets[h.lord],strength=state(d,i+1,options),infl=topInfluences(h),seen=reportSeen,para=[];
   const meta={lagna:d.lagna,houseLord:h.lord,lordSign:lord.sign,lordHouse:lord.house,occupants:[...h.occupants],aspects:[...h.aspects],score:strength,ownerDignity:options.planetDignity?options.planetDignity(d,lord):null,ownerFunctional:options.functional?options.functional(d,h.lord):null};
   if(i===0){
     // First pass: the native's rising character + real ruler's house/sign,
