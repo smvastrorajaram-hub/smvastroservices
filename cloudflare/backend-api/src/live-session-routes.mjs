@@ -416,6 +416,17 @@ export function registerD1LiveSessionRoutes({
     } catch(error) { return replyError(res,error,'Unable to load Live Sessions.'); }
   });
 
+  // Recovery polling returns only in-flight sessions and recently ended sessions.
+  // The full bounded history route remains available for initial/dashboard history loads.
+  app.get('/live/sessions/status',async(req,res)=>{
+    try {
+      await assertReady();
+      const user=await requireRole(req,['customer','astrologer']);
+      const sessions=await liveService.listSessionStatus({uid:user.uid,role:user.role});
+      return res.set('Cache-Control','no-store').json({success:true,sessions});
+    } catch(error) { return replyError(res,error,'Unable to load Live Session status.'); }
+  });
+
   app.get('/live/sessions/:id',async(req,res)=>{
     try {
       await assertReady();
