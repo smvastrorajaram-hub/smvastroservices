@@ -1297,7 +1297,7 @@ async function submitAuth(mode){
       smvShowRoleNav();
       smvEnterInternalView("dashboard",true);
       go("dashboard");
-      loadDashboard(role).then(()=>smvCompleteWalletRechargeNavigation(role)).catch(err=>console.warn("Login dashboard load skipped:",err));
+      loadDashboard(role).then(()=>smvCompleteWalletRechargeNavigation(role)).catch(err=>{console.warn("Login dashboard load skipped:",err);smvCompleteWalletRechargeNavigation(role);});
     }
     return;
   }
