@@ -112,7 +112,7 @@ test('birth details validate Tamil-local customer date and coordinate boundaries
   assert.equal(valid.birthDate,'2000-02-29');
   assert.equal(valid.birthGender,'Other');
   assert.equal(valid.birthLatitude,9.9252);
-  assert.throws(()=>validateLiveBirthDetails({birthDate:'2026-11-01',birthTime:'12:00',birthPlace:'Madurai'},Date.parse('2026-10-31T00:00:00Z')),error=>error.code==='LIVE_BIRTH_DATE_FUTURE');
+  assert.throws(()=>validateLiveBirthDetails({birthDate:'2026-11-01',birthTime:'12:00',birthPlace:'Madurai',birthGender:'Male'},Date.parse('2026-10-31T00:00:00Z')),error=>error.code==='LIVE_BIRTH_DATE_FUTURE');
   assert.throws(()=>validateLiveBirthDetails({birthDate:'2000-01-01',birthTime:'24:00',birthPlace:'Madurai',birthGender:'Male'}),error=>error.code==='LIVE_BIRTH_TIME_INVALID');
   assert.throws(()=>validateLiveBirthDetails({birthDate:'2000-01-01',birthTime:'10:00',birthPlace:'Madurai',birthGender:'Invalid'}),error=>error.code==='LIVE_BIRTH_GENDER_INVALID');
 });
