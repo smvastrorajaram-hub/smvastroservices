@@ -137,10 +137,11 @@ test('Customer can create a Live request and a durable ring timer is scheduled',
   const f=fixture(),res=responseHarness();
   await f.app.handlers.get('POST /live/requests')(req({
     astrologerId:'astro-1',mode:'call',minutes:5,requestId:'request-0001',
-    customerName:'Customer',birthDetails:{birthDate:'2000-01-01',birthTime:'10:00',birthPlace:'Madurai'}
+    customerName:'Customer',birthDetails:{birthDate:'2000-01-01',birthTime:'10:00',birthPlace:'Madurai',birthGender:'Female'}
   }),res);
   assert.equal(res.statusCode,200);
   assert.equal(res.body.kind,'session');
+  assert.equal(f.calls.find(x=>x.service==='createRequest').input.birthDetails.birthGender,'Female');
   assert.ok(f.calls.some(x=>String(x.url||'').includes('/schedule')&&x.body.deadlines[0].type==='ring_timeout'));
   assert.ok(f.calls.some(x=>String(x.url||'').includes('/publish')&&x.body.type==='live.session.request'));
 });
