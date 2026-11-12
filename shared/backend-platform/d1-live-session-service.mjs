@@ -118,6 +118,24 @@ export function createD1LiveSessionService({
     }
     return byAppointment;
   }
+  async function listSessionStatus({uid,role}={}) {
+    const actor=checkUid(uid);
+    const field=role==='astrologer'?'astrologer_uid':role==='customer'?'customer_uid':'';
+    if(!actor||!field) throw liveError('LIVE_ROLE_REQUIRED','Live Session login is required.',403);
+    const recentEndedAfterMs=Number(now())-24*60*60*1000;
+    const rows=await all(
+      `SELECT * FROM (
+         SELECT * FROM ${SESSION_TABLE}
+         WHERE ${field}=? AND state IN ('ringing','preparing','connecting','active')
+         UNION ALL
+         SELECT * FROM ${SESSION_TABLE}
+         WHERE ${field}=? AND state='ended' AND updated_at_ms>=?
+       ) AS recent_sessions
+       ORDER BY updated_at_ms DESC LIMIT 50`,
+      [actor,actor,recentEndedAfterMs]
+    );
+    return (rows.results||[]).map(row=>sessionView(mapLiveSessionRow(row)));
+  }
   async function getBooking(id) {
     const row=await first('SELECT * FROM '+BOOKING_TABLE+' WHERE booking_id=? LIMIT 1',[id]);
     return mapLiveBookingRow(row);
@@ -1135,7 +1153,7 @@ export function createD1LiveSessionService({
   return Object.freeze({
     createRequest,acceptBooking,acceptSession,rejectSession,readySession,endSession,setConnection,isApprovedAstrologer,
     rejectBooking,cancelBooking,sendMessage,listMessages,signal,listSignals,
-    listSessions,listBookings,listCustomerBookings,getSessionForParticipant,listEndedSessionsForAppointments,processDeadline,expireBooking,
+    listSessions,listSessionStatus,listBookings,listCustomerBookings,getSessionForParticipant,listEndedSessionsForAppointments,processDeadline,expireBooking,
     getPricing,getCommission,saveSetting,getAstrologerAvailability,updateAstrologerAvailability
   });
 }
