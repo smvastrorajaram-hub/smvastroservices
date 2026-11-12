@@ -131,8 +131,8 @@ test('shared UI stylesheet must not override hero and content headings with pale
 });
 
 test('desktop Homepage CTA buttons match the Mobile colours and remain equal in size', () => {
-  const start=css.indexOf('@media (min-width: 900px){\\nhtml body.smv-v12-theme #home .smv33-scene');
-  const end=css.indexOf('\\n}\\n.smv-location-wrap',start);
+  const start=css.indexOf('@media (min-width: 900px){\nhtml body.smv-v12-theme #home .smv33-scene');
+  const end=css.indexOf('\n}\n.smv-location-wrap',start);
   assert.ok(start>=0 && end>start, 'desktop Homepage hero media block should exist');
   const desktop=css.slice(start,end);
   assert.ok(desktop.includes('.smv33-actions{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:10px;margin-top:12px;max-width:470px}'));
@@ -140,7 +140,7 @@ test('desktop Homepage CTA buttons match the Mobile colours and remain equal in 
   assert.ok(desktop.includes('width:230px;max-width:100%;min-width:0;min-height:42px;'));
   assert.ok(desktop.includes('.smv33-actions .ask{color:#fff;border-color:#e50055;background:linear-gradient(135deg,#e90058,#d90048)}'));
   assert.ok(desktop.includes('.smv33-actions .horoscope{color:#20324a;border-color:#75461a;background:rgba(255,250,240,.9)}'));
-  assert.doesNotMatch(desktop, /smv33-actions a\\{background:rgb\\(237,0,84\\)/);
+  assert.doesNotMatch(desktop, /smv33-actions a\{background:rgb\(237,0,84\)/);
   const mobile=css.slice(css.indexOf('html body.smv-v12-theme #home .smv33-actions .ask{', end), css.indexOf('html body.smv-v12-theme #home .smv33-trust{', end));
   assert.ok(mobile.includes('background:linear-gradient(135deg,#e90058,#d90048)'));
   assert.ok(mobile.includes('background:rgba(255,250,240,.9)'));
