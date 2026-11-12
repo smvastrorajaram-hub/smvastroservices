@@ -131,11 +131,11 @@ test('shared UI stylesheet must not override hero and content headings with pale
 });
 
 test('main page cache versions point to the audited theme assets', () => {
-  assert.ok(html.includes('smvastro.css?v=20261102-consult-route-cleanup-v1'));
+  assert.ok(html.includes('smvastro.css?v=20261112-legacy-free-minutes-reset-svg-offer-banners-v1'));
   assert.ok(html.includes('android-app-install.css?v=20261110-icon-png-v3'));
   assert.ok(html.includes('smv-ui.css?v=20261105-dashboard-typography-hierarchy-v1'));
   assert.ok(html.includes('dashboard-typography.css?v=20261111-earnings-ledger-accuracy-v1'));
-  assert.ok(html.includes('smvastro.mjs?v=20261112-bonus-credit-direct-award-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261112-legacy-free-minutes-reset-svg-offer-banners-v1'));
   assert.ok(html.includes('android-app-install.js?v=20261110-icon-png-v3'));
   assert.ok(html.includes('public-content-loader.js?v=20261107-private-chat-selected-astrologer-v5'));
   assert.doesNotMatch(html, /<script[^>]+src=["'][^"']*public-content\.mjs/);
