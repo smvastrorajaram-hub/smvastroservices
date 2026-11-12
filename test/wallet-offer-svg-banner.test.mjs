@@ -28,6 +28,10 @@ test('Customer Wallet displays the same offer SVG banner before Bonus Credit and
   assert.ok(walletCard.includes('id="smvCustomerWalletOfferBanners"'));
   assert.ok(walletCard.indexOf('smvCustomerWalletOfferBanners') < walletCard.indexOf('smv-wallet-bonus-summary'));
   assert.ok(walletCard.indexOf('smvCustomerWalletOfferBanners') < walletCard.indexOf('smvWalletRechargeForm'));
+  const shellStart = frontend.indexOf('function smvRenderFastDashboardShell');
+  const shellEnd = frontend.indexOf('function smvWalletMoney', shellStart);
+  const customerShell = frontend.slice(shellStart, shellEnd);
+  assert.ok(customerShell.includes('void smvLoadHomeWalletRechargeOffers().catch(()=>{})'), 'Dashboard shell refreshes current active offers after it mounts its banner');
 });
 
 test('SVG offer banners navigate to Customer login or Wallet recharge amount without auto-payment', () => {
