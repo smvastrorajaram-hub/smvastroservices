@@ -19,7 +19,7 @@ const deferred=[
 ];
 
 test('result-only styles do not block the initial Horoscope document render',()=>{
-  const eager=[...html.matchAll(/<link\\b[^>]*rel=["']stylesheet["'][^>]*>/gi)].map(x=>x[0]);
+  const eager=[...html.matchAll(/<link\b[^>]*rel=["']stylesheet["'][^>]*>/gi)].map(x=>x[0]);
   for(const file of deferred){
     assert.equal(eager.some(link=>link.includes(file)),false,file+' must not be an eager stylesheet link');
   }
@@ -52,6 +52,7 @@ test('Marriage Matching loads its report CSS before the matching script',()=>{
   assert.ok(start>=0,'Marriage Matching lazy entry point exists');
   const loader=html.slice(start,start+2600);
   const styleReady=loader.indexOf('window.__smvEnsureMarriageReportStyles?.()');
+  assert.ok(loader.includes('chart-style.css'), 'Matching retains chart layout styles');
   const matchingScript=loader.indexOf("sc.src='marriage-matching.js");
   assert.ok(styleReady>=0&&matchingScript>styleReady,
     'matching styles and calculation engines are awaited before appending the matching script');
