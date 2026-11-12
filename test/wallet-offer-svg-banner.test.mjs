@@ -78,3 +78,15 @@ test('existing offer SVG assets are precached across the synchronized SMV app re
   assert.ok(calendarWorker.includes(release + 'pages-v1') && calendarWorker.includes(release + 'in-v1'));
   assert.ok(css.includes('.smv-wallet-offer-svg-banner'));
 });
+test('Homepage and Customer Wallet SVG offer banners share a clean white background', () => {
+  const bannerStart = css.indexOf('.smv-wallet-offer-svg-banner{');
+  const bannerEnd = css.indexOf('}', bannerStart);
+  assert.ok(bannerStart >= 0 && bannerEnd > bannerStart, 'Shared SVG banner style exists');
+  const bannerRule = css.slice(bannerStart, bannerEnd);
+  assert.ok(bannerRule.includes('background:#fff;'), 'SVG offer banner card uses a white background');
+  assert.ok(!bannerRule.includes('linear-gradient('), 'The previous tinted gradient is not used');
+  const artStart = css.indexOf('.smv-wallet-offer-svg-banner-art{');
+  const artEnd = css.indexOf('}', artStart);
+  assert.ok(artStart >= 0 && artEnd > artStart);
+  assert.ok(css.slice(artStart, artEnd).includes('background:#fff;'), 'SVG artwork surface is also white');
+});
