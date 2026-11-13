@@ -1,6 +1,6 @@
 name: Cloudflare Production Backend Worker code-only deploy
 
-# Deploys the already-reviewed Worker source without changing Worker secrets or applying D1 migrations.
+# Deploys the reviewed Worker source without changing Worker secrets, variables, or D1 schema.
 on:
   workflow_dispatch:
     inputs:
@@ -45,10 +45,10 @@ jobs:
       - name: Install Worker dependencies
         run: npm install --prefix cloudflare/backend-api --no-package-lock --ignore-scripts --no-audit --no-fund
 
-      - name: Deploy Production Worker code without changing secrets or D1
+      - name: Deploy Production Worker code without changing secrets, variables, or D1
         run: npx --yes wrangler@4.156.0 deploy --config cloudflare/backend-api/wrangler.production.jsonc
 
-      - name: Verify Production Worker health, Bonus Credit schema and Live query indexes
+      - name: Verify Production Worker core schema and Bonus Credit readiness (independent of Live indexes)
         shell: bash
         run: |
           set -euo pipefail
@@ -57,17 +57,17 @@ jobs:
           for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
             status="$(curl --silent --show-error --connect-timeout 10 --max-time 20 --output /tmp/smv-worker-health.json --write-out '%{http_code}' "$ROOT/healthz" || true)"
             echo "Production Worker health attempt $attempt returned HTTP $status."
-            if [ "$status" = '200' ] && node --input-type=module -e "import fs from 'node:fs'; const d=JSON.parse(fs.readFileSync('/tmp/smv-worker-health.json','utf8')); if(d.environment!=='production'||d.schemaReady!==true||d.d1Binding!==true||d.schemaQuerySucceeded!==true||d.bonusCreditSchemaQuerySucceeded!==true||d.schemaMigrations?.['0013_bonus_credit_wallet']!==true||d.schemaMigrations?.['0014_live_session_query_indexes']!==true||d.backendActive!==true||d.firebaseConnected!==true||d.walletPayoutEncryptionConfigured!==true||d.walletReadRoutesRegistered!==true||d.walletRechargeRoutesRegistered!==true||d.walletOfferRoutesRegistered!==true||d.liveSessionRoutesRegistered!==true||d.walletRechargeMode!=='live'||d.identityProfileD1AuthorizationEnabled!==true||d.identityProfileD1AuthorizationReady!==true||d.productionTrafficEnabled!==false) process.exit(1);"; then
+            if [ "$status" = '200' ] && node --input-type=module -e "import fs from 'node:fs'; const d=JSON.parse(fs.readFileSync('/tmp/smv-worker-health.json','utf8')); if(d.environment!=='production'||d.schemaReady!==true||d.d1Binding!==true||d.schemaQuerySucceeded!==true||d.bonusCreditSchemaQuerySucceeded!==true||d.schemaMigrations?.['0013_bonus_credit_wallet']!==true||d.backendActive!==true||d.firebaseConnected!==true||d.walletPayoutEncryptionConfigured!==true||d.walletReadRoutesRegistered!==true||d.walletRechargeRoutesRegistered!==true||d.walletOfferRoutesRegistered!==true||d.liveSessionRoutesRegistered!==true||d.walletReadRoutesEnabled!==true||d.walletRechargeRoutesEnabled!==true||d.walletOfferRoutesEnabled!==true||d.liveCallChatRoutesEnabled!==true||d.walletRechargeMode!=='live'||d.identityProfileD1AuthorizationEnabled!==true||d.identityProfileD1AuthorizationReady!==true||d.productionTrafficEnabled!==false) process.exit(1); console.log('LIVE_INDEX_MIGRATION='+(d.schemaMigrations?.['0014_live_session_query_indexes']===true?'PASS':'PENDING'));"; then
               cat /tmp/smv-worker-health.json
               ready='true'
               break
             fi
-            echo 'Production Worker has not yet converged to the expected deployed code, 0013 schema and 0014 query indexes.'
+            echo 'Core Production Worker / Bonus Credit readiness is not yet healthy.'
             sleep 5
           done
           if [ "$ready" != 'true' ]; then
             test -f /tmp/smv-worker-health.json && cat /tmp/smv-worker-health.json || true
-            echo 'Production Worker health or Bonus Credit schema or Live query-index verification failed.'
+            echo 'Production Worker core readiness verification failed.'
             exit 1
           fi
 
@@ -80,19 +80,43 @@ jobs:
           for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
             status="$(curl --silent --show-error --connect-timeout 10 --max-time 20 --output /tmp/smv-worker-readiness.json --write-out '%{http_code}' "$ROOT/api/backend/readiness" || true)"
             echo "Production financial readiness attempt $attempt returned HTTP $status."
-            if [ "$status" = '200' ] && node --input-type=module -e "import fs from 'node:fs'; const d=JSON.parse(fs.readFileSync('/tmp/smv-worker-readiness.json','utf8')); if(d.ok!==true||d.ready!==true||d.schemaMigrations?.['0013_bonus_credit_wallet']!==true||d.schemaMigrations?.['0014_live_session_query_indexes']!==true||d.checks?.bonusCreditWalletSchema!==true||d.checks?.bonusCreditSchemaQuerySucceeded!==true||d.firebaseConnected!==true||d.walletPayoutEncryptionConfigured!==true||d.walletPayoutEncryptionReady!==true||d.razorpayMode!=='live'||d.razorpayCredentialsConfigured!==true||d.razorpayProviderConnectionVerified!==true||d.walletReadRoutesEnabled!==true||d.walletRechargeRoutesEnabled!==true||d.walletRechargeMode!=='live'||d.walletOfferRoutesEnabled!==true||d.liveCallChatRoutesEnabled!==true||d.identityProfileD1AuthorizationEnabled!==true||d.identityProfileD1AuthorizationReady!==true||d.productionFinancialTrafficRoutingEnabled!==true||d.productionTrafficEnabled!==false) process.exit(1);"; then
+            if [ "$status" = '200' ] && node --input-type=module -e "import fs from 'node:fs'; const d=JSON.parse(fs.readFileSync('/tmp/smv-worker-readiness.json','utf8')); if(d.ok!==true||d.ready!==true||d.schemaMigrations?.['0013_bonus_credit_wallet']!==true||d.checks?.walletSchema!==true||d.checks?.walletRechargeSchema!==true||d.checks?.bonusCreditWalletSchema!==true||d.checks?.bonusCreditSchemaQuerySucceeded!==true||d.firebaseConnected!==true||d.walletPayoutEncryptionConfigured!==true||d.walletPayoutEncryptionReady!==true||d.razorpayMode!=='live'||d.razorpayCredentialsConfigured!==true||d.razorpayProviderConnectionVerified!==true||d.walletReadRoutesEnabled!==true||d.walletRechargeRoutesEnabled!==true||d.walletRechargeMode!=='live'||d.walletOfferRoutesEnabled!==true||d.liveCallChatRoutesEnabled!==true||d.identityProfileD1AuthorizationEnabled!==true||d.identityProfileD1AuthorizationReady!==true||d.productionFinancialTrafficRoutingEnabled!==true||d.productionTrafficEnabled!==false) process.exit(1); console.log('Live index migration status: '+(d.schemaMigrations?.['0014_live_session_query_indexes']===true?'PASS':'PENDING - separate additive migration workflow'));"; then
               cat /tmp/smv-worker-readiness.json
               ready='true'
               break
             fi
-            echo 'Production financial readiness has not reached every required live dependency and feature gate.'
+            echo 'Production Wallet / Bonus Credit readiness has not reached every required core dependency and feature gate.'
             sleep 5
           done
           if [ "$ready" = 'true' ]; then
-            echo 'PASS: Production D1 Bonus Credit schema, Live query indexes, Wallet, Recharge, Offers, Live/Booking, Firebase Project 1, Razorpay Live and selected financial routing are ready.'
-            echo 'PASS: productionTrafficEnabled remains false; only selected financial routing is verified.'
+            echo 'PASS: Production Wallet, Recharge, Offer Bonus Credit, Live route schema, Firebase Project 1, Razorpay Live and selected financial routing are ready.'
+            echo 'PASS: productionTrafficEnabled remains false; no global traffic switch was changed.'
+            echo 'NOTE: Live query indexes are audited separately and do not block the code-only deploy.'
             exit 0
           fi
           test -f /tmp/smv-worker-readiness.json && cat /tmp/smv-worker-readiness.json || true
           echo 'Production financial readiness verification failed; no customer payment was initiated.'
           exit 1
+
+      - name: Report the independent Production Live-index gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT='https://smvastroservices.astroservices.workers.dev'
+          status="$(curl --silent --show-error --connect-timeout 10 --max-time 20 --output /tmp/smv-worker-migration-status.json --write-out '%{http_code}' "$ROOT/api/backend/migration-status" || true)"
+          echo "Production migration-status endpoint returned HTTP $status."
+          test "$status" = '200' || { cat /tmp/smv-worker-migration-status.json || true; exit 1; }
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const d = JSON.parse(fs.readFileSync('/tmp/smv-worker-migration-status.json', 'utf8'));
+          if (d.schemaMigrations?.['0013_bonus_credit_wallet'] !== true) {
+            console.error('Bonus Credit migration 0013 is not ready.');
+            process.exit(1);
+          }
+          if (d.schemaMigrations?.['0014_live_session_query_indexes'] === true) {
+            console.log('PASS: Production Live query indexes 0014 are already applied.');
+          } else {
+            console.log('PENDING: Production Live query indexes 0014. Run the separate additive-index-only workflow; no other migration is required here.');
+          }
+          console.log('Live Session route gate: ' + String(d.liveSessionRoutesEnabled));
+          NODE
