@@ -101,7 +101,32 @@ jobs:
           FROM object_checks CROSS JOIN column_checks CROSS JOIN bonus_credit_version;
           SQL
           )"
-          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "$SQL" > /tmp/smv-production-bonus-credit-diagnostic.json
+          set +e
+          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "$SQL" > /tmp/smv-production-bonus-credit-diagnostic.log 2>&1
+          wrangler_status=$?
+          set -e
+          if [ "$wrangler_status" -ne 0 ]; then
+            echo "The exact Worker readiness SQL failed in Wrangler (exit $wrangler_status). Full captured output follows:"
+            cat /tmp/smv-production-bonus-credit-diagnostic.log
+            echo "Running independent scalar SELECT diagnostics to verify Production D1 objects:"
+            FALLBACK_SQL="SELECT
+              (SELECT COUNT(*) FROM pragma_table_info('smv_domain_wallets') WHERE name IN ('bonus_credit_balance_paise','reserved_bonus_credit_paise')) AS wallet_bonus_credit_columns_count,
+              (SELECT COUNT(*) FROM pragma_table_info('smv_domain_wallet_ledger') WHERE name IN ('bonus_credit_delta_paise','reserved_bonus_credit_delta_paise','bonus_credit_balance_after_paise','reserved_bonus_credit_balance_after_paise')) AS wallet_ledger_bonus_credit_columns_count,
+              (SELECT COUNT(*) FROM pragma_table_info('smv_domain_wallet_offers') WHERE name='bonus_credit_paise') AS wallet_offer_bonus_credit_columns_count,
+              (SELECT COUNT(*) FROM pragma_table_info('smv_domain_offer_redemptions') WHERE name='bonus_credit_paise') AS offer_redemption_bonus_credit_columns_count,
+              (SELECT COUNT(*) FROM pragma_table_info('smv_domain_live_sessions') WHERE name='reserved_bonus_credit_paise') AS live_session_bonus_credit_columns_count,
+              (SELECT COUNT(*) FROM pragma_table_info('smv_domain_live_bookings') WHERE name='reserved_bonus_credit_paise') AS live_booking_bonus_credit_columns_count,
+              (SELECT COUNT(*) FROM sqlite_master WHERE type='trigger' AND name='smv_domain_live_session_reserve_validate') AS live_session_bonus_reserve_trigger_count,
+              (SELECT COUNT(*) FROM sqlite_master WHERE type='trigger' AND name='smv_domain_live_earning_validate') AS live_earning_bonus_credit_trigger_count,
+              (SELECT COUNT(*) FROM sqlite_master WHERE type='trigger' AND name='smv_domain_wallet_ledger_apply') AS wallet_ledger_bonus_credit_apply_trigger_count,
+              (SELECT COUNT(*) FROM sqlite_master WHERE type='trigger' AND name='smv_domain_wallet_ledger_validate') AS wallet_ledger_bonus_credit_validate_trigger_count,
+              (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key='bonus-credit-wallet' LIMIT 1) AS bonus_credit_wallet_version;"
+            npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "$FALLBACK_SQL" || true
+            echo "The combined Worker-query diagnostic could not complete; no write statement was executed."
+            exit "$wrangler_status"
+          fi
+          cp /tmp/smv-production-bonus-credit-diagnostic.log /tmp/smv-production-bonus-credit-diagnostic.json
+          cat /tmp/smv-production-bonus-credit-diagnostic.json
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           const raw = JSON.parse(fs.readFileSync('/tmp/smv-production-bonus-credit-diagnostic.json', 'utf8'));
