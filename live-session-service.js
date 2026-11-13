@@ -42,11 +42,6 @@ function safePaise(value) {
   return Number.isSafeInteger(n) && n >= 0 ? n : 0;
 }
 
-function safeMinutes(value) {
-  const n = Number(value ?? 0);
-  return Number.isSafeInteger(n) && n >= 0 && n <= 1_000_000 ? n : 0;
-}
-
 function validateLiveBirthDetails(input) {
   const d = input && typeof input === 'object' ? input : {};
   const birthDate = String(d.birthDate || '').trim();
@@ -1743,7 +1738,8 @@ async function rejectOrCancel(sessionId, user, reason) {
       } : null,
       ratePerMinutePaise: safePaise(d.ratePerMinutePaise),
       reservedAmountPaise: safePaise(d.reservedAmountPaise),
-      reservedBonusMinutes: safeMinutes(d.reservedBonusMinutes),
+      reservedBonusCreditPaise: safePaise(d.reservedBonusCreditPaise),
+      bonusCreditReleasedPaise: safePaise(d.bonusCreditReleasedPaise),
       walletReservationState: String(d.walletReservationState || ''),
       actualChargePaise: safePaise(d.actualChargePaise),
       releasedAmountPaise: safePaise(d.releasedAmountPaise),
