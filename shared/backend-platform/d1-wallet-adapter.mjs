@@ -202,13 +202,13 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     return statement(
       `INSERT INTO ${LEDGER_TABLE}
        (ledger_id, owner_uid, owner_role, currency, type, direction, amount_paise,
-        available_delta_paise, reserved_delta_paise, bonus_minutes_delta, reserved_bonus_minutes_delta,
-        bonus_credit_delta_paise,reserved_bonus_credit_delta_paise,
+        available_delta_paise, reserved_delta_paise,
+         bonus_credit_delta_paise,reserved_bonus_credit_delta_paise,
         idempotency_key, reference_type, reference_id, note, metadata_json, status, source, created_at_ms)
-       VALUES (?, ?, ?, 'INR', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'posted', ?, ?)`,
+       VALUES (?, ?, ?, 'INR', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'posted', ?, ?)`,
       [row.ledgerId, row.ownerUid, row.ownerRole, row.type, row.direction, row.amountPaise,
-       row.availableDeltaPaise, row.reservedDeltaPaise, 0, 0,
-       row.bonusCreditDeltaPaise,row.reservedBonusCreditDeltaPaise,
+       row.availableDeltaPaise, row.reservedDeltaPaise,
+        row.bonusCreditDeltaPaise,row.reservedBonusCreditDeltaPaise,
        row.idempotencyKey, row.referenceType, row.referenceId, row.note, row.metadataJson, row.source, row.createdAtMs]
     );
   }
@@ -551,7 +551,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       "VALUES (?,?,?,?,?,?,?,0,?,?,?,?,?,?) " +
       "ON CONFLICT(offer_id) DO UPDATE SET " +
       "enabled=excluded.enabled,minimum_recharge_paise=excluded.minimum_recharge_paise," +
-      "bonus_minutes=excluded.bonus_minutes,bonus_credit_paise=excluded.bonus_credit_paise,per_customer_limit=excluded.per_customer_limit," +
+      "bonus_minutes=1,bonus_credit_paise=excluded.bonus_credit_paise,per_customer_limit=excluded.per_customer_limit," +
       "total_usage_limit=excluded.total_usage_limit,priority=excluded.priority," +
       "start_at_ms=excluded.start_at_ms,end_at_ms=excluded.end_at_ms," +
       "payload_json=excluded.payload_json,updated_at_ms=excluded.updated_at_ms",
@@ -609,7 +609,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       paymentId: row.razorpay_payment_id || null,
       customerPaymentId: String(payload.customerPaymentId || '') || null,
       paidAt: Number(row.paid_at_ms || 0),
-            bonusCreditPaiseCredited: safePaise(payload.bonusCreditCreditedPaise),
+            bonusCreditCreditedPaise: safePaise(payload.bonusCreditCreditedPaise),
       bonusCreditSkippedReason: String(payload.bonusCreditSkippedReason || ''),
       offerId: payload.offerId || null,
       offerName: payload.offerName || null
@@ -649,7 +649,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     if(cashLedger||bonusLedger)throw walletError('WALLET_LEDGER_CONFLICT','A Wallet recharge ledger already exists and requires reconciliation.',409);
     const nowMs=Number(now());
     const offersResult=await statement(
-      `SELECT o.offer_id,o.enabled,o.minimum_recharge_paise,o.bonus_minutes,o.bonus_credit_paise,
+      `SELECT o.offer_id,o.enabled,o.minimum_recharge_paise,o.bonus_credit_paise,
               o.per_customer_limit,o.total_usage_limit,o.used_count,o.priority,o.start_at_ms,o.end_at_ms,o.payload_json,
               COALESCE(u.redemption_count,0) AS customer_redemption_count
        FROM smv_domain_wallet_offers o
