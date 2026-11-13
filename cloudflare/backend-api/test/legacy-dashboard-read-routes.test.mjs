@@ -60,6 +60,52 @@ test('Astrologer appointment read is UID-scoped and applies the IST two-minute m
   assert.deepEqual(res.body.appointments[0].birthDetails,{birthDate:'1990-01-02',birthTime:'08:30',birthPlace:'Perambalur',birthGender:'Female'});
 });
 
+test('Astrologer scheduled Call and Chat reads reconcile started D1 sessions and leave missed bookings missed', async () => {
+  const app=harness();
+  const firestore=firestoreFixture({
+    docs:{
+      'smv_users/astro-1':{exists:true,data:{role:'astrologer'}},
+      'smv_astrologers/astro-1':{exists:true,data:{role:'astrologer'}}
+    },
+    queries:{smv_appointments:[
+      {id:'appointment-chat-1',data:{bookingKind:'scheduled_chat_request',type:'Chat Consultation',bookingStatus:'accepted',status:'accepted',createdAt:'2026-11-04T05:00:00.000Z'}},
+      {id:'appointment-call-1',data:{bookingKind:'scheduled_call_request',type:'Call Consultation',bookingStatus:'accepted',status:'accepted',createdAt:'2026-11-04T04:00:00.000Z'}},
+      {id:'appointment-missed-1',data:{bookingKind:'scheduled_chat_request',type:'Chat Consultation',bookingStatus:'accepted',status:'accepted',preferredDate:'2026-01-01',preferredTime:'10:00',createdAt:'2026-11-04T03:00:00.000Z'}}
+    ]}
+  });
+  const lookups=[];
+  const liveService={
+    async listEndedSessionsForAppointments(input){
+      lookups.push(input);
+      return {
+        'appointment-chat-1':{id:'live-chat-session-1',state:'ended',startedAt:'2026-11-04T05:00:00.000Z',endedAt:'2026-11-04T05:02:00.000Z'},
+        'appointment-call-1':{id:'live-call-session-1',state:'ended',startedAt:'2026-11-04T04:00:00.000Z',endedAt:'2026-11-04T04:03:00.000Z'}
+      };
+    }
+  };
+  registerLegacyDashboardReadRoutes({
+    app,firestore,liveService,isLiveReady:async()=>true,
+    identityService:{async authenticateAuthorization(){return {uid:'astro-1',role:'astrologer'};}},
+    now:()=>Date.parse('2026-11-13T18:00:00+05:30')
+  });
+  const res=response();
+  await app.handlers.get('GET /astrologer/appointments')(req(),res);
+  assert.equal(res.statusCode,200);
+  const byId=Object.fromEntries(res.body.appointments.map(item=>[item.id,item]));
+  assert.equal(byId['appointment-chat-1'].bookingStatus,'completed');
+  assert.equal(byId['appointment-chat-1'].status,'completed');
+  assert.equal(byId['appointment-chat-1'].liveSessionId,'live-chat-session-1');
+  assert.equal(byId['appointment-chat-1'].liveEndedAt,'2026-11-04T05:02:00.000Z');
+  assert.equal(byId['appointment-call-1'].bookingStatus,'completed');
+  assert.equal(byId['appointment-call-1'].liveSessionId,'live-call-session-1');
+  assert.equal(byId['appointment-missed-1'].bookingStatus,'missed_by_astrologer');
+  assert.equal(byId['appointment-missed-1'].liveSessionId,'');
+  assert.deepEqual(lookups,[{
+    appointmentIds:['appointment-chat-1','appointment-call-1','appointment-missed-1'],
+    uid:'astro-1',role:'astrologer'
+  }]);
+});
+
 test('Customer appointments require Customer role and filter only scheduled Call/Chat kinds', async () => {
   const app=harness();
   const firestore=firestoreFixture({queries:{smv_appointments:[

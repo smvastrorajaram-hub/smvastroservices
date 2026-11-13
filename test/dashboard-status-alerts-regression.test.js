@@ -75,6 +75,7 @@ test('Live-session colours keep Customer green, make dismissed Astrologer sessio
  assert.ok(frontend.includes("const dashboardRole=String(window.__smvCurrentRole||'').toLowerCase();"));
  assert.ok(frontend.includes("const actionColor=ended?'#5b2a86':(dashboardRole==='astrologer'&&windowClosed?'#166534':'#00e676');"),'only dismissed, not-ended Astrologer sessions use dark green; ended receipts use dark purple');
  assert.ok(frontend.includes('openButton.style.color=actionColor;'));
+ assert.ok(frontend.includes("openButton.classList.toggle('smv-live-session-receipt-action',ended);"),'ended receipts in both roles use the dark-purple receipt class');
  assert.ok(frontend.includes('openButton.style.webkitTextFillColor=actionColor;'),'Android WebView text fill follows the same colour logic');
  assert.ok(frontend.includes('View Session Receipt</button>'),'Customer scheduled receipt label uses title case');
  assert.ok(frontend.includes('smv-plain-text-action smv-live-session-receipt-action'),'scheduled receipt is a plain-text action');

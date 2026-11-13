@@ -5625,6 +5625,7 @@ function smvLiveUpdateDashboardSessionStatus(session){
   const dashboardRole=String(window.__smvCurrentRole||'').toLowerCase();
   const actionColor=ended?'#5b2a86':(dashboardRole==='astrologer'&&windowClosed?'#166534':'#00e676');
   if(openButton){
+   openButton.classList.toggle('smv-live-session-receipt-action',ended);
    openButton.textContent=ended?'Download Receipt':'Open Session';
    openButton.style.background='transparent';
    openButton.style.color=actionColor;
@@ -5786,6 +5787,8 @@ function smvLiveRenderScheduledBookings(appointments){
    buttons='<div class="action-row" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"><button class="btn" data-scheduled-open="'+escapeHtml(a.liveSessionId)+'" type="button">OPEN LIVE '+(isChat?'CHAT':'CALL')+'</button></div>';
   }else if(status==='waiting_for_online'){
    buttons='<p class="small" style="margin-top:8px">This appointment was moved to the Live queue because the session could not start immediately. Check Pending Bookings above and accept the queued request after going Online.</p>';
+  }else if(status==='completed'&&a.liveSessionId){
+   buttons='<button type="button" class="smv-plain-text-action smv-live-session-receipt-action" data-astrologer-scheduled-receipt="'+escapeHtml(a.liveSessionId)+'">View Session Receipt</button>';
   }
   return '<article class="card" style="margin:8px 0;min-width:0;overflow-wrap:anywhere"><div class="smv-live-booking-kind">'+modeLabel+'</div><h4 class="smv-live-booking-id" style="margin:6px 0">'+escapeHtml(a.bookingId||'Booking')+'</h4><p class="small smv-live-booking-detail"><b>Customer:</b> '+escapeHtml(a.name||'Customer')+'</p><p class="small smv-live-booking-detail"><b>Preferred date/time (IST):</b> '+escapeHtml(String(a.preferredDate||'')+' '+String(a.preferredTime||''))+'</p><p class="small smv-live-booking-dates">'+escapeHtml(smvScheduledBookingDateSummary(a)||'Booking date &amp; time unavailable')+'</p><p class="small smv-live-booking-detail"><b>Duration:</b> '+Number(a.scheduledMinutes||5)+' minute(s) · <b>Status:</b> '+escapeHtml(stateText(a))+'</p>'+(isChat&&a.question?'<div class="small" style="white-space:pre-wrap;overflow-wrap:anywhere"><b>Previous Chat Question:</b> '+escapeHtml(a.question)+'</div>':'')+smvLiveBirthDetailsHtml(birth,'Customer Birth Details')+(a.notes?'<p class="small smv-live-booking-detail" style="white-space:pre-wrap;overflow-wrap:anywhere"><b>Notes:</b> '+escapeHtml(a.notes)+'</p>':'')+buttons+'</article>';
  }).join('');
@@ -5852,6 +5855,7 @@ function smvLiveRenderScheduledBookings(appointments){
   try{const list=await renderApi('/live/sessions',{method:'GET'});const session=(list.sessions||[]).find(x=>String(x.id||'')===id);if(session)smvLiveOpenSession(session,null,false);else throw new Error('Live session is not available yet. Refresh the dashboard.');}
   catch(error){smvLiveShowError(error);}
  });
+ host.querySelectorAll('[data-astrologer-scheduled-receipt]').forEach(btn=>btn.onclick=()=>smvLiveOpenScheduledReceipt(btn.dataset.astrologerScheduledReceipt,btn));
 }
 async function smvLiveLoadScheduledAppointments(){
  const host=$('smvScheduledBookings');if(!host||String(window.__smvCurrentRole||'').toLowerCase()!=='astrologer')return;
@@ -5899,6 +5903,19 @@ function smvLiveNormalizeScheduledAppointments(appointments,sessions){
   return {...a,bookingStatus:status,status,liveSessionId:liveId||String(session.id||''),liveEndedAt:session.endedAt||a.liveEndedAt||null};
  });
 }
+async function smvLiveOpenScheduledReceipt(sessionId,button){
+ const id=String(sessionId||'').trim();if(!id)return;
+ if(button)button.disabled=true;
+ try{
+  const result=await renderApi('/live/sessions/'+encodeURIComponent(id),{method:'GET',timeoutMs:12000});
+  const session=result.session;
+  if(!session||String(session.state||session.status||'').toLowerCase()!=='ended')throw new Error('The Live Session has not reached its final settled state yet. Refresh your bookings and retry.');
+  await smvLiveOpenReceiptPage(session);
+ }catch(error){
+  smvLiveShowDashboardMessage(error?.message||String(error));
+  if(button)button.disabled=false;
+ }
+}
 function smvLiveRenderCustomerScheduledBookings(appointments){
  const host=$('smvLiveCustomerScheduledBookings');if(!host)return;
  if(!appointments.length){smvLiveScheduleBookingTransitionRefresh([],'customer');host.innerHTML='<p class="small">No scheduled Call / Chat bookings yet.</p>';return;}
@@ -5944,16 +5961,7 @@ function smvLiveRenderCustomerScheduledBookings(appointments){
    else throw new Error('The Live Session is not available. Refresh your bookings.');
   }catch(error){smvLiveShowDashboardMessage(error?.message||String(error));}
  });
- host.querySelectorAll('[data-customer-scheduled-receipt]').forEach(btn=>btn.onclick=async()=>{
-  const id=String(btn.dataset.customerScheduledReceipt||'');if(!id)return;
-  btn.disabled=true;
-  try{
-   const result=await renderApi('/live/sessions/'+encodeURIComponent(id),{method:'GET',timeoutMs:12000});
-   const session=result.session;
-   if(!session||String(session.state||session.status||'').toLowerCase()!=='ended')throw new Error('The Live Session has not reached its final settled state yet. Refresh your bookings and retry.');
-   await smvLiveOpenReceiptPage(session);
-  }catch(error){smvLiveShowDashboardMessage(error?.message||String(error));btn.disabled=false;}
- });
+ host.querySelectorAll('[data-customer-scheduled-receipt]').forEach(btn=>btn.onclick=()=>smvLiveOpenScheduledReceipt(btn.dataset.customerScheduledReceipt,btn));
 }
 function smvLiveShowDashboardMessage(message){
  const target=$('smvLiveDashboardMsg');
