@@ -583,7 +583,7 @@ function futureLocalAppointment(offsetMs = -60_000) {
   };
 }
 
-test('Scheduled Call/Chat start creates, accepts, schedules and links a session without changing the wallet directly', async () => {
+test('Production Scheduled Call/Chat start creates, accepts, schedules and links a session without changing the wallet directly', async () => {
   const appointmentTime = futureLocalAppointment();
   const session = {
     id: 'scheduled-session-1',
@@ -624,7 +624,7 @@ test('Scheduled Call/Chat start creates, accepts, schedules and links a session 
     liveService,
     isLiveReady: async () => true,
     env: {
-      SMV_ENVIRONMENT: 'staging',
+      SMV_ENVIRONMENT: 'production',
       SMV_LIVE_SESSION_ROUTES_ENABLED: 'true',
       ...bindings
     }
