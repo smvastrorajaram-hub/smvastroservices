@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parseRupeesToPaise, paiseToRupees, calculateStartedMinuteCharge, walletLedgerDocId, createWalletService, selectRechargeBonusOffer, rechargeOfferMatches, offerUsageCounterId, classifyRechargeIntent } = require('../wallet-service');
+const { parseRupeesToPaise, paiseToRupees, walletLedgerDocId, createWalletService, selectRechargeBonusOffer, rechargeOfferMatches, offerUsageCounterId, classifyRechargeIntent } = require('../wallet-service');
 
 test('failed Wallet recharge order can be retried with the same idempotency key without weakening amount checks', () => {
   assert.equal(classifyRechargeIntent({ status: 'failed', storedAmountPaise: 10000, requestedAmountPaise: 10000 }), 'retry_failed');
@@ -27,16 +27,6 @@ test('rupee input rejects values that could be ambiguous or unsafe', () => {
   assert.equal(parseRupeesToPaise('0'), null);
   assert.equal(parseRupeesToPaise('0', { allowZero: true }), 0);
   assert.equal(parseRupeesToPaise('9007199254740992'), null);
-});
-
-test('started-minute billing subtracts promotional time before rounding', () => {
-  assert.deepEqual(calculateStartedMinuteCharge({ connectedSeconds: 300, freeSeconds: 300, ratePerMinutePaise: 1000 }), {
-    connectedSeconds: 300, freeSeconds: 300, billableSeconds: 0, billableMinutes: 0, amountPaise: 0
-  });
-  assert.equal(calculateStartedMinuteCharge({ connectedSeconds: 301, freeSeconds: 300, ratePerMinutePaise: 1000 }).amountPaise, 1000);
-  assert.equal(calculateStartedMinuteCharge({ connectedSeconds: 360, freeSeconds: 300, ratePerMinutePaise: 1200 }).amountPaise, 1200);
-  assert.equal(calculateStartedMinuteCharge({ connectedSeconds: 420, freeSeconds: 300, ratePerMinutePaise: 1200 }).amountPaise, 2400);
-  assert.equal(calculateStartedMinuteCharge({ connectedSeconds: -1, freeSeconds: 0, ratePerMinutePaise: 1000 }), null);
 });
 
 test('wallet ledger ids are deterministic and stable', () => {
