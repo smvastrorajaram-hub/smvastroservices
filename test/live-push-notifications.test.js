@@ -1505,6 +1505,7 @@ test('Android notification opens reuse one Recents task and root Back keeps SMV 
   const incoming=manifest.slice(incomingStart,incomingEnd);
   assert.ok(incoming.includes('android:excludeFromRecents="true"'), 'the full-screen ringing screen itself stays out of Recents');
   assert.ok(incoming.includes('android:taskAffinity="in.smvastroservices.smvastro.incoming"'), 'the ringing screen uses a separate task affinity');
+  assert.ok(notifications.includes('Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS|Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP'), 'the full-screen notification starts only the hidden ringing task');
   assert.ok(!main.includes('android:taskAffinity='), 'the launcher keeps the package default visible Recents task affinity');
   assert.ok(notifications.includes('Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP'), 'notification tap launches or restores the visible app task rather than retaining the hidden ringing task');
   const backStart = activity.indexOf('public void onBackPressed()');
