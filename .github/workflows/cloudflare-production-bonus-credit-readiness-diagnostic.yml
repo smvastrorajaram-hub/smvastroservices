@@ -1,0 +1,143 @@
+name: Diagnose Production Bonus Credit readiness (read-only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_database_name:
+        description: 'Type smvastro-wallet-production to run read-only diagnostics.'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-production-bonus-credit-readiness-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  diagnose-production-bonus-credit:
+    if: ${{ inputs.confirm_database_name == 'smvastro-wallet-production' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_D1_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify dedicated Production D1 credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${CLOUDFLARE_API_TOKEN:-}" || { echo 'Missing CLOUDFLARE_D1_API_TOKEN in GitHub production environment.'; exit 1; }
+
+      - name: Resolve Cloudflare account if needed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+            account_id="$(node .github/scripts/resolve-cloudflare-account-from-production-d1.mjs)"
+            test -n "$account_id" || { echo 'Unable to resolve Cloudflare account for Production D1.'; exit 1; }
+            echo "CLOUDFLARE_ACCOUNT_ID=$account_id" >> "$GITHUB_ENV"
+          fi
+
+      - name: Install Wrangler
+        run: npm install --prefix cloudflare/backend-api --no-package-lock --ignore-scripts --no-audit --no-fund
+
+      - name: Execute the exact Worker Bonus Credit readiness query (read-only)
+        working-directory: cloudflare/backend-api
+        shell: bash
+        run: |
+          set -euo pipefail
+          SQL="$(cat <<'SQL'
+          WITH schema_objects AS MATERIALIZED (
+            SELECT type, name FROM sqlite_master
+            WHERE name IN (
+              'smv_domain_live_session_reserve_validate','smv_domain_live_earning_validate',
+              'smv_domain_wallet_ledger_apply','smv_domain_wallet_ledger_validate'
+            )
+          ),
+          table_columns AS MATERIALIZED (
+            SELECT 'smv_domain_wallets' AS table_name, name AS column_name FROM pragma_table_info('smv_domain_wallets')
+            UNION ALL SELECT 'smv_domain_wallet_ledger', name FROM pragma_table_info('smv_domain_wallet_ledger')
+            UNION ALL SELECT 'smv_domain_wallet_offers', name FROM pragma_table_info('smv_domain_wallet_offers')
+            UNION ALL SELECT 'smv_domain_offer_redemptions', name FROM pragma_table_info('smv_domain_offer_redemptions')
+            UNION ALL SELECT 'smv_domain_live_sessions', name FROM pragma_table_info('smv_domain_live_sessions')
+            UNION ALL SELECT 'smv_domain_live_bookings', name FROM pragma_table_info('smv_domain_live_bookings')
+          ),
+          object_checks AS (
+            SELECT
+              MAX(CASE WHEN type='trigger' AND name='smv_domain_live_session_reserve_validate' THEN 1 ELSE 0 END) AS live_session_bonus_reserve_trigger_count,
+              MAX(CASE WHEN type='trigger' AND name='smv_domain_live_earning_validate' THEN 1 ELSE 0 END) AS live_earning_bonus_credit_trigger_count,
+              MAX(CASE WHEN type='trigger' AND name='smv_domain_wallet_ledger_apply' THEN 1 ELSE 0 END) AS wallet_ledger_bonus_credit_apply_trigger_count,
+              MAX(CASE WHEN type='trigger' AND name='smv_domain_wallet_ledger_validate' THEN 1 ELSE 0 END) AS wallet_ledger_bonus_credit_validate_trigger_count
+            FROM schema_objects
+          ),
+          column_checks AS (
+            SELECT
+              SUM(CASE WHEN table_name='smv_domain_wallets' AND column_name IN ('bonus_credit_balance_paise','reserved_bonus_credit_paise') THEN 1 ELSE 0 END) AS wallet_bonus_credit_columns_count,
+              SUM(CASE WHEN table_name='smv_domain_wallet_ledger' AND column_name IN ('bonus_credit_delta_paise','reserved_bonus_credit_delta_paise','bonus_credit_balance_after_paise','reserved_bonus_credit_balance_after_paise') THEN 1 ELSE 0 END) AS wallet_ledger_bonus_credit_columns_count,
+              SUM(CASE WHEN table_name='smv_domain_wallet_offers' AND column_name='bonus_credit_paise' THEN 1 ELSE 0 END) AS wallet_offer_bonus_credit_columns_count,
+              SUM(CASE WHEN table_name='smv_domain_offer_redemptions' AND column_name='bonus_credit_paise' THEN 1 ELSE 0 END) AS offer_redemption_bonus_credit_columns_count,
+              SUM(CASE WHEN table_name='smv_domain_live_sessions' AND column_name='reserved_bonus_credit_paise' THEN 1 ELSE 0 END) AS live_session_bonus_credit_columns_count,
+              SUM(CASE WHEN table_name='smv_domain_live_bookings' AND column_name='reserved_bonus_credit_paise' THEN 1 ELSE 0 END) AS live_booking_bonus_credit_columns_count
+            FROM table_columns
+          ),
+          bonus_credit_version AS (
+            SELECT schema_version AS bonus_credit_wallet_version
+            FROM smv_domain_schema_meta
+            WHERE schema_key='bonus-credit-wallet'
+            LIMIT 1
+          )
+          SELECT bonus_credit_version.bonus_credit_wallet_version, object_checks.*, column_checks.*
+          FROM object_checks CROSS JOIN column_checks CROSS JOIN bonus_credit_version;
+          SQL
+          )"
+          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "$SQL" > /tmp/smv-production-bonus-credit-diagnostic.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const raw = JSON.parse(fs.readFileSync('/tmp/smv-production-bonus-credit-diagnostic.json', 'utf8'));
+          const rows = Array.isArray(raw)
+            ? raw.flatMap(item => Array.isArray(item.results) ? item.results : [])
+            : (Array.isArray(raw.results) ? raw.results : []);
+          const row = rows[0];
+          if (!row) {
+            console.log(JSON.stringify({ result: 'NO_ROW', rawResults: raw }, null, 2));
+            process.exit(0);
+          }
+          const expected = {
+            live_session_bonus_reserve_trigger_count: 1,
+            live_earning_bonus_credit_trigger_count: 1,
+            wallet_ledger_bonus_credit_apply_trigger_count: 1,
+            wallet_ledger_bonus_credit_validate_trigger_count: 1,
+            wallet_bonus_credit_columns_count: 2,
+            wallet_ledger_bonus_credit_columns_count: 4,
+            wallet_offer_bonus_credit_columns_count: 1,
+            offer_redemption_bonus_credit_columns_count: 1,
+            live_session_bonus_credit_columns_count: 1,
+            live_booking_bonus_credit_columns_count: 1,
+            bonus_credit_wallet_version: '0013_bonus_credit_wallet'
+          };
+          const mismatches = Object.entries(expected)
+            .filter(([key, value]) => String(row[key] ?? '') !== String(value))
+            .map(([key, expectedValue]) => ({ key, expected: expectedValue, actual: row[key] ?? null }));
+          console.log(JSON.stringify({
+            result: mismatches.length === 0 ? 'PASS' : 'MISMATCH',
+            database: 'smvastro-wallet-production',
+            exactWorkerReadinessQuery: true,
+            readOnly: true,
+            row,
+            mismatches
+          }, null, 2));
+          NODE
+
+      - name: Confirm no writes were requested
+        run: echo 'Read-only diagnostic complete. No D1 migrations or write statements were executed.'
