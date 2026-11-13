@@ -1458,7 +1458,10 @@ test('Cloudflare native Live notifications use Android tray payloads and open th
   assert.match(fcmRoutes, /priority:\s*'HIGH'/);
   assert.match(fcmRoutes, /channel_id:\s*'smv_native_background_alerts_v1'/);
   assert.match(index, /firestore:\s*firestoreAdmin,\s*fcmSender,/);
-  assert.match(notifications, /CHANNEL_ALERTS\s*=\s*"smv_native_background_alerts_v1"/);
+  assert.match(notifications, /CHANNEL_ALERTS\s*=\s*"smv_native_background_alerts_v2"/);
+  assert.match(notifications, /CHANNEL_INCOMING\s*=\s*"smv_native_incoming_call_v2"/);
+  assert.match(notifications, /incoming\.setSound\(ringtone,ringAttributes\)/);
+  assert.match(notifications, /alerts\.setSound\(ringtone,ringAttributes\)/);
   assert.match(nativePush, /startForegroundService\(ring\)/);
   assert.equal(nativePush.includes('MainActivity.isAppVisible()'),false,
     'native call ringtone must start while the app is foregrounded as well as backgrounded');
@@ -1511,6 +1514,9 @@ test('Scheduled booking and Preferred-Time pushes use the same Android looping d
   assert.ok(incoming.includes('"scheduled_booking_reminder".equals(type)'));
   assert.ok(ringtone.includes('player.setLooping(true)'));
   assert.ok(ringtone.includes('RING_TIMEOUT_MILLIS'));
+  assert.ok(ringtone.includes('showStandardAlert(this,type,title,body,sessionId,bookingId)'));
+  assert.match(ringtone,/Ringtone playback failed:[^\\n]*clearPlayer\\(\\);return true;/);
+  assert.match(ringtone,/Could not play the device ringtone; the audible notification-channel fallback remains active\\.",error\\);clearPlayer\\(\\);/);
 });
 
 test('Scheduled session Start promotes an earlier idempotent queue into one real session and never stores a booking ID as liveSessionId', () => {
