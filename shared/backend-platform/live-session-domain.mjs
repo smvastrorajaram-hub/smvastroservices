@@ -67,7 +67,6 @@ export function reserveLiveWallet({wallet,minutes,ratePerMinutePaise}={}) {
   }
   return {
     reservedAmountPaise,
-    reservedBonusMinutes:0,
     reservedBonusCreditPaise,
     grossRequiredPaise,
     availableBalanceAfterPaise:available-reservedAmountPaise,
@@ -231,7 +230,7 @@ export function calculateLiveSettlement({session,nowMs=Date.now()}={}) {
     grossServiceAmountPaise,commissionableAmountPaise:grossServiceAmountPaise,
     bonusCreditUsedPaise,bonusCreditReleasedPaise,
     reservedBonusCreditPaise,chargedAmountPaise,releasedAmountPaise,
-    reservedAmountPaise,reservedBonusMinutes:0,freeMinutesUsed:0,bonusMinutesReleased:0,
+    reservedAmountPaise,
     ...commission
   };
 }
@@ -249,7 +248,6 @@ export function mapLiveSessionRow(row) {
     state:String(row.state),
     appointmentId:String(row.appointment_id||payload.appointmentId||''),
     reservedAmountPaise:safePaise(row.reserved_amount_paise),
-    reservedBonusMinutes:0,
     reservedBonusCreditPaise:safePaise(row.reserved_bonus_credit_paise),
     actualChargePaise:safePaise(row.actual_charge_paise),
     startedAtMs:Number(row.started_at_ms||payload.startedAtMs||0),
@@ -273,7 +271,6 @@ export function mapLiveBookingRow(row) {
     status:String(row.status),
     walletReservationState:String(row.wallet_reservation_state||'none'),
     reservedAmountPaise:safePaise(row.reserved_amount_paise),
-    reservedBonusMinutes:0,
     reservedBonusCreditPaise:safePaise(row.reserved_bonus_credit_paise),
     expiresAtMs:Number(row.expires_at_ms||0),
     createdAtMs:Number(row.created_at_ms||0),
