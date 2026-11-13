@@ -583,7 +583,7 @@ function futureLocalAppointment(offsetMs = -60_000) {
   };
 }
 
-test('Scheduled Call/Chat start creates, accepts, schedules and links a session without changing the wallet directly', async () => {
+test('Production Scheduled Call/Chat start creates, accepts, schedules and links a session without changing the wallet directly', async () => {
   const appointmentTime = futureLocalAppointment();
   const session = {
     id: 'scheduled-session-1',
@@ -624,7 +624,7 @@ test('Scheduled Call/Chat start creates, accepts, schedules and links a session 
     liveService,
     isLiveReady: async () => true,
     env: {
-      SMV_ENVIRONMENT: 'staging',
+      SMV_ENVIRONMENT: 'production',
       SMV_LIVE_SESSION_ROUTES_ENABLED: 'true',
       ...bindings
     }
@@ -725,7 +725,7 @@ test('FCM HTTP v1 keeps the standard notification envelope for ordinary alerts',
   assert.equal(message.data.sessionId,'session-1');
   assert.equal(message.android.priority,'HIGH');
   assert.equal(message.android.ttl,'120s');
-  assert.equal(message.android.notification.channel_id,'smv_native_background_alerts_v1');
+  assert.equal(message.android.notification.channel_id,'smv_native_background_alerts_v2');
   assert.equal(message.android.notification.sound,'default');
   assert.equal(message.android.notification.tag,'smv-live-request-session-1');
 });

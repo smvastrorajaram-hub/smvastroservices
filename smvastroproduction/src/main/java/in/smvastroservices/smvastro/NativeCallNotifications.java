@@ -11,8 +11,9 @@ import android.net.Uri;
 import android.os.Build;
 import java.util.Map;
 public final class NativeCallNotifications {
-    public static final String CHANNEL_INCOMING = "smv_native_incoming_call_v1";
-    public static final String CHANNEL_ALERTS = "smv_native_background_alerts_v1";
+    // New IDs are required because Android persists the old v1 silent-channel settings.
+    public static final String CHANNEL_INCOMING = "smv_native_incoming_call_v2";
+    public static final String CHANNEL_ALERTS = "smv_native_background_alerts_v2";
     public static final String EXTRA_TYPE="smv_native_type", EXTRA_MODE="smv_native_mode", EXTRA_SESSION_ID="smv_native_session_id",
         EXTRA_BOOKING_ID="smv_native_booking_id", EXTRA_TITLE="smv_native_title", EXTRA_BODY="smv_native_body",
         EXTRA_TAG="smv_native_tag", EXTRA_NOTIFICATION_ID="smv_native_notification_id";
@@ -21,14 +22,18 @@ public final class NativeCallNotifications {
         if (Build.VERSION.SDK_INT < 26) return;
         NotificationManager manager=(NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
         if(manager==null)return;
+        Uri ringtone=RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+        if(ringtone==null)ringtone=RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        AudioAttributes ringAttributes=new AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build();
         NotificationChannel incoming=new NotificationChannel(CHANNEL_INCOMING,"Incoming SMV ASTRO Calls and Chats",NotificationManager.IMPORTANCE_HIGH);
-        incoming.setDescription("Ringing alerts for incoming Live Call and Live Chat requests.");
-        incoming.setSound(null,(AudioAttributes)null); incoming.enableVibration(false); incoming.setShowBadge(true);
+        incoming.setDescription("Audible ringtone alerts for incoming Live and Scheduled Call/Chat requests.");
+        incoming.setSound(ringtone,ringAttributes); incoming.enableVibration(true); incoming.setShowBadge(true);
         manager.createNotificationChannel(incoming);
         NotificationChannel alerts=new NotificationChannel(CHANNEL_ALERTS,"SMV ASTRO Background Alerts",NotificationManager.IMPORTANCE_HIGH);
-        alerts.setDescription("Background alerts for scheduled bookings and notification tests.");
-        alerts.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
-            new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION).build());
+        alerts.setDescription("Audible ringtone fallback for scheduled bookings and notification tests.");
+        alerts.setSound(ringtone,ringAttributes);
         alerts.enableVibration(true); manager.createNotificationChannel(alerts);
     }
     public static int notificationId(String sessionId,String bookingId) {
@@ -49,18 +54,27 @@ public final class NativeCallNotifications {
         return builder.setSmallIcon(R.drawable.smv_notification_call).setContentTitle(safeTitle).setContentText(safeBody)
             .setStyle(new Notification.BigTextStyle().bigText(safeBody)).setCategory(Notification.CATEGORY_CALL)
             .setVisibility(Notification.VISIBILITY_PUBLIC).setPriority(Notification.PRIORITY_MAX).setOngoing(true)
-            .setAutoCancel(false).setOnlyAlertOnce(true).setColor(0xFF24103F).setContentIntent(call).setFullScreenIntent(call,true).build();
+            .setAutoCancel(false).setOnlyAlertOnce(false)
+            .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE))
+            .setVibrate(new long[]{0,700,350,700})
+            .setColor(0xFF24103F).setContentIntent(call).setFullScreenIntent(call,true).build();
     }
     public static void showStandardAlert(Context context,Map<String,String> data) {
+        showStandardAlert(context,value(data,"type"),value(data,"title"),value(data,"body"),
+            value(data,"sessionId"),value(data,"bookingId"));
+    }
+    public static void showStandardAlert(Context context,String type,String title,String body,String sessionId,String bookingId) {
         createChannels(context);
-        String type=value(data,"type"),title=value(data,"title"),body=value(data,"body"),sessionId=value(data,"sessionId"),bookingId=value(data,"bookingId");
         Intent open=mainIntent(context,sessionId,bookingId); int id=notificationId(sessionId,bookingId)+6000;
         PendingIntent pending=PendingIntent.getActivity(context,id,open,PendingIntent.FLAG_UPDATE_CURRENT|immutableFlag());
         Notification.Builder builder=Build.VERSION.SDK_INT>=26?new Notification.Builder(context,CHANNEL_ALERTS):new Notification.Builder(context);
         Notification notification=builder.setSmallIcon(R.drawable.smv_notification_call)
             .setContentTitle(empty(title)?"SMV ASTRO Alert":title).setContentText(empty(body)?"Open SMV ASTRO to review the request.":body)
-            .setAutoCancel(true).setCategory("scheduled_booking".equals(type)?Notification.CATEGORY_EVENT:Notification.CATEGORY_STATUS)
-            .setPriority(Notification.PRIORITY_HIGH).setContentIntent(pending).setColor(0xFF24103F).build();
+            .setAutoCancel(true).setCategory("scheduled_booking".equals(type)||"scheduled_booking_reminder".equals(type)?Notification.CATEGORY_EVENT:Notification.CATEGORY_STATUS)
+            .setPriority(Notification.PRIORITY_HIGH)
+            .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE))
+            .setVibrate(new long[]{0,700,350,700})
+            .setContentIntent(pending).setColor(0xFF24103F).build();
         NotificationManager manager=(NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE); if(manager!=null)manager.notify(id,notification);
     }
     static Intent mainIntent(Context context,String sessionId,String bookingId) {

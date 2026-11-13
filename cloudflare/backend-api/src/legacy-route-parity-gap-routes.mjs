@@ -273,7 +273,7 @@ export function createFcmSender({ projectId, tokenProvider, fetchImpl = globalTh
                   body: String(payload.body || '').slice(0, 300)
                 };
                 message.android.notification = {
-                  channel_id: 'smv_native_background_alerts_v1',
+                  channel_id: 'smv_native_background_alerts_v2',
                   sound: 'default',
                   ...(tag ? { tag } : {})
                 };
@@ -1149,7 +1149,7 @@ export function registerLegacyRouteParityGapRoutes({
       const user = await authenticate(req);
       if (roleError(user, ['astrologer'])) throw routeError('ASTROLOGER_REQUIRED', 'Astrologer account required.', 403);
       const uid = safeUid(user.uid);
-      if (String(env?.SMV_ENVIRONMENT || '') !== 'staging' ||
+      if (!['staging', 'production'].includes(String(env?.SMV_ENVIRONMENT || '').trim().toLowerCase()) ||
           String(env?.SMV_LIVE_SESSION_ROUTES_ENABLED || '').toLowerCase() !== 'true' ||
           !liveService || typeof liveService.createRequest !== 'function' ||
           typeof liveService.acceptSession !== 'function' || typeof liveService.endSession !== 'function' ||

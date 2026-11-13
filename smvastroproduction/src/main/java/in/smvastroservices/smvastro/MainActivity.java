@@ -579,7 +579,17 @@ public class MainActivity extends Activity {
     protected void onResume() {
         appVisible = true;
         super.onResume();
-        if (webView != null) webView.onResume();
+        if (webView != null) {
+            webView.onResume();
+            // A retained WebView may keep stale dashboard data after Android backgrounds it.
+            // Ask the authenticated page to reconcile only after its JS task has resumed.
+            webView.postDelayed(() -> {
+                if (webView != null && appVisible) {
+                    webView.evaluateJavascript(
+                        "window.__smvAndroidAppResumed && window.__smvAndroidAppResumed();", null);
+                }
+            }, 350);
+        }
     }
 
     @Override
