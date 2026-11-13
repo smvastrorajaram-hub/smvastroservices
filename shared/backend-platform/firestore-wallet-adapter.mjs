@@ -51,7 +51,7 @@ function makeWalletPatch(wallet, deltas, owner, timestamp) {
   };
   for (const value of Object.values(next)) {
     if (!Number.isSafeInteger(value) || value < 0 || value > Number.MAX_SAFE_INTEGER) {
-      throw walletError('LIVE_WALLET_RESERVE_MISMATCH', 'Wallet cash or Bonus Credit reserve does not reconcile.');
+      throw walletError('WALLET_INSUFFICIENT_BALANCE', 'Wallet cash or Bonus Credit balance does not reconcile.');
     }
   }
   return {
@@ -61,7 +61,7 @@ function makeWalletPatch(wallet, deltas, owner, timestamp) {
   };
 }
 
-/** Firestore Admin SDK adapter. Wallet promotional value is Bonus Credit only. */
+/** Firestore Admin SDK adapter. The same Bonus Credit-only rules are used by D1. */
 export function createFirestoreWalletAdapter({ db, FieldValue, cryptoImpl = globalThis.crypto } = {}) {
   if (!db || typeof db.runTransaction !== 'function' || !FieldValue?.serverTimestamp) {
     throw new TypeError('Firestore db and FieldValue.serverTimestamp are required.');
@@ -182,8 +182,7 @@ export function createFirestoreWalletAdapter({ db, FieldValue, cryptoImpl = glob
     const id = String(sessionId || '').trim();
     if (!id) throw walletError('LIVE_SESSION_ID_REQUIRED', 'Live Session ID is required.', 400);
     const expectedKeys = walletReservationSettlementKeys({
-      sessionId: id, reservedAmountPaise, reservedBonusCreditPaise,
-      chargedAmountPaise, bonusCreditUsedPaise
+      sessionId: id, reservedAmountPaise, reservedBonusCreditPaise, chargedAmountPaise, bonusCreditUsedPaise
     });
     const expectedRefs = await Promise.all(expectedKeys.map(async item =>
       ledgerRef(await ledgerId(item.type, owner.ownerUid, item.idempotencyKey, id))
@@ -207,14 +206,12 @@ export function createFirestoreWalletAdapter({ db, FieldValue, cryptoImpl = glob
       idempotencyKey: 'live-session-usage:' + id, reservedDeltaPaise: -settlement.chargedAmountPaise
     });
     if (settlement.bonusCreditUsedPaise > 0) specs.push({
-      type: 'live_session_bonus_credit_used', direction: 'debit',
-      amountPaise: settlement.bonusCreditUsedPaise,
+      type: 'live_session_bonus_credit_used', direction: 'debit', amountPaise: settlement.bonusCreditUsedPaise,
       idempotencyKey: 'live-session-bonus-credit-used:' + id,
       reservedBonusCreditDeltaPaise: -settlement.bonusCreditUsedPaise
     });
     if (settlement.bonusCreditReleasedPaise > 0) specs.push({
-      type: 'live_session_bonus_credit_release', direction: 'credit',
-      amountPaise: settlement.bonusCreditReleasedPaise,
+      type: 'live_session_bonus_credit_release', direction: 'credit', amountPaise: settlement.bonusCreditReleasedPaise,
       idempotencyKey: 'live-session-bonus-credit-release:' + id,
       bonusCreditDeltaPaise: settlement.bonusCreditReleasedPaise,
       reservedBonusCreditDeltaPaise: -settlement.bonusCreditReleasedPaise
@@ -224,7 +221,7 @@ export function createFirestoreWalletAdapter({ db, FieldValue, cryptoImpl = glob
       idempotencyKey: 'live-session-release:' + id,
       availableDeltaPaise: settlement.releasedAmountPaise, reservedDeltaPaise: -settlement.releasedAmountPaise
     });
-    if (!specs.length) return { success: true, alreadyProcessed: true, wallet, settlement: usage };
+    if (!specs.length) return { success: true, alreadyProcessed: true, wallet, settlement };
     const rows = [];
     for (const spec of specs) rows.push({
       ...spec, ownerUid: owner.ownerUid, ownerRole: owner.ownerRole,
@@ -242,8 +239,8 @@ export function createFirestoreWalletAdapter({ db, FieldValue, cryptoImpl = glob
       let next = current;
       for (const row of rows) {
         const patch = makeWalletPatch(next, row, owner, nowTimestamp);
-        const ledger = ledgerData({ ...row,
-          balanceAfterPaise: patch.availableBalancePaise,
+        const ledger = ledgerData({
+          ...row, balanceAfterPaise: patch.availableBalancePaise,
           reservedBalanceAfterPaise: patch.reservedBalancePaise,
           bonusCreditBalanceAfterPaise: patch.bonusCreditBalancePaise,
           reservedBonusCreditBalanceAfterPaise: patch.reservedBonusCreditPaise
