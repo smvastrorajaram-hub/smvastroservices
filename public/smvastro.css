@@ -4424,3 +4424,24 @@ html body #smv24-footer .smv24-footer-top .smv24-brand h2{
 .smv-wallet-offer-svg-banner-bonus{font-size:.96rem;font-weight:900;color:#17613a;-webkit-text-fill-color:#17613a}
 .smv-wallet-offer-svg-banner-action{font-size:.8rem;line-height:1.4;color:#514465;-webkit-text-fill-color:#514465}
 @media(max-width:520px){.smv-wallet-offer-svg-banners{grid-template-columns:minmax(0,1fr)}.smv-wallet-offer-svg-banner{gap:10px;padding:10px}.smv-wallet-offer-svg-banner-art{flex-basis:70px;width:70px;height:70px}}
+
+
+/* Live Session receipt actions stay neutral and never inherit the modal's purple primary-button treatment. */
+#modal .modalbox .smv-live-session-panel button#smvLiveDownloadReceipt.smv-live-session-receipt-action{
+  display:inline-flex!important;align-items:center;justify-content:center;
+  width:100%;min-width:0;min-height:0!important;height:auto;
+  margin:0;padding:8px 0!important;box-sizing:border-box;
+  appearance:none;-webkit-appearance:none;
+  background:transparent!important;color:#241f1b!important;-webkit-text-fill-color:#241f1b!important;
+  border:0!important;border-radius:0!important;box-shadow:none!important;
+  font-size:15px;font-weight:800;line-height:1.5;text-align:center;text-decoration:none;cursor:pointer;
+}
+#modal .modalbox .smv-live-session-panel button#smvLiveDownloadReceipt.smv-live-session-receipt-action::before{
+  content:'';display:inline-block;width:8px;height:8px;min-width:8px;margin-right:8px;
+  border-radius:50%;background:#b42318;
+}
+#modal .modalbox .smv-live-session-panel button#smvLiveDownloadReceipt.smv-live-session-receipt-action:hover,
+#modal .modalbox .smv-live-session-panel button#smvLiveDownloadReceipt.smv-live-session-receipt-action:focus{
+  background:transparent!important;color:#241f1b!important;-webkit-text-fill-color:#241f1b!important;
+  border:0!important;box-shadow:none!important;text-decoration:none;
+}
