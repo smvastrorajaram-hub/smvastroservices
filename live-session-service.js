@@ -42,7 +42,12 @@ function safePaise(value) {
   return Number.isSafeInteger(n) && n >= 0 ? n : 0;
 }
 
-function validateLiveBirthDetails(input) {function validateLiveBirthDetails(input) {
+function safeMinutes(value) {
+  const n = Number(value ?? 0);
+  return Number.isSafeInteger(n) && n >= 0 && n <= 1_000_000 ? n : 0;
+}
+
+function validateLiveBirthDetails(input) {
   const d = input && typeof input === 'object' ? input : {};
   const birthDate = String(d.birthDate || '').trim();
   const birthTime = String(d.birthTime || '').trim();
@@ -180,7 +185,7 @@ function billableMinutesForElapsedMs(elapsedMs, maximumMinutes) {
 function calculateLiveSessionCharge({ elapsedMs, ratePerMinutePaise, maximumMinutes }) {
   const rate = Number(ratePerMinutePaise);
   const minutes = billableMinutesForElapsedMs(elapsedMs, maximumMinutes);
-  if (minutes === null || !Number.isSafeInteger(rate) || rate < 0 || rate > 1_000_000) return null;
+  if (minutes === null || !Number.isSafeInteger(rate) || rate < 100 || rate > 1_000_000) return null;
   const amountPaise = minutes * rate;
   if (!Number.isSafeInteger(amountPaise)) return null;
   return { elapsedMs: Math.floor(Number(elapsedMs)), billableMinutes: minutes, totalBillableMinutes: minutes, amountPaise };
@@ -245,24 +250,17 @@ function calculateBookingReserveRelease({
   availableBalancePaise, reservedBalancePaise, bonusCreditBalancePaise, reservedBonusCreditPaise,
   releaseAmountPaise, releaseBonusCreditPaise
 }) {
-  const values = [availableBalancePaise, reservedBalancePaise, bonusCreditBalancePaise,
-    reservedBonusCreditPaise, releaseAmountPaise, releaseBonusCreditPaise].map(Number);
+  const values = [availableBalancePaise,reservedBalancePaise,bonusCreditBalancePaise,reservedBonusCreditPaise,releaseAmountPaise,releaseBonusCreditPaise].map(Number);
   if (!values.every(Number.isSafeInteger) || values.some(value => value < 0)) return null;
-  const [available, reserved, bonusAvailable, bonusReserved, amount, bonus] = values;
-  if (reserved < amount || bonusReserved < bonus) return null;
-  const nextAvailable = available + amount;
-  const nextReserved = reserved - amount;
-  const nextBonusAvailable = bonusAvailable + bonus;
-  const nextBonusReserved = bonusReserved - bonus;
-  if (!Number.isSafeInteger(nextAvailable) || !Number.isSafeInteger(nextReserved) ||
-      !Number.isSafeInteger(nextBonusAvailable) || !Number.isSafeInteger(nextBonusReserved) ||
-      nextAvailable > Number.MAX_SAFE_INTEGER || nextReserved > Number.MAX_SAFE_INTEGER ||
-      nextBonusAvailable > Number.MAX_SAFE_INTEGER || nextBonusReserved > Number.MAX_SAFE_INTEGER) return null;
-  return {
-    availableBalancePaise: nextAvailable, reservedBalancePaise: nextReserved,
-    bonusCreditBalancePaise: nextBonusAvailable, reservedBonusCreditPaise: nextBonusReserved,
-    releasedAmountPaise: amount, releasedBonusCreditPaise: bonus
-  };
+  const [available,reserved,creditAvailable,creditReserved,amount,credit] = values;
+  if (reserved < amount || creditReserved < credit) return null;
+  const nextAvailable=available+amount,nextReserved=reserved-amount;
+  const nextCreditAvailable=creditAvailable+credit,nextCreditReserved=creditReserved-credit;
+  const next=[nextAvailable,nextReserved,nextCreditAvailable,nextCreditReserved];
+  if(!next.every(Number.isSafeInteger)||next.some(value=>value<0||value>Number.MAX_SAFE_INTEGER)) return null;
+  return {availableBalancePaise:nextAvailable,reservedBalancePaise:nextReserved,
+    bonusCreditBalancePaise:nextCreditAvailable,reservedBonusCreditPaise:nextCreditReserved,
+    releasedAmountPaise:amount,releasedBonusCreditPaise:credit};
 }
 
 function safePersonName(...values) {
@@ -305,44 +303,34 @@ function astrologerAvailabilityStatus(astroProfile, activeSessionCountOverride) 
 }
 
 function liveSessionSafeView(id, data) {
-  const d = data || {};
+  const d=data||{};
   return {
-    id: String(id),
-    customerUid: String(d.customerUid || ''),
-    astrologerUid: String(d.astrologerUid || ''),
-    astrologerId: String(d.astrologerId || d.astrologerUid || ''),
-    astrologerName: safePersonName(d.astrologerName, d.astrologerFullName, d.astrologerDisplayName, d.astroName) || 'Astrologer',
-    customerName: safePersonName(d.customerName, d.customerFullName, d.customerDisplayName) || 'Customer',
-    appointmentId: String(d.appointmentId || ''),
-    birthDetails: d.birthDetails && typeof d.birthDetails === 'object' ? {
-      birthDate: String(d.birthDetails.birthDate || ''),
-      birthTime: String(d.birthDetails.birthTime || ''),
-      birthPlace: String(d.birthDetails.birthPlace || ''),
-      birthLatitude: d.birthDetails.birthLatitude == null ? null : Number(d.birthDetails.birthLatitude),
-      birthLongitude: d.birthDetails.birthLongitude == null ? null : Number(d.birthDetails.birthLongitude),
-      birthTimezone: String(d.birthDetails.birthTimezone || '')
-    } : null,
-    preparationUntil: timestampMillis(d.preparationUntil) ? new Date(timestampMillis(d.preparationUntil)).toISOString() : null,
-    preparationCompletedAt: timestampMillis(d.preparationCompletedAt) ? new Date(timestampMillis(d.preparationCompletedAt)).toISOString() : null,
-    connectingAt: timestampMillis(d.connectingAt) ? new Date(timestampMillis(d.connectingAt)).toISOString() : null,
-    mode: String(d.mode || ''),
-    minutes: Number(d.minutes || 0),
-    ratePerMinutePaise: safePaise(d.ratePerMinutePaise),
-    reservedAmountPaise: safePaise(d.reservedAmountPaise),
-    reservedBonusCreditPaise: safePaise(d.reservedBonusCreditPaise),
-    bonusCreditUsedPaise: safePaise(d.bonusCreditUsedPaise),
-    status: String(d.status || d.state || ''),
-    state: String(d.state || ''),
-    createdAt: timestampMillis(d.createdAt) ? new Date(timestampMillis(d.createdAt)).toISOString() : null,
-    acceptedAt: timestampMillis(d.acceptedAt) ? new Date(timestampMillis(d.acceptedAt)).toISOString() : null,
-    startedAt: timestampMillis(d.startedAt) ? new Date(timestampMillis(d.startedAt)).toISOString() : null,
-    endedAt: timestampMillis(d.endedAt) ? new Date(timestampMillis(d.endedAt)).toISOString() : null,
-    actualChargePaise: safePaise(d.actualChargePaise),
-    billableMinutes: safePaise(d.billableMinutes),
-    releasedAmountPaise: safePaise(d.releasedAmountPaise),
-    endReason: String(d.endReason || ''),
-    customerReady: d.customerReady === true,
-    astrologerReady: d.astrologerReady === true
+    id:String(id),customerUid:String(d.customerUid||''),astrologerUid:String(d.astrologerUid||''),
+    astrologerId:String(d.astrologerId||d.astrologerUid||''),
+    astrologerName:safePersonName(d.astrologerName,d.astrologerFullName,d.astrologerDisplayName,d.astroName)||'Astrologer',
+    customerName:safePersonName(d.customerName,d.customerFullName,d.customerDisplayName)||'Customer',
+    appointmentId:String(d.appointmentId||''),
+    birthDetails:d.birthDetails&&typeof d.birthDetails==='object'?{
+      birthDate:String(d.birthDetails.birthDate||''),birthTime:String(d.birthDetails.birthTime||''),
+      birthPlace:String(d.birthDetails.birthPlace||''),
+      birthLatitude:d.birthDetails.birthLatitude==null?null:Number(d.birthDetails.birthLatitude),
+      birthLongitude:d.birthDetails.birthLongitude==null?null:Number(d.birthDetails.birthLongitude),
+      birthTimezone:String(d.birthDetails.birthTimezone||'')
+    }:null,
+    preparationUntil:timestampMillis(d.preparationUntil)?new Date(timestampMillis(d.preparationUntil)).toISOString():null,
+    preparationCompletedAt:timestampMillis(d.preparationCompletedAt)?new Date(timestampMillis(d.preparationCompletedAt)).toISOString():null,
+    connectingAt:timestampMillis(d.connectingAt)?new Date(timestampMillis(d.connectingAt)).toISOString():null,
+    mode:String(d.mode||''),minutes:Number(d.minutes||0),ratePerMinutePaise:safePaise(d.ratePerMinutePaise),
+    reservedAmountPaise:safePaise(d.reservedAmountPaise),reservedBonusCreditPaise:safePaise(d.reservedBonusCreditPaise),
+    bonusCreditUsedPaise:safePaise(d.bonusCreditUsedPaise),bonusCreditReleasedPaise:safePaise(d.bonusCreditReleasedPaise),
+    status:String(d.status||d.state||''),state:String(d.state||''),
+    createdAt:timestampMillis(d.createdAt)?new Date(timestampMillis(d.createdAt)).toISOString():null,
+    acceptedAt:timestampMillis(d.acceptedAt)?new Date(timestampMillis(d.acceptedAt)).toISOString():null,
+    startedAt:timestampMillis(d.startedAt)?new Date(timestampMillis(d.startedAt)).toISOString():null,
+    endedAt:timestampMillis(d.endedAt)?new Date(timestampMillis(d.endedAt)).toISOString():null,
+    actualChargePaise:safePaise(d.actualChargePaise),billableMinutes:safePaise(d.billableMinutes),
+    releasedAmountPaise:safePaise(d.releasedAmountPaise),endReason:String(d.endReason||''),
+    customerReady:d.customerReady===true,astrologerReady:d.astrologerReady===true
   };
 }
 
@@ -695,62 +683,40 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
   }
 
   async function reserveInTransaction(tx, { uid, mode, minutes, rate, walletSnapshot, sessionId, reservationType = 'live_session' }) {
-    const wallet = walletSnapshot && walletSnapshot.exists ? (walletSnapshot.data() || {}) : {};
-    const available = safePaise(wallet.availableBalancePaise);
-    const reserved = safePaise(wallet.reservedBalancePaise);
-    const bonusCreditBalance = safePaise(wallet.bonusCreditBalancePaise);
-    const reservedBonusCredit = safePaise(wallet.reservedBonusCreditPaise);
-    const grossRequiredPaise = minutes * rate;
-    const reservedBonusCreditPaise = Math.min(grossRequiredPaise, bonusCreditBalance);
-    const needed = grossRequiredPaise - reservedBonusCreditPaise;
-    if (!Number.isSafeInteger(grossRequiredPaise) || !Number.isSafeInteger(needed) || needed < 0) {
-      throw httpError(409, 'Session cost is invalid.', 'LIVE_PRICE_INVALID');
-    }
-    if (available < needed) {
-      throw httpError(409, 'Insufficient Wallet balance for the selected duration.', 'WALLET_INSUFFICIENT_BALANCE', {
-        availableBalancePaise: available, requiredBalancePaise: needed, shortfallPaise: needed - available
-      });
-    }
-    const nextAvailable = available - needed;
-    const nextReserved = reserved + needed;
-    const nextBonusBalance = bonusCreditBalance - reservedBonusCreditPaise;
-    const nextReservedBonus = reservedBonusCredit + reservedBonusCreditPaise;
-    if (![nextAvailable, nextReserved, nextBonusBalance, nextReservedBonus].every(Number.isSafeInteger) ||
-        nextAvailable < 0 || nextReserved < 0 || nextBonusBalance < 0 || nextReservedBonus < 0 ||
-        nextReserved > Number.MAX_SAFE_INTEGER || nextReservedBonus > Number.MAX_SAFE_INTEGER) {
-      throw httpError(409, 'Wallet reserve exceeds the supported balance range.', 'WALLET_BALANCE_OVERFLOW');
-    }
-    const ref = walletRef(uid);
-    const isBookingReserve = reservationType === 'live_booking';
-    const reserveEntryType = isBookingReserve ? 'live_booking_reserve' : 'live_session_reserve';
-    const ledgerRef = db.collection(LEDGER).doc(walletLedgerDocId(reserveEntryType, sessionId));
-    const now = nowTimestamp();
-    tx.set(ref, {
-      ownerUid: uid, ownerRole: 'customer', currency: 'INR',
-      availableBalancePaise: nextAvailable, reservedBalancePaise: nextReserved,
-      bonusCreditBalancePaise: nextBonusBalance, reservedBonusCreditPaise: nextReservedBonus,
-      version: safePaise(wallet.version) + 1, createdAt: wallet.createdAt || now, updatedAt: now
-    }, { merge: true });
-    tx.create(ledgerRef, {
-      ownerUid: uid, ownerRole: 'customer', currency: 'INR',
-      type: reserveEntryType, direction: 'reserve', amountPaise: needed,
-      balanceAfterPaise: nextAvailable, reservedBalanceAfterPaise: nextReserved,
-      bonusCreditDeltaPaise: -reservedBonusCreditPaise,
-      reservedBonusCreditDeltaPaise: reservedBonusCreditPaise,
-      bonusCreditBalanceAfterPaise: nextBonusBalance,
-      reservedBonusCreditBalanceAfterPaise: nextReservedBonus,
-      idempotencyKey: (isBookingReserve ? 'live-booking:' : 'live-session:') + sessionId,
-      referenceType: isBookingReserve ? 'live_booking' : 'live_session', referenceId: sessionId,
-      note: 'Wallet reserve for ' + (isBookingReserve ? 'booked Live ' : 'Live ') + mode +
-        (reservedBonusCreditPaise ? '; Bonus Credit ₹' + (reservedBonusCreditPaise / 100).toFixed(2) : ''),
-      status: 'posted', createdAt: now
+    const wallet=walletSnapshot&&walletSnapshot.exists?(walletSnapshot.data()||{}):{};
+    const available=safePaise(wallet.availableBalancePaise),reserved=safePaise(wallet.reservedBalancePaise);
+    const creditBalance=safePaise(wallet.bonusCreditBalancePaise),reservedCredit=safePaise(wallet.reservedBonusCreditPaise);
+    const gross=Number(minutes)*Number(rate);
+    if(!Number.isSafeInteger(gross)||gross<0) throw httpError(409,'Session cost is invalid.','LIVE_PRICE_INVALID');
+    const creditReserved=Math.min(gross,creditBalance),needed=gross-creditReserved;
+    if(!Number.isSafeInteger(needed)||available<needed) throw httpError(409,'Insufficient Wallet balance for the selected duration.','WALLET_INSUFFICIENT_BALANCE',{
+      availableBalancePaise:available,requiredBalancePaise:needed,shortfallPaise:needed-available
     });
-    return {
-      availableBalancePaise: nextAvailable, reservedBalancePaise: nextReserved,
-      reservedAmountPaise: needed,
-      bonusCreditBalancePaise: nextBonusBalance, reservedBonusCreditPaise: nextReservedBonus,
-      reservedBonusCreditPaiseForSession: reservedBonusCreditPaise
-    };
+    const nextAvailable=available-needed,nextReserved=reserved+needed;
+    const nextCredit=creditBalance-creditReserved,nextReservedCredit=reservedCredit+creditReserved;
+    if(![nextAvailable,nextReserved,nextCredit,nextReservedCredit].every(Number.isSafeInteger)||
+       [nextAvailable,nextReserved,nextCredit,nextReservedCredit].some(value=>value<0||value>Number.MAX_SAFE_INTEGER)) {
+      throw httpError(409,'Wallet reserve exceeds the supported balance range.','WALLET_BALANCE_OVERFLOW');
+    }
+    const isBooking=reservationType==='live_booking',ledgerType=isBooking?'live_booking_reserve':'live_session_reserve';
+    const now=nowTimestamp();
+    tx.set(walletRef(uid),{
+      ownerUid:uid,ownerRole:'customer',currency:'INR',availableBalancePaise:nextAvailable,reservedBalancePaise:nextReserved,
+      bonusCreditBalancePaise:nextCredit,reservedBonusCreditPaise:nextReservedCredit,
+      version:safePaise(wallet.version)+1,createdAt:wallet.createdAt||now,updatedAt:now
+    },{merge:true});
+    tx.create(db.collection(LEDGER).doc(walletLedgerDocId(ledgerType,sessionId)),{
+      ownerUid:uid,ownerRole:'customer',currency:'INR',type:ledgerType,direction:'reserve',amountPaise:needed,
+      balanceAfterPaise:nextAvailable,reservedBalanceAfterPaise:nextReserved,
+      bonusCreditDeltaPaise:-creditReserved,reservedBonusCreditDeltaPaise:creditReserved,
+      bonusCreditBalanceAfterPaise:nextCredit,reservedBonusCreditBalanceAfterPaise:nextReservedCredit,
+      idempotencyKey:(isBooking?'live-booking:':'live-session:')+sessionId,
+      referenceType:isBooking?'live_booking':'live_session',referenceId:sessionId,
+      note:'Wallet reserve for '+(isBooking?'booked Live ':'Live ')+mode+(creditReserved?'; Bonus Credit ₹'+(creditReserved/100).toFixed(2):''),
+      status:'posted',createdAt:now
+    });
+    return {availableBalancePaise:nextAvailable,reservedBalancePaise:nextReserved,reservedAmountPaise:needed,
+      bonusCreditBalancePaise:nextCredit,reservedBonusCreditPaise:nextReservedCredit,reservedBonusCreditForSessionPaise:creditReserved};
   }
 
   function validateActiveAstrologer(astroProfile, expectedUid) {
@@ -761,26 +727,20 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
     }
   }
 
-  function makeSession({ id, customerUid, astrologerUid, astroProfile, customerName, birthDetails, mode, minutes, rate,
-    reservedAmount, reservedBonusCreditPaise = 0, state, origin, fingerprint, commission, appointmentId = '' }) {
-    const preparation = state === 'preparing' ? preparationWindow() : null;
-    const preparationStartedAt = preparation?.preparationStartedAt || null;
+  function makeSession({ id, customerUid, astrologerUid, astroProfile, customerName, birthDetails, mode, minutes, rate, reservedAmount, reservedBonusCreditPaise = 0, state, origin, fingerprint, commission, appointmentId = '' }) {
+    const preparation=state==='preparing'?preparationWindow():null;
+    const preparationStartedAt=preparation?.preparationStartedAt||null;
     return {
-      sessionId: id, customerUid, astrologerUid, appointmentId: String(appointmentId || ''),
-      astrologerId: astrologerUid, astrologerName: safePersonName(astroProfile.name, astroProfile.fullName, astroProfile.displayName, astroProfile.astrologerName) || 'Astrologer',
-      customerName: String(customerName || 'Customer'), birthDetails: birthDetails || null,
-      preparationStartedAt, preparationUntil: preparation?.preparationUntil || null,
-      preparationCompletedAt: null, connectingAt: null,
-      mode, minutes, ratePerMinutePaise: rate, reservedAmountPaise: reservedAmount,
-      billingModel: 'bonus_credit_v1', reservedBonusCreditPaise: safePaise(reservedBonusCreditPaise),
-      bonusCreditUsedPaise: 0,
-      astrologerCommissionPercent: Number(commission?.astroPercent ?? 20),
-      adminCommissionPercent: Number(commission?.adminPercent ?? 80),
-      state, customerReady: false, astrologerReady: false,
-      origin: origin || 'direct', payloadFingerprint: fingerprint,
-      createdAt: new Date(), updatedAt: nowTimestamp(),
-      acceptedAt: preparationStartedAt, startedAt: null, endedAt: null,
-      actualChargePaise: 0, billableMinutes: 0, releasedAmountPaise: 0
+      sessionId:id,customerUid,astrologerUid,appointmentId:String(appointmentId||''),
+      astrologerId:astrologerUid,astrologerName:safePersonName(astroProfile.name,astroProfile.fullName,astroProfile.displayName,astroProfile.astrologerName)||'Astrologer',
+      customerName:String(customerName||'Customer'),birthDetails:birthDetails||null,
+      preparationStartedAt,preparationUntil:preparation?.preparationUntil||null,preparationCompletedAt:null,connectingAt:null,
+      mode,minutes,ratePerMinutePaise:rate,reservedAmountPaise:reservedAmount,
+      billingModel:'bonus_credit_v1',reservedBonusCreditPaise:safePaise(reservedBonusCreditPaise),
+      astrologerCommissionPercent:Number(commission?.astroPercent??20),adminCommissionPercent:Number(commission?.adminPercent??80),
+      state,customerReady:false,astrologerReady:false,origin:origin||'direct',payloadFingerprint:fingerprint,
+      createdAt:new Date(),updatedAt:nowTimestamp(),acceptedAt:preparationStartedAt,startedAt:null,endedAt:null,
+      actualChargePaise:0,billableMinutes:0,releasedAmountPaise:0,bonusCreditUsedPaise:0,bonusCreditReleasedPaise:0
     };
   }
 
@@ -862,9 +822,8 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
         throw httpError(409, (kind === 'call' ? 'Call' : 'Chat') + ' price per minute is not configured for this Astrologer.', 'LIVE_PRICE_UNAVAILABLE');
       }
       const walletData = walletSnap.exists ? (walletSnap.data() || {}) : {};
-      const grossRequiredPaise = length * rate;
-      const bonusCreditAvailablePaise = Math.min(grossRequiredPaise, safePaise(walletData.bonusCreditBalancePaise));
-      const requiredBalancePaise = grossRequiredPaise - bonusCreditAvailablePaise;
+      const bonusMinutesAvailable = Math.min(length, safeMinutes(walletData.bonusMinutesBalance));
+      const requiredBalancePaise = (length - bonusMinutesAvailable) * rate;
       const availableBalancePaise = safePaise(walletData.availableBalancePaise);
       if (!Number.isSafeInteger(requiredBalancePaise) || requiredBalancePaise < 0) {
         throw httpError(409, 'Session cost is invalid.', 'LIVE_PRICE_INVALID');
@@ -892,7 +851,7 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
           astrologerName: astroName, customerName: sessionCustomerName,
           birthDetails: sessionBirthDetails, mode: kind, minutes: length, appointmentId: scheduledAppointmentId,
           ratePerMinutePaise: rate, reservedAmountPaise: reserve.reservedAmountPaise,
-          reservedBonusCreditPaise: reserve.reservedBonusCreditPaiseForSession, walletReservationState: 'reserved',
+          reservedBonusMinutes: reserve.reservedBonusMinutesForSession, walletReservationState: 'reserved',
           astrologerCommissionPercent: commission.astroPercent, adminCommissionPercent: commission.adminPercent,
           status: 'pending', origin: 'offline_queue', payloadFingerprint: fingerprint,
           createdAt: nowTimestamp(), updatedAt: nowTimestamp(),
@@ -910,7 +869,7 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
         id, customerUid: uid, astrologerUid: astroId, astroProfile: { ...astro, name: astroName },
         customerName: sessionCustomerName, birthDetails: sessionBirthDetails,
         mode: kind, minutes: length, rate, reservedAmount: reserve.reservedAmountPaise,
-        reservedBonusCreditPaise: reserve.reservedBonusCreditPaiseForSession,
+        reservedBonusMinutes: reserve.reservedBonusMinutesForSession,
         state: 'ringing', origin: 'direct', fingerprint, commission, appointmentId: scheduledAppointmentId
       }));
       tx.create(sRef, data);
@@ -1030,20 +989,20 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
       if (String(booking.walletReservationState || '') === 'reserved') {
         const wallet = walletSnap.exists ? (walletSnap.data() || {}) : {};
         const reservedAmountPaise = Number(booking.reservedAmountPaise);
-        const reservedBonusCreditPaiseForSession = Number(booking.reservedBonusCreditPaise);
+        const reservedBonusMinutesForSession = Number(booking.reservedBonusMinutes);
         if (!Number.isSafeInteger(reservedAmountPaise) || reservedAmountPaise < 0 ||
-            !Number.isSafeInteger(reservedBonusCreditPaiseForSession) || reservedBonusCreditPaiseForSession < 0 ||
+            !Number.isSafeInteger(reservedBonusMinutesForSession) || reservedBonusMinutesForSession < 0 ||
             safePaise(wallet.reservedBalancePaise) < reservedAmountPaise ||
-            safePaise(wallet.reservedBonusCreditPaise) < reservedBonusCreditPaiseForSession) {
+            safeMinutes(wallet.reservedBonusMinutes) < reservedBonusMinutesForSession) {
           throw httpError(409, 'Wallet reserve for this booking does not reconcile. The booking was not accepted.', 'LIVE_BOOKING_WALLET_RESERVE_MISMATCH');
         }
         reserve = {
           availableBalancePaise: safePaise(wallet.availableBalancePaise),
           reservedBalancePaise: safePaise(wallet.reservedBalancePaise),
           reservedAmountPaise,
-          bonusCreditBalancePaise: safePaise(wallet.bonusCreditBalancePaise),
-          reservedBonusCreditPaise: safePaise(wallet.reservedBonusCreditPaise),
-          reservedBonusCreditPaiseForSession
+          bonusMinutesBalance: safeMinutes(wallet.bonusMinutesBalance),
+          reservedBonusMinutes: safeMinutes(wallet.reservedBonusMinutes),
+          reservedBonusMinutesForSession
         };
       } else {
         // Backward compatibility: reserve legacy bookings created before prepayment was added.
@@ -1057,7 +1016,7 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
         customerName: booking.customerName || customerSnap.data()?.name || 'Customer',
         birthDetails: booking.birthDetails || null,
         mode: booking.mode, minutes, rate, reservedAmount: reserve.reservedAmountPaise,
-        reservedBonusCreditPaise: reserve.reservedBonusCreditPaiseForSession,
+        reservedBonusMinutes: reserve.reservedBonusMinutesForSession,
         state: 'preparing', origin: 'accepted_booking', fingerprint, commission,
         appointmentId: booking.appointmentId || ''
       }));
@@ -1229,49 +1188,42 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
       const now = Date.now();
       const startedAt = timestampMillis(session.startedAt);
       const elapsedMs = startedAt ? Math.max(0, now - startedAt) : 0;
+      const reservedBonusMinutes = safeMinutes(session.reservedBonusMinutes);
       const pricing = calculateLiveSessionCharge({
         elapsedMs, ratePerMinutePaise: safePaise(session.ratePerMinutePaise),
-        maximumMinutes: Number(session.minutes || 1)
+        maximumMinutes: Number(session.minutes || 1), freeMinutes: startedAt ? reservedBonusMinutes : 0
       });
       if (!pricing) throw httpError(500, 'Unable to calculate the Live Session charge safely.', 'LIVE_BILLING_CALCULATION_FAILED');
-      const grossServiceAmountPaise = startedAt ? pricing.amountPaise : 0;
-      const reservedBonusCreditPaise = safePaise(session.reservedBonusCreditPaise);
-      const bonusCreditUsedPaise = Math.min(grossServiceAmountPaise, reservedBonusCreditPaise);
-      const bonusCreditReleasedPaise = reservedBonusCreditPaise - bonusCreditUsedPaise;
+      const freeMinutesUsed = safeMinutes(pricing.freeMinutesUsed);
       const reservedAmount = safePaise(session.reservedAmountPaise);
-      const charge = grossServiceAmountPaise - bonusCreditUsedPaise;
+      const charge = Math.min(reservedAmount, pricing.amountPaise);
       const release = reservedAmount - charge;
-      if (!Number.isSafeInteger(grossServiceAmountPaise) || charge < 0 || release < 0) {
-        throw httpError(500, 'Bonus Credit and cash settlement could not be calculated safely.', 'LIVE_BILLING_CALCULATION_FAILED');
-      }
       const currentCommission = commissionFromSnapshot(commissionSnap);
       const savedAstroPercent = Number(session.astrologerCommissionPercent);
       const savedAdminPercent = Number(session.adminCommissionPercent);
       const commission = Number.isFinite(savedAstroPercent) && Number.isFinite(savedAdminPercent) && savedAstroPercent >= 0 && savedAstroPercent <= 100 && savedAdminPercent >= 0 && savedAdminPercent <= 100 && Math.abs(savedAstroPercent + savedAdminPercent - 100) <= 0.001
         ? { astroPercent: savedAstroPercent, adminPercent: savedAdminPercent } : currentCommission;
-      const astrologerCommissionPaise = grossServiceAmountPaise > 0 ? Math.round(grossServiceAmountPaise * commission.astroPercent / 100) : 0;
-      const adminCommissionPaise = grossServiceAmountPaise - astrologerCommissionPaise;
+      const astrologerCommissionPaise = charge > 0 ? Math.round(charge * commission.astroPercent / 100) : 0;
+      const adminCommissionPaise = charge - astrologerCommissionPaise;
       const available = safePaise(wallet.availableBalancePaise);
       const reserved = safePaise(wallet.reservedBalancePaise);
-      const bonusAvailable = safePaise(wallet.bonusCreditBalancePaise);
-      const bonusReserved = safePaise(wallet.reservedBonusCreditPaise);
-      if (reserved < reservedAmount || bonusReserved < reservedBonusCreditPaise) {
-        throw httpError(409, 'Wallet cash or Bonus Credit reserve does not reconcile with this Live Session. The session was not silently settled.', 'LIVE_WALLET_RESERVE_MISMATCH');
+      const bonusAvailable = safeMinutes(wallet.bonusMinutesBalance);
+      const bonusReserved = safeMinutes(wallet.reservedBonusMinutes);
+      if (reserved < reservedAmount || bonusReserved < reservedBonusMinutes) {
+        throw httpError(409, 'Wallet cash or promotional reserve does not reconcile with this Live Session. The session was not silently settled.', 'LIVE_WALLET_RESERVE_MISMATCH');
       }
+      const bonusMinutesReleased = reservedBonusMinutes - freeMinutesUsed;
       const nextAvailable = available + release;
       const nextReserved = reserved - reservedAmount;
-      const nextBonusAvailable = bonusAvailable + bonusCreditReleasedPaise;
-      const nextBonusReserved = bonusReserved - reservedBonusCreditPaise;
-      if (![nextAvailable, nextReserved, nextBonusAvailable, nextBonusReserved].every(Number.isSafeInteger) ||
-          nextAvailable < 0 || nextReserved < 0 || nextBonusAvailable < 0 || nextBonusReserved < 0 ||
-          nextAvailable > Number.MAX_SAFE_INTEGER || nextReserved > Number.MAX_SAFE_INTEGER ||
-          nextBonusAvailable > Number.MAX_SAFE_INTEGER || nextBonusReserved > Number.MAX_SAFE_INTEGER) {
+      const nextBonusAvailable = bonusAvailable + bonusMinutesReleased;
+      const nextBonusReserved = bonusReserved - reservedBonusMinutes;
+      if (!Number.isSafeInteger(nextAvailable) || !Number.isSafeInteger(nextReserved) || !Number.isSafeInteger(nextBonusAvailable) || !Number.isSafeInteger(nextBonusReserved)) {
         throw httpError(409, 'Wallet settlement exceeds the supported balance range.', 'WALLET_BALANCE_OVERFLOW');
       }
       const nowServer = nowTimestamp();
       tx.set(wRef, {
         availableBalancePaise: nextAvailable, reservedBalancePaise: nextReserved,
-        bonusCreditBalancePaise: nextBonusAvailable, reservedBonusCreditPaise: nextBonusReserved,
+        bonusMinutesBalance: nextBonusAvailable, reservedBonusMinutes: nextBonusReserved,
         version: safePaise(wallet.version) + 1, updatedAt: nowServer
       }, { merge: true });
       if (charge > 0) {
@@ -1281,35 +1233,32 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
           type: 'live_session_usage', direction: 'debit', amountPaise: charge,
           balanceAfterPaise: nextAvailable, reservedBalanceAfterPaise: nextReserved,
           idempotencyKey: 'live-session-usage:' + id, referenceType: 'live_session', referenceId: id,
-          note: 'Live ' + session.mode + ' cash portion of started-minute usage',
+          note: 'Live ' + session.mode + ' used ' + pricing.billableMinutes + ' paid started minute(s)' + (freeMinutesUsed ? '; ' + freeMinutesUsed + ' promotional free minute(s) used' : ''),
+          bonusMinutesUsed: freeMinutesUsed,
           status: 'posted', createdAt: nowServer
         });
       }
-      if (bonusCreditUsedPaise > 0) {
-        const bonusUsageRef = db.collection(LEDGER).doc(walletLedgerDocId('live_session_bonus_credit_used', id));
+      if (freeMinutesUsed > 0) {
+        const bonusUsageRef = db.collection(LEDGER).doc(walletLedgerDocId('live_session_bonus_minutes', id));
         tx.create(bonusUsageRef, {
           ownerUid: session.customerUid, ownerRole: 'customer', currency: 'INR',
-          type: 'live_session_bonus_credit_used', direction: 'debit', amountPaise: bonusCreditUsedPaise,
-          bonusCreditDeltaPaise: 0, reservedBonusCreditDeltaPaise: -bonusCreditUsedPaise,
+          type: 'live_session_bonus_minutes', direction: 'debit', amountPaise: 0,
           balanceAfterPaise: nextAvailable, reservedBalanceAfterPaise: nextReserved,
-          bonusCreditBalanceAfterPaise: nextBonusAvailable, reservedBonusCreditBalanceAfterPaise: nextBonusReserved,
-          idempotencyKey: 'live-session-bonus-credit-used:' + id,
-          referenceType: 'live_session', referenceId: id,
-          note: 'Bonus Credit used for Live ' + session.mode,
+          bonusMinutes: freeMinutesUsed, bonusMinutesBalanceAfter: nextBonusAvailable, reservedBonusMinutesAfter: nextBonusReserved,
+          idempotencyKey: 'live-session-bonus-used:' + id, referenceType: 'live_session', referenceId: id,
+          note: freeMinutesUsed + ' promotional free minute(s) used for Live ' + session.mode,
           status: 'posted', createdAt: nowServer
         });
       }
-      if (bonusCreditReleasedPaise > 0) {
-        const bonusReleaseRef = db.collection(LEDGER).doc(walletLedgerDocId('live_session_bonus_credit_release', id));
+      if (bonusMinutesReleased > 0) {
+        const bonusReleaseRef = db.collection(LEDGER).doc(walletLedgerDocId('live_session_bonus_minutes_release', id));
         tx.create(bonusReleaseRef, {
           ownerUid: session.customerUid, ownerRole: 'customer', currency: 'INR',
-          type: 'live_session_bonus_credit_release', direction: 'credit', amountPaise: bonusCreditReleasedPaise,
-          bonusCreditDeltaPaise: bonusCreditReleasedPaise, reservedBonusCreditDeltaPaise: -bonusCreditReleasedPaise,
+          type: 'live_session_bonus_minutes_release', direction: 'credit', amountPaise: 0,
           balanceAfterPaise: nextAvailable, reservedBalanceAfterPaise: nextReserved,
-          bonusCreditBalanceAfterPaise: nextBonusAvailable, reservedBonusCreditBalanceAfterPaise: nextBonusReserved,
-          idempotencyKey: 'live-session-bonus-credit-release:' + id,
-          referenceType: 'live_session', referenceId: id,
-          note: 'Unused Bonus Credit returned after Live ' + session.mode,
+          bonusMinutes: bonusMinutesReleased, bonusMinutesBalanceAfter: nextBonusAvailable, reservedBonusMinutesAfter: nextBonusReserved,
+          idempotencyKey: 'live-session-bonus-release:' + id, referenceType: 'live_session', referenceId: id,
+          note: bonusMinutesReleased + ' unused promotional free minute(s) returned to Wallet',
           status: 'posted', createdAt: nowServer
         });
       }
@@ -1320,7 +1269,7 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
           type: 'live_session_unused_release', direction: 'credit', amountPaise: release,
           balanceAfterPaise: nextAvailable, reservedBalanceAfterPaise: nextReserved,
           idempotencyKey: 'live-session-release:' + id, referenceType: 'live_session', referenceId: id,
-          note: 'Unused Live ' + session.mode + ' Wallet cash reserve released', status: 'posted', createdAt: nowServer
+          note: 'Unused Live ' + session.mode + ' Wallet reserve released', status: 'posted', createdAt: nowServer
         });
       }
       const prevCount = safePaise(astro.activeSessionCount);
