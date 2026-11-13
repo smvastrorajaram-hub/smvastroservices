@@ -141,7 +141,8 @@ test('legacy Free Minutes offers are out of scope and cannot become Bonus Credit
   });
   assert.equal(mapped.mapped,false);
   assert.equal(mapped.warning,'NOT_BONUS_CREDIT_WALLET_OFFER');
-  assert.equal(mapped.statements.length,0);
+  assert.equal(mapped.statements.some(row=>row.kind==='wallet_offer'),false);
+  assert.equal(mapped.statements.some(row=>row.kind==='legacy_document_archive'),true);
 });
 
 test('nested Live messages and signals retain their session parent identity', () => {
