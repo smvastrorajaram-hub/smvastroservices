@@ -1152,7 +1152,7 @@ export function registerLegacyRouteParityGapRoutes({
       if (String(env?.SMV_ENVIRONMENT || '') !== 'staging' ||
           String(env?.SMV_LIVE_SESSION_ROUTES_ENABLED || '').toLowerCase() !== 'true' ||
           !liveService || typeof liveService.createRequest !== 'function' ||
-          typeof liveService.acceptSession !== 'function' || typeof liveService.acceptBooking !== 'function' || typeof liveService.endSession !== 'function' ||
+          typeof liveService.acceptSession !== 'function' || typeof liveService.endSession !== 'function' ||
           !env?.LIVE_SESSION_COORDINATOR || !env?.LIVE_USER_EVENT_HUB || !(await isLiveReady())) {
         return res.status(503).json({ success: false, error: 'Scheduled Live Call/Chat infrastructure is not ready.', code: 'LIVE_SCHEMA_NOT_READY' });
       }
@@ -1237,6 +1237,9 @@ export function registerLegacyRouteParityGapRoutes({
       let finalResult = result;
       let session = result.session || null;
       if (result.kind === 'booking' && result.booking) {
+        if (typeof liveService.acceptBooking !== 'function') {
+          throw routeError('LIVE_BOOKING_PROMOTION_UNAVAILABLE', 'The queued booking cannot be promoted into a Live Session by this backend.', 503);
+        }
         const promoted = await liveService.acceptBooking({
           bookingId: String(result.booking.id || result.booking.bookingId || ''), astrologerUid: uid
         });

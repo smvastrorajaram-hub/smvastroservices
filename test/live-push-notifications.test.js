@@ -1036,7 +1036,8 @@ test('Live and booked Call/Chat sessions share the same timeout, readiness and s
   assert.ok(acceptedBooking.includes('scheduleSessionTimer(id, txResult.data);'));
   assert.ok(acceptedBooking.includes("type: 'live.session.request'"));
   assert.ok(scheduled.includes('const accepted = await acceptSession(result.session.id, uid);'));
-  assert.ok(scheduled.includes("bookingStatus: isSession ? 'in_progress' : 'waiting_for_online'"));
+  assert.ok(scheduled.includes("bookingStatus: 'in_progress'"));
+  assert.ok(scheduled.includes("liveBookingId: ''"));
   assert.ok(directRequest.includes('const result = await createRequest('));
   assert.ok(frontend.includes("if(s.state==='connecting'&&!call&&String(s.customerUid||'')===String(currentUser?.uid||''))smvLiveMarkReady(s.id,false)"));
   assert.ok(frontend.includes("id=\"smvLiveConnectChat\""));
@@ -1535,7 +1536,7 @@ test('Scheduled booking acceptance and Start send stop_ringing without using not
   const worker=read('cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs');
   const render=read('server.js');
   assert.ok(coordinator.includes("url.pathname === '/stop-booking-ringtone'"));
-  assert.ok(appointments.includes("'stop-booking-ringtone'"));
+  assert.ok(appointments.includes('stop-booking-ringtone'));
   assert.ok(worker.includes("'stop-booking-ringtone'"));
   assert.ok(render.includes("type: 'stop_ringing', bookingId: String(outcome.appointmentId || ref.id)"));
 });
