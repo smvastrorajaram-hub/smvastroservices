@@ -66,17 +66,21 @@ test('Production Worker shares the D1 Live service across legacy route registrat
 
 
 
-test('Live-session Open Session action stays bright green until ended on both Customer and Astrologer dashboards',()=>{
+test('Live-session colours keep Customer green, make dismissed Astrologer sessions dark green, and receipts purple',()=>{
  const css=read('public/dashboard-typography.css');
  const frontend=read('public/smvastro.mjs');
- const style=css.match(/#dashboardContent #smvLiveDashboardCard \.smv-live-session-open-button\{([^}]*)\}/)?.[1]||'';
- assert.match(style,/color:#00e676/,'default Open Session text is bright green');
- assert.doesNotMatch(style,/color:#ff1744\s*!important/,'typography must not force the active action to red');
- assert.match(frontend,/openButton\.style\.color=ended\?'#ff1744':'#00e676'/,'active/ringing sessions stay bright green and terminal sessions keep their distinct closed colour');
- assert.match(frontend,/openButton\.style\.webkitTextFillColor=ended\?'#ff1744':'#00e676'/,'Android WebView text fill follows the same live-session state');
- assert.match(frontend,/function smvLiveDashboardHtml\(role\)[\s\S]*id="smvLiveDashboardSessions"[\s\S]*smv-live-session-open-button/,'both dashboard roles use the shared Live Sessions list');
+ assert.ok(css.includes('#dashboardContent #smvLiveDashboardCard .smv-live-session-open-button{'));
+ assert.ok(css.includes('color:#00e676;'),'Customer/default Open Session text retains bright green');
+ assert.ok(frontend.includes('windowClosed=ended||smvLiveDismissedSessionIds.has(id);'),'Close Window remains a UI-only dismissed-window state');
+ assert.ok(frontend.includes("const dashboardRole=String(window.__smvCurrentRole||'').toLowerCase();"));
+ assert.ok(frontend.includes("const actionColor=ended?'#5b2a86':(dashboardRole==='astrologer'&&windowClosed?'#166534':'#00e676');"),'only dismissed, not-ended Astrologer sessions use dark green; ended receipts use dark purple');
+ assert.ok(frontend.includes('openButton.style.color=actionColor;'));
+ assert.ok(frontend.includes('openButton.style.webkitTextFillColor=actionColor;'),'Android WebView text fill follows the same colour logic');
+ assert.ok(frontend.includes('View Session Receipt</button>'),'Customer scheduled receipt label uses title case');
+ assert.ok(frontend.includes('smv-plain-text-action smv-live-session-receipt-action'),'scheduled receipt is a plain-text action');
+ assert.ok(css.includes('.smv-live-session-receipt-action{')&&css.includes('color:#5b2a86;')&&css.includes('background:transparent;')&&css.includes('border:0;'),'scheduled receipt is dark purple without a button box');
+ assert.ok(frontend.includes('function smvLiveDashboardHtml(role)')&&frontend.includes('id="smvLiveDashboardSessions"')&&frontend.includes('smv-live-session-open-button'),'both roles retain the shared Live Sessions list');
 });
-
 test('Customer, Astrologer and Admin dashboards share one responsive typography hierarchy',()=>{
  const theme=read('public/smv-ui.css');
  const css=read('public/dashboard-typography.css');

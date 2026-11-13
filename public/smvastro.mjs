@@ -5622,11 +5622,13 @@ function smvLiveUpdateDashboardSessionStatus(session){
   if(liveDot)liveDot.hidden=!running;
   if(closedDot)closedDot.hidden=!windowClosed;
   if(windowStatus){windowStatus.hidden=!windowClosed||ended;windowStatus.textContent='Window Closed';}
+  const dashboardRole=String(window.__smvCurrentRole||'').toLowerCase();
+  const actionColor=ended?'#5b2a86':(dashboardRole==='astrologer'&&windowClosed?'#166534':'#00e676');
   if(openButton){
    openButton.textContent=ended?'Download Receipt':'Open Session';
    openButton.style.background='transparent';
-   openButton.style.color=ended?'#000':'#00e676';
-   openButton.style.webkitTextFillColor=ended?'#000':'#00e676';
+   openButton.style.color=actionColor;
+   openButton.style.webkitTextFillColor=actionColor;
    openButton.style.border='0';
    openButton.style.borderRadius='0';openButton.style.padding='0';openButton.style.fontWeight='900';
    openButton.style.boxShadow='none';openButton.style.textDecoration='none';
@@ -5929,7 +5931,7 @@ function smvLiveRenderCustomerScheduledBookings(appointments){
    '<p class="small smv-live-booking-detail">Duration: '+Number(a.scheduledMinutes||5)+' minute(s)</p>'+
    '<p class="small smv-live-booking-detail">Status: <b>'+escapeHtml(describe(a))+'</b></p>'+
    (a.liveSessionId&&status==='in_progress'?'<button class="btn" type="button" data-customer-scheduled-open="'+escapeHtml(a.liveSessionId)+'">OPEN LIVE '+mode+'</button>':'')+
-   (a.liveSessionId&&status==='completed'?'<button class="btn gray" type="button" data-customer-scheduled-receipt="'+escapeHtml(a.liveSessionId)+'">VIEW SESSION RECEIPT</button>':'')+
+   (a.liveSessionId&&status==='completed'?'<button type="button" class="smv-plain-text-action smv-live-session-receipt-action" data-customer-scheduled-receipt="'+escapeHtml(a.liveSessionId)+'">View Session Receipt</button>':'')+
    '</article>';
  }).join('');
  smvLiveScheduleBookingTransitionRefresh(appointments,'customer');
