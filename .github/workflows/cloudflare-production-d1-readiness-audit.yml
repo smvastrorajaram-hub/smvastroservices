@@ -26,7 +26,8 @@ jobs:
     timeout-minutes: 15
     environment: production
     env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      # Keep Wrangler's standard env name, but source it from the dedicated Production D1 token.
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_D1_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - name: Checkout the exact Production Worker deployment revision
@@ -43,7 +44,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Missing CLOUDFLARE_API_TOKEN.'; exit 1; }
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Missing CLOUDFLARE_D1_API_TOKEN secret in the GitHub production environment.'; exit 1; }
           if [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
             account_id="$(node .github/scripts/resolve-cloudflare-account-from-production-d1.mjs)"
             test -n "$account_id" || { echo 'Unable to resolve Production D1 account.'; exit 1; }
@@ -68,6 +69,13 @@ jobs:
         run: |
           set -euo pipefail
           npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "SELECT 'wallets' AS domain, COUNT(*) AS row_count FROM smv_domain_wallets; SELECT 'wallet_ledger' AS domain, COUNT(*) AS row_count FROM smv_domain_wallet_ledger; SELECT 'wallet_recharges' AS domain, COUNT(*) AS row_count FROM smv_domain_wallet_recharges; SELECT 'legacy_wallet_documents' AS domain, COUNT(*) AS row_count FROM smv_domain_legacy_documents; SELECT 'legacy_wallet_transactions' AS domain, COUNT(*) AS row_count FROM smv_domain_legacy_wallet_transactions; SELECT 'legacy_wallet_recharges' AS domain, COUNT(*) AS row_count FROM smv_domain_legacy_wallet_recharges; SELECT 'live_sessions' AS domain, COUNT(*) AS row_count FROM smv_domain_live_sessions; SELECT 'live_bookings' AS domain, COUNT(*) AS row_count FROM smv_domain_live_bookings; SELECT 'live_messages' AS domain, COUNT(*) AS row_count FROM smv_domain_live_messages; SELECT 'live_signals' AS domain, COUNT(*) AS row_count FROM smv_domain_live_signals; SELECT 'earnings' AS domain, COUNT(*) AS row_count FROM smv_domain_earnings; SELECT 'withdrawals' AS domain, COUNT(*) AS row_count FROM smv_domain_withdrawals; SELECT 'withdrawal_payouts_encrypted' AS domain, COUNT(*) AS row_count FROM smv_domain_withdrawal_payouts_encrypted; SELECT 'withdrawal_payouts_legacy_plaintext' AS domain, COUNT(*) AS row_count FROM smv_domain_withdrawal_payouts;"
+
+      - name: Audit legacy Free Minutes exposure using aggregate counts only (SELECT queries)
+        working-directory: cloudflare/backend-api
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "SELECT 'active_legacy_minute_offers' AS audit_item, COUNT(*) AS row_count FROM smv_domain_wallet_offers WHERE enabled=1 AND bonus_minutes>0; SELECT 'customer_wallets_with_legacy_minutes' AS audit_item, COUNT(*) AS wallet_count, COALESCE(SUM(bonus_minutes_balance),0) AS total_minutes FROM smv_domain_wallets WHERE owner_role='customer' AND bonus_minutes_balance>0; SELECT 'customer_wallets_with_reserved_legacy_minutes' AS audit_item, COUNT(*) AS wallet_count, COALESCE(SUM(reserved_bonus_minutes),0) AS total_reserved_minutes FROM smv_domain_wallets WHERE owner_role='customer' AND reserved_bonus_minutes>0; SELECT 'bonus_credit_wallet_columns' AS audit_item, name FROM pragma_table_info('smv_domain_wallets') WHERE name IN ('bonus_credit_balance_paise','reserved_bonus_credit_paise') ORDER BY name; SELECT 'bonus_credit_offer_column' AS audit_item, name FROM pragma_table_info('smv_domain_wallet_offers') WHERE name='bonus_credit_paise' ORDER BY name;"
+
 
       - name: Verify live Production Worker health and selected financial routing gates
         shell: bash
