@@ -60,15 +60,21 @@ public final class NativeCallNotifications {
             .setColor(0xFF24103F).setContentIntent(call).setFullScreenIntent(call,true).build();
     }
     public static void showStandardAlert(Context context,Map<String,String> data) {
+        showStandardAlert(context,value(data,"type"),value(data,"title"),value(data,"body"),
+            value(data,"sessionId"),value(data,"bookingId"));
+    }
+    public static void showStandardAlert(Context context,String type,String title,String body,String sessionId,String bookingId) {
         createChannels(context);
-        String type=value(data,"type"),title=value(data,"title"),body=value(data,"body"),sessionId=value(data,"sessionId"),bookingId=value(data,"bookingId");
         Intent open=mainIntent(context,sessionId,bookingId); int id=notificationId(sessionId,bookingId)+6000;
         PendingIntent pending=PendingIntent.getActivity(context,id,open,PendingIntent.FLAG_UPDATE_CURRENT|immutableFlag());
         Notification.Builder builder=Build.VERSION.SDK_INT>=26?new Notification.Builder(context,CHANNEL_ALERTS):new Notification.Builder(context);
         Notification notification=builder.setSmallIcon(R.drawable.smv_notification_call)
             .setContentTitle(empty(title)?"SMV ASTRO Alert":title).setContentText(empty(body)?"Open SMV ASTRO to review the request.":body)
-            .setAutoCancel(true).setCategory("scheduled_booking".equals(type)?Notification.CATEGORY_EVENT:Notification.CATEGORY_STATUS)
-            .setPriority(Notification.PRIORITY_HIGH).setContentIntent(pending).setColor(0xFF24103F).build();
+            .setAutoCancel(true).setCategory("scheduled_booking".equals(type)||"scheduled_booking_reminder".equals(type)?Notification.CATEGORY_EVENT:Notification.CATEGORY_STATUS)
+            .setPriority(Notification.PRIORITY_HIGH)
+            .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE))
+            .setVibrate(new long[]{0,700,350,700})
+            .setContentIntent(pending).setColor(0xFF24103F).build();
         NotificationManager manager=(NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE); if(manager!=null)manager.notify(id,notification);
     }
     static Intent mainIntent(Context context,String sessionId,String bookingId) {
