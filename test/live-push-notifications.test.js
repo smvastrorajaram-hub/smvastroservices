@@ -1506,6 +1506,17 @@ test('Android notification opens reuse one Recents task and root Back keeps SMV 
 });
 
 
+test('Android app resume refreshes authenticated dashboards and restores missing Live panels', () => {
+  const activity=read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java');
+  const frontend=read('public/smvastro.mjs');
+  assert.ok(activity.includes('window.__smvAndroidAppResumed && window.__smvAndroidAppResumed()'));
+  assert.ok(frontend.includes("if(['customer','astrologer'].includes(cachedRole)&&!$('smvLiveDashboardCard'))"));
+  assert.ok(frontend.includes('window.__smvAndroidAppResumed=()=>'));
+  assert.ok(frontend.includes('smvLiveStopEventStream();'));
+  assert.ok(frontend.includes('smvLiveStartEventStream();'));
+  assert.ok(frontend.includes('loadDashboard(role,true,true).then(()=>smvLivePollSessions())'));
+});
+
 test('Scheduled booking and Preferred-Time pushes use the same Android looping device ringtone as Live requests', () => {
   const nativePush=read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/NativePushMessagingService.java');
   const incoming=read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/IncomingCallActivity.java');
