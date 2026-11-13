@@ -65,14 +65,6 @@ jobs:
               'smv_domain_wallet_ledger_apply','smv_domain_wallet_ledger_validate'
             )
           ),
-          table_columns AS MATERIALIZED (
-            SELECT 'smv_domain_wallets' AS table_name, name AS column_name FROM pragma_table_info('smv_domain_wallets')
-            UNION ALL SELECT 'smv_domain_wallet_ledger', name FROM pragma_table_info('smv_domain_wallet_ledger')
-            UNION ALL SELECT 'smv_domain_wallet_offers', name FROM pragma_table_info('smv_domain_wallet_offers')
-            UNION ALL SELECT 'smv_domain_offer_redemptions', name FROM pragma_table_info('smv_domain_offer_redemptions')
-            UNION ALL SELECT 'smv_domain_live_sessions', name FROM pragma_table_info('smv_domain_live_sessions')
-            UNION ALL SELECT 'smv_domain_live_bookings', name FROM pragma_table_info('smv_domain_live_bookings')
-          ),
           object_checks AS (
             SELECT
               MAX(CASE WHEN type='trigger' AND name='smv_domain_live_session_reserve_validate' THEN 1 ELSE 0 END) AS live_session_bonus_reserve_trigger_count,
@@ -81,24 +73,20 @@ jobs:
               MAX(CASE WHEN type='trigger' AND name='smv_domain_wallet_ledger_validate' THEN 1 ELSE 0 END) AS wallet_ledger_bonus_credit_validate_trigger_count
             FROM schema_objects
           ),
-          column_checks AS (
-            SELECT
-              SUM(CASE WHEN table_name='smv_domain_wallets' AND column_name IN ('bonus_credit_balance_paise','reserved_bonus_credit_paise') THEN 1 ELSE 0 END) AS wallet_bonus_credit_columns_count,
-              SUM(CASE WHEN table_name='smv_domain_wallet_ledger' AND column_name IN ('bonus_credit_delta_paise','reserved_bonus_credit_delta_paise','bonus_credit_balance_after_paise','reserved_bonus_credit_balance_after_paise') THEN 1 ELSE 0 END) AS wallet_ledger_bonus_credit_columns_count,
-              SUM(CASE WHEN table_name='smv_domain_wallet_offers' AND column_name='bonus_credit_paise' THEN 1 ELSE 0 END) AS wallet_offer_bonus_credit_columns_count,
-              SUM(CASE WHEN table_name='smv_domain_offer_redemptions' AND column_name='bonus_credit_paise' THEN 1 ELSE 0 END) AS offer_redemption_bonus_credit_columns_count,
-              SUM(CASE WHEN table_name='smv_domain_live_sessions' AND column_name='reserved_bonus_credit_paise' THEN 1 ELSE 0 END) AS live_session_bonus_credit_columns_count,
-              SUM(CASE WHEN table_name='smv_domain_live_bookings' AND column_name='reserved_bonus_credit_paise' THEN 1 ELSE 0 END) AS live_booking_bonus_credit_columns_count
-            FROM table_columns
-          ),
           bonus_credit_version AS (
             SELECT schema_version AS bonus_credit_wallet_version
             FROM smv_domain_schema_meta
             WHERE schema_key='bonus-credit-wallet'
             LIMIT 1
           )
-          SELECT bonus_credit_version.bonus_credit_wallet_version, object_checks.*, column_checks.*
-          FROM object_checks CROSS JOIN column_checks CROSS JOIN bonus_credit_version;
+          SELECT bonus_credit_version.bonus_credit_wallet_version, object_checks.*,
+            (SELECT COUNT(*) FROM pragma_table_info('smv_domain_wallets') WHERE name IN ('bonus_credit_balance_paise','reserved_bonus_credit_paise')) AS wallet_bonus_credit_columns_count,
+            (SELECT COUNT(*) FROM pragma_table_info('smv_domain_wallet_ledger') WHERE name IN ('bonus_credit_delta_paise','reserved_bonus_credit_delta_paise','bonus_credit_balance_after_paise','reserved_bonus_credit_balance_after_paise')) AS wallet_ledger_bonus_credit_columns_count,
+            (SELECT COUNT(*) FROM pragma_table_info('smv_domain_wallet_offers') WHERE name='bonus_credit_paise') AS wallet_offer_bonus_credit_columns_count,
+            (SELECT COUNT(*) FROM pragma_table_info('smv_domain_offer_redemptions') WHERE name='bonus_credit_paise') AS offer_redemption_bonus_credit_columns_count,
+            (SELECT COUNT(*) FROM pragma_table_info('smv_domain_live_sessions') WHERE name='reserved_bonus_credit_paise') AS live_session_bonus_credit_columns_count,
+            (SELECT COUNT(*) FROM pragma_table_info('smv_domain_live_bookings') WHERE name='reserved_bonus_credit_paise') AS live_booking_bonus_credit_columns_count
+          FROM object_checks CROSS JOIN bonus_credit_version;
           SQL
           )"
           set +e
