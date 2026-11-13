@@ -176,9 +176,9 @@ test('all three PWA cache releases are synchronized for Pages.dev and .in conten
     return { pages: match[1], legacy: match[2] };
   });
   assert.deepEqual(releases.map(item => item.pages), [
-    '20261113-scheduled-booking-ringtone-pages-v1',
-    '20261113-scheduled-booking-ringtone-pages-v1',
-    '20261113-scheduled-booking-ringtone-pages-v1'
+    '20261113-ringtone-dashboard-resume-pages-v1',
+    '20261113-ringtone-dashboard-resume-pages-v1',
+    '20261113-ringtone-dashboard-resume-pages-v1'
   ]);
   assert.deepEqual(releases.map(item => item.legacy), [
     '20261113-live-session-receipt-in-v1',
