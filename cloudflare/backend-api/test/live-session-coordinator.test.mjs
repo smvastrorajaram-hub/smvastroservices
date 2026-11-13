@@ -290,3 +290,84 @@ test('accepted scheduled booking can stop its previously started native ringtone
   assert.equal(response.status, 200);
   assert.deepEqual(pushes.map(item => item.type), ['scheduled_booking', 'stop_ringing']);
 });
+
+
+test('D1 terminal snapshot is replayed and retained deadline retries a failed user-event publish', async () => {
+  const startedAtMs=Date.now()-60_000;
+  const endedAtMs=Date.now();
+  const row={
+    session_id:'bonus-ended-session',
+    customer_uid:'customer_1',
+    astrologer_uid:'astro_1',
+    mode:'chat',
+    state:'ended',
+    appointment_id:'',
+    reserved_amount_paise:0,
+    reserved_bonus_credit_paise:1000,
+    actual_charge_paise:0,
+    started_at_ms:startedAtMs,
+    ended_at_ms:endedAtMs,
+    created_at_ms:startedAtMs,
+    updated_at_ms:endedAtMs,
+    payload_json:JSON.stringify({
+      minutes:1,ratePerMinutePaise:1000,billableMinutes:1,
+      actualServiceAmountPaise:1000,bonusCreditUsedPaise:1000,
+      bonusCreditReleasedPaise:0,releasedAmountPaise:0
+    })
+  };
+  const db={
+    prepare(sql){
+      return {bind(){
+        return {
+          async first(){return sql.includes('SELECT * FROM smv_domain_live_sessions')?row:null;},
+          async all(){return {results:[]};},
+          async run(){return {success:true,meta:{changes:1}};}
+        };
+      }};
+    },
+    async batch(){return []; }
+  };
+  const publishCalls=[];
+  let failFirstPublish=true;
+  const env={
+    DB:db,
+    LIVE_USER_EVENT_HUB:{
+      idFromName(uid){return uid;},
+      get(uid){return {async fetch(_url,init){
+        const payload=JSON.parse(init.body);
+        publishCalls.push({uid,payload});
+        if(failFirstPublish){failFirstPublish=false;return new Response(JSON.stringify({ok:false}),{status:503});}
+        return new Response(JSON.stringify({ok:true,duplicate:false}),{status:200});
+      }};}
+    }
+  };
+  const state=fakeState({extraEnv:env});
+  const coordinator=new LiveSessionCoordinator(state.ctx,state.env);
+  await coordinator.fetch(request('/schedule',{
+    sessionId:'bonus-ended-session',state:'active',
+    deadlines:[{type:'session_duration',atMs:Date.now()-1,deadlineId:'duration:1',generation:1}]
+  }));
+
+  await coordinator.alarm();
+  let record=await state.storage.get('live-session-record');
+  assert.equal(record.pendingEvents.length,1,'a 503 user-event publish must not mark the deadline delivered');
+  assert.equal(record.pendingEvents[0].attempts,1);
+  assert.match(record.pendingEvents[0].lastError,/LIVE_USER_EVENT_PUBLISH_FAILED/);
+
+  record.pendingEvents[0].nextAttemptAtMs=Date.now()-1;
+  await state.storage.put('live-session-record',record);
+  await coordinator.alarm();
+
+  record=await state.storage.get('live-session-record');
+  assert.equal(record.pendingEvents.length,0,'successful user-event fan-out clears the durable retry');
+  assert.ok(record.deliveredEventIds.includes('bonus-ended-session:duration:1:1'));
+  assert.equal(publishCalls.length,3,'the failed first participant publish is retried, then the second participant is notified');
+  const terminal=publishCalls.filter(call=>call.payload.type==='live.session.ended');
+  assert.equal(terminal.length,3);
+  for(const call of terminal){
+    assert.equal(call.payload.data.session.state,'ended');
+    assert.equal(call.payload.data.session.actualChargePaise,0);
+    assert.equal(call.payload.data.session.actualServiceAmountPaise,1000);
+    assert.equal(call.payload.data.session.bonusCreditUsedPaise,1000);
+  }
+});

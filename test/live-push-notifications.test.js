@@ -229,7 +229,7 @@ test('Live Chat uses canonical mode/state and native visibility instead of a cha
   assert.equal(frontend.includes('smv-live-chat-active'), false, 'no chat-only modal class should be toggled by JavaScript');
   assert.equal(css.includes('.smv-live-chat-active'), false, 'Chat must not depend on a special CSS override block');
   assert.ok(html.includes('smvastro.css?v=20261112-d1-read-optimization-5000-customers-v1'));
-  assert.ok(html.includes('smvastro.mjs?v=20261113-live-session-receipt-stability-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261114-live-settlement-recovery-v1'));
 });
 
 test('Live Chat connected confirmation requires a rendered message pane and does not open a separate Chat window', () => {
@@ -303,7 +303,7 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('smvLiveStartCustomerPendingStatusPoll(s.id);'));
   assert.ok(frontend.includes('setInterval(()=>void reconcile(),2500)'));
   assert.ok(frontend.includes('Astrologer Generating Horoscope · '));
-  assert.ok(html.includes('smvastro.mjs?v=20261113-live-session-receipt-stability-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261114-live-settlement-recovery-v1'));
 });
 
 test('Live Chat recovers a missed connecting-to-active event while SSE remains connected', () => {
@@ -350,7 +350,7 @@ test('Customer and Astrologer Dashboard open without Dashboard-wide loading or q
   assert.equal(frontend.includes('Loading your dashboard...'), false);
   assert.ok(!frontend.includes("because Firebase could not be read."));
   assert.ok(!frontend.includes("Dashboard is open. Astrologer profile and data"));
-  assert.ok(html.includes('smvastro.mjs?v=20261113-live-session-receipt-stability-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261114-live-settlement-recovery-v1'));
 });
 
 test('Explicit login keeps the fast role shell mounted and does not hide/reopen Dashboard', () => {
@@ -394,7 +394,7 @@ test('Astrologer Dashboard keeps one heading and parallelizes its first profile 
   assert.ok(dashboard.includes('const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null;'));
   assert.ok(dashboard.includes('astrologerProfileResult=profileResult;'));
   assert.ok(!dashboard.includes("const a=await withTimeout(\n     getDoc(doc(db,'smv_astrologers',currentUser.uid))"));
-  assert.ok(html.includes('smvastro.mjs?v=20261113-live-session-receipt-stability-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261114-live-settlement-recovery-v1'));
 });
 
 test('Astrologer Dashboard renders its main UI before earnings and withdrawal history resolve', () => {
@@ -414,7 +414,7 @@ test('Astrologer Dashboard renders its main UI before earnings and withdrawal hi
   assert.ok(dashboard.includes('id="smvAstroEarningsHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalStatus"'));
-  assert.ok(html.includes('smvastro.mjs?v=20261113-live-session-receipt-stability-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261114-live-settlement-recovery-v1'));
 });
 
 test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
@@ -1495,10 +1495,19 @@ test('Android push deep-link waits for restored Firebase user before opening the
 test('Android notification opens reuse one Recents task and root Back keeps SMV ASTRO in standby', () => {
   const manifest = read('smvastroproduction/src/main/AndroidManifest.xml');
   const activity = read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java');
+  const notifications = read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/NativeCallNotifications.java');
   const mainStart = manifest.indexOf('android:name=".MainActivity"');
   const main = manifest.slice(mainStart - 100, manifest.indexOf('</activity>', mainStart));
   assert.ok(main.includes('android:launchMode="singleTask"'), 'notification opens route into the existing launcher task');
   assert.ok(main.includes('android:excludeFromRecents="false"'), 'SMV ASTRO remains visible in Android Recents');
+  const incomingStart=manifest.indexOf('android:name=".IncomingCallActivity"');
+  const incomingEnd=manifest.indexOf('</activity>',incomingStart);
+  const incoming=manifest.slice(incomingStart,incomingEnd);
+  assert.ok(incoming.includes('android:excludeFromRecents="true"'), 'the full-screen ringing screen itself stays out of Recents');
+  assert.ok(incoming.includes('android:taskAffinity="in.smvastroservices.smvastro.incoming"'), 'the ringing screen uses a separate task affinity');
+  assert.ok(notifications.includes('Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS|Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP'), 'the full-screen notification starts only the hidden ringing task');
+  assert.ok(!main.includes('android:taskAffinity='), 'the launcher keeps the package default visible Recents task affinity');
+  assert.ok(notifications.includes('Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP'), 'notification tap launches or restores the visible app task rather than retaining the hidden ringing task');
   const backStart = activity.indexOf('public void onBackPressed()');
   const back = activity.slice(backStart, activity.indexOf('@Override', backStart + 10));
   assert.ok(back.includes('moveTaskToBack(true)'), 'root Back backgrounds the task instead of finishing MainActivity');
@@ -1556,4 +1565,35 @@ test('Scheduled booking acceptance and Start send stop_ringing without using not
   assert.ok(appointments.includes('stop-booking-ringtone'));
   assert.ok(worker.includes('stop-booking-ringtone'));
   assert.ok(render.includes("type: 'stop_ringing', bookingId: String(outcome.appointmentId || ref.id)"));
+});
+
+
+test('Live receipts show gross service value, Cash Wallet debit, Bonus Credit usage and both unused reserve releases', () => {
+  const frontend=read('public/smvastro.mjs');
+  assert.ok(frontend.includes('function smvLiveTotalServiceAmountPaise(session){'));
+  assert.ok(frontend.includes('s.actualServiceAmountPaise'));
+  assert.ok(frontend.includes('cash+bonus'));
+  assert.ok(frontend.includes('Total amount charged (Cash + Bonus Credit)'));
+  assert.ok(frontend.includes('Cash Wallet charged'));
+  assert.ok(frontend.includes('Bonus Credit used'));
+  assert.ok(frontend.includes('Unused cash reserve returned'));
+  assert.ok(frontend.includes('Unused Bonus Credit returned'));
+  const receiptStart=frontend.indexOf('async function smvLiveBuildReceiptDocument(session)');
+  const receiptEnd=frontend.indexOf('function smvLiveOpenReceiptPage',receiptStart);
+  const receipt=frontend.slice(receiptStart,receiptEnd);
+  assert.ok(receipt.includes('smvLiveTotalServiceAmountPaise(s)'));
+  assert.ok(receipt.includes('money(s.actualChargePaise)'));
+  assert.ok(receipt.includes('money(s.bonusCreditUsedPaise)'));
+  assert.ok(receipt.includes('money(s.bonusCreditReleasedPaise)'));
+});
+
+test('Live Call/Chat countdown confirms terminal D1 settlement even when its SSE event is missed', () => {
+  const frontend=read('public/smvastro.mjs');
+  assert.ok(frontend.includes('function smvLiveStartSettlementRecovery(sessionId,attempt=0)'));
+  assert.ok(frontend.includes("renderApi('/live/sessions/'+encodeURIComponent(id),{method:'GET',timeoutMs:8000})"));
+  assert.ok(frontend.includes('smvLiveApplySession(authoritative)'));
+  assert.ok(frontend.includes('smvLiveStopSettlementRecovery()'));
+  assert.ok(frontend.includes('Math.min(15000,2000*(2**Math.min(retry,3)))'));
+  assert.ok(frontend.includes('Time ended — confirming server settlement…'));
+  assert.equal(frontend.includes('Time ended — waiting for server settlement…'),false);
 });

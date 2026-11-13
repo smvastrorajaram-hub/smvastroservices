@@ -29,6 +29,7 @@
             android:name=".IncomingCallActivity"
             android:exported="false"
             android:excludeFromRecents="true"
+            android:taskAffinity="in.smvastroservices.smvastro.incoming"
             android:launchMode="singleTop"
             android:showWhenLocked="true"
             android:turnScreenOn="true"

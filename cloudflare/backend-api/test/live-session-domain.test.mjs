@@ -311,3 +311,48 @@ test('Live status query is participant-scoped, bounded and excludes old ended hi
   assert.deepEqual(calls[0].values,['customer-1','customer-1',1_799_913_600_000]);
   await assert.rejects(service.listSessionStatus({uid:'customer-1',role:'admin'}),/Live Session login is required/);
 });
+
+
+test('Participant-facing D1 session view preserves gross charged value when Bonus Credit makes the cash debit zero',async()=>{
+  const now=Date.now();
+  const row={
+    session_id:'bonus-receipt-session',
+    customer_uid:'customer-1',
+    astrologer_uid:'astro-1',
+    mode:'call',
+    state:'ended',
+    appointment_id:'',
+    reserved_amount_paise:0,
+    reserved_bonus_credit_paise:1000,
+    actual_charge_paise:0,
+    started_at_ms:now-60_000,
+    ended_at_ms:now,
+    created_at_ms:now-60_000,
+    updated_at_ms:now,
+    payload_json:JSON.stringify({
+      minutes:1,ratePerMinutePaise:1000,billableMinutes:1,
+      actualServiceAmountPaise:1000,bonusCreditUsedPaise:1000,
+      bonusCreditReleasedPaise:0,releasedAmountPaise:0
+    })
+  };
+  const db={
+    prepare(sql){return{bind(){return{
+      async first(){return sql.includes('SELECT * FROM smv_domain_live_sessions')?row:null;},
+      async all(){return{results:[]};},
+      async run(){return{success:true,meta:{changes:1}};}
+    };}};},
+    async batch(){return[];}
+  };
+  const service=createD1LiveSessionService({
+    db,
+    walletAdapter:{async ensureWallet(){return{};},async getWallet(){return{};}},
+    firestore:{async getDocument(){return{exists:false,data:null};}},
+    cryptoImpl:globalThis.crypto
+  });
+  const session=await service.getSessionForParticipant({sessionId:row.session_id,uid:'customer-1'});
+  assert.equal(session.state,'ended');
+  assert.equal(session.actualChargePaise,0,'Cash Wallet debit remains zero when Bonus Credit paid the service');
+  assert.equal(session.actualServiceAmountPaise,1000,'Receipt API exposes the full service value separately from the cash debit');
+  assert.equal(session.bonusCreditUsedPaise,1000);
+  assert.equal(session.bonusCreditReleasedPaise,0);
+});

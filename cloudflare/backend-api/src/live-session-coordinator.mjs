@@ -562,10 +562,12 @@ export class LiveSessionCoordinator {
 
   async publishUserEvent(uid, event) {
     const hub = this.env.LIVE_USER_EVENT_HUB;
-    if (!hub || typeof hub.idFromName !== 'function') return;
+    if (!hub || typeof hub.idFromName !== 'function') {
+      throw new Error('LIVE_USER_EVENT_HUB binding is unavailable; the terminal event remains queued for retry.');
+    }
     try {
       const stub = hub.get(hub.idFromName(String(uid)));
-      await stub.fetch('https://live-user-hub.internal/publish', {
+      const response = await stub.fetch('https://live-user-hub.internal/publish', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -578,8 +580,14 @@ export class LiveSessionCoordinator {
           data: event.data ?? null
         })
       });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || result?.ok !== true) {
+        throw new Error('LIVE_USER_EVENT_PUBLISH_FAILED: HTTP ' + response.status);
+      }
+      return result;
     } catch (error) {
       console.warn('[Live Session DO] User event fan-out deferred:', error?.message || error);
+      throw error;
     }
   }
 
