@@ -4959,7 +4959,7 @@ function smvLiveStopSettlementRecovery(){
 function smvLiveStartSettlementRecovery(sessionId,attempt=0){
  const id=String(sessionId||'');
  if(!id||id!==smvLivePanelSessionId||String(smvLiveCurrentSession?.state||'')!=='active')return;
- if(smvLiveSettlementRecoverySessionId===id&&smvLiveSettlementRecoveryTimer)return;
+ if(smvLiveSettlementRecoverySessionId===id&&(smvLiveSettlementRecoveryTimer||smvLiveSettlementRecoveryBusy))return;
  if(smvLiveSettlementRecoverySessionId!==id)smvLiveStopSettlementRecovery();
  smvLiveSettlementRecoverySessionId=id;
  smvLiveSettlementRecoveryAttempt=Math.max(0,Math.trunc(Number(attempt)||0));
@@ -5305,8 +5305,7 @@ function smvLiveStartClock(s){
   if(el)el.textContent='Time remaining: '+Math.floor(remaining/60)+':'+String(remaining%60).padStart(2,'0');
   if(!remaining){smvLiveSetStatus('Time ended — confirming server settlement…');smvLiveStartSettlementRecovery(id,0);}
  };
- if(!smvLiveClockTimer)smvLiveClockTimer=setInterval(tick,1000);
- tick();
+ if(!smvLiveClockTimer){smvLiveClockTimer=setInterval(tick,1000);tick();}
 }
 function smvLiveSetStatus(v){if($('smvLiveSessionStatus'))$('smvLiveSessionStatus').textContent=String(v||'');}
 function smvLiveMediaErrorText(error){
