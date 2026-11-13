@@ -104,11 +104,13 @@ function insertLedger(sqlite, row) {
     `INSERT INTO smv_domain_wallet_ledger
      (ledger_id,owner_uid,owner_role,currency,type,direction,amount_paise,
       available_delta_paise,reserved_delta_paise,bonus_minutes_delta,reserved_bonus_minutes_delta,
+      bonus_credit_delta_paise,reserved_bonus_credit_delta_paise,
       idempotency_key,reference_type,reference_id,note,metadata_json,status,source,created_at_ms)
-     VALUES (?,?,?,'INR',?,?,?,?,?,?,?,?,?,?,?,'{}','posted','local_d1_test',?)`
+     VALUES (?,?,?,'INR',?,?,?,?,?,?,?,?,?,?,?,?,?,'{}','posted','local_d1_test',?)`
   ).run(row.ledgerId,row.ownerUid,row.ownerRole,row.type,row.direction,row.amountPaise,
     row.availableDeltaPaise,row.reservedDeltaPaise,row.bonusMinutesDelta||0,
-    row.reservedBonusMinutesDelta||0,row.idempotencyKey,row.referenceType,row.referenceId,
+    row.reservedBonusMinutesDelta||0,row.bonusCreditDeltaPaise||0,
+    row.reservedBonusCreditDeltaPaise||0,row.idempotencyKey,row.referenceType,row.referenceId,
     row.note||'local D1 invariant test',row.createdAtMs);
 }
 
@@ -264,27 +266,28 @@ test('local D1 blocks stale booking cancellation/expiry release after accept tra
   const { sqlite } = await openMigratedLocalD1();
   const nowMs = Date.now(), customerUid = id('booking_customer');
   const astrologerUid = id('booking_astro'), adminUid = id('booking_admin'), bookingId = id('booking');
-  seedWallet(sqlite, customerUid, 'customer', 10000, 2, nowMs);
+  seedWallet(sqlite, customerUid, 'customer', 10000, 0, nowMs);
+  sqlite.prepare('UPDATE smv_domain_wallets SET bonus_credit_balance_paise=2000 WHERE owner_uid=?').run(customerUid);
   try {
     sqlite.exec('BEGIN IMMEDIATE');
     insertLedger(sqlite, {
       ledgerId: id('booking_reserve_ledger'), ownerUid: customerUid, ownerRole: 'customer',
       type: 'live_booking_reserve', direction: 'reserve', amountPaise: 3000,
       availableDeltaPaise: -3000, reservedDeltaPaise: 3000,
-      bonusMinutesDelta: -2, reservedBonusMinutesDelta: 2,
+      bonusCreditDeltaPaise: -2000, reservedBonusCreditDeltaPaise: 2000,
       idempotencyKey: 'live-booking:' + bookingId, referenceType: 'live_booking',
       referenceId: bookingId, createdAtMs: nowMs
     });
     const bookingPayload = {
       id: bookingId, customerUid, astrologerUid, mode: 'chat', minutes: 5,
-      ratePerMinutePaise: 1000, reservedAmountPaise: 3000, reservedBonusMinutes: 2,
+      ratePerMinutePaise: 1000, reservedAmountPaise: 3000, reservedBonusCreditPaise: 2000,
       walletReservationState: 'reserved', origin: 'offline_queue',
       createdAtMs: nowMs, expiresAtMs: nowMs + 86400000
     };
     sqlite.prepare(
       `INSERT INTO smv_domain_live_bookings
        (booking_id,customer_uid,astrologer_uid,mode,status,wallet_reservation_state,
-        reserved_amount_paise,reserved_bonus_minutes,expires_at_ms,payload_json,created_at_ms,updated_at_ms)
+        reserved_amount_paise,reserved_bonus_credit_paise,expires_at_ms,payload_json,created_at_ms,updated_at_ms)
        VALUES (?,?,?,'chat','pending','reserved',?,?,?,?,?,?)`
     ).run(bookingId,customerUid,astrologerUid,3000,2,nowMs+86400000,JSON.stringify(bookingPayload),nowMs,nowMs);
     const sessionPayload = {
@@ -295,7 +298,7 @@ test('local D1 blocks stale booking cancellation/expiry release after accept tra
     sqlite.prepare(
       `INSERT INTO smv_domain_live_sessions
        (session_id,customer_uid,astrologer_uid,mode,state,appointment_id,
-        reserved_amount_paise,reserved_bonus_minutes,actual_charge_paise,
+        reserved_amount_paise,reserved_bonus_credit_paise,actual_charge_paise,
         started_at_ms,ended_at_ms,settlement_operation_id,payload_json,created_at_ms,updated_at_ms)
        VALUES (?,?,?,'chat','preparing',NULL,?,?,0,NULL,NULL,NULL,?,?,?)`
     ).run(bookingId,customerUid,astrologerUid,3000,2,JSON.stringify(sessionPayload),nowMs,nowMs);
@@ -311,9 +314,9 @@ test('local D1 blocks stale booking cancellation/expiry release after accept tra
         const cash = kind === 'live_booking_unused_release';
         insertLedger(sqlite, {
           ledgerId: id('stale_release'), ownerUid: customerUid, ownerRole: 'customer',
-          type: kind, direction: 'credit', amountPaise: cash ? 3000 : 0,
+          type: kind, direction: 'credit', amountPaise: cash ? 3000 : 2000,
           availableDeltaPaise: cash ? 3000 : 0, reservedDeltaPaise: cash ? -3000 : 0,
-          bonusMinutesDelta: cash ? 0 : 2, reservedBonusMinutesDelta: cash ? 0 : -2,
+          bonusCreditDeltaPaise: cash ? 0 : 2000, reservedBonusCreditDeltaPaise: cash ? 0 : -2000,
           idempotencyKey: id('stale_idempotency'), referenceType: 'live_booking',
           referenceId: bookingId, createdAtMs: nowMs + 1
         });
@@ -325,7 +328,7 @@ test('local D1 blocks stale booking cancellation/expiry release after accept tra
       }
     }
     const booking = sqlite.prepare('SELECT status,wallet_reservation_state FROM smv_domain_live_bookings WHERE booking_id=?').get(bookingId);
-    const wallet = sqlite.prepare('SELECT available_balance_paise,reserved_balance_paise,bonus_minutes_balance,reserved_bonus_minutes FROM smv_domain_wallets WHERE owner_uid=?').get(customerUid);
+    const wallet = sqlite.prepare('SELECT available_balance_paise,reserved_balance_paise,bonus_credit_balance_paise,reserved_bonus_credit_paise FROM smv_domain_wallets WHERE owner_uid=?').get(customerUid);
     const releaseRows = sqlite.prepare(
       "SELECT COUNT(*) AS total FROM smv_domain_wallet_ledger WHERE reference_id=? AND type IN ('live_booking_unused_release','live_booking_bonus_release')"
     ).get(bookingId);
@@ -333,13 +336,13 @@ test('local D1 blocks stale booking cancellation/expiry release after accept tra
     assert.equal(booking.wallet_reservation_state, 'transferred');
     assert.equal(Number(wallet.available_balance_paise), 7000);
     assert.equal(Number(wallet.reserved_balance_paise), 3000);
-    assert.equal(Number(wallet.bonus_minutes_balance), 0);
-    assert.equal(Number(wallet.reserved_bonus_minutes), 2);
+    assert.equal(Number(wallet.bonus_credit_balance_paise), 0);
+    assert.equal(Number(wallet.reserved_bonus_credit_paise), 2000);
     assert.equal(Number(releaseRows.total), 0);
 
     // The accepted scheduled booking follows the same D1 settlement path as
     // a direct Call Now / Chat Now session. Three connected started minutes
-    // consume two reserved bonus minutes and credit one paid minute (₹10 gross,
+    // consume ₹20 reserved Bonus Credit and charge ₹10 cash (₹30 gross,
     // 20% Astrologer commission, 80% Admin commission).
     const activePayload = {
       ...sessionPayload,state:'active',startedAtMs:nowMs,
@@ -359,14 +362,14 @@ test('local D1 blocks stale booking cancellation/expiry release after accept tra
     const settledRow=sqlite.prepare('SELECT payload_json FROM smv_domain_live_sessions WHERE session_id=?').get(bookingId);
     assert.equal(JSON.parse(settledRow.payload_json).origin,'accepted_booking');
     assert.equal(settled.session.actualChargePaise,1000);
-    assert.equal(settled.session.freeMinutesUsed,2);
+    assert.equal(settled.session.bonusCreditUsedPaise,2000);
 
     const earning=sqlite.prepare(
       'SELECT gross_amount_paise,astrologer_amount_paise,admin_amount_paise,status FROM smv_domain_earnings WHERE reference_id=?'
     ).get(bookingId);
-    assert.equal(Number(earning.gross_amount_paise),1000);
-    assert.equal(Number(earning.astrologer_amount_paise),200);
-    assert.equal(Number(earning.admin_amount_paise),800);
+    assert.equal(Number(earning.gross_amount_paise),3000);
+    assert.equal(Number(earning.astrologer_amount_paise),600);
+    assert.equal(Number(earning.admin_amount_paise),2400);
     assert.equal(earning.status,'credited');
 
     const earningsService=createD1WithdrawalService({
@@ -423,7 +426,7 @@ test('local D1 rolls back failed Live settlement and serializes two competing se
     sqlite.prepare(
       `INSERT INTO smv_domain_live_sessions
        (session_id,customer_uid,astrologer_uid,mode,state,appointment_id,
-        reserved_amount_paise,reserved_bonus_minutes,actual_charge_paise,
+        reserved_amount_paise,reserved_bonus_credit_paise,actual_charge_paise,
         started_at_ms,ended_at_ms,settlement_operation_id,payload_json,created_at_ms,updated_at_ms)
        VALUES (?,?,?,'chat','active',NULL,?,0,0,?,NULL,NULL,?,?,?)`
     ).run(sessionId,customerUid,astrologerUid,5000,nowMs-60000,JSON.stringify(payload),nowMs-60000,nowMs);
