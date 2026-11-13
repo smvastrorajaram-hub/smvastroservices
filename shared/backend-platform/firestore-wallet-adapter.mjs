@@ -139,7 +139,9 @@ export function createFirestoreWalletAdapter({ db, FieldValue, cryptoImpl = glob
     const ledgerIdValue = await ledgerId(entry.type, owner.ownerUid, entry.idempotencyKey);
     const row = {
       ...entry, ledgerId: ledgerIdValue,
-      availableDeltaPaise: entry.direction === 'credit' ? entry.amountPaise : -entry.amountPaise,
+      availableDeltaPaise: entry.bonusCreditDeltaPaise !== 0
+        ? 0
+        : (entry.direction === 'credit' ? entry.amountPaise : -entry.amountPaise),
       referenceType: input.referenceType, referenceId: input.referenceId,
       note: input.note, metadata: input.metadata, source: input.source
     };
