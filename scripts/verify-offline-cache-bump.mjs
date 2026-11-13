@@ -13,6 +13,8 @@ const workers = [
 ];
 const publicSourceChanged = [...changed].some(path => path.startsWith('public/'));
 const inHostSourceChanged = changed.has('public/index.html')
+  || changed.has('public/smvastro.mjs')
+  || changed.has('public/dashboard-typography.css')
   || changed.has('public/sitemap.xml')
   || changed.has('public/sitemap.html')
   || [...changed].some(path => path.startsWith('public/astrology-guides/'));
