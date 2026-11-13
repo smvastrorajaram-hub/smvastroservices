@@ -98,7 +98,7 @@ test('Production D1 schema readiness recognizes the current 0002-0013 migration 
   assert.doesNotMatch(db.calls[0], /smv_wallet_schema_meta|0001_wallet_live_domain/);
   assert.match(db.calls[0], /schema_objects AS MATERIALIZED/);
   assert.doesNotMatch(db.calls[1], /table_columns AS MATERIALIZED/);
-  assert.doesNotMatch(db.calls[1], /\\bUNION(?:\\s+ALL)?\\b/i,
+  assert.doesNotMatch(db.calls[1], /UNION ALL/i,
     'Bonus Credit table metadata checks must avoid compound SELECT terms for D1 compatibility');
   assert.equal((db.calls[0].match(/FROM sqlite_master/g) || []).length, 1,
     'the required schema contract scans sqlite_master once per probe');
