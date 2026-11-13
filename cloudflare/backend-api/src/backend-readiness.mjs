@@ -75,9 +75,7 @@ const BONUS_CREDIT_SCHEMA_QUERY = [
   "  SELECT type, name FROM sqlite_master",
   "  WHERE name IN (",
   "    'smv_domain_live_session_reserve_validate','smv_domain_live_earning_validate',",
-  "    'smv_domain_wallet_ledger_apply','smv_domain_wallet_ledger_validate',",
-  "    'smv_domain_promotional_fund','smv_domain_promotional_fund_ledger',",
-  "    'smv_domain_promotional_fund_ledger_validate','smv_domain_promotional_fund_ledger_apply'",
+  "    'smv_domain_wallet_ledger_apply','smv_domain_wallet_ledger_validate'",
   "  )",
   "),",
   "table_columns AS MATERIALIZED (",
@@ -93,11 +91,7 @@ const BONUS_CREDIT_SCHEMA_QUERY = [
   "    MAX(CASE WHEN type='trigger' AND name='smv_domain_live_session_reserve_validate' THEN 1 ELSE 0 END) AS live_session_bonus_reserve_trigger_count,",
   "    MAX(CASE WHEN type='trigger' AND name='smv_domain_live_earning_validate' THEN 1 ELSE 0 END) AS live_earning_bonus_credit_trigger_count,",
   "    MAX(CASE WHEN type='trigger' AND name='smv_domain_wallet_ledger_apply' THEN 1 ELSE 0 END) AS wallet_ledger_bonus_credit_apply_trigger_count,",
-  "    MAX(CASE WHEN type='trigger' AND name='smv_domain_wallet_ledger_validate' THEN 1 ELSE 0 END) AS wallet_ledger_bonus_credit_validate_trigger_count,",
-  "    MAX(CASE WHEN type='table' AND name='smv_domain_promotional_fund' THEN 1 ELSE 0 END) AS promotional_fund_table_count,",
-  "    MAX(CASE WHEN type='table' AND name='smv_domain_promotional_fund_ledger' THEN 1 ELSE 0 END) AS promotional_fund_ledger_table_count,",
-  "    MAX(CASE WHEN type='trigger' AND name='smv_domain_promotional_fund_ledger_validate' THEN 1 ELSE 0 END) AS promotional_fund_validate_trigger_count,",
-  "    MAX(CASE WHEN type='trigger' AND name='smv_domain_promotional_fund_ledger_apply' THEN 1 ELSE 0 END) AS promotional_fund_apply_trigger_count",
+  "    MAX(CASE WHEN type='trigger' AND name='smv_domain_wallet_ledger_validate' THEN 1 ELSE 0 END) AS wallet_ledger_bonus_credit_validate_trigger_count",
   "  FROM schema_objects",
   "),",
   "column_checks AS (",
@@ -113,15 +107,11 @@ const BONUS_CREDIT_SCHEMA_QUERY = [
   "bonus_credit_version AS (",
   "  SELECT schema_version AS bonus_credit_wallet_version",
   "  FROM smv_domain_schema_meta WHERE schema_key='bonus-credit-wallet' LIMIT 1",
-  "),",
-  "promotional_fund_seed AS (",
-  "  SELECT COUNT(*) AS promotional_fund_seed_count",
-  "  FROM smv_domain_promotional_fund WHERE fund_id='SMV_ASTRO'",
   ")",
   "SELECT bonus_credit_version.bonus_credit_wallet_version, object_checks.*,",
-  "  column_checks.*, promotional_fund_seed.promotional_fund_seed_count",
+  "  column_checks.*",
   "FROM object_checks CROSS JOIN column_checks",
-  "CROSS JOIN bonus_credit_version CROSS JOIN promotional_fund_seed"
+  "CROSS JOIN bonus_credit_version"
 ].join('\n');
 
 const MIGRATION_KEYS = [
