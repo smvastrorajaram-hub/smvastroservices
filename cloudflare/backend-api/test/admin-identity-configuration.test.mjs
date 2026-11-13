@@ -24,7 +24,7 @@ test('configured Admin UID allowlist preserves legacy single-UID binding and ign
 });
 
 
-test('Bonus Credit Promotional Fund resolves the unique configured Production Admin Wallet', () => {
+test('the unique configured Admin resolves the canonical Production Admin Wallet UID', () => {
   assert.equal(
     resolveConfiguredAdminWalletUid({
       SMV_CONFIGURED_ADMIN_UIDS: 'TwjeEIFS3Zcf1SxboLZoujm91Ky2'
@@ -43,7 +43,7 @@ test('an explicit ADMIN_WALLET_UID takes precedence over the Admin allowlist', (
   );
 });
 
-test('multiple configured Admins fail closed without an explicit Promotional Fund owner', () => {
+test('multiple configured Admins fail closed without an explicit primary Admin Wallet owner', () => {
   assert.equal(
     resolveConfiguredAdminWalletUid({
       SMV_CONFIGURED_ADMIN_UIDS: 'admin-one,admin-two'
