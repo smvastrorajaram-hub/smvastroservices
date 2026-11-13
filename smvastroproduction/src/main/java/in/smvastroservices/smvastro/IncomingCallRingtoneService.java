@@ -48,7 +48,7 @@ public final class IncomingCallRingtoneService extends Service {
             foregroundStarted=true;
         } catch(Exception error) {
             Log.w(LOG_TAG,"Foreground ringtone service was blocked by Android.",error); stopSelf(startId);
-            NativeCallNotifications.showStandardAlert(this,java.util.Collections.singletonMap("title",title.isEmpty()?"Incoming SMV ASTRO request":title));
+            NativeCallNotifications.showStandardAlert(this,type,title,body,sessionId,bookingId);
             return START_NOT_STICKY;
         }
         startLoopingRingtone(); handler.removeCallbacks(ringTimeout); handler.postDelayed(ringTimeout,RING_TIMEOUT_MILLIS);
@@ -64,9 +64,9 @@ public final class IncomingCallRingtoneService extends Service {
             player.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
             player.setDataSource(this,ringtone);player.setLooping(true);
-            player.setOnErrorListener((mp,what,extra)->{Log.w(LOG_TAG,"Ringtone playback failed: "+what+"/"+extra);clearAudioAndTimeout();return true;});
+            player.setOnErrorListener((mp,what,extra)->{Log.w(LOG_TAG,"Ringtone playback failed: "+what+"/"+extra);clearPlayer();return true;});
             player.prepare();player.start();
-        } catch(Exception error){Log.w(LOG_TAG,"Could not play the device ringtone.",error);clearAudioAndTimeout();}
+        } catch(Exception error){Log.w(LOG_TAG,"Could not play the device ringtone; the audible notification-channel fallback remains active.",error);clearPlayer();}
     }
     private void stopMatching(String sid,String bid) {
         String s=value(sid),b=value(bid); boolean unscoped=s.isEmpty()&&b.isEmpty();
