@@ -1,6 +1,6 @@
 name: Cloudflare Production Backend Worker code-only deploy
 
-# Deploys the reviewed Worker source without changing Worker secrets, variables, or D1 schema.
+# Deploys reviewed Worker source, preserves existing dashboard vars and secrets, and does not run D1 migrations.
 on:
   workflow_dispatch:
     inputs:
@@ -45,8 +45,8 @@ jobs:
       - name: Install Worker dependencies
         run: npm install --prefix cloudflare/backend-api --no-package-lock --ignore-scripts --no-audit --no-fund
 
-      - name: Deploy Production Worker code without changing secrets, variables, or D1
-        run: npx --yes wrangler@4.156.0 deploy --config cloudflare/backend-api/wrangler.production.jsonc
+      - name: Deploy Production Worker code while preserving existing dashboard variables and secrets
+        run: npx --yes wrangler@4.156.0 deploy --keep-vars --config cloudflare/backend-api/wrangler.production.jsonc
 
       - name: Verify Production Worker core schema and Bonus Credit readiness (independent of Live indexes)
         shell: bash
