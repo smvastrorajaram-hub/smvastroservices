@@ -46,7 +46,9 @@ public final class NativeCallNotifications {
         Intent incoming=new Intent(context,IncomingCallActivity.class).putExtra(EXTRA_TYPE,type).putExtra(EXTRA_MODE,mode)
             .putExtra(EXTRA_SESSION_ID,sessionId).putExtra(EXTRA_BOOKING_ID,bookingId).putExtra(EXTRA_TITLE,title)
             .putExtra(EXTRA_BODY,body).putExtra(EXTRA_TAG,tag).putExtra(EXTRA_NOTIFICATION_ID,id);
-        incoming.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        // Keep the full-screen ringing UI in its own excluded task. Tapping Open launches
+        // MainActivity into the package-default visible task via mainIntent() below.
+        incoming.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS|Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent call=PendingIntent.getActivity(context,id,incoming,PendingIntent.FLAG_UPDATE_CURRENT|immutableFlag());
         Notification.Builder builder=Build.VERSION.SDK_INT>=26?new Notification.Builder(context,CHANNEL_INCOMING):new Notification.Builder(context);
         String safeTitle=empty(title)?"Incoming SMV ASTRO request":title;
