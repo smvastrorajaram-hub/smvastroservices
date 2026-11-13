@@ -110,7 +110,7 @@ const BONUS_CREDIT_SCHEMA_QUERY = [
   ")",
   "SELECT bonus_credit_version.bonus_credit_wallet_version, object_checks.*, column_checks.*",
   "FROM object_checks CROSS JOIN column_checks CROSS JOIN bonus_credit_version"
-].join('\\n');
+].join('\n');
 
 const MIGRATION_KEYS = [
   '0002_shared_domain_repository',
