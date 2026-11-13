@@ -1246,7 +1246,7 @@ export function registerLegacyRouteParityGapRoutes({
         session = promoted.session || null;
         finalResult = { ...result, kind: 'session', session, booking: null, wallet: promoted.wallet || result.wallet };
       }
-      if (result.kind === 'session' && session && String(session.state || '') === 'ringing') {
+      if (result.kind === 'session' && session && (!session.state || String(session.state) === 'ringing')) {
         createdSessionId = String(session.id);
         const accepted = await liveService.acceptSession({ sessionId: createdSessionId, astrologerUid: uid });
         session = accepted.session;

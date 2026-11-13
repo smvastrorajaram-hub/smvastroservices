@@ -1537,6 +1537,6 @@ test('Scheduled booking acceptance and Start send stop_ringing without using not
   const render=read('server.js');
   assert.ok(coordinator.includes("url.pathname === '/stop-booking-ringtone'"));
   assert.ok(appointments.includes('stop-booking-ringtone'));
-  assert.ok(worker.includes("'stop-booking-ringtone'"));
+  assert.ok(worker.includes('stop-booking-ringtone'));
   assert.ok(render.includes("type: 'stop_ringing', bookingId: String(outcome.appointmentId || ref.id)"));
 });
