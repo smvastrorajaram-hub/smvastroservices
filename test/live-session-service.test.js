@@ -94,23 +94,23 @@ test('₹25 with a two-minute ₹10/minute reserve settles the actual started mi
   const earlyDisconnect = calculateLiveSessionCharge({
     elapsedMs: 59_999, ratePerMinutePaise: 1000, maximumMinutes: 2
   });
-  assert.deepEqual(earlyDisconnect, { elapsedMs: 59_999, billableMinutes: 1, amountPaise: 1000 });
+  assert.deepEqual(earlyDisconnect, { elapsedMs: 59_999, billableMinutes: 1, totalBillableMinutes: 1, amountPaise: 1000 });
   assert.equal(initialBalancePaise - reservedPaise + (reservedPaise - earlyDisconnect.amountPaise), 1500);
 
   const atMinuteBoundary = calculateLiveSessionCharge({
     elapsedMs: 60_000, ratePerMinutePaise: 1000, maximumMinutes: 2
   });
-  assert.deepEqual(atMinuteBoundary, { elapsedMs: 60_000, billableMinutes: 1, amountPaise: 1000 });
+  assert.deepEqual(atMinuteBoundary, { elapsedMs: 60_000, billableMinutes: 1, totalBillableMinutes: 1, amountPaise: 1000 });
   assert.equal(initialBalancePaise - reservedPaise + (reservedPaise - atMinuteBoundary.amountPaise), 1500);
 });
 
 test('selected duration caps charge and an unstarted connection costs zero', () => {
   assert.deepEqual(calculateLiveSessionCharge({
     elapsedMs: 0, ratePerMinutePaise: 1000, maximumMinutes: 5
-  }), { elapsedMs: 0, billableMinutes: 0, amountPaise: 0 });
+  }), { elapsedMs: 0, billableMinutes: 0, totalBillableMinutes: 0, amountPaise: 0 });
   assert.deepEqual(calculateLiveSessionCharge({
     elapsedMs: 600_000, ratePerMinutePaise: 1000, maximumMinutes: 3
-  }), { elapsedMs: 600_000, billableMinutes: 3, amountPaise: 3000 });
+  }), { elapsedMs: 600_000, billableMinutes: 3, totalBillableMinutes: 3, amountPaise: 3000 });
   assert.equal(calculateLiveSessionCharge({
     elapsedMs: 1, ratePerMinutePaise: 1_000_001, maximumMinutes: 3
   }), null);
