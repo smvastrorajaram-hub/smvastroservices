@@ -1124,8 +1124,11 @@ test('Session-ended event and end API never send Customer wallet balance to the 
   assert.ok(eventBlock.includes('sendTo(result.session.customerUid'));
   assert.ok(eventBlock.includes('sendTo(result.session.customerUid, { ...endedEvent, wallet: result.wallet });'));
   assert.ok(eventBlock.includes('sendTo(result.session.astrologerUid, endedEvent)'));
-  assert.equal(eventBlock.includes('wallet: result.wallet'), false,
-    'the shared event sent to the Astrologer must not contain the Customer Wallet balance');
+  const sharedEventStart = eventBlock.indexOf('const endedEvent = {');
+  const sharedEventEnd = eventBlock.indexOf('\n      };', sharedEventStart);
+  const sharedEvent = eventBlock.slice(sharedEventStart, sharedEventEnd);
+  assert.doesNotMatch(sharedEvent, /wallet\s*:/i,
+    'the shared event object sent to the Astrologer must not contain the Customer Wallet balance');
   assert.equal(eventBlock.includes('sendToParticipants(result.session'), false);
   const routeStart = service.indexOf("app.post('/live/sessions/:id/end'");
   const routeEnd = service.indexOf("app.post('/live/sessions/:id/ready'", routeStart);
