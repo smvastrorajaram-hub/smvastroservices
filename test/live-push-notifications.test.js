@@ -1526,8 +1526,8 @@ test('Scheduled booking and Preferred-Time pushes use the same Android looping d
   assert.ok(ringtone.includes('player.setLooping(true)'));
   assert.ok(ringtone.includes('RING_TIMEOUT_MILLIS'));
   assert.ok(ringtone.includes('showStandardAlert(this,type,title,body,sessionId,bookingId)'));
-  assert.match(ringtone,/Ringtone playback failed:[^\\n]*clearPlayer\\(\\);return true;/);
-  assert.match(ringtone,/Could not play the device ringtone; the audible notification-channel fallback remains active\\.",error\\);clearPlayer\\(\\);/);
+  assert.ok(ringtone.includes('Ringtone playback failed: "+what+"/"+extra);clearPlayer();return true;'));
+  assert.ok(ringtone.includes('Could not play the device ringtone; the audible notification-channel fallback remains active.",error);clearPlayer();'));
 });
 
 test('Scheduled session Start promotes an earlier idempotent queue into one real session and never stores a booking ID as liveSessionId', () => {
