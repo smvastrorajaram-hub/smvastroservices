@@ -106,20 +106,6 @@ function walletLedgerDocId(type, key) {
   return crypto.createHash('sha256').update(String(type) + ':' + String(key)).digest('hex');
 }
 
-function calculateStartedMinuteCharge({ connectedSeconds, freeSeconds = 0, ratePerMinutePaise }) {
-  const connected = Number(connectedSeconds);
-  const free = Number(freeSeconds);
-  const rate = Number(ratePerMinutePaise);
-  if (!Number.isFinite(connected) || connected < 0 || !Number.isFinite(free) || free < 0 ||
-      !Number.isSafeInteger(rate) || rate < 0) return null;
-  const connectedWhole = Math.floor(connected);
-  const freeWhole = Math.min(connectedWhole, Math.floor(free));
-  const billableSeconds = Math.max(0, connectedWhole - freeWhole);
-  const billableMinutes = Math.ceil(billableSeconds / 60);
-  const amountPaise = billableMinutes * rate;
-  if (!Number.isSafeInteger(amountPaise)) return null;
-  return { connectedSeconds: connectedWhole, freeSeconds: freeWhole, billableSeconds, billableMinutes, amountPaise };
-}
 
 function httpError(status, message, code) {
   return Object.assign(new Error(message), { httpStatus: status, code });
@@ -586,7 +572,6 @@ function registerWalletRoutes({ app, db, profileDb = db, FieldValue, crypto, raz
 module.exports = {
   parseRupeesToPaise,
   paiseToRupees,
-  calculateStartedMinuteCharge,
   walletLedgerDocId,
   offerDateMilliseconds,
   rechargeOfferMatches,
