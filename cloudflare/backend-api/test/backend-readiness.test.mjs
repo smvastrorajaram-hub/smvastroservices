@@ -100,6 +100,14 @@ test('Production D1 schema readiness recognizes the current 0002-0013 migration 
   assert.doesNotMatch(db.calls[0], /smv_domain_promotional_fund|bonus-credit-wallet/);
   assert.match(db.calls[1], /smv_domain_promotional_fund/);
   assert.doesNotMatch(db.calls[0], /smv_wallet_schema_meta|0001_wallet_live_domain/);
+  assert.match(db.calls[0], /schema_objects AS MATERIALIZED/);
+  assert.match(db.calls[1], /table_columns AS MATERIALIZED/);
+  assert.equal((db.calls[0].match(/FROM sqlite_master/g) || []).length, 1,
+    'the required schema contract scans sqlite_master once per probe');
+  assert.equal((db.calls[1].match(/FROM sqlite_master/g) || []).length, 1,
+    'the Bonus Credit schema contract scans sqlite_master once per probe');
+  assert.equal((db.calls[1].match(/FROM pragma_table_info\(/g) || []).length, 6,
+    'Bonus Credit column checks read each required table definition once');
 });
 
 test('schema inspector coalesces concurrent probes and reuses a bounded successful result', async () => {
