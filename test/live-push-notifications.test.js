@@ -1564,3 +1564,34 @@ test('Scheduled booking acceptance and Start send stop_ringing without using not
   assert.ok(worker.includes('stop-booking-ringtone'));
   assert.ok(render.includes("type: 'stop_ringing', bookingId: String(outcome.appointmentId || ref.id)"));
 });
+
+
+test('Live receipts show gross service value, Cash Wallet debit, Bonus Credit usage and both unused reserve releases', () => {
+  const frontend=read('public/smvastro.mjs');
+  assert.ok(frontend.includes('function smvLiveTotalServiceAmountPaise(session){'));
+  assert.ok(frontend.includes('s.actualServiceAmountPaise'));
+  assert.ok(frontend.includes('cash+bonus'));
+  assert.ok(frontend.includes('Total amount charged (Cash + Bonus Credit)'));
+  assert.ok(frontend.includes('Cash Wallet charged'));
+  assert.ok(frontend.includes('Bonus Credit used'));
+  assert.ok(frontend.includes('Unused cash reserve returned'));
+  assert.ok(frontend.includes('Unused Bonus Credit returned'));
+  const receiptStart=frontend.indexOf('async function smvLiveBuildReceiptDocument(session)');
+  const receiptEnd=frontend.indexOf('function smvLiveOpenReceiptPage',receiptStart);
+  const receipt=frontend.slice(receiptStart,receiptEnd);
+  assert.ok(receipt.includes('smvLiveTotalServiceAmountPaise(s)'));
+  assert.ok(receipt.includes('money(s.actualChargePaise)'));
+  assert.ok(receipt.includes('money(s.bonusCreditUsedPaise)'));
+  assert.ok(receipt.includes('money(s.bonusCreditReleasedPaise)'));
+});
+
+test('Live Call/Chat countdown confirms terminal D1 settlement even when its SSE event is missed', () => {
+  const frontend=read('public/smvastro.mjs');
+  assert.ok(frontend.includes('function smvLiveStartSettlementRecovery(sessionId,attempt=0)'));
+  assert.ok(frontend.includes("renderApi('/live/sessions/'+encodeURIComponent(id),{method:'GET',timeoutMs:8000})"));
+  assert.ok(frontend.includes('smvLiveApplySession(authoritative)'));
+  assert.ok(frontend.includes('smvLiveStopSettlementRecovery()'));
+  assert.ok(frontend.includes('Math.min(15000,2000*(2**Math.min(retry,3)))'));
+  assert.ok(frontend.includes('Time ended — confirming server settlement…'));
+  assert.equal(frontend.includes('Time ended — waiting for server settlement…'),false);
+});
