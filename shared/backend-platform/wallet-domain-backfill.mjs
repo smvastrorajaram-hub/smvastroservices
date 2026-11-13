@@ -241,6 +241,9 @@ function insertLegacyOffer(data, id) {
   const created = dateField(data, 'createdAt') ?? 0;
   const updated = dateField(data, 'updatedAt') ?? created;
   const successful = nonNegativeInteger(data.successfulRedemptions ?? used) ?? used;
+  const payload = { ...data, offerType: WALLET_RECHARGE_OFFER_TYPE, bonusCreditPaise: bonusCredit };
+  for (const key of ['bonusMinutes','bonusMinutesCredited','bonusMinutesUsed','bonusMinutesAwarded',
+    'totalBonusMinutesAwarded','legacyTotalBonusMinutes','legacy_total_bonus_minutes']) delete payload[key];
   return result([{
     kind: 'wallet_offer',
     sql: `INSERT INTO smv_domain_wallet_offers
@@ -258,7 +261,7 @@ function insertLegacyOffer(data, id) {
        legacy_total_bonus_minutes=0,bonus_credit_paise=excluded.bonus_credit_paise
       WHERE NOT EXISTS (SELECT 1 FROM smv_domain_offer_redemptions r WHERE r.offer_id=excluded.offer_id)`,
     values: [id,data.enabled === true ? 1 : 0,minimum,1,Math.max(0,perCustomer),totalLimit,
-      used,priority,start,end,json({ ...data,name,bannerTheme:theme }),created,updated,successful,bonusCredit]
+      used,priority,start,end,json({ ...payload,name,bannerTheme:theme }),created,updated,successful,bonusCredit]
   }]);
 }
 
