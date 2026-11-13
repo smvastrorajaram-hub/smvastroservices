@@ -211,7 +211,7 @@ function insertLegacyRecharge(data, id) {
          razorpay_payment_id,paid_at_ms,payload_json,created_at_ms,updated_at_ms)
         VALUES (?,?,?,'INR','paid',?,?,?,?,?,?)`,
       values: [id,customerUid,amount,orderId,paymentId,paidAt,json({
-        bonusMinutesCredited: nonNegativeInteger(data.bonusMinutesCredited) ?? 0,
+        bonusCreditCreditedPaise: nonNegativeInteger(data.bonusCreditCreditedPaise) ?? 0,
         offerId: data.offerId || null, offerName: data.offerName || null,
         paymentSource: 'legacy_firestore_backfill'
       }),created,updated]
