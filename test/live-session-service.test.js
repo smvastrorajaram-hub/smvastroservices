@@ -116,22 +116,19 @@ test('selected duration caps charge and an unstarted connection costs zero', () 
   }), null);
 });
 
-test('Wallet recharge promotional free minutes reduce cash billing and cap at selected duration', () => {
+test('Live charge calculation bills all connected started minutes without Free Minutes discounts', () => {
   assert.deepEqual(calculateLiveSessionCharge({
-    elapsedMs: 0, ratePerMinutePaise: 1000, maximumMinutes: 5, freeMinutes: 2
-  }), { elapsedMs: 0, billableMinutes: 0, totalBillableMinutes: 0, freeMinutesUsed: 0, amountPaise: 0 });
+    elapsedMs:0,ratePerMinutePaise:1000,maximumMinutes:5
+  }),{elapsedMs:0,billableMinutes:0,totalBillableMinutes:0,amountPaise:0});
   assert.deepEqual(calculateLiveSessionCharge({
-    elapsedMs: 59_999, ratePerMinutePaise: 1000, maximumMinutes: 5, freeMinutes: 2
-  }), { elapsedMs: 59_999, billableMinutes: 0, totalBillableMinutes: 1, freeMinutesUsed: 1, amountPaise: 0 });
+    elapsedMs:59_999,ratePerMinutePaise:1000,maximumMinutes:5
+  }),{elapsedMs:59_999,billableMinutes:1,totalBillableMinutes:1,amountPaise:1000});
   assert.deepEqual(calculateLiveSessionCharge({
-    elapsedMs: 60_001, ratePerMinutePaise: 1000, maximumMinutes: 5, freeMinutes: 1
-  }), { elapsedMs: 60_001, billableMinutes: 1, totalBillableMinutes: 2, freeMinutesUsed: 1, amountPaise: 1000 });
+    elapsedMs:60_001,ratePerMinutePaise:1000,maximumMinutes:5
+  }),{elapsedMs:60_001,billableMinutes:2,totalBillableMinutes:2,amountPaise:2000});
   assert.deepEqual(calculateLiveSessionCharge({
-    elapsedMs: 600_000, ratePerMinutePaise: 1200, maximumMinutes: 3, freeMinutes: 1
-  }), { elapsedMs: 600_000, billableMinutes: 2, totalBillableMinutes: 3, freeMinutesUsed: 1, amountPaise: 2400 });
-  assert.equal(calculateLiveSessionCharge({
-    elapsedMs: 60_000, ratePerMinutePaise: 1000, maximumMinutes: 5, freeMinutes: -1
-  }), null);
+    elapsedMs:600_000,ratePerMinutePaise:1200,maximumMinutes:3
+  }),{elapsedMs:600_000,billableMinutes:3,totalBillableMinutes:3,amountPaise:3600});
 });
 
 test('invalid durations and elapsed times fail closed', () => {
@@ -172,33 +169,39 @@ test('legacy global pricing defaults safely, but Customer rates come from the se
 });
 
 
-test('pending-booking cancellation releases held cash and promotional minutes together', () => {
+test('pending-booking cancellation releases cash and Bonus Credit reserves together', () => {
   assert.deepEqual(calculateBookingReserveRelease({
-    availableBalancePaise: 500, reservedBalancePaise: 2000, bonusMinutesBalance: 3,
-    reservedBonusMinutes: 2, releaseAmountPaise: 1000, releaseBonusMinutes: 1
-  }), {
-    availableBalancePaise: 1500, reservedBalancePaise: 1000, bonusMinutesBalance: 4,
-    reservedBonusMinutes: 1, releasedAmountPaise: 1000, releasedBonusMinutes: 1
+    availableBalancePaise:500,reservedBalancePaise:2000,
+    bonusCreditBalancePaise:3000,reservedBonusCreditPaise:2000,
+    releaseAmountPaise:1000,releaseBonusCreditPaise:1000
+  }),{
+    availableBalancePaise:1500,reservedBalancePaise:1000,
+    bonusCreditBalancePaise:4000,reservedBonusCreditPaise:1000,
+    releasedAmountPaise:1000,releasedBonusCreditPaise:1000
   });
 });
 
-test('pending-booking reserve release fails closed on mismatched or unsafe balances', () => {
+test('pending-booking Bonus Credit release fails closed on mismatched or unsafe balances', () => {
   assert.equal(calculateBookingReserveRelease({
-    availableBalancePaise: 500, reservedBalancePaise: 900, bonusMinutesBalance: 0,
-    reservedBonusMinutes: 1, releaseAmountPaise: 1000, releaseBonusMinutes: 1
-  }), null);
+    availableBalancePaise:500,reservedBalancePaise:900,
+    bonusCreditBalancePaise:0,reservedBonusCreditPaise:1000,
+    releaseAmountPaise:1000,releaseBonusCreditPaise:1000
+  }),null);
   assert.equal(calculateBookingReserveRelease({
-    availableBalancePaise: 500, reservedBalancePaise: 1000, bonusMinutesBalance: 0,
-    reservedBonusMinutes: 0, releaseAmountPaise: 1000, releaseBonusMinutes: 1
-  }), null);
+    availableBalancePaise:500,reservedBalancePaise:1000,
+    bonusCreditBalancePaise:0,reservedBonusCreditPaise:500,
+    releaseAmountPaise:1000,releaseBonusCreditPaise:1000
+  }),null);
   assert.equal(calculateBookingReserveRelease({
-    availableBalancePaise: Number.MAX_SAFE_INTEGER, reservedBalancePaise: 1000,
-    bonusMinutesBalance: 0, reservedBonusMinutes: 0, releaseAmountPaise: 1000, releaseBonusMinutes: 0
-  }), null);
+    availableBalancePaise:Number.MAX_SAFE_INTEGER,reservedBalancePaise:1000,
+    bonusCreditBalancePaise:0,reservedBonusCreditPaise:0,
+    releaseAmountPaise:1000,releaseBonusCreditPaise:0
+  }),null);
   assert.equal(calculateBookingReserveRelease({
-    availableBalancePaise: 0, reservedBalancePaise: 1000, bonusMinutesBalance: 1000000,
-    reservedBonusMinutes: 1, releaseAmountPaise: 1000, releaseBonusMinutes: 1
-  }), null);
+    availableBalancePaise:0,reservedBalancePaise:1000,
+    bonusCreditBalancePaise:Number.MAX_SAFE_INTEGER,reservedBonusCreditPaise:1,
+    releaseAmountPaise:1000,releaseBonusCreditPaise:1
+  }),null);
 });
 
 test('Live sessions require valid DOB/time/place before the two-minute-fifteen-second horoscope preparation', () => {
