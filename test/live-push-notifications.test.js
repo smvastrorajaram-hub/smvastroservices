@@ -1168,7 +1168,7 @@ test('Print/Save is exposed only for ended sessions and Chat print retrieves the
   assert.ok(receiptPage.includes('RECEIPT_TTL_MS=5*60*1000'), 'The fallback expires after five minutes.');
   assert.ok(receiptPage.includes('localStorage.getItem(key)'), 'Receipt page reads the exact session fallback.');
   assert.ok(receiptPage.includes('localStorage.removeItem(key)'), 'Receipt page removes only the consumed session key.');
-  assert.doesNotMatch(receiptPage,/localStorage\\.clear\\(|sessionStorage\\.clear\\(/, 'Receipt recovery never clears origin-wide storage.');
+  assert.doesNotMatch(receiptPage,/localStorage\.clear\(|sessionStorage\.clear\(/, 'Receipt recovery never clears origin-wide storage.');
   assert.ok(!frontend.includes('<iframe title="SMV ASTRO Live Session Bill"'), 'Live receipt is a full page, not a sandboxed iframe modal.');
   assert.ok(frontend.includes("typeof b.viewLiveReceiptPdf===&quot;function&quot;"), 'Live Receipt must use a dedicated Android bridge, not the Horoscope viewPdf method.');
   assert.ok(frontend.includes("data-customer-scheduled-receipt=\"'+escapeHtml(a.liveSessionId)+'\""), 'Completed scheduled bookings have a distinct receipt action.');
@@ -1184,7 +1184,7 @@ test('Print/Save is exposed only for ended sessions and Chat print retrieves the
   assert.ok(frontend.includes('function smvLiveBindDashboardSessionAction(button,session){'), 'The Live Sessions row switches behavior once ended.');
   assert.ok(frontend.includes('button.onclick=()=>smvLiveOpenScheduledReceipt(id,button);'), 'Download Receipt fetches and opens the participant-authorized receipt.');
   const loadStart=frontend.indexOf('async function smvLiveLoadDashboard(role){');
-  const loadEnd=frontend.indexOf('\\nasync function smvLiveHandlePushOpen(payload',loadStart);
+  const loadEnd=frontend.indexOf('\nasync function smvLiveHandlePushOpen(payload',loadStart);
   const loadDashboard=frontend.slice(loadStart,loadEnd);
   assert.ok(loadDashboard.includes('smvLiveBindDashboardSessionAction(btn,session);'), 'The final row binding preserves the ended-receipt action.');
   assert.ok(frontend.includes("function smvLiveQueueEndedReceipt(session)"));
