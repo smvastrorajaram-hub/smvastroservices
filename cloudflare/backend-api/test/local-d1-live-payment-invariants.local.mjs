@@ -90,13 +90,14 @@ function runWorker(workerData) {
 
 function id(prefix) { return prefix + '_' + webcrypto.randomUUID().replaceAll('-', ''); }
 
-function seedWallet(sqlite, uid, role, available, bonus, nowMs) {
+function seedWallet(sqlite, uid, role, available, bonusCreditPaise, nowMs) {
   sqlite.prepare(
     `INSERT INTO smv_domain_wallets
      (owner_uid,owner_role,currency,available_balance_paise,reserved_balance_paise,
-      bonus_minutes_balance,reserved_bonus_minutes,version,created_at_ms,updated_at_ms)
-     VALUES (?,?,'INR',?,0,?,0,1,?,?)`
-  ).run(uid, role, available, bonus, nowMs, nowMs);
+      bonus_minutes_balance,reserved_bonus_minutes,bonus_credit_balance_paise,reserved_bonus_credit_paise,
+      version,created_at_ms,updated_at_ms)
+     VALUES (?,?,'INR',?,0,0,0,?,0,1,?,?)`
+  ).run(uid, role, available, bonusCreditPaise, nowMs, nowMs);
 }
 
 function insertLedger(sqlite, row) {
@@ -266,8 +267,7 @@ test('local D1 blocks stale booking cancellation/expiry release after accept tra
   const { sqlite } = await openMigratedLocalD1();
   const nowMs = Date.now(), customerUid = id('booking_customer');
   const astrologerUid = id('booking_astro'), adminUid = id('booking_admin'), bookingId = id('booking');
-  seedWallet(sqlite, customerUid, 'customer', 10000, 0, nowMs);
-  sqlite.prepare('UPDATE smv_domain_wallets SET bonus_credit_balance_paise=2000 WHERE owner_uid=?').run(customerUid);
+  seedWallet(sqlite, customerUid, 'customer', 10000, 2000, nowMs);
   try {
     sqlite.exec('BEGIN IMMEDIATE');
     insertLedger(sqlite, {
@@ -289,7 +289,7 @@ test('local D1 blocks stale booking cancellation/expiry release after accept tra
        (booking_id,customer_uid,astrologer_uid,mode,status,wallet_reservation_state,
         reserved_amount_paise,reserved_bonus_credit_paise,expires_at_ms,payload_json,created_at_ms,updated_at_ms)
        VALUES (?,?,?,'chat','pending','reserved',?,?,?,?,?,?)`
-    ).run(bookingId,customerUid,astrologerUid,3000,2,nowMs+86400000,JSON.stringify(bookingPayload),nowMs,nowMs);
+    ).run(bookingId,customerUid,astrologerUid,3000,2000,nowMs+86400000,JSON.stringify(bookingPayload),nowMs,nowMs);
     const sessionPayload = {
       ...bookingPayload, id: bookingId, sessionId: bookingId,
       state: 'preparing', origin: 'accepted_booking', walletReservationState: 'transferred',
@@ -301,7 +301,7 @@ test('local D1 blocks stale booking cancellation/expiry release after accept tra
         reserved_amount_paise,reserved_bonus_credit_paise,actual_charge_paise,
         started_at_ms,ended_at_ms,settlement_operation_id,payload_json,created_at_ms,updated_at_ms)
        VALUES (?,?,?,'chat','preparing',NULL,?,?,0,NULL,NULL,NULL,?,?,?)`
-    ).run(bookingId,customerUid,astrologerUid,3000,2,JSON.stringify(sessionPayload),nowMs,nowMs);
+    ).run(bookingId,customerUid,astrologerUid,3000,2000,JSON.stringify(sessionPayload),nowMs,nowMs);
     sqlite.prepare(
       `UPDATE smv_domain_live_bookings SET status='accepted',wallet_reservation_state='transferred',payload_json=?,updated_at_ms=?
        WHERE booking_id=? AND status='pending' AND wallet_reservation_state='reserved'`
@@ -418,7 +418,7 @@ test('local D1 rolls back failed Live settlement and serializes two competing se
     const payload = {
       id: sessionId, sessionId, origin: 'direct', customerUid, astrologerUid,
       mode: 'chat', minutes: 5, ratePerMinutePaise: 1000,
-      reservedAmountPaise: 5000, reservedBonusMinutes: 0,
+      reservedAmountPaise: 5000, reservedBonusCreditPaise: 0,
       startedAtMs: nowMs - 60000, createdAtMs: nowMs - 60000, updatedAtMs: nowMs,
       astrologerCommissionPercent: 20, adminCommissionPercent: 80,
       customerReady: true, astrologerReady: true
