@@ -140,7 +140,7 @@ function cleanupFixture(sqlite, options = {}) {
   }
 }
 
-test('local D1 credits Offer Bonus Credit directly without Admin Wallet or Promotional Fund funding', async () => {
+test('local D1 credits Offer Bonus Credit directly to the Customer Wallet', async () => {
   const { sqlite } = await openMigratedLocalD1();
   const nowMs=Date.now();
   const customerUid=id('bonus_customer');
@@ -148,7 +148,6 @@ test('local D1 credits Offer Bonus Credit directly without Admin Wallet or Promo
   const paymentIds=[id('bonus_payment'),id('bonus_payment')];
   const orderIds=[id('bonus_order'),id('bonus_order')];
   const rechargeIds=[];
-  const originalFund=Number(sqlite.prepare("SELECT balance_paise FROM smv_domain_promotional_fund WHERE fund_id='SMV_ASTRO'").get()?.balance_paise||0);
   const adapter=createD1WalletAdapter({db:makeD1Binding(sqlite),now:()=>nowMs,cryptoImpl:webcrypto});
   try {
     await adapter.ensureWallet(customerUid,'customer');
@@ -187,10 +186,6 @@ test('local D1 credits Offer Bonus Credit directly without Admin Wallet or Promo
     const wallet=await adapter.getWallet(customerUid);
     assert.equal(wallet.availableBalancePaise,20000,'both verified Recharge payments are credited as Original Wallet cash');
     assert.equal(wallet.bonusCreditBalancePaise,5000,'both Offer amounts appear in the Customer Bonus Credit balance');
-    assert.equal(Number(sqlite.prepare("SELECT balance_paise FROM smv_domain_promotional_fund WHERE fund_id='SMV_ASTRO'").get().balance_paise),originalFund,
-      'the legacy Fund table remains untouched and is not a source of Bonus Credit');
-    const fundAwards=sqlite.prepare("SELECT COUNT(*) AS count FROM smv_domain_promotional_fund_ledger WHERE entry_type='bonus_credit_award'").get();
-    assert.equal(Number(fundAwards.count),0,'Bonus Credit awards do not write Promotional Fund ledger entries');
     const bonusLedger=sqlite.prepare("SELECT COUNT(*) AS count FROM smv_domain_wallet_ledger WHERE owner_uid=? AND type='recharge_bonus_credit'").get(customerUid);
     assert.equal(Number(bonusLedger.count),2,'each captured eligible recharge has one Customer Bonus Credit ledger row');
   } finally {

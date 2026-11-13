@@ -62,7 +62,18 @@ jobs:
         working-directory: cloudflare/backend-api
         run: |
           set -euo pipefail
-          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "SELECT name, type FROM sqlite_master WHERE name IN ('smv_wallet_schema_meta','smv_domain_schema_meta','smv_domain_wallets','smv_domain_live_sessions','smv_domain_live_bookings','smv_domain_withdrawal_payouts_encrypted','smv_domain_razorpay_webhook_events','smv_domain_notification_inbox','smv_domain_offer_redemptions','smv_domain_identity_users','idx_smv_domain_sessions_customer_recent','idx_smv_domain_sessions_astrologer_recent','idx_smv_domain_sessions_customer_status_updated','idx_smv_domain_sessions_astrologer_status_updated','idx_smv_domain_sessions_customer_appointment','idx_smv_domain_sessions_astrologer_appointment') ORDER BY type, name; SELECT schema_key, schema_version FROM smv_domain_schema_meta ORDER BY schema_key; SELECT name FROM pragma_table_info('smv_domain_razorpay_webhook_events') WHERE name IN ('claim_token','lease_until_ms') ORDER BY name; SELECT name, type FROM sqlite_master WHERE type='trigger' AND name IN ('smv_domain_offer_redemption_validate','smv_domain_offer_redemption_apply','smv_domain_live_booking_release_pending_validate') ORDER BY name;"
+          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "SELECT name, type FROM sqlite_master WHERE name IN ('smv_wallet_schema_meta','smv_domain_schema_meta','smv_domain_wallets','smv_domain_live_sessions','smv_domain_live_bookings','smv_domain_withdrawal_payouts_encrypted','smv_domain_razorpay_webhook_events','smv_domain_notification_inbox','smv_domain_offer_redemptions','smv_domain_identity_users','idx_smv_domain_sessions_customer_recent','idx_smv_domain_sessions_astrologer_recent','idx_smv_domain_sessions_customer_status_updated','idx_smv_domain_sessions_astrologer_status_updated','idx_smv_domain_sessions_customer_appointment','idx_smv_domain_sessions_astrologer_appointment','smv_domain_promotional_fund','smv_domain_promotional_fund_ledger','smv_domain_promotional_fund_ledger_validate','smv_domain_promotional_fund_ledger_apply') ORDER BY type, name; SELECT schema_key, schema_version FROM smv_domain_schema_meta ORDER BY schema_key; SELECT name FROM pragma_table_info('smv_domain_razorpay_webhook_events') WHERE name IN ('claim_token','lease_until_ms') ORDER BY name; SELECT name, type FROM sqlite_master WHERE type='trigger' AND name IN ('smv_domain_offer_redemption_validate','smv_domain_offer_redemption_apply','smv_domain_live_booking_release_pending_validate') ORDER BY name;"
+
+
+
+      - name: Assert Admin Promotional Fund objects are absent from Production D1 (SELECT only)
+        working-directory: cloudflare/backend-api
+        shell: bash
+        run: |
+          set -euo pipefail
+          result="$(npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "SELECT 'ADMIN_PROMOTIONAL_FUND_REMOVED' AS audit_status WHERE NOT EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name IN ('smv_domain_promotional_fund','smv_domain_promotional_fund_ledger')) AND NOT EXISTS (SELECT 1 FROM sqlite_master WHERE type='trigger' AND name IN ('smv_domain_promotional_fund_ledger_validate','smv_domain_promotional_fund_ledger_apply'))")"
+          printf '%s\n' "$result"
+          printf '%s' "$result" | grep -q 'ADMIN_PROMOTIONAL_FUND_REMOVED' || { echo 'Admin Promotional Fund D1 objects still exist.'; exit 1; }
 
       - name: Count Production Wallet and Live domain rows only (no record values)
         working-directory: cloudflare/backend-api

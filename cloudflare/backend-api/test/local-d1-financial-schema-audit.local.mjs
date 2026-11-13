@@ -44,7 +44,6 @@ async function openFullyMigratedLocalD1() {
 const TABLES = [
   'smv_domain_schema_meta',
   'smv_domain_wallets','smv_domain_wallet_ledger','smv_domain_wallet_recharges',
-  'smv_domain_promotional_fund','smv_domain_promotional_fund_ledger',
   'smv_domain_wallet_offers','smv_domain_offer_usage','smv_domain_wallet_offer_redemption_usage',
   'smv_domain_offer_redemptions','smv_domain_notification_inbox',
   'smv_domain_live_sessions','smv_domain_live_bookings','smv_domain_live_messages','smv_domain_live_signals',
@@ -95,8 +94,7 @@ const TRIGGERS = [
   'smv_domain_live_signal_validate','smv_domain_live_session_terminal_immutable',
   'smv_domain_live_booking_reserve_validate','smv_domain_live_session_booking_transfer_validate',
   'smv_domain_live_booking_accept_validate','smv_domain_live_booking_release_validate',
-  'smv_domain_live_booking_release_pending_validate',
-  'smv_domain_promotional_fund_ledger_validate','smv_domain_promotional_fund_ledger_apply'
+  'smv_domain_live_booking_release_pending_validate'
 ];
 
 test('local D1 contains every required Wallet, Live, Earnings, Withdrawal and Identity/Profile table, index and trigger', async () => {
@@ -108,6 +106,10 @@ test('local D1 contains every required Wallet, Live, Earnings, Withdrawal and Id
     assert.deepEqual(TABLES.filter(name => !tables.has(name)), [], 'missing D1 tables in ' + file);
     assert.deepEqual(INDEXES.filter(name => !indexes.has(name)), [], 'missing D1 indexes');
     assert.deepEqual(TRIGGERS.filter(name => !triggers.has(name)), [], 'missing D1 integrity triggers');
+    assert.equal(tables.has('smv_domain_promotional_fund'), false, 'Admin Promotional Fund table must be removed');
+    assert.equal(tables.has('smv_domain_promotional_fund_ledger'), false, 'Admin Promotional Fund ledger must be removed');
+    assert.equal(triggers.has('smv_domain_promotional_fund_ledger_validate'), false, 'Admin Promotional Fund validation trigger must be removed');
+    assert.equal(triggers.has('smv_domain_promotional_fund_ledger_apply'), false, 'Admin Promotional Fund apply trigger must be removed');
 
     const payoutColumns = new Set(db.prepare("PRAGMA table_info('smv_domain_withdrawal_payouts_encrypted')").all().map(row => row.name));
     for (const name of ['withdrawal_id','algorithm','key_version','nonce_hex','ciphertext_hex','auth_tag_hex','source_payload_sha256','created_at_ms','updated_at_ms']) {

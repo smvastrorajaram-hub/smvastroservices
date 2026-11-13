@@ -47,11 +47,6 @@ function readyRow() {
     live_earning_bonus_credit_trigger_count: 1,
     wallet_ledger_bonus_credit_apply_trigger_count: 1,
     wallet_ledger_bonus_credit_validate_trigger_count: 1,
-    promotional_fund_table_count: 1,
-    promotional_fund_ledger_table_count: 1,
-    promotional_fund_seed_count: 1,
-    promotional_fund_validate_trigger_count: 1,
-    promotional_fund_apply_trigger_count: 1
   };
 }
 
@@ -64,8 +59,8 @@ function dbWith(row, { fail = false, bonusCreditFail = false } = {}) {
       return {
         async first() {
           if (fail) throw new Error('D1 read failed');
-          if (bonusCreditFail && /smv_domain_promotional_fund|bonus-credit-wallet/.test(sql)) {
-            throw new Error('no such table: smv_domain_promotional_fund');
+          if (bonusCreditFail && /bonus-credit-wallet/.test(sql)) {
+            throw new Error('Bonus Credit schema marker is unavailable');
           }
           return row;
         }
@@ -97,8 +92,9 @@ test('Production D1 schema readiness recognizes the current 0002-0013 migration 
   assert.equal(result.checks.bonusCreditWalletSchema, true);
   assert.equal(db.calls.length, 2);
   assert.match(db.calls[0], /smv_domain_schema_meta/);
-  assert.doesNotMatch(db.calls[0], /smv_domain_promotional_fund|bonus-credit-wallet/);
-  assert.match(db.calls[1], /smv_domain_promotional_fund/);
+  assert.doesNotMatch(db.calls[0], /bonus-credit-wallet/);
+  assert.match(db.calls[1], /bonus-credit-wallet/);
+  assert.doesNotMatch(db.calls[1], /promotional_fund/i);
   assert.doesNotMatch(db.calls[0], /smv_wallet_schema_meta|0001_wallet_live_domain/);
   assert.match(db.calls[0], /schema_objects AS MATERIALIZED/);
   assert.match(db.calls[1], /table_columns AS MATERIALIZED/);
@@ -233,11 +229,6 @@ test('any missing or stale required marker or schema object fails readiness clos
     row => { row.live_earning_bonus_credit_trigger_count = 0; },
     row => { row.wallet_ledger_bonus_credit_apply_trigger_count = 0; },
     row => { row.wallet_ledger_bonus_credit_validate_trigger_count = 0; },
-    row => { row.promotional_fund_table_count = 0; },
-    row => { row.promotional_fund_ledger_table_count = 0; },
-    row => { row.promotional_fund_seed_count = 0; },
-    row => { row.promotional_fund_validate_trigger_count = 0; },
-    row => { row.promotional_fund_apply_trigger_count = 0; }
   ]) {
     const row = readyRow();
     mutate(row);

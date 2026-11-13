@@ -13,7 +13,7 @@ export function resolveConfiguredAdminUids(env = {}) {
 
 
 /**
- * Resolve the single Admin identity that owns the promotional-fund source Wallet.
+ * Resolve the canonical Admin Wallet UID used by Admin balance and settlement paths.
  * An explicit ADMIN_WALLET_UID wins. Otherwise only a unique configured Admin
  * is safe; multiple Admins require an explicit primary wallet owner.
  */

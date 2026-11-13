@@ -26,6 +26,24 @@ test('Production Worker uses the exact requested Worker name, D1 ID, Firebase Pr
   }]);
 });
 
+test('Admin Promotional Fund cleanup is a targeted, manual D1 operation that cannot apply unrelated migrations', () => {
+  const workflow = fs.readFileSync(path.join(root, '..', '..', '.github', 'workflows', 'cloudflare-remove-admin-promotional-fund.yml'), 'utf8');
+  const sql = fs.readFileSync(path.join(root, 'manual-migrations', 'remove_admin_promotional_fund.sql'), 'utf8');
+  assert.match(workflow, /^on:\n  workflow_dispatch:/m);
+  assert.ok(workflow.includes("inputs.confirm_database_name == 'smvastro-wallet-production'"));
+  assert.ok(workflow.includes('CLOUDFLARE_D1_API_TOKEN'));
+  assert.ok(workflow.includes('d1 execute smvastro-wallet-production --remote --yes'));
+  assert.ok(workflow.includes('--file manual-migrations/remove_admin_promotional_fund.sql'));
+  assert.doesNotMatch(workflow, /d1 migrations apply/);
+  for (const statement of [
+    'DROP TRIGGER IF EXISTS smv_domain_promotional_fund_ledger_validate;',
+    'DROP TRIGGER IF EXISTS smv_domain_promotional_fund_ledger_apply;',
+    'DROP TABLE IF EXISTS smv_domain_promotional_fund_ledger;',
+    'DROP TABLE IF EXISTS smv_domain_promotional_fund;'
+  ]) assert.ok(sql.includes(statement), 'missing targeted cleanup statement: ' + statement);
+  assert.doesNotMatch(sql, /^(?:DROP|DELETE|ALTER) (?:TABLE|TRIGGER) (?!IF EXISTS smv_domain_promotional_fund)/m);
+});
+
 test('Production Worker enables D1 Identity authorization for the explicitly approved fresh start', () => {
   assert.equal(config.vars.SMV_BACKEND_CLOUDFLARE_ACTIVE, 'true');
   assert.equal(config.vars.SMV_WALLET_DOMAIN_BACKFILL_COMPLETE, 'true');

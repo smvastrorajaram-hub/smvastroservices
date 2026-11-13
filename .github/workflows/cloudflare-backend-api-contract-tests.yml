@@ -77,6 +77,12 @@ jobs:
         working-directory: cloudflare/backend-api
         run: npx --yes wrangler@4.156.0 d1 migrations apply smvastro-wallet-production --local --config wrangler.production.jsonc
 
+      - name: Apply targeted Fund cleanup to ephemeral local D1 databases only
+        working-directory: cloudflare/backend-api
+        run: |
+          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-staging --local --config wrangler.staging.jsonc --file manual-migrations/remove_admin_promotional_fund.sql
+          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --local --config wrangler.production.jsonc --file manual-migrations/remove_admin_promotional_fund.sql
+
       - name: Audit the full financial schema on ephemeral local D1 only
         working-directory: cloudflare/backend-api
         run: node --test test/local-d1-financial-schema-audit.local.mjs
