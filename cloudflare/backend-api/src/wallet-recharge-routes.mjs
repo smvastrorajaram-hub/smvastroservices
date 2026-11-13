@@ -183,7 +183,7 @@ export function registerWalletRechargeRoutes({
           amount: paiseToRupees(recharge.amountPaise),
           availableBalancePaise: Number(wallet?.availableBalancePaise || 0),
           availableBalance: paiseToRupees(wallet?.availableBalancePaise || 0),
-          bonusCreditCreditedPaise: recharge.bonusCreditPaiseCredited,
+          bonusCreditCreditedPaise: recharge.bonusCreditCreditedPaise,
           bonusCreditSkippedReason: recharge.bonusCreditSkippedReason,
           bonusCreditBalancePaise: wallet?.bonusCreditBalancePaise || 0,
         });
