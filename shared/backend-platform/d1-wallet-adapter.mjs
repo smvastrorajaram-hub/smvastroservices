@@ -237,7 +237,9 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       return { success: true, alreadyProcessed: true, transactionId: previous.id, ...wallet };
     }
     const ledgerId = await sha256Hex(entry.type + ':' + owner.ownerUid + ':' + entry.idempotencyKey, cryptoImpl);
-    const delta = entry.direction === 'credit' ? entry.amountPaise : -entry.amountPaise;
+    const delta = entry.bonusCreditDeltaPaise !== 0
+      ? 0
+      : (entry.direction === 'credit' ? entry.amountPaise : -entry.amountPaise);
     const row = await buildLedgerRow({
       ...owner, ...entry, ledgerId, availableDeltaPaise: delta,
       referenceType: input.referenceType, referenceId: input.referenceId,
