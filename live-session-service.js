@@ -1182,7 +1182,7 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
         }
         return {
           alreadyProcessed: true, session,
-          wallet: { availableBalancePaise: safePaise(wallet.availableBalancePaise), reservedBalancePaise: safePaise(wallet.reservedBalancePaise) }
+          wallet: { availableBalancePaise: safePaise(wallet.availableBalancePaise), reservedBalancePaise: safePaise(wallet.reservedBalancePaise), bonusCreditBalancePaise: safePaise(wallet.bonusCreditBalancePaise), reservedBonusCreditPaise: safePaise(wallet.reservedBonusCreditPaise) }
         };
       }
       const now = Date.now();
@@ -1291,23 +1291,25 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
       const finalState = {
         state: 'ended', endedAt: new Date(now), updatedAt: nowServer,
         endedByUid: actor || 'server', endReason: finalReason,
-        connectedDurationMs: elapsedMs, billableMinutes: pricing.billableMinutes, freeMinutesUsed,
-        actualChargePaise: charge, releasedAmountPaise: release,
-        bonusMinutesReleased, bonusMinutesBalanceAfter: nextBonusAvailable,
-        commissionStatus: charge > 0 ? 'credited' : 'not_applicable',
+        connectedDurationMs: elapsedMs, billableMinutes: pricing.billableMinutes,
+        billingModel: 'bonus_credit_v1', grossServiceAmountPaise,
+        actualChargePaise: grossServiceAmountPaise, cashChargedPaise: charge,
+        releasedAmountPaise: release, bonusCreditUsedPaise, bonusCreditReleasedPaise,
+        bonusCreditBalanceAfterPaise: nextBonusAvailable,
+        commissionStatus: grossServiceAmountPaise > 0 ? 'credited' : 'not_applicable',
         astrologerCommissionPercent: commission.astroPercent, adminCommissionPercent: commission.adminPercent,
         astrologerCommissionPaise, adminCommissionPaise,
         astrologerCommissionAmount: astrologerCommissionPaise / 100, adminCommissionAmount: adminCommissionPaise / 100,
         availableBalanceAfterPaise: nextAvailable, reservedBalanceAfterPaise: nextReserved
       };
-      if (charge > 0 && !earningSnap.exists) {
+      if (grossServiceAmountPaise > 0 && !earningSnap.exists) {
         tx.create(earningRefDoc, {
           paymentId: earningRefDoc.id, type: 'astrologer_earning', source: 'live_session', sourceType: 'live_session',
           sessionId: id, bookingId: session.origin === 'accepted_booking' || session.origin === 'offline_queue' ? id : null,
           customerId: session.customerUid, customerUid: session.customerUid, customerName: session.customerName || 'Customer',
           astrologerId: session.astrologerUid, astrologerName: session.astrologerName || astro.name || 'Astrologer',
           mode: session.mode || 'chat', question: 'Live ' + String(session.mode || 'chat').toUpperCase() + ' with ' + String(session.customerName || 'Customer'),
-          grossAmount: charge / 100, grossAmountPaise: charge,
+          grossAmount: grossServiceAmountPaise / 100, grossAmountPaise: grossServiceAmountPaise,
           commissionPercent: commission.astroPercent, commissionAmount: astrologerCommissionPaise / 100,
           earningAmount: astrologerCommissionPaise / 100, earningAmountPaise: astrologerCommissionPaise,
           adminCommissionPercent: commission.adminPercent, adminCommissionAmount: adminCommissionPaise / 100,
@@ -1332,7 +1334,7 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
       }
       return {
         alreadyProcessed: false, session: { ...session, ...finalState },
-        wallet: { availableBalancePaise: nextAvailable, reservedBalancePaise: nextReserved, bonusMinutesBalance: nextBonusAvailable, reservedBonusMinutes: nextBonusReserved }
+        wallet: { availableBalancePaise: nextAvailable, reservedBalancePaise: nextReserved, bonusCreditBalancePaise: nextBonusAvailable, reservedBonusCreditPaise: nextBonusReserved }
       };
     });
     void notifyAstrologerPush(result.session.astrologerUid, {
@@ -1368,7 +1370,7 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
       };
       sendTo(result.session.customerUid, {
         ...endedEvent,
-        wallet: { availableBalancePaise: result.wallet.availableBalancePaise, reservedBalancePaise: result.wallet.reservedBalancePaise, bonusMinutesBalance: result.wallet.bonusMinutesBalance, reservedBonusMinutes: result.wallet.reservedBonusMinutes }
+        wallet: { availableBalancePaise: result.wallet.availableBalancePaise, reservedBalancePaise: result.wallet.reservedBalancePaise, bonusCreditBalancePaise: result.wallet.bonusCreditBalancePaise, reservedBonusCreditPaise: result.wallet.reservedBonusCreditPaise }
       });
       sendTo(result.session.astrologerUid, endedEvent);
     }
