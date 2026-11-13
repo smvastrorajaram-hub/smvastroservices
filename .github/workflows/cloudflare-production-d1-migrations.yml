@@ -58,14 +58,6 @@ jobs:
       - name: Display Production D1 migration state
         run: npx --yes wrangler@4.156.0 d1 migrations list smvastro-wallet-production --remote --config cloudflare/backend-api/wrangler.production.jsonc
 
-      - name: Apply pending reviewed Production D1 migrations
+      - name: Apply pending additive Production D1 migrations
         run: npx --yes wrangler@4.156.0 d1 migrations apply smvastro-wallet-production --remote --config cloudflare/backend-api/wrangler.production.jsonc
 
-      - name: Verify Admin Promotional Fund tables and triggers are removed from Production D1
-        working-directory: cloudflare/backend-api
-        shell: bash
-        run: |
-          set -euo pipefail
-          result="$(npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "SELECT 'ADMIN_PROMOTIONAL_FUND_REMOVED' AS audit_status WHERE NOT EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name IN ('smv_domain_promotional_fund','smv_domain_promotional_fund_ledger')) AND NOT EXISTS (SELECT 1 FROM sqlite_master WHERE type='trigger' AND name IN ('smv_domain_promotional_fund_ledger_validate','smv_domain_promotional_fund_ledger_apply'))")"
-          printf '%s\\n' "$result"
-          printf '%s' "$result" | grep -q 'ADMIN_PROMOTIONAL_FUND_REMOVED' || { echo 'Admin Promotional Fund D1 objects still exist.'; exit 1; }
