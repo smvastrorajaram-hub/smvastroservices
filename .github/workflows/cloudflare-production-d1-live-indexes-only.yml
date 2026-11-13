@@ -1,0 +1,166 @@
+name: Apply Production Live Session Indexes Only
+
+# Applies only the reviewed additive 0014 index migration after read-only schema preflight.
+# It never runs the general D1 migrations workflow or changes financial rows, balances, secrets, or variables.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_database_name:
+        description: 'Type smvastro-wallet-production to apply only the Live Session query indexes.'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-production-live-session-indexes-only
+  cancel-in-progress: false
+
+jobs:
+  apply-live-session-indexes-only:
+    if: ${{ inputs.confirm_database_name == 'smvastro-wallet-production' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_D1_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Checkout the single reviewed additive migration
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify dedicated Production D1 API token
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${CLOUDFLARE_API_TOKEN:-}" || { echo 'Missing CLOUDFLARE_D1_API_TOKEN in the GitHub production environment.'; exit 1; }
+
+      - name: Resolve Cloudflare account from the configured Production D1
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+            account_id="$(node .github/scripts/resolve-cloudflare-account-from-production-d1.mjs)"
+            test -n "$account_id" || { echo 'Unable to resolve Cloudflare account for Production D1.'; exit 1; }
+            echo "CLOUDFLARE_ACCOUNT_ID=$account_id" >> "$GITHUB_ENV"
+          fi
+
+      - name: Install Wrangler
+        run: npm install --prefix cloudflare/backend-api --no-package-lock --ignore-scripts --no-audit --no-fund
+
+      - name: Read-only preflight - verify Bonus Credit 0013 and Live index prerequisites
+        id: preflight
+        working-directory: cloudflare/backend-api
+        shell: bash
+        run: |
+          set -euo pipefail
+          SQL="SELECT
+            (SELECT COUNT(*) FROM pragma_table_info('smv_domain_wallets') WHERE name IN ('bonus_credit_balance_paise','reserved_bonus_credit_paise')) AS wallet_bonus_credit_columns_count,
+            (SELECT COUNT(*) FROM pragma_table_info('smv_domain_wallet_ledger') WHERE name IN ('bonus_credit_delta_paise','reserved_bonus_credit_delta_paise','bonus_credit_balance_after_paise','reserved_bonus_credit_balance_after_paise')) AS wallet_ledger_bonus_credit_columns_count,
+            (SELECT COUNT(*) FROM pragma_table_info('smv_domain_wallet_offers') WHERE name='bonus_credit_paise') AS wallet_offer_bonus_credit_columns_count,
+            (SELECT COUNT(*) FROM pragma_table_info('smv_domain_offer_redemptions') WHERE name='bonus_credit_paise') AS offer_redemption_bonus_credit_columns_count,
+            (SELECT COUNT(*) FROM pragma_table_info('smv_domain_live_sessions') WHERE name='reserved_bonus_credit_paise') AS live_session_bonus_credit_columns_count,
+            (SELECT COUNT(*) FROM pragma_table_info('smv_domain_live_bookings') WHERE name='reserved_bonus_credit_paise') AS live_booking_bonus_credit_columns_count,
+            (SELECT COUNT(*) FROM sqlite_master WHERE type='trigger' AND name IN ('smv_domain_live_session_reserve_validate','smv_domain_live_earning_validate','smv_domain_wallet_ledger_apply','smv_domain_wallet_ledger_validate')) AS bonus_credit_trigger_count,
+            (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key='bonus-credit-wallet' LIMIT 1) AS bonus_credit_wallet_version,
+            (SELECT COUNT(*) FROM pragma_table_info('smv_domain_live_sessions') WHERE name IN ('customer_uid','astrologer_uid','created_at_ms','session_id','state','updated_at_ms','appointment_id','ended_at_ms')) AS live_index_columns_count,
+            (SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name IN ('idx_smv_domain_sessions_customer_recent','idx_smv_domain_sessions_astrologer_recent','idx_smv_domain_sessions_customer_status_updated','idx_smv_domain_sessions_astrologer_status_updated','idx_smv_domain_sessions_customer_appointment','idx_smv_domain_sessions_astrologer_appointment')) AS live_indexes_count,
+            (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key='live-session-query-indexes' LIMIT 1) AS live_session_query_indexes_version;"
+          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "$SQL" > /tmp/smv-production-live-index-preflight.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const raw = JSON.parse(fs.readFileSync('/tmp/smv-production-live-index-preflight.json', 'utf8'));
+          const rows = Array.isArray(raw) ? raw.flatMap(item => Array.isArray(item.results) ? item.results : []) : (Array.isArray(raw.results) ? raw.results : []);
+          const row = rows[0];
+          if (!row) throw new Error('Production D1 read-only preflight returned no row.');
+          const expected = {
+            wallet_bonus_credit_columns_count: 2,
+            wallet_ledger_bonus_credit_columns_count: 4,
+            wallet_offer_bonus_credit_columns_count: 1,
+            offer_redemption_bonus_credit_columns_count: 1,
+            live_session_bonus_credit_columns_count: 1,
+            live_booking_bonus_credit_columns_count: 1,
+            bonus_credit_trigger_count: 4,
+            live_index_columns_count: 8
+          };
+          for (const [key, value] of Object.entries(expected)) {
+            if (Number(row[key]) !== value) throw new Error(`Preflight failed: ${key} expected ${value}, got ${row[key]}.`);
+          }
+          if (row.bonus_credit_wallet_version !== '0013_bonus_credit_wallet') {
+            throw new Error('Bonus Credit schema marker 0013 is missing or has an unexpected version. No Live index migration was applied.');
+          }
+          const alreadyReady = Number(row.live_indexes_count) === 6 &&
+            row.live_session_query_indexes_version === '0014_live_session_query_indexes';
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `indexes_ready=${alreadyReady ? 'true' : 'false'}\n`);
+          console.log(JSON.stringify({
+            bonusCredit0013: 'PASS',
+            liveIndexPrerequisiteColumns: 'PASS',
+            existingLiveIndexCount: Number(row.live_indexes_count),
+            liveIndexVersion: row.live_session_query_indexes_version || null,
+            action: alreadyReady ? 'SKIP - all six indexes and the 0014 marker already exist' : 'APPLY - execute only 0014_live_session_query_indexes.sql'
+          }, null, 2));
+          NODE
+
+      - name: Apply only 0014 Live Session query indexes
+        if: steps.preflight.outputs.indexes_ready != 'true'
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --yes --config wrangler.production.jsonc --file migrations/0014_live_session_query_indexes.sql
+
+      - name: Verify Production Bonus Credit and all six Live indexes
+        working-directory: cloudflare/backend-api
+        shell: bash
+        run: |
+          set -euo pipefail
+          SQL="SELECT
+            (SELECT COUNT(*) FROM pragma_table_info('smv_domain_wallets') WHERE name IN ('bonus_credit_balance_paise','reserved_bonus_credit_paise')) AS wallet_bonus_credit_columns_count,
+            (SELECT COUNT(*) FROM pragma_table_info('smv_domain_wallet_ledger') WHERE name IN ('bonus_credit_delta_paise','reserved_bonus_credit_delta_paise','bonus_credit_balance_after_paise','reserved_bonus_credit_balance_after_paise')) AS wallet_ledger_bonus_credit_columns_count,
+            (SELECT COUNT(*) FROM pragma_table_info('smv_domain_wallet_offers') WHERE name='bonus_credit_paise') AS wallet_offer_bonus_credit_columns_count,
+            (SELECT COUNT(*) FROM pragma_table_info('smv_domain_offer_redemptions') WHERE name='bonus_credit_paise') AS offer_redemption_bonus_credit_columns_count,
+            (SELECT COUNT(*) FROM pragma_table_info('smv_domain_live_sessions') WHERE name='reserved_bonus_credit_paise') AS live_session_bonus_credit_columns_count,
+            (SELECT COUNT(*) FROM pragma_table_info('smv_domain_live_bookings') WHERE name='reserved_bonus_credit_paise') AS live_booking_bonus_credit_columns_count,
+            (SELECT COUNT(*) FROM sqlite_master WHERE type='trigger' AND name IN ('smv_domain_live_session_reserve_validate','smv_domain_live_earning_validate','smv_domain_wallet_ledger_apply','smv_domain_wallet_ledger_validate')) AS bonus_credit_trigger_count,
+            (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key='bonus-credit-wallet' LIMIT 1) AS bonus_credit_wallet_version,
+            (SELECT COUNT(*) FROM pragma_table_info('smv_domain_live_sessions') WHERE name IN ('customer_uid','astrologer_uid','created_at_ms','session_id','state','updated_at_ms','appointment_id','ended_at_ms')) AS live_index_columns_count,
+            (SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name IN ('idx_smv_domain_sessions_customer_recent','idx_smv_domain_sessions_astrologer_recent','idx_smv_domain_sessions_customer_status_updated','idx_smv_domain_sessions_astrologer_status_updated','idx_smv_domain_sessions_customer_appointment','idx_smv_domain_sessions_astrologer_appointment')) AS live_indexes_count,
+            (SELECT schema_version FROM smv_domain_schema_meta WHERE schema_key='live-session-query-indexes' LIMIT 1) AS live_session_query_indexes_version;"
+          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "$SQL" > /tmp/smv-production-live-index-verification.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const raw = JSON.parse(fs.readFileSync('/tmp/smv-production-live-index-verification.json', 'utf8'));
+          const rows = Array.isArray(raw) ? raw.flatMap(item => Array.isArray(item.results) ? item.results : []) : (Array.isArray(raw.results) ? raw.results : []);
+          const row = rows[0];
+          if (!row) throw new Error('Production D1 final verification returned no row.');
+          const expected = {
+            wallet_bonus_credit_columns_count: 2,
+            wallet_ledger_bonus_credit_columns_count: 4,
+            wallet_offer_bonus_credit_columns_count: 1,
+            offer_redemption_bonus_credit_columns_count: 1,
+            live_session_bonus_credit_columns_count: 1,
+            live_booking_bonus_credit_columns_count: 1,
+            bonus_credit_trigger_count: 4,
+            live_index_columns_count: 8,
+            live_indexes_count: 6
+          };
+          for (const [key, value] of Object.entries(expected)) {
+            if (Number(row[key]) !== value) throw new Error(`Final verification failed: ${key} expected ${value}, got ${row[key]}.`);
+          }
+          if (row.bonus_credit_wallet_version !== '0013_bonus_credit_wallet' ||
+              row.live_session_query_indexes_version !== '0014_live_session_query_indexes') {
+            throw new Error('Final verification failed: schema version marker mismatch.');
+          }
+          console.log(JSON.stringify({
+            result: 'PASS',
+            productionD1: 'smvastro-wallet-production',
+            bonusCreditSchema0013: 'PASS',
+            liveSessionIndexes0014: 'PASS',
+            liveIndexesCount: 6,
+            customerBalancesAndLedgerRowsModified: false,
+            generalD1MigrationsExecuted: false
+          }, null, 2));
+          NODE
