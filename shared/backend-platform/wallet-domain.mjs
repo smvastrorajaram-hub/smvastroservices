@@ -1,7 +1,7 @@
 // Platform-neutral Wallet business rules shared by Render and Cloudflare adapters.
+// Promotional Wallet value is rupee-denominated Bonus Credit only.
 export const WALLET_CURRENCY = 'INR';
 export const MAX_WALLET_PAISE = Number.MAX_SAFE_INTEGER;
-export const MAX_BONUS_MINUTES = 1_000_000;
 
 export function walletError(code, message, httpStatus = 409, details = {}) {
   return Object.assign(new Error(message || code), { code, httpStatus, ...details });
@@ -21,11 +21,6 @@ export function safePaise(value) {
   return Number.isSafeInteger(number) && number >= 0 ? number : 0;
 }
 
-export function safeMinutes(value) {
-  const number = Number(value ?? 0);
-  return Number.isSafeInteger(number) && number >= 0 && number <= MAX_BONUS_MINUTES ? number : 0;
-}
-
 export function normalizeWallet(raw = {}, ownerUid = '', ownerRole = '') {
   const owner = validateWalletOwner(ownerUid || raw.ownerUid, ownerRole || raw.ownerRole);
   return Object.freeze({
@@ -34,8 +29,6 @@ export function normalizeWallet(raw = {}, ownerUid = '', ownerRole = '') {
     currency: WALLET_CURRENCY,
     availableBalancePaise: safePaise(raw.availableBalancePaise),
     reservedBalancePaise: safePaise(raw.reservedBalancePaise),
-    bonusMinutesBalance: safeMinutes(raw.bonusMinutesBalance),
-    reservedBonusMinutes: safeMinutes(raw.reservedBonusMinutes),
     bonusCreditBalancePaise: safePaise(raw.bonusCreditBalancePaise),
     reservedBonusCreditPaise: safePaise(raw.reservedBonusCreditPaise),
     version: safePaise(raw.version),
@@ -51,91 +44,97 @@ export function calculateWalletReservation({ wallet, minutes, ratePerMinutePaise
       !Number.isSafeInteger(rate) || rate < 0) {
     throw walletError('LIVE_PRICE_INVALID', 'Session duration or per-minute rate is invalid.', 400);
   }
-  const bonusMinutesReserved = Math.min(length, safeMinutes(wallet?.bonusMinutesBalance));
-  const cashMinutesRequired = length - bonusMinutesReserved;
-  const reservedAmountPaise = cashMinutesRequired * rate;
-  if (!Number.isSafeInteger(reservedAmountPaise) || reservedAmountPaise < 0) {
-    throw walletError('LIVE_PRICE_INVALID', 'Session reserve is outside the supported range.');
-  }
+  const grossRequiredPaise = length * rate;
+  const availableBonusCredit = safePaise(wallet?.bonusCreditBalancePaise);
+  const reservedBonusCreditPaise = Math.min(grossRequiredPaise, availableBonusCredit);
+  const reservedAmountPaise = grossRequiredPaise - reservedBonusCreditPaise;
   const available = safePaise(wallet?.availableBalancePaise);
-  if (available < reservedAmountPaise) {
+  if (!Number.isSafeInteger(grossRequiredPaise) || available < reservedAmountPaise) {
     throw walletError('WALLET_INSUFFICIENT_BALANCE', 'Insufficient Wallet balance for the selected duration.', 409, {
       availableBalancePaise: available,
-      requiredBalancePaise: reservedAmountPaise,
-      shortfallPaise: reservedAmountPaise - available
+      requiredBalancePaise: Number.isSafeInteger(reservedAmountPaise) ? reservedAmountPaise : 0,
+      shortfallPaise: Number.isSafeInteger(reservedAmountPaise) ? Math.max(0, reservedAmountPaise - available) : 0
     });
+  }
+  const reserved = safePaise(wallet?.reservedBalancePaise);
+  const reservedBonus = safePaise(wallet?.reservedBonusCreditPaise);
+  if (!Number.isSafeInteger(reserved + reservedAmountPaise) ||
+      !Number.isSafeInteger(reservedBonus + reservedBonusCreditPaise) ||
+      reserved + reservedAmountPaise > MAX_WALLET_PAISE ||
+      reservedBonus + reservedBonusCreditPaise > MAX_WALLET_PAISE) {
+    throw walletError('WALLET_BALANCE_OVERFLOW', 'Wallet reserve exceeds the supported balance range.');
   }
   return Object.freeze({
     minutes: length,
     ratePerMinutePaise: rate,
-    cashMinutesRequired,
-    bonusMinutesReserved,
+    grossRequiredPaise,
     reservedAmountPaise,
+    reservedBonusCreditPaise,
     availableBalanceAfterPaise: available - reservedAmountPaise,
-    reservedBalanceAfterPaise: safePaise(wallet?.reservedBalancePaise) + reservedAmountPaise,
-    bonusMinutesBalanceAfter: safeMinutes(wallet?.bonusMinutesBalance) - bonusMinutesReserved,
-    reservedBonusMinutesAfter: safeMinutes(wallet?.reservedBonusMinutes) + bonusMinutesReserved
+    reservedBalanceAfterPaise: reserved + reservedAmountPaise,
+    bonusCreditBalanceAfterPaise: availableBonusCredit - reservedBonusCreditPaise,
+    reservedBonusCreditAfterPaise: reservedBonus + reservedBonusCreditPaise
   });
 }
 
-export function walletReservationSettlementKeys({ sessionId, reservedAmountPaise, reservedBonusMinutes, chargedAmountPaise, freeMinutesUsed } = {}) {
+export function walletReservationSettlementKeys({
+  sessionId, reservedAmountPaise, reservedBonusCreditPaise,
+  chargedAmountPaise, bonusCreditUsedPaise
+} = {}) {
   const id = String(sessionId || '').trim();
   const reservedCash = Number(reservedAmountPaise);
-  const reservedBonus = Number(reservedBonusMinutes);
+  const reservedCredit = Number(reservedBonusCreditPaise);
   const charge = Number(chargedAmountPaise);
-  const usedBonus = Number(freeMinutesUsed);
-  if (!id || ![reservedCash, reservedBonus, charge, usedBonus].every(Number.isSafeInteger) ||
-      reservedCash < 0 || reservedBonus < 0 || charge < 0 || charge > reservedCash ||
-      usedBonus < 0 || usedBonus > reservedBonus) {
+  const usedCredit = Number(bonusCreditUsedPaise);
+  if (!id || ![reservedCash, reservedCredit, charge, usedCredit].every(Number.isSafeInteger) ||
+      reservedCash < 0 || reservedCredit < 0 || charge < 0 || charge > reservedCash ||
+      usedCredit < 0 || usedCredit > reservedCredit) {
     throw walletError('LIVE_BILLING_CALCULATION_FAILED', 'Wallet settlement values are invalid.');
   }
   const keys = [];
   if (charge > 0) keys.push({ type: 'live_session_usage', idempotencyKey: 'live-session-usage:' + id });
-  if (usedBonus > 0) keys.push({ type: 'live_session_bonus_minutes', idempotencyKey: 'live-session-bonus-used:' + id });
-  if (reservedBonus - usedBonus > 0) keys.push({ type: 'live_session_bonus_minutes_release', idempotencyKey: 'live-session-bonus-release:' + id });
+  if (usedCredit > 0) keys.push({ type: 'live_session_bonus_credit_used', idempotencyKey: 'live-session-bonus-credit-used:' + id });
+  if (reservedCredit - usedCredit > 0) keys.push({ type: 'live_session_bonus_credit_release', idempotencyKey: 'live-session-bonus-credit-release:' + id });
   if (reservedCash - charge > 0) keys.push({ type: 'live_session_unused_release', idempotencyKey: 'live-session-release:' + id });
   return keys;
 }
 
 export function calculateWalletReservationSettlement({
-  wallet,
-  reservedAmountPaise,
-  reservedBonusMinutes,
-  chargedAmountPaise,
-  freeMinutesUsed
+  wallet, reservedAmountPaise, reservedBonusCreditPaise,
+  chargedAmountPaise, bonusCreditUsedPaise
 } = {}) {
   const reservedCash = Number(reservedAmountPaise);
-  const reservedBonus = Number(reservedBonusMinutes);
+  const reservedCredit = Number(reservedBonusCreditPaise);
   const charge = Number(chargedAmountPaise);
-  const usedBonus = Number(freeMinutesUsed);
+  const usedCredit = Number(bonusCreditUsedPaise);
   walletReservationSettlementKeys({
     sessionId: 'validation-only', reservedAmountPaise: reservedCash,
-    reservedBonusMinutes: reservedBonus, chargedAmountPaise: charge, freeMinutesUsed: usedBonus
+    reservedBonusCreditPaise: reservedCredit, chargedAmountPaise: charge,
+    bonusCreditUsedPaise: usedCredit
   });
   const currentReserved = safePaise(wallet?.reservedBalancePaise);
-  const currentReservedBonus = safeMinutes(wallet?.reservedBonusMinutes);
-  if (currentReserved < reservedCash || currentReservedBonus < reservedBonus) {
-    throw walletError('LIVE_WALLET_RESERVE_MISMATCH', 'Wallet cash or promotional reserve does not reconcile with this Live Session.');
+  const currentReservedCredit = safePaise(wallet?.reservedBonusCreditPaise);
+  if (currentReserved < reservedCash || currentReservedCredit < reservedCredit) {
+    throw walletError('LIVE_WALLET_RESERVE_MISMATCH', 'Wallet cash or Bonus Credit reserve does not reconcile.');
   }
   const releasedCashPaise = reservedCash - charge;
-  const releasedBonusMinutes = reservedBonus - usedBonus;
+  const releasedBonusCreditPaise = reservedCredit - usedCredit;
   const next = {
     availableBalancePaise: safePaise(wallet?.availableBalancePaise) + releasedCashPaise,
     reservedBalancePaise: currentReserved - reservedCash,
-    bonusMinutesBalance: safeMinutes(wallet?.bonusMinutesBalance) + releasedBonusMinutes,
-    reservedBonusMinutes: currentReservedBonus - reservedBonus
+    bonusCreditBalancePaise: safePaise(wallet?.bonusCreditBalancePaise) + releasedBonusCreditPaise,
+    reservedBonusCreditPaise: currentReservedCredit - reservedCredit
   };
   for (const value of Object.values(next)) {
-    if (!Number.isSafeInteger(value) || value < 0 ||
-        value > (value === next.bonusMinutesBalance || value === next.reservedBonusMinutes ? MAX_BONUS_MINUTES : MAX_WALLET_PAISE)) {
+    if (!Number.isSafeInteger(value) || value < 0 || value > MAX_WALLET_PAISE) {
       throw walletError('WALLET_BALANCE_OVERFLOW', 'Wallet settlement exceeds the supported balance range.');
     }
   }
   return Object.freeze({
     chargedAmountPaise: charge,
     releasedAmountPaise: releasedCashPaise,
-    freeMinutesUsed: usedBonus,
-    bonusMinutesReleased: releasedBonusMinutes,
+    bonusCreditUsedPaise: usedCredit,
+    bonusCreditReleasedPaise: releasedBonusCreditPaise,
     ...next
   });
 }
