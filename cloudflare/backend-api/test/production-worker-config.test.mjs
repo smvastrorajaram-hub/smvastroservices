@@ -29,7 +29,7 @@ test('Production Worker uses the exact requested Worker name, D1 ID, Firebase Pr
 test('Admin Promotional Fund cleanup is a targeted, manual D1 operation that cannot apply unrelated migrations', () => {
   const workflow = fs.readFileSync(path.join(root, '..', '..', '.github', 'workflows', 'cloudflare-remove-admin-promotional-fund.yml'), 'utf8');
   const sql = fs.readFileSync(path.join(root, 'manual-migrations', 'remove_admin_promotional_fund.sql'), 'utf8');
-  assert.match(workflow, /^on:\\n  workflow_dispatch:/m);
+  assert.match(workflow, /^on:\n  workflow_dispatch:/m);
   assert.ok(workflow.includes("inputs.confirm_database_name == 'smvastro-wallet-production'"));
   assert.ok(workflow.includes('CLOUDFLARE_D1_API_TOKEN'));
   assert.ok(workflow.includes('d1 execute smvastro-wallet-production --remote --yes'));
