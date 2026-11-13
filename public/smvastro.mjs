@@ -1594,6 +1594,22 @@ window.__smvRefreshDashboard=()=>{
 };
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)smvLiveQueue?.resume();});
 document.addEventListener('focusout',()=>setTimeout(()=>smvLiveQueue?.resume(),0));
+let smvAndroidResumeHandledAt=0;
+window.__smvAndroidAppResumed=()=>{
+ const role=String(window.__smvCurrentRole||dashboardReadyRole||'').toLowerCase();
+ if(!currentUser||!['customer','astrologer'].includes(role)||smvInternalView!=='dashboard'||document.hidden)return;
+ const now=Date.now();
+ if(now-smvAndroidResumeHandledAt<5000)return;
+ smvAndroidResumeHandledAt=now;
+ smvDashboardDirty=true;
+ dashboardReadyAt=0;
+ // Reconnect both dashboard invalidations and Live-session events after Android suspends WebView networking.
+ smvStopLive();
+ smvLiveStopEventStream();
+ smvStartLive(role);
+ smvLiveStartEventStream();
+ void loadDashboard(role,true,true).then(()=>smvLivePollSessions()).catch(error=>console.warn('Dashboard reconciliation after Android resume deferred:',error?.message||error));
+};
 window.addEventListener('smv:logged-out',()=>{smvStopLive();dashboardReadyUid=null;dashboardReadyRole=null;dashboardReadyAt=0;smvProfiles.clear();});
 function smvCustomerPrivateChatCardHtml(){
  return '<section class="card" id="smvCustomerPrivateChatCard" style="margin-top:16px" aria-labelledby="smvCustomerPrivateChatTitle">'+
@@ -2237,6 +2253,10 @@ async function loadDashboard(expectedRole=null,force=false,background=false){
      void smvLoadCustomerWallet({force:true});
    }
    show('dashboard');
+   const cachedRole=String(dashboardReadyRole||requestedRole||window.__smvCurrentRole||'').toLowerCase();
+   if(['customer','astrologer'].includes(cachedRole)&&!$('smvLiveDashboardCard')){
+     smvLiveBindDashboard(cachedRole);
+   }
    touchSession();
    armIdleTimer();
    return;
