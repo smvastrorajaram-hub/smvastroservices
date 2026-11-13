@@ -72,7 +72,7 @@ jobs:
         run: |
           set -euo pipefail
           result="$(npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "SELECT 'ADMIN_PROMOTIONAL_FUND_REMOVED' AS audit_status WHERE NOT EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name IN ('smv_domain_promotional_fund','smv_domain_promotional_fund_ledger')) AND NOT EXISTS (SELECT 1 FROM sqlite_master WHERE type='trigger' AND name IN ('smv_domain_promotional_fund_ledger_validate','smv_domain_promotional_fund_ledger_apply'))")"
-          printf '%s\\n' "$result"
+          printf '%s\n' "$result"
           printf '%s' "$result" | grep -q 'ADMIN_PROMOTIONAL_FUND_REMOVED' || { echo 'Admin Promotional Fund D1 objects still exist.'; exit 1; }
 
       - name: Count Production Wallet and Live domain rows only (no record values)
