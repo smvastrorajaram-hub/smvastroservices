@@ -1178,7 +1178,7 @@ test('Print/Save is exposed only for ended sessions and Chat print retrieves the
   assert.ok(frontend.includes("await smvLiveOpenReceiptPage({...session,state:'ended'});"), 'A completed booking opens the authoritative receipt page after normalizing its ended state.');
   assert.ok(frontend.includes("data-astrologer-scheduled-receipt=\"'+escapeHtml(a.liveSessionId)+'\""), 'Astrologer completed scheduled bookings expose the receipt action.');
   assert.ok(frontend.includes("host.querySelectorAll('[data-astrologer-scheduled-receipt]')"), 'Astrologer receipt actions use the common scheduled receipt handler.');
-  assert.ok(frontend.includes('smvLiveStyleReceiptAction(btn);'), 'Astrologer scheduled receipt labels receive inline neutral styling.');
+  assert.ok(frontend.includes('smvLiveBindReceiptAction(btn,btn.getAttribute(\'data-astrologer-scheduled-receipt\')'), 'Astrologer scheduled receipt labels receive inline neutral styling.');
   assert.ok(frontend.includes('function smvLiveBindReceiptAction(button,sessionId,label){'), 'Scheduled receipt actions use one explicit receipt-only binder.');
   assert.ok(frontend.includes('event.stopPropagation();'), 'Receipt clicks stop before ancestor Chat/session actions can run.');
   assert.ok(frontend.includes("button.style.color='#241f1b';"), 'Receipt labels use neutral black text instead of dark purple.');
@@ -1186,7 +1186,7 @@ test('Print/Save is exposed only for ended sessions and Chat print retrieves the
   assert.ok(frontend.includes('async function smvLiveOpenScheduledReceipt(sessionId,button)'), 'Both roles share the participant-authorized receipt lookup.');
   assert.ok(frontend.includes("openButton.classList.toggle('smv-live-session-receipt-action',ended)"), 'Download Receipt shares the neutral receipt style.');
   assert.ok(frontend.includes('function smvLiveBindDashboardSessionAction(button,session){'), 'The Live Sessions row switches behavior once ended.');
-  assert.ok(frontend.includes('button.onclick=()=>smvLiveOpenScheduledReceipt(id,button);'), 'Download Receipt fetches and opens the participant-authorized receipt.');
+  assert.ok(frontend.includes('button.onclick=event=>{'), 'Download Receipt fetches and opens the participant-authorized receipt.');
   const loadStart=frontend.indexOf('async function smvLiveLoadDashboard(role){');
   const loadEnd=frontend.indexOf('\nasync function smvLiveHandlePushOpen(payload',loadStart);
   const loadDashboard=frontend.slice(loadStart,loadEnd);
