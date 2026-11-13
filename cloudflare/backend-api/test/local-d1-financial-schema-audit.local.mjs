@@ -38,7 +38,7 @@ async function openFullyMigratedLocalD1() {
       db.close();
     } catch { try { db?.close(); } catch {} }
   }
-  throw new Error('No fully migrated ephemeral Wrangler D1 (0002–0015) was found. Apply migrations with --local only; this audit never opens a remote database.');
+  throw new Error('No fully migrated ephemeral Wrangler D1 (0002–0014) was found. Apply migrations with --local only; this audit never opens a remote database.');
 }
 
 const TABLES = [
