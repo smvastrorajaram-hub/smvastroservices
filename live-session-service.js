@@ -1382,52 +1382,71 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
   }
 
   async function releaseBookingReserveInTransaction(tx, id, booking, status, extra = {}) {
-  const patch = { status, updatedAt: nowTimestamp(), ...extra };
-  if (String(booking.walletReservationState || '') === 'reserved') {
-    const uid = String(booking.customerUid || '').trim();
-    if (!uid) throw httpError(409, 'This booking has no Wallet owner for its reservation.', 'LIVE_BOOKING_WALLET_RESERVE_MISMATCH');
-    const wRef = walletRef(uid);
-    const wSnap = await tx.get(wRef);
-    if (!wSnap.exists) throw httpError(409, 'Wallet reserve for this booking is missing. The booking was not silently cancelled.', 'LIVE_BOOKING_WALLET_RESERVE_MISMATCH');
-    const wallet = wSnap.data() || {};
-    const released = calculateBookingReserveRelease({
-      availableBalancePaise: wallet.availableBalancePaise,
-      reservedBalancePaise: wallet.reservedBalancePaise,
-      bonusMinutesBalance: wallet.bonusMinutesBalance,
-      reservedBonusMinutes: wallet.reservedBonusMinutes,
-      releaseAmountPaise: booking.reservedAmountPaise,
-      releaseBonusMinutes: booking.reservedBonusMinutes
-    });
-    if (!released) throw httpError(409, 'Wallet cash or promotional reserve for this booking does not reconcile. No cancellation or refund was silently recorded.', 'LIVE_BOOKING_WALLET_RESERVE_MISMATCH');
-    tx.set(wRef, {
-      availableBalancePaise: released.availableBalancePaise,
-      reservedBalancePaise: released.reservedBalancePaise,
-      bonusMinutesBalance: released.bonusMinutesBalance,
-      reservedBonusMinutes: released.reservedBonusMinutes,
-      version: safePaise(wallet.version) + 1, updatedAt: nowTimestamp()
-    }, { merge: true });
-    const ledgerRef = db.collection(LEDGER).doc(walletLedgerDocId('live_booking_unused_release', id));
-    tx.create(ledgerRef, {
-      ownerUid: uid, ownerRole: 'customer', currency: 'INR',
-      type: 'live_booking_unused_release', direction: 'credit',
-      amountPaise: released.releasedAmountPaise,
-      balanceAfterPaise: released.availableBalancePaise,
-      reservedBalanceAfterPaise: released.reservedBalancePaise,
-      bonusMinutes: released.releasedBonusMinutes,
-      bonusMinutesBalanceAfter: released.bonusMinutesBalance,
-      reservedBonusMinutesAfter: released.reservedBonusMinutes,
-      idempotencyKey: 'live-booking-release:' + id, referenceType: 'live_booking', referenceId: id,
-      note: 'Unused Wallet and promotional-minute reserve released for ' + String(booking.mode || 'Live') + ' booking',
-      status: 'posted', createdAt: nowTimestamp()
-    });
-    patch.walletReservationState = 'released';
-    patch.releasedAmountPaise = released.releasedAmountPaise;
-    patch.bonusMinutesReleased = released.releasedBonusMinutes;
-    patch.bonusMinutesBalanceAfter = released.bonusMinutesBalance;
+    const patch = { status, updatedAt: nowTimestamp(), ...extra };
+    if (String(booking.walletReservationState || '') === 'reserved') {
+      const uid = String(booking.customerUid || '').trim();
+      if (!uid) throw httpError(409, 'This booking has no Wallet owner for its reservation.', 'LIVE_BOOKING_WALLET_RESERVE_MISMATCH');
+      const wRef = walletRef(uid);
+      const wSnap = await tx.get(wRef);
+      if (!wSnap.exists) throw httpError(409, 'Wallet reserve for this booking is missing. The booking was not silently cancelled.', 'LIVE_BOOKING_WALLET_RESERVE_MISMATCH');
+      const wallet = wSnap.data() || {};
+      const released = calculateBookingReserveRelease({
+        availableBalancePaise: wallet.availableBalancePaise,
+        reservedBalancePaise: wallet.reservedBalancePaise,
+        bonusCreditBalancePaise: wallet.bonusCreditBalancePaise,
+        reservedBonusCreditPaise: wallet.reservedBonusCreditPaise,
+        releaseAmountPaise: booking.reservedAmountPaise,
+        releaseBonusCreditPaise: booking.reservedBonusCreditPaise
+      });
+      if (!released) throw httpError(409, 'Wallet cash or Bonus Credit reserve for this booking does not reconcile. No cancellation or refund was silently recorded.', 'LIVE_BOOKING_WALLET_RESERVE_MISMATCH');
+      tx.set(wRef, {
+        availableBalancePaise: released.availableBalancePaise,
+        reservedBalancePaise: released.reservedBalancePaise,
+        bonusCreditBalancePaise: released.bonusCreditBalancePaise,
+        reservedBonusCreditPaise: released.reservedBonusCreditPaise,
+        version: safePaise(wallet.version) + 1, updatedAt: nowTimestamp()
+      }, { merge: true });
+      if (released.releasedAmountPaise > 0) {
+        const ledgerRef = db.collection(LEDGER).doc(walletLedgerDocId('live_booking_unused_release', id));
+        tx.create(ledgerRef, {
+          ownerUid: uid, ownerRole: 'customer', currency: 'INR',
+          type: 'live_booking_unused_release', direction: 'credit',
+          amountPaise: released.releasedAmountPaise,
+          availableDeltaPaise: released.releasedAmountPaise,
+          reservedDeltaPaise: -released.releasedAmountPaise,
+          balanceAfterPaise: released.availableBalancePaise,
+          reservedBalanceAfterPaise: released.reservedBalancePaise,
+          idempotencyKey: 'live-booking-release:' + id, referenceType: 'live_booking', referenceId: id,
+          note: 'Unused Wallet cash reserve released for Live ' + String(booking.mode || 'booking'),
+          status: 'posted', createdAt: nowTimestamp()
+        });
+      }
+      if (released.releasedBonusCreditPaise > 0) {
+        const creditLedgerRef = db.collection(LEDGER).doc(walletLedgerDocId('live_booking_bonus_credit_release', id));
+        tx.create(creditLedgerRef, {
+          ownerUid: uid, ownerRole: 'customer', currency: 'INR',
+          type: 'live_booking_bonus_credit_release', direction: 'credit',
+          amountPaise: released.releasedBonusCreditPaise,
+          bonusCreditDeltaPaise: released.releasedBonusCreditPaise,
+          reservedBonusCreditDeltaPaise: -released.releasedBonusCreditPaise,
+          balanceAfterPaise: released.availableBalancePaise,
+          reservedBalanceAfterPaise: released.reservedBalancePaise,
+          bonusCreditBalanceAfterPaise: released.bonusCreditBalancePaise,
+          reservedBonusCreditBalanceAfterPaise: released.reservedBonusCreditPaise,
+          idempotencyKey: 'live-booking-bonus-credit-release:' + id,
+          referenceType: 'live_booking', referenceId: id,
+          note: 'Unused Bonus Credit released for Live ' + String(booking.mode || 'booking'),
+          status: 'posted', createdAt: nowTimestamp()
+        });
+      }
+      patch.walletReservationState = 'released';
+      patch.releasedAmountPaise = released.releasedAmountPaise;
+      patch.bonusCreditReleasedPaise = released.releasedBonusCreditPaise;
+      patch.bonusCreditBalanceAfterPaise = released.bonusCreditBalancePaise;
+    }
+    tx.set(bookingRef(id), patch, { merge: true });
+    return { ...booking, ...patch };
   }
-  tx.set(bookingRef(id), patch, { merge: true });
-  return { ...booking, ...patch };
-}
 
 async function rejectOrCancel(sessionId, user, reason) {
     const snap = await sessionRef(sessionId).get();
