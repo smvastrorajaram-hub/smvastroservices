@@ -1167,6 +1167,8 @@ test('Print/Save is exposed only for ended sessions and Chat print retrieves the
   assert.ok(frontend.includes("typeof b.viewLiveReceiptPdf===&quot;function&quot;"), 'Live Receipt must use a dedicated Android bridge, not the Horoscope viewPdf method.');
   assert.ok(frontend.includes("data-customer-scheduled-receipt=\"'+escapeHtml(a.liveSessionId)+'\""), 'Completed scheduled bookings have a distinct receipt action.');
   assert.ok(frontend.includes("renderApi('/live/sessions/'+encodeURIComponent(id),{method:'GET',timeoutMs:12000})"), 'The receipt action fetches the exact session record rather than reopening the live panel.');
+  assert.ok(frontend.includes('View Session Receipt</button>'), 'Completed scheduled bookings use the requested title-case receipt label.');
+  assert.ok(frontend.includes('smv-plain-text-action smv-live-session-receipt-action'), 'View Session Receipt is plain text without a button-box class.');
   assert.ok(frontend.includes('await smvLiveOpenReceiptPage(session);'), 'A completed booking opens the authoritative receipt page directly.');
   assert.ok(frontend.includes("function smvLiveQueueEndedReceipt(session)"));
   assert.ok(frontend.includes("if(s.state!=='ended')throw new Error('The Bill is available after the Live Session ends.');"));
@@ -1269,9 +1271,9 @@ test('Live Session End and Cancel are distinct from closing the session window',
   assert.ok(frontend.includes('if(closedDot)closedDot.hidden=!windowClosed;'), 'The original red closed-session indicator remains visible for ended sessions');
   assert.ok(frontend.includes("return 'LIVE SESSION · '+clock+' remaining'"), 'A dismissed but active Call/Chat continues to show its server-based remaining time');
   assert.ok(frontend.includes("['preparing','active'].includes(String(row.state||''))"), 'The dashboard timer refreshes both horoscope preparation and active session time');
-  assert.ok(frontend.includes("openButton.style.color=ended?'#000':'#00e676'"), 'Open Session is green and Download Receipt is bold black');
-  assert.ok(frontend.includes("openButton.style.webkitTextFillColor=ended?'#000':'#00e676'"), 'Android WebView text fill follows the live-session state');
-  assert.ok(frontend.includes("openButton.style.fontWeight='900'"), 'The receipt remains bold black through the shared Customer/Astrologer renderer');
+  assert.ok(frontend.includes("openButton.style.color=actionColor"), 'Open Session and Download Receipt use role/state-specific text colours');
+  assert.ok(frontend.includes("openButton.style.webkitTextFillColor=actionColor"), 'Android WebView text fill follows the role/state-specific colour');
+  assert.ok(frontend.includes("openButton.style.fontWeight='900'"), 'The receipt action remains bold through the shared Customer/Astrologer renderer');
   assert.ok(frontend.includes("openButton.style.background='transparent'"), 'Closed receipt action has no button box');
   assert.ok(frontend.includes("openButton.style.textDecoration='none'"), 'Closed receipt action has no underline');
   const dashboardCss = read('public/dashboard-typography.css');
