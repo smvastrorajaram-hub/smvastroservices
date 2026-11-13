@@ -1,0 +1,73 @@
+name: Remove Admin Promotional Fund from Production D1
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_database_name:
+        description: 'Type smvastro-wallet-production to remove only the obsolete Admin Promotional Fund tables and triggers.'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-remove-admin-promotional-fund
+  cancel-in-progress: false
+
+jobs:
+  remove-admin-promotional-fund:
+    if: ${{ inputs.confirm_database_name == 'smvastro-wallet-production' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_D1_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Checkout reviewed cleanup SQL
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify dedicated Production D1 API token
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Missing CLOUDFLARE_D1_API_TOKEN in the GitHub production environment.'; exit 1; }
+
+      - name: Resolve Cloudflare account from the exact Production D1 ID
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+            account_id="$(node .github/scripts/resolve-cloudflare-account-from-production-d1.mjs)"
+            test -n "$account_id" || { echo 'Unable to resolve Cloudflare account for Production D1.'; exit 1; }
+            echo "CLOUDFLARE_ACCOUNT_ID=$account_id" >> "$GITHUB_ENV"
+          fi
+
+      - name: Install Wrangler
+        run: npm install --prefix cloudflare/backend-api --no-package-lock --ignore-scripts --no-audit --no-fund
+
+      - name: Show only the targeted Admin Promotional Fund objects before removal
+        working-directory: cloudflare/backend-api
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "SELECT name, type FROM sqlite_master WHERE name IN ('smv_domain_promotional_fund','smv_domain_promotional_fund_ledger','smv_domain_promotional_fund_ledger_validate','smv_domain_promotional_fund_ledger_apply') ORDER BY type, name;"
+
+      - name: Remove only Admin Promotional Fund tables and triggers
+        working-directory: cloudflare/backend-api
+        run: npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --yes --config wrangler.production.jsonc --file manual-migrations/remove_admin_promotional_fund.sql
+
+      - name: Verify targeted Fund objects are absent
+        working-directory: cloudflare/backend-api
+        shell: bash
+        run: |
+          set -euo pipefail
+          result="$(npx --yes wrangler@4.156.0 d1 execute smvastro-wallet-production --remote --config wrangler.production.jsonc --json --command "SELECT 'ADMIN_PROMOTIONAL_FUND_REMOVED' AS audit_status WHERE NOT EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name IN ('smv_domain_promotional_fund','smv_domain_promotional_fund_ledger')) AND NOT EXISTS (SELECT 1 FROM sqlite_master WHERE type='trigger' AND name IN ('smv_domain_promotional_fund_ledger_validate','smv_domain_promotional_fund_ledger_apply'))")"
+          printf '%s\\n' "$result"
+          printf '%s' "$result" | grep -q 'ADMIN_PROMOTIONAL_FUND_REMOVED' || { echo 'Admin Promotional Fund D1 objects still exist.'; exit 1; }
+          echo 'PASS: only the obsolete Admin Promotional Fund D1 objects were removed.'
