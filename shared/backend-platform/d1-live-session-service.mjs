@@ -1160,6 +1160,9 @@ function sessionView(session) {
     startedAt:iso(d.startedAtMs),endedAt:iso(d.endedAtMs),
     actualChargePaise:safePaise(d.actualChargePaise),
     billableMinutes:safePaise(d.billableMinutes),
+    reservedBonusCreditPaise:safePaise(d.reservedBonusCreditPaise),
+    bonusCreditUsedPaise:safePaise(d.bonusCreditUsedPaise),
+    bonusCreditReleasedPaise:safePaise(d.bonusCreditReleasedPaise),
     releasedAmountPaise:safePaise(d.releasedAmountPaise),
     endReason:String(d.endReason||''),
     customerReady:d.customerReady===true,astrologerReady:d.astrologerReady===true
