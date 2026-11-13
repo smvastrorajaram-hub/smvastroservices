@@ -186,8 +186,8 @@ async function main() {
     compareQuery('walletTransactions', sourceDb.collection('smv_wallet_transactions'), targetDb.collection('smv_wallet_transactions'), report),
     compareQuery('walletRecharges', sourceDb.collection('smv_wallet_recharges'), targetDb.collection('smv_wallet_recharges'), report),
     compareQuery('walletRechargeOffers',
-      sourceDb.collection('smv_offers').where('offerType', '==', 'wallet_recharge_bonus_minutes'),
-      targetDb.collection('smv_offers').where('offerType', '==', 'wallet_recharge_bonus_minutes'), report),
+      sourceDb.collection('smv_offers').where('offerType', '==', 'wallet_recharge_bonus_credit'),
+      targetDb.collection('smv_offers').where('offerType', '==', 'wallet_recharge_bonus_credit'), report),
     compareQuery('walletOfferAudit',
       sourceDb.collection('smv_offer_audit').where('service', '==', 'wallet_recharge'),
       targetDb.collection('smv_offer_audit').where('service', '==', 'wallet_recharge'), report),
@@ -218,8 +218,8 @@ async function main() {
   const participantIds = new Set();
   for (const [uid, wallet] of wallets) {
     if (wallet.ownerUid) participantIds.add(String(wallet.ownerUid));
-    if (Number(wallet.reservedBalancePaise || 0) !== 0 || Number(wallet.reservedBonusMinutes || 0) !== 0) {
-      report.blockers.push('Wallet ' + uid + ' still has reserved balance/minutes; reconcile its active reservation before cutover.');
+    if (Number(wallet.reservedBalancePaise || 0) !== 0 || Number(wallet.reservedBonusCreditPaise || 0) !== 0) {
+      report.blockers.push('Wallet ' + uid + ' still has reserved Cash/Bonus Credit; reconcile its active reservation before cutover.');
     }
   }
   const ledgerByOwner = new Map();
@@ -236,8 +236,8 @@ async function main() {
   const balanceFields = [
     { wallet: 'availableBalancePaise', ledger: 'balanceAfterPaise' },
     { wallet: 'reservedBalancePaise', ledger: 'reservedBalanceAfterPaise' },
-    { wallet: 'bonusMinutesBalance', ledger: 'bonusMinutesBalanceAfter' },
-    { wallet: 'reservedBonusMinutes', ledger: 'reservedBonusMinutesAfter' }
+    { wallet: 'bonusCreditBalancePaise', ledger: 'bonusCreditBalanceAfterPaise' },
+    { wallet: 'reservedBonusCreditPaise', ledger: 'reservedBonusCreditBalanceAfterPaise' }
   ];
   for (const [uid, wallet] of wallets) {
     const entries = ledgerByOwner.get(String(uid)) || [];

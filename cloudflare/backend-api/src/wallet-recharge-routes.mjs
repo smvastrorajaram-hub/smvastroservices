@@ -28,7 +28,7 @@ function safePaymentView(payment) {
 
 /**
  * Customer Wallet recharge routes. Razorpay requests are made only through the
- * injected REST adapter; Wallet credits/bonus minutes are committed by one D1
+ * injected REST adapter; Wallet cash and Bonus Credit are committed by one D1
  * batch whose ledger triggers update balances atomically.
  */
 export function registerWalletRechargeRoutes({
@@ -183,10 +183,9 @@ export function registerWalletRechargeRoutes({
           amount: paiseToRupees(recharge.amountPaise),
           availableBalancePaise: Number(wallet?.availableBalancePaise || 0),
           availableBalance: paiseToRupees(wallet?.availableBalancePaise || 0),
-          bonusCreditCreditedPaise: recharge.bonusCreditPaiseCredited,
+          bonusCreditCreditedPaise: recharge.bonusCreditCreditedPaise,
           bonusCreditSkippedReason: recharge.bonusCreditSkippedReason,
           bonusCreditBalancePaise: wallet?.bonusCreditBalancePaise || 0,
-          bonusMinutesBalance: wallet?.bonusMinutesBalance || 0
         });
       }
       const signatureValid = await razorpay.verifyPaymentSignature({ orderId, paymentId, signature });

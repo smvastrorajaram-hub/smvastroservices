@@ -1,11 +1,11 @@
-import { WALLET_OFFER_THEMES } from './wallet-recharge-domain.mjs';
+import { WALLET_OFFER_THEMES, WALLET_RECHARGE_OFFER_TYPE } from './wallet-recharge-domain.mjs';
 import { encryptPayoutSnapshot } from './payout-encryption.mjs';
 
 export const WALLET_DOMAIN_BACKFILL_COLLECTIONS = Object.freeze({
   wallets: Object.freeze({ path: 'smv_wallets' }),
   walletTransactions: Object.freeze({ path: 'smv_wallet_transactions' }),
   walletRecharges: Object.freeze({ path: 'smv_wallet_recharges' }),
-  walletRechargeOffers: Object.freeze({ path: 'smv_offers', filter: data => data.offerType === 'wallet_recharge_bonus_minutes' }),
+  walletRechargeOffers: Object.freeze({ path: 'smv_offers', filter: data => data.offerType === WALLET_RECHARGE_OFFER_TYPE }),
   walletOfferAudit: Object.freeze({ path: 'smv_offer_audit', filter: data => data.service === 'wallet_recharge' }),
   walletOfferUsageCounters: Object.freeze({ path: 'smv_offer_usage_counters' }),
   liveSessions: Object.freeze({ path: 'smv_live_sessions' }),
@@ -113,12 +113,13 @@ function insertLegacyWallet(data, id) {
   const ownerRole = string(data.ownerRole).toLowerCase();
   const cash = nonNegativeInteger(data.availableBalancePaise);
   const reserved = nonNegativeInteger(data.reservedBalancePaise);
-  const bonus = nonNegativeInteger(data.bonusMinutesBalance);
-  const reservedBonus = nonNegativeInteger(data.reservedBonusMinutes);
+  const bonusCredit = nonNegativeInteger(data.bonusCreditBalancePaise) ?? 0;
+  const reservedBonusCredit = nonNegativeInteger(data.reservedBonusCreditPaise) ?? 0;
   const version = nonNegativeInteger(data.version, 1);
   if (!ownerUid || !['customer', 'astrologer', 'admin'].includes(ownerRole) ||
-      cash === null || reserved === null || bonus === null || reservedBonus === null ||
-      version === null || bonus > 1_000_000 || reservedBonus > 1_000_000) {
+      cash === null || reserved === null || version === null ||
+      !Number.isSafeInteger(bonusCredit) || !Number.isSafeInteger(reservedBonusCredit) ||
+      bonusCredit > Number.MAX_SAFE_INTEGER || reservedBonusCredit > Number.MAX_SAFE_INTEGER) {
     return result([], 'WALLET_SNAPSHOT_INVALID');
   }
   const created = dateField(data, 'createdAt') ?? 0;
@@ -127,17 +128,19 @@ function insertLegacyWallet(data, id) {
     kind: 'wallet_snapshot',
     sql: `INSERT INTO smv_domain_wallets
       (owner_uid,owner_role,currency,available_balance_paise,reserved_balance_paise,
-       bonus_minutes_balance,reserved_bonus_minutes,version,created_at_ms,updated_at_ms)
-      VALUES (?,?, 'INR', ?,?,?,?,?,?,?)
+       bonus_minutes_balance,reserved_bonus_minutes,bonus_credit_balance_paise,reserved_bonus_credit_paise,
+       version,created_at_ms,updated_at_ms)
+      VALUES (?,?, 'INR', ?,?,0,0,?,?,?, ?,?)
       ON CONFLICT(owner_uid) DO UPDATE SET
         owner_role=excluded.owner_role,currency=excluded.currency,
         available_balance_paise=excluded.available_balance_paise,
         reserved_balance_paise=excluded.reserved_balance_paise,
-        bonus_minutes_balance=excluded.bonus_minutes_balance,
-        reserved_bonus_minutes=excluded.reserved_bonus_minutes,
+        bonus_minutes_balance=0,reserved_bonus_minutes=0,
+        bonus_credit_balance_paise=excluded.bonus_credit_balance_paise,
+        reserved_bonus_credit_paise=excluded.reserved_bonus_credit_paise,
         version=excluded.version,created_at_ms=excluded.created_at_ms,updated_at_ms=excluded.updated_at_ms
       WHERE NOT EXISTS (SELECT 1 FROM smv_domain_wallet_ledger l WHERE l.owner_uid=excluded.owner_uid)`,
-    values: [ownerUid, ownerRole, cash, reserved, bonus, reservedBonus, Math.max(1, version), created, updated]
+    values: [ownerUid,ownerRole,cash,reserved,bonusCredit,reservedBonusCredit,Math.max(1,version),created,updated]
   }], '');
 }
 
@@ -149,17 +152,14 @@ function insertLegacyWalletTransaction(data, id) {
   const amount = nonNegativeInteger(data.amountPaise);
   const balance = nonNegativeInteger(data.balanceAfterPaise);
   const reserved = nonNegativeInteger(data.reservedBalanceAfterPaise);
-  const bonus = nonNegativeInteger(data.bonusMinutes);
-  const bonusCredited = nonNegativeInteger(data.bonusMinutesCredited);
-  const bonusAfter = nonNegativeInteger(data.bonusMinutesBalanceAfter);
-  const reservedBonusAfter = nonNegativeInteger(data.reservedBonusMinutesAfter);
   if (!ownerUid || !['customer','astrologer','admin'].includes(ownerRole) ||
       !['credit','debit','reserve','release'].includes(direction) ||
-      amount === null || balance === null || reserved === null ||
-      bonus === null || bonusCredited === null || bonusAfter === null || reservedBonusAfter === null) {
+      amount === null || balance === null || reserved === null) {
     return result([], 'WALLET_TRANSACTION_INVALID');
   }
   const created = dateField(data, 'createdAt', 'updatedAt') ?? 0;
+  const archivedData = { ...data };
+  for (const key of ['bonusMinutes','bonusMinutesCredited','bonusMinutesUsed','bonusMinutesBalanceAfter','reservedBonusMinutesAfter']) delete archivedData[key];
   return result([{
     kind: 'legacy_wallet_transaction',
     sql: `INSERT OR IGNORE INTO smv_domain_legacy_wallet_transactions
@@ -167,14 +167,11 @@ function insertLegacyWalletTransaction(data, id) {
        reserved_balance_after_paise,bonus_minutes,bonus_minutes_credited,bonus_minutes_balance_after,
        reserved_bonus_minutes_after,idempotency_key,reference_type,reference_id,note,metadata_json,
        status,created_at_ms,payload_json)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-`,
-    values: [id,ownerUid,ownerRole,type,direction,amount,balance,reserved,bonus,bonusCredited,
-      bonusAfter,reservedBonusAfter,string(data.idempotencyKey),
-      data.referenceType == null ? null : string(data.referenceType),
-      data.referenceId == null ? null : string(data.referenceId),
-      string(data.note).slice(0,240),json(data.metadata),string(data.status || 'posted'),
-      created,json(data)]
+      VALUES (?,?,?,?,?,?,?,?,0,0,0,0,?,?,?,?,?,?,?,?)`,
+    values: [id,ownerUid,ownerRole,type,direction,amount,balance,reserved,
+      string(data.idempotencyKey),data.referenceType == null ? null : string(data.referenceType),
+      data.referenceId == null ? null : string(data.referenceId),string(data.note).slice(0,240),
+      json(data.metadata),string(data.status || 'posted'),created,json(archivedData)]
   }]);
 }
 
@@ -214,7 +211,7 @@ function insertLegacyRecharge(data, id) {
          razorpay_payment_id,paid_at_ms,payload_json,created_at_ms,updated_at_ms)
         VALUES (?,?,?,'INR','paid',?,?,?,?,?,?)`,
       values: [id,customerUid,amount,orderId,paymentId,paidAt,json({
-        bonusMinutesCredited: nonNegativeInteger(data.bonusMinutesCredited) ?? 0,
+        bonusCreditCreditedPaise: nonNegativeInteger(data.bonusCreditCreditedPaise) ?? 0,
         offerId: data.offerId || null, offerName: data.offerName || null,
         paymentSource: 'legacy_firestore_backfill'
       }),created,updated]
@@ -224,9 +221,9 @@ function insertLegacyRecharge(data, id) {
 }
 
 function insertLegacyOffer(data, id) {
-  if (data.offerType !== 'wallet_recharge_bonus_minutes') return result([], 'NOT_WALLET_RECHARGE_OFFER');
+  if (data.offerType !== WALLET_RECHARGE_OFFER_TYPE) return result([], 'NOT_BONUS_CREDIT_WALLET_OFFER');
   const name = string(data.name);
-  const bonus = nonNegativeInteger(data.bonusMinutes);
+  const bonusCredit = nonNegativeInteger(data.bonusCreditPaise);
   const minimum = nonNegativeInteger(data.minimumRechargeAmountPaise);
   const perCustomer = nonNegativeInteger(data.perCustomerLimit ?? 1);
   const totalLimit = nonNegativeInteger(data.totalUsageLimit);
@@ -235,7 +232,7 @@ function insertLegacyOffer(data, id) {
   const start = legacyTimestampMilliseconds(data.startAt);
   const end = legacyTimestampMilliseconds(data.endAt);
   const theme = THEMES.has(string(data.bannerTheme)) ? string(data.bannerTheme) : 'auto';
-  if (!name || bonus === null || bonus < 1 || bonus > 1440 || minimum === null ||
+  if (!name || bonusCredit === null || bonusCredit < 1 || minimum === null ||
       perCustomer === null || totalLimit === null || used === null ||
       !Number.isSafeInteger(priority) || priority < -1000 || priority > 1000 ||
       (start !== null && end !== null && start >= end)) {
@@ -244,25 +241,27 @@ function insertLegacyOffer(data, id) {
   const created = dateField(data, 'createdAt') ?? 0;
   const updated = dateField(data, 'updatedAt') ?? created;
   const successful = nonNegativeInteger(data.successfulRedemptions ?? used) ?? used;
-  const totalBonus = nonNegativeInteger(data.totalBonusMinutesAwarded) ?? 0;
+  const payload = { ...data, offerType: WALLET_RECHARGE_OFFER_TYPE, bonusCreditPaise: bonusCredit };
+  for (const key of ['bonusMinutes','bonusMinutesCredited','bonusMinutesUsed','bonusMinutesAwarded',
+    'totalBonusMinutesAwarded','legacyTotalBonusMinutes','legacy_total_bonus_minutes']) delete payload[key];
   return result([{
     kind: 'wallet_offer',
     sql: `INSERT INTO smv_domain_wallet_offers
       (offer_id,enabled,minimum_recharge_paise,bonus_minutes,per_customer_limit,total_usage_limit,
        used_count,priority,start_at_ms,end_at_ms,payload_json,created_at_ms,updated_at_ms,
-       legacy_successful_redemptions,legacy_total_bonus_minutes)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+       legacy_successful_redemptions,legacy_total_bonus_minutes,bonus_credit_paise)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?)
       ON CONFLICT(offer_id) DO UPDATE SET
        enabled=excluded.enabled,minimum_recharge_paise=excluded.minimum_recharge_paise,
-       bonus_minutes=excluded.bonus_minutes,per_customer_limit=excluded.per_customer_limit,
+       bonus_minutes=1,per_customer_limit=excluded.per_customer_limit,
        total_usage_limit=excluded.total_usage_limit,used_count=MAX(smv_domain_wallet_offers.used_count,excluded.used_count),
        priority=excluded.priority,start_at_ms=excluded.start_at_ms,end_at_ms=excluded.end_at_ms,
        payload_json=excluded.payload_json,updated_at_ms=excluded.updated_at_ms,
        legacy_successful_redemptions=MAX(smv_domain_wallet_offers.legacy_successful_redemptions,excluded.legacy_successful_redemptions),
-       legacy_total_bonus_minutes=MAX(smv_domain_wallet_offers.legacy_total_bonus_minutes,excluded.legacy_total_bonus_minutes)
+       legacy_total_bonus_minutes=0,bonus_credit_paise=excluded.bonus_credit_paise
       WHERE NOT EXISTS (SELECT 1 FROM smv_domain_offer_redemptions r WHERE r.offer_id=excluded.offer_id)`,
-    values: [id,data.enabled === true ? 1 : 0,minimum,bonus,Math.max(0,perCustomer),totalLimit,
-      used,priority,start,end,json({ ...data, name, bannerTheme: theme }),created,updated,successful,totalBonus]
+    values: [id,data.enabled === true ? 1 : 0,minimum,1,Math.max(0,perCustomer),totalLimit,
+      used,priority,start,end,json({ ...payload,name,bannerTheme:theme }),created,updated,successful,bonusCredit]
   }]);
 }
 
@@ -294,16 +293,19 @@ function insertLiveSession(data, id) {
   const updated = dateField(data, 'updatedAt') ?? created;
   const started = dateField(data, 'startedAt');
   const ended = dateField(data, 'endedAt');
+  const reservedCredit = nonNegativeInteger(data.reservedBonusCreditPaise) ?? 0;
   return result([{
     kind: 'live_session',
     sql: `INSERT OR IGNORE INTO smv_domain_live_sessions
       (session_id,customer_uid,astrologer_uid,mode,state,appointment_id,reserved_amount_paise,
-       reserved_bonus_minutes,actual_charge_paise,started_at_ms,ended_at_ms,payload_json,created_at_ms,updated_at_ms)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       reserved_bonus_minutes,actual_charge_paise,started_at_ms,ended_at_ms,payload_json,created_at_ms,updated_at_ms,
+       reserved_bonus_credit_paise)
+      VALUES (?,?,?,?,?,?,?,0,?,?,?,?,?,?,?)`,
     values: [id,customerUid,astrologerUid,mode,string(data.state || data.status || 'unknown'),
       string(data.appointmentId) || null,nonNegativeInteger(data.reservedAmountPaise) ?? 0,
-      nonNegativeInteger(data.reservedBonusMinutes) ?? 0,nonNegativeInteger(data.actualChargePaise) ?? 0,
-      started,ended,json({...data,origin:'legacy_import',migrationSource:'legacy_import',legacyOrigin:string(data.origin)||null}),created,updated]
+      nonNegativeInteger(data.actualChargePaise) ?? 0,started,ended,
+      json({...data,origin:'legacy_import',billingModel:'bonus_credit_v1',reservedBonusCreditPaise:reservedCredit,
+        migrationSource:'legacy_import',legacyOrigin:string(data.origin)||null}),created,updated,reservedCredit]
   }]);
 }
 
@@ -314,16 +316,17 @@ function insertLiveBooking(data, id) {
   if (!customerUid || !astrologerUid || !['call','chat'].includes(mode)) return result([], 'LIVE_BOOKING_IDENTITY_INVALID');
   const created = dateField(data, 'createdAt') ?? 0;
   const updated = dateField(data, 'updatedAt') ?? created;
+  const reservedCredit = nonNegativeInteger(data.reservedBonusCreditPaise) ?? 0;
   return result([{
     kind: 'live_booking',
     sql: `INSERT OR IGNORE INTO smv_domain_live_bookings
       (booking_id,customer_uid,astrologer_uid,mode,status,wallet_reservation_state,reserved_amount_paise,
-       reserved_bonus_minutes,expires_at_ms,payload_json,created_at_ms,updated_at_ms)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+       reserved_bonus_minutes,expires_at_ms,payload_json,created_at_ms,updated_at_ms,reserved_bonus_credit_paise)
+      VALUES (?,?,?,?,?,?,?,0,?,?,?,?,?)`,
     values: [id,customerUid,astrologerUid,mode,string(data.status || 'unknown'),
-      string(data.walletReservationState || 'none'),
-      nonNegativeInteger(data.reservedAmountPaise) ?? 0,nonNegativeInteger(data.reservedBonusMinutes) ?? 0,
-      dateField(data,'expiresAt'),json({...data,origin:'legacy_import',migrationSource:'legacy_import',legacyOrigin:string(data.origin)||null}),created,updated]
+      string(data.walletReservationState || 'none'),nonNegativeInteger(data.reservedAmountPaise) ?? 0,
+      dateField(data,'expiresAt'),json({...data,origin:'legacy_import',reservedBonusCreditPaise:reservedCredit,
+        migrationSource:'legacy_import',legacyOrigin:string(data.origin)||null}),created,updated,reservedCredit]
   }]);
 }
 

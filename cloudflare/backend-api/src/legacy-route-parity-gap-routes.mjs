@@ -538,7 +538,7 @@ export function registerLegacyRouteParityGapRoutes({
               tx.create('smv_wallets/' + uid, {
                 ownerUid: uid, ownerRole: 'customer', currency: 'INR',
                 availableBalancePaise: 0, reservedBalancePaise: 0,
-                bonusMinutesBalance: 0, reservedBonusMinutes: 0, version: 1,
+                bonusCreditBalancePaise: 0, reservedBonusCreditPaise: 0, version: 1,
                 createdAt: FirestoreFieldValue.serverTimestamp(), updatedAt: FirestoreFieldValue.serverTimestamp()
               });
             }

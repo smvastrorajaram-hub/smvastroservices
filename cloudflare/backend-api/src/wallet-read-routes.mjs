@@ -1,4 +1,4 @@
-import { safePaise, safeMinutes, walletError } from '../../../shared/backend-platform/wallet-domain.mjs';
+import { safePaise, walletError } from '../../../shared/backend-platform/wallet-domain.mjs';
 
 export function isWalletReadRouteGateOpen(env = {}) {
   const environment = String(env.SMV_ENVIRONMENT || '').trim().toLowerCase();
@@ -37,7 +37,6 @@ function transactionView(row = {}) {
   const amountPaise = safePaise(row.amountPaise);
   const balanceAfterPaise = safePaise(row.balanceAfterPaise);
   const reservedBalanceAfterPaise = safePaise(row.reservedBalanceAfterPaise);
-  const bonusMinutes = safeMinutes(row.bonusMinutes ?? row.bonusMinutesCredited);
   return {
     id: String(row.id || ''),
     type: String(row.type || ''),
@@ -48,9 +47,6 @@ function transactionView(row = {}) {
     balanceAfterPaise,
     balanceAfter: rupees(balanceAfterPaise),
     reservedBalanceAfterPaise,
-    bonusMinutes,
-    bonusMinutesCredited: safeMinutes(row.bonusMinutesCredited ?? bonusMinutes),
-    bonusMinutesBalanceAfter: safeMinutes(row.bonusMinutesBalanceAfter),
     bonusCreditDeltaPaise: safePaise(row.bonusCreditDeltaPaise),
     reservedBonusCreditDeltaPaise: safePaise(row.reservedBonusCreditDeltaPaise),
     bonusCreditBalanceAfterPaise: safePaise(row.bonusCreditBalanceAfterPaise),
@@ -104,8 +100,6 @@ export function registerWalletReadRoutes({ app, identityService, walletAdapter, 
           availableBalance: rupees(wallet.availableBalancePaise),
           reservedBalancePaise: wallet.reservedBalancePaise,
           reservedBalance: rupees(wallet.reservedBalancePaise),
-          bonusMinutesBalance: wallet.bonusMinutesBalance,
-          reservedBonusMinutes: wallet.reservedBonusMinutes,
           bonusCreditBalancePaise: safePaise(wallet.bonusCreditBalancePaise),
           bonusCreditBalance: rupees(wallet.bonusCreditBalancePaise),
           reservedBonusCreditPaise: safePaise(wallet.reservedBonusCreditPaise),
@@ -138,8 +132,6 @@ export function registerWalletReadRoutes({ app, identityService, walletAdapter, 
           availableBalance: rupees(wallet.availableBalancePaise),
           reservedBalancePaise: wallet.reservedBalancePaise,
           reservedBalance: rupees(wallet.reservedBalancePaise),
-          bonusMinutesBalance: wallet.bonusMinutesBalance,
-          reservedBonusMinutes: wallet.reservedBonusMinutes,
           bonusCreditBalancePaise: safePaise(wallet.bonusCreditBalancePaise),
           bonusCreditBalance: rupees(wallet.bonusCreditBalancePaise),
           reservedBonusCreditPaise: safePaise(wallet.reservedBonusCreditPaise),

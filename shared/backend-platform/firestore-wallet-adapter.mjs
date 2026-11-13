@@ -28,12 +28,12 @@ function ledgerData(row, timestamp) {
     type: row.type, direction: row.direction, amountPaise: row.amountPaise,
     availableDeltaPaise: row.availableDeltaPaise || 0,
     reservedDeltaPaise: row.reservedDeltaPaise || 0,
-    bonusMinutesDelta: row.bonusMinutesDelta || 0,
-    reservedBonusMinutesDelta: row.reservedBonusMinutesDelta || 0,
+    bonusCreditDeltaPaise: row.bonusCreditDeltaPaise || 0,
+    reservedBonusCreditDeltaPaise: row.reservedBonusCreditDeltaPaise || 0,
     balanceAfterPaise: row.balanceAfterPaise ?? null,
     reservedBalanceAfterPaise: row.reservedBalanceAfterPaise ?? null,
-    bonusMinutesBalanceAfter: row.bonusMinutesBalanceAfter ?? null,
-    reservedBonusMinutesAfter: row.reservedBonusMinutesAfter ?? null,
+    bonusCreditBalanceAfterPaise: row.bonusCreditBalanceAfterPaise ?? null,
+    reservedBonusCreditBalanceAfterPaise: row.reservedBonusCreditBalanceAfterPaise ?? null,
     idempotencyKey: row.idempotencyKey,
     referenceType: row.referenceType || null, referenceId: row.referenceId || null,
     note: String(row.note || '').slice(0, 240),
@@ -46,14 +46,13 @@ function makeWalletPatch(wallet, deltas, owner, timestamp) {
   const next = {
     availableBalancePaise: wallet.availableBalancePaise + Number(deltas.availableDeltaPaise || 0),
     reservedBalancePaise: wallet.reservedBalancePaise + Number(deltas.reservedDeltaPaise || 0),
-    bonusMinutesBalance: wallet.bonusMinutesBalance + Number(deltas.bonusMinutesDelta || 0),
-    reservedBonusMinutes: wallet.reservedBonusMinutes + Number(deltas.reservedBonusMinutesDelta || 0)
+    bonusCreditBalancePaise: wallet.bonusCreditBalancePaise + Number(deltas.bonusCreditDeltaPaise || 0),
+    reservedBonusCreditPaise: wallet.reservedBonusCreditPaise + Number(deltas.reservedBonusCreditDeltaPaise || 0)
   };
-  for (const value of [next.availableBalancePaise, next.reservedBalancePaise]) {
-    if (!Number.isSafeInteger(value) || value < 0) throw walletError('WALLET_INSUFFICIENT_BALANCE', 'Wallet reserve or available balance does not reconcile.');
-  }
-  for (const value of [next.bonusMinutesBalance, next.reservedBonusMinutes]) {
-    if (!Number.isSafeInteger(value) || value < 0 || value > 1_000_000) throw walletError('LIVE_WALLET_RESERVE_MISMATCH', 'Wallet promotional minute reserve does not reconcile.');
+  for (const value of Object.values(next)) {
+    if (!Number.isSafeInteger(value) || value < 0 || value > Number.MAX_SAFE_INTEGER) {
+      throw walletError('WALLET_INSUFFICIENT_BALANCE', 'Wallet cash or Bonus Credit balance does not reconcile.');
+    }
   }
   return {
     ownerUid: owner.ownerUid, ownerRole: owner.ownerRole, currency: WALLET_CURRENCY,
@@ -62,7 +61,7 @@ function makeWalletPatch(wallet, deltas, owner, timestamp) {
   };
 }
 
-/** Firestore Admin SDK adapter. The same Wallet operations and pure rules are used by D1. */
+/** Firestore Admin SDK adapter. The same Bonus Credit-only rules are used by D1. */
 export function createFirestoreWalletAdapter({ db, FieldValue, cryptoImpl = globalThis.crypto } = {}) {
   if (!db || typeof db.runTransaction !== 'function' || !FieldValue?.serverTimestamp) {
     throw new TypeError('Firestore db and FieldValue.serverTimestamp are required.');
@@ -100,7 +99,7 @@ export function createFirestoreWalletAdapter({ db, FieldValue, cryptoImpl = glob
       tx.create(ref, {
         ownerUid: owner.ownerUid, ownerRole: owner.ownerRole, currency: WALLET_CURRENCY,
         availableBalancePaise: 0, reservedBalancePaise: 0,
-        bonusMinutesBalance: 0, reservedBonusMinutes: 0,
+        bonusCreditBalancePaise: 0, reservedBonusCreditPaise: 0,
         version: 1, createdAt: timestamp, updatedAt: timestamp
       });
     });
@@ -117,13 +116,13 @@ export function createFirestoreWalletAdapter({ db, FieldValue, cryptoImpl = glob
       const wallet = walletView(walletSnap, owner);
       const timestamp = FieldValue.serverTimestamp();
       const patch = makeWalletPatch(wallet, row, owner, timestamp);
-      const nextLedger = {
-        ...ledgerData({ ...row, ownerUid: owner.ownerUid, ownerRole: owner.ownerRole,
-          balanceAfterPaise: patch.availableBalancePaise,
-          reservedBalanceAfterPaise: patch.reservedBalancePaise,
-          bonusMinutesBalanceAfter: patch.bonusMinutesBalance,
-          reservedBonusMinutesAfter: patch.reservedBonusMinutes }, timestamp)
-      };
+      const nextLedger = ledgerData({
+        ...row, ownerUid: owner.ownerUid, ownerRole: owner.ownerRole,
+        balanceAfterPaise: patch.availableBalancePaise,
+        reservedBalanceAfterPaise: patch.reservedBalancePaise,
+        bonusCreditBalanceAfterPaise: patch.bonusCreditBalancePaise,
+        reservedBonusCreditBalanceAfterPaise: patch.reservedBonusCreditPaise
+      }, timestamp);
       tx.set(wRef, patch, { merge: true });
       tx.create(lRef, nextLedger);
       return { alreadyProcessed: false, wallet: normalizeWallet(patch, owner.ownerUid, owner.ownerRole), transactionId: row.ledgerId };
@@ -140,7 +139,9 @@ export function createFirestoreWalletAdapter({ db, FieldValue, cryptoImpl = glob
     const ledgerIdValue = await ledgerId(entry.type, owner.ownerUid, entry.idempotencyKey);
     const row = {
       ...entry, ledgerId: ledgerIdValue,
-      availableDeltaPaise: entry.direction === 'credit' ? entry.amountPaise : -entry.amountPaise,
+      availableDeltaPaise: entry.bonusCreditDeltaPaise !== 0
+        ? 0
+        : (entry.direction === 'credit' ? entry.amountPaise : -entry.amountPaise),
       referenceType: input.referenceType, referenceId: input.referenceId,
       note: input.note, metadata: input.metadata, source: input.source
     };
@@ -166,21 +167,24 @@ export function createFirestoreWalletAdapter({ db, FieldValue, cryptoImpl = glob
       ledgerId: idValue, type, direction: 'reserve', amountPaise: reserve.reservedAmountPaise,
       idempotencyKey: key, availableDeltaPaise: -reserve.reservedAmountPaise,
       reservedDeltaPaise: reserve.reservedAmountPaise,
-      bonusMinutesDelta: -reserve.bonusMinutesReserved,
-      reservedBonusMinutesDelta: reserve.bonusMinutesReserved,
+      bonusCreditDeltaPaise: -reserve.reservedBonusCreditPaise,
+      reservedBonusCreditDeltaPaise: reserve.reservedBonusCreditPaise,
       referenceType: booking ? 'live_booking' : 'live_session', referenceId: id,
-      note: 'Wallet reserve for ' + (booking ? 'booked Live ' : 'Live ') + String(mode || 'chat')
+      note: 'Wallet reserve for ' + (booking ? 'booked Live ' : 'Live ') + String(mode || 'chat') +
+        (reserve.reservedBonusCreditPaise ? '; Bonus Credit ₹' + (reserve.reservedBonusCreditPaise / 100).toFixed(2) : '')
     }});
     return { success: true, ...result, reserve };
   }
 
-    async function settleReservation({ ownerUid, ownerRole, sessionId, reservedAmountPaise, reservedBonusMinutes,
-    chargedAmountPaise, freeMinutesUsed = 0 } = {}) {
+  async function settleReservation({
+    ownerUid, ownerRole, sessionId, reservedAmountPaise, reservedBonusCreditPaise,
+    chargedAmountPaise, bonusCreditUsedPaise = 0
+  } = {}) {
     const owner = validateWalletOwner(ownerUid, ownerRole);
     const id = String(sessionId || '').trim();
     if (!id) throw walletError('LIVE_SESSION_ID_REQUIRED', 'Live Session ID is required.', 400);
     const expectedKeys = walletReservationSettlementKeys({
-      sessionId: id, reservedAmountPaise, reservedBonusMinutes, chargedAmountPaise, freeMinutesUsed
+      sessionId: id, reservedAmountPaise, reservedBonusCreditPaise, chargedAmountPaise, bonusCreditUsedPaise
     });
     const expectedRefs = await Promise.all(expectedKeys.map(async item =>
       ledgerRef(await ledgerId(item.type, owner.ownerUid, item.idempotencyKey, id))
@@ -194,30 +198,32 @@ export function createFirestoreWalletAdapter({ db, FieldValue, cryptoImpl = glob
     }
     const wallet = await getWallet(owner.ownerUid);
     if (!wallet) throw walletError('WALLET_NOT_FOUND', 'Wallet not found.', 409);
-    const usage = calculateWalletReservationSettlement({
-      wallet, reservedAmountPaise, reservedBonusMinutes,
-      chargedAmountPaise, freeMinutesUsed
+    const settlement = calculateWalletReservationSettlement({
+      wallet, reservedAmountPaise, reservedBonusCreditPaise,
+      chargedAmountPaise, bonusCreditUsedPaise
     });
     const specs = [];
-    if (usage.chargedAmountPaise > 0) specs.push({
-      type: 'live_session_usage', direction: 'debit', amountPaise: usage.chargedAmountPaise,
-      idempotencyKey: 'live-session-usage:' + id, reservedDeltaPaise: -usage.chargedAmountPaise
+    if (settlement.chargedAmountPaise > 0) specs.push({
+      type: 'live_session_usage', direction: 'debit', amountPaise: settlement.chargedAmountPaise,
+      idempotencyKey: 'live-session-usage:' + id, reservedDeltaPaise: -settlement.chargedAmountPaise
     });
-    if (usage.freeMinutesUsed > 0) specs.push({
-      type: 'live_session_bonus_minutes', direction: 'debit', amountPaise: 0,
-      idempotencyKey: 'live-session-bonus-used:' + id, reservedBonusMinutesDelta: -usage.freeMinutesUsed
+    if (settlement.bonusCreditUsedPaise > 0) specs.push({
+      type: 'live_session_bonus_credit_used', direction: 'debit', amountPaise: settlement.bonusCreditUsedPaise,
+      idempotencyKey: 'live-session-bonus-credit-used:' + id,
+      reservedBonusCreditDeltaPaise: -settlement.bonusCreditUsedPaise
     });
-    if (usage.bonusMinutesReleased > 0) specs.push({
-      type: 'live_session_bonus_minutes_release', direction: 'credit', amountPaise: 0,
-      idempotencyKey: 'live-session-bonus-release:' + id,
-      bonusMinutesDelta: usage.bonusMinutesReleased, reservedBonusMinutesDelta: -usage.bonusMinutesReleased
+    if (settlement.bonusCreditReleasedPaise > 0) specs.push({
+      type: 'live_session_bonus_credit_release', direction: 'credit', amountPaise: settlement.bonusCreditReleasedPaise,
+      idempotencyKey: 'live-session-bonus-credit-release:' + id,
+      bonusCreditDeltaPaise: settlement.bonusCreditReleasedPaise,
+      reservedBonusCreditDeltaPaise: -settlement.bonusCreditReleasedPaise
     });
-    if (usage.releasedAmountPaise > 0) specs.push({
-      type: 'live_session_unused_release', direction: 'credit', amountPaise: usage.releasedAmountPaise,
+    if (settlement.releasedAmountPaise > 0) specs.push({
+      type: 'live_session_unused_release', direction: 'credit', amountPaise: settlement.releasedAmountPaise,
       idempotencyKey: 'live-session-release:' + id,
-      availableDeltaPaise: usage.releasedAmountPaise, reservedDeltaPaise: -usage.releasedAmountPaise
+      availableDeltaPaise: settlement.releasedAmountPaise, reservedDeltaPaise: -settlement.releasedAmountPaise
     });
-    if (!specs.length) return { success: true, alreadyProcessed: true, wallet, settlement: usage };
+    if (!specs.length) return { success: true, alreadyProcessed: true, wallet, settlement };
     const rows = [];
     for (const spec of specs) rows.push({
       ...spec, ownerUid: owner.ownerUid, ownerRole: owner.ownerRole,
@@ -235,11 +241,11 @@ export function createFirestoreWalletAdapter({ db, FieldValue, cryptoImpl = glob
       let next = current;
       for (const row of rows) {
         const patch = makeWalletPatch(next, row, owner, nowTimestamp);
-        const ledger = ledgerData({ ...row,
-          balanceAfterPaise: patch.availableBalancePaise,
+        const ledger = ledgerData({
+          ...row, balanceAfterPaise: patch.availableBalancePaise,
           reservedBalanceAfterPaise: patch.reservedBalancePaise,
-          bonusMinutesBalanceAfter: patch.bonusMinutesBalance,
-          reservedBonusMinutesAfter: patch.reservedBonusMinutes
+          bonusCreditBalanceAfterPaise: patch.bonusCreditBalancePaise,
+          reservedBonusCreditBalanceAfterPaise: patch.reservedBonusCreditPaise
         }, nowTimestamp);
         tx.create(ledgerRef(row.ledgerId), ledger);
         next = normalizeWallet(patch, owner.ownerUid, owner.ownerRole);
@@ -247,10 +253,10 @@ export function createFirestoreWalletAdapter({ db, FieldValue, cryptoImpl = glob
       tx.set(walletRef(owner.ownerUid), { ...next, updatedAt: nowTimestamp }, { merge: true });
       return { alreadyProcessed: false, wallet: next };
     });
-    return { success: true, ...result, settlement: usage };
+    return { success: true, ...result, settlement };
   }
 
-    async function listTransactions(ownerUid, limit = 30) {
+  async function listTransactions(ownerUid, limit = 30) {
     const uid = String(ownerUid || '').trim();
     if (!uid) throw walletError('WALLET_OWNER_INVALID', 'Wallet owner is required.', 400);
     const max = Math.max(1, Math.min(100, Math.floor(Number(limit) || 30)));

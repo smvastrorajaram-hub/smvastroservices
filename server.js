@@ -777,7 +777,7 @@ app.post("/register-customer-profile", async (req, res) => {
             tx.create(walletRef, {
               ownerUid: user.uid, ownerRole: "customer", currency: "INR",
               availableBalancePaise: 0, reservedBalancePaise: 0,
-              bonusMinutesBalance: 0, reservedBonusMinutes: 0, version: 1,
+              bonusCreditBalancePaise: 0, reservedBonusCreditPaise: 0, version: 1,
               createdAt: now, updatedAt: now
             });
           }
@@ -3005,9 +3005,7 @@ app.get("/admin/wallet/transactions", async (req,res)=>{
   }
 });
 
-// Admin-managed Wallet recharge bonus-minute Offers.
-// These records are isolated from any legacy cash-discount offers still in Firestore.
-// A bonus is selected and credited only inside the captured-recharge Wallet transaction.
+// Admin-managed Wallet recharge Bonus Credit Offers.
 function walletOfferText(value, maxLength = 120) {
   return String(value ?? '').trim().slice(0, maxLength);
 }
@@ -3022,6 +3020,7 @@ function walletOfferDate(value, fieldName) {
 }
 function walletOfferView(docSnap) {
   const offer = docSnap.data() || {};
+  const bonusCreditPaise = Number(offer.bonusCreditPaise ?? 0);
   return {
     id: docSnap.id,
     offerType: WALLET_RECHARGE_OFFER_TYPE,
@@ -3029,22 +3028,22 @@ function walletOfferView(docSnap) {
     bannerTheme: WALLET_OFFER_THEMES.includes(offer.bannerTheme) ? offer.bannerTheme : 'auto',
     enabled: offer.enabled === true,
     minimumRechargeAmountPaise: Number.isSafeInteger(Number(offer.minimumRechargeAmountPaise)) ? Number(offer.minimumRechargeAmountPaise) : 0,
-    bonusMinutes: walletOfferWholeNumber(offer.bonusMinutes, 0),
+    bonusCreditAmountPaise: Number.isSafeInteger(bonusCreditPaise) && bonusCreditPaise > 0 ? bonusCreditPaise : 0,
     perCustomerLimit: walletOfferWholeNumber(offer.perCustomerLimit, 1),
     totalUsageLimit: walletOfferWholeNumber(offer.totalUsageLimit, 0),
     priority: walletOfferWholeNumber(offer.priority, 0),
     usedCount: walletOfferWholeNumber(offer.usedCount, 0),
     successfulRedemptions: walletOfferWholeNumber(offer.successfulRedemptions, 0),
-    totalBonusMinutesAwarded: walletOfferWholeNumber(offer.totalBonusMinutesAwarded, 0),
+    totalBonusCreditPaiseAwarded: walletOfferWholeNumber(offer.totalBonusCreditPaiseAwarded, 0),
     startAt: offer.startAt || null,
     endAt: offer.endAt || null,
     createdAt: offer.createdAt || null,
     updatedAt: offer.updatedAt || null
   };
 }
-// Public, display-only list for the Home-page Wallet Offer banner.
-// Award eligibility is still checked again inside the captured-recharge transaction.
-app.get('/wallet/recharge-offers', async (req, res) => {
+// Public, display-only list for the Home-page Wallet Bonus Credit banner.
+// Only Bonus Credit-valued offers may be displayed or redeemed.
+app.get('/wallet/recharge-offers', async (_req, res) => {
   try {
     const snap = await walletDomainDb().collection('smv_offers')
       .where('offerType', '==', WALLET_RECHARGE_OFFER_TYPE).limit(100).get();
@@ -3052,13 +3051,13 @@ app.get('/wallet/recharge-offers', async (req, res) => {
     const offers = snap.docs.map(docSnap => {
       const offer = docSnap.data() || {};
       const minimum = Number(offer.minimumRechargeAmountPaise ?? 0);
-      const bonus = Number(offer.bonusMinutes);
+      const bonus = Number(offer.bonusCreditPaise);
       const used = Number(offer.usedCount ?? 0);
       const totalLimit = Number(offer.totalUsageLimit ?? 0);
       const perCustomerLimit = Number(offer.perCustomerLimit ?? 1);
       if (offer.enabled !== true ||
           !Number.isSafeInteger(minimum) || minimum < 0 ||
-          !Number.isSafeInteger(bonus) || bonus < 1 || bonus > 1440 ||
+          !Number.isSafeInteger(bonus) || bonus < 1 ||
           !Number.isSafeInteger(used) || used < 0 ||
           !Number.isSafeInteger(totalLimit) || totalLimit < 0 ||
           !Number.isSafeInteger(perCustomerLimit) || perCustomerLimit < 0 ||
@@ -3076,14 +3075,14 @@ app.get('/wallet/recharge-offers', async (req, res) => {
         name: walletOfferText(offer.name),
         bannerTheme: WALLET_OFFER_THEMES.includes(offer.bannerTheme) ? offer.bannerTheme : 'auto',
         minimumRechargeAmountPaise: minimum,
-        bonusMinutes: bonus,
+        bonusCreditAmountPaise: bonus,
         perCustomerLimit,
         startAt: offer.startAt || null,
         endAt: offer.endAt || null,
         priority: walletOfferWholeNumber(offer.priority, 0)
       };
     }).filter(Boolean).sort((a, b) =>
-      b.priority - a.priority || b.bonusMinutes - a.bonusMinutes || a.name.localeCompare(b.name)
+      b.priority - a.priority || b.bonusCreditAmountPaise - a.bonusCreditAmountPaise || a.name.localeCompare(b.name)
     );
     return res.set('Cache-Control', 'no-store').json({ success: true, offers });
   } catch (error) {
@@ -3099,7 +3098,9 @@ app.get('/admin/offers', async (req, res) => {
   try {
     const snap = await walletDomainDb().collection('smv_offers')
       .where('offerType', '==', WALLET_RECHARGE_OFFER_TYPE).limit(100).get();
-    const offers = snap.docs.map(walletOfferView).sort((a, b) => b.priority - a.priority || b.bonusMinutes - a.bonusMinutes || a.name.localeCompare(b.name));
+    const offers = snap.docs.map(walletOfferView).sort((a, b) =>
+      b.priority - a.priority || b.bonusCreditAmountPaise - a.bonusCreditAmountPaise || a.name.localeCompare(b.name)
+    );
     return res.set('Cache-Control', 'no-store').json({ success: true, offers });
   } catch (error) {
     console.error('Admin Wallet Offers read failed:', error?.stack || error);
@@ -3129,7 +3130,7 @@ app.post('/admin/offers/save', express.json({ limit: '20kb' }), async (req, res)
     const name = walletOfferText(body.name, 120);
     const theme = String(body.bannerTheme || 'auto');
     const minimumRechargeAmountPaise = parseRupeesToPaise(body.minimumRechargeAmount ?? '0', { allowZero: true });
-    const bonusMinutes = Number(body.bonusMinutes);
+    const bonusCreditPaise = parseRupeesToPaise(body.bonusCreditAmount);
     const perCustomerLimit = Number(body.perCustomerLimit ?? 1);
     const totalUsageLimit = Number(body.totalUsageLimit ?? 0);
     const priority = Number(body.priority ?? 0);
@@ -3140,8 +3141,8 @@ app.post('/admin/offers/save', express.json({ limit: '20kb' }), async (req, res)
     if (minimumRechargeAmountPaise === null || minimumRechargeAmountPaise < 0) {
       return res.status(400).json({ success: false, error: 'Minimum recharge must be ₹0 or a positive amount with up to two decimal places.' });
     }
-    if (!Number.isSafeInteger(bonusMinutes) || bonusMinutes < 1 || bonusMinutes > 1440) {
-      return res.status(400).json({ success: false, error: 'Free minutes must be a whole number from 1 to 1,440.' });
+    if (!Number.isSafeInteger(bonusCreditPaise) || bonusCreditPaise < 1) {
+      return res.status(400).json({ success: false, error: 'Bonus Credit must be a positive rupee amount with up to two decimal places.' });
     }
     if (!Number.isSafeInteger(perCustomerLimit) || perCustomerLimit < 0 || perCustomerLimit > 10000) {
       return res.status(400).json({ success: false, error: 'Per-customer limit must be 0 (unlimited) or a whole number up to 10,000.' });
@@ -3160,10 +3161,8 @@ app.post('/admin/offers/save', express.json({ limit: '20kb' }), async (req, res)
     const data = {
       offerType: WALLET_RECHARGE_OFFER_TYPE,
       name, bannerTheme: theme, enabled: body.enabled === true,
-      minimumRechargeAmountPaise, bonusMinutes, perCustomerLimit, totalUsageLimit, priority,
+      minimumRechargeAmountPaise, bonusCreditPaise, perCustomerLimit, totalUsageLimit, priority,
       startAt, endAt,
-      // Preserve redemption statistics already stored on the Offer. Do not copy stale
-      // counters from a non-transactional read while successful recharges update them.
       createdAt: existing.createdAt || now, updatedAt: now, updatedBy: user.uid
     };
     await offerRef.set(data, { merge: true });

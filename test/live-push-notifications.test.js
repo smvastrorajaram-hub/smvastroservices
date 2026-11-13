@@ -865,7 +865,7 @@ test('Project 3 WebRTC auxiliary data does not change FCM sender project 1', () 
 
 test('Wallet recharge offer endpoints use the selected Wallet financial domain', () => {
   const server = read('server.js');
-  const start = server.indexOf('// Admin-managed Wallet recharge bonus-minute Offers.');
+  const start = server.indexOf('// Admin-managed Wallet recharge Bonus Credit Offers.');
   const end = server.indexOf('// The Web Push VAPID public key', start);
   assert.ok(start >= 0 && end > start, 'Wallet offer routes are isolated in the expected section');
   const section = server.slice(start, end);
@@ -1122,8 +1122,13 @@ test('Session-ended event and end API never send Customer wallet balance to the 
   assert.ok(eventStart >= 0 && eventEnd > eventStart);
   const eventBlock = service.slice(eventStart, eventEnd);
   assert.ok(eventBlock.includes('sendTo(result.session.customerUid'));
-  assert.ok(eventBlock.includes('wallet: { availableBalancePaise: result.wallet.availableBalancePaise'));
+  assert.ok(eventBlock.includes('sendTo(result.session.customerUid, { ...endedEvent, wallet: result.wallet });'));
   assert.ok(eventBlock.includes('sendTo(result.session.astrologerUid, endedEvent)'));
+  const sharedEventStart = eventBlock.indexOf('const endedEvent = {');
+  const sharedEventEnd = eventBlock.indexOf('\n      };', sharedEventStart);
+  const sharedEvent = eventBlock.slice(sharedEventStart, sharedEventEnd);
+  assert.doesNotMatch(sharedEvent, /wallet\s*:/i,
+    'the shared event object sent to the Astrologer must not contain the Customer Wallet balance');
   assert.equal(eventBlock.includes('sendToParticipants(result.session'), false);
   const routeStart = service.indexOf("app.post('/live/sessions/:id/end'");
   const routeEnd = service.indexOf("app.post('/live/sessions/:id/ready'", routeStart);

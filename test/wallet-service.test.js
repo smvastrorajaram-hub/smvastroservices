@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parseRupeesToPaise, paiseToRupees, calculateStartedMinuteCharge, walletLedgerDocId, createWalletService, selectRechargeBonusOffer, rechargeOfferMatches, offerUsageCounterId, classifyRechargeIntent } = require('../wallet-service');
+const { parseRupeesToPaise, paiseToRupees, walletLedgerDocId, createWalletService, selectRechargeBonusOffer, rechargeOfferMatches, offerUsageCounterId, classifyRechargeIntent } = require('../wallet-service');
 
 test('failed Wallet recharge order can be retried with the same idempotency key without weakening amount checks', () => {
   assert.equal(classifyRechargeIntent({ status: 'failed', storedAmountPaise: 10000, requestedAmountPaise: 10000 }), 'retry_failed');
@@ -27,16 +27,6 @@ test('rupee input rejects values that could be ambiguous or unsafe', () => {
   assert.equal(parseRupeesToPaise('0'), null);
   assert.equal(parseRupeesToPaise('0', { allowZero: true }), 0);
   assert.equal(parseRupeesToPaise('9007199254740992'), null);
-});
-
-test('started-minute billing subtracts promotional time before rounding', () => {
-  assert.deepEqual(calculateStartedMinuteCharge({ connectedSeconds: 300, freeSeconds: 300, ratePerMinutePaise: 1000 }), {
-    connectedSeconds: 300, freeSeconds: 300, billableSeconds: 0, billableMinutes: 0, amountPaise: 0
-  });
-  assert.equal(calculateStartedMinuteCharge({ connectedSeconds: 301, freeSeconds: 300, ratePerMinutePaise: 1000 }).amountPaise, 1000);
-  assert.equal(calculateStartedMinuteCharge({ connectedSeconds: 360, freeSeconds: 300, ratePerMinutePaise: 1200 }).amountPaise, 1200);
-  assert.equal(calculateStartedMinuteCharge({ connectedSeconds: 420, freeSeconds: 300, ratePerMinutePaise: 1200 }).amountPaise, 2400);
-  assert.equal(calculateStartedMinuteCharge({ connectedSeconds: -1, freeSeconds: 0, ratePerMinutePaise: 1000 }), null);
 });
 
 test('wallet ledger ids are deterministic and stable', () => {
@@ -91,11 +81,11 @@ test('wallet transaction history falls back when the owner/date composite index 
 test('Wallet recharge offers select one active matching festival rule without stacking', () => {
   const nowMs = Date.parse('2026-10-26T06:00:00.000Z');
   const offers = [
-    { id: 'low-priority', offerType: 'wallet_recharge_bonus_minutes', enabled: true, name: 'Pongal', bonusMinutes: 8, minimumRechargeAmountPaise: 10000, usedCount: 0, totalUsageLimit: 0, perCustomerLimit: 1, priority: 1 },
-    { id: 'high-priority', offerType: 'wallet_recharge_bonus_minutes', enabled: true, name: 'Diwali', bonusMinutes: 5, minimumRechargeAmountPaise: 5000, usedCount: 0, totalUsageLimit: 20, perCustomerLimit: 1, priority: 2 },
-    { id: 'disabled', offerType: 'wallet_recharge_bonus_minutes', enabled: false, name: 'Disabled', bonusMinutes: 99, minimumRechargeAmountPaise: 100, usedCount: 0, totalUsageLimit: 0, perCustomerLimit: 0, priority: 99 },
-    { id: 'legacy-discount', offerType: 'percentage_discount', enabled: true, name: 'Legacy', bonusMinutes: 100, minimumRechargeAmountPaise: 100, usedCount: 0, totalUsageLimit: 0, perCustomerLimit: 0, priority: 100 },
-    { id: 'not-started', offerType: 'wallet_recharge_bonus_minutes', enabled: true, name: 'Future', bonusMinutes: 100, minimumRechargeAmountPaise: 100, usedCount: 0, totalUsageLimit: 0, perCustomerLimit: 0, priority: 100, startAt: '2026-10-27T12:00' }
+    { id: 'low-priority', offerType: 'wallet_recharge_bonus_credit', enabled: true, name: 'Pongal', bonusCreditPaise: 8000, minimumRechargeAmountPaise: 10000, usedCount: 0, totalUsageLimit: 0, perCustomerLimit: 1, priority: 1 },
+    { id: 'high-priority', offerType: 'wallet_recharge_bonus_credit', enabled: true, name: 'Diwali', bonusCreditPaise: 5000, minimumRechargeAmountPaise: 5000, usedCount: 0, totalUsageLimit: 20, perCustomerLimit: 1, priority: 2 },
+    { id: 'disabled', offerType: 'wallet_recharge_bonus_credit', enabled: false, name: 'Disabled', bonusCreditPaise: 9900, minimumRechargeAmountPaise: 100, usedCount: 0, totalUsageLimit: 0, perCustomerLimit: 0, priority: 99 },
+    { id: 'legacy-discount', offerType: 'percentage_discount', enabled: true, name: 'Legacy', bonusCreditPaise: 1000000, minimumRechargeAmountPaise: 100, usedCount: 0, totalUsageLimit: 0, perCustomerLimit: 0, priority: 100 },
+    { id: 'not-started', offerType: 'wallet_recharge_bonus_credit', enabled: true, name: 'Future', bonusCreditPaise: 1000000, minimumRechargeAmountPaise: 100, usedCount: 0, totalUsageLimit: 0, perCustomerLimit: 0, priority: 100, startAt: '2026-10-27T12:00' }
   ];
   const selected = selectRechargeBonusOffer({ offers, amountPaise: 15000, nowMs, usageCounts: {} });
   assert.equal(selected.id, 'high-priority');
@@ -160,29 +150,29 @@ function createWalletFirestoreMock(seed = {}) {
   return db;
 }
 
-test('captured Wallet recharge awards one matching free-minute offer only once and respects customer limit', async () => {
+test('captured Wallet recharge awards one matching Bonus Credit offer only once and respects customer limit', async () => {
   const db = createWalletFirestoreMock({
-    'smv_wallets/customer-1': { ownerUid: 'customer-1', ownerRole: 'customer', availableBalancePaise: 500, reservedBalancePaise: 0, bonusMinutesBalance: 0, reservedBonusMinutes: 0, version: 1 },
+    'smv_wallets/customer-1': { ownerUid: 'customer-1', ownerRole: 'customer', availableBalancePaise: 500, reservedBalancePaise: 0, bonusCreditBalancePaise: 0, reservedBonusCreditPaise: 0, version: 1 },
     'smv_wallet_recharges/recharge-1': { customerUid: 'customer-1', amountPaise: 10000, razorpayOrderId: 'order-1', status: 'order_created' },
     'razorpay_orders/order-1': { status: 'created' },
-    'smv_offers/diwali-5': { id: 'diwali-5', offerType: 'wallet_recharge_bonus_minutes', name: 'Diwali', enabled: true, bonusMinutes: 5, minimumRechargeAmountPaise: 5000, startAt: null, endAt: null, perCustomerLimit: 1, totalUsageLimit: 10, usedCount: 0, successfulRedemptions: 0, totalBonusMinutesAwarded: 0, priority: 5 }
+    'smv_offers/diwali-5': { id: 'diwali-5', offerType: 'wallet_recharge_bonus_credit', name: 'Diwali', enabled: true, bonusCreditPaise: 5000, minimumRechargeAmountPaise: 5000, startAt: null, endAt: null, perCustomerLimit: 1, totalUsageLimit: 10, usedCount: 0, successfulRedemptions: 0, totalBonusCreditPaiseAwarded: 0, priority: 5 }
   });
   const service = createWalletService({ db, FieldValue: { serverTimestamp: () => new Date('2026-10-26T06:00:00.000Z') } });
 
   const first = await service.finalizeRecharge({ rechargeId: 'recharge-1', orderId: 'order-1', paymentId: 'pay-1', amountPaise: 10000, currency: 'INR' });
   assert.equal(first.alreadyProcessed, false);
   assert.equal(first.availableBalancePaise, 10500);
-  assert.equal(first.bonusMinutesCredited, 5);
-  assert.equal(first.bonusMinutesBalance, 5);
+  assert.equal(first.bonusCreditCreditedPaise, 5000);
+  assert.equal(first.bonusCreditBalancePaise, 5000);
   assert.equal(first.offerId, 'diwali-5');
   assert.equal(db.inspect('smv_offers/diwali-5').usedCount, 1);
-  assert.equal(db.inspect('smv_wallet_transactions/' + walletLedgerDocId('recharge', 'customer-1:pay-1')).bonusMinutesCredited, 5);
+  assert.equal(db.inspect('smv_wallet_transactions/' + walletLedgerDocId('recharge', 'customer-1:pay-1')).bonusCreditDeltaPaise, 5000);
 
   const replay = await service.finalizeRecharge({ rechargeId: 'recharge-1', orderId: 'order-1', paymentId: 'pay-1', amountPaise: 10000, currency: 'INR' });
   assert.equal(replay.alreadyProcessed, true);
-  assert.equal(replay.bonusMinutesCredited, 5);
+  assert.equal(replay.bonusCreditCreditedPaise, 5000);
   assert.equal(db.inspect('smv_wallets/customer-1').availableBalancePaise, 10500);
-  assert.equal(db.inspect('smv_wallets/customer-1').bonusMinutesBalance, 5);
+  assert.equal(db.inspect('smv_wallets/customer-1').bonusCreditBalancePaise, 5000);
   assert.equal(db.inspect('smv_offers/diwali-5').usedCount, 1);
 
   await db.collection('smv_wallet_recharges').doc('recharge-2');
@@ -192,8 +182,8 @@ test('captured Wallet recharge awards one matching free-minute offer only once a
     tx.set(db.collection('razorpay_orders').doc('order-2'), { status: 'created' });
   });
   const second = await service.finalizeRecharge({ rechargeId: 'recharge-2', orderId: 'order-2', paymentId: 'pay-2', amountPaise: 10000, currency: 'INR' });
-  assert.equal(second.bonusMinutesCredited, 0);
-  assert.equal(second.bonusMinutesBalance, 5);
+  assert.equal(second.bonusCreditCreditedPaise, 0);
+  assert.equal(second.bonusCreditBalancePaise, 5000);
   assert.equal(db.inspect('smv_offers/diwali-5').usedCount, 1);
   assert.equal(db.inspect('smv_wallets/customer-1').availableBalancePaise, 20500);
 });

@@ -15,30 +15,30 @@ function fixtureCollections() {
   return {
     smv_wallets: [
       doc('wallet-1', { ownerUid:'wallet-1', ownerRole:'customer', availableBalancePaise:11000,
-        reservedBalancePaise:0, bonusMinutesBalance:6, reservedBonusMinutes:0, version:2 }),
+        reservedBalancePaise:0, bonusCreditBalancePaise:0, reservedBonusCreditPaise:0, version:2 }),
       doc('wallet-2', { ownerUid:'wallet-2', ownerRole:'customer', availableBalancePaise:7000,
-        reservedBalancePaise:500, bonusMinutesBalance:0, reservedBonusMinutes:0, version:4 })
+        reservedBalancePaise:500, bonusCreditBalancePaise:0, reservedBonusCreditPaise:0, version:4 })
     ],
     smv_wallet_transactions: [
       doc('ledger-1', { ownerUid:'wallet-1', ownerRole:'customer', type:'recharge', direction:'credit',
         amountPaise:5000, balanceAfterPaise:5000, reservedBalanceAfterPaise:0,
-        bonusMinutes:0, bonusMinutesCredited:3, bonusMinutesBalanceAfter:3,
-        reservedBonusMinutesAfter:0, idempotencyKey:'recharge:payment-1', referenceType:'razorpay_payment',
+        bonusCreditDeltaPaise:0, reservedBonusCreditDeltaPaise:0,
+        bonusCreditBalanceAfterPaise:0, reservedBonusCreditBalanceAfterPaise:0, idempotencyKey:'recharge:payment-1', referenceType:'razorpay_payment',
         referenceId:'payment-1', createdAt:new Date('2026-10-30T00:00:00Z') }),
       doc('ledger-2', { ownerUid:'wallet-1', ownerRole:'customer', type:'recharge', direction:'credit',
         amountPaise:6000, balanceAfterPaise:11000, reservedBalanceAfterPaise:0,
-        bonusMinutes:0, bonusMinutesCredited:3, bonusMinutesBalanceAfter:6,
-        reservedBonusMinutesAfter:0, idempotencyKey:'recharge:payment-1', referenceType:'razorpay_payment',
+        bonusCreditDeltaPaise:0, reservedBonusCreditDeltaPaise:0,
+        bonusCreditBalanceAfterPaise:0, reservedBonusCreditBalanceAfterPaise:0, idempotencyKey:'recharge:payment-1', referenceType:'razorpay_payment',
         referenceId:'payment-2', createdAt:new Date('2026-10-30T00:01:00Z') })
     ],
     smv_wallet_recharges: [
       doc('recharge-1', { customerUid:'wallet-1', amountPaise:5000, status:'paid',
         razorpayOrderId:'order-1', razorpayPaymentId:'payment-1', paidAmountPaise:5000,
-        bonusMinutesCredited:3, bonusMinutesBalanceAfter:3 })
+        bonusCreditCreditedPaise:0, bonusCreditBalanceAfterPaise:0 })
     ],
     smv_offers: [
-      doc('offer-1', { offerType:'wallet_recharge_bonus_minutes', name:'Test bonus',
-        enabled:true, minimumRechargeAmountPaise:5000, bonusMinutes:3,
+      doc('offer-1', { offerType:'wallet_recharge_bonus_credit', name:'Test bonus',
+        enabled:true, minimumRechargeAmountPaise:5000, bonusCreditPaise:300,
         perCustomerLimit:1, totalUsageLimit:100, usedCount:1, priority:1 }),
       doc('offer-unrelated', { offerType:'other_campaign', name:'Out of scope fixture' })
     ],
@@ -52,17 +52,17 @@ function fixtureCollections() {
     smv_live_sessions: [
       doc('session.with.dot', { customerUid:'wallet-1', astrologerUid:'astro-1',
         mode:'chat', state:'completed', appointmentId:'appointment-1',
-        reservedAmountPaise:500, reservedBonusMinutes:1, actualChargePaise:300,
-        releasedAmountPaise:200, freeMinutesUsed:0, bonusMinutesReleased:1,
+        reservedAmountPaise:500, reservedBonusCreditPaise:100, actualChargePaise:300,
+        releasedAmountPaise:200, bonusCreditUsedPaise:0, bonusCreditReleasedPaise:100,
         astrologerCommissionPercent:20, adminCommissionPercent:80,
         astrologerCommissionPaise:60, adminCommissionPaise:240 }),
       doc('s'.repeat(200), { customerUid:'wallet-1', astrologerUid:'astro-1',
-        mode:'call', state:'active', reservedAmountPaise:0, reservedBonusMinutes:0 })
+        mode:'call', state:'active', reservedAmountPaise:0, reservedBonusCreditPaise:0 })
     ],
     smv_live_bookings: [
       doc('booking-1', { customerUid:'wallet-1', astrologerUid:'astro-1',
         mode:'call', status:'completed', liveSessionId:'missing-session',
-        walletReservationState:'settled', reservedAmountPaise:500, reservedBonusMinutes:0 })
+        walletReservationState:'settled', reservedAmountPaise:500, reservedBonusCreditPaise:0 })
     ],
     smv_appointments: [
       doc('appointment-1', { customerUid:'wallet-1', astrologerUid:'astro-1',
@@ -214,12 +214,12 @@ test('consistency audit detects wallet idempotency conflicts and broken booking/
   assert.equal(finance.paidRecharge.missingWalletRechargeOrders,0);
   assert.equal(finance.paidRecharge.missingRechargeCreditLedger,0);
   assert.equal(finance.paidRecharge.rechargeCreditAmountMismatches,0);
-  assert.equal(finance.paidRecharge.rechargeBonusMinuteMismatches,0);
+  assert.equal(finance.paidRecharge.rechargeBonusCreditMismatches,0);
   assert.equal(finance.liveReservationSettlement.sessionsMissingReservationLedger,1);
   assert.equal(finance.liveReservationSettlement.endedSessionsMissingUsageLedger,1);
   assert.equal(finance.liveReservationSettlement.sessionsMissingCashReleaseLedger,1);
-  assert.equal(finance.liveReservationSettlement.sessionsMissingBonusReleaseLedger,1);
-  assert.equal(finance.liveReservationSettlement.sessionBonusMinutesNotReconciled,0);
+  assert.equal(finance.liveReservationSettlement.sessionsMissingBonusCreditReleaseLedger,1);
+  assert.equal(finance.liveReservationSettlement.sessionBonusCreditNotReconciled,0);
   assert.equal(finance.liveReservationSettlement.sessionCommissionAmountMismatches,0);
   assert.equal(finance.liveReservationSettlement.chargedSessionsMissingEarning,1);
   assert.equal(finance.billingConfiguration.commissionPercentValid,true);

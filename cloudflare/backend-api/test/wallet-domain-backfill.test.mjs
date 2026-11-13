@@ -36,7 +36,7 @@ test('Wallet snapshot mapping uses an upsert that cannot overwrite a Wallet with
     data: {
       ownerUid: 'customer-1', ownerRole: 'customer', currency: 'INR',
       availableBalancePaise: 7250, reservedBalancePaise: 0,
-      bonusMinutesBalance: 4, reservedBonusMinutes: 0,
+      bonusCreditBalancePaise: 400, reservedBonusCreditPaise: 0,
       version: 8, createdAt: new Date('2026-01-01T00:00:00Z'),
       updatedAt: new Date('2026-10-31T00:00:00Z')
     },
@@ -46,7 +46,7 @@ test('Wallet snapshot mapping uses an upsert that cannot overwrite a Wallet with
   const snapshot = mapped.statements.find(row => row.kind === 'wallet_snapshot');
   assert.ok(snapshot);
   assert.match(snapshot.sql, /NOT EXISTS \(SELECT 1 FROM smv_domain_wallet_ledger/);
-  assert.deepEqual(snapshot.values.slice(0, 7), ['customer-1','customer',7250,0,4,0,8]);
+  assert.deepEqual(snapshot.values.slice(0, 7), ['customer-1','customer',7250,0,400,0,8]);
   assert.equal(mapped.statements.some(row => row.kind === 'legacy_document_archive'), true);
 });
 
@@ -78,7 +78,7 @@ test('fully linked paid recharge creates an idempotent lookup without issuing a 
     data: {
       customerUid: 'customer-1', amountPaise: 5000, currency: 'INR',
       status: 'paid', razorpayOrderId: 'order-1', razorpayPaymentId: 'payment-1',
-      paidAmountPaise: 5000, bonusMinutesCredited: 3,
+      paidAmountPaise: 5000, bonusCreditCreditedPaise: 300,
       offerId: 'festival-1', offerName: 'Deepavali',
       createdAt: new Date('2026-10-01T00:00:00Z'),
       paidAt: new Date('2026-10-01T00:01:00Z')
@@ -102,14 +102,15 @@ test('non-terminal recharge is preserved in the legacy archive without becoming 
   assert.equal(mapped.statements.some(row => row.kind === 'paid_legacy_recharge_lookup'), false);
 });
 
-test('Offer definitions and usage counters preserve existing successful redemption history', () => {
+test('Bonus Credit offers import paise values and never carry legacy Free Minutes amounts', () => {
   const offer = mapLegacyWalletDomainDocument('walletRechargeOffers', {
     id: 'diwali-offer',
     data: {
-      offerType:'wallet_recharge_bonus_minutes', name:'Deepavali',
+      offerType:'wallet_recharge_bonus_credit', name:'Deepavali',
       bannerTheme:'diwali', enabled:true, minimumRechargeAmountPaise:5000,
-      bonusMinutes:10, perCustomerLimit:2, totalUsageLimit:100,
-      usedCount:20, successfulRedemptions:18, totalBonusMinutesAwarded:180,
+      bonusCreditPaise:1000, bonusMinutes:10, totalBonusMinutesAwarded:180,
+      perCustomerLimit:2, totalUsageLimit:100,
+      usedCount:20, successfulRedemptions:18, totalBonusCreditPaiseAwarded:18000,
       priority:30, startAt:'2026-10-20T10:00', endAt:'2026-11-01T10:00'
     }
   });
@@ -117,7 +118,11 @@ test('Offer definitions and usage counters preserve existing successful redempti
   assert.ok(offerSql);
   assert.match(offerSql.sql,/legacy_successful_redemptions/);
   assert.equal(offerSql.values[13],18);
-  assert.equal(offerSql.values[14],180);
+  assert.equal(offerSql.values[14],1000);
+  const payload = JSON.parse(offerSql.values[10]);
+  assert.equal(payload.bonusCreditPaise,1000);
+  assert.equal(Object.hasOwn(payload,'bonusMinutes'),false);
+  assert.equal(Object.hasOwn(payload,'totalBonusMinutesAwarded'),false);
 
   const usage = mapLegacyWalletDomainDocument('walletOfferUsageCounters', {
     id:'usage-hash',
@@ -127,6 +132,17 @@ test('Offer definitions and usage counters preserve existing successful redempti
   assert.ok(usageSql);
   assert.match(usageSql.sql,/MAX\(smv_domain_wallet_offer_redemption_usage.redemption_count/);
   assert.deepEqual(usageSql.values.slice(0,4),['diwali-offer','customer-1',2,'recharge-2']);
+});
+
+test('legacy Free Minutes offers are out of scope and cannot become Bonus Credit', () => {
+  const mapped = mapLegacyWalletDomainDocument('walletRechargeOffers', {
+    id:'legacy-minute-offer',
+    data:{ offerType:'wallet_recharge_bonus_minutes', name:'Old minute offer', bonusMinutes:10, enabled:true }
+  });
+  assert.equal(mapped.mapped,false);
+  assert.equal(mapped.warning,'NOT_BONUS_CREDIT_WALLET_OFFER');
+  assert.equal(mapped.statements.some(row=>row.kind==='wallet_offer'),false);
+  assert.equal(mapped.statements.some(row=>row.kind==='legacy_document_archive'),true);
 });
 
 test('nested Live messages and signals retain their session parent identity', () => {

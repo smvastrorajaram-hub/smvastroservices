@@ -1,6 +1,5 @@
 import {
   safePaise,
-  safeMinutes,
   walletError
 } from './wallet-domain.mjs';
 import { inspectMessageText } from './chat-moderation.mjs';
@@ -309,8 +308,8 @@ export function createD1LiveSessionService({
   }
   async function buildLedger({
     ownerUid,ownerRole='customer',type,direction,amountPaise=0,
-    availableDeltaPaise=0,reservedDeltaPaise=0,bonusMinutesDelta=0,
-    reservedBonusMinutesDelta=0,bonusCreditDeltaPaise=0,reservedBonusCreditDeltaPaise=0,
+    availableDeltaPaise=0,reservedDeltaPaise=0,
+    bonusCreditDeltaPaise=0,reservedBonusCreditDeltaPaise=0,
     idempotencyKey,referenceType,referenceId,note=''
   }) {
     const timestamp=Number(now());
@@ -323,7 +322,7 @@ export function createD1LiveSessionService({
         idempotency_key,reference_type,reference_id,note,metadata_json,status,source,created_at_ms)
        VALUES (?,?,?,'INR',?,?,?,?,?,?,?,?,?,?,?,?,?,'{}','posted','cloudflare_live_session',?)`,
       [ledgerId,ownerUid,ownerRole,type,direction,amountPaise,availableDeltaPaise,
-        reservedDeltaPaise,bonusMinutesDelta,reservedBonusMinutesDelta,
+        reservedDeltaPaise,0,0,
         bonusCreditDeltaPaise,reservedBonusCreditDeltaPaise,
         idempotencyKey,referenceType,referenceId,String(note||'').slice(0,240),timestamp]
     );
@@ -337,8 +336,6 @@ export function createD1LiveSessionService({
       amountPaise:reserve.reservedAmountPaise,
       availableDeltaPaise:-reserve.reservedAmountPaise,
       reservedDeltaPaise:reserve.reservedAmountPaise,
-      bonusMinutesDelta:-reserve.reservedBonusMinutes,
-      reservedBonusMinutesDelta:reserve.reservedBonusMinutes,
       bonusCreditDeltaPaise:-safePaise(reserve.reservedBonusCreditPaise),
       reservedBonusCreditDeltaPaise:safePaise(reserve.reservedBonusCreditPaise),
       idempotencyKey:(booking?'live-booking:':'live-session:')+sessionId,
@@ -406,13 +403,12 @@ export function createD1LiveSessionService({
       birthDetails:birth,mode:kind,minutes:length,ratePerMinutePaise:rate,
       billingModel:'bonus_credit_v1',
       reservedAmountPaise:reserve.reservedAmountPaise,
-      reservedBonusMinutes:0,
       reservedBonusCreditPaise:reserve.reservedBonusCreditPaise,
       astrologerCommissionPercent:commission.astroPercent,
       adminCommissionPercent:commission.adminPercent,
       payloadFingerprint:fingerprint,createdAtMs:timestamp,updatedAtMs:timestamp,
       customerReady:false,astrologerReady:false,actualChargePaise:0,
-      releasedAmountPaise:0,freeMinutesUsed:0,origin:canStartNow?'direct':'offline_queue'
+      releasedAmountPaise:0,origin:canStartNow?'direct':'offline_queue'
     };
     const ledger=await reserveLedger({uid,sessionId:id,booking:!canStartNow,mode:kind,reserve});
     if(canStartNow) {
@@ -634,7 +630,6 @@ export function createD1LiveSessionService({
     const settlement=calculateLiveSettlement({session,nowMs:timestamp});
     const wallet=await walletAdapter.getWallet(session.customerUid);
     if(!wallet||wallet.reservedBalancePaise<settlement.reservedAmountPaise||
-       wallet.reservedBonusMinutes<settlement.reservedBonusMinutes||
        wallet.reservedBonusCreditPaise<safePaise(settlement.reservedBonusCreditPaise)) {
       // A competing endSession call may have committed the settlement after this
       // request read the still-active session but before it read the Wallet. In
@@ -661,13 +656,11 @@ export function createD1LiveSessionService({
       connectedDurationMs:settlement.elapsedMs,
       billableMinutes:settlement.billableMinutes,
       totalBillableMinutes:settlement.totalBillableMinutes,
-      freeMinutesUsed:settlement.freeMinutesUsed,
       actualChargePaise:settlement.chargedAmountPaise,
       actualServiceAmountPaise:safePaise(settlement.commissionableAmountPaise??settlement.chargedAmountPaise),
       bonusCreditUsedPaise:safePaise(settlement.bonusCreditUsedPaise),
       bonusCreditReleasedPaise:safePaise(settlement.bonusCreditReleasedPaise),
       releasedAmountPaise:settlement.releasedAmountPaise,
-      bonusMinutesReleased:settlement.bonusMinutesReleased,
       commissionStatus:safePaise(settlement.commissionableAmountPaise??settlement.chargedAmountPaise)>0?'credited':'not_applicable',
       astrologerCommissionPercent:settlement.astroPercent,
       adminCommissionPercent:settlement.adminPercent,
@@ -723,12 +716,6 @@ export function createD1LiveSessionService({
       idempotencyKey:'live-session-usage:'+id,referenceType,referenceId:id,
       note:'Live '+session.mode+' used '+settlement.billableMinutes+' paid started minute(s)'
     }));
-    if(settlement.freeMinutesUsed>0) ledger.push(await buildLedger({
-      ownerUid:session.customerUid,type:'live_session_bonus_minutes',direction:'debit',
-      amountPaise:0,reservedBonusMinutesDelta:-settlement.freeMinutesUsed,
-      idempotencyKey:'live-session-bonus-used:'+id,referenceType,referenceId:id,
-      note:settlement.freeMinutesUsed+' promotional free minute(s) used for Live '+session.mode
-    }));
     if(safePaise(settlement.bonusCreditUsedPaise)>0) ledger.push(await buildLedger({
       ownerUid:session.customerUid,type:'live_session_bonus_credit_used',direction:'debit',
       amountPaise:safePaise(settlement.bonusCreditUsedPaise),reservedBonusCreditDeltaPaise:-safePaise(settlement.bonusCreditUsedPaise),
@@ -741,13 +728,6 @@ export function createD1LiveSessionService({
       reservedBonusCreditDeltaPaise:-safePaise(settlement.bonusCreditReleasedPaise),
       idempotencyKey:'live-session-bonus-credit-release:'+id,referenceType,referenceId:id,
       note:'Unused Bonus Credit returned to Wallet · ₹'+(safePaise(settlement.bonusCreditReleasedPaise)/100).toFixed(2)
-    }));
-    if(settlement.bonusMinutesReleased>0) ledger.push(await buildLedger({
-      ownerUid:session.customerUid,type:'live_session_bonus_minutes_release',direction:'credit',
-      amountPaise:0,bonusMinutesDelta:settlement.bonusMinutesReleased,
-      reservedBonusMinutesDelta:-settlement.bonusMinutesReleased,
-      idempotencyKey:'live-session-bonus-release:'+id,referenceType,referenceId:id,
-      note:settlement.bonusMinutesReleased+' unused promotional free minute(s) returned to Wallet'
     }));
     if(settlement.releasedAmountPaise>0) ledger.push(await buildLedger({
       ownerUid:session.customerUid,type:'live_session_unused_release',direction:'credit',
@@ -840,7 +820,6 @@ export function createD1LiveSessionService({
     if(booking.walletReservationState!=='reserved') throw liveError('LIVE_BOOKING_WALLET_RESERVE_MISMATCH','Booking Wallet reserve is not in a releasable state.',409);
     const wallet=await walletAdapter.getWallet(booking.customerUid);
     if(!wallet||wallet.reservedBalancePaise<booking.reservedAmountPaise||
-       wallet.reservedBonusMinutes<booking.reservedBonusMinutes||
        wallet.reservedBonusCreditPaise<safePaise(booking.reservedBonusCreditPaise)) {
       throw liveError('LIVE_BOOKING_WALLET_RESERVE_MISMATCH','Wallet reserve for this booking does not reconcile.',409);
     }
@@ -860,18 +839,10 @@ export function createD1LiveSessionService({
       idempotencyKey:'live-booking-bonus-credit-release:'+id,referenceType:'live_booking',referenceId:id,
       note:'Unused Bonus Credit released for Live '+booking.mode+' booking · ₹'+(safePaise(booking.reservedBonusCreditPaise)/100).toFixed(2)
     }));
-    if(booking.reservedBonusMinutes>0) ledger.push(await buildLedger({
-      ownerUid:booking.customerUid,type:'live_booking_bonus_release',direction:'credit',
-      amountPaise:0,bonusMinutesDelta:booking.reservedBonusMinutes,
-      reservedBonusMinutesDelta:-booking.reservedBonusMinutes,
-      idempotencyKey:'live-booking-bonus-release:'+id,referenceType:'live_booking',referenceId:id,
-      note:'Unused promotional minutes released for Live '+booking.mode+' booking'
-    }));
     const finalStatus=['cancelled','rejected','expired'].includes(status)?status:'cancelled';
     const updatedBooking={
       ...booking,status:finalStatus,walletReservationState:'released',
       releasedAmountPaise:booking.reservedAmountPaise,
-      bonusMinutesReleased:booking.reservedBonusMinutes,
       bonusCreditReleasedPaise:safePaise(booking.reservedBonusCreditPaise),
       endReason,updatedAtMs:timestamp
     };
@@ -1184,13 +1155,14 @@ function sessionView(session) {
     mode:String(d.mode),minutes:Number(d.minutes||0),
     ratePerMinutePaise:safePaise(d.ratePerMinutePaise),
     reservedAmountPaise:safePaise(d.reservedAmountPaise),
-    reservedBonusMinutes:safeMinutes(d.reservedBonusMinutes),
-    freeMinutesUsed:safeMinutes(d.freeMinutesUsed),
     status:String(d.state||''),state:String(d.state||''),
     createdAt:iso(d.createdAtMs),acceptedAt:iso(d.acceptedAtMs),
     startedAt:iso(d.startedAtMs),endedAt:iso(d.endedAtMs),
     actualChargePaise:safePaise(d.actualChargePaise),
-    billableMinutes:safeMinutes(d.billableMinutes),
+    billableMinutes:safePaise(d.billableMinutes),
+    reservedBonusCreditPaise:safePaise(d.reservedBonusCreditPaise),
+    bonusCreditUsedPaise:safePaise(d.bonusCreditUsedPaise),
+    bonusCreditReleasedPaise:safePaise(d.bonusCreditReleasedPaise),
     releasedAmountPaise:safePaise(d.releasedAmountPaise),
     endReason:String(d.endReason||''),
     customerReady:d.customerReady===true,astrologerReady:d.astrologerReady===true
@@ -1211,7 +1183,6 @@ function bookingView(booking) {
     }:null,
     ratePerMinutePaise:safePaise(d.ratePerMinutePaise),
     reservedAmountPaise:safePaise(d.reservedAmountPaise),
-    reservedBonusMinutes:safeMinutes(d.reservedBonusMinutes),
     walletReservationState:String(d.walletReservationState||''),
     actualChargePaise:safePaise(d.actualChargePaise),
     releasedAmountPaise:safePaise(d.releasedAmountPaise),

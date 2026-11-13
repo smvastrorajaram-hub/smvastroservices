@@ -60,7 +60,7 @@ test('Wallet read routes preserve Customer wallet JSON contract and integer pais
   const walletAdapter = {
     async ensureWallet(uid, role) {
       assert.equal(uid, 'customer-1'); assert.equal(role, 'customer');
-      return { ownerUid:uid,ownerRole:role,availableBalancePaise:12550,reservedBalancePaise:500,bonusMinutesBalance:2,reservedBonusMinutes:1,updatedAt:1000 };
+      return { ownerUid:uid,ownerRole:role,availableBalancePaise:12550,reservedBalancePaise:500,bonusCreditBalancePaise:200,reservedBonusCreditPaise:100,updatedAt:1000 };
     },
     async listTransactions() { return []; }
   };
@@ -71,7 +71,8 @@ test('Wallet read routes preserve Customer wallet JSON contract and integer pais
   assert.equal(res.headers['Cache-Control'], 'no-store');
   assert.equal(res.body.wallet.availableBalance, 125.5);
   assert.equal(res.body.wallet.totalBalance, 130.5);
-  assert.equal(res.body.wallet.bonusMinutesBalance, 2);
+  assert.equal(res.body.wallet.bonusCreditBalance, 2);
+  assert.equal(res.body.wallet.reservedBonusCredit, 1);
 });
 
 test('Admin Wallet reads use the configured shared Admin wallet owner UID', async () => {

@@ -4,7 +4,6 @@ import {
   calculateWalletReservationSettlement,
   normalizeWallet,
   safePaise,
-  safeMinutes,
   validateWalletEntry,
   validateWalletOwner,
   walletReservationSettlementKeys,
@@ -35,8 +34,6 @@ function mapLedger(row) {
     amountPaise: safePaise(row.amount_paise),
     balanceAfterPaise: safePaise(row.balance_after_paise),
     reservedBalanceAfterPaise: safePaise(row.reserved_balance_after_paise),
-    bonusMinutesBalanceAfter: safeMinutes(row.bonus_minutes_balance_after),
-    reservedBonusMinutesAfter: safeMinutes(row.reserved_bonus_minutes_after),
     bonusCreditDeltaPaise: safePaise(row.bonus_credit_delta_paise),
     reservedBonusCreditDeltaPaise: safePaise(row.reserved_bonus_credit_delta_paise),
     bonusCreditBalanceAfterPaise: safePaise(row.bonus_credit_balance_after_paise),
@@ -60,8 +57,6 @@ function mapWallet(row) {
     currency: row.currency,
     availableBalancePaise: row.available_balance_paise,
     reservedBalancePaise: row.reserved_balance_paise,
-    bonusMinutesBalance: row.bonus_minutes_balance,
-    reservedBonusMinutes: row.reserved_bonus_minutes,
     bonusCreditBalancePaise: row.bonus_credit_balance_paise,
     reservedBonusCreditPaise: row.reserved_bonus_credit_paise,
     version: row.version,
@@ -80,7 +75,6 @@ function d1Error(error) {
   const message = String(error?.message || error || '');
   if (message.includes('WALLET_INSUFFICIENT_BALANCE')) return walletError('WALLET_INSUFFICIENT_BALANCE', 'Insufficient Wallet balance.', 409);
   if (message.includes('WALLET_RESERVED_BALANCE_MISMATCH')) return walletError('LIVE_WALLET_RESERVE_MISMATCH', 'Wallet cash reserve does not reconcile with this operation.');
-  if (message.includes('WALLET_BONUS_BALANCE_MISMATCH') || message.includes('WALLET_RESERVED_BONUS_MISMATCH')) return walletError('LIVE_WALLET_RESERVE_MISMATCH', 'Wallet promotional minute reserve does not reconcile with this operation.');
   if (message.includes('WALLET_BONUS_CREDIT_BALANCE_MISMATCH') || message.includes('WALLET_RESERVED_BONUS_CREDIT_MISMATCH')) return walletError('LIVE_WALLET_RESERVE_MISMATCH', 'Wallet Bonus Credit reserve does not reconcile with this operation.');
   if (message.includes('WALLET_BALANCE_OVERFLOW')) return walletError('WALLET_BALANCE_OVERFLOW', 'Wallet balance exceeds the supported range.');
   if (message.includes('WALLET_OWNER_ROLE_MISMATCH')) return walletError('WALLET_OWNER_ROLE_MISMATCH', 'Wallet owner role does not match the stored Wallet.');
@@ -158,7 +152,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     await statement(
       `INSERT OR IGNORE INTO ${WALLET_TABLE}
        (owner_uid, owner_role, currency, available_balance_paise, reserved_balance_paise,
-        bonus_minutes_balance, reserved_bonus_minutes, version, created_at_ms, updated_at_ms)
+        bonus_credit_balance_paise, reserved_bonus_credit_paise, version, created_at_ms, updated_at_ms)
        VALUES (?, ?, 'INR', 0, 0, 0, 0, 1, ?, ?)`,
       [owner.ownerUid, owner.ownerRole, timestamp, timestamp]
     ).run();
@@ -172,7 +166,6 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     if (!uid) throw walletError('WALLET_OWNER_INVALID', 'Wallet owner is required.', 400);
     const row = await statement(
       `SELECT owner_uid, owner_role, currency, available_balance_paise, reserved_balance_paise,
-              bonus_minutes_balance, reserved_bonus_minutes,
               bonus_credit_balance_paise,reserved_bonus_credit_paise,version,created_at_ms,updated_at_ms
        FROM ${WALLET_TABLE} WHERE owner_uid = ? LIMIT 1`,
       [uid]
@@ -189,13 +182,13 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
   }
 
   async function buildLedgerRow({ ownerUid, ownerRole, type, direction, amountPaise, idempotencyKey,
-    availableDeltaPaise = 0, reservedDeltaPaise = 0, bonusMinutesDelta = 0, reservedBonusMinutesDelta = 0,
+    availableDeltaPaise = 0, reservedDeltaPaise = 0,
     bonusCreditDeltaPaise = 0, reservedBonusCreditDeltaPaise = 0,
     referenceType = null, referenceId = null, note = '', metadata = {}, source = null, ledgerId }) {
     const id = ledgerId || await sha256Hex(type + ':' + referenceId, cryptoImpl);
     return {
       ledgerId: id, ownerUid, ownerRole, type, direction, amountPaise,
-      idempotencyKey, availableDeltaPaise, reservedDeltaPaise, bonusMinutesDelta, reservedBonusMinutesDelta,
+      idempotencyKey, availableDeltaPaise, reservedDeltaPaise,
       bonusCreditDeltaPaise, reservedBonusCreditDeltaPaise,
       referenceType: referenceType == null ? null : String(referenceType),
       referenceId: referenceId == null ? null : String(referenceId), note: String(note || '').slice(0, 240),
@@ -209,13 +202,13 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     return statement(
       `INSERT INTO ${LEDGER_TABLE}
        (ledger_id, owner_uid, owner_role, currency, type, direction, amount_paise,
-        available_delta_paise, reserved_delta_paise, bonus_minutes_delta, reserved_bonus_minutes_delta,
-        bonus_credit_delta_paise,reserved_bonus_credit_delta_paise,
+        available_delta_paise, reserved_delta_paise,
+         bonus_credit_delta_paise,reserved_bonus_credit_delta_paise,
         idempotency_key, reference_type, reference_id, note, metadata_json, status, source, created_at_ms)
-       VALUES (?, ?, ?, 'INR', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'posted', ?, ?)`,
+       VALUES (?, ?, ?, 'INR', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'posted', ?, ?)`,
       [row.ledgerId, row.ownerUid, row.ownerRole, row.type, row.direction, row.amountPaise,
-       row.availableDeltaPaise, row.reservedDeltaPaise, row.bonusMinutesDelta, row.reservedBonusMinutesDelta,
-       row.bonusCreditDeltaPaise,row.reservedBonusCreditDeltaPaise,
+       row.availableDeltaPaise, row.reservedDeltaPaise,
+        row.bonusCreditDeltaPaise,row.reservedBonusCreditDeltaPaise,
        row.idempotencyKey, row.referenceType, row.referenceId, row.note, row.metadataJson, row.source, row.createdAtMs]
     );
   }
@@ -244,7 +237,9 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       return { success: true, alreadyProcessed: true, transactionId: previous.id, ...wallet };
     }
     const ledgerId = await sha256Hex(entry.type + ':' + owner.ownerUid + ':' + entry.idempotencyKey, cryptoImpl);
-    const delta = entry.direction === 'credit' ? entry.amountPaise : -entry.amountPaise;
+    const delta = entry.bonusCreditDeltaPaise !== 0
+      ? 0
+      : (entry.direction === 'credit' ? entry.amountPaise : -entry.amountPaise);
     const row = await buildLedgerRow({
       ...owner, ...entry, ledgerId, availableDeltaPaise: delta,
       referenceType: input.referenceType, referenceId: input.referenceId,
@@ -272,22 +267,26 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       ...owner, type: ledgerType, direction: 'reserve', amountPaise: reserve.reservedAmountPaise,
       idempotencyKey: existingKey, ledgerId: await sha256Hex(ledgerType + ':' + id, cryptoImpl),
       availableDeltaPaise: -reserve.reservedAmountPaise, reservedDeltaPaise: reserve.reservedAmountPaise,
-      bonusMinutesDelta: -reserve.bonusMinutesReserved, reservedBonusMinutesDelta: reserve.bonusMinutesReserved,
+      bonusCreditDeltaPaise: -reserve.reservedBonusCreditPaise,
+      reservedBonusCreditDeltaPaise: reserve.reservedBonusCreditPaise,
       referenceType: booking ? 'live_booking' : 'live_session', referenceId: id,
       note: 'Wallet reserve for ' + (booking ? 'booked Live ' : 'Live ') + String(mode || 'chat') +
-        (reserve.bonusMinutesReserved ? '; ' + reserve.bonusMinutesReserved + ' promotional free minute(s)' : '')
+        (reserve.reservedBonusCreditPaise ? '; Bonus Credit ₹' + (reserve.reservedBonusCreditPaise / 100).toFixed(2) : '')
     });
     const result = await insertOne(row);
     return { success: true, alreadyProcessed: result.alreadyProcessed, wallet: await getWallet(owner.ownerUid), reserve: result.ledger };
   }
 
-  async function settleReservation({ ownerUid, ownerRole, sessionId, reservedAmountPaise, reservedBonusMinutes,
-    chargedAmountPaise, freeMinutesUsed = 0 } = {}) {
+  async function settleReservation({
+    ownerUid, ownerRole, sessionId, reservedAmountPaise, reservedBonusCreditPaise,
+    chargedAmountPaise, bonusCreditUsedPaise = 0
+  } = {}) {
     const owner = validateWalletOwner(ownerUid, ownerRole);
     const id = String(sessionId || '').trim();
     if (!id) throw walletError('LIVE_SESSION_ID_REQUIRED', 'Live Session ID is required.', 400);
     const expectedKeys = walletReservationSettlementKeys({
-      sessionId: id, reservedAmountPaise, reservedBonusMinutes, chargedAmountPaise, freeMinutesUsed
+      sessionId: id, reservedAmountPaise, reservedBonusCreditPaise,
+      chargedAmountPaise, bonusCreditUsedPaise
     });
     const existingRows = await Promise.all(expectedKeys.map(item => findLedger(owner.ownerUid, item.idempotencyKey)));
     if (existingRows.length && existingRows.every(Boolean)) {
@@ -299,7 +298,8 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     const wallet = await getWallet(owner.ownerUid);
     if (!wallet) throw walletError('WALLET_NOT_FOUND', 'Wallet not found.', 409);
     const settlement = calculateWalletReservationSettlement({
-      wallet, reservedAmountPaise, reservedBonusMinutes, chargedAmountPaise, freeMinutesUsed
+      wallet, reservedAmountPaise, reservedBonusCreditPaise,
+      chargedAmountPaise, bonusCreditUsedPaise
     });
     const specs = [];
     if (settlement.chargedAmountPaise > 0) specs.push({
@@ -307,17 +307,20 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       idempotencyKey: 'live-session-usage:' + id, availableDeltaPaise: 0,
       reservedDeltaPaise: -settlement.chargedAmountPaise, note: 'Live session paid usage'
     });
-    if (settlement.freeMinutesUsed > 0) specs.push({
-      type: 'live_session_bonus_minutes', direction: 'debit', amountPaise: 0,
-      idempotencyKey: 'live-session-bonus-used:' + id,
-      reservedBonusMinutesDelta: -settlement.freeMinutesUsed, note: 'Promotional free minutes used'
+    if (settlement.bonusCreditUsedPaise > 0) specs.push({
+      type: 'live_session_bonus_credit_used', direction: 'debit',
+      amountPaise: settlement.bonusCreditUsedPaise,
+      idempotencyKey: 'live-session-bonus-credit-used:' + id,
+      reservedBonusCreditDeltaPaise: -settlement.bonusCreditUsedPaise,
+      note: 'Bonus Credit used for Live session'
     });
-    if (settlement.bonusMinutesReleased > 0) specs.push({
-      type: 'live_session_bonus_minutes_release', direction: 'credit', amountPaise: 0,
-      idempotencyKey: 'live-session-bonus-release:' + id,
-      bonusMinutesDelta: settlement.bonusMinutesReleased,
-      reservedBonusMinutesDelta: -settlement.bonusMinutesReleased,
-      note: 'Unused promotional free minutes returned'
+    if (settlement.bonusCreditReleasedPaise > 0) specs.push({
+      type: 'live_session_bonus_credit_release', direction: 'credit',
+      amountPaise: settlement.bonusCreditReleasedPaise,
+      idempotencyKey: 'live-session-bonus-credit-release:' + id,
+      bonusCreditDeltaPaise: settlement.bonusCreditReleasedPaise,
+      reservedBonusCreditDeltaPaise: -settlement.bonusCreditReleasedPaise,
+      note: 'Unused Bonus Credit returned to Wallet'
     });
     if (settlement.releasedAmountPaise > 0) specs.push({
       type: 'live_session_unused_release', direction: 'credit', amountPaise: settlement.releasedAmountPaise,
@@ -477,7 +480,6 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     const result = await statement(
       "SELECT o.*, " +
       "COALESCE(o.legacy_successful_redemptions,0) + (SELECT COUNT(*) FROM smv_domain_offer_redemptions r WHERE r.offer_id=o.offer_id) AS successful_redemptions, " +
-      "COALESCE(o.legacy_total_bonus_minutes,0) + COALESCE((SELECT SUM(r.bonus_minutes) FROM smv_domain_offer_redemptions r WHERE r.offer_id=o.offer_id AND COALESCE(r.bonus_credit_paise,0)=0),0) AS total_bonus_minutes_awarded, " +
       "COALESCE((SELECT SUM(r.bonus_credit_paise) FROM smv_domain_offer_redemptions r WHERE r.offer_id=o.offer_id),0) AS total_bonus_credit_paise_awarded " +
       "FROM smv_domain_wallet_offers o" + where +
       " ORDER BY priority DESC, bonus_credit_paise DESC, offer_id ASC LIMIT 100",
@@ -495,13 +497,11 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
         enabled: Number(row.enabled) === 1,
         minimumRechargeAmountPaise: safePaise(row.minimum_recharge_paise),
         bonusCreditAmountPaise: safePaise(row.bonus_credit_paise),
-        legacyBonusMinutes: safeMinutes(row.bonus_minutes),
         perCustomerLimit: safePaise(row.per_customer_limit),
         totalUsageLimit: safePaise(row.total_usage_limit),
         priority: Number(row.priority || 0),
         usedCount: safePaise(row.used_count),
         successfulRedemptions: safePaise(row.successful_redemptions),
-        totalBonusMinutesAwarded: safePaise(row.total_bonus_minutes_awarded),
         totalBonusCreditPaiseAwarded: safePaise(row.total_bonus_credit_paise_awarded),
         startAt: date(row.start_at_ms),
         endAt: date(row.end_at_ms),
@@ -553,7 +553,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       "VALUES (?,?,?,?,?,?,?,0,?,?,?,?,?,?) " +
       "ON CONFLICT(offer_id) DO UPDATE SET " +
       "enabled=excluded.enabled,minimum_recharge_paise=excluded.minimum_recharge_paise," +
-      "bonus_minutes=excluded.bonus_minutes,bonus_credit_paise=excluded.bonus_credit_paise,per_customer_limit=excluded.per_customer_limit," +
+      "bonus_minutes=1,bonus_credit_paise=excluded.bonus_credit_paise,per_customer_limit=excluded.per_customer_limit," +
       "total_usage_limit=excluded.total_usage_limit,priority=excluded.priority," +
       "start_at_ms=excluded.start_at_ms,end_at_ms=excluded.end_at_ms," +
       "payload_json=excluded.payload_json,updated_at_ms=excluded.updated_at_ms",
@@ -611,8 +611,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       paymentId: row.razorpay_payment_id || null,
       customerPaymentId: String(payload.customerPaymentId || '') || null,
       paidAt: Number(row.paid_at_ms || 0),
-      bonusMinutesCredited: safeMinutes(payload.bonusMinutesCredited),
-      bonusCreditPaiseCredited: safePaise(payload.bonusCreditCreditedPaise),
+            bonusCreditCreditedPaise: safePaise(payload.bonusCreditCreditedPaise),
       bonusCreditSkippedReason: String(payload.bonusCreditSkippedReason || ''),
       offerId: payload.offerId || null,
       offerName: payload.offerName || null
@@ -652,7 +651,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
     if(cashLedger||bonusLedger)throw walletError('WALLET_LEDGER_CONFLICT','A Wallet recharge ledger already exists and requires reconciliation.',409);
     const nowMs=Number(now());
     const offersResult=await statement(
-      `SELECT o.offer_id,o.enabled,o.minimum_recharge_paise,o.bonus_minutes,o.bonus_credit_paise,
+      `SELECT o.offer_id,o.enabled,o.minimum_recharge_paise,o.bonus_credit_paise,
               o.per_customer_limit,o.total_usage_limit,o.used_count,o.priority,o.start_at_ms,o.end_at_ms,o.payload_json,
               COALESCE(u.redemption_count,0) AS customer_redemption_count
        FROM smv_domain_wallet_offers o
@@ -669,7 +668,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       return {id:String(row.offer_id),offerType:'wallet_recharge_bonus_credit',
         enabled:Number(row.enabled)===1,
         minimumRechargeAmountPaise:safePaise(row.minimum_recharge_paise),
-        bonusCreditPaise:safePaise(row.bonus_credit_paise),bonusMinutes:1,
+        bonusCreditPaise:safePaise(row.bonus_credit_paise),
         perCustomerLimit:Number(row.per_customer_limit),totalUsageLimit:Number(row.total_usage_limit),
         usedCount:Number(row.used_count),priority:Number(row.priority),
         startAt:row.start_at_ms==null?null:Number(row.start_at_ms),
@@ -704,7 +703,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
         [await sha256Hex('wallet-recharge-offer:'+rid+':'+selectedOffer.id,cryptoImpl),selectedOffer.id,owner.ownerUid,rid,amount,bonusCreditCreditedPaise,nowMs]
       ));
     }
-    const payload={...rechargePayload,customerPaymentId,bonusMinutesCredited:0,bonusCreditCreditedPaise,
+    const payload={...rechargePayload,customerPaymentId,bonusCreditCreditedPaise,
       bonusCreditSkippedReason,offerId:selectedOffer?.id||null,offerName:selectedOffer?.name||null,
       paymentSource:String(source).slice(0,80)};
     const appendPaidTransitions=(target,payloadValue)=>{
@@ -739,7 +738,7 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
       bonusCreditCreditedPaise=0;
       bonusCreditSkippedReason=bonusCreditLimitReached?'bonus_credit_balance_limit':'offer_limit_reached_during_recharge';
       selectedOffer=null;
-      const fallbackPayload={...rechargePayload,customerPaymentId,bonusMinutesCredited:0,bonusCreditCreditedPaise:0,
+      const fallbackPayload={...rechargePayload,customerPaymentId,bonusCreditCreditedPaise:0,
         bonusCreditSkippedReason,offerId:null,offerName:null,paymentSource:String(source).slice(0,80)};
       const fallback=[insertStatement(cashRow)];appendPaidTransitions(fallback,fallbackPayload);
       const retry=await db.batch(fallback);
@@ -914,10 +913,6 @@ export function createD1WalletAdapter({ db, now = Date.now, cryptoImpl = globalT
         amountPaise: safePaise(row.amount_paise),
         balanceAfterPaise: safePaise(row.balance_after_paise),
         reservedBalanceAfterPaise: safePaise(row.reserved_balance_after_paise),
-        bonusMinutes: safeMinutes(row.bonus_minutes),
-        bonusMinutesCredited: safeMinutes(row.bonus_minutes_credited),
-        bonusMinutesBalanceAfter: safeMinutes(row.bonus_minutes_balance_after),
-        reservedBonusMinutesAfter: safeMinutes(row.reserved_bonus_minutes_after),
         idempotencyKey: String(row.idempotency_key || ''),
         referenceType: row.reference_type || null,
         referenceId: row.reference_id || null,
