@@ -642,10 +642,13 @@ test('Scheduled Call/Chat start creates, accepts, schedules and links a session 
   assert.equal(calls.create[0].minutes, 7);
   assert.deepEqual(calls.list, [{ uid: 'astro-1', role: 'astrologer' }]);
   assert.deepEqual(calls.accept, [{ sessionId: 'scheduled-session-1', astrologerUid: 'astro-1' }]);
-  assert.equal(bindings.calls.coordinator.length, 1);
+  assert.equal(bindings.calls.coordinator.length, 2);
+  assert.equal(bindings.calls.coordinator[0].id, 'scheduled-session-1');
   assert.equal(bindings.calls.coordinator[0].body.state, 'preparing');
   assert.equal(bindings.calls.coordinator[0].body.deadlines[0].atMs, Date.parse(session.preparationUntil),
     'the Scheduled Call/Chat Durable Object receives the accepted session 2:15 deadline');
+  assert.equal(bindings.calls.coordinator[1].id, 'scheduled-booking-booking-1');
+  assert.equal(new URL(bindings.calls.coordinator[1].url).pathname, '/stop-booking-ringtone');
   assert.equal(bindings.calls.hub.length, 2);
   const appointmentWrite = firestore.calls.writes.find(row => row.path === 'smv_appointments/booking-1');
   assert.equal(appointmentWrite.data.bookingStatus, 'in_progress');
