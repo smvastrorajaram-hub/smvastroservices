@@ -725,7 +725,7 @@ test('FCM HTTP v1 keeps the standard notification envelope for ordinary alerts',
   assert.equal(message.data.sessionId,'session-1');
   assert.equal(message.android.priority,'HIGH');
   assert.equal(message.android.ttl,'120s');
-  assert.equal(message.android.notification.channel_id,'smv_native_background_alerts_v1');
+  assert.equal(message.android.notification.channel_id,'smv_native_background_alerts_v2');
   assert.equal(message.android.notification.sound,'default');
   assert.equal(message.android.notification.tag,'smv-live-request-session-1');
 });
