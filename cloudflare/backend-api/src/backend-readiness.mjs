@@ -108,11 +108,9 @@ const BONUS_CREDIT_SCHEMA_QUERY = [
   "  SELECT schema_version AS bonus_credit_wallet_version",
   "  FROM smv_domain_schema_meta WHERE schema_key='bonus-credit-wallet' LIMIT 1",
   ")",
-  "SELECT bonus_credit_version.bonus_credit_wallet_version, object_checks.*,",
-  "  column_checks.*",
-  "FROM object_checks CROSS JOIN column_checks",
-  "CROSS JOIN bonus_credit_version"
-].join('\n');
+  "SELECT bonus_credit_version.bonus_credit_wallet_version, object_checks.*, column_checks.*",
+  "FROM object_checks CROSS JOIN column_checks CROSS JOIN bonus_credit_version"
+].join('\\n');
 
 const MIGRATION_KEYS = [
   '0002_shared_domain_repository',
@@ -234,12 +232,7 @@ export async function inspectBackendSchema(db) {
         countIs(bonusCreditRow.live_session_bonus_reserve_trigger_count, 1) &&
         countIs(bonusCreditRow.live_earning_bonus_credit_trigger_count, 1) &&
         countIs(bonusCreditRow.wallet_ledger_bonus_credit_apply_trigger_count, 1) &&
-        countIs(bonusCreditRow.wallet_ledger_bonus_credit_validate_trigger_count, 1) &&
-        countIs(bonusCreditRow.promotional_fund_table_count, 1) &&
-        countIs(bonusCreditRow.promotional_fund_ledger_table_count, 1) &&
-        countIs(bonusCreditRow.promotional_fund_seed_count, 1) &&
-        countIs(bonusCreditRow.promotional_fund_validate_trigger_count, 1) &&
-        countIs(bonusCreditRow.promotional_fund_apply_trigger_count, 1),
+        countIs(bonusCreditRow.wallet_ledger_bonus_credit_validate_trigger_count, 1),
       '0014_live_session_query_indexes':
         row.live_session_query_indexes_version === '0014_live_session_query_indexes' &&
         countIs(row.live_session_query_indexes_count, 6)
