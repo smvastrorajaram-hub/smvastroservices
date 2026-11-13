@@ -95,9 +95,20 @@ export function registerLegacyDashboardReadRoutes({ app, firestore, identityServ
         filters: [{ field: 'astrologerUid', op: '==', value: uid }],
         limit: 100
       });
+      let endedSessionsByAppointment = Object.create(null);
+      if (liveService && typeof liveService.listEndedSessionsForAppointments === 'function' && documents.length && await isLiveReady()) {
+        try {
+          endedSessionsByAppointment = await liveService.listEndedSessionsForAppointments({
+            appointmentIds: documents.map(document => document.id), uid, role: 'astrologer'
+          });
+        } catch (error) {
+          console.warn('[Dashboard] Completed scheduled Live Session reconciliation deferred:', error?.message || error);
+        }
+      }
       const appointments = documents.map(document => {
         const a = document.data || {};
-        const bookingStatus = scheduledBookingStatus(a, now());
+        const completedSession = endedSessionsByAppointment?.[document.id] || null;
+        const bookingStatus = completedSession ? 'completed' : scheduledBookingStatus(a, now());
         const missed = bookingStatus === 'missed_by_astrologer';
         return {
           id: document.id,
@@ -110,11 +121,12 @@ export function registerLegacyDashboardReadRoutes({ app, firestore, identityServ
           question: String(a.question || ''),
           notes: String(a.notes || ''),
           birthDetails: a.birthDetails || null,
-          status: missed ? 'missed' : String(a.status || 'new'),
+          status: completedSession ? 'completed' : (missed ? 'missed' : String(a.status || 'new')),
           bookingStatus,
           missedReason: missed ? 'astrologer_not_connected_within_grace' : String(a.missedReason || ''),
           scheduledMinutes: Number(a.scheduledMinutes || 5),
-          liveSessionId: String(a.liveSessionId || ''),
+          liveSessionId: String(completedSession?.id || a.liveSessionId || ''),
+          liveEndedAt: completedSession?.endedAt || a.liveEndedAt || null,
           createdAt: a.createdAt || null,
           respondedAt: a.respondedAt || null,
           updatedAt: a.updatedAt || null
