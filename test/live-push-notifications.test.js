@@ -229,7 +229,7 @@ test('Live Chat uses canonical mode/state and native visibility instead of a cha
   assert.equal(frontend.includes('smv-live-chat-active'), false, 'no chat-only modal class should be toggled by JavaScript');
   assert.equal(css.includes('.smv-live-chat-active'), false, 'Chat must not depend on a special CSS override block');
   assert.ok(html.includes('smvastro.css?v=20261112-d1-read-optimization-5000-customers-v1'));
-  assert.ok(html.includes('smvastro.mjs?v=20261113-scheduled-booking-receipt-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261113-live-session-receipt-stability-v1'));
 });
 
 test('Live Chat connected confirmation requires a rendered message pane and does not open a separate Chat window', () => {
@@ -303,7 +303,7 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('smvLiveStartCustomerPendingStatusPoll(s.id);'));
   assert.ok(frontend.includes('setInterval(()=>void reconcile(),2500)'));
   assert.ok(frontend.includes('Astrologer Generating Horoscope · '));
-  assert.ok(html.includes('smvastro.mjs?v=20261113-scheduled-booking-receipt-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261113-live-session-receipt-stability-v1'));
 });
 
 test('Live Chat recovers a missed connecting-to-active event while SSE remains connected', () => {
@@ -350,7 +350,7 @@ test('Customer and Astrologer Dashboard open without Dashboard-wide loading or q
   assert.equal(frontend.includes('Loading your dashboard...'), false);
   assert.ok(!frontend.includes("because Firebase could not be read."));
   assert.ok(!frontend.includes("Dashboard is open. Astrologer profile and data"));
-  assert.ok(html.includes('smvastro.mjs?v=20261113-scheduled-booking-receipt-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261113-live-session-receipt-stability-v1'));
 });
 
 test('Explicit login keeps the fast role shell mounted and does not hide/reopen Dashboard', () => {
@@ -394,7 +394,7 @@ test('Astrologer Dashboard keeps one heading and parallelizes its first profile 
   assert.ok(dashboard.includes('const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null;'));
   assert.ok(dashboard.includes('astrologerProfileResult=profileResult;'));
   assert.ok(!dashboard.includes("const a=await withTimeout(\n     getDoc(doc(db,'smv_astrologers',currentUser.uid))"));
-  assert.ok(html.includes('smvastro.mjs?v=20261113-scheduled-booking-receipt-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261113-live-session-receipt-stability-v1'));
 });
 
 test('Astrologer Dashboard renders its main UI before earnings and withdrawal history resolve', () => {
@@ -414,7 +414,7 @@ test('Astrologer Dashboard renders its main UI before earnings and withdrawal hi
   assert.ok(dashboard.includes('id="smvAstroEarningsHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalStatus"'));
-  assert.ok(html.includes('smvastro.mjs?v=20261113-scheduled-booking-receipt-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261113-live-session-receipt-stability-v1'));
 });
 
 test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
@@ -1163,19 +1163,33 @@ test('Print/Save is exposed only for ended sessions and Chat print retrieves the
   assert.ok(frontend.includes("async function smvLiveOpenReceiptPage(session)"));
   assert.ok(frontend.includes("window.location.assign('/live-session-receipt.html?session='+encodeURIComponent(id));"));
   assert.ok(frontend.includes("sessionStorage.setItem('smv_live_receipt_'+id,bill);"));
+  assert.ok(frontend.includes("localStorage.setItem(key,fallback);"), 'A receipt-scoped fallback protects handoff when WebView session storage changes context.');
+  const receiptPage=read('public/live-session-receipt.mjs');
+  assert.ok(receiptPage.includes('RECEIPT_TTL_MS=5*60*1000'), 'The fallback expires after five minutes.');
+  assert.ok(receiptPage.includes('localStorage.getItem(key)'), 'Receipt page reads the exact session fallback.');
+  assert.ok(receiptPage.includes('localStorage.removeItem(key)'), 'Receipt page removes only the consumed session key.');
+  assert.doesNotMatch(receiptPage,/localStorage\.clear\(|sessionStorage\.clear\(/, 'Receipt recovery never clears origin-wide storage.');
   assert.ok(!frontend.includes('<iframe title="SMV ASTRO Live Session Bill"'), 'Live receipt is a full page, not a sandboxed iframe modal.');
   assert.ok(frontend.includes("typeof b.viewLiveReceiptPdf===&quot;function&quot;"), 'Live Receipt must use a dedicated Android bridge, not the Horoscope viewPdf method.');
   assert.ok(frontend.includes("data-customer-scheduled-receipt=\"'+escapeHtml(a.liveSessionId)+'\""), 'Completed scheduled bookings have a distinct receipt action.');
   assert.ok(frontend.includes("renderApi('/live/sessions/'+encodeURIComponent(id),{method:'GET',timeoutMs:12000})"), 'The receipt action fetches the exact session record rather than reopening the live panel.');
   assert.ok(frontend.includes('View Session Receipt</button>'), 'Completed scheduled bookings use the requested title-case receipt label.');
   assert.ok(frontend.includes('smv-plain-text-action smv-live-session-receipt-action'), 'View Session Receipt is plain text without a button-box class.');
-  assert.ok(frontend.includes('await smvLiveOpenReceiptPage(session);'), 'A completed booking opens the authoritative receipt page directly.');
+  assert.ok(frontend.includes("await smvLiveOpenReceiptPage({...session,state:'ended'});"), 'A completed booking opens the authoritative receipt page after normalizing its ended state.');
   assert.ok(frontend.includes("data-astrologer-scheduled-receipt=\"'+escapeHtml(a.liveSessionId)+'\""), 'Astrologer completed scheduled bookings expose the receipt action.');
   assert.ok(frontend.includes("host.querySelectorAll('[data-astrologer-scheduled-receipt]')"), 'Astrologer receipt actions use the common scheduled receipt handler.');
+  assert.ok(frontend.includes('smvLiveStyleReceiptAction(btn);'), 'Astrologer scheduled receipt labels receive inline dark-purple styling.');
   assert.ok(frontend.includes('async function smvLiveOpenScheduledReceipt(sessionId,button)'), 'Both roles share the participant-authorized receipt lookup.');
   assert.ok(frontend.includes("openButton.classList.toggle('smv-live-session-receipt-action',ended)"), 'Download Receipt shares the dark-purple receipt style.');
+  assert.ok(frontend.includes('function smvLiveBindDashboardSessionAction(button,session){'), 'The Live Sessions row switches behavior once ended.');
+  assert.ok(frontend.includes('button.onclick=()=>smvLiveOpenScheduledReceipt(id,button);'), 'Download Receipt fetches and opens the participant-authorized receipt.');
+  const loadStart=frontend.indexOf('async function smvLiveLoadDashboard(role){');
+  const loadEnd=frontend.indexOf('\nasync function smvLiveHandlePushOpen(payload',loadStart);
+  const loadDashboard=frontend.slice(loadStart,loadEnd);
+  assert.ok(loadDashboard.includes('smvLiveBindDashboardSessionAction(btn,session);'), 'The final row binding preserves the ended-receipt action.');
   assert.ok(frontend.includes("function smvLiveQueueEndedReceipt(session)"));
-  assert.ok(frontend.includes("if(s.state!=='ended')throw new Error('The Bill is available after the Live Session ends.');"));
+  assert.ok(frontend.includes('function smvLiveSessionIsEnded(session){'), 'Receipt eligibility accepts normalized ended state from state or status.');
+  assert.ok(frontend.includes("if(!smvLiveSessionIsEnded(s))throw new Error('The Bill is available after the Live Session ends.');"));
   assert.ok(frontend.includes("renderApi('/live/sessions/'+encodeURIComponent(String(s.id||s.sessionId||''))+'/messages'"));
   assert.ok(frontend.includes("historyLoadWarning='Server history could not be refreshed. The transcript below includes messages already loaded in this session.';"));
   const applyStart=frontend.indexOf('function smvLiveApplySession(session){');
