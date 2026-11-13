@@ -1175,7 +1175,7 @@ test('Print/Save is exposed only for ended sessions and Chat print retrieves the
   assert.ok(frontend.includes("renderApi('/live/sessions/'+encodeURIComponent(id),{method:'GET',timeoutMs:12000})"), 'The receipt action fetches the exact session record rather than reopening the live panel.');
   assert.ok(frontend.includes('View Session Receipt</button>'), 'Completed scheduled bookings use the requested title-case receipt label.');
   assert.ok(frontend.includes('smv-plain-text-action smv-live-session-receipt-action'), 'View Session Receipt is plain text without a button-box class.');
-  assert.ok(frontend.includes('await smvLiveOpenReceiptPage(session);'), 'A completed booking opens the authoritative receipt page directly.');
+  assert.ok(frontend.includes("await smvLiveOpenReceiptPage({...session,state:'ended'});"), 'A completed booking opens the authoritative receipt page after normalizing its ended state.');
   assert.ok(frontend.includes("data-astrologer-scheduled-receipt=\"'+escapeHtml(a.liveSessionId)+'\""), 'Astrologer completed scheduled bookings expose the receipt action.');
   assert.ok(frontend.includes("host.querySelectorAll('[data-astrologer-scheduled-receipt]')"), 'Astrologer receipt actions use the common scheduled receipt handler.');
   assert.ok(frontend.includes('smvLiveStyleReceiptAction(btn);'), 'Astrologer scheduled receipt labels receive inline dark-purple styling.');
