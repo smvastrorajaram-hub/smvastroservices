@@ -98,7 +98,7 @@ const BONUS_CREDIT_SCHEMA_QUERY = [
   "  (SELECT COUNT(*) FROM pragma_table_info('smv_domain_live_sessions') WHERE name='reserved_bonus_credit_paise') AS live_session_bonus_credit_columns_count,",
   "  (SELECT COUNT(*) FROM pragma_table_info('smv_domain_live_bookings') WHERE name='reserved_bonus_credit_paise') AS live_booking_bonus_credit_columns_count",
   "FROM object_checks CROSS JOIN bonus_credit_version"
-].join('\\n');
+].join('\n');
 
 const MIGRATION_KEYS = [
   '0002_shared_domain_repository',
