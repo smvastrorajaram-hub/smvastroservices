@@ -36,36 +36,29 @@ test('started-minute billing has exact disconnect boundaries and respects select
   assert.equal(billableMinutesForElapsedMs(900000,2),2);
 });
 
-test('promotional minutes are used before cash minutes and only paid started minutes are charged',()=>{
-  const at59=calculateLiveSessionCharge({elapsedMs:59999,ratePerMinutePaise:1000,maximumMinutes:5,freeMinutes:1});
-  assert.deepEqual(at59,{elapsedMs:59999,billableMinutes:0,totalBillableMinutes:1,freeMinutesUsed:1,amountPaise:0});
-  const at120=calculateLiveSessionCharge({elapsedMs:120000,ratePerMinutePaise:1200,maximumMinutes:5,freeMinutes:1});
+test('started-minute billing bills the full service time without Free Minutes offsets',()=>{
+  const at59=calculateLiveSessionCharge({elapsedMs:59999,ratePerMinutePaise:1000,maximumMinutes:5});
+  assert.deepEqual(at59,{elapsedMs:59999,billableMinutes:1,totalBillableMinutes:1,amountPaise:1000});
+  const at120=calculateLiveSessionCharge({elapsedMs:120000,ratePerMinutePaise:1200,maximumMinutes:5});
   assert.equal(at120.totalBillableMinutes,2);
-  assert.equal(at120.freeMinutesUsed,1);
-  assert.equal(at120.billableMinutes,1);
-  assert.equal(at120.amountPaise,1200);
+  assert.equal(at120.billableMinutes,2);
+  assert.equal(at120.amountPaise,2400);
 });
 
-test('Wallet reserve uses Bonus Credit first and leaves legacy Free Minutes untouched',()=>{
+test('Wallet reserve applies Bonus Credit first and keeps the cash remainder separate',()=>{
   const result=reserveLiveWallet({
-    wallet:{
-      availableBalancePaise:5000,reservedBalancePaise:0,
-      bonusCreditBalancePaise:3000,reservedBonusCreditPaise:0,
-      bonusMinutesBalance:25,reservedBonusMinutes:0
-    },
+    wallet:{availableBalancePaise:5000,reservedBalancePaise:0,bonusCreditBalancePaise:3000,reservedBonusCreditPaise:0},
     minutes:5,ratePerMinutePaise:1000
   });
   assert.equal(result.grossRequiredPaise,5000);
   assert.equal(result.reservedBonusCreditPaise,3000);
   assert.equal(result.reservedAmountPaise,2000);
-  assert.equal(result.reservedBonusMinutes,0);
-  assert.equal(result.bonusMinutesBalanceAfter,25);
   assert.equal(result.availableBalanceAfterPaise,3000);
   assert.equal(result.reservedBalanceAfterPaise,2000);
   assert.equal(result.bonusCreditBalanceAfterPaise,0);
   assert.equal(result.reservedBonusCreditAfterPaise,3000);
   assert.throws(()=>reserveLiveWallet({
-    wallet:{availableBalancePaise:1000,bonusCreditBalancePaise:0,bonusMinutesBalance:100},
+    wallet:{availableBalancePaise:1000,bonusCreditBalancePaise:0},
     minutes:2,ratePerMinutePaise:1000
   }),error=>error.code==='WALLET_INSUFFICIENT_BALANCE');
 });
@@ -176,32 +169,43 @@ test('Bonus Credit reserves are released when a Live session never connects',()=
   assert.equal(result.adminAmountPaise,0);
 });
 
-test('session settlement releases all reserve before connection and rounds connected time upward',()=>{
+test('session settlement releases Bonus Credit and cash before connection, then charges only remaining cash',()=>{
   const pending=calculateLiveSettlement({
-    session:{minutes:5,ratePerMinutePaise:1000,reservedAmountPaise:4000,reservedBonusMinutes:1},
+    session:{billingModel:'bonus_credit_v1',minutes:5,ratePerMinutePaise:1000,
+      reservedAmountPaise:4000,reservedBonusCreditPaise:1000},
     nowMs:2000
   });
   assert.equal(pending.chargedAmountPaise,0);
   assert.equal(pending.releasedAmountPaise,4000);
-  assert.equal(pending.bonusMinutesReleased,1);
+  assert.equal(pending.bonusCreditUsedPaise,0);
+  assert.equal(pending.bonusCreditReleasedPaise,1000);
+
   const started=calculateLiveSettlement({
-    session:{minutes:5,ratePerMinutePaise:1000,reservedAmountPaise:4000,reservedBonusMinutes:1,startedAtMs:1000,astrologerCommissionPercent:20,adminCommissionPercent:80},
+    session:{billingModel:'bonus_credit_v1',minutes:5,ratePerMinutePaise:1000,
+      reservedAmountPaise:4000,reservedBonusCreditPaise:1000,startedAtMs:1000,
+      astrologerCommissionPercent:20,adminCommissionPercent:80},
     nowMs:61000
   });
   assert.equal(started.totalBillableMinutes,1);
-  assert.equal(started.freeMinutesUsed,1);
+  assert.equal(started.grossServiceAmountPaise,1000);
+  assert.equal(started.bonusCreditUsedPaise,1000);
   assert.equal(started.chargedAmountPaise,0);
   assert.equal(started.releasedAmountPaise,4000);
+  assert.equal(started.bonusCreditReleasedPaise,0);
+
   const longer=calculateLiveSettlement({
-    session:{minutes:5,ratePerMinutePaise:1000,reservedAmountPaise:4000,reservedBonusMinutes:1,startedAtMs:1000,astrologerCommissionPercent:20,adminCommissionPercent:80},
+    session:{billingModel:'bonus_credit_v1',minutes:5,ratePerMinutePaise:1000,
+      reservedAmountPaise:4000,reservedBonusCreditPaise:1000,startedAtMs:1000,
+      astrologerCommissionPercent:20,adminCommissionPercent:80},
     nowMs:121001
   });
   assert.equal(longer.totalBillableMinutes,3);
-  assert.equal(longer.freeMinutesUsed,1);
+  assert.equal(longer.grossServiceAmountPaise,3000);
+  assert.equal(longer.bonusCreditUsedPaise,1000);
   assert.equal(longer.chargedAmountPaise,2000);
   assert.equal(longer.releasedAmountPaise,2000);
-  assert.equal(longer.astrologerAmountPaise,400);
-  assert.equal(longer.adminAmountPaise,1600);
+  assert.equal(longer.astrologerAmountPaise,600);
+  assert.equal(longer.adminAmountPaise,2400);
 });
 
 test('Live booking row preserves the Customer birth details for the assigned Astrologer',()=>{
