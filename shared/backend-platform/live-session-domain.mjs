@@ -69,7 +69,7 @@ export function reserveLiveWallet({wallet,minutes,ratePerMinutePaise}={}) {
     grossRequiredPaise,
     availableBalanceAfterPaise:available-reservedAmountPaise,
     reservedBalanceAfterPaise:reserved+reservedAmountPaise,
-    reservedBonusCreditBalanceAfterPaise:bonusAvailable-reservedBonusCreditPaise,
+    bonusCreditBalanceAfterPaise:bonusAvailable-reservedBonusCreditPaise,
     reservedBonusCreditAfterPaise:reservedBonusCredit+reservedBonusCreditPaise
   };
 }
