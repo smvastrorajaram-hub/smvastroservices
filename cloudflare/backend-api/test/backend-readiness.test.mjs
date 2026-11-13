@@ -124,7 +124,7 @@ test('required schema query aggregates all six optional Live Session indexes', a
   ];
 
   assert.match(query, /AS live_session_query_indexes_count/);
-  assert.match(query, /SUM\\(CASE WHEN type='index' AND name IN \\(/);
+  assert.ok(query.includes("SUM(CASE WHEN type='index' AND name IN ("));
   for (const name of expectedIndexes) {
     assert.equal((query.match(new RegExp(name, 'g')) || []).length, 2,
       name + ' must be both selected by the metadata CTE and included in the aggregate');
