@@ -349,7 +349,7 @@ export function createD1LiveSessionService({
     return JSON.stringify(data);
   }
   async function createRequest({
-    customerUid,astrologerId,mode,minutes,requestId,customerName,birthDetails,appointmentId=''
+    customerUid,astrologerId,mode,minutes,requestId,customerName,birthDetails,appointmentId='',requireImmediateSession=false
   }={}) {
     const uid=checkUid(customerUid),astroUid=checkUid(astrologerId);
     const kind=String(mode||'').trim().toLowerCase();
@@ -394,6 +394,7 @@ export function createD1LiveSessionService({
     // Admission uses the authoritative in-flight count and mode eligibility;
     // public Busy presence never blocks another request below the configured capacity.
     const canStartNow=liveRequestCanStartNow(astro,kind,count,pricing.maxConcurrentSessions);
+    if(!canStartNow&&requireImmediateSession) throw liveError('LIVE_ASTROLOGER_BUSY','The Astrologer has reached the Live Session limit. Finish another session and retry the scheduled Start button.',409);
     const timestamp=Number(now());
     const common={
       sessionId:id,customerUid:uid,astrologerUid:astroUid,astrologerId:astroUid,

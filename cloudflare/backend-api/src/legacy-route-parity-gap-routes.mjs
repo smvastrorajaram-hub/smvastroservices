@@ -1152,7 +1152,7 @@ export function registerLegacyRouteParityGapRoutes({
       if (String(env?.SMV_ENVIRONMENT || '') !== 'staging' ||
           String(env?.SMV_LIVE_SESSION_ROUTES_ENABLED || '').toLowerCase() !== 'true' ||
           !liveService || typeof liveService.createRequest !== 'function' ||
-          typeof liveService.acceptSession !== 'function' || typeof liveService.endSession !== 'function' ||
+          typeof liveService.acceptSession !== 'function' || typeof liveService.acceptBooking !== 'function' || typeof liveService.endSession !== 'function' ||
           !env?.LIVE_SESSION_COORDINATOR || !env?.LIVE_USER_EVENT_HUB || !(await isLiveReady())) {
         return res.status(503).json({ success: false, error: 'Scheduled Live Call/Chat infrastructure is not ready.', code: 'LIVE_SCHEMA_NOT_READY' });
       }
@@ -1236,11 +1236,21 @@ export function registerLegacyRouteParityGapRoutes({
       });
       let finalResult = result;
       let session = result.session || null;
-      if (result.kind === 'session' && session) {
+      if (result.kind === 'booking' && result.booking) {
+        const promoted = await liveService.acceptBooking({
+          bookingId: String(result.booking.id || result.booking.bookingId || ''), astrologerUid: uid
+        });
+        session = promoted.session || null;
+        finalResult = { ...result, kind: 'session', session, booking: null, wallet: promoted.wallet || result.wallet };
+      }
+      if (result.kind === 'session' && session && String(session.state || '') === 'ringing') {
         createdSessionId = String(session.id);
         const accepted = await liveService.acceptSession({ sessionId: createdSessionId, astrologerUid: uid });
         session = accepted.session;
-        finalResult = { ...result, session };
+        finalResult = { ...finalResult, kind: 'session', session };
+      }
+      if (session && finalResult.kind === 'session') {
+        createdSessionId = String(session.id);
         const until = timestampMillis(session.preparationUntil || session.preparationUntilMs) ||
           Date.now() + LIVE_PREPARATION_DURATION_MS;
         const stub = env.LIVE_SESSION_COORDINATOR.get(env.LIVE_SESSION_COORDINATOR.idFromName(createdSessionId));
@@ -1270,12 +1280,13 @@ export function registerLegacyRouteParityGapRoutes({
           } catch { /* realtime event is best-effort after the D1 state is committed */ }
         }
       }
-      const isSession = result.kind === 'session' && !!session;
+      const isSession = finalResult.kind === 'session' && !!session;
+      if (!isSession) throw routeError('SCHEDULED_SESSION_NOT_CREATED', 'The scheduled Call/Chat did not create a Live Session. Retry Start while the booking window is open.', 409);
       const appointmentPatch = {
-        bookingStatus: isSession ? 'in_progress' : 'waiting_for_online',
-        status: isSession ? 'in_progress' : 'accepted',
-        liveSessionId: String(session?.id || result.booking?.id || ''),
-        liveBookingId: String(result.booking?.id || ''),
+        bookingStatus: 'in_progress',
+        status: 'in_progress',
+        liveSessionId: String(session.id || ''),
+        liveBookingId: '',
         liveRequestId: requestId,
         scheduledStartedAt: isSession ? FirestoreFieldValue.serverTimestamp() : null,
         updatedAt: FirestoreFieldValue.serverTimestamp()
@@ -1291,7 +1302,20 @@ export function registerLegacyRouteParityGapRoutes({
         }
         tx.set(path, appointmentPatch, { merge: true });
       });
-      return noStore(res).json(finalResult);
+      if (env?.LIVE_SESSION_COORDINATOR?.get && env?.LIVE_SESSION_COORDINATOR?.idFromName) {
+        try {
+          const reminderStub = env.LIVE_SESSION_COORDINATOR.get(
+            env.LIVE_SESSION_COORDINATOR.idFromName('scheduled-booking-' + appointmentId)
+          );
+          await reminderStub.fetch('https://scheduled-booking.internal/stop-booking-ringtone', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookingId: appointmentId, astrologerUid: uid })
+          });
+        } catch (error) {
+          console.warn('[Scheduled Booking] Stop-ringtone signal deferred:', error?.message || error);
+        }
+      }
+      return noStore(res).json({ ...finalResult, session });
     } catch (error) {
       if (createdSessionId && liveService?.endSession) {
         await liveService.endSession({ sessionId: createdSessionId, reason: 'server_ended', system: true }).catch(() => {});

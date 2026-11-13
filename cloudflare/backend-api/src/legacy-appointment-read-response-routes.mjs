@@ -30,7 +30,7 @@ function sendError(res,error,fallback){
 }
 
 /** Customer-scoped consultation history and UID-verified scheduled booking responses. */
-export function registerLegacyAppointmentReadAndResponseRoutes({app,firestore,identityService,now=Date.now}={}){
+export function registerLegacyAppointmentReadAndResponseRoutes({app,firestore,identityService,reminderCoordinator=null,now=Date.now}={}){
   if(!app||typeof app.get!=='function'||typeof app.post!=='function'||
      typeof firestore?.runQuery!=='function'||typeof firestore?.getDocument!=='function'||
      typeof firestore?.runTransaction!=='function'||
@@ -106,6 +106,17 @@ export function registerLegacyAppointmentReadAndResponseRoutes({app,firestore,id
         return{success:true,alreadyProcessed:false,appointmentId:id,bookingStatus:target};
       });
       if(outcome.errorStatus)return res.status(outcome.errorStatus).set('Cache-Control','no-store').json({success:false,error:outcome.error,bookingStatus:outcome.bookingStatus});
+      if (['accepted', 'rejected'].includes(String(outcome.bookingStatus || '')) && reminderCoordinator?.idFromName && reminderCoordinator?.get) {
+        try {
+          const reminderStub = reminderCoordinator.get(reminderCoordinator.idFromName('scheduled-booking-' + id));
+          await reminderStub.fetch('https://scheduled-booking.internal/stop-booking-ringtone', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookingId: id, astrologerUid: uid })
+          });
+        } catch (error) {
+          console.warn('[Scheduled Booking] Stop-ringtone signal deferred:', error?.message || error);
+        }
+      }
       return res.set('Cache-Control','no-store').json(outcome);
     }catch(error){
       return sendError(res,error,'Unable to update this scheduled booking.');

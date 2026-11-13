@@ -739,7 +739,7 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
     };
   }
 
-  async function createRequest({ customerUid, astrologerId, mode, minutes, requestId, customerName, birthDetails, appointmentId = '' }) {
+  async function createRequest({ customerUid, astrologerId, mode, minutes, requestId, customerName, birthDetails, appointmentId = '', requireImmediateSession = false }) {
     const uid = String(customerUid || '').trim();
     const astroId = String(astrologerId || '').trim();
     const kind = String(mode || '').trim().toLowerCase();
@@ -838,6 +838,9 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
       // configured concurrent-session capacity still has room. Manual Busy
       // was rejected above and is never queued or reserved.
       const canStartNow = liveCount < pricing.maxConcurrentSessions;
+      if (!canStartNow && requireImmediateSession) {
+        throw httpError(409, 'The Astrologer has reached the Live Session limit. Finish another session and retry the scheduled Start button.', 'LIVE_ASTROLOGER_BUSY');
+      }
       if (!canStartNow) {
         const reserve = await reserveInTransaction(tx, {
           uid, mode: kind, minutes: length, rate, walletSnapshot: walletSnap, sessionId: id, reservationType: 'live_booking'
@@ -2102,7 +2105,7 @@ async function rejectOrCancel(sessionId, user, reason) {
       }
       const mode = appointment.bookingKind === 'scheduled_chat_request' ? 'chat' : 'call';
       const requestId = 'smv-scheduled-' + appointmentId;
-      const result = await createRequest({
+      let result = await createRequest({
         customerUid: String(appointment.customerUid || ''),
         astrologerId: uid,
         mode,
@@ -2110,26 +2113,44 @@ async function rejectOrCancel(sessionId, user, reason) {
         requestId,
         customerName: String(appointment.name || ''),
         birthDetails: appointment.birthDetails || {},
-        appointmentId
+        appointmentId,
+        requireImmediateSession: true
       });
-      if (result.kind === 'session' && result.session) {
+      // Earlier Start attempts could leave this deterministic request ID as a pending booking.
+      // Promote that same reservation into its single authoritative session when capacity is free.
+      if (result.kind === 'booking' && result.booking) {
+        const promoted = await acceptBooking({
+          bookingId: String(result.booking.id || result.booking.bookingId || ''), astrologerUid: uid
+        });
+        result = { ...result, kind: 'session', session: promoted.session, booking: null, wallet: promoted.wallet || result.wallet };
+      }
+      if (result.kind === 'session' && result.session && String(result.session.state || '') === 'ringing') {
         // This button is the Astrologer's explicit Start action for an accepted schedule.
         // Move straight into the 3-minute preparation phase instead of showing a second Accept prompt.
         const accepted = await acceptSession(result.session.id, uid);
         result.session = accepted.session;
       }
       const isSession = result.kind === 'session' && !!result.session;
+      if (!isSession) {
+        throw httpError(409, 'The scheduled Call/Chat did not create a Live Session. Retry Start while the booking window is open.', 'SCHEDULED_SESSION_NOT_CREATED');
+      }
       const appointmentPatch = {
-        bookingStatus: isSession ? 'in_progress' : 'waiting_for_online',
-        status: isSession ? 'in_progress' : 'accepted',
-        liveSessionId: String(result.session?.id || result.booking?.id || ''),
-        liveBookingId: String(result.booking?.id || ''),
+        bookingStatus: 'in_progress',
+        status: 'in_progress',
+        liveSessionId: String(result.session.id || ''),
+        liveBookingId: '',
         liveRequestId: requestId,
         scheduledStartedAt: isSession ? FieldValue.serverTimestamp() : null,
         updatedAt: FieldValue.serverTimestamp()
       };
       await domainAppointmentRef.set(appointmentPatch, { merge: true });
       if (db !== profileDb) await appointmentRef.set(appointmentPatch, { merge: true });
+      void notifyAstrologerPush(uid, {
+        type: 'stop_ringing', mode, sessionId: String(result.session.id || ''),
+        bookingId: appointmentId, title: 'Scheduled booking started',
+        body: 'The scheduled Live session has started.',
+        tag: 'smv-stop-scheduled-' + appointmentId
+      });
       return res.set('Cache-Control', 'no-store').json(result);
     } catch (error) { return replyError(res, error, 'Unable to start this scheduled Call/Chat.'); }
   });

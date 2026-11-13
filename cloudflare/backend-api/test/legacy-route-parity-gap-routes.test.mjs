@@ -454,6 +454,7 @@ test('Scheduled in-progress retry passes the D1 Live service listSessions object
   const liveService={
     async createRequest(){throw new Error('must not create a duplicate request');},
     async acceptSession(){throw new Error('must not re-accept an existing session');},
+    async acceptBooking(){throw new Error('must not promote a booking when a session already exists');},
     async endSession(){throw new Error('must not end an existing session');},
     async listSessions(input){
       inputs.push(input);

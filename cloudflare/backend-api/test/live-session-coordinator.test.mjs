@@ -14,7 +14,7 @@ class FakeStorage {
   async getAlarm() { return this.alarmAt; }
 }
 
-function fakeState({ queue = null } = {}) {
+function fakeState({ queue = null, extraEnv = {} } = {}) {
   const storage = new FakeStorage();
   const sent = [];
   const ctx = {
@@ -23,7 +23,7 @@ function fakeState({ queue = null } = {}) {
     acceptWebSocket(socket) { this.accepted.push(socket); },
     getWebSockets() { return this.accepted; }
   };
-  const env = queue ? { LIVE_SESSION_EVENTS: { async send(value) { sent.push(value); } } } : {};
+  const env = { ...(queue ? { LIVE_SESSION_EVENTS: { async send(value) { sent.push(value); } } } : {}), ...extraEnv };
   return { ctx, env, storage, sent };
 }
 
@@ -213,4 +213,80 @@ test('event hub rejects publish calls without internal Worker assertion', async 
     targetUid: 'customer_1', eventId: 'event:2', type: 'live.session.updated'
   }));
   assert.equal(response.status, 403);
+});
+
+
+test('scheduled booking sends an immediate native alert and durably arms the exact Preferred-Time reminder', async () => {
+  const pushes = [];
+  const state = fakeState({ extraEnv: {
+    __sendScheduledBookingPush: async ({ reminder, type }) => {
+      pushes.push({ bookingId: reminder.bookingId, type });
+      return { sent: 1, registered: 1 };
+    }
+  } });
+  const coordinator = new LiveSessionCoordinator(state.ctx, state.env);
+  const preferredAtMs = Date.now() + 60_000;
+  const response = await coordinator.fetch(request('/schedule-booking-reminder', {
+    bookingId: 'appointment-1', astrologerUid: 'astro-1', mode: 'call', preferredAtMs
+  }));
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).ok, true);
+  assert.deepEqual(pushes, [{ bookingId: 'appointment-1', type: 'scheduled_booking' }]);
+  const record = await state.storage.get('live-session-record');
+  assert.equal(record.bookingReminder.preferredAtMs, preferredAtMs);
+  assert.equal(record.bookingReminder.initialPushSent, true);
+  assert.equal(await state.storage.getAlarm(), preferredAtMs);
+});
+
+test('Preferred-Time reminder rings only after Astrologer acceptance and keeps the original two-minute grace', async () => {
+  const pushes = [];
+  let bookingStatus = 'requested';
+  const state = fakeState({ extraEnv: {
+    __sendScheduledBookingPush: async ({ reminder, type }) => {
+      pushes.push({ bookingId: reminder.bookingId, type });
+      return { sent: 1, registered: 1 };
+    },
+    __getScheduledBookingState: async reminder => ({ exists: true, astrologerUid: reminder.astrologerUid, bookingStatus })
+  } });
+  const coordinator = new LiveSessionCoordinator(state.ctx, state.env);
+  const preferredAtMs = Date.now() + 60_000;
+  await coordinator.fetch(request('/schedule-booking-reminder', {
+    bookingId: 'appointment-2', astrologerUid: 'astro-2', mode: 'chat', preferredAtMs
+  }));
+  let record = await state.storage.get('live-session-record');
+  record.bookingReminder.preferredAtMs = Date.now() - 1;
+  record.bookingReminder.preferredNextAttemptAtMs = Date.now() - 1;
+  await state.storage.put('live-session-record', record);
+  await coordinator.alarm();
+  assert.equal(pushes.filter(item => item.type === 'scheduled_booking_reminder').length, 0);
+  record = await state.storage.get('live-session-record');
+  assert.ok(record.bookingReminder.preferredNextAttemptAtMs <= record.bookingReminder.preferredAtMs + 2 * 60_000);
+
+  bookingStatus = 'accepted';
+  record.bookingReminder.preferredNextAttemptAtMs = Date.now() - 1;
+  await state.storage.put('live-session-record', record);
+  await coordinator.alarm();
+  assert.equal(pushes.filter(item => item.type === 'scheduled_booking_reminder').length, 1);
+  assert.equal((await state.storage.get('live-session-record')).bookingReminder.preferredReminderSent, true);
+});
+
+
+test('accepted scheduled booking can stop its previously started native ringtone', async () => {
+  const pushes = [];
+  const state = fakeState({ extraEnv: {
+    __sendScheduledBookingPush: async ({ reminder, type }) => {
+      pushes.push({ bookingId: reminder.bookingId, type });
+      return { sent: 1, registered: 1 };
+    }
+  } });
+  const coordinator = new LiveSessionCoordinator(state.ctx, state.env);
+  await coordinator.fetch(request('/schedule-booking-reminder', {
+    bookingId: 'appointment-stop', astrologerUid: 'astro-stop', mode: 'call',
+    preferredAtMs: Date.now() + 60_000
+  }));
+  const response = await coordinator.fetch(request('/stop-booking-ringtone', {
+    bookingId: 'appointment-stop', astrologerUid: 'astro-stop'
+  }));
+  assert.equal(response.status, 200);
+  assert.deepEqual(pushes.map(item => item.type), ['scheduled_booking', 'stop_ringing']);
 });

@@ -1137,6 +1137,13 @@ app.post("/astrologer/appointments/:id/respond", async (req,res)=>{
       });
       return {success:true,alreadyProcessed:false,appointmentId:ref.id,bookingStatus:target,customerUid:String(a.customerUid||'')};
     });
+    if (outcome.success && ['accepted', 'rejected'].includes(String(outcome.bookingStatus || ''))) {
+      void liveSessionService.notifyAstrologerPush(uid, {
+        type: 'stop_ringing', bookingId: String(outcome.appointmentId || ref.id),
+        title: 'Scheduled booking handled', body: 'The scheduled booking has been accepted or rejected.',
+        tag: 'smv-stop-scheduled-' + String(outcome.appointmentId || ref.id)
+      });
+    }
     if(outcome.customerUid){
       try{await notifyDashboardUsers([outcome.customerUid,uid],req.path);}
       catch(signalError){console.warn('Scheduled booking response dashboard signal deferred:',signalError?.message||signalError);}
