@@ -32,8 +32,7 @@ class FakeD1 {
       const [uid, role, created, updated] = values;
       if (!this.wallets.has(uid)) this.wallets.set(uid, {
         owner_uid: uid, owner_role: role, currency: 'INR', available_balance_paise: 0,
-        reserved_balance_paise: 0, bonus_minutes_balance: 0, reserved_bonus_minutes: 0,
-        bonus_credit_balance_paise: 0, reserved_bonus_credit_paise: 0,
+        reserved_balance_paise: 0, bonus_credit_balance_paise: 0, reserved_bonus_credit_paise: 0,
         version: 1, created_at_ms: created, updated_at_ms: updated
       });
       return { success: true, meta: { changes: 1 } };
@@ -53,8 +52,7 @@ class FakeD1 {
     }
     if (sql.startsWith('INSERT INTO smv_domain_wallet_ledger')) {
       const [ledgerId, uid, role, type, direction, amount, availableDelta, reservedDelta,
-        bonusDelta, reservedBonusDelta, bonusCreditDelta, reservedBonusCreditDelta,
-        key, referenceType, referenceId, note, metadataJson, source, createdAt] = values;
+        bonusCreditDelta, reservedBonusCreditDelta, key, referenceType, referenceId, note, metadataJson, source, createdAt] = values;
       const wallet = this.wallets.get(uid);
       if (!wallet) throw new Error('WALLET_OWNER_NOT_FOUND');
       if (wallet.owner_role !== role) throw new Error('WALLET_OWNER_ROLE_MISMATCH');
@@ -64,24 +62,19 @@ class FakeD1 {
       const next = {
         available_balance_paise: wallet.available_balance_paise + availableDelta,
         reserved_balance_paise: wallet.reserved_balance_paise + reservedDelta,
-        bonus_minutes_balance: wallet.bonus_minutes_balance + bonusDelta,
-        reserved_bonus_minutes: wallet.reserved_bonus_minutes + reservedBonusDelta,
         bonus_credit_balance_paise: wallet.bonus_credit_balance_paise + bonusCreditDelta,
         reserved_bonus_credit_paise: wallet.reserved_bonus_credit_paise + reservedBonusCreditDelta
       };
       if (next.available_balance_paise < 0) throw new Error('WALLET_INSUFFICIENT_BALANCE');
       if (next.reserved_balance_paise < 0) throw new Error('WALLET_RESERVED_BALANCE_MISMATCH');
-      if (next.bonus_minutes_balance < 0 || next.reserved_bonus_minutes < 0) throw new Error('WALLET_BONUS_BALANCE_MISMATCH');
       if (next.bonus_credit_balance_paise < 0) throw new Error('WALLET_BONUS_CREDIT_BALANCE_MISMATCH');
       if (next.reserved_bonus_credit_paise < 0) throw new Error('WALLET_RESERVED_BONUS_CREDIT_MISMATCH');
       Object.assign(wallet, next, { version: wallet.version + 1, updated_at_ms: createdAt });
       const row = {
         ledger_id: ledgerId, owner_uid: uid, owner_role: role, currency: 'INR', type, direction,
         amount_paise: amount, available_delta_paise: availableDelta, reserved_delta_paise: reservedDelta,
-        bonus_minutes_delta: bonusDelta, reserved_bonus_minutes_delta: reservedBonusDelta,
         bonus_credit_delta_paise: bonusCreditDelta,reserved_bonus_credit_delta_paise:reservedBonusCreditDelta,
         balance_after_paise: next.available_balance_paise, reserved_balance_after_paise: next.reserved_balance_paise,
-        bonus_minutes_balance_after: next.bonus_minutes_balance, reserved_bonus_minutes_after: next.reserved_bonus_minutes,
         bonus_credit_balance_after_paise: next.bonus_credit_balance_paise,
         reserved_bonus_credit_balance_after_paise: next.reserved_bonus_credit_paise,
         idempotency_key: key, reference_type: referenceType, reference_id: referenceId, note,
@@ -177,7 +170,7 @@ function fieldValue() {
   return { serverTimestamp: () => new Date().toISOString() };
 }
 
-async function runWalletParity(label, createAdapter, seedBonus) {
+async function runWalletParity(label, createAdapter) {
   const adapter = createAdapter();
   const owner = { ownerUid: 'customer-1', ownerRole: 'customer' };
   await adapter.ensureWallet(owner.ownerUid, owner.ownerRole);
@@ -199,11 +192,19 @@ async function runWalletParity(label, createAdapter, seedBonus) {
     ...owner, type: 'manual_debit', direction: 'debit', amountPaise: 1000,
     idempotencyKey: 'manual:1'
   });
-  await seedBonus();
+  await adapter.postWalletEntry({
+    ...owner, type: 'recharge_bonus_credit', direction: 'credit', amountPaise: 2000,
+    idempotencyKey: 'bonus-credit:offer-1', referenceType: 'wallet_offer', referenceId: 'offer-1',
+    bonusCreditDeltaPaise: 2000
+  });
   const reserve = await adapter.reserveWallet({
     ...owner, mode: 'call', minutes: 5, ratePerMinutePaise: 1000, sessionId: 'session-1'
   });
   assert.equal(reserve.alreadyProcessed, false, label + ': reserve first run');
+  assert.equal(reserve.wallet.availableBalancePaise, 1000, label + ': remaining cash after reserve');
+  assert.equal(reserve.wallet.reservedBalancePaise, 3000, label + ': cash reserve');
+  assert.equal(reserve.wallet.bonusCreditBalancePaise, 0, label + ': Bonus Credit reserve');
+  assert.equal(reserve.wallet.reservedBonusCreditPaise, 2000, label + ': reserved Bonus Credit');
   const duplicateReserve = await adapter.reserveWallet({
     ...owner, mode: 'call', minutes: 5, ratePerMinutePaise: 1000, sessionId: 'session-1'
   });
@@ -211,29 +212,28 @@ async function runWalletParity(label, createAdapter, seedBonus) {
 
   const settled = await adapter.settleReservation({
     ...owner, sessionId: 'session-1', reservedAmountPaise: 3000,
-    reservedBonusMinutes: 2, chargedAmountPaise: 1000, freeMinutesUsed: 1
+    reservedBonusCreditPaise: 2000, chargedAmountPaise: 0, bonusCreditUsedPaise: 1000
   });
   assert.equal(settled.alreadyProcessed, false, label + ': settlement first run');
-  assert.equal(settled.wallet.availableBalancePaise, 3000, label + ': final available cash');
+  assert.equal(settled.wallet.availableBalancePaise, 4000, label + ': final available cash');
   assert.equal(settled.wallet.reservedBalancePaise, 0, label + ': final reserved cash');
-  assert.equal(settled.wallet.bonusMinutesBalance, 1, label + ': final bonus minutes');
-  assert.equal(settled.wallet.reservedBonusMinutes, 0, label + ': final reserved bonus minutes');
+  assert.equal(settled.wallet.bonusCreditBalancePaise, 1000, label + ': unused Bonus Credit returned');
+  assert.equal(settled.wallet.reservedBonusCreditPaise, 0, label + ': final reserved Bonus Credit');
 
   const duplicateSettlement = await adapter.settleReservation({
     ...owner, sessionId: 'session-1', reservedAmountPaise: 3000,
-    reservedBonusMinutes: 2, chargedAmountPaise: 1000, freeMinutesUsed: 1
+    reservedBonusCreditPaise: 2000, chargedAmountPaise: 0, bonusCreditUsedPaise: 1000
   });
   assert.equal(duplicateSettlement.alreadyProcessed, true, label + ': duplicate settlement');
-  assert.equal(duplicateSettlement.wallet.availableBalancePaise, 3000, label + ': duplicate did not mutate');
+  assert.equal(duplicateSettlement.wallet.availableBalancePaise, 4000, label + ': duplicate did not mutate');
   const history = await adapter.listTransactions(owner.ownerUid, 100);
   assert.equal(history.length, 7, label + ': seven ledger events recorded');
 }
 
+
 test('D1 Wallet adapter conforms to shared reserve, settlement and idempotency semantics', async () => {
   const db = new FakeD1();
-  await runWalletParity('D1', () => createD1WalletAdapter({ db, now: () => 1000 }), async () => {
-    db.wallets.get('customer-1').bonus_minutes_balance = 2;
-  });
+  await runWalletParity('D1', () => createD1WalletAdapter({ db, now: () => 1000 }));
 });
 
 test('D1 Wallet history merges archived Firestore transactions with the live D1 ledger', async () => {
@@ -253,10 +253,6 @@ test('D1 Wallet history merges archived Firestore transactions with the live D1 
     amount_paise: 2500,
     balance_after_paise: 2500,
     reserved_balance_after_paise: 0,
-    bonus_minutes: 0,
-    bonus_minutes_credited: 0,
-    bonus_minutes_balance_after: 0,
-    reserved_bonus_minutes_after: 0,
     idempotency_key: 'legacy:recharge:1',
     reference_type: 'recharge',
     reference_id: 'legacy-order-1',
@@ -279,7 +275,5 @@ test('D1 Wallet history merges archived Firestore transactions with the live D1 
 test('Firestore Admin Wallet adapter conforms to shared reserve, settlement and idempotency semantics', async () => {
   const db = createFakeFirestore();
   const adapter = createFirestoreWalletAdapter({ db, FieldValue: fieldValue() });
-  await runWalletParity('Firestore', () => adapter, async () => {
-    await db.collection('smv_wallets').doc('customer-1').set({ bonusMinutesBalance: 2 }, { merge: true });
-  });
+  await runWalletParity('Firestore', () => adapter);
 });
