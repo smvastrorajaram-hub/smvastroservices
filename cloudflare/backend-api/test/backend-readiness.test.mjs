@@ -110,6 +110,36 @@ test('Production D1 schema readiness recognizes the current 0002-0013 migration 
     'Bonus Credit column checks read each required table definition once');
 });
 
+test('required schema query aggregates all six optional Live Session indexes', async () => {
+  const db = dbWith(readyRow());
+  const result = await inspectBackendSchema(db);
+  const query = db.calls[0];
+  const expectedIndexes = [
+    'idx_smv_domain_sessions_customer_recent',
+    'idx_smv_domain_sessions_astrologer_recent',
+    'idx_smv_domain_sessions_customer_status_updated',
+    'idx_smv_domain_sessions_astrologer_status_updated',
+    'idx_smv_domain_sessions_customer_appointment',
+    'idx_smv_domain_sessions_astrologer_appointment'
+  ];
+
+  assert.match(query, /AS live_session_query_indexes_count/);
+  assert.ok(query.includes("SUM(CASE WHEN type='index' AND name IN ("));
+  for (const name of expectedIndexes) {
+    assert.equal((query.match(new RegExp(name, 'g')) || []).length, 2,
+      name + ' must be both selected by the metadata CTE and included in the aggregate');
+  }
+  assert.equal(result.schemaMigrations['0014_live_session_query_indexes'], true);
+  assert.equal(result.checks.liveSessionQueryIndexes, true);
+
+  const incompleteRow = readyRow();
+  incompleteRow.live_session_query_indexes_count = 5;
+  const incomplete = await inspectBackendSchema(dbWith(incompleteRow));
+  assert.equal(incomplete.schemaMigrations['0014_live_session_query_indexes'], false);
+  assert.equal(incomplete.checks.liveSessionQueryIndexes, false);
+  assert.equal(incomplete.ready, true, 'the optional 0014 index gate must not block core readiness');
+});
+
 test('schema inspector coalesces concurrent probes and reuses a bounded successful result', async () => {
   let clock = 1000;
   let prepareCalls = 0;
