@@ -1499,6 +1499,13 @@ test('Android notification opens reuse one Recents task and root Back keeps SMV 
   const main = manifest.slice(mainStart - 100, manifest.indexOf('</activity>', mainStart));
   assert.ok(main.includes('android:launchMode="singleTask"'), 'notification opens route into the existing launcher task');
   assert.ok(main.includes('android:excludeFromRecents="false"'), 'SMV ASTRO remains visible in Android Recents');
+  const incomingStart=manifest.indexOf('android:name=".IncomingCallActivity"');
+  const incomingEnd=manifest.indexOf('</activity>',incomingStart);
+  const incoming=manifest.slice(incomingStart,incomingEnd);
+  assert.ok(incoming.includes('android:excludeFromRecents="true"'), 'the full-screen ringing screen itself stays out of Recents');
+  assert.ok(incoming.includes('android:taskAffinity="in.smvastroservices.smvastro.incoming"'), 'the ringing screen uses a separate task affinity');
+  assert.ok(!main.includes('android:taskAffinity='), 'the launcher keeps the package default visible Recents task affinity');
+  assert.ok(activity.includes('Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP'), 'notification tap launches or restores the visible app task rather than retaining the hidden ringing task');
   const backStart = activity.indexOf('public void onBackPressed()');
   const back = activity.slice(backStart, activity.indexOf('@Override', backStart + 10));
   assert.ok(back.includes('moveTaskToBack(true)'), 'root Back backgrounds the task instead of finishing MainActivity');
