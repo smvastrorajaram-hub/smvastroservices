@@ -1036,7 +1036,8 @@ test('Live and booked Call/Chat sessions share the same timeout, readiness and s
   assert.ok(acceptedBooking.includes('scheduleSessionTimer(id, txResult.data);'));
   assert.ok(acceptedBooking.includes("type: 'live.session.request'"));
   assert.ok(scheduled.includes('const accepted = await acceptSession(result.session.id, uid);'));
-  assert.ok(scheduled.includes("bookingStatus: isSession ? 'in_progress' : 'waiting_for_online'"));
+  assert.ok(scheduled.includes("bookingStatus: 'in_progress'"));
+  assert.ok(scheduled.includes("liveBookingId: ''"));
   assert.ok(directRequest.includes('const result = await createRequest('));
   assert.ok(frontend.includes("if(s.state==='connecting'&&!call&&String(s.customerUid||'')===String(currentUser?.uid||''))smvLiveMarkReady(s.id,false)"));
   assert.ok(frontend.includes("id=\"smvLiveConnectChat\""));
@@ -1499,4 +1500,43 @@ test('Android notification opens reuse one Recents task and root Back keeps SMV 
   const back = activity.slice(backStart, activity.indexOf('@Override', backStart + 10));
   assert.ok(back.includes('moveTaskToBack(true)'), 'root Back backgrounds the task instead of finishing MainActivity');
   assert.ok(activity.includes('webView.loadUrl(resolveStartUrl(intent))'), 'notification intent still routes the exact live session into the WebView');
+});
+
+
+test('Scheduled booking and Preferred-Time pushes use the same Android looping device ringtone as Live requests', () => {
+  const nativePush=read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/NativePushMessagingService.java');
+  const incoming=read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/IncomingCallActivity.java');
+  const ringtone=read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/IncomingCallRingtoneService.java');
+  assert.match(nativePush,/type\.equals\("live_request"\) \|\| type\.equals\("live_booking"\) \|\| type\.equals\("scheduled_booking"\) \|\| type\.equals\("scheduled_booking_reminder"\)/);
+  assert.ok(incoming.includes('"scheduled_booking_reminder".equals(type)'));
+  assert.ok(ringtone.includes('player.setLooping(true)'));
+  assert.ok(ringtone.includes('RING_TIMEOUT_MILLIS'));
+});
+
+test('Scheduled session Start promotes an earlier idempotent queue into one real session and never stores a booking ID as liveSessionId', () => {
+  const render=read('live-session-service.js');
+  const d1=read('shared/backend-platform/d1-live-session-service.mjs');
+  const worker=read('cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs');
+  assert.ok(render.includes('requireImmediateSession = false'));
+  assert.ok(render.includes('requireImmediateSession: true'));
+  assert.ok(render.includes('const promoted = await acceptBooking('));
+  assert.ok(render.includes("bookingStatus: 'in_progress', status: 'in_progress'"));
+  assert.ok(render.includes("liveBookingId: ''"));
+  assert.ok(d1.includes('requireImmediateSession=false'));
+  assert.ok(d1.includes('if(!canStartNow&&requireImmediateSession)'));
+  assert.ok(worker.includes('liveService.acceptBooking({'));
+  assert.ok(worker.includes('SCHEDULED_SESSION_NOT_CREATED'));
+  assert.ok(render.includes('const SCHEDULED_CONNECT_GRACE_MS = 2 * 60_000;'));
+});
+
+
+test('Scheduled booking acceptance and Start send stop_ringing without using notification UI', () => {
+  const coordinator=read('cloudflare/backend-api/src/live-session-coordinator.mjs');
+  const appointments=read('cloudflare/backend-api/src/legacy-appointment-read-response-routes.mjs');
+  const worker=read('cloudflare/backend-api/src/legacy-route-parity-gap-routes.mjs');
+  const render=read('server.js');
+  assert.ok(coordinator.includes("url.pathname === '/stop-booking-ringtone'"));
+  assert.ok(appointments.includes('stop-booking-ringtone'));
+  assert.ok(worker.includes('stop-booking-ringtone'));
+  assert.ok(render.includes("type: 'stop_ringing', bookingId: String(outcome.appointmentId || ref.id)"));
 });

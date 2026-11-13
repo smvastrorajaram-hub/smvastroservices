@@ -65,7 +65,8 @@ export function registerAppointmentBookingRoute({
   firestore,
   identityService,
   now = Date.now,
-  randomId = () => globalThis.crypto.randomUUID()
+  randomId = () => globalThis.crypto.randomUUID(),
+  reminderCoordinator = null
 } = {}) {
   if (!app || typeof app.post !== 'function' ||
       !firestore || typeof firestore.runTransaction !== 'function' ||
@@ -288,6 +289,27 @@ export function registerAppointmentBookingRoute({
         tx.create('smv_appointments/' + appointmentId, data);
         return { bookingId, appointmentId, data };
       });
+      if (hasCustomerBooking && reminderCoordinator && typeof reminderCoordinator.idFromName === 'function' && typeof reminderCoordinator.get === 'function') {
+        try {
+          const reminderStub = reminderCoordinator.get(reminderCoordinator.idFromName('scheduled-booking-' + booking.appointmentId));
+          const reminderResponse = await reminderStub.fetch('https://scheduled-booking.internal/schedule-booking-reminder', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              bookingId: booking.appointmentId,
+              astrologerUid: String(callBooking.astrologerUid || ''),
+              mode: callBooking.bookingKind === 'scheduled_chat_request' ? 'chat' : 'call',
+              preferredAtMs: scheduleEpoch
+            })
+          });
+          const reminderResult = await reminderResponse.json().catch(() => ({}));
+          if (!reminderResponse.ok || reminderResult.ok !== true) {
+            console.warn('[Scheduled Booking] Native ringtone scheduling deferred:', reminderResult.code || reminderResponse.status);
+          }
+        } catch (error) {
+          // Booking creation is authoritative; a temporary push transport issue must not lose the booking.
+          console.warn('[Scheduled Booking] Native ringtone scheduling deferred:', error?.message || error);
+        }
+      }
       return res.set('Cache-Control', 'no-store').json({
         ok: true,
         bookingId: booking.bookingId,

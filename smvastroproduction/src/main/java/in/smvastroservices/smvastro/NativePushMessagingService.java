@@ -41,7 +41,7 @@ public final class NativePushMessagingService extends FirebaseMessagingService {
         if (data == null || data.isEmpty()) return;
         String type = value(data,"type"), sessionId = value(data,"sessionId"), bookingId = value(data,"bookingId");
         if ("stop_ringing".equals(type)) { IncomingCallRingtoneService.stopFor(this,sessionId,bookingId); return; }
-        if (type.equals("live_request") || type.equals("live_booking")) {
+        if (type.equals("live_request") || type.equals("live_booking") || type.equals("scheduled_booking") || type.equals("scheduled_booking_reminder")) {
             Intent ring = new Intent(this,IncomingCallRingtoneService.class)
                 .setAction(IncomingCallRingtoneService.ACTION_RING)
                 .putExtra(NativeCallNotifications.EXTRA_TYPE,type)

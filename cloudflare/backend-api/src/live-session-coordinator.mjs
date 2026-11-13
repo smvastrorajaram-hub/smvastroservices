@@ -9,6 +9,7 @@ const ALLOWED_DEADLINE_TYPES = new Set([
   'booking_expiry'
 ]);
 import { createD1WalletAdapter } from '../../../shared/backend-platform/d1-wallet-adapter.mjs';
+import { createGoogleServiceAccountTokenProvider } from '../../../shared/backend-platform/google-service-account-token.mjs';
 import { createD1LiveSessionService } from '../../../shared/backend-platform/d1-live-session-service.mjs';
 
 const MAX_DEADLINES = 16;
@@ -61,6 +62,7 @@ function freshRecord(sessionId) {
     deadlines: [],
     pendingEvents: [],
     deliveredEventIds: [],
+    bookingReminder: null,
     updatedAtMs: Date.now()
   };
 }
@@ -83,6 +85,23 @@ export class LiveSessionCoordinator {
     this.ctx = ctx;
     this.env = env;
     this.sseClients = new Set();
+    this.firebaseProjectId = String(env.FIREBASE_PROJECT_ID || '').trim();
+    this.bookingPushTokenProvider = null;
+    try {
+      const raw = String(env.FIREBASE_SERVICE_ACCOUNT_JSON || '').trim();
+      const credentials = raw ? JSON.parse(raw) : {
+        project_id: this.firebaseProjectId,
+        client_email: String(env.FIREBASE_CLIENT_EMAIL || '').trim(),
+        private_key: String(env.FIREBASE_PRIVATE_KEY || '').trim()
+      };
+      this.firebaseProjectId = String(this.firebaseProjectId || credentials.project_id || '').trim();
+      this.bookingPushTokenProvider = createGoogleServiceAccountTokenProvider({
+        credentials,
+        scope: 'https://www.googleapis.com/auth/datastore https://www.googleapis.com/auth/firebase.messaging'
+      });
+    } catch (error) {
+      console.warn('[Scheduled Booking] Firebase push credentials are unavailable:', error?.message || error);
+    }
     this.liveService = env.DB && typeof env.DB.prepare === 'function' && typeof env.DB.batch === 'function'
       ? createD1LiveSessionService({
           db: env.DB,
@@ -99,6 +118,8 @@ export class LiveSessionCoordinator {
       return json({ ok: true, durable: true, role: 'live-session-coordinator' });
     }
     if (request.method === 'POST' && url.pathname === '/schedule') return this.schedule(request);
+    if (request.method === 'POST' && url.pathname === '/schedule-booking-reminder') return this.scheduleBookingReminder(request);
+    if (request.method === 'POST' && url.pathname === '/stop-booking-ringtone') return this.stopBookingRingtone(request);
     if (request.method === 'POST' && url.pathname === '/cancel-deadline') return this.cancelDeadline(request);
     if (request.method === 'POST' && url.pathname === '/connection') return this.connection(request);
     if (request.method === 'POST' && url.pathname === '/publish') return this.publish(request);
@@ -131,9 +152,217 @@ export class LiveSessionCoordinator {
     const retryAt = record.pendingEvents
       .filter(item => !item.deliveredAtMs)
       .reduce((next, item) => Math.min(next, Number(item.nextAttemptAtMs || Date.now() + RETRY_BASE_MS)), Number.POSITIVE_INFINITY);
-    const next = Math.min(deadlineAt, retryAt);
+    const reminder = record.bookingReminder;
+    const reminderAt = reminder ? Math.min(
+      reminder.initialPushSent ? Number.POSITIVE_INFINITY : Number(reminder.initialNextAttemptAtMs || Date.now()),
+      reminder.preferredReminderSent ? Number.POSITIVE_INFINITY : (Number(reminder.preferredAtMs || Number.POSITIVE_INFINITY) <= Date.now()
+        ? Number(reminder.preferredNextAttemptAtMs || reminder.preferredAtMs)
+        : Number(reminder.preferredAtMs || Number.POSITIVE_INFINITY))
+    ) : Number.POSITIVE_INFINITY;
+    const next = Math.min(deadlineAt, retryAt, reminderAt);
     if (Number.isFinite(next)) await this.ctx.storage.setAlarm(Math.max(Date.now() + 1000, next));
     else await this.ctx.storage.deleteAlarm();
+  }
+
+
+  async scheduleBookingReminder(request) {
+    const body = await readJson(request);
+    if (!body) return json({ ok: false, code: 'JSON_INVALID' }, 400);
+    const bookingId = String(body.bookingId || '').trim();
+    const astrologerUid = validUid(body.astrologerUid);
+    const mode = String(body.mode || '').trim().toLowerCase();
+    const preferredAtMs = Number(body.preferredAtMs);
+    if (!/^[A-Za-z0-9_-]{1,180}$/.test(bookingId) || !astrologerUid ||
+        !['call', 'chat'].includes(mode) || !Number.isSafeInteger(preferredAtMs) ||
+        preferredAtMs <= Date.now()) {
+      return json({ ok: false, code: 'BOOKING_REMINDER_INVALID' }, 400);
+    }
+    const record = await this.readRecord();
+    const previous = record.bookingReminder;
+    if (previous && String(previous.bookingId || '') !== bookingId) {
+      return json({ ok: false, code: 'BOOKING_REMINDER_ID_MISMATCH' }, 409);
+    }
+    record.bookingReminder = previous || {
+      bookingId, astrologerUid, mode, preferredAtMs,
+      initialPushSent: false, initialAttempts: 0, initialNextAttemptAtMs: Date.now(),
+      preferredReminderSent: false, preferredAttempts: 0,
+      preferredNextAttemptAtMs: preferredAtMs,
+      updatedAtMs: Date.now()
+    };
+    if (record.bookingReminder.astrologerUid !== astrologerUid ||
+        record.bookingReminder.mode !== mode || Number(record.bookingReminder.preferredAtMs) !== preferredAtMs) {
+      return json({ ok: false, code: 'BOOKING_REMINDER_CONFLICT' }, 409);
+    }
+    await this.writeRecord(record);
+    await this.deliverScheduledBookingReminder(record);
+    await this.armNextAlarm(record);
+    return json({
+      ok: true, bookingId, initialPushSent: record.bookingReminder.initialPushSent === true,
+      preferredReminderAtMs: preferredAtMs
+    });
+  }
+
+  async stopBookingRingtone(request) {
+    const body = await readJson(request);
+    if (!body) return json({ ok: false, code: 'JSON_INVALID' }, 400);
+    const bookingId = String(body.bookingId || '').trim();
+    const astrologerUid = validUid(body.astrologerUid);
+    const record = await this.readRecord();
+    const reminder = record.bookingReminder;
+    if (!/^[A-Za-z0-9_-]{1,180}$/.test(bookingId) || !astrologerUid ||
+        !reminder || reminder.bookingId !== bookingId || reminder.astrologerUid !== astrologerUid) {
+      return json({ ok: false, code: 'BOOKING_REMINDER_NOT_FOUND' }, 404);
+    }
+    try {
+      const result = await this.sendScheduledBookingPush(reminder, 'stop_ringing');
+      return json({ ok: true, sent: Number(result?.sent || 0) });
+    } catch (error) {
+      console.warn('[Scheduled Booking] Stop-ringtone push deferred:', error?.message || error);
+      return json({ ok: false, code: 'BOOKING_STOP_PUSH_FAILED' }, 503);
+    }
+  }
+
+  async firebaseRequest(url, options = {}) {
+    if (!this.bookingPushTokenProvider || !this.firebaseProjectId) {
+      throw new Error('Firebase Admin push credentials are not configured.');
+    }
+    const accessToken = await this.bookingPushTokenProvider.getAccessToken();
+    const response = await fetch(url, {
+      ...options,
+      headers: { Authorization: 'Bearer ' + accessToken, ...(options.headers || {}) }
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error('Firebase request failed with HTTP ' + response.status + '.');
+    return payload;
+  }
+
+  async scheduledBookingState(reminder) {
+    if (typeof this.env.__getScheduledBookingState === 'function') return this.env.__getScheduledBookingState(reminder);
+    const name = 'projects/' + encodeURIComponent(this.firebaseProjectId) +
+      '/databases/(default)/documents/smv_appointments/' + encodeURIComponent(reminder.bookingId);
+    const document = await this.firebaseRequest('https://firestore.googleapis.com/v1/' + name);
+    const fields = document.fields || {};
+    const value = key => String(fields[key]?.stringValue || '');
+    return {
+      exists: true,
+      bookingStatus: value('bookingStatus').toLowerCase(),
+      astrologerUid: value('astrologerUid')
+    };
+  }
+
+  async sendScheduledBookingPush(reminder, type) {
+    if (typeof this.env.__sendScheduledBookingPush === 'function') return this.env.__sendScheduledBookingPush({ reminder, type });
+    const queryUrl = 'https://firestore.googleapis.com/v1/projects/' +
+      encodeURIComponent(this.firebaseProjectId) + '/databases/(default)/documents:runQuery';
+    const query = await this.firebaseRequest(queryUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: 'smv_push_tokens' }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: 'uid' }, op: 'EQUAL',
+              value: { stringValue: reminder.astrologerUid }
+            }
+          },
+          limit: 25
+        }
+      })
+    });
+    const tokens = [...new Set((Array.isArray(query) ? query : [])
+      .map(row => String(row?.document?.fields?.token?.stringValue || '').trim())
+      .filter(token => token.length >= 30 && token.length <= 8192 && !/\\s/.test(token)))];
+    if (!tokens.length) return { sent: 0, registered: 0 };
+    const mode = String(reminder.mode || 'call').toUpperCase();
+    const preferred = type === 'scheduled_booking_reminder';
+    const stopping = type === 'stop_ringing';
+    const title = stopping ? 'Scheduled ' + mode + ' Booking Accepted' : preferred ? 'Scheduled ' + mode + ' Starting Now' : 'New Scheduled ' + mode + ' Booking';
+    const body = stopping
+      ? 'The scheduled booking has been accepted or started.'
+      : preferred
+        ? 'Your accepted ' + mode + ' booking is at the preferred time. Open SMV ASTRO to start.'
+        : 'A Customer has requested a scheduled ' + mode + '. Open SMV ASTRO to review.';
+    const endpoint = 'https://fcm.googleapis.com/v1/projects/' +
+      encodeURIComponent(this.firebaseProjectId) + '/messages:send';
+    const results = await Promise.allSettled(tokens.map(token => this.firebaseRequest(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: {
+          token,
+          data: {
+            type, mode: String(reminder.mode || 'call'), bookingId: reminder.bookingId,
+            title, body, tag: 'smv-scheduled-' + type + '-' + reminder.bookingId
+          },
+          android: { priority: 'HIGH', ttl: '120s' }
+        }
+      })
+    })));
+    return {
+      sent: results.filter(item => item.status === 'fulfilled').length,
+      failed: results.filter(item => item.status === 'rejected').length,
+      registered: tokens.length
+    };
+  }
+
+  async deliverScheduledBookingReminder(record) {
+    const reminder = record?.bookingReminder;
+    if (!reminder || reminder.cancelledAtMs) return;
+    const now = Date.now();
+    if (!reminder.initialPushSent && Number(reminder.initialNextAttemptAtMs || 0) <= now) {
+      try {
+        const result = await this.sendScheduledBookingPush(reminder, 'scheduled_booking');
+        reminder.initialPushSent = true;
+        reminder.initialPushSentAtMs = now;
+        reminder.initialDelivery = result;
+        reminder.initialLastError = '';
+      } catch (error) {
+        reminder.initialAttempts = Number(reminder.initialAttempts || 0) + 1;
+        reminder.initialLastError = String(error?.message || error).slice(0, 200);
+        if (reminder.initialAttempts >= 6) {
+          reminder.initialPushSent = true;
+          reminder.initialPushFailed = true;
+        } else {
+          reminder.initialNextAttemptAtMs = now + Math.min(RETRY_MAX_MS, RETRY_BASE_MS * (2 ** Math.min(reminder.initialAttempts - 1, 4)));
+        }
+      }
+    }
+    const preferredAtMs = Number(reminder.preferredAtMs || 0);
+    if (!reminder.preferredReminderSent && now >= preferredAtMs &&
+        Number(reminder.preferredNextAttemptAtMs || preferredAtMs) <= now) {
+      // Keep the existing two-minute Preferred-Time grace window unchanged.
+      if (now > preferredAtMs + 2 * 60_000) {
+        reminder.preferredReminderSent = true;
+        reminder.preferredSkippedReason = 'preferred_time_grace_elapsed';
+      } else {
+        try {
+          const current = await this.scheduledBookingState(reminder);
+          if (!current.exists || current.astrologerUid !== reminder.astrologerUid ||
+              ['cancelled', 'rejected', 'missed', 'missed_by_astrologer', 'completed', 'in_progress'].includes(current.bookingStatus)) {
+            reminder.preferredReminderSent = true;
+            reminder.preferredSkippedReason = 'booking_not_eligible';
+          } else if (current.bookingStatus !== 'accepted') {
+            reminder.preferredNextAttemptAtMs = Math.min(preferredAtMs + 2 * 60_000, now + RETRY_BASE_MS);
+          } else {
+            const result = await this.sendScheduledBookingPush(reminder, 'scheduled_booking_reminder');
+            reminder.preferredReminderSent = true;
+            reminder.preferredReminderSentAtMs = now;
+            reminder.preferredDelivery = result;
+            reminder.preferredLastError = '';
+          }
+        } catch (error) {
+          reminder.preferredAttempts = Number(reminder.preferredAttempts || 0) + 1;
+          reminder.preferredNextAttemptAtMs = Math.min(
+            preferredAtMs + 2 * 60_000,
+            now + Math.min(RETRY_MAX_MS, RETRY_BASE_MS * (2 ** Math.min(reminder.preferredAttempts - 1, 4)))
+          );
+          reminder.preferredLastError = String(error?.message || error).slice(0, 200);
+        }
+      }
+    }
+    reminder.updatedAtMs = now;
+    await this.ctx.storage.put('live-session-record', record);
   }
 
   async schedule(request) {
@@ -307,6 +536,7 @@ export class LiveSessionCoordinator {
   async alarm() {
     const record = await this.readRecord();
     const now = Date.now();
+    await this.deliverScheduledBookingReminder(record);
     const due = record.deadlines.filter(item => item.atMs <= now);
     if (due.length) {
       const dueIds = new Set(due.map(item => item.deadlineId));

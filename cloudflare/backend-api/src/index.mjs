@@ -372,11 +372,11 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
     registerAstrologerAnswerEditRoute({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerAdminAstrologerCatalogRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerLegacyQuestionWorkflowRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
-    registerAppointmentBookingRoute({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    registerAppointmentBookingRoute({ app, firestore: firestoreAdmin, identityService: walletIdentityService, reminderCoordinator: env.LIVE_SESSION_COORDINATOR || null });
     registerAdminDashboardRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
     registerLegacyAstrologerApprovalRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService, db: env.DB, projectId });
     registerLegacyQuestionActionRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
-    registerLegacyAppointmentReadAndResponseRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService });
+    registerLegacyAppointmentReadAndResponseRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService, reminderCoordinator: env.LIVE_SESSION_COORDINATOR || null });
     const resendEmailClient = env.RESEND_API_KEY && env.RESEND_FROM
       ? createResendEmailClient({
           apiKey: String(env.RESEND_API_KEY),

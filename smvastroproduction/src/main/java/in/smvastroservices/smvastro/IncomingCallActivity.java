@@ -45,7 +45,7 @@ public final class IncomingCallActivity extends Activity {
         note.setTextColor(Color.rgb(211,198,226));note.setTextSize(12f);note.setGravity(Gravity.CENTER);note.setPadding(0,dp(20),0,0);root.addView(note,fullWidth());
         setContentView(root);
     }
-    private String incomingLabel(){String m=mode.isEmpty()?"":" "+mode.toUpperCase(java.util.Locale.US);return "live_booking".equals(type)?"Incoming Live"+m+" Booking":"Incoming Live"+m;}
+    private String incomingLabel(){String m=mode.isEmpty()?"":" "+mode.toUpperCase(java.util.Locale.US);return ("live_booking".equals(type)||"scheduled_booking".equals(type)||"scheduled_booking_reminder".equals(type))?"Scheduled Live"+m+" Booking":"Incoming Live"+m;}
     private void openAstro(){IncomingCallRingtoneService.stopFor(this,sessionId,bookingId);cancelIncomingNotification();startActivity(NativeCallNotifications.mainIntent(this,sessionId,bookingId));finish();}
     private void silenceOnly(){IncomingCallRingtoneService.stopFor(this,sessionId,bookingId);cancelIncomingNotification();finish();}
     private void cancelIncomingNotification(){if(notificationId<0)return;android.app.NotificationManager nm=(android.app.NotificationManager)getSystemService(NOTIFICATION_SERVICE);if(nm!=null)nm.cancel(notificationId);}

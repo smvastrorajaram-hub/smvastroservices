@@ -130,3 +130,28 @@ test('generic appointment requests still require email/mobile and create no paym
  assert.equal(appointment.data.paymentStatus,'not_required');
  assert.equal(appointment.data.bookingKind,undefined);
 });
+
+
+test('scheduled Call booking arms the native Astrologer reminder at the exact India-local Preferred Time',async()=>{
+ const app=harness(),firestore=fixture({docs:{
+   'smv_users/cus-1':{exists:true,data:{uid:'cus-1',role:'customer'}},
+   'smv_astrologers/astro-1':{exists:true,id:'astro-1',data:{uid:'astro-1',status:'approved',name:'Astrologer',liveCallEnabled:true,callPricePerMinute:15}}
+ }});
+ const calls=[];
+ const reminderCoordinator={
+   idFromName(name){return name;},
+   get(name){return{async fetch(url,options){calls.push({name,url,body:JSON.parse(options.body)});return new Response(JSON.stringify({ok:true}),{status:200});}};}
+ };
+ registerAppointmentBookingRoute({
+   app,firestore,reminderCoordinator,now:()=>Date.parse('2026-11-01T08:00:00Z'),randomId:()=>'appointment-reminder-1',
+   identityService:{async authenticateAuthorization(){return{uid:'cus-1',email:'customer@example.com'};}}
+ });
+ const res=response();
+ await app.handlers.get('POST /appointment-booking')(request(baseBody),res);
+ assert.equal(res.statusCode,200);
+ assert.equal(calls.length,1);
+ assert.equal(calls[0].name,'scheduled-booking-appointment-reminder-1');
+ assert.equal(calls[0].body.preferredAtMs,Date.parse('2026-12-01T18:30:00+05:30'));
+ assert.equal(calls[0].body.astrologerUid,'astro-1');
+ assert.equal(calls[0].body.mode,'call');
+});
