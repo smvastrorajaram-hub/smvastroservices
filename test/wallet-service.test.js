@@ -172,7 +172,7 @@ test('captured Wallet recharge awards one matching Bonus Credit offer only once 
   const first = await service.finalizeRecharge({ rechargeId: 'recharge-1', orderId: 'order-1', paymentId: 'pay-1', amountPaise: 10000, currency: 'INR' });
   assert.equal(first.alreadyProcessed, false);
   assert.equal(first.availableBalancePaise, 10500);
-  assert.equal(first.bonusCreditDeltaPaise, 5000);
+  assert.equal(first.bonusCreditCreditedPaise, 5000);
   assert.equal(first.bonusCreditBalancePaise, 5000);
   assert.equal(first.offerId, 'diwali-5');
   assert.equal(db.inspect('smv_offers/diwali-5').usedCount, 1);
@@ -180,7 +180,7 @@ test('captured Wallet recharge awards one matching Bonus Credit offer only once 
 
   const replay = await service.finalizeRecharge({ rechargeId: 'recharge-1', orderId: 'order-1', paymentId: 'pay-1', amountPaise: 10000, currency: 'INR' });
   assert.equal(replay.alreadyProcessed, true);
-  assert.equal(replay.bonusCreditDeltaPaise, 5000);
+  assert.equal(replay.bonusCreditCreditedPaise, 5000);
   assert.equal(db.inspect('smv_wallets/customer-1').availableBalancePaise, 10500);
   assert.equal(db.inspect('smv_wallets/customer-1').bonusCreditBalancePaise, 5000);
   assert.equal(db.inspect('smv_offers/diwali-5').usedCount, 1);
