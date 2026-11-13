@@ -108,14 +108,14 @@ test('All three app service workers use synchronized new cache releases without 
     read('public/horoscope/calendar/sw.js')
   ];
   for (const source of workers) {
-    assert.match(source, /20261113-scheduled-booking-receipt-pages-v1/);
-    assert.match(source, /20261113-scheduled-booking-receipt-in-v1/);
+    assert.match(source, /20261113-live-session-receipt-pages-v1/);
+    assert.match(source, /20261113-live-session-receipt-in-v1/);
     assert.doesNotMatch(source, /localStorage\.clear\(|sessionStorage\.clear\(|WebView\.clearCache\(/);
   }
   const releases = workers.map(source => source.match(/SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/));
   assert.ok(releases.every(Boolean));
-  assert.deepEqual(releases.map(match => match[1]), Array(3).fill('20261113-scheduled-booking-receipt-pages-v1'));
-  assert.deepEqual(releases.map(match => match[2]), Array(3).fill('20261113-scheduled-booking-receipt-in-v1'));
+  assert.deepEqual(releases.map(match => match[1]), Array(3).fill('20261113-live-session-receipt-pages-v1'));
+  assert.deepEqual(releases.map(match => match[2]), Array(3).fill('20261113-live-session-receipt-in-v1'));
 });
 
 
