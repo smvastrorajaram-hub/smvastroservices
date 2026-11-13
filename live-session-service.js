@@ -862,8 +862,9 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
         throw httpError(409, (kind === 'call' ? 'Call' : 'Chat') + ' price per minute is not configured for this Astrologer.', 'LIVE_PRICE_UNAVAILABLE');
       }
       const walletData = walletSnap.exists ? (walletSnap.data() || {}) : {};
-      const bonusMinutesAvailable = Math.min(length, safeMinutes(walletData.bonusMinutesBalance));
-      const requiredBalancePaise = (length - bonusMinutesAvailable) * rate;
+      const grossRequiredPaise = length * rate;
+      const bonusCreditAvailablePaise = Math.min(grossRequiredPaise, safePaise(walletData.bonusCreditBalancePaise));
+      const requiredBalancePaise = grossRequiredPaise - bonusCreditAvailablePaise;
       const availableBalancePaise = safePaise(walletData.availableBalancePaise);
       if (!Number.isSafeInteger(requiredBalancePaise) || requiredBalancePaise < 0) {
         throw httpError(409, 'Session cost is invalid.', 'LIVE_PRICE_INVALID');
@@ -891,7 +892,7 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
           astrologerName: astroName, customerName: sessionCustomerName,
           birthDetails: sessionBirthDetails, mode: kind, minutes: length, appointmentId: scheduledAppointmentId,
           ratePerMinutePaise: rate, reservedAmountPaise: reserve.reservedAmountPaise,
-          reservedBonusMinutes: reserve.reservedBonusMinutesForSession, walletReservationState: 'reserved',
+          reservedBonusCreditPaise: reserve.reservedBonusCreditPaiseForSession, walletReservationState: 'reserved',
           astrologerCommissionPercent: commission.astroPercent, adminCommissionPercent: commission.adminPercent,
           status: 'pending', origin: 'offline_queue', payloadFingerprint: fingerprint,
           createdAt: nowTimestamp(), updatedAt: nowTimestamp(),
@@ -909,7 +910,7 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
         id, customerUid: uid, astrologerUid: astroId, astroProfile: { ...astro, name: astroName },
         customerName: sessionCustomerName, birthDetails: sessionBirthDetails,
         mode: kind, minutes: length, rate, reservedAmount: reserve.reservedAmountPaise,
-        reservedBonusMinutes: reserve.reservedBonusMinutesForSession,
+        reservedBonusCreditPaise: reserve.reservedBonusCreditPaiseForSession,
         state: 'ringing', origin: 'direct', fingerprint, commission, appointmentId: scheduledAppointmentId
       }));
       tx.create(sRef, data);
@@ -1029,20 +1030,20 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
       if (String(booking.walletReservationState || '') === 'reserved') {
         const wallet = walletSnap.exists ? (walletSnap.data() || {}) : {};
         const reservedAmountPaise = Number(booking.reservedAmountPaise);
-        const reservedBonusMinutesForSession = Number(booking.reservedBonusMinutes);
+        const reservedBonusCreditPaiseForSession = Number(booking.reservedBonusCreditPaise);
         if (!Number.isSafeInteger(reservedAmountPaise) || reservedAmountPaise < 0 ||
-            !Number.isSafeInteger(reservedBonusMinutesForSession) || reservedBonusMinutesForSession < 0 ||
+            !Number.isSafeInteger(reservedBonusCreditPaiseForSession) || reservedBonusCreditPaiseForSession < 0 ||
             safePaise(wallet.reservedBalancePaise) < reservedAmountPaise ||
-            safeMinutes(wallet.reservedBonusMinutes) < reservedBonusMinutesForSession) {
+            safePaise(wallet.reservedBonusCreditPaise) < reservedBonusCreditPaiseForSession) {
           throw httpError(409, 'Wallet reserve for this booking does not reconcile. The booking was not accepted.', 'LIVE_BOOKING_WALLET_RESERVE_MISMATCH');
         }
         reserve = {
           availableBalancePaise: safePaise(wallet.availableBalancePaise),
           reservedBalancePaise: safePaise(wallet.reservedBalancePaise),
           reservedAmountPaise,
-          bonusMinutesBalance: safeMinutes(wallet.bonusMinutesBalance),
-          reservedBonusMinutes: safeMinutes(wallet.reservedBonusMinutes),
-          reservedBonusMinutesForSession
+          bonusCreditBalancePaise: safePaise(wallet.bonusCreditBalancePaise),
+          reservedBonusCreditPaise: safePaise(wallet.reservedBonusCreditPaise),
+          reservedBonusCreditPaiseForSession
         };
       } else {
         // Backward compatibility: reserve legacy bookings created before prepayment was added.
@@ -1056,7 +1057,7 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
         customerName: booking.customerName || customerSnap.data()?.name || 'Customer',
         birthDetails: booking.birthDetails || null,
         mode: booking.mode, minutes, rate, reservedAmount: reserve.reservedAmountPaise,
-        reservedBonusMinutes: reserve.reservedBonusMinutesForSession,
+        reservedBonusCreditPaise: reserve.reservedBonusCreditPaiseForSession,
         state: 'preparing', origin: 'accepted_booking', fingerprint, commission,
         appointmentId: booking.appointmentId || ''
       }));
