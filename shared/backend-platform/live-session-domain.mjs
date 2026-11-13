@@ -1,7 +1,5 @@
 import { safePaise, walletError } from './wallet-domain.mjs';
 
-} from './wallet-domain.mjs';
-
 export const LIVE_MAX_SESSION_MINUTES = 1440;
 export const LIVE_RING_TIMEOUT_MS = 2 * 60_000;
 export const LIVE_CALL_CONNECT_TIMEOUT_MS = 45_000;
