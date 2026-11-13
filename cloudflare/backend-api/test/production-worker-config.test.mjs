@@ -97,7 +97,9 @@ test('Production Worker registers a server-side GeoNames proxy for all three pub
   assert.ok(workflow.includes('cloudflare/backend-api/migrations/*.sql'));
   assert.ok(workflow.includes('cloudflare/backend-api/wrangler.production.jsonc'));
   assert.ok(workflow.includes('secret put GEONAMES_USERNAME'));
-  assert.ok(workflow.includes('Apply pending additive migrations to exact Production D1'));
+  assert.ok(workflow.includes('Apply pending reviewed migrations to exact Production D1'));
+  assert.ok(workflow.includes('0015_remove_admin_promotional_fund.sql') || workflow.includes('d1 migrations apply smvastro-wallet-production --remote'));
+  assert.ok(workflow.includes('ADMIN_PROMOTIONAL_FUND_REMOVED'));
 
   assert.ok(mainLocation.includes('https://smvastroservices.astroservices.workers.dev'));
   assert.ok(sharedLocation.includes("const defaultBackend='https://smvastroservices.astroservices.workers.dev'"));
