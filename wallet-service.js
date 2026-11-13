@@ -8,7 +8,7 @@ const RECHARGE_COLLECTION = 'smv_wallet_recharges';
 const OFFER_COLLECTION = 'smv_offers';
 const OFFER_AUDIT_COLLECTION = 'smv_offer_audit';
 const OFFER_USAGE_COUNTER_COLLECTION = 'smv_offer_usage_counters';
-const WALLET_RECHARGE_OFFER_TYPE = 'wallet_recharge_bonus_minutes';
+const WALLET_RECHARGE_OFFER_TYPE = 'wallet_recharge_bonus_credit';
 const WALLET_OFFER_THEMES = Object.freeze([
   'auto', 'generic', 'pongal', 'diwali', 'navaratri', 'dasara', 'ayudha_pooja',
   'shivaratri', 'tamil_new_year', 'vinayagar_chaturthi', 'karthigai_deepam',
@@ -29,13 +29,13 @@ function offerDateMilliseconds(value) {
 function rechargeOfferMatches(offer, { amountPaise, nowMs = Date.now() } = {}) {
   if (!offer || offer.offerType !== WALLET_RECHARGE_OFFER_TYPE || offer.enabled !== true) return false;
   const amount = Number(amountPaise);
-  const bonus = Number(offer.bonusMinutes);
+  const bonus = Number(offer.bonusCreditPaise);
   const minimum = Number(offer.minimumRechargeAmountPaise ?? 0);
   const used = Number(offer.usedCount ?? 0);
   const totalLimit = Number(offer.totalUsageLimit ?? 0);
   const perCustomerLimit = Number(offer.perCustomerLimit ?? 1);
   if (!Number.isSafeInteger(amount) || amount < 100 ||
-      !Number.isSafeInteger(bonus) || bonus < 1 || bonus > 1440 ||
+      !Number.isSafeInteger(bonus) || bonus < 1 ||
       !Number.isSafeInteger(minimum) || minimum < 0 || amount < minimum ||
       !Number.isSafeInteger(used) || used < 0 ||
       !Number.isSafeInteger(totalLimit) || totalLimit < 0 ||
@@ -61,7 +61,7 @@ function selectRechargeBonusOffer({ offers, amountPaise, nowMs = Date.now(), usa
   });
   candidates.sort((a, b) =>
     Number(b.priority || 0) - Number(a.priority || 0) ||
-    Number(b.bonusMinutes || 0) - Number(a.bonusMinutes || 0) ||
+    Number(b.bonusCreditPaise || 0) - Number(a.bonusCreditPaise || 0) ||
     String(a.name || a.id || '').localeCompare(String(b.name || b.id || ''))
   );
   return candidates.length ? candidates[0] : null;
@@ -100,11 +100,6 @@ function paiseToRupees(value) {
 function safePaise(value) {
   const n = Number(value ?? 0);
   return Number.isSafeInteger(n) && n >= 0 ? n : 0;
-}
-
-function safeMinutes(value) {
-  const n = Number(value ?? 0);
-  return Number.isSafeInteger(n) && n >= 0 && n <= 1_000_000 ? n : 0;
 }
 
 function walletLedgerDocId(type, key) {
@@ -157,7 +152,7 @@ function createWalletService({ db, FieldValue }) {
       tx.set(ref, {
         ownerUid: uid, ownerRole: role, currency: 'INR',
         availableBalancePaise: 0, reservedBalancePaise: 0,
-        bonusMinutesBalance: 0, reservedBonusMinutes: 0, version: 1,
+        bonusCreditBalancePaise: 0, reservedBonusCreditPaise: 0, version: 1,
         createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp()
       });
     });
@@ -167,8 +162,8 @@ function createWalletService({ db, FieldValue }) {
       ownerUid: uid, ownerRole: role, currency: 'INR',
       availableBalancePaise: safePaise(data.availableBalancePaise),
       reservedBalancePaise: safePaise(data.reservedBalancePaise),
-      bonusMinutesBalance: safeMinutes(data.bonusMinutesBalance),
-      reservedBonusMinutes: safeMinutes(data.reservedBonusMinutes),
+      bonusCreditBalancePaise: safePaise(data.bonusCreditBalancePaise),
+      reservedBonusCreditPaise: safePaise(data.reservedBonusCreditPaise),
       version: safePaise(data.version), createdAt: data.createdAt || null, updatedAt: data.updatedAt || null
     };
   }
@@ -252,8 +247,8 @@ function createWalletService({ db, FieldValue }) {
         const existingWallet = walletSnap.exists ? walletSnap.data() || {} : {};
         return { success: true, alreadyProcessed: true, rechargeId: rid, paymentId: pid, amountPaise: amount,
           availableBalancePaise: safePaise(existingWallet.availableBalancePaise),
-          bonusMinutesCredited: safeMinutes(recharge.bonusMinutesCredited),
-          bonusMinutesBalance: safeMinutes(existingWallet.bonusMinutesBalance) };
+          bonusCreditCreditedPaise: safePaise(recharge.bonusCreditCreditedPaise),
+          bonusCreditBalancePaise: safePaise(existingWallet.bonusCreditBalancePaise) };
       }
       if (!['order_created', 'payment_pending'].includes(String(recharge.status || ''))) {
         throw httpError(409, 'This Wallet recharge is not ready to be credited.', 'WALLET_RECHARGE_NOT_READY');
@@ -264,8 +259,8 @@ function createWalletService({ db, FieldValue }) {
       const wallet = walletSnap.exists ? walletSnap.data() || {} : {};
       const available = safePaise(wallet.availableBalancePaise);
       const reserved = safePaise(wallet.reservedBalancePaise);
-      const bonusBalance = safeMinutes(wallet.bonusMinutesBalance);
-      const reservedBonus = safeMinutes(wallet.reservedBonusMinutes);
+      const bonusCreditBalance = safePaise(wallet.bonusCreditBalancePaise);
+      const reservedBonusCredit = safePaise(wallet.reservedBonusCreditPaise);
       const nowMs = Date.now();
       const offerQuery = db.collection(OFFER_COLLECTION)
         .where('offerType', '==', WALLET_RECHARGE_OFFER_TYPE).limit(100);
@@ -289,33 +284,34 @@ function createWalletService({ db, FieldValue }) {
         : -1;
       const selectedUsageRef = selectedUsageIndex >= 0 ? usageReferences[selectedUsageIndex].ref : null;
       const selectedUsageSnap = selectedUsageIndex >= 0 ? usageSnapshots[selectedUsageIndex] : null;
-      const awardBonus = selectedOffer ? Number(selectedOffer.bonusMinutes) : 0;
+      const awardBonusCreditPaise = selectedOffer ? Number(selectedOffer.bonusCreditPaise) : 0;
       const nextAvailable = available + amount;
-      const nextBonusBalance = bonusBalance + awardBonus;
-      if (!Number.isSafeInteger(nextAvailable) || !Number.isSafeInteger(nextBonusBalance) || nextBonusBalance > 1_000_000) {
-        throw httpError(409, 'Wallet balance or promotional minute balance exceeds the supported range.', 'WALLET_BALANCE_OVERFLOW');
+      const nextBonusCreditBalance = bonusCreditBalance + awardBonusCreditPaise;
+      if (!Number.isSafeInteger(nextAvailable) || !Number.isSafeInteger(nextBonusCreditBalance)) {
+        throw httpError(409, 'Wallet balance or Bonus Credit exceeds the supported range.', 'WALLET_BALANCE_OVERFLOW');
       }
       const now = FieldValue.serverTimestamp();
       tx.set(walletRef, {
         ownerUid: uid, ownerRole: 'customer', currency: 'INR',
         availableBalancePaise: nextAvailable, reservedBalancePaise: reserved,
-        bonusMinutesBalance: nextBonusBalance, reservedBonusMinutes: reservedBonus,
+        bonusCreditBalancePaise: nextBonusCreditBalance, reservedBonusCreditPaise: reservedBonusCredit,
         version: safePaise(wallet.version) + 1, createdAt: wallet.createdAt || now, updatedAt: now
       }, { merge: true });
       tx.create(ledgerRef, {
         ownerUid: uid, ownerRole: 'customer', currency: 'INR', type: 'recharge', direction: 'credit',
         amountPaise: amount, balanceAfterPaise: nextAvailable, reservedBalanceAfterPaise: reserved,
-        bonusMinutesCredited: awardBonus, bonusMinutesBalanceAfter: nextBonusBalance,
+        bonusCreditDeltaPaise: awardBonusCreditPaise,
+        bonusCreditBalanceAfterPaise: nextBonusCreditBalance,
         offerId: selectedOffer?.id || null, offerName: selectedOffer?.name || null,
         idempotencyKey: 'recharge:' + pid, referenceType: 'razorpay_payment', referenceId: pid,
-        note: awardBonus > 0
-          ? 'Wallet recharge successful; ' + awardBonus + ' promotional Live minute(s) credited'
+        note: awardBonusCreditPaise > 0
+          ? 'Wallet recharge successful; Bonus Credit ₹' + (awardBonusCreditPaise / 100).toFixed(2) + ' credited'
           : 'Wallet recharge successful',
         status: 'posted', source, razorpayOrderId: oid, razorpayPaymentId: pid, createdAt: now
       });
       tx.set(rechargeRef, {
         status: 'paid', razorpayPaymentId: pid, paidAmountPaise: amount, currency: 'INR',
-        bonusMinutesCredited: awardBonus, bonusMinutesBalanceAfter: nextBonusBalance,
+        bonusCreditCreditedPaise: awardBonusCreditPaise, bonusCreditBalanceAfterPaise: nextBonusCreditBalance,
         offerId: selectedOffer?.id || null, offerName: selectedOffer?.name || null,
         paymentSource: source, paidAt: now, updatedAt: now
       }, { merge: true });
@@ -323,29 +319,30 @@ function createWalletService({ db, FieldValue }) {
       if (selectedOffer && selectedUsageRef && selectedUsageSnap) {
         const usedCount = safePaise(selectedOffer.usedCount) + 1;
         const successfulRedemptions = safePaise(selectedOffer.successfulRedemptions) + 1;
-        const totalBonusMinutesAwarded = safePaise(selectedOffer.totalBonusMinutesAwarded) + awardBonus;
+        const totalBonusCreditPaiseAwarded = safePaise(selectedOffer.totalBonusCreditPaiseAwarded) + awardBonusCreditPaise;
         const redemptionCount = usageCounts[selectedOffer.id] + 1;
         tx.set(db.collection(OFFER_COLLECTION).doc(selectedOffer.id), {
-          usedCount, successfulRedemptions, totalBonusMinutesAwarded, lastRedeemedAt: now, updatedAt: now
+          usedCount, successfulRedemptions, totalBonusCreditPaiseAwarded, lastRedeemedAt: now, updatedAt: now
         }, { merge: true });
         tx.set(selectedUsageRef, {
           offerId: selectedOffer.id, customerUid: uid, redemptionCount,
           lastRechargeId: rid, updatedAt: now
         }, { merge: true });
         const auditRef = db.collection(OFFER_AUDIT_COLLECTION)
-          .doc(walletLedgerDocId('wallet_recharge_bonus_minutes', rid + ':' + selectedOffer.id));
+          .doc(walletLedgerDocId('wallet_recharge_bonus_credit', rid + ':' + selectedOffer.id));
         tx.create(auditRef, {
           customerId: uid, customerUid: uid, service: 'wallet_recharge',
           referenceId: rid, rechargeId: rid, paymentId: pid, offerId: selectedOffer.id,
           offerName: String(selectedOffer.name || 'Wallet recharge offer'),
-          offerType: WALLET_RECHARGE_OFFER_TYPE, amountPaise: amount, bonusMinutes: awardBonus,
+          offerType: WALLET_RECHARGE_OFFER_TYPE, amountPaise: amount,
+          bonusCreditPaise: awardBonusCreditPaise,
           status: 'used', usedAt: now, createdAt: now
         });
       }
       return {
         success: true, alreadyProcessed: false, rechargeId: rid, paymentId: pid, amountPaise: amount,
-        availableBalancePaise: nextAvailable, bonusMinutesCredited: awardBonus,
-        bonusMinutesBalance: nextBonusBalance, offerId: selectedOffer?.id || null,
+        availableBalancePaise: nextAvailable, bonusCreditCreditedPaise: awardBonusCreditPaise,
+        bonusCreditBalancePaise: nextBonusCreditBalance, offerId: selectedOffer?.id || null,
         offerName: selectedOffer?.name || null
       };
     });
@@ -388,8 +385,8 @@ function createWalletService({ db, FieldValue }) {
           amountPaise: safePaise(d.amountPaise), amount: paiseToRupees(safePaise(d.amountPaise)),
           balanceAfterPaise: safePaise(d.balanceAfterPaise), balanceAfter: paiseToRupees(safePaise(d.balanceAfterPaise)),
           reservedBalanceAfterPaise: safePaise(d.reservedBalanceAfterPaise),
-          bonusMinutes: safeMinutes(d.bonusMinutes), bonusMinutesCredited: safeMinutes(d.bonusMinutesCredited),
-          bonusMinutesBalanceAfter: safeMinutes(d.bonusMinutesBalanceAfter),
+          bonusCreditDeltaPaise: safePaise(d.bonusCreditDeltaPaise),
+          bonusCreditBalanceAfterPaise: safePaise(d.bonusCreditBalanceAfterPaise),
           note: d.note || '', referenceType: d.referenceType || '', referenceId: d.referenceId || '',
           createdAt: timestampIso(d.createdAt)
         };
@@ -440,7 +437,8 @@ function registerWalletRoutes({ app, db, profileDb = db, FieldValue, crypto, raz
           availableBalance: paiseToRupees(wallet.availableBalancePaise),
           reservedBalancePaise: wallet.reservedBalancePaise,
           reservedBalance: paiseToRupees(wallet.reservedBalancePaise),
-          bonusMinutesBalance: wallet.bonusMinutesBalance, reservedBonusMinutes: wallet.reservedBonusMinutes,
+          bonusCreditBalancePaise: wallet.bonusCreditBalancePaise,
+          reservedBonusCreditPaise: wallet.reservedBonusCreditPaise,
           totalBalancePaise: wallet.availableBalancePaise + wallet.reservedBalancePaise,
           totalBalance: paiseToRupees(wallet.availableBalancePaise + wallet.reservedBalancePaise),
           updatedAt: timestampIso(wallet.updatedAt)
@@ -459,7 +457,7 @@ function registerWalletRoutes({ app, db, profileDb = db, FieldValue, crypto, raz
       const [wallet, transactions] = await Promise.all([service.ensureWallet(ownerUid, role), service.getTransactions(ownerUid, req.query?.limit)]);
       return res.set('Cache-Control', 'no-store').json({
         success: true,
-        wallet: { availableBalancePaise: wallet.availableBalancePaise, availableBalance: paiseToRupees(wallet.availableBalancePaise), reservedBalancePaise: wallet.reservedBalancePaise, reservedBalance: paiseToRupees(wallet.reservedBalancePaise), bonusMinutesBalance: wallet.bonusMinutesBalance, reservedBonusMinutes: wallet.reservedBonusMinutes },
+        wallet: { availableBalancePaise: wallet.availableBalancePaise, availableBalance: paiseToRupees(wallet.availableBalancePaise), reservedBalancePaise: wallet.reservedBalancePaise, reservedBalance: paiseToRupees(wallet.reservedBalancePaise), bonusCreditBalancePaise: wallet.bonusCreditBalancePaise, bonusCreditBalance: paiseToRupees(wallet.bonusCreditBalancePaise), reservedBonusCreditPaise: wallet.reservedBonusCreditPaise },
         transactions
       });
     } catch (e) { return sendWalletError(res, e, 'Unable to load Wallet transactions.'); }
@@ -573,7 +571,7 @@ function registerWalletRoutes({ app, db, profileDb = db, FieldValue, crypto, raz
       }
       if (payment.status !== 'captured') return res.status(409).json({ error: 'Payment capture is pending. Reopen Wallet and verify the recharge again.' });
       const credited = await service.finalizeRecharge({ rechargeId, orderId, paymentId, amountPaise: Number(payment.amount), currency: payment.currency, source: 'payment_verification' });
-      return res.json({ success: true, verified: true, alreadyCredited: credited.alreadyProcessed, rechargeId, paymentId, amount: paiseToRupees(credited.amountPaise || Number(payment.amount)), availableBalance: paiseToRupees(credited.availableBalancePaise), bonusMinutesCredited: safeMinutes(credited.bonusMinutesCredited), bonusMinutesBalance: safeMinutes(credited.bonusMinutesBalance) });
+      return res.json({ success: true, verified: true, alreadyCredited: credited.alreadyProcessed, rechargeId, paymentId, amount: paiseToRupees(credited.amountPaise || Number(payment.amount)), availableBalance: paiseToRupees(credited.availableBalancePaise), bonusCreditCredited: paiseToRupees(credited.bonusCreditCreditedPaise), bonusCreditBalance: paiseToRupees(credited.bonusCreditBalancePaise) });
     } catch (e) { return sendWalletError(res, e, 'Unable to verify Wallet recharge.'); }
   });
 
