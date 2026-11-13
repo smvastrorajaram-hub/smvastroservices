@@ -181,9 +181,9 @@ test('all three PWA cache releases are synchronized for Pages.dev and .in conten
     '20261113-scheduled-booking-ringtone-pages-v1'
   ]);
   assert.deepEqual(releases.map(item => item.legacy), [
-    '20261113-scheduled-booking-ringtone-in-v1',
-    '20261113-scheduled-booking-ringtone-in-v1',
-    '20261113-scheduled-booking-ringtone-in-v1'
+    '20261113-live-session-receipt-in-v1',
+    '20261113-live-session-receipt-in-v1',
+    '20261113-live-session-receipt-in-v1'
   ]);
 });
 test('each installer creates its own 256x256 Windows icon', () => {
