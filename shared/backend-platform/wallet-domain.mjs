@@ -139,15 +139,19 @@ export function calculateWalletReservationSettlement({
   });
 }
 
-export function validateWalletEntry({ type, amountPaise, direction, idempotencyKey } = {}) {
+export function validateWalletEntry({ type, amountPaise, direction, idempotencyKey, bonusCreditDeltaPaise = 0 } = {}) {
   const kind = String(type || '').trim();
   const amount = Number(amountPaise);
   const key = String(idempotencyKey || '').trim();
   const dir = String(direction || '').trim().toLowerCase();
+  const bonusDelta = Number(bonusCreditDeltaPaise ?? 0);
+  const bonusDeltaInvalid = !Number.isSafeInteger(bonusDelta) ||
+    (bonusDelta !== 0 && (Math.abs(bonusDelta) !== amount ||
+      (dir === 'credit' ? bonusDelta < 0 : dir === 'debit' ? bonusDelta > 0 : true)));
   if (!kind || kind.length > 80 || !key || key.length > 240 ||
       !Number.isSafeInteger(amount) || amount < 0 ||
-      !['credit', 'debit', 'reserve', 'release'].includes(dir)) {
-    throw walletError('WALLET_TRANSACTION_INVALID', 'Wallet transaction type, amount, direction and idempotency key are required.', 400);
+      !['credit', 'debit', 'reserve', 'release'].includes(dir) || bonusDeltaInvalid) {
+    throw walletError('WALLET_TRANSACTION_INVALID', 'Wallet transaction type, amount, direction and Bonus Credit delta are invalid.', 400);
   }
-  return { type: kind, amountPaise: amount, direction: dir, idempotencyKey: key };
+  return { type: kind, amountPaise: amount, direction: dir, idempotencyKey: key, bonusCreditDeltaPaise: bonusDelta };
 }
