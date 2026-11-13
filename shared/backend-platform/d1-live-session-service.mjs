@@ -946,12 +946,20 @@ export function createD1LiveSessionService({
     if(!id||!type||!Number.isSafeInteger(deadline)) throw liveError('LIVE_DEADLINE_INVALID','Live deadline event is invalid.',400);
     if(type==='preparation_timeout') {
       const current=await getSession(id);
-      if(!current||current.state!=='preparing'||Number(current.preparationUntilMs||0)>deadline) return {success:true,skipped:true};
+      if(!current) return {success:true,skipped:true};
+      // A previous alarm attempt may have committed the state transition but
+      // failed while publishing the user event. Return the latest authoritative
+      // snapshot so the same durable event can safely fan out on retry.
+      if(current.state!=='preparing') return {success:true,skipped:true,session:sessionView(current)};
+      if(Number(current.preparationUntilMs||0)>deadline) return {success:true,skipped:true};
       return completePreparation(id);
     }
     if(type==='booking_expiry') {
       const booking=await getBooking(id);
-      if(!booking||booking.status!=='pending') return {success:true,skipped:true};
+      if(!booking) return {success:true,skipped:true};
+      // As with sessions, an already-committed booking transition must still be
+      // publishable when a prior event-hub write failed.
+      if(booking.status!=='pending') return {success:true,skipped:true,booking:bookingView(booking)};
       if(booking.expiresAtMs&&Number(now())<booking.expiresAtMs) return {success:true,skipped:true};
       return releaseBooking({bookingId:id,status:'expired',endReason:'booking_expired'});
     }
@@ -965,17 +973,26 @@ export function createD1LiveSessionService({
     })[type];
     if(!reason) throw liveError('LIVE_DEADLINE_TYPE_INVALID','Unsupported Live deadline type.',400);
     const session=await getSession(id);
-    if(!session||session.state==='ended') return {success:true,skipped:true};
-    if(type==='ring_timeout'&&(session.state!=='ringing'||deadline<session.createdAtMs+LIVE_RING_TIMEOUT_MS)) return {success:true,skipped:true};
+    if(!session) return {success:true,skipped:true};
+    // D1 may already contain the terminal state when the coordinator retries
+    // a deadline whose event-hub publication previously failed.
+    if(session.state==='ended') return {success:true,skipped:true,session:sessionView(session)};
+    if(type==='ring_timeout'&&(session.state!=='ringing'||deadline<session.createdAtMs+LIVE_RING_TIMEOUT_MS)) {
+      return {success:true,skipped:true,session:sessionView(session)};
+    }
     if(type==='call_connect_timeout'||type==='chat_accept_timeout') {
       if(session.state!=='connecting'||deadline<Number(session.connectingAtMs||0)+
-        (type==='chat_accept_timeout'?LIVE_CHAT_CONNECT_TIMEOUT_MS:LIVE_CALL_CONNECT_TIMEOUT_MS)) return {success:true,skipped:true};
+        (type==='chat_accept_timeout'?LIVE_CHAT_CONNECT_TIMEOUT_MS:LIVE_CALL_CONNECT_TIMEOUT_MS)) {
+        return {success:true,skipped:true,session:sessionView(session)};
+      }
     }
-    if(type==='session_duration'&&(session.state!=='active'||deadline<session.startedAtMs+Number(session.minutes||1)*60_000)) return {success:true,skipped:true};
+    if(type==='session_duration'&&(session.state!=='active'||deadline<session.startedAtMs+Number(session.minutes||1)*60_000)) {
+      return {success:true,skipped:true,session:sessionView(session)};
+    }
     if(type==='disconnect_grace') {
-      if(!['connecting','active'].includes(session.state)) return {success:true,skipped:true};
+      if(!['connecting','active'].includes(session.state)) return {success:true,skipped:true,session:sessionView(session)};
       const uid=checkUid(participantUid);
-      if(!uid) return {success:true,skipped:true};
+      if(!uid) return {success:true,skipped:true,session:sessionView(session)};
       const connection=await first(
         'SELECT connected,generation,deadline_at_ms FROM smv_domain_live_connections WHERE session_id=? AND uid=? LIMIT 1',
         [id,uid]
@@ -984,7 +1001,7 @@ export function createD1LiveSessionService({
          Number(connection.generation)!==Number(generation)||
          Number(connection.deadline_at_ms)!==deadline||
          Number(now())<Number(connection.deadline_at_ms)) {
-        return {success:true,skipped:true};
+        return {success:true,skipped:true,session:sessionView(session)};
       }
       return endSession({
         sessionId:id,reason,system:true,
@@ -1160,6 +1177,7 @@ function sessionView(session) {
     createdAt:iso(d.createdAtMs),acceptedAt:iso(d.acceptedAtMs),
     startedAt:iso(d.startedAtMs),endedAt:iso(d.endedAtMs),
     actualChargePaise:safePaise(d.actualChargePaise),
+    actualServiceAmountPaise:safePaise(d.actualServiceAmountPaise??(safePaise(d.actualChargePaise)+safePaise(d.bonusCreditUsedPaise))),
     billableMinutes:safePaise(d.billableMinutes),
     reservedBonusCreditPaise:safePaise(d.reservedBonusCreditPaise),
     bonusCreditUsedPaise:safePaise(d.bonusCreditUsedPaise),
@@ -1186,6 +1204,9 @@ function bookingView(booking) {
     reservedAmountPaise:safePaise(d.reservedAmountPaise),
     walletReservationState:String(d.walletReservationState||''),
     actualChargePaise:safePaise(d.actualChargePaise),
+    actualServiceAmountPaise:safePaise(d.actualServiceAmountPaise??(safePaise(d.actualChargePaise)+safePaise(d.bonusCreditUsedPaise))),
+    bonusCreditUsedPaise:safePaise(d.bonusCreditUsedPaise),
+    bonusCreditReleasedPaise:safePaise(d.bonusCreditReleasedPaise),
     releasedAmountPaise:safePaise(d.releasedAmountPaise),
     endReason:String(d.endReason||''),sessionId:String(d.sessionId||''),
     createdAt:iso(d.createdAtMs),acceptedAt:iso(d.acceptedAtMs),
