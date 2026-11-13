@@ -273,7 +273,7 @@ export function createFcmSender({ projectId, tokenProvider, fetchImpl = globalTh
                   body: String(payload.body || '').slice(0, 300)
                 };
                 message.android.notification = {
-                  channel_id: 'smv_native_background_alerts_v1',
+                  channel_id: 'smv_native_background_alerts_v2',
                   sound: 'default',
                   ...(tag ? { tag } : {})
                 };
