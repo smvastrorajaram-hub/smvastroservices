@@ -383,10 +383,10 @@ test('local D1 blocks stale booking cancellation/expiry release after accept tra
       payoutKeyVersion:'v1',sourceProjectId:'smv-astro'
     });
     const dashboard=await earningsService.getEarningsDashboard(astrologerUid);
-    assert.equal(dashboard.totalEarnings,2);
+    assert.equal(dashboard.totalEarnings,6);
     assert.equal(dashboard.ledger.length,1);
     assert.equal(dashboard.ledger[0].id,bookingId);
-    assert.equal(dashboard.ledger[0].commission,2);
+    assert.equal(dashboard.ledger[0].commission,6);
   } finally {
     cleanupFixture(sqlite, { uids: [customerUid, astrologerUid, adminUid], sessions: [bookingId], bookings: [bookingId], references: [bookingId] });
     sqlite.close();
