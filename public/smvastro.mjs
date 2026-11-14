@@ -5475,8 +5475,11 @@ function smvLiveStartChatRecovery(id,session){
  smvLiveChatRecoveryTimer=setInterval(()=>{
   const activeSession=smvLiveCurrentSession;
   if(smvLivePanelSessionId!==key||!activeSession||activeSession.state!=='active'||smvLiveCanonicalMode(activeSession)!=='chat'||!$('smvLiveMessages')){smvLiveStopChatRecovery();return;}
+  // SSE delivers messages immediately. Reconcile the cursor only as a low-frequency safety net.
+  // If SSE is disconnected, the existing fallback poller already runs at its faster recovery cadence.
+  if(!smvLiveEventStreamConnected)return;
   smvLivePollMessages(key).catch(()=>{});
- },1500);
+ },15000);
 }
 async function smvLivePollMessages(id){
  const key=String(id||'');if(!key||!$('smvLiveMessages'))return;
