@@ -1076,9 +1076,18 @@ test('Customer and Astrologer Live Chat messages broadcast both ways and recover
   assert.ok(service.includes('sendTo(session.customerUid, payload);'));
   assert.ok(service.includes('sendTo(session.astrologerUid, payload);'));
   assert.ok(messagesRoute.includes('const messageStoreDb = afterMs > 0 ? db :'));
+  const recoveryStart = frontend.indexOf('function smvLiveStartChatRecovery(id,session){');
+  const recoveryEnd = frontend.indexOf('async function smvLivePollMessages(id){', recoveryStart);
+  const recovery = frontend.slice(recoveryStart, recoveryEnd);
   assert.ok(frontend.includes('let smvLiveChatRecoveryTimer=null,smvLiveChatRecoverySessionId=\'\';'));
-  assert.ok(frontend.includes('smvLivePollMessages(key).catch(()=>{});'));
-  assert.ok(frontend.includes('},1500);'));
+  assert.ok(recoveryStart >= 0 && recoveryEnd > recoveryStart);
+  assert.ok(recovery.includes('smvLiveStopChatRecovery();'));
+  assert.ok(!recovery.includes('setInterval('), 'Active Chat must not start a second timer-based poller');
+  assert.ok(recovery.includes('smvLiveStartFallbackPolling()'), 'The single fallback transport owns recovery while SSE is unavailable');
+  const fallbackStart = frontend.indexOf('function smvLiveStartFallbackPolling(){');
+  const fallbackEnd = frontend.indexOf('function smvLiveStartTransport(id,s){', fallbackStart);
+  const fallback = frontend.slice(fallbackStart, fallbackEnd);
+  assert.ok(fallback.includes('smvLiveMessageTimer=setInterval('));
   assert.ok(frontend.includes('if(chat&&active)smvLiveStartChatRecovery(s.id,s);'));
 });
 
