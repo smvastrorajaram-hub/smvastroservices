@@ -427,3 +427,36 @@ test('Live Session detail route returns only the authenticated participant recei
   assert.equal(res.body.session.state,'ended');
   assert.deepEqual(f.calls.find(x=>x.service==='getSessionForParticipant').input,{sessionId:'session-1',uid:'customer-1'});
 });
+
+test('Reading an expired active booked Live Chat settles it and publishes the receipt event to both participants',async()=>{
+  const f=fixture({session:{
+    id:'session-1',customerUid:'customer-1',astrologerUid:'astro-1',
+    mode:'chat',state:'active',minutes:1,
+    startedAt:new Date(Date.now()-60_001).toISOString()
+  }});
+  const res=responseHarness();
+  await f.app.handlers.get('GET /live/sessions/:id')(req({},'customer','session-1'),res);
+  assert.equal(res.statusCode,200);
+  assert.equal(res.body.session.state,'ended');
+  const settlement=f.calls.find(item=>item.service==='endSession');
+  assert.equal(settlement.input.sessionId,'session-1');
+  assert.equal(settlement.input.reason,'duration_complete');
+  assert.equal(settlement.input.system,true);
+  const events=f.calls.filter(item=>String(item.url||'').includes('/publish')&&item.body.type==='live.session.ended');
+  assert.deepEqual(events.map(item=>item.body.targetUid).sort(),['astro-1','customer-1']);
+  assert.ok(f.calls.filter(item=>String(item.url||'').includes('/cancel-deadline')).length>=7,
+    'the participant-read settlement cancels the stale durable deadlines');
+});
+
+test('Reading a still-running booked Live Call does not settle it before its booked duration expires',async()=>{
+  const f=fixture({session:{
+    id:'session-1',customerUid:'customer-1',astrologerUid:'astro-1',
+    mode:'call',state:'active',minutes:5,startedAt:new Date().toISOString()
+  }});
+  const res=responseHarness();
+  await f.app.handlers.get('GET /live/sessions/:id')(req({},'customer','session-1'),res);
+  assert.equal(res.statusCode,200);
+  assert.equal(res.body.session.state,'active');
+  assert.equal(f.calls.some(item=>item.service==='endSession'),false);
+  assert.equal(f.calls.some(item=>String(item.url||'').includes('/publish')),false);
+});
