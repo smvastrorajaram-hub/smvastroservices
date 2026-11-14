@@ -64,9 +64,26 @@ vm.runInNewContext(vimRuntime+'\nglobalThis.__vimshottariAudit=dashaAtBirth;',vi
 const vimshottariExample50=vimContext.__vimshottariAudit(302+23/60,new Date('2000-04-28T00:00:00Z'),'2026-10-20',330);
 const vimBirthMd=vimshottariExample50.periods[0];
 ok(Math.abs(vimshottariExample50.balanceYears-2.24875)<1e-8&&Math.abs(vimBirthMd.years-2.24875)<1e-8&&vimBirthMd.fullYears===7,'PVR §16.2 Example 50: Dhanishtha Moon at 2°23 Aquarius leaves 2.24875 Mars Dasa years');
-ok(vimBirthMd.start==='2000-04-28'&&['2002-07-15','2002-07-16'].includes(vimBirthMd.end),'PVR Example 50: Savana-year Mars balance ends at the source worked-example boundary');
+ok(vimBirthMd.start==='2000-04-28'&&vimBirthMd.end==='2002-07-28','Vimshottari solar-year oracle: 2.24875 Mars balance reaches 28 July 2002 with 365.2422-day years');
+ok(vimshottariExample50.yearLengthDays===365.2422&&vimshottariExample50.yearConvention==='solar year (365.2422 days)','Vimshottari output declares the selected 365.2422-day convention');
 ok(vimBirthMd.antardashas[0].lord==='கேது'&&vimBirthMd.antardashas[0].years>0&&vimBirthMd.antardashas[0].years<vimBirthMd.antardashas[0].fullYears,'PVR §16.3: birth Antardasa is clipped to the remaining balance from the full Mars Mahadasa');
 ok(Math.abs(vimBirthMd.antardashas.reduce((sum,x)=>sum+x.years,0)-vimBirthMd.years)<1e-8,'Vimshottari visible Antardasa balances sum to the Mahadasa remaining balance');
+const onlineServerSource=fs.readFileSync(new URL('../public/horoscope/server.js',import.meta.url),'utf8');
+const onlineVimStart=onlineServerSource.indexOf('function nakshatraInfo(lon)');
+const onlineVimEnd=onlineServerSource.indexOf('function circularLonDiff(',onlineVimStart);
+ok(onlineVimStart>=0&&onlineVimEnd>onlineVimStart,'Found online server Vimshottari source block');
+const onlineVimContext={
+ NAKSHATRAS:['அஸ்வினி','பரணி','கார்த்திகை','ரோகிணி','மிருகசீரிடம்','திருவாதிரை','புனர்பூசம்','பூசம்','ஆயில்யம்','மகம்','பூரம்','உத்திரம்','ஹஸ்தம்','சித்திரை','சுவாதி','விசாகம்','அனுஷம்','கேட்டை','மூலம்','பூராடம்','உத்திராடம்','திருவோணம்','அவிட்டம்','சதயம்','பூரட்டாதி','உத்திரட்டாதி','ரேவதி'],
+ NAK_LORDS:['கேது','சுக்கிரன்','சூரியன்','சந்திரன்','செவ்வாய்','ராகு','குரு','சனி','புதன்'],
+ DASHA_YEARS:{'கேது':7,'சுக்கிரன்':20,'சூரியன்':6,'சந்திரன்':10,'செவ்வாய்':7,'ராகு':18,'குரு':16,'சனி':19,'புதன்':17},
+ DASHA_ORDER:['கேது','சுக்கிரன்','சூரியன்','சந்திரன்','செவ்வாய்','ராகு','குரு','சனி','புதன்'],
+ norm360:n=>{const x=Number(n)%360;return x<0?x+360:x;}
+};
+vm.runInNewContext(onlineServerSource.slice(onlineVimStart,onlineVimEnd)+'\\nglobalThis.__onlineVimshottariAudit=dashaAtBirth;',onlineVimContext,{timeout:10000});
+const onlineVimExample50=onlineVimContext.__onlineVimshottariAudit(302+23/60,new Date('2000-04-28T00:00:00Z'));
+const dashaShape=value=>value.periods.map(md=>({lord:md.lord,start:md.start,end:md.end,antardashas:md.antardashas.map(ad=>({lord:ad.lord,start:ad.start,end:ad.end}))}));
+ok(JSON.stringify(dashaShape(onlineVimExample50))===JSON.stringify(dashaShape(vimshottariExample50)),'Online and offline Vimshottari MD/AD boundaries remain identical under the same 365.2422-day convention');
+ok(!onlineServerSource.includes('const SAVANA_YEAR_DAYS=360')&&!vimWrapperSource.includes('const SAVANA_YEAR_DAYS=360'),'Neither primary Vimshottari engine silently retains the 360-day Savana-year override');
 const specialRuleChart={birthDate:'2000-01-01',lagna:{longitude:0},planets:[
  {name:'Sun',longitude:29},{name:'Moon',longitude:57},{name:'Mars',longitude:86},
  {name:'Mercury',longitude:115},{name:'Jupiter',longitude:144},{name:'Venus',longitude:173},
