@@ -27,7 +27,7 @@ jobs:
     timeout-minutes: 10
     environment: production
     env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_D1_API_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_D1_ANALYTICS_READ_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CAPACITY_DAYS: ${{ github.event.inputs.days || '30' }}
       PRODUCTION_D1_ID: b1d5684c-3fcd-48fe-9571-ea41fc605c7d
@@ -45,7 +45,7 @@ jobs:
         run: |
           set -euo pipefail
           test -n "${CLOUDFLARE_API_TOKEN:-}" || {
-            echo "::error::Missing CLOUDFLARE_D1_API_TOKEN in the GitHub production environment."
+            echo "::error::Missing CLOUDFLARE_D1_ANALYTICS_READ_TOKEN in the GitHub production environment. Create a separate Cloudflare token with Account Analytics Read permission; keep the existing D1 token unchanged."
             exit 1
           }
           if [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
@@ -132,7 +132,7 @@ jobs:
           if (!response.ok || payload.errors?.length) {
             const detail = (payload.errors || []).map(item => item.message || 'GraphQL error').join('; ');
             if (/permission|forbidden|unauthorized|authentication/i.test(detail) || response.status === 401 || response.status === 403) {
-              throw new Error('Cloudflare token requires Account Analytics Read permission. No D1 query or database write was performed. ' + detail);
+              throw new Error('Cloudflare token is not authorized for this account or lacks Account Analytics Read permission. Check the dedicated analytics token and account ID. No D1 query or database write was performed. ' + detail);
             }
             throw new Error('Cloudflare Analytics API request failed (HTTP ' + response.status + '): ' + detail);
           }
