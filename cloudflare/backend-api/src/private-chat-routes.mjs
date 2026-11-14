@@ -427,34 +427,55 @@ export function registerPrivateChatRoutes({
     try{
       const actor=await requireAdmin(req),questionId=safeId(req.body?.questionId);
       if(!questionId)throw apiError('PRIVATE_CHAT_ASSIGNMENT_REQUIRED','Select the paid question before approval.',400);
+      const settings=await readSettings();
       const saved=await firestore.runTransaction(async tx=>{
         const snapshot=await tx.getDocument(QUESTION_COLLECTION+'/'+questionId);
         if(!snapshot.exists)throw apiError('PRIVATE_CHAT_NOT_FOUND','Private Chat question was not found.',404);
         const q=snapshot.data||{};
         if(q.privateChat!==true||String(q.questionType||'')!=='private_chat'||String(q.paymentStatus||'')!=='paid')throw apiError('PRIVATE_CHAT_NOT_PAID','Only a paid Private Chat question can be allocated.',409);
-        if(q.refundId||['question_rejected','admin_rejected'].includes(String(q.status||'')))throw apiError('PRIVATE_CHAT_CLOSED','Refunded or rejected questions cannot be allocated.',409);
-        if(!['private_chat_pending_admin','private_chat_available_to_astrologers'].includes(String(q.status||''))||String(q.astrologerId||''))throw apiError('PRIVATE_CHAT_NOT_AWAITING_ADMIN','This question is no longer awaiting its selected Astrologer allocation.',409);
+        const status=String(q.status||'');
+        const pendingStatuses=['private_chat_pending_admin','private_chat_available_to_astrologers','available_to_astrologers','pending_admin_approval'];
+        const refundStatus=String(q.refundStatus||'').toLowerCase();
+        if(q.refundId||q.refundRequestedAt||q.refundEligible===true||
+           ['pending','created','initiated','processing','failed','waiting_balance','processed','completed'].includes(refundStatus)||
+           ['question_rejected','admin_rejected','rejected_by_admin'].includes(status)){
+          throw apiError('PRIVATE_CHAT_CLOSED','Refunded or rejected questions cannot be allocated.',409);
+        }
+        if(!pendingStatuses.includes(status)||String(q.astrologerId||''))throw apiError('PRIVATE_CHAT_NOT_AWAITING_ADMIN','This paid Private Chat question is no longer waiting for Admin allocation.',409);
         const orderId=safeId(q.razorpayOrderId,160);
         const orderSnapshot=orderId?await tx.getDocument(ORDER_COLLECTION+'/'+orderId):{exists:false,data:null};
-        const astrologerId=safeId(q.requestedAstrologerId||orderSnapshot.data?.requestedAstrologerId,160);
-        if(!astrologerId)throw apiError('PRIVATE_CHAT_SELECTED_ASTROLOGER_MISSING','The Customer-selected Astrologer could not be safely recovered. Do not assign this question to another Astrologer.',409);
+        const requestedAstrologerId=safeId(q.requestedAstrologerId||orderSnapshot.data?.requestedAstrologerId,160);
+        const requestedAstrologerName=String(q.requestedAstrologerName||orderSnapshot.data?.requestedAstrologerName||'');
+        const suppliedAstrologerId=String(req.body?.astrologerId||'').trim();
+        if(suppliedAstrologerId&&!safeId(suppliedAstrologerId,160))throw apiError('PRIVATE_CHAT_ASTROLOGER_INVALID','Choose a valid approved Astrologer.',400);
+        const astrologerId=safeId(suppliedAstrologerId||requestedAstrologerId,160);
+        if(!astrologerId)throw apiError('PRIVATE_CHAT_SELECTED_ASTROLOGER_MISSING','Select an approved Astrologer to allocate this paid Private Chat question.',409);
         const astroSnapshot=await tx.getDocument('smv_astrologers/'+astrologerId);
-        if(!astroSnapshot.exists||String(astroSnapshot.data?.status||'').toLowerCase()!=='approved')throw apiError('PRIVATE_CHAT_ASTROLOGER_UNAVAILABLE','The Customer-selected Astrologer is not currently approved. No other Astrologer can be substituted.',409);
-        const astroName=String(q.requestedAstrologerName||orderSnapshot.data?.requestedAstrologerName||astroSnapshot.data?.name||'Astrologer');
-        const directSelected=q.adminApprovalBypassed===true||['direct_selected','open_to_all'].includes(String(q.assignmentMode||''));
+        if(!astroSnapshot.exists||String(astroSnapshot.data?.status||'').toLowerCase()!=='approved')throw apiError('PRIVATE_CHAT_ASTROLOGER_UNAVAILABLE','The selected Astrologer must have an approved profile.',409);
+        const astroName=String(astroSnapshot.data?.name||'Astrologer');
+        // Per-question approval mode wins. Legacy open_to_all records use the
+        // current Private Chat setting; that old flag must not bypass Admin review.
+        const savedAssignmentMode=String(q.assignmentMode||'');
+        const directSelected=savedAssignmentMode==='direct_selected'
+          ?q.adminApprovalBypassed===true
+          :savedAssignmentMode==='admin_assigned'?false:settings.assignmentMode==='direct_selected';
         const timestamp=FirestoreFieldValue.serverTimestamp();
         tx.update(QUESTION_COLLECTION+'/'+questionId,{
-          astrologerId,astrologerName:astroName,status:'private_chat_assigned',allocationStatus:'assigned_to_astrologer',
-          requestedAstrologerId:astrologerId,requestedAstrologerName:astroName,
+          astrologerId,astrologerName,status:'private_chat_assigned',allocationStatus:'assigned_to_astrologer',
+          requestedAstrologerId,requestedAstrologerName,
           assignmentMode:directSelected?'direct_selected':'admin_assigned',adminApprovalBypassed:directSelected,
+          allocationMethod:requestedAstrologerId&&requestedAstrologerId===astrologerId?'customer_selected':'admin_selected',
+          adminAllocatedAstrologerId:astrologerId,adminAllocatedAstrologerName:astroName,
+          adminAllocatedBy:String(actor.uid||''),adminAllocatedAt:timestamp,
           adminQuestionApprovedAt:timestamp,adminQuestionApprovedBy:String(actor.uid||''),
           astrologerAssignedAt:timestamp,commissionStatus:'allocated_pending_answer',updatedAt:timestamp
         });
-        return {customerId:String(q.customerId||''),astrologerId,astrologerName:astroName};
+        return {customerId:String(q.customerId||''),astrologerId,astrologerName:astroName,
+          assignmentMode:directSelected?'direct_selected':'admin_assigned'};
       });
       await firestore.setDocument('smv_notifications/private_chat_assigned_'+questionId,{
         userId:saved.astrologerId,type:'private_chat_assigned',title:'New Paid Private Chat Question',
-        message:'A paid Private Chat question selected for you by the Customer has been assigned to you. Submit your answer within 24–48 hours.',
+        message:'Admin assigned a paid Private Chat question to you. Submit your answer within 24–48 hours.',
         questionId,createdAt:FirestoreFieldValue.serverTimestamp(),read:false
       },{merge:true}).catch(()=>{});
       if(saved.customerId)await firestore.setDocument('smv_notifications/'+saved.customerId+'_private_chat_allocated_'+questionId,{
@@ -462,7 +483,10 @@ export function registerPrivateChatRoutes({
         message:saved.astrologerName+' has been assigned to your Private Chat question. Answer expected within 24–48 hours.',
         questionId,astrologerId:saved.astrologerId,astrologerName:saved.astrologerName,createdAt:FirestoreFieldValue.serverTimestamp(),read:false
       },{merge:true}).catch(()=>{});
-      return res.set('Cache-Control','no-store').json({success:true,questionId,astrologerId:saved.astrologerId,astrologerName:saved.astrologerName,status:'private_chat_assigned'});
+      return res.set('Cache-Control','no-store').json({
+        success:true,questionId,astrologerId:saved.astrologerId,astrologerName:saved.astrologerName,
+        assignmentMode:saved.assignmentMode,status:'private_chat_assigned'
+      });
     }catch(error){return sendError(res,error,'Unable to approve and allocate the Private Chat question.');}
   });
 
@@ -552,29 +576,42 @@ export function registerPrivateChatRoutes({
   app.post('/admin/private-chat/reject-answer',async(req,res)=>{
     try{
       const actor=await requireAdmin(req),questionId=safeId(req.body?.questionId),reason=String(req.body?.reason||'').trim().slice(0,1000);
-      if(!questionId||!reason)throw apiError('PRIVATE_CHAT_REJECTION_REASON_REQUIRED','Question ID and rejection reason are required.',400);
+      if(!questionId||!reason)throw apiError('PRIVATE_CHAT_REJECTION_REASON_REQUIRED','Question ID and refund reason are required.',400);
       const saved=await firestore.runTransaction(async tx=>{
         const snapshot=await tx.getDocument(QUESTION_COLLECTION+'/'+questionId);
         if(!snapshot.exists)throw apiError('PRIVATE_CHAT_NOT_FOUND','Private Chat question was not found.',404);
         const q=snapshot.data||{};
         if(q.privateChat!==true||String(q.questionType||'')!=='private_chat')throw apiError('PRIVATE_CHAT_NOT_FOUND','Private Chat question was not found.',404);
-        if(String(q.status||'')!=='processing'||!String(q.answer||'').trim())throw apiError('PRIVATE_CHAT_ANSWER_NOT_PENDING','Only an answer awaiting Admin approval can be rejected.',409);
+        if(String(q.paymentStatus||'')!=='paid'||String(q.status||'')!=='processing'||!String(q.answer||'').trim())throw apiError('PRIVATE_CHAT_ANSWER_NOT_PENDING','Only a submitted Private Chat answer awaiting Admin approval can be rejected.',409);
+        if(q.refundId||q.refundRequestedAt)throw apiError('PRIVATE_CHAT_REFUND_ALREADY_STARTED','A refund is already registered for this Private Chat question.',409);
         const timestamp=FirestoreFieldValue.serverTimestamp();
+        const commissionAlreadyCredited=String(q.commissionStatus||'')==='credited'||Boolean(q.commissionCreditedAt);
         tx.update(QUESTION_COLLECTION+'/'+questionId,{
-          answer:FirestoreFieldValue.delete(),answerWordCount:0,answerSubmittedAt:FirestoreFieldValue.delete(),
+          status:'question_rejected',allocationStatus:'rejected_by_admin',
+          astrologerAnswerStatus:'rejected_by_admin',answerRejectionReason:reason,
+          adminAnswerRejectedAt:timestamp,adminAnswerRejectedBy:String(actor.uid||''),
+          lastAnswerRejectedAt:timestamp,lastAnswerRejectedBy:String(actor.uid||''),
+          refundPreviousStatus:String(q.refundPreviousStatus||q.status||'processing'),
           answerAvailableAt:FirestoreFieldValue.delete(),answerApprovedAt:FirestoreFieldValue.delete(),
-          astrologerAnswerStatus:'revision_required',answerRejectionReason:reason,status:'private_chat_assigned',
-          commissionStatus:'allocated_pending_answer',commissionCreditedAt:FirestoreFieldValue.delete(),updatedAt:timestamp,
-          lastAnswerRejectedAt:timestamp,lastAnswerRejectedBy:String(actor.uid||'')
+          adminAnswerApprovedAt:FirestoreFieldValue.delete(),customerAnswerViewedAt:FirestoreFieldValue.delete(),
+          ...(commissionAlreadyCredited?{refundCommissionReviewRequired:true}:{commissionStatus:'refund_pending',commissionCreditedAt:FirestoreFieldValue.delete()}),
+          updatedAt:timestamp
         });
-        return {astrologerId:String(q.astrologerId||'')};
+        return {astrologerId:String(q.astrologerId||''),commissionAlreadyCredited};
       });
-      if(saved.astrologerId)await firestore.setDocument('smv_notifications/astro_private_chat_answer_rejected_'+questionId+'_'+String(Date.now()),{
-        userId:saved.astrologerId,type:'answer_revision_required',title:'Private Chat Answer Needs Revision',
-        message:'Admin requested a revision: '+reason,questionId,createdAt:FirestoreFieldValue.serverTimestamp(),read:false
+      const refund=await refundPrivateChatQuestion({
+        questionId,reason:'Astrologer answer rejected by Admin: '+reason,actorUid:String(actor.uid||''),retry:false
+      });
+      if(saved.astrologerId)await firestore.setDocument('smv_notifications/astro_private_chat_answer_rejected_'+questionId+'_'+String(Number(now())),{
+        userId:saved.astrologerId,type:'answer_rejected_refund_requested',title:'Private Chat Answer Rejected',
+        message:'Admin rejected the answer and requested a Customer refund. Reason: '+reason,
+        questionId,refundStatus:refund.refundStatus||'pending',createdAt:FirestoreFieldValue.serverTimestamp(),read:false
       },{merge:true}).catch(()=>{});
-      return res.set('Cache-Control','no-store').json({success:true,questionId,status:'private_chat_assigned',reason});
-    }catch(error){return sendError(res,error,'Unable to reject the Astrologer answer.');}
+      return res.set('Cache-Control','no-store').json({
+        success:true,questionId,status:'question_rejected',answerRejected:true,
+        commissionReviewRequired:saved.commissionAlreadyCredited,...refund
+      });
+    }catch(error){return sendError(res,error,'Unable to reject the Private Chat answer and request its refund.');}
   });
 
   app.post('/admin/private-chat/reject-question',async(req,res)=>{

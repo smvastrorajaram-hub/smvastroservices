@@ -31,6 +31,10 @@ export function createPublicAnswerCreditService({firestore,now=Date.now}={}){
         throw apiError('Answer is not ready to view.',409,'ANSWER_NOT_READY');
       }
 
+      const privateChat=question.privateChat===true&&String(question.questionType||'')==='private_chat';
+      if(privateChat&&question.adminApprovalBypassed!==true&&!question.adminAnswerApprovedAt&&!question.answerApprovedAt){
+        throw apiError('ANSWER_NOT_ADMIN_APPROVED','Private Chat commission cannot be credited before Admin approves the Astrologer answer.',409);
+      }
       const alreadyViewed=Boolean(question.customerAnswerViewedAt);
       const patch={updatedAt:FirestoreFieldValue.serverTimestamp()};
       if(!alreadyViewed){
@@ -44,7 +48,6 @@ export function createPublicAnswerCreditService({firestore,now=Date.now}={}){
         return {credited:false,already:true,commissionAmount:0};
       }
 
-      const privateChat=question.privateChat===true&&String(question.questionType||'')==='private_chat';
       const astrologerAmount=money(question.astrologerCommissionAmount??question.commissionAmount);
       const grossAmount=money(question.amount??question.paymentAmount);
       const adminAmount=money(privateChat?(question.adminCommissionAmount??grossAmount-astrologerAmount):(grossAmount-astrologerAmount));

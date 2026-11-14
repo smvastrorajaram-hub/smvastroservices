@@ -176,14 +176,14 @@ test('all three PWA cache releases are synchronized for Pages.dev and .in conten
     return { pages: match[1], legacy: match[2] };
   });
   assert.deepEqual(releases.map(item => item.pages), [
-    '20261114-live-chat-sse-recovery-15s-pages-v1',
-    '20261114-live-chat-sse-recovery-15s-pages-v1',
-    '20261114-live-chat-sse-recovery-15s-pages-v1'
+    '20261114-private-chat-admin-approval-pages-v1',
+    '20261114-private-chat-admin-approval-pages-v1',
+    '20261114-private-chat-admin-approval-pages-v1'
   ]);
   assert.deepEqual(releases.map(item => item.legacy), [
-    '20261114-live-chat-sse-recovery-15s-in-v1',
-    '20261114-live-chat-sse-recovery-15s-in-v1',
-    '20261114-live-chat-sse-recovery-15s-in-v1'
+    '20261114-private-chat-admin-approval-in-v1',
+    '20261114-private-chat-admin-approval-in-v1',
+    '20261114-private-chat-admin-approval-in-v1'
   ]);
 });
 test('each installer creates its own 256x256 Windows icon', () => {

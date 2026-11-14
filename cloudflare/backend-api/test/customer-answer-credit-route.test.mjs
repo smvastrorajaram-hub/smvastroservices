@@ -89,7 +89,7 @@ test('HTTP route authenticates Customer and settles only owned answer',async()=>
 
 
 test('Private Chat answer view settles the saved Admin-defined 75/25 split',async()=>{
- const privateQuestion={...question,privateChat:true,questionType:'private_chat',amount:499,commissionPercent:75,adminCommissionPercent:25,astrologerCommissionAmount:374.25,adminCommissionAmount:124.75};
+ const privateQuestion={...question,privateChat:true,questionType:'private_chat',adminApprovalBypassed:false,adminAnswerApprovedAt:{seconds:1794040000},amount:499,commissionPercent:75,adminCommissionPercent:25,astrologerCommissionAmount:374.25,adminCommissionAmount:124.75};
  const firestore=fixture({docs:{'smv_questions/smvqt-123456':privateQuestion}});
  const service=createPublicAnswerCreditService({firestore});
  const result=await service.settle('smvqt-123456',{customerId:'cus-1'});
@@ -98,8 +98,17 @@ test('Private Chat answer view settles the saved Admin-defined 75/25 split',asyn
  assert.equal(ledger.commissionPercent,75);assert.equal(ledger.adminCommissionPercent,25);assert.equal(ledger.adminCommissionAmount,124.75);
 });
 
+test('Private Chat answer cannot create commission before Admin approval when approval bypass is OFF',async()=>{
+ const privateQuestion={...question,privateChat:true,questionType:'private_chat',adminApprovalBypassed:false,commissionStatus:'pending_admin_approval'};
+ const firestore=fixture({docs:{'smv_questions/smvqt-not-approved':privateQuestion}});
+ const service=createPublicAnswerCreditService({firestore});
+ await assert.rejects(service.settle('smvqt-not-approved',{customerId:'cus-1'}),e=>e.code==='ANSWER_NOT_ADMIN_APPROVED');
+ assert.equal(firestore.writes.length,0);
+ assert.equal(firestore.store.has('smv_payments/SMV-Q-EARN-smvqt-not-approved'),false);
+});
+
 test('Private Chat settlement fails closed when its Admin commission split is missing',async()=>{
- const privateQuestion={...question,privateChat:true,questionType:'private_chat'};
+ const privateQuestion={...question,privateChat:true,questionType:'private_chat',adminApprovalBypassed:false,adminAnswerApprovedAt:{seconds:1794040000}};
  const firestore=fixture({docs:{'smv_questions/smvqt-654321':privateQuestion}});
  const service=createPublicAnswerCreditService({firestore});
  await assert.rejects(service.settle('smvqt-654321',{customerId:'cus-1'}),e=>e.code==='ANSWER_COMMISSION_INVALID');
