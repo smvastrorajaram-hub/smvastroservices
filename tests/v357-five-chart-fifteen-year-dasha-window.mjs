@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import {full} from '../public/horoscope/offline/offline-engine.mjs';
 import {clipPeriods,yearAfter} from '../public/horoscope/d1-15-year-reading.mjs';
 const cases=[['1994-06-15','13:03'],['2015-09-06','09:30'],['1992-07-31','22:05'],['1971-05-04','05:05'],['1974-01-11','16:04']];
-const ref='2026-10-16';
+const ref='2026-11-14';
 let assertions=0;
 const eq=(a,b,description)=>{assert.deepEqual(a,b,description);assertions++};
 const ok=(a,description)=>{assert.ok(a,description);assertions++};
@@ -16,6 +16,14 @@ const summaries=[];
 for(const [date,time] of cases){
  const computed=await full({date,time,lat:11.232,lon:78.88,utcOffsetMinutes:330,referenceDate:ref,name:'V357 15-year Vimshottari'});
  ok(computed.ok,date+' horoscope full available');
+ if(date==='1992-07-31'&&time==='22:05'){
+  const running=computed.chart?.dashas?.current;
+  eq(computed.chart?.dashas?.yearLengthDays,365.2422,'1992-07-31 Perambalur chart uses the selected 365.2422-day Vimshottari year');
+  eq(running?.referenceDate,ref,'1992-07-31 Perambalur current Dasha is evaluated for 14 November 2026');
+  eq(running?.mahadasha?.lord,'சந்திரன்','1992-07-31 22:05 Perambalur remains in Moon Mahadasha on 14 November 2026');
+  eq(running?.antardasha?.lord,'கேது','1992-07-31 22:05 Perambalur is in Moon-Ketu Bhukti on 14 November 2026; catches 360-day regressions');
+  ok(String(running?.antardasha?.start||'').startsWith('2026-09')&&String(running?.antardasha?.end||'').startsWith('2027-04'),'Moon-Ketu boundary falls in September 2026 to April 2027 with the selected solar-year convention');
+ }
  const output=clipPeriods(computed,ref);
  eq(output.referenceDate,ref,date+' must begin at report date, not birth');
  eq(output.end,'2041-10-16',date+' exactly next 15 years');
