@@ -1597,3 +1597,20 @@ test('Live Call/Chat countdown confirms terminal D1 settlement even when its SSE
   assert.ok(frontend.includes('Time ended — confirming server settlement…'));
   assert.equal(frontend.includes('Time ended — waiting for server settlement…'),false);
 });
+
+test('Live Call/Chat and Book Call/Chat allocate ten-digit numeric IDs with stable idempotent retries', () => {
+  const d1 = read('shared/backend-platform/d1-live-session-service.mjs');
+  const legacy = read('live-session-service.js');
+  assert.ok(d1.includes('async function numericLiveSessionId(uid,requestId,attempt=0)'));
+  assert.ok(legacy.includes('function numericLiveSessionId(uid, requestId, attempt = 0)'));
+  assert.ok(d1.includes("1_000_000_000n+(BigInt('0x'+digest.slice(0,16))%9_000_000_000n)"));
+  assert.ok(legacy.includes("1_000_000_000n + (BigInt('0x' + digest.slice(0, 16)) % 9_000_000_000n)"));
+  assert.ok(d1.includes('idempotencyRequestId:reqId'));
+  assert.ok(legacy.includes('idempotencyRequestId: reqId'));
+  assert.ok(d1.includes('for(let attempt=0;attempt<32;attempt++)'));
+  assert.ok(legacy.includes('for (let attempt = 0; attempt < 32; attempt++)'));
+  assert.ok(d1.includes("const legacyId=await sha256(uid+':'+reqId);"),
+    'D1 preserves retries for sessions created before the numeric-ID release.');
+  assert.ok(legacy.includes("const legacyId = hash(uid + ':' + reqId);"),
+    'The existing service preserves retries for sessions created before the numeric-ID release.');
+});
