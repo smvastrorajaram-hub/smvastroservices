@@ -487,7 +487,7 @@ export function registerPrivateChatRoutes({
         success:true,questionId,astrologerId:saved.astrologerId,astrologerName:saved.astrologerName,
         assignmentMode:saved.assignmentMode,status:'private_chat_assigned'
       });
-    }catch(error){return sendError(res,error,'Unable to approve and allocate the Private Chat question.');}
+    }catch(error){console.warn('Private Chat Admin allocation failed:',String(error?.stack||error));return sendError(res,error,'Unable to approve and allocate the Private Chat question.');}
   });
 
   app.post('/admin/private-chat/reallocate',async(req,res)=>{

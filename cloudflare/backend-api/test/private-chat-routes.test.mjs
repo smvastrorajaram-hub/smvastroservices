@@ -565,7 +565,7 @@ test('Admin rejects a Private Chat answer, requests Customer refund and keeps co
   assert.equal(saved.allocationStatus,'rejected_by_admin');
   assert.equal(saved.astrologerAnswerStatus,'rejected_by_admin');
   assert.equal(saved.commissionStatus,'refund_pending');
-  assert.equal(saved.commissionCreditedAt,undefined);
+  assert.equal(saved.commissionCreditedAt?.__smvFirestoreFieldOperation,'delete');
   assert.equal(saved.answerRejectionReason,'Please clarify the timing.');
   assert.equal(state.refundCalls.length,1);
   assert.deepEqual(state.refundCalls[0],{

@@ -33,7 +33,7 @@ export function createPublicAnswerCreditService({firestore,now=Date.now}={}){
 
       const privateChat=question.privateChat===true&&String(question.questionType||'')==='private_chat';
       if(privateChat&&question.adminApprovalBypassed!==true&&!question.adminAnswerApprovedAt&&!question.answerApprovedAt){
-        throw apiError('ANSWER_NOT_ADMIN_APPROVED','Private Chat commission cannot be credited before Admin approves the Astrologer answer.',409);
+        throw apiError('Private Chat commission cannot be credited before Admin approves the Astrologer answer.',409,'ANSWER_NOT_ADMIN_APPROVED');
       }
       const alreadyViewed=Boolean(question.customerAnswerViewedAt);
       const patch={updatedAt:FirestoreFieldValue.serverTimestamp()};

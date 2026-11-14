@@ -216,7 +216,7 @@ test('Private Chat 24-hour reallocation, Customer Review flow and workflow times
   assert.match(app, /\/customer\/submit-review/);
   assert.match(review, /PRIVATE_CHAT_ANSWER_NOT_VIEWED/);
   assert.match(app, /Razorpay Refund ID/);
-  assert.match(app, /Admin rejected answer — revision requested/);
+  assert.match(app, /Admin rejected answer — refund requested/);
   assert.match(app, /\['Requested',w\.createdAt\|\|w\.requestedAt\],\['Processing',w\.processingAt\]/);
   assert.match(app, /saveEditedReview/);
   assert.match(app, /data-review-edit/);
