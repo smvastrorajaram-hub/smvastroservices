@@ -2,7 +2,7 @@
 
 **Audit date:** 14 November 2026  
 **Audited source:** `smvastrorajaram-hub/smvastroservices`  
-**Main baseline:** `ff73618d650d2bdce1d0f5971e7d13f60ad201f8` (after PR #494; includes PRs #491 and #494)  
+**Main baseline:** `4254de3b5a0cefce1334b551088af899840bf955` (after PR #495; includes PRs #491 and #494)  
 **Status:** Documentation-only audit. No runtime source, configuration, secrets, production data, database migrations, or deployments are changed by this document.
 
 ## 1. Objective and conclusion
@@ -97,7 +97,11 @@ Observed at approximately 04:49:54–04:49:55 UTC:
 
 The Production main Pages deployment for PR #494 subsequently passed (GitHub run `43559595015`); the two satellite PWA deployments also passed (Horoscope `43559633769`, Calendar `43559635904`). The deployed `.in` main script and all three Service Workers returned the new synchronized cache markers.
 
-**Rows Read / Rows Written are still unverified.** Cloudflare documents that D1 account analytics comes from the GraphQL Analytics API and that `wrangler d1 insights` requires an API token with **Account Analytics Read** permission. The existing D1-only token's analytics permission has not been verified; do not change or re-upload any secret. A dedicated Analytics Read permission/token may be required for the next read-only metrics report. See [Cloudflare D1 Metrics and Analytics](https://developers.cloudflare.com/d1/observability/metrics-analytics/) and [Find slow and expensive queries](https://developers.cloudflare.com/d1/observability/find-expensive-queries/).
+**Rows Read / Rows Written are still unverified.** The Production-only metrics workflow from PR #495 ran as GitHub Actions run `43560299555`, but the Cloudflare GraphQL Analytics API returned `not authorized for that account`. The workflow stopped before any metrics were returned; its optional `wrangler d1 insights` step was skipped. No D1 query, SQL read, migration or write was performed by this failed metrics run.
+
+Cloudflare documents that D1 account analytics comes from the GraphQL Analytics API and that `wrangler d1 insights` requires an API token with **Account Analytics Read** permission. A separate follow-up PR #496 uses a dedicated `CLOUDFLARE_D1_ANALYTICS_READ_TOKEN` secret so the existing `CLOUDFLARE_D1_API_TOKEN` remains unchanged. This report must stay marked unverified until a token scoped to the correct Cloudflare account with Account Analytics Read is added to the GitHub `production` environment and the report completes.
+
+References: [Cloudflare D1 Metrics and Analytics](https://developers.cloudflare.com/d1/observability/metrics-analytics/) and [Find slow and expensive queries](https://developers.cloudflare.com/d1/observability/find-expensive-queries/).
 
 ## 4. Current source findings
 
@@ -177,6 +181,8 @@ The existing #226 source audit already recommended narrow CSS consolidation and 
 - **PR #474:** consolidation of D1 schema metadata scans.
 - **PR #491:** booked session settlement, Android receipt margins and numeric Session IDs.
 - **PR #494:** reduced healthy-SSE Live Chat recovery polling to 15 seconds, synchronized all three PWA cache releases, and deployed the main site plus both satellite PWAs.
+- **PR #495:** added a Production-only, read-only D1 Analytics workflow; its first run was blocked by missing account-level Analytics authorization.
+- **PR #496:** follow-up to use a dedicated `CLOUDFLARE_D1_ANALYTICS_READ_TOKEN`; awaiting the operator-created Production environment secret.
 
 The old branch `perf/d1-read-architecture-5000-customers-20261112` is not reused. This follow-up audit starts from current main to avoid pulling in a branch that has diverged from main.
 
