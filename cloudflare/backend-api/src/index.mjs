@@ -363,7 +363,8 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
       liveService: liveSessionRoutesOpen ? gapLiveService : null,
       isLiveReady: async () => {
         const schema = await inspectSchema();
-        return schema.checks.liveSessionSchema === true && schema.checks.walletSecuritySchema === true;
+        return schema.checks.liveSessionSchema === true && schema.checks.walletSecuritySchema === true &&
+          schema.checks.liveSessionQueryIndexes === true;
       }
     });
     registerLegacyBusinessRoutes({ app, firestore: firestoreAdmin, identityService: walletIdentityService, liveService: gapLiveService });
@@ -428,7 +429,7 @@ if ((requiresFirestoreAdmin || identityProfileD1AuthorizationOpen) && env.DB && 
   const checkLiveSessionSchemaReady = async () => {
     const schema = await inspectSchema();
     liveSessionSchemaReady = schema.checks.liveSessionSchema === true &&
-      schema.checks.walletSecuritySchema === true;
+      schema.checks.walletSecuritySchema === true && schema.checks.liveSessionQueryIndexes === true;
     return liveSessionSchemaReady;
   };
 
@@ -653,7 +654,7 @@ app.get('/healthz', async (_req, res) => {
   const schema = await inspectSchema();
   walletDomainSchemaReady = schema.checks.walletSchema;
   walletRechargeSchemaReady = schema.checks.walletRechargeSchema;
-  liveSessionSchemaReady = schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;
+  liveSessionSchemaReady = schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema && schema.checks.liveSessionQueryIndexes === true;
   const firebaseConnected = await firebaseConnectivityProbe();
   const razorpayVerification = await getRazorpayProviderVerification();
   const identityGate = d1IdentityAuthorizationService
@@ -666,7 +667,7 @@ app.get('/healthz', async (_req, res) => {
   const walletRechargeRoutesEnabled = walletRechargeRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
   const walletOfferRoutesEnabled = walletOfferRoutesRegistered && walletReadRouteGateOpen && schema.checks.walletRechargeSchema;
   const liveCallChatRoutesEnabled = liveSessionRoutesRegistered && liveSessionRoutesOpen &&
-    schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;
+    schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema && schema.checks.liveSessionQueryIndexes === true;
   const razorpayCredentialsConfigured = razorpayPolicy.enabled && !!razorpayKeyId && !!razorpayKeySecret && !!razorpayWebhookSecret;
   const productionFinancialTrafficRoutingEnabled = isProductionFinancialTrafficRoutingEnabled({
     environment: String(env.SMV_ENVIRONMENT || 'unknown'),
@@ -710,6 +711,7 @@ app.get('/healthz', async (_req, res) => {
     liveSessionRoutesRegistered,
     liveCallChatRoutesEnabled,
     liveSessionSchemaReady,
+    liveSessionQueryIndexesReady: schema.checks.liveSessionQueryIndexes === true,
     walletPayoutEncryptionConfigured,
     razorpayMode: razorpayPolicy.mode,
     razorpayCredentialsConfigured,
@@ -766,7 +768,7 @@ app.get('/api/backend/migration-status', async (_req, res) => {
   const schema = await inspectSchema();
   walletDomainSchemaReady = schema.checks.walletSchema;
   walletRechargeSchemaReady = schema.checks.walletRechargeSchema;
-  liveSessionSchemaReady = schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema;
+  liveSessionSchemaReady = schema.checks.liveSessionSchema && schema.checks.walletSecuritySchema && schema.checks.liveSessionQueryIndexes === true;
   const firebaseConnected = await firebaseConnectivityProbe();
   const razorpayVerification = await getRazorpayProviderVerification();
   const identityGate = d1IdentityAuthorizationService
@@ -838,6 +840,7 @@ app.get('/api/backend/migration-status', async (_req, res) => {
     walletBusinessRoutesEnabled: false,
     callChatRoutesEnabled: liveSessionRoutesEnabled,
     liveSessionRoutesEnabled,
+    liveSessionQueryIndexesReady: schema.checks.liveSessionQueryIndexes === true,
     walletPayoutEncryptionConfigured,
     renderDependency: false,
     productionTrafficEnabled: false,
