@@ -133,6 +133,10 @@ test('Scheduled Call and Chat bookings also trigger an Astrologer push', () => {
 
 test('Astrologer can register and test device-level Background Alerts', () => {
   const frontend = read('public/smvastro.mjs');
+  const backendRouting = frontend.match(/function smvApiBackend\(path\) \{([\s\S]*?)\n\}/);
+  assert.ok(backendRouting, 'The API backend router must remain explicit.');
+  assert.doesNotMatch(backendRouting[1], /push-config/, 'The VAPID public key endpoint must stay on Render, where FCM_VAPID_PUBLIC_KEY is configured.');
+  assert.match(frontend, /const pushConfig=await renderApi\('\/public\/push-config'/, 'The browser obtains the VAPID public key through the shared API transport.');
   assert.match(frontend, /Notification\.requestPermission\(\)/);
   assert.match(frontend, /messagingModule\.getToken\(messaging,\s*\{\s*vapidKey,\s*serviceWorkerRegistration\s*:\s*registration\s*\}\)/);
   assert.match(frontend, /id="smvLivePushEnable"/);
