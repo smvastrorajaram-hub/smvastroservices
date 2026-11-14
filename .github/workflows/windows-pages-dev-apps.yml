@@ -1,4 +1,4 @@
-name: Pages.dev Windows Desktop Installers
+name: Permanent Windows Releases — Pages.dev Apps
 
 on:
   pull_request:
@@ -16,9 +16,25 @@ on:
       - '.github/scripts/windows-pages-desktop-smoke.cjs'
       - '.github/workflows/windows-pages-dev-apps.yml'
   workflow_dispatch:
+    inputs:
+      astro_version:
+        description: 'SMV ASTRO Pages.dev version (x.y.z; creates a permanent GitHub Release)'
+        required: true
+        type: string
+        default: '0.1.0'
+      horoscope_version:
+        description: 'SMV HOROSCOPE Pages.dev version (x.y.z; creates a permanent GitHub Release)'
+        required: true
+        type: string
+        default: '0.1.0'
+      calendar_version:
+        description: 'SMV CALENDAR Pages.dev version (x.y.z; creates a permanent GitHub Release)'
+        required: true
+        type: string
+        default: '0.1.0'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-install-desktop-and-offline-test:
@@ -34,26 +50,35 @@ jobs:
             key: astro
             name: SMV ASTRO
             directory: desktop/pages-astro-windows
-            installer: desktop/pages-astro-windows/release/SMV-ASTRO-Pages-Setup-0.1.0-x64.exe
             executable: SMV ASTRO.exe
             path: /
             cache: smv-astro-shell-
+            version: ${{ github.event_name == 'workflow_dispatch' && inputs.astro_version || '0.1.0' }}
+            installer_prefix: SMV-ASTRO-Pages-Setup
+            release_name: SMV ASTRO Pages.dev Windows
+            tag_prefix: smv-pages-astro-windows
           - app: HOROSCOPE
             key: horoscope
             name: SMV HOROSCOPE
             directory: desktop/pages-horoscope-windows
-            installer: desktop/pages-horoscope-windows/release/SMV-HOROSCOPE-Pages-Setup-0.1.0-x64.exe
             executable: SMV HOROSCOPE.exe
             path: /horoscope/
             cache: smv-horoscope-shell-
+            version: ${{ github.event_name == 'workflow_dispatch' && inputs.horoscope_version || '0.1.0' }}
+            installer_prefix: SMV-HOROSCOPE-Pages-Setup
+            release_name: SMV HOROSCOPE Pages.dev Windows
+            tag_prefix: smv-pages-horoscope-windows
           - app: CALENDAR
             key: calendar
             name: SMV CALENDAR
             directory: desktop/pages-calendar-windows
-            installer: desktop/pages-calendar-windows/release/SMV-CALENDAR-Pages-Setup-0.1.0-x64.exe
             executable: SMV CALENDAR.exe
             path: /horoscope/calendar/
             cache: smv-calendar-forecast-assets-
+            version: ${{ github.event_name == 'workflow_dispatch' && inputs.calendar_version || '0.1.0' }}
+            installer_prefix: SMV-CALENDAR-Pages-Setup
+            release_name: SMV CALENDAR Pages.dev Windows
+            tag_prefix: smv-pages-calendar-windows
 
     steps:
       - name: Check out source
@@ -63,6 +88,20 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
+
+      - name: Validate and set manually selected Windows release version
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        shell: pwsh
+        working-directory: ${{ matrix.directory }}
+        env:
+          APP_VERSION: ${{ matrix.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:APP_VERSION -notmatch '^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$') {
+            throw "Version must use semantic version format x.y.z, optionally with prerelease/build metadata."
+          }
+          npm pkg set "version=$env:APP_VERSION"
+          if ($LASTEXITCODE -ne 0) { throw 'Could not set the requested app version.' }
 
       - name: Install desktop build dependencies
         working-directory: ${{ matrix.directory }}
@@ -76,23 +115,34 @@ jobs:
         working-directory: ${{ matrix.directory }}
         run: npm run dist:win
 
+      - name: Resolve versioned Windows installer
+        id: installer
+        shell: pwsh
+        env:
+          APP_DIRECTORY: ${{ matrix.directory }}
+          INSTALLER_PREFIX: ${{ matrix.installer_prefix }}
+          APP_VERSION: ${{ matrix.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $path = Join-Path $env:GITHUB_WORKSPACE (Join-Path $env:APP_DIRECTORY ("release/" + $env:INSTALLER_PREFIX + "-" + $env:APP_VERSION + "-x64.exe"))
+          if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+            throw "Versioned Windows installer was not produced: $path"
+          }
+          "path=$path" >> $env:GITHUB_OUTPUT
+
       - name: Install and launch packaged Windows application
         shell: pwsh
         env:
           APP_LABEL: ${{ matrix.app }}
           APP_KEY: ${{ matrix.key }}
-          INSTALLER_PATH: ${{ matrix.installer }}
+          INSTALLER_PATH: ${{ steps.installer.outputs.path }}
           APP_EXE: ${{ matrix.executable }}
           EXPECTED_NAME: ${{ matrix.name }}
           EXPECTED_PATH: ${{ matrix.path }}
           CACHE_PREFIX: ${{ matrix.cache }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $installer = Join-Path $env:GITHUB_WORKSPACE $env:INSTALLER_PATH
-          if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) {
-            throw "Installer was not produced: $installer"
-          }
-
+          $installer = $env:INSTALLER_PATH
           $installDir = Join-Path $env:RUNNER_TEMP ("smv-pages-" + $env:APP_KEY)
           if (Test-Path -LiteralPath $installDir) {
             Remove-Item -LiteralPath $installDir -Recurse -Force
@@ -113,8 +163,8 @@ jobs:
           }
 
           $env:SMV_DEBUG_PORT = '9222'
-          $env:SMV_EXPECTED_PATH = $env:EXPECTED_PATH
           $env:SMV_EXPECTED_NAME = $env:EXPECTED_NAME
+          $env:SMV_EXPECTED_PATH = $env:EXPECTED_PATH
           $env:SMV_CACHE_PREFIX = $env:CACHE_PREFIX
           $proofDir = Join-Path $env:GITHUB_WORKSPACE 'pages-dev-desktop-proof'
           New-Item -ItemType Directory -Force -Path $proofDir | Out-Null
@@ -143,14 +193,21 @@ jobs:
             }
           }
 
-      - name: Upload Pages.dev Windows installer
-        if: success()
-        uses: actions/upload-artifact@v4
+      - name: Publish permanent Pages.dev Windows Release
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: smv-pages-${{ matrix.key }}-windows-installer
-          path: ${{ matrix.installer }}
-          if-no-files-found: error
-          retention-days: 14
+          tag_name: ${{ matrix.tag_prefix }}-v${{ matrix.version }}
+          name: ${{ matrix.release_name }} v${{ matrix.version }}
+          body: |
+            Permanent Windows installer for ${{ matrix.release_name }}.
+            Built from commit ${{ github.sha }}.
+          files: ${{ steps.installer.outputs.path }}
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
 
       - name: Upload desktop and offline screenshots
         if: always()

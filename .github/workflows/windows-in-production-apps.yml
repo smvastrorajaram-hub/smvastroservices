@@ -1,0 +1,193 @@
+name: Permanent Windows Releases — Production .in Apps
+
+on:
+  pull_request:
+    paths:
+      - 'desktop/windows/**'
+      - 'desktop/horoscope-windows/**'
+      - 'desktop/calendar-windows/**'
+      - 'test/windows-desktop-shell.test.cjs'
+      - 'test/windows-standalone-installers.test.cjs'
+      - '.github/workflows/windows-in-production-apps.yml'
+  workflow_dispatch:
+    inputs:
+      astro_version:
+        description: 'SMV ASTRO .in version (x.y.z; creates a permanent GitHub Release)'
+        required: true
+        type: string
+        default: '0.1.0'
+      horoscope_version:
+        description: 'SMV HOROSCOPE .in version (x.y.z; creates a permanent GitHub Release)'
+        required: true
+        type: string
+        default: '0.1.0'
+      calendar_version:
+        description: 'SMV CALENDAR .in version (x.y.z; creates a permanent GitHub Release)'
+        required: true
+        type: string
+        default: '0.1.0'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-in-production-apps-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-install-and-smoke-test:
+    name: Build and launch .in ${{ matrix.app }} installer
+    runs-on: windows-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - app: ASTRO
+            key: astro
+            directory: desktop/windows
+            executable: SMV ASTRO.exe
+            installer_prefix: SMV-ASTRO-Setup
+            version: ${{ github.event_name == 'workflow_dispatch' && inputs.astro_version || '0.1.0' }}
+            release_name: SMV ASTRO .in Windows
+            tag_prefix: smv-in-astro-windows
+          - app: HOROSCOPE
+            key: horoscope
+            directory: desktop/horoscope-windows
+            executable: SMV HOROSCOPE.exe
+            installer_prefix: SMV-HOROSCOPE-Setup
+            version: ${{ github.event_name == 'workflow_dispatch' && inputs.horoscope_version || '0.1.0' }}
+            release_name: SMV HOROSCOPE .in Windows
+            tag_prefix: smv-in-horoscope-windows
+          - app: CALENDAR
+            key: calendar
+            directory: desktop/calendar-windows
+            executable: SMV CALENDAR.exe
+            installer_prefix: SMV-CALENDAR-Setup
+            version: ${{ github.event_name == 'workflow_dispatch' && inputs.calendar_version || '0.1.0' }}
+            release_name: SMV CALENDAR .in Windows
+            tag_prefix: smv-in-calendar-windows
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Validate and set manually selected Windows release version
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        shell: pwsh
+        working-directory: ${{ matrix.directory }}
+        env:
+          APP_VERSION: ${{ matrix.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:APP_VERSION -notmatch '^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$') {
+            throw "Version must use semantic version format x.y.z, optionally with prerelease/build metadata."
+          }
+          npm pkg set "version=$env:APP_VERSION"
+          if ($LASTEXITCODE -ne 0) { throw 'Could not set the requested app version.' }
+
+      - name: Install desktop build dependencies
+        working-directory: ${{ matrix.directory }}
+        run: npm install --no-audit --no-fund
+
+      - name: Run independent .in app identity and installer regression tests
+        working-directory: ${{ matrix.directory }}
+        run: npm test
+
+      - name: Build production .in Windows installer
+        working-directory: ${{ matrix.directory }}
+        run: npm run dist:win
+
+      - name: Resolve versioned Windows installer
+        id: installer
+        shell: pwsh
+        env:
+          APP_DIRECTORY: ${{ matrix.directory }}
+          INSTALLER_PREFIX: ${{ matrix.installer_prefix }}
+          APP_VERSION: ${{ matrix.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $path = Join-Path $env:GITHUB_WORKSPACE (Join-Path $env:APP_DIRECTORY ("release/" + $env:INSTALLER_PREFIX + "-" + $env:APP_VERSION + "-x64.exe"))
+          if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+            throw "Versioned Windows installer was not produced: $path"
+          }
+          "path=$path" >> $env:GITHUB_OUTPUT
+
+      - name: Install and launch packaged Windows application
+        shell: pwsh
+        env:
+          APP_LABEL: ${{ matrix.app }}
+          APP_KEY: ${{ matrix.key }}
+          INSTALLER_PATH: ${{ steps.installer.outputs.path }}
+          APP_EXE: ${{ matrix.executable }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $installer = $env:INSTALLER_PATH
+          $installDir = Join-Path $env:RUNNER_TEMP ("smv-in-" + $env:APP_KEY)
+          if (Test-Path -LiteralPath $installDir) {
+            Remove-Item -LiteralPath $installDir -Recurse -Force
+          }
+
+          $setup = Start-Process -FilePath $installer -ArgumentList @('/S', "/D=$installDir") -Wait -PassThru
+          if ($setup.ExitCode -ne 0) {
+            throw "$env:APP_LABEL installer exited with code $($setup.ExitCode)"
+          }
+
+          $appPath = Join-Path $installDir $env:APP_EXE
+          if (-not (Test-Path -LiteralPath $appPath -PathType Leaf)) {
+            $found = Get-ChildItem -LiteralPath $installDir -Filter '*.exe' -File -Recurse |
+              Where-Object { $_.Name -eq $env:APP_EXE } |
+              Select-Object -First 1
+            if ($null -eq $found) {
+              throw "$env:APP_LABEL executable was not found after installation."
+            }
+            $appPath = $found.FullName
+          }
+
+          $logPath = Join-Path $env:RUNNER_TEMP ("smv-in-" + $env:APP_KEY + "-electron.log")
+          $appProcess = Start-Process -FilePath $appPath -ArgumentList @('--enable-logging', "--log-file=$logPath") -PassThru
+          try {
+            Start-Sleep -Seconds 15
+            $appProcess.Refresh()
+            if ($appProcess.HasExited) {
+              $details = if (Test-Path -LiteralPath $logPath) { Get-Content -LiteralPath $logPath -Raw } else { 'No Electron log was produced.' }
+              throw "$env:APP_LABEL exited during the launch smoke test. $details"
+            }
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "PASS: $env:APP_LABEL installer installed and its Windows application process remained running for 15 seconds."
+          } finally {
+            & taskkill.exe /PID $appProcess.Id /T /F | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+              Stop-Process -Id $appProcess.Id -Force -ErrorAction SilentlyContinue
+            }
+          }
+
+      - name: Publish permanent production .in Windows Release
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ matrix.tag_prefix }}-v${{ matrix.version }}
+          name: ${{ matrix.release_name }} v${{ matrix.version }}
+          body: |
+            Permanent Windows installer for ${{ matrix.release_name }}.
+            Built from commit ${{ github.sha }}.
+          files: ${{ steps.installer.outputs.path }}
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
+
+      - name: Upload Windows launch log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smv-in-${{ matrix.key }}-runtime-log
+          path: ${{ runner.temp }}/smv-in-${{ matrix.key }}-electron.log
+          if-no-files-found: ignore
+          retention-days: 7
