@@ -461,7 +461,7 @@ export function registerPrivateChatRoutes({
           :savedAssignmentMode==='admin_assigned'?false:settings.assignmentMode==='direct_selected';
         const timestamp=FirestoreFieldValue.serverTimestamp();
         tx.update(QUESTION_COLLECTION+'/'+questionId,{
-          astrologerId,astrologerName,status:'private_chat_assigned',allocationStatus:'assigned_to_astrologer',
+          astrologerId,astrologerName:astroName,status:'private_chat_assigned',allocationStatus:'assigned_to_astrologer',
           requestedAstrologerId,requestedAstrologerName,
           assignmentMode:directSelected?'direct_selected':'admin_assigned',adminApprovalBypassed:directSelected,
           allocationMethod:requestedAstrologerId&&requestedAstrologerId===astrologerId?'customer_selected':'admin_selected',
