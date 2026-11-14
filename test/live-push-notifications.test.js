@@ -235,7 +235,7 @@ test('Live Chat uses canonical mode/state and native visibility instead of a cha
   assert.equal(frontend.includes('smvLiveApplyChatLayout'), false, 'Chat visibility must not depend on a second dynamic layout mutator');
   assert.equal(frontend.includes('smv-live-chat-active'), false, 'no chat-only modal class should be toggled by JavaScript');
   assert.equal(css.includes('.smv-live-chat-active'), false, 'Chat must not depend on a special CSS override block');
-  assert.ok(html.includes('smvastro.css?v=20261112-d1-read-optimization-5000-customers-v1'));
+  assert.ok(html.includes('smvastro.css?v=20261114-blog-image-top-full-width-v1'));
   assert.ok(html.includes('smvastro.mjs?v=20261114-private-chat-answer-viewed-live-reviews-v1'));
 });
 
