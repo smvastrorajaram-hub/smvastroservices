@@ -354,6 +354,10 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
   function hash(value) {
     return crypto.createHash('sha256').update(String(value)).digest('hex');
   }
+  function numericLiveSessionId(uid, requestId, attempt = 0) {
+    const digest = hash('smv-live-session-id:' + uid + ':' + requestId + ':' + attempt);
+    return (1_000_000_000n + (BigInt('0x' + digest.slice(0, 16)) % 9_000_000_000n)).toString();
+  }
 
   function sessionRef(id) { return db.collection(SESSIONS).doc(String(id)); }
   const availabilitySyncQueues = new Map();
@@ -758,7 +762,6 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
     if (reqId.length < 8 || reqId.length > 128) throw httpError(400, 'A valid request ID is required. Please try again.', 'LIVE_REQUEST_ID_INVALID');
     const scheduledAppointmentId = String(appointmentId || '').trim();
     if (scheduledAppointmentId && scheduledAppointmentId.length > 180) throw httpError(400, 'Scheduled booking ID is invalid.', 'LIVE_APPOINTMENT_ID_INVALID');
-    const id = hash(uid + ':' + reqId);
     const fingerprintPayload = {
       customerUid: uid, astrologerId: astroId, mode: kind, minutes: length,
       customerName: sessionCustomerName, birthDetails: sessionBirthDetails
@@ -767,6 +770,52 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
     const fingerprint = hash(JSON.stringify(scheduledAppointmentId
       ? { ...fingerprintPayload, appointmentId: scheduledAppointmentId }
       : fingerprintPayload));
+    // Honour idempotent retries created before numeric IDs were introduced.
+    const legacyId = hash(uid + ':' + reqId);
+    const [legacySessionSnap, legacyBookingSnap] = await Promise.all([
+      sessionRef(legacyId).get(), bookingRef(legacyId).get()
+    ]);
+    if (legacySessionSnap.exists || legacyBookingSnap.exists) {
+      const oldSession = legacySessionSnap.exists ? legacySessionSnap.data() || {} : null;
+      const oldBooking = legacyBookingSnap.exists ? legacyBookingSnap.data() || {} : null;
+      const old = oldSession || oldBooking;
+      const canAttachLegacyAppointment = !!scheduledAppointmentId && !old.appointmentId &&
+        old.payloadFingerprint === legacyFingerprint;
+      if ((old.payloadFingerprint !== fingerprint && !canAttachLegacyAppointment) ||
+          old.customerUid !== uid || old.astrologerUid !== astroId) {
+        throw httpError(409, 'This request ID was already used for different session details.', 'LIVE_IDEMPOTENCY_CONFLICT');
+      }
+      if (canAttachLegacyAppointment) {
+        const patch = { appointmentId: scheduledAppointmentId, payloadFingerprint: fingerprint, updatedAt: nowTimestamp() };
+        await (oldSession ? sessionRef(legacyId) : bookingRef(legacyId)).set(patch, { merge: true });
+        Object.assign(old, patch);
+      }
+      return oldSession
+        ? { success: true, kind: 'session', alreadyProcessed: true, session: liveSessionSafeView(legacyId, old) }
+        : { success: true, kind: 'booking', alreadyProcessed: true, booking: safeBookingView(legacyId, old) };
+    }
+    // Stable request keys produce stable ten-digit IDs. Deterministic collision
+    // probing keeps the public reference numeric without sacrificing idempotency.
+    let id = '';
+    for (let attempt = 0; attempt < 32; attempt++) {
+      const candidate = numericLiveSessionId(uid, reqId, attempt);
+      const [candidateSessionSnap, candidateBookingSnap] = await Promise.all([
+        sessionRef(candidate).get(), bookingRef(candidate).get()
+      ]);
+      const collision = candidateSessionSnap.exists
+        ? candidateSessionSnap.data() || {}
+        : candidateBookingSnap.exists ? candidateBookingSnap.data() || {} : null;
+      if (!collision) { id = candidate; break; }
+      if (String(collision.idempotencyRequestId || '') === reqId) {
+        if (collision.payloadFingerprint !== fingerprint || collision.customerUid !== uid || collision.astrologerUid !== astroId) {
+          throw httpError(409, 'This request ID was already used for different session details.', 'LIVE_IDEMPOTENCY_CONFLICT');
+        }
+        return candidateSessionSnap.exists
+          ? { success: true, kind: 'session', alreadyProcessed: true, session: liveSessionSafeView(candidate, collision) }
+          : { success: true, kind: 'booking', alreadyProcessed: true, booking: safeBookingView(candidate, collision) };
+      }
+    }
+    if (!id) throw httpError(503, 'A unique numeric Session ID could not be allocated. Please retry.', 'LIVE_SESSION_ID_EXHAUSTED');
     const sRef = sessionRef(id), bRef = bookingRef(id);
     const aRef = astroRef(astroId), wRef = walletRef(uid), pRef = pricingRef(), cRef = commissionRef();
     // Auth/profile/approval/rates remain authoritative in Project 1; only wallet,
@@ -782,6 +831,9 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
       ]);
       if (oldSession.exists || oldBooking.exists) {
         const old = oldSession.exists ? (oldSession.data() || {}) : (oldBooking.data() || {});
+        if (String(old.idempotencyRequestId || '') !== reqId) {
+          throw httpError(409, 'A numeric Session ID collision was detected. Retry the request.', 'LIVE_SESSION_ID_COLLISION');
+        }
         const canAttachLegacyAppointment = !!scheduledAppointmentId && !old.appointmentId &&
           old.payloadFingerprint === legacyFingerprint;
         if ((old.payloadFingerprint !== fingerprint && !canAttachLegacyAppointment) ||
@@ -852,7 +904,7 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
           ratePerMinutePaise: rate, reservedAmountPaise: reserve.reservedAmountPaise,
           reservedBonusCreditPaise: reserve.reservedBonusCreditForSessionPaise, walletReservationState: 'reserved',
           astrologerCommissionPercent: commission.astroPercent, adminCommissionPercent: commission.adminPercent,
-          status: 'pending', origin: 'offline_queue', payloadFingerprint: fingerprint,
+          status: 'pending', origin: 'offline_queue', payloadFingerprint: fingerprint, idempotencyRequestId: reqId,
           createdAt: nowTimestamp(), updatedAt: nowTimestamp(),
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         };
@@ -864,7 +916,8 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
       }
       const customer = customerSnap.data() || {};
       const reserve = await reserveInTransaction(tx, { uid, mode: kind, minutes: length, rate, walletSnapshot: walletSnap, sessionId: id });
-      const data = annotateSessionStorage(makeSession({
+      const data = annotateSessionStorage({
+        ...makeSession({
         id, customerUid: uid, astrologerUid: astroId, astroProfile: { ...astro, name: astroName },
         customerName: sessionCustomerName, birthDetails: sessionBirthDetails,
         mode: kind, minutes: length, rate, reservedAmount: reserve.reservedAmountPaise,
