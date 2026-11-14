@@ -229,7 +229,7 @@ test('Live Chat uses canonical mode/state and native visibility instead of a cha
   assert.equal(frontend.includes('smv-live-chat-active'), false, 'no chat-only modal class should be toggled by JavaScript');
   assert.equal(css.includes('.smv-live-chat-active'), false, 'Chat must not depend on a special CSS override block');
   assert.ok(html.includes('smvastro.css?v=20261112-d1-read-optimization-5000-customers-v1'));
-  assert.ok(html.includes('smvastro.mjs?v=20261114-booking-receipt-numeric-session-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261114-live-chat-sse-recovery-15s-v1'));
 });
 
 test('Live Chat connected confirmation requires a rendered message pane and does not open a separate Chat window', () => {
@@ -303,7 +303,7 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('smvLiveStartCustomerPendingStatusPoll(s.id);'));
   assert.ok(frontend.includes('setInterval(()=>void reconcile(),2500)'));
   assert.ok(frontend.includes('Astrologer Generating Horoscope · '));
-  assert.ok(html.includes('smvastro.mjs?v=20261114-booking-receipt-numeric-session-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261114-live-chat-sse-recovery-15s-v1'));
 });
 
 test('Live Chat recovers a missed connecting-to-active event while SSE remains connected', () => {
@@ -350,7 +350,7 @@ test('Customer and Astrologer Dashboard open without Dashboard-wide loading or q
   assert.equal(frontend.includes('Loading your dashboard...'), false);
   assert.ok(!frontend.includes("because Firebase could not be read."));
   assert.ok(!frontend.includes("Dashboard is open. Astrologer profile and data"));
-  assert.ok(html.includes('smvastro.mjs?v=20261114-booking-receipt-numeric-session-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261114-live-chat-sse-recovery-15s-v1'));
 });
 
 test('Explicit login keeps the fast role shell mounted and does not hide/reopen Dashboard', () => {
@@ -394,7 +394,7 @@ test('Astrologer Dashboard keeps one heading and parallelizes its first profile 
   assert.ok(dashboard.includes('const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null;'));
   assert.ok(dashboard.includes('astrologerProfileResult=profileResult;'));
   assert.ok(!dashboard.includes("const a=await withTimeout(\n     getDoc(doc(db,'smv_astrologers',currentUser.uid))"));
-  assert.ok(html.includes('smvastro.mjs?v=20261114-booking-receipt-numeric-session-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261114-live-chat-sse-recovery-15s-v1'));
 });
 
 test('Astrologer Dashboard renders its main UI before earnings and withdrawal history resolve', () => {
@@ -414,7 +414,7 @@ test('Astrologer Dashboard renders its main UI before earnings and withdrawal hi
   assert.ok(dashboard.includes('id="smvAstroEarningsHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalStatus"'));
-  assert.ok(html.includes('smvastro.mjs?v=20261114-booking-receipt-numeric-session-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261114-live-chat-sse-recovery-15s-v1'));
 });
 
 test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
@@ -1078,7 +1078,12 @@ test('Customer and Astrologer Live Chat messages broadcast both ways and recover
   assert.ok(messagesRoute.includes('const messageStoreDb = afterMs > 0 ? db :'));
   assert.ok(frontend.includes('let smvLiveChatRecoveryTimer=null,smvLiveChatRecoverySessionId=\'\';'));
   assert.ok(frontend.includes('smvLivePollMessages(key).catch(()=>{});'));
-  assert.ok(frontend.includes('},1500);'));
+  const chatRecoveryStart = frontend.indexOf('function smvLiveStartChatRecovery(id,session){');
+  const chatRecoveryEnd = frontend.indexOf('async function smvLivePollMessages(id){', chatRecoveryStart);
+  const chatRecovery = frontend.slice(chatRecoveryStart, chatRecoveryEnd);
+  assert.ok(chatRecovery.includes('if(!smvLiveEventStreamConnected)return;'));
+  assert.ok(chatRecovery.includes('},15000);'));
+  assert.equal(chatRecovery.includes('},1500);'), false, 'Healthy SSE should not trigger a 1.5-second duplicate message poll.');
   assert.ok(frontend.includes('if(chat&&active)smvLiveStartChatRecovery(s.id,s);'));
 });
 
