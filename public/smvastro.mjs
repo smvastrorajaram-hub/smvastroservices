@@ -1620,8 +1620,7 @@ function smvPrivateChatStatusLabel(question){
  const q=question||{};
  if(q.paymentStatus!=='paid')return 'Payment Pending';
  if(q.status==='answered')return 'Astrologer Answer Ready';
- if(q.status==='private_chat_pending_admin')return 'Paid — Awaiting Admin Astrologer Allocation';
- if(q.status==='private_chat_available_to_astrologers')return 'Legacy question — Admin must restore Customer-selected Astrologer allocation';
+ if(['private_chat_pending_admin','private_chat_available_to_astrologers','available_to_astrologers','pending_admin_approval'].includes(String(q.status||'')))return 'Paid — Awaiting Admin Astrologer Allocation';
  if(q.status==='private_chat_assigned')return 'Submitted — Awaiting Astrologer Answer';
  if(q.status==='processing')return 'Astrologer Answer — Awaiting Admin Approval';
  if(q.status==='admin_review')return 'Answer Being Prepared';
@@ -1635,7 +1634,7 @@ function smvPrivateChatTimelineHtml(q){
   ['Admin approved question',q.adminQuestionApprovedAt],['Astrologer assigned',q.astrologerAssignedAt],
   ['Astrologer reallocated',q.astrologerReassignedAt],['Astrologer answer submitted',q.answerSubmittedAt],
   ['Admin approved answer',q.answerApprovedAt||q.adminAnswerApprovedAt],['Answer available',q.answerAvailableAt],
-  ['Customer viewed answer',q.customerAnswerViewedAt],['Admin rejected question',q.adminQuestionRejectedAt],['Admin rejected answer — revision requested',q.lastAnswerRejectedAt],
+  ['Customer viewed answer',q.customerAnswerViewedAt],['Admin rejected question',q.adminQuestionRejectedAt],['Admin rejected answer — refund requested',q.lastAnswerRejectedAt],
   ['Refund requested',q.refundRequestedAt],['Razorpay refund created',q.refundCreatedAt],
   ['Refund processed',q.refundProcessedAt],['Refund failed',q.refundFailedAt],
   ['Refund last synced',q.refundSyncedAt],['Customer review submitted',q.reviewSubmittedAt]
@@ -1898,7 +1897,11 @@ async function smvLoadAdminPrivateChat(){
    if(!questionId)return;button.disabled=true;
    try{
     let path='',body={questionId};
-    if(action==='approve-question'){path='/admin/private-chat/approve-question';}
+    if(action==='approve-question'){
+     const target=String(card?.querySelector('[data-private-chat-allocation-select]')?.value||'');
+     if(!target){if(message)message.textContent='Select an approved Astrologer before approving this question.';button.disabled=false;return;}
+     body.astrologerId=target;path='/admin/private-chat/approve-question';
+    }
     else if(action==='reject-question'){body.reason=window.prompt('Enter the reason for rejecting this Customer Question and refunding the payment:');if(!body.reason){button.disabled=false;return;}path='/admin/private-chat/reject-question';}
     else if(action==='reallocate'){
      const target=String(card?.querySelector('[data-private-chat-reallocate-select]')?.value||'');
@@ -1906,13 +1909,13 @@ async function smvLoadAdminPrivateChat(){
      body.astrologerId=target;path='/admin/private-chat/reallocate';
     }
     else if(action==='approve-answer')path='/admin/private-chat/approve-answer';
-    else if(action==='reject-answer'){body.reason=window.prompt('Enter the reason for rejecting this Astrologer Answer:');if(!body.reason){button.disabled=false;return;}path='/admin/private-chat/reject-answer';}
+    else if(action==='reject-answer'){body.reason=window.prompt('Enter the rejection reason. The Customer payment will be refunded:');if(!body.reason){button.disabled=false;return;}path='/admin/private-chat/reject-answer';}
     else if(action==='retry-refund')path='/admin/private-chat/retry-refund';
     else if(action==='sync-refund')path='/admin/private-chat/sync-refund';else return;
     const result=await smvPrivateChatApi(path,{method:'POST',body});
     if(message)message.textContent=result.refundStatus?'Updated. Refund status: '+result.refundStatus:'Action completed successfully.';
     await smvLoadAdminPrivateChat();
-   }catch(error){if(message)message.textContent=error?.message||String(error);button.disabled=false;}
+   }catch(error){if(message)message.textContent=error?.message||String(error);await smvLoadAdminPrivateChat().catch(()=>{});button.disabled=false;}
   };
  }
  queue.innerHTML='<div class="small">Loading Private Chat Admin data…</div>';
@@ -1930,10 +1933,11 @@ async function smvLoadAdminPrivateChat(){
   const questions=Array.isArray(result.questions)?result.questions:[],astrologers=Array.isArray(result.astrologers)?result.astrologers:[];
   const astroOptions='<option value="">Select approved Astrologer</option>'+astrologers.map(a=>'<option value="'+escapeHtml(a.id)+'">'+escapeHtml(a.name)+'</option>').join('');
   queue.innerHTML=questions.length?questions.map(q=>{
-   const id=String(q.questionId||q.id||''),status=String(q.status||''),pendingAssignment=['private_chat_pending_admin','private_chat_available_to_astrologers'].includes(status),pendingAnswer=status==='processing';
+   const id=String(q.questionId||q.id||''),status=String(q.status||''),pendingAssignment=['private_chat_pending_admin','private_chat_available_to_astrologers','available_to_astrologers','pending_admin_approval'].includes(status)&&!String(q.astrologerId||''),pendingAnswer=status==='processing'&&q.paymentStatus==='paid'&&!!String(q.answer||'').trim();
    const refunded=Boolean(q.refundId)||['question_rejected','admin_rejected'].includes(status);
-   const assign=pendingAssignment?'<div class="smv-private-chat-admin-action-row"><button class="btn" type="button" data-private-chat-admin-action="approve-question" data-question-id="'+escapeHtml(id)+'">APPROVE & ASSIGN TO CUSTOMER-SELECTED ASTROLOGER</button></div>':'';
-   const rejectAction=q.paymentStatus==='paid'&&!refunded&&['private_chat_pending_admin','private_chat_available_to_astrologers','private_chat_assigned','processing'].includes(status)
+   const allocationOptions='<option value="">Select approved Astrologer</option>'+astrologers.map(a=>'<option value="'+escapeHtml(a.id)+'"'+(String(a.id)===String(q.requestedAstrologerId||'')?' selected':'')+'>'+escapeHtml(a.name)+'</option>').join('');
+   const assign=pendingAssignment?'<div class="smv-private-chat-admin-action-row"><label><b>Allocate to approved Astrologer</b><select data-private-chat-allocation-select="'+escapeHtml(id)+'">'+allocationOptions+'</select></label><button class="btn" type="button" data-private-chat-admin-action="approve-question" data-question-id="'+escapeHtml(id)+'">APPROVE & ALLOCATE ASTROLOGER</button></div>':'';
+   const rejectAction=q.paymentStatus==='paid'&&!refunded&&['private_chat_pending_admin','private_chat_available_to_astrologers','available_to_astrologers','pending_admin_approval','private_chat_assigned','processing'].includes(status)
     ?'<div class="smv-private-chat-admin-action-row"><button class="btn gray" type="button" data-private-chat-admin-action="reject-question" data-question-id="'+escapeHtml(id)+'">REJECT QUESTION & REFUND</button></div>':'';
    const review=pendingAnswer?'<details open><summary>Astrologer Answer — Admin Review</summary><p style="white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(q.answer||'')+'</p><div class="smv-private-chat-admin-action-row"><button class="btn" type="button" data-private-chat-admin-action="approve-answer" data-question-id="'+escapeHtml(id)+'">ACCEPT ANSWER</button><button class="btn gray" type="button" data-private-chat-admin-action="reject-answer" data-question-id="'+escapeHtml(id)+'">REJECT ANSWER</button></div></details>' :(q.answer?'<details><summary>Astrologer Answer</summary><p style="white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(q.answer)+'</p></details>':'');
    const refundActions=refunded&&q.paymentStatus==='paid'&&q.refundStatus!=='processed'&&q.refundStatus!=='completed'?'<div class="smv-private-chat-admin-action-row"><button class="btn gray" type="button" data-private-chat-admin-action="retry-refund" data-question-id="'+escapeHtml(id)+'">RETRY REFUND</button><button class="btn gray" type="button" data-private-chat-admin-action="sync-refund" data-question-id="'+escapeHtml(id)+'">SYNC REFUND</button></div>':'';
@@ -1947,7 +1951,7 @@ async function smvLoadAdminPrivateChat(){
     '<p><b>Price:</b> ₹'+Number(q.amount||0).toFixed(2)+' · <b>Status:</b> '+escapeHtml(smvPrivateChatStatusLabel(q))+'</p>'+
     '<p><b>Question:</b> <span style="white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(q.question||'')+'</span></p>'+
     smvPrivateChatRefundReferencesHtml(q)+smvPrivateChatTimelineHtml(q)+
-    modeNote+assign+reallocateAction+rejectAction+review+refundActions+'<p class="small" data-private-chat-admin-message role="status"></p></article>';
+    modeNote+(q.answerRejectionReason?'<p class="small"><b>Answer rejection reason:</b> '+escapeHtml(q.answerRejectionReason)+'</p>':'')+assign+reallocateAction+rejectAction+review+refundActions+'<p class="small" data-private-chat-admin-message role="status"></p></article>';
   }).join(''):'<div class="empty">No Private Chat questions have been submitted yet.</div>';
 }catch(error){if(settingsMsg)settingsMsg.textContent=error?.message||String(error);queue.innerHTML='<div class="empty error">'+escapeHtml(error?.message||String(error))+'</div>';}
 }

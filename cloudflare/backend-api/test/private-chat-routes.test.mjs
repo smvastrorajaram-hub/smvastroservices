@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { registerPrivateChatRoutes } from '../src/private-chat-routes.mjs';
 
 function appHarness(){
@@ -332,6 +333,49 @@ test('Admin approves a paid Private Chat question and allocates the specified ap
   assert.equal(saved.commissionStatus,'allocated_pending_answer');
 });
 
+test('Admin approval ON repairs a legacy available_to_astrologers Private Chat and can allocate any approved Astrologer',async()=>{
+  const state=setup();
+  state.firestore.documents.set('smv_questions/smvqt-available-1',{
+    questionId:'smvqt-available-1',privateChat:true,questionType:'private_chat',paymentStatus:'paid',
+    status:'available_to_astrologers',allocationStatus:'available_to_astrologers',
+    assignmentMode:'open_to_all',adminApprovalBypassed:true,
+    customerId:'customer-1',requestedAstrologerId:'astro-1',requestedAstrologerName:'Test Astrologer',
+    astrologerId:'',question:'Legacy paid question',amount:1,customerPaymentId:'SMV-PAY-14112026-01'
+  });
+  const queue=response();
+  await state.app.handlers.get('GET /admin/private-chat/questions')(
+    request({authorization:'Bearer admin-token'}),queue
+  );
+  assert.equal(queue.statusCode,200);
+  assert.equal(queue.body.questions[0].id,'smvqt-available-1');
+  assert.deepEqual(queue.body.astrologers.map(a=>a.id),['astro-1','astro-2']);
+  const assigned=response();
+  await state.app.handlers.get('POST /admin/private-chat/approve-question')(
+    request({authorization:'Bearer admin-token',body:{questionId:'smvqt-available-1',astrologerId:'astro-2'}}),assigned
+  );
+  assert.equal(assigned.statusCode,200);
+  const saved=state.firestore.documents.get('smv_questions/smvqt-available-1');
+  assert.equal(saved.status,'private_chat_assigned');
+  assert.equal(saved.astrologerId,'astro-2');
+  assert.equal(saved.astrologerName,'Other Astrologer');
+  assert.equal(saved.requestedAstrologerId,'astro-1');
+  assert.equal(saved.requestedAstrologerName,'Test Astrologer');
+  assert.equal(saved.adminAllocatedAstrologerId,'astro-2');
+  assert.equal(saved.allocationMethod,'admin_selected');
+  assert.equal(saved.assignmentMode,'admin_assigned');
+  assert.equal(saved.adminApprovalBypassed,false);
+  assert.equal(saved.commissionStatus,'allocated_pending_answer');
+  const allocated=response(),notAllocated=response();
+  await state.app.handlers.get('GET /astrologer/private-chat/questions')(
+    request({authorization:'Bearer other-astrologer-token'}),allocated
+  );
+  await state.app.handlers.get('GET /astrologer/private-chat/questions')(
+    request({authorization:'Bearer astrologer-token'}),notAllocated
+  );
+  assert.equal(allocated.body.questions[0].questionId,'smvqt-available-1');
+  assert.equal(notAllocated.body.questions.length,0);
+});
+
 test('Admin OFF sends Private Chat only to the Astrologer selected by the Customer',async()=>{
   const state=setup();
   await state.firestore.setDocument('smv_settings/privateChat',{assignmentMode:'direct_selected'},{merge:true});
@@ -504,7 +548,7 @@ test('Admin answer approval releases an answer to Customer only after acceptance
   assert.equal(state.firestore.documents.get('smv_questions/smvqt-333333').commissionStatus,'pending_customer_view');
 });
 
-test('Admin rejects submitted answer back to Astrologer for revision and keeps it hidden from Customer',async()=>{
+test('Admin rejects a Private Chat answer, requests Customer refund and keeps commission uncredited',async()=>{
   const state=setup();
   state.firestore.documents.set('smv_questions/smvqt-444444',{
     questionId:'smvqt-444444',privateChat:true,questionType:'private_chat',paymentStatus:'paid',
@@ -517,8 +561,18 @@ test('Admin rejects submitted answer back to Astrologer for revision and keeps i
   );
   assert.equal(rejected.statusCode,200);
   const saved=state.firestore.documents.get('smv_questions/smvqt-444444');
-  assert.equal(saved.status,'private_chat_assigned');
-  assert.equal(saved.astrologerAnswerStatus,'revision_required');
+  assert.equal(saved.status,'question_rejected');
+  assert.equal(saved.allocationStatus,'rejected_by_admin');
+  assert.equal(saved.astrologerAnswerStatus,'rejected_by_admin');
+  assert.equal(saved.commissionStatus,'refund_pending');
+  assert.equal(saved.commissionCreditedAt?.__smvFirestoreFieldOperation,'delete');
+  assert.equal(saved.answerRejectionReason,'Please clarify the timing.');
+  assert.equal(state.refundCalls.length,1);
+  assert.deepEqual(state.refundCalls[0],{
+    questionId:'smvqt-444444',
+    reason:'Astrologer answer rejected by Admin: Please clarify the timing.',
+    actorUid:'admin-1',retry:false
+  });
   const customer=response();
   await state.app.handlers.get('GET /customer/private-chat/questions')(request(),customer);
   assert.equal(customer.body.questions[0].answer,undefined);
@@ -535,3 +589,13 @@ test('Private Chat rejection uses the shared Admin-controlled Razorpay refund se
     questionId:'smvqt-555555',reason:'Question is not eligible.',actorUid:'admin-1',retry:false
   });
 });
+
+test('Private Chat Admin UI exposes legacy paid statuses and requires an approved Astrologer allocation choice',()=>{
+  const ui=readFileSync(new URL('../../../public/smvastro.mjs',import.meta.url),'utf8');
+  assert.ok(ui.includes("'available_to_astrologers','pending_admin_approval'].includes(status)"));
+  assert.ok(ui.includes('data-private-chat-allocation-select'));
+  assert.ok(ui.includes('body.astrologerId=target'));
+  assert.ok(ui.includes('APPROVE & ALLOCATE ASTROLOGER'));
+  assert.ok(ui.includes("path='/admin/private-chat/reject-answer'"));
+});
+
