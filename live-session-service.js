@@ -918,12 +918,14 @@ function createLiveSessionService({ app, db, profileDb = db, FieldValue, crypto,
       const reserve = await reserveInTransaction(tx, { uid, mode: kind, minutes: length, rate, walletSnapshot: walletSnap, sessionId: id });
       const data = annotateSessionStorage({
         ...makeSession({
-        id, customerUid: uid, astrologerUid: astroId, astroProfile: { ...astro, name: astroName },
-        customerName: sessionCustomerName, birthDetails: sessionBirthDetails,
-        mode: kind, minutes: length, rate, reservedAmount: reserve.reservedAmountPaise,
-        reservedBonusCreditPaise: reserve.reservedBonusCreditForSessionPaise,
-        state: 'ringing', origin: 'direct', fingerprint, commission, appointmentId: scheduledAppointmentId
-      }));
+          id, customerUid: uid, astrologerUid: astroId, astroProfile: { ...astro, name: astroName },
+          customerName: sessionCustomerName, birthDetails: sessionBirthDetails,
+          mode: kind, minutes: length, rate, reservedAmount: reserve.reservedAmountPaise,
+          reservedBonusCreditPaise: reserve.reservedBonusCreditForSessionPaise,
+          state: 'ringing', origin: 'direct', fingerprint, commission, appointmentId: scheduledAppointmentId
+        }),
+        idempotencyRequestId: reqId
+      });
       tx.create(sRef, data);
       const nextCount = liveCount + 1;
       tx.set(aRef, {
