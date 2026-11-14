@@ -201,7 +201,9 @@ export function registerLegacyDashboardReadRoutes({ app, firestore, identityServ
       });
       const reviews = documents.map(document => ({
         id: document.id,
-        questionId: String(document.data?.questionId || '')
+        questionId: String(document.data?.questionId || ''),
+        ...(document.data?.sessionId ? { sessionId: String(document.data.sessionId) } : {}),
+        ...(document.data?.sourceType ? { sourceType: String(document.data.sourceType) } : {})
       })).filter(item => item.questionId);
       return res.set('Cache-Control', 'no-store').json({ success: true, reviews });
     } catch (error) {

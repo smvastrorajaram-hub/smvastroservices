@@ -1,3 +1,4 @@
+import { FirestoreFieldValue } from '../../../shared/backend-platform/firestore-admin-rest.mjs';
 import {
   parseRupeesToPaise,
   splitLiveCommission,
@@ -448,6 +449,84 @@ export function registerD1LiveSessionRoutes({
       }
       return res.set('Cache-Control','no-store').json({success:true,session});
     } catch(error) { return replyError(res,error,'Unable to load this Live Session receipt.'); }
+  });
+
+  app.post('/live/sessions/:id/review',async(req,res)=>{
+    try {
+      await assertReady();
+      const user=await requireRole(req,['customer']);
+      if(typeof firestore?.runTransaction!=='function') {
+        throw httpError('LIVE_REVIEW_STORE_UNAVAILABLE','Customer Reviews are temporarily unavailable.',503);
+      }
+      const session=await liveService.getSessionForParticipant({
+        sessionId:req.params.id,uid:user.uid
+      });
+      const mode=String(session?.mode||'').trim().toLowerCase();
+      const startedAtMs=Date.parse(session?.startedAt||'');
+      const billableMinutes=Number(session?.billableMinutes||0);
+      const serviceAmountPaise=Number(
+        session?.actualServiceAmountPaise ??
+        (Number(session?.actualChargePaise||0)+Number(session?.bonusCreditUsedPaise||0))
+      );
+      const endReason=String(session?.endReason||'').trim().toLowerCase();
+      const unreviewableEndReasons=new Set([
+        'rejected','rejected_by_astrologer','cancelled','booking_cancelled','booking_expired',
+        'ring_timeout','no_answer','missed_by_astrologer','scheduled_connection_timeout',
+        'preparation_timeout','call_connect_timeout','chat_accept_timeout','connection_failed','server_ended'
+      ]);
+      if(session?.state!=='ended'||!['call','chat'].includes(mode)||unreviewableEndReasons.has(endReason)||
+         !Number.isFinite(startedAtMs)||startedAtMs<=0||
+         !Number.isSafeInteger(billableMinutes)||billableMinutes<1||
+         !Number.isSafeInteger(serviceAmountPaise)||serviceAmountPaise<1) {
+        throw httpError('LIVE_REVIEW_NOT_ELIGIBLE','A Customer Review is available only after a started, completed and billable Live / Booked Call or Chat.',409);
+      }
+      const rating=Number(req.body?.rating);
+      const review=String(req.body?.review||'').trim();
+      if(!Number.isInteger(rating)||rating<1||rating>5) {
+        throw httpError('LIVE_REVIEW_RATING_INVALID','Please select a rating from 1 to 5.',400);
+      }
+      if(!review||review.length>4000) {
+        throw httpError('LIVE_REVIEW_TEXT_INVALID','Please write a review of up to 4000 characters.',400);
+      }
+      const sessionId=String(session.id||req.params.id||'').trim();
+      if(!sessionId||sessionId.length>180||sessionId.includes('/')||[...sessionId].some(character=>character.charCodeAt(0)<32)) {
+        throw httpError('LIVE_REVIEW_SESSION_INVALID','The Live Session reference is invalid.',400);
+      }
+      const appointmentId=String(session.appointmentId||'').trim();
+      const isBooked=appointmentId.length>0||String(session.origin||'')==='accepted_booking';
+      const sourceType=(isBooked?'booked_':'live_')+mode;
+      const sourceLabel=(isBooked?'Booked ':'Live ')+(mode==='chat'?'Chat':'Call');
+      const astrologerId=String(session.astrologerUid||'').trim();
+      const reviewId='live_'+sessionId+'_'+String(user.uid||'').trim();
+      const reviewPath='smv_reviews/'+reviewId;
+      const outcome=await firestore.runTransaction(async tx=>{
+        const existing=await tx.getDocument(reviewPath);
+        if(existing.exists) return {alreadySubmitted:true,reviewId};
+        tx.create(reviewPath,{
+          questionId:'live_session_'+sessionId,
+          sessionId,
+          appointmentId,
+          sourceType,
+          sourceLabel,
+          customerId:String(user.uid),
+          customerName:String(session.customerName||user.name||user.displayName||'Customer'),
+          astrologerId,
+          astrologerName:String(session.astrologerName||'Astrologer'),
+          rating,
+          review,
+          verified:true,
+          approved:false,
+          status:'pending',
+          createdAt:FirestoreFieldValue.serverTimestamp()
+        });
+        return {alreadySubmitted:false,reviewId};
+      });
+      return res.set('Cache-Control','no-store').json({
+        success:true,sessionId,sourceType,sourceLabel,...outcome
+      });
+    } catch(error) {
+      return replyError(res,error,'Unable to submit the Live / Booked Call or Chat review.');
+    }
   });
 
   app.get('/live/bookings/pending',async(req,res)=>{
