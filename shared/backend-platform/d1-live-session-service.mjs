@@ -84,6 +84,10 @@ export function createD1LiveSessionService({
     const digest=await cryptoImpl.subtle.digest('SHA-256',new TextEncoder().encode(String(value)));
     return Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,'0')).join('');
   }
+  async function numericLiveSessionId(uid,requestId,attempt=0) {
+    const digest=await sha256('smv-live-session-id:'+uid+':'+requestId+':'+attempt);
+    return (1_000_000_000n+(BigInt('0x'+digest.slice(0,16))%9_000_000_000n)).toString();
+  }
   async function getSession(id) {
     const row=await first('SELECT * FROM '+SESSION_TABLE+' WHERE session_id=? LIMIT 1',[id]);
     return mapLiveSessionRow(row);
@@ -364,20 +368,40 @@ export function createD1LiveSessionService({
     if(reqId.length<8||reqId.length>128) throw liveError('LIVE_REQUEST_ID_INVALID','A valid request ID is required.',400);
     if(!name||name.length>100||/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(name)) throw liveError('LIVE_CUSTOMER_NAME_INVALID','Enter the Customer name (not an email address).',400);
     const birth=validateLiveBirthDetails(birthDetails||{},Number(now()));
-    const id=await sha256(uid+':'+reqId);
     const fingerprint=await sha256(JSON.stringify({
       customerUid:uid,astrologerId:astroUid,mode:kind,minutes:length,customerName:name,birthDetails:birth,appointmentId:appointment
     }));
-    const [oldSession,oldBooking]=await Promise.all([getSession(id),getBooking(id)]);
-    const existing=oldSession||oldBooking;
-    if(existing) {
-      if(existing.payloadFingerprint!==fingerprint||existing.customerUid!==uid||existing.astrologerUid!==astroUid) {
+    // Preserve idempotent retries created before numeric Session IDs were introduced.
+    const legacyId=await sha256(uid+':'+reqId);
+    const [legacySession,legacyBooking]=await Promise.all([getSession(legacyId),getBooking(legacyId)]);
+    const legacyExisting=legacySession||legacyBooking;
+    if(legacyExisting) {
+      if(legacyExisting.payloadFingerprint!==fingerprint||legacyExisting.customerUid!==uid||legacyExisting.astrologerUid!==astroUid) {
         throw liveError('LIVE_IDEMPOTENCY_CONFLICT','This request ID was already used for different session details.',409);
       }
-      return oldSession
-        ?{success:true,kind:'session',alreadyProcessed:true,session:sessionView(oldSession)}
-        :{success:true,kind:'booking',alreadyProcessed:true,booking:bookingView(oldBooking)};
+      return legacySession
+        ?{success:true,kind:'session',alreadyProcessed:true,session:sessionView(legacySession)}
+        :{success:true,kind:'booking',alreadyProcessed:true,booking:bookingView(legacyBooking)};
     }
+    // Hash the stable idempotency key into a ten-digit numeric reference. Probe
+    // deterministic alternatives on collision; the original key remains stored
+    // privately so retries return the same record instead of creating duplicates.
+    let id='';
+    for(let attempt=0;attempt<32;attempt++) {
+      const candidate=await numericLiveSessionId(uid,reqId,attempt);
+      const [candidateSession,candidateBooking]=await Promise.all([getSession(candidate),getBooking(candidate)]);
+      const collision=candidateSession||candidateBooking;
+      if(!collision) { id=candidate; break; }
+      if(String(collision.idempotencyRequestId||'')===reqId) {
+        if(collision.payloadFingerprint!==fingerprint||collision.customerUid!==uid||collision.astrologerUid!==astroUid) {
+          throw liveError('LIVE_IDEMPOTENCY_CONFLICT','This request ID was already used for different session details.',409);
+        }
+        return candidateSession
+          ?{success:true,kind:'session',alreadyProcessed:true,session:sessionView(candidateSession)}
+          :{success:true,kind:'booking',alreadyProcessed:true,booking:bookingView(candidateBooking)};
+      }
+    }
+    if(!id) throw liveError('LIVE_SESSION_ID_EXHAUSTED','A unique numeric Session ID could not be allocated. Please retry.',503);
     const profiles=await getProfiles(uid,astroUid);
     const astro=profiles.astro;
     const enabled=kind==='call'?astro.liveCallEnabled===true:astro.liveChatEnabled===true;
@@ -407,7 +431,7 @@ export function createD1LiveSessionService({
       reservedBonusCreditPaise:reserve.reservedBonusCreditPaise,
       astrologerCommissionPercent:commission.astroPercent,
       adminCommissionPercent:commission.adminPercent,
-      payloadFingerprint:fingerprint,createdAtMs:timestamp,updatedAtMs:timestamp,
+      payloadFingerprint:fingerprint,idempotencyRequestId:reqId,createdAtMs:timestamp,updatedAtMs:timestamp,
       customerReady:false,astrologerReady:false,actualChargePaise:0,
       releasedAmountPaise:0,origin:canStartNow?'direct':'offline_queue'
     };
@@ -429,7 +453,7 @@ export function createD1LiveSessionService({
         ]);
       } catch(error) {
         const again=await getSession(id);
-        if(again&&again.payloadFingerprint===fingerprint) return {success:true,kind:'session',alreadyProcessed:true,session:sessionView(again)};
+        if(again&&again.payloadFingerprint===fingerprint&&String(again.idempotencyRequestId||'')===reqId) return {success:true,kind:'session',alreadyProcessed:true,session:sessionView(again)};
         if(String(error?.message||'').includes('LIVE_ASTROLOGER_BUSY')) throw liveError('LIVE_ASTROLOGER_BUSY','This Astrologer is currently busy. Choose a booking instead.',409);
         throw mapLiveD1Error(error);
       }
@@ -456,7 +480,7 @@ export function createD1LiveSessionService({
       ]);
     } catch(error) {
       const again=await getBooking(id);
-      if(again&&again.payloadFingerprint===fingerprint) return {success:true,kind:'booking',alreadyProcessed:true,booking:bookingView(again)};
+      if(again&&again.payloadFingerprint===fingerprint&&String(again.idempotencyRequestId||'')===reqId) return {success:true,kind:'booking',alreadyProcessed:true,booking:bookingView(again)};
       throw mapLiveD1Error(error);
     }
     const created=await getBooking(id);
