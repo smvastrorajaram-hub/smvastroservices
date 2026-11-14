@@ -97,7 +97,7 @@ jobs:
           APP_VERSION: ${{ matrix.version }}
         run: |
           $ErrorActionPreference = 'Stop'
-          if ($env:APP_VERSION -notmatch '^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$') {
+          if ($env:APP_VERSION -notmatch '^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$') {
             throw "Version must use semantic version format x.y.z, optionally with prerelease/build metadata."
           }
           npm pkg set "version=$env:APP_VERSION"
