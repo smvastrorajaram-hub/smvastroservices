@@ -114,6 +114,17 @@ test('Live routes fail closed when disabled, the Firebase project is mismatched 
   }
 });
 
+test('Live D1 routes remain fail-closed until the 0014 participant query-index readiness gate passes',async()=>{
+  const f=fixture({isReady:async()=>false});
+  const res=responseHarness();
+  await f.app.handlers.get('GET /live/sessions/status')(req(),res);
+  assert.equal(res.statusCode,503);
+  assert.equal(res.body.success,false);
+  assert.equal(res.body.code,'LIVE_SCHEMA_NOT_READY');
+  assert.match(res.body.error,/0014/);
+  assert.equal(f.calls.some(item=>item.service==='listSessionStatus'),false,'D1 query is not attempted before its required indexes pass readiness');
+});
+
 test('Production Live routes accept only Firebase Project 1 after backend activation',async()=>{
   const allowed=fixture({
     environment:'production',sourceProjectId:'smv-astro',backendActive:true
