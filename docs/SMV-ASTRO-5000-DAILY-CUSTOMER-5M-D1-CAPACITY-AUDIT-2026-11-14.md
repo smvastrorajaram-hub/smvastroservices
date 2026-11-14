@@ -133,7 +133,7 @@ The current function checks `smv_phone_registry/{phoneHash}` first. If that docu
 
 That fallback is an O(number of existing users) Firestore read on every registry miss. If the phone registry is incomplete for legacy users, new registrations can repeatedly incur a full user scan. This is a **Firebase Project 1 read/latency risk, not a Cloudflare D1 row-read charge**.
 
-**Safety boundary:** do not remove the fallback or switch Login/Register/identity reads in this capacity work. The Identity/Profile staging import and full phone-registry reconciliation must first prove unique-phone parity and completeness. Only then can a separate identity-scoped proposal evaluate a safe replacement. This audit makes no identity, profile, registration or Firebase data change.
+**Safety boundary:** do not remove the fallback or switch Login/Register/identity reads in this capacity work. A separate identity-scoped proposal must first prove complete phone-registry parity from read-only Production evidence. No registration or identity source change is included here. Only then can a separate identity-scoped proposal evaluate a safe replacement. This audit makes no identity, profile, registration or Firebase data change.
 
 ### P2 — SMV ASTRO browser source remains large and costly to maintain
 
@@ -165,16 +165,21 @@ The old branch `perf/d1-read-architecture-5000-customers-20261112` is not reused
 
 A credible capacity statement requires a representative test mix and measured query accounting. A unit test or a successful APK build is not a load test.
 
-### Staging-only workload
+### Production-only validation — passive real traffic
 
-Use synthetic accounts and synthetic D1 data. Do not create real customer payments, charge real Wallet balances, or use production customer information. Exercise:
-- Public home and astrologer-list browsing.
-- Login and Customer/Astrologer dashboard reads.
-- Live pricing, status, booking, Chat history and cursor-based message delivery.
-- Wallet balance/history and non-financial read paths.
-- Representative booking/session state transitions using synthetic users and non-monetary fixtures.
+Do not direct synthetic high-volume traffic at the live Production site or Production D1. Do not run a 500 → 1,000 → 2,500 → 5,000-user stress ramp against customers' live service. This capacity check uses real Production customer activity and read-only account metrics only.
 
-Run ramp stages against a documented daily workload model (for example 500, 1,000, 2,500 and 5,000 distinct synthetic customers) and separate peak-concurrency stages. Daily active customers must not be treated as peak simultaneous customers.
+For each daily observation window, correlate:
+- Actual distinct daily Customer activity from the approved aggregate business analytics source (counts only; no customer identities or profile values).
+- Production D1 account-wide Rows Read / Rows Written, Query Insights by normalized SQL statement, and Workers request/CPU/error/overload metrics.
+- Active Live session count, concurrent Chat/Call count and message volume from aggregate operational metrics.
+- Admin, Astrologer, background and webhook traffic so those reads/writes are not incorrectly attributed to Customers.
+- API p50/p95/p99 latency, error rate and quota headroom over the same window.
+- Browser mobile LCP/INP/CLS and JS/CSS transferred bytes separately from database metrics.
+
+Collect the same read-only metrics over consecutive ordinary Production days, including the busiest observed day. No wallet/payment transactions, booking/session mutations, customer test accounts, D1 migrations or database writes are part of this measurement. Never log auth tokens, UIDs, private birth details, message bodies, bank data or payment secrets.
+
+Until Production genuinely receives 5,000 distinct Customers/day, a projection from observed per-customer rates is only an estimate. It must not be described as a completed 5,000-customer load test. When real Production traffic reaches that level, the same metrics provide the direct capacity evidence.
 
 ### Metrics required
 
@@ -196,15 +201,15 @@ For each D1 statement and API route, record:
 - Firestore Project 1 usage is measured separately; the D1 5M budget does not absorb Firebase reads.
 - Existing app data, user sessions, saved reports and offline location caches remain intact.
 
-A short synthetic test can validate per-customer read/write rates and concurrency behavior; it does not prove a full calendar-day profile unless the daily workload is representative. After any separately approved Production deployment, compare the same Query Insights/Row Metrics to the pre-deployment baseline before raising the customer target.
+Production capacity is judged from passive real-traffic observations, not an artificial load spike. After each separately approved Production deployment, compare the same Query Insights / Row Metrics and peak concurrency to the prior Production baseline before increasing the customer-growth target.
 
 ## 7. Prioritized implementation sequence
 
 | Priority | Separate scoped task | Gate |
 |---|---|---|
-| P0 | Confirm 0014 index presence and align route/health/readiness gate with forced-index SQL | Read-only Production schema evidence; staging missing-index and present-index tests |
+| P0 | Confirm 0014 index presence and align route/health/readiness gate with forced-index SQL | Read-only Production schema evidence; local D1 unit fixtures for present/missing-index behavior |
 | P1 | Reduce active Chat message polling while SSE is healthy | Multi-instance/reconnect/message-loss tests; both users receive updates without refresh |
-| P1 (separate domain) | Reconcile Project 1 phone registry before changing the full-scan fallback | Staging import + unique-phone reconciliation; no identity cutover in this D1 work |
+| P1 (separate domain) | Reconcile Project 1 phone registry before changing the full-scan fallback | Read-only Production aggregate completeness evidence and a separately reviewed identity proposal; no identity cutover in this D1 work |
 | P2 | Measure then split main SMV ASTRO modules and consolidate CSS in small batches | Real browser baselines, mobile/desktop screenshots, existing dashboard/live/print regressions |
 
 ## 8. Explicit non-goals and safety
