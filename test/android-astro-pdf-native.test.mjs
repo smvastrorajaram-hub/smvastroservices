@@ -53,6 +53,13 @@ test('SMV ASTRO PDF preview and Save as PDF use Android A4 Print Framework', () 
   assert.match(astro, /Choose ‘Save as PDF’/);
 });
 
+test('SMV ASTRO Live Receipt PDF uses a safe native print border without changing Horoscope PDF margins', () => {
+  assert.ok(astro.includes('.setMinMargins(liveReceipt ? new PrintAttributes.Margins(250, 250, 250, 250) : PrintAttributes.Margins.NO_MARGINS)'),
+    'Only Live Session receipt PDFs receive standard printable edge margins.');
+  assert.ok(astro.includes('PrintAttributes.Margins.NO_MARGINS'),
+    'Existing Horoscope PDF output retains its previous zero-minimum-margin setting.');
+});
+
 test('SMV ASTRO Live Session ended receipt opens the trusted Android native Print page', () => {
   const livePage = read('public/live-session-receipt.html');
   const liveLoader = read('public/live-session-receipt.mjs');

@@ -279,7 +279,7 @@ public class MainActivity extends Activity {
             PrintAttributes attributes = new PrintAttributes.Builder()
                     .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
                     .setResolution(new PrintAttributes.Resolution(resolutionId, resolutionLabel, 300, 300))
-                    .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
+                    .setMinMargins(liveReceipt ? new PrintAttributes.Margins(250, 250, 250, 250) : PrintAttributes.Margins.NO_MARGINS)
                     .build();
             printManager.print(jobName, webView.createPrintDocumentAdapter(jobName), attributes);
             String message = download
