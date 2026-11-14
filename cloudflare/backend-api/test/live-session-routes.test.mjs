@@ -29,6 +29,32 @@ function req(body={},role='customer',id='session-1',token='token') {
     on(){}
   };
 }
+
+function reviewFirestore({documents={}}={}) {
+  const docs=new Map(Object.entries(documents));
+  const writes=[];
+  return {
+    docs,writes,
+    async runTransaction(callback) {
+      const pending=[];
+      const tx={
+        async getDocument(path) {
+          const data=docs.get(path);
+          return data?{exists:true,data}:{exists:false,data:null};
+        },
+        create(path,data) { pending.push({path,data}); }
+      };
+      const result=await callback(tx);
+      for(const write of pending) {
+        if(docs.has(write.path)) throw new Error('document already exists');
+        docs.set(write.path,write.data);
+        writes.push(write);
+      }
+      return result;
+    }
+  };
+}
+
 function fixture(overrides={}) {
   const calls=[];
   const app=appHarness();
@@ -459,4 +485,108 @@ test('Reading a still-running booked Live Call does not settle it before its boo
   assert.equal(res.body.session.state,'active');
   assert.equal(f.calls.some(item=>item.service==='endSession'),false);
   assert.equal(f.calls.some(item=>String(item.url||'').includes('/publish')),false);
+});
+
+
+test('Customer can review a completed billable Live Call through the shared pending Reviews collection',async()=>{
+  const firestore=reviewFirestore();
+  const session={
+    id:'session-12345',customerUid:'customer-1',customerName:'Customer One',
+    astrologerUid:'astro-1',astrologerName:'Test Astrologer',mode:'call',state:'ended',
+    startedAt:'2026-11-13T10:00:00.000Z',endedAt:'2026-11-13T10:01:15.000Z',
+    billableMinutes:1,actualServiceAmountPaise:1500,actualChargePaise:1500,appointmentId:''
+  };
+  const f=fixture({firestore,session});
+  const res=responseHarness();
+  await f.app.handlers.get('POST /live/sessions/:id/review')(
+    req({rating:5,review:'A helpful Live Call.'},'customer','session-12345'),res
+  );
+  assert.equal(res.statusCode,200);
+  assert.equal(res.body.success,true);
+  assert.equal(res.body.sourceType,'live_call');
+  assert.equal(res.body.alreadySubmitted,false);
+  const saved=firestore.docs.get('smv_reviews/live_session-12345_customer-1');
+  assert.equal(saved.customerId,'customer-1');
+  assert.equal(saved.astrologerId,'astro-1');
+  assert.equal(saved.sourceType,'live_call');
+  assert.equal(saved.status,'pending');
+  assert.equal(saved.approved,false);
+  assert.equal(saved.rating,5);
+  assert.equal(firestore.writes.length,1);
+  assert.equal(f.calls.some(item=>String(item.service||'').toLowerCase().includes('wallet')),false);
+});
+
+test('Customer booked Live Chat review is tagged as booked_chat and uses the same shared review queue',async()=>{
+  const firestore=reviewFirestore();
+  const f=fixture({firestore,session:{
+    id:'booking-54321',customerUid:'customer-1',customerName:'Customer One',
+    astrologerUid:'astro-1',astrologerName:'Test Astrologer',mode:'chat',state:'ended',
+    startedAt:'2026-11-13T10:00:00.000Z',endedAt:'2026-11-13T10:02:00.000Z',
+    origin:'accepted_booking',billableMinutes:2,actualServiceAmountPaise:2400,actualChargePaise:2400,appointmentId:''
+  }});
+  const res=responseHarness();
+  await f.app.handlers.get('POST /live/sessions/:id/review')(
+    req({rating:4,review:'Good booked Chat.'},'customer','booking-54321'),res
+  );
+  assert.equal(res.statusCode,200);
+  assert.equal(res.body.sourceType,'booked_chat');
+  const saved=firestore.docs.get('smv_reviews/live_booking-54321_customer-1');
+  assert.equal(saved.appointmentId,'');
+  assert.equal(saved.sourceLabel,'Booked Chat');
+  assert.equal(saved.status,'pending');
+});
+
+test('Live review fails closed before session start, before billing, or while the session is not ended',async()=>{
+  const cases=[
+    {state:'ended',startedAt:null,billableMinutes:0,actualServiceAmountPaise:0},
+    {state:'ended',startedAt:'2026-11-13T10:00:00.000Z',billableMinutes:0,actualServiceAmountPaise:0},
+    {state:'ended',startedAt:'2026-11-13T10:00:00.000Z',billableMinutes:1,actualServiceAmountPaise:0},
+    {state:'active',startedAt:'2026-11-13T10:00:00.000Z',billableMinutes:1,actualServiceAmountPaise:1000},
+    {state:'ended',startedAt:'2026-11-13T10:00:00.000Z',billableMinutes:1,actualServiceAmountPaise:1000,endReason:'connection_failed'}
+  ];
+  for(const [index,extra] of cases.entries()) {
+    const firestore=reviewFirestore();
+    const f=fixture({firestore,session:{
+      id:'session-'+index,customerUid:'customer-1',astrologerUid:'astro-1',mode:'call',
+      state:'ended',startedAt:'2026-11-13T10:00:00.000Z',
+      billableMinutes:1,actualServiceAmountPaise:1000,...extra
+    }});
+    const res=responseHarness();
+    await f.app.handlers.get('POST /live/sessions/:id/review')(
+      req({rating:5,review:'Not eligible.'},'customer','session-'+index),res
+    );
+    assert.equal(res.statusCode,409);
+    assert.equal(res.body.code,'LIVE_REVIEW_NOT_ELIGIBLE');
+    assert.equal(firestore.writes.length,0);
+  }
+});
+
+test('Only the Customer may create a Live / Booked Call or Chat review',async()=>{
+  const firestore=reviewFirestore();
+  const f=fixture({firestore,role:'astrologer',user:{uid:'astro-1',role:'astrologer'}});
+  const res=responseHarness();
+  await f.app.handlers.get('POST /live/sessions/:id/review')(
+    req({rating:5,review:'Astrologer cannot review.'},'astrologer','session-1'),res
+  );
+  assert.equal(res.statusCode,403);
+  assert.equal(res.body.code,'LIVE_ROLE_FORBIDDEN');
+  assert.equal(firestore.writes.length,0);
+});
+
+test('Live / Booked review submission is idempotent and never creates a second review',async()=>{
+  const reviewId='live_session-1_customer-1';
+  const firestore=reviewFirestore({documents:{
+    ['smv_reviews/'+reviewId]:{sessionId:'session-1',customerId:'customer-1',status:'pending'}
+  }});
+  const f=fixture({firestore,session:{
+    id:'session-1',customerUid:'customer-1',astrologerUid:'astro-1',mode:'chat',state:'ended',
+    startedAt:'2026-11-13T10:00:00.000Z',billableMinutes:1,actualServiceAmountPaise:1000
+  }});
+  const res=responseHarness();
+  await f.app.handlers.get('POST /live/sessions/:id/review')(
+    req({rating:4,review:'Duplicate request.'},'customer','session-1'),res
+  );
+  assert.equal(res.statusCode,200);
+  assert.equal(res.body.alreadySubmitted,true);
+  assert.equal(firestore.writes.length,0);
 });

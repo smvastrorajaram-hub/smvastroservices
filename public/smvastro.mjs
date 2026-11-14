@@ -1709,6 +1709,10 @@ async function smvLoadCustomerPrivateChatQuestions(){
    const id=String(q.questionId||q.id||''),status=smvPrivateChatStatusLabel(q),paid=q.paymentStatus==='paid';
    const answerReady=q.status==='answered'&&String(q.answer||'').trim(),answerViewed=!!q.customerAnswerViewedAt;
    const rejected=['question_rejected','admin_rejected'].includes(String(q.status||'')),retry=!paid&&!rejected;
+   const answerButton=answerViewed
+    ?'<div class="action-row"><button class="btn" type="button" disabled>ANSWER VIEWED</button></div>'
+    :'<div class="action-row"><button class="btn" type="button" data-private-chat-answer="'+escapeHtml(id)+'">VIEW ASTROLOGER ANSWER</button></div>';
+   const answerBoxClass=answerViewed?'card':'card hidden';
    const reviewHtml=answerReady?(q.reviewed
     ?'<p class="small success">Customer Review &amp; Rating submitted · '+escapeHtml(smvDateTime(q.reviewSubmittedAt))+'</p>'
     :answerViewed
@@ -1720,7 +1724,7 @@ async function smvLoadCustomerPrivateChatQuestions(){
     '<p><b>Astrologer:</b> '+escapeHtml(q.astrologerName||'—')+'</p><p><b>Status:</b> <strong>'+escapeHtml(status)+'</strong></p>'+
     (paid&&q.status!=='answered'&&!rejected?'<p class="small success">Astrologer Answer is expected within 24 hours. If no answer arrives, Admin can allocate another approved Astrologer.</p>':'')+
     (retry?'<button class="btn" type="button" data-private-chat-retry="'+escapeHtml(id)+'">RETRY PAYMENT ₹'+Number(q.amount||0).toFixed(2)+'</button>':'')+
-    (answerReady?'<div class="action-row"><button class="btn" type="button" data-private-chat-answer="'+escapeHtml(id)+'">VIEW ASTROLOGER ANSWER</button></div><div class="card hidden" data-private-chat-answer-box style="margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(q.answer)+'</div>'+reviewHtml:'')+
+    (answerReady?answerButton+'<div class="'+answerBoxClass+'" data-private-chat-answer-box style="margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(q.answer)+'</div>'+reviewHtml:'')+
     smvPrivateChatRefundReferencesHtml(q)+'<p class="small smv-private-chat-dates"><b>Dates &amp; Times (IST):</b> '+escapeHtml(smvPrivateChatDateSummary(q)||'—')+'</p>'+smvPrivateChatTimelineHtml(q)+
     '<p class="small" data-private-chat-message role="status" aria-live="polite"></p></article>';
   }).join(''):'<div class="empty">No Private Chat questions have been submitted yet.</div>';
@@ -5567,7 +5571,7 @@ function smvLiveHandleEvent(ev){
   else if(ev.replayed!==true&&['preparing','connecting','active'].includes(s.state)&&s.astrologerUid===currentUser?.uid&&!smvLiveRingSuppressedIds.has(String(s.id||'')))smvLiveOpenSession(s,null,false);
   else if(ev.replayed!==true&&['preparing','ringing','connecting','active'].includes(s.state)&&s.customerUid===currentUser?.uid&&!smvLiveRingSuppressedIds.has(String(s.id||'')))smvLiveOpenSession(s,null,false);
  }else if(ev.type==='live.session.ended'){
-  const s=ev.session;if(s)smvLiveUpdateDashboardSessionStatus(s);if(s&&s.id===smvLivePanelSessionId){smvLiveApplySession(s);const result=$('smvLiveSessionResult');if(result)result.textContent=smvLiveSessionEndedMessage(s,ev.wallet);if(String(window.__smvCurrentRole||'').toLowerCase()!=='astrologer')loadDashboard(window.__smvCurrentRole||null,true,true).catch(()=>{});}
+  const s=ev.session;if(s)smvLiveUpdateDashboardSessionStatus(s);if(s&&s.customerUid===currentUser?.uid&&$('smvLiveDashboardCard'))smvLiveLoadDashboard('customer').catch(()=>{});if(s&&s.id===smvLivePanelSessionId){smvLiveApplySession(s);const result=$('smvLiveSessionResult');if(result)result.textContent=smvLiveSessionEndedMessage(s,ev.wallet);if(String(window.__smvCurrentRole||'').toLowerCase()!=='astrologer')loadDashboard(window.__smvCurrentRole||null,true,true).catch(()=>{});}
  }else if(ev.type==='live.chat.message'&&ev.message?.sessionId===smvLivePanelSessionId){
   if($('smvLiveMessages')){const ms=Date.parse(ev.message.createdAt||'');if(Number.isFinite(ms))smvLiveMessageSinceMs=Math.max(smvLiveMessageSinceMs,ms);smvLiveAppendMessage(ev.message);}
  }else if(ev.type==='live.call.signal'&&ev.signal?.sessionId===smvLivePanelSessionId){
@@ -6140,7 +6144,14 @@ async function smvLiveLoadDashboard(role){
  const host=$('smvLiveDashboardSessions'),msg=$('smvLiveDashboardMsg');if(!host)return;
  const reload=async()=>{
   try{
-   const list=await renderApi('/live/sessions',{method:'GET'});
+   const [list,customerReviewStatus]=await Promise.all([
+    renderApi('/live/sessions',{method:'GET'}),
+    role==='customer'?renderApi('/customer/reviews',{method:'GET'}).catch(error=>{
+     console.warn('Live review status refresh skipped:',error?.message||error);return {reviews:[]};
+    }):Promise.resolve({reviews:[]})
+   ]);
+   const reviewedLiveSessionIds=new Set((customerReviewStatus?.reviews||[])
+    .map(item=>String(item.sessionId||'')).filter(Boolean));
    // Keep any request/event that arrived while the history read was in flight.
    // A Customer may create the request from the public directory before this
    // Dashboard is mounted; a stale initial response must not erase that event.
@@ -6153,7 +6164,20 @@ async function smvLiveLoadDashboard(role){
    const rows=Array.from(rowsById.values());
    smvLiveDashboardSessionsById.clear();
    rows.forEach(item=>smvLiveDashboardSessionsById.set(String(item.id||item.sessionId||''),item));
-   host.innerHTML=rows.length?rows.map(s=>'<article class="card smv-live-session-card" style="margin:8px 0"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><b class="smv-live-session-mode">'+escapeHtml(String(s.mode||'chat').toUpperCase())+' · '+Number(s.minutes||1)+' min</b><span style="display:inline-flex;align-items:center;gap:7px"><span data-live-presence-dot="'+escapeHtml(s.id)+'" class="smv-live-presence-dot smv-live-presence-dot--active" hidden aria-label="Live session running"></span><span data-live-window-dot="'+escapeHtml(s.id)+'" class="smv-live-presence-dot smv-live-presence-dot--closed" hidden aria-label="Window closed or session ended"></span></span></div><p class="small smv-live-session-meta"><b>Status:</b> <span data-live-dashboard-status="'+escapeHtml(s.id)+'">'+escapeHtml(smvLiveSessionStatusLabel(s))+'</span> · <b>Rate:</b> '+smvLiveMoney(s.ratePerMinutePaise)+'/min</p><p class="small smv-live-session-meta"><span data-live-window-status="'+escapeHtml(s.id)+'" class="smv-live-window-closed-label" hidden></span> <b>Charged:</b> '+smvLiveMoney(s.actualChargePaise)+' · <b>Released:</b> '+smvLiveMoney(s.releasedAmountPaise)+'</p><button type="button" class="smv-plain-text-action smv-live-session-open-button" data-live-open="'+escapeHtml(s.id)+'">OPEN SESSION</button></article>').join(''):'<p class="small">No Live Sessions yet.</p>';
+   host.innerHTML=rows.length?rows.map(s=>{
+    const sessionId=String(s.id||s.sessionId||'');
+    const startedAtMs=Date.parse(s.startedAt||'');
+    const billableMinutes=Number(s.billableMinutes||0);
+    const serviceAmountPaise=Number(s.actualServiceAmountPaise??(Number(s.actualChargePaise||0)+Number(s.bonusCreditUsedPaise||0)));
+    const endReason=String(s.endReason||'').toLowerCase();
+    const reviewBlockedEndReasons=['rejected','rejected_by_astrologer','cancelled','booking_cancelled','booking_expired','ring_timeout','no_answer','missed_by_astrologer','scheduled_connection_timeout','preparation_timeout','call_connect_timeout','chat_accept_timeout','connection_failed','server_ended'];
+    const reviewEligible=role==='customer'&&s.state==='ended'&&!reviewBlockedEndReasons.includes(endReason)&&Number.isFinite(startedAtMs)&&startedAtMs>0&&
+     Number.isSafeInteger(billableMinutes)&&billableMinutes>0&&Number.isSafeInteger(serviceAmountPaise)&&serviceAmountPaise>0;
+    const reviewHtml=reviewEligible?(reviewedLiveSessionIds.has(sessionId)
+     ?'<p class="small success">Customer Review &amp; Rating submitted · Waiting for Admin approval.</p>'
+     :'<form class="smv-live-session-review-form" data-live-session-review="'+escapeHtml(sessionId)+'" style="margin-top:10px"><b>'+((s.appointmentId||s.origin==='accepted_booking')?'Booked ':'Live ')+String(s.mode||'call').toUpperCase()+' · Customer Review &amp; Rating</b><label style="display:block;margin-top:8px">Rating <select name="rating" required><option value="5">★★★★★ — 5</option><option value="4">★★★★☆ — 4</option><option value="3">★★★☆☆ — 3</option><option value="2">★★☆☆☆ — 2</option><option value="1">★☆☆☆☆ — 1</option></select></label><label style="display:block;margin-top:8px">Your Review <textarea name="review" rows="3" maxlength="4000" required placeholder="Share your experience with this Astrologer"></textarea></label><button class="btn" type="submit" style="margin-top:8px">SUBMIT REVIEW &amp; RATING</button><p class="small" data-live-review-message role="status" aria-live="polite"></p></form>'):'';
+    return '<article class="card smv-live-session-card" style="margin:8px 0"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><b class="smv-live-session-mode">'+escapeHtml(String(s.mode||'chat').toUpperCase())+' · '+Number(s.minutes||1)+' min</b><span style="display:inline-flex;align-items:center;gap:7px"><span data-live-presence-dot="'+escapeHtml(sessionId)+'" class="smv-live-presence-dot smv-live-presence-dot--active" hidden aria-label="Live session running"></span><span data-live-window-dot="'+escapeHtml(sessionId)+'" class="smv-live-presence-dot smv-live-presence-dot--closed" hidden aria-label="Window closed or session ended"></span></span></div><p class="small smv-live-session-meta"><b>Status:</b> <span data-live-dashboard-status="'+escapeHtml(sessionId)+'">'+escapeHtml(smvLiveSessionStatusLabel(s))+'</span> · <b>Rate:</b> '+smvLiveMoney(s.ratePerMinutePaise)+'/min</p><p class="small smv-live-session-meta"><span data-live-window-status="'+escapeHtml(sessionId)+'" class="smv-live-window-closed-label" hidden></span> <b>Charged:</b> '+smvLiveMoney(s.actualChargePaise)+' · <b>Released:</b> '+smvLiveMoney(s.releasedAmountPaise)+'</p><button type="button" class="smv-plain-text-action smv-live-session-open-button" data-live-open="'+escapeHtml(sessionId)+'">OPEN SESSION</button>'+reviewHtml+'</article>';
+   }).join(''):'<p class="small">No Live Sessions yet.</p>';
     rows.forEach(s=>smvLiveUpdateDashboardSessionStatus(s));
    host.querySelectorAll('[data-live-open]').forEach(btn=>{
     const id=String(btn.dataset.liveOpen||'');
@@ -6187,6 +6211,32 @@ async function smvLiveLoadDashboard(role){
   }catch(e){if(host)host.innerHTML='<p class="error">'+escapeHtml(e.message||String(e))+'</p>';if(msg)msg.textContent='Live Sessions unavailable: '+String(e.message||e);}
  };
  const refresh=$('smvLiveRefreshDashboard');if(refresh&&!refresh.dataset.bound){refresh.dataset.bound='1';refresh.onclick=reload;}
+ if(!host.dataset.smvLiveReviewBound){
+  host.dataset.smvLiveReviewBound='1';
+  host.addEventListener('submit',async event=>{
+   const form=event.target.closest('[data-live-session-review]');if(!form)return;
+   event.preventDefault();
+   const sessionId=String(form.dataset.liveSessionReview||''),button=form.querySelector('button[type="submit"]');
+   const message=form.querySelector('[data-live-review-message]');
+   const rating=Number(form.querySelector('[name="rating"]')?.value);
+   const review=String(form.querySelector('[name="review"]')?.value||'').trim();
+   if(!sessionId||!Number.isInteger(rating)||rating<1||rating>5||!review){
+    if(message)message.textContent='Select a rating and enter your review.';return;
+   }
+   if(button){button.disabled=true;button.textContent='SUBMITTING REVIEW…';}
+   try{
+    const result=await renderApi('/live/sessions/'+encodeURIComponent(sessionId)+'/review',{
+     method:'POST',body:JSON.stringify({rating,review})
+    });
+    if(result.success!==true)throw new Error(result.error||'The server did not confirm this review.');
+    await reload();
+    smvNotice('Review Submitted','Your Customer Review & Rating was sent to Admin for approval. It will appear in the Astrologer Reviews & Ratings after approval.');
+   }catch(error){
+    if(message)message.textContent=error?.message||String(error);
+    if(button){button.disabled=false;button.textContent='SUBMIT REVIEW & RATING';}
+   }
+  });
+ }
  const callToggle=$('smvLiveCallEnabled'),chatToggle=$('smvLiveChatEnabled'),availabilitySelect=$('smvLiveAvailability'),availabilityMessage=$('smvLiveAvailabilityMsg'),set=$('smvLiveSetAvailability');
  let modeSaveTimer=null;
  const modeNote=(call,chat)=>{

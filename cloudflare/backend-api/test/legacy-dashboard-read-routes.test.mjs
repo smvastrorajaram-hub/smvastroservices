@@ -125,12 +125,12 @@ test('Customer appointments require Customer role and filter only scheduled Call
 
 test('Customer review status returns only question ID references for the signed-in customer', async () => {
   const app=harness(), firestore=firestoreFixture({queries:{smv_reviews:[
-    {id:'r1',data:{questionId:'q1'}},{id:'r2',data:{questionId:''}}
+    {id:'r1',data:{questionId:'q1',sessionId:'session-1',sourceType:'booked_chat'}},{id:'r2',data:{questionId:''}}
   ]}});
   registerLegacyDashboardReadRoutes({app,firestore,identityService:{async authenticateAuthorization(){return {uid:'cus-1',role:'customer'};}}});
   const res=response();
   await app.handlers.get('GET /customer/reviews')(req(),res);
-  assert.deepEqual(res.body,{success:true,reviews:[{id:'r1',questionId:'q1'}]});
+  assert.deepEqual(res.body,{success:true,reviews:[{id:'r1',questionId:'q1',sessionId:'session-1',sourceType:'booked_chat'}]});
   assert.equal(firestore.queryCalls[0].filters[0].value,'cus-1');
 });
 

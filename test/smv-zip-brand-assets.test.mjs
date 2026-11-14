@@ -126,8 +126,8 @@ test('All three independent Service Workers share one new cache release and cach
   const workers=[read('public/sw.js'),read('public/horoscope/sw.js'),read('public/horoscope/calendar/sw.js')];
   const versions=workers.map(source=>/const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(source));
   assert.ok(versions.every(Boolean),'Each app worker selects a Pages.dev and legacy cache release.');
-  assert.deepEqual(versions.map(match=>match[1]),['20261114-private-chat-admin-approval-pages-v1','20261114-private-chat-admin-approval-pages-v1','20261114-private-chat-admin-approval-pages-v1']);
-  assert.deepEqual(versions.map(match=>match[2]),['20261114-private-chat-admin-approval-in-v1','20261114-private-chat-admin-approval-in-v1','20261114-private-chat-admin-approval-in-v1']);
+  assert.deepEqual(versions.map(match=>match[1]),['20261114-private-chat-answer-viewed-live-reviews-pages-v1','20261114-private-chat-answer-viewed-live-reviews-pages-v1','20261114-private-chat-answer-viewed-live-reviews-pages-v1']);
+  assert.deepEqual(versions.map(match=>match[2]),['20261114-private-chat-answer-viewed-live-reviews-in-v1','20261114-private-chat-answer-viewed-live-reviews-in-v1','20261114-private-chat-answer-viewed-live-reviews-in-v1']);
   assert.ok(workers[0].includes("'./assets/favicon-astro.ico'"));
   assert.ok(workers[0].includes("'./assets/favicon-astro.png'"));
   assert.ok(workers[0].includes("'./assets/pwa-astro-192.svg'"));

@@ -1186,6 +1186,7 @@ function sessionView(session) {
   const d=session;
   return {
     id:String(d.id),customerUid:String(d.customerUid),astrologerUid:String(d.astrologerUid),
+    origin:String(d.origin||'direct'),
     astrologerId:String(d.astrologerId||d.astrologerUid),
     astrologerName:safeName(d.astrologerName)||'Astrologer',
     customerName:safeName(d.customerName)||'Customer',
