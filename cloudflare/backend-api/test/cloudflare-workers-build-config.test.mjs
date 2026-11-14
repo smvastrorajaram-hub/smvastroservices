@@ -82,6 +82,10 @@ test('Dedicated staging config continues to target the isolated staging Worker a
   assert.equal(staging.vars.FIREBASE_AUTH_PROJECT_IDS, 'smv-astro-staging');
   assert.equal(staging.d1_databases[0].database_name, 'smvastro-wallet-staging');
   assert.equal(staging.d1_databases[0].database_id, '0ddb87a9-8a16-4e39-a806-c9137c64959a');
+  assert.equal(staging.vars.SMV_BACKEND_CLOUDFLARE_ACTIVE, 'false');
+  assert.equal(staging.vars.SMV_LIVE_SESSION_ROUTES_ENABLED, 'false', 'Staging Live routes remain disabled until separately approved and verified');
+  assert.equal(staging.vars.SMV_RAZORPAY_LIVE_MODE_ENABLED, 'false');
+  assert.equal(staging.vars.SMV_RAZORPAY_TEST_MODE_ENABLED, 'true');
 });
 
 test('Production deploy config alone targets the Production Firebase project and Production D1', () => {
