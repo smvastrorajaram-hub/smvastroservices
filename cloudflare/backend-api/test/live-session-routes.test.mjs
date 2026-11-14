@@ -121,7 +121,7 @@ test('Live D1 routes remain fail-closed until the 0014 participant query-index r
   assert.equal(res.statusCode,503);
   assert.equal(res.body.success,false);
   assert.equal(res.body.code,'LIVE_SCHEMA_NOT_READY');
-  assert.match(res.body.error,/0014/);
+  assert.equal(res.body.error,'Unable to load Live Session status.','Internal index diagnostics must not leak through the public error message');
   assert.equal(f.calls.some(item=>item.service==='listSessionStatus'),false,'D1 query is not attempted before its required indexes pass readiness');
 });
 
