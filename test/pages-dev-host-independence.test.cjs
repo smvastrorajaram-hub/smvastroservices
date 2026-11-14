@@ -241,11 +241,11 @@ test('Each PWA uses synchronized Pages.dev and .in cache releases for public con
   ];
   for (const source of workers) {
     assert.match(source, /const IS_PAGES_DEV_HOST\s*=/);
-    assert.match(source, /'20261114-blog-image-top-full-width-pages-v1'\s*:\s*'20261114-blog-image-top-full-width-in-v1'/);
+    assert.match(source, /'20261114-vimshottari-solar-year-pages-v1'\s*:\s*'20261114-vimshottari-solar-year-in-v1'/);
     assert.match(source, /PAGES_DEV_HELPER_FILES\s*=\s*IS_PAGES_DEV_HOST/);
   }
   const horoscope = workers[1];
-  assert.match(horoscope, /'v280-pages-dev-guides-sitemap-20261111'\s*:\s*'v275-in-guides-home-hide-20261111'/);
+  assert.match(horoscope, /'v281-pages-dev-vimshottari-year-20261114'\s*:\s*'v276-in-vimshottari-year-20261114'/);
 });
 
 test('The Pages.dev helper is cached only in Pages.dev worker scopes', () => {

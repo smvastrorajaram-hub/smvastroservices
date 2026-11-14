@@ -3375,10 +3375,11 @@ function nakshatraInfo(lon){
   return {index:idx,name:NAKSHATRAS[idx],pada:Math.floor(within/padaSpan)+1,lord:NAK_LORDS[idx%9]};
 }
 const DAY_MS=86400000;
-const SAVANA_YEAR_DAYS=360;
-// PVR §16.2 explicitly uses 360-day Savana years for all Nakshatra Dasa date calculations.
-function addSavanaYears(date, years){ return new Date(date.getTime()+Number(years||0)*SAVANA_YEAR_DAYS*DAY_MS); }
-function savanaYearsBetween(start,end){ return (end.getTime()-start.getTime())/(SAVANA_YEAR_DAYS*DAY_MS); }
+// SMV's selected Vimshottari civil-date convention: a 365.2422-day solar year.
+// Keep this separate from source-specific Savana-year rules in other Dasa systems.
+const VIMSHOTTARI_YEAR_DAYS=365.2422;
+function addVimshottariYears(date, years){ return new Date(date.getTime()+Number(years||0)*VIMSHOTTARI_YEAR_DAYS*DAY_MS); }
+function vimshottariYearsBetween(start,end){ return (end.getTime()-start.getTime())/(VIMSHOTTARI_YEAR_DAYS*DAY_MS); }
 function isoDate(date){ return date.toISOString().slice(0,10); }
 function sequenceFromLord(lord){
   const i=DASHA_ORDER.indexOf(lord);
@@ -3386,10 +3387,10 @@ function sequenceFromLord(lord){
   return DASHA_ORDER.slice(i).concat(DASHA_ORDER.slice(0,i));
 }
 function buildSubPeriods(parentLord, parentStart, parentEnd, level){
-  const seq=sequenceFromLord(parentLord), parentYears=savanaYearsBetween(parentStart,parentEnd);
+  const seq=sequenceFromLord(parentLord), parentYears=vimshottariYearsBetween(parentStart,parentEnd);
   return seq.map(lord=>{
     const years=parentYears*(DASHA_YEARS[lord]/120);
-    const durationDays=years*SAVANA_YEAR_DAYS;
+    const durationDays=years*VIMSHOTTARI_YEAR_DAYS;
     return {lord,years,fullYears:years,startDate:null,endDate:null,durationDays};
   }).reduce((acc,x)=>{
     const prev=acc.length?acc[acc.length-1].endDate:parentStart;
@@ -3402,7 +3403,7 @@ function buildPratyantar(antarLord, startDate, endDate, birthDate){
     .filter(p=>!birthDate||p.endDate>birthDate)
     .map(p=>{
       const visibleStart=birthDate&&p.startDate<birthDate?birthDate:p.startDate;
-      return {...p,years:savanaYearsBetween(visibleStart,p.endDate),start:isoDate(visibleStart),end:isoDate(p.endDate)};
+      return {...p,years:vimshottariYearsBetween(visibleStart,p.endDate),start:isoDate(visibleStart),end:isoDate(p.endDate)};
     })
     .map(p=>({lord:p.lord,years:p.years,fullYears:p.fullYears,start:p.start,end:p.end}));
 }
@@ -3414,7 +3415,7 @@ function buildAntardasha(mdLord, fullStart, fullEnd, birthDate){
       const visibleEnd=x.endDate;
       return {
         lord:x.lord,
-        years:savanaYearsBetween(visibleStart,visibleEnd),
+        years:vimshottariYearsBetween(visibleStart,visibleEnd),
         fullYears:x.fullYears,
         start:isoDate(visibleStart),
         end:isoDate(visibleEnd),
@@ -3427,17 +3428,17 @@ function dashaAtBirth(moonSiderealLon,date){
   const lord=n.lord,total=DASHA_YEARS[lord],balance=total*(1-progressed);
   if(!lord||!Number.isFinite(total)||!Number.isFinite(balance))throw new Error("Unable to calculate Vimshottari Dasha from Moon longitude.");
   const idx=DASHA_ORDER.indexOf(lord),elapsed=total-balance;
-  let start=addSavanaYears(date,-elapsed);
+  let start=addVimshottariYears(date,-elapsed);
   const periods=[];
   for(let i=0;i<9;i++){
-   const name=DASHA_ORDER[(idx+i)%9],fullYears=DASHA_YEARS[name],end=addSavanaYears(start,fullYears);
+   const name=DASHA_ORDER[(idx+i)%9],fullYears=DASHA_YEARS[name],end=addVimshottariYears(start,fullYears);
    if(end>date){
     const visibleStart=start<date?date:start;
-    periods.push({lord:name,years:savanaYearsBetween(visibleStart,end),fullYears,start:isoDate(visibleStart),end:isoDate(end),antardashas:buildAntardasha(name,start,end,date)});
+    periods.push({lord:name,years:vimshottariYearsBetween(visibleStart,end),fullYears,start:isoDate(visibleStart),end:isoDate(end),antardashas:buildAntardasha(name,start,end,date)});
    }
    start=end;
   }
-  return {balanceYears:Number(balance.toFixed(5)),order:DASHA_ORDER,periods,current:{mahadasha:null,antardasha:null,pratyantardasha:null}};
+  return {balanceYears:Number(balance.toFixed(5)),yearLengthDays:VIMSHOTTARI_YEAR_DAYS,yearConvention:'solar year (365.2422 days)',order:DASHA_ORDER,periods,current:{mahadasha:null,antardasha:null,pratyantardasha:null}};
 }
 
 function circularLonDiff(a,b){ return ((Number(a)-Number(b)+540)%360)-180; }

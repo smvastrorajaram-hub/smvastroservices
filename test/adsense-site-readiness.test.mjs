@@ -108,21 +108,21 @@ test('All three app service workers use synchronized new cache releases without 
     read('public/horoscope/calendar/sw.js')
   ];
   for (const source of workers) {
-    assert.match(source, /20261114-blog-image-top-full-width-pages-v1/);
-    assert.match(source, /20261114-blog-image-top-full-width-in-v1/);
+    assert.match(source, /20261114-vimshottari-solar-year-pages-v1/);
+    assert.match(source, /20261114-vimshottari-solar-year-in-v1/);
     assert.doesNotMatch(source, /localStorage\.clear\(|sessionStorage\.clear\(|WebView\.clearCache\(/);
   }
   const releases = workers.map(source => source.match(/SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/));
   assert.ok(releases.every(Boolean));
-  assert.deepEqual(releases.map(match => match[1]), Array(3).fill('20261114-blog-image-top-full-width-pages-v1'));
-  assert.deepEqual(releases.map(match => match[2]), Array(3).fill('20261114-blog-image-top-full-width-in-v1'));
+  assert.deepEqual(releases.map(match => match[1]), Array(3).fill('20261114-vimshottari-solar-year-pages-v1'));
+  assert.deepEqual(releases.map(match => match[2]), Array(3).fill('20261114-vimshottari-solar-year-in-v1'));
 });
 
 
 test('Calculation-method guide publishes source-grounded examples and transparent limitations', () => {
   const html = read('public/astrology-guides/calculation-method/index.html');
   assert.match(html, /45°30′/);
-  assert.match(html, /2,115 Savana days/);
+  assert.match(html, /2,145\.797925 days/);
   assert.match(html, /Tithi segment/);
   assert.match(html, /automated drafting assistance/);
   assert.match(html, /SMV ASTRO source repository/);
