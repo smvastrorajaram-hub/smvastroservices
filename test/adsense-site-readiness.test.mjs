@@ -122,7 +122,7 @@ test('All three app service workers use synchronized new cache releases without 
 test('Calculation-method guide publishes source-grounded examples and transparent limitations', () => {
   const html = read('public/astrology-guides/calculation-method/index.html');
   assert.match(html, /45°30′/);
-  assert.match(html, /2,115 Savana days/);
+  assert.match(html, /2,145\.797925 days/);
   assert.match(html, /Tithi segment/);
   assert.match(html, /automated drafting assistance/);
   assert.match(html, /SMV ASTRO source repository/);
