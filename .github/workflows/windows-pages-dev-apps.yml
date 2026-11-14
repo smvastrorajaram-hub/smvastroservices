@@ -1,6 +1,22 @@
 name: Pages.dev Windows Desktop Installers
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'desktop/pages-astro-windows/**'
+      - 'desktop/pages-horoscope-windows/**'
+      - 'desktop/pages-calendar-windows/**'
+      - 'public/sw.js'
+      - 'public/horoscope/index.html'
+      - 'public/horoscope/horoscope.css'
+      - 'public/horoscope/sw.js'
+      - 'public/horoscope/calendar/index.html'
+      - 'public/horoscope/calendar/sw.js'
+      - 'test/pages-dev-windows.test.cjs'
+      - '.github/scripts/windows-pages-desktop-smoke.cjs'
+      - '.github/workflows/windows-pages-dev-apps.yml'
   pull_request:
     paths:
       - 'desktop/pages-astro-windows/**'
