@@ -26,7 +26,7 @@ for(const [date,time] of cases){
  }
  const output=clipPeriods(computed,ref);
  eq(output.referenceDate,ref,date+' must begin at report date, not birth');
- eq(output.end,'2041-10-16',date+' exactly next 15 years');
+ eq(output.end,'2041-11-14',date+' exactly next 15 years');
  ok(output.periods.length>0,date+' has MD/AD periods');
  eq(output.periods[0].from,ref,date+' first period begins at requested date');
  eq(output.periods.at(-1).to,output.end,date+' last period ends at limit');
