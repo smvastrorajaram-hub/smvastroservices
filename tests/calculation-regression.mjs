@@ -79,7 +79,7 @@ const onlineVimContext={
  DASHA_ORDER:['கேது','சுக்கிரன்','சூரியன்','சந்திரன்','செவ்வாய்','ராகு','குரு','சனி','புதன்'],
  norm360:n=>{const x=Number(n)%360;return x<0?x+360:x;}
 };
-vm.runInNewContext(onlineServerSource.slice(onlineVimStart,onlineVimEnd)+'\\nglobalThis.__onlineVimshottariAudit=dashaAtBirth;',onlineVimContext,{timeout:10000});
+vm.runInNewContext(onlineServerSource.slice(onlineVimStart,onlineVimEnd)+'\nglobalThis.__onlineVimshottariAudit=dashaAtBirth;',onlineVimContext,{timeout:10000});
 const onlineVimExample50=onlineVimContext.__onlineVimshottariAudit(302+23/60,new Date('2000-04-28T00:00:00Z'));
 const dashaShape=value=>value.periods.map(md=>({lord:md.lord,start:md.start,end:md.end,antardashas:md.antardashas.map(ad=>({lord:ad.lord,start:ad.start,end:ad.end}))}));
 ok(JSON.stringify(dashaShape(onlineVimExample50))===JSON.stringify(dashaShape(vimshottariExample50)),'Online and offline Vimshottari MD/AD boundaries remain identical under the same 365.2422-day convention');
