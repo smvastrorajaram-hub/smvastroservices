@@ -87,6 +87,24 @@ test('Astrology Insights, Blogs, Media, hero kicker and footer tagline use high-
   assert.ok(contrastRatio('#6b4b1e','#fff8e7') >= 6, 'content headings must remain strongly readable');
 });
 
+
+test('Desktop Blog cards place the cover image above full-width description and article content without changing the mobile stack', () => {
+  const desktopStart = css.indexOf('@media (min-width: 701px){\n#smv-content-hub #publicBlogs{display:flex;flex-direction:column;gap:18px}');
+  const desktopEnd = css.indexOf('@media (max-width: 700px){\n#smv-content-hub #publicBlogs .blog-card{display:flex!important;flex-direction:column!important', desktopStart);
+  assert.ok(desktopStart >= 0 && desktopEnd > desktopStart, 'The desktop Blog layout block should exist.');
+  const desktop = css.slice(desktopStart, desktopEnd);
+  assert.match(desktop, /\.blog-card\{display:flex!important;flex-direction:column!important/);
+  assert.match(desktop, /\.blog-card::before\{order:-2\}/);
+  assert.match(desktop, /\.blog-card > \.content-thumb\{order:-1;[^}]*width:100%!important/);
+  assert.match(desktop, /\.blog-card > p\.small\{order:1;width:100%!important/);
+  assert.match(desktop, /\.blog-card > \.blog-content\{order:2;width:100%!important;max-width:100%!important/);
+  assert.doesNotMatch(desktop, /grid-template-columns:minmax\(220px, 34%\)/, 'Desktop Blog cards must not reserve a left-side image column.');
+  const mobileStart = css.indexOf('@media (max-width: 700px){\n#smv-content-hub #publicBlogs .blog-card{display:flex!important;flex-direction:column!important');
+  assert.ok(mobileStart >= 0, 'The existing mobile stacked Blog layout must remain in place.');
+  const mobile = css.slice(mobileStart, mobileStart + 500);
+  assert.match(mobile, /\.blog-card > \.content-thumb\{width:100%;height:auto;max-height:240px/);
+});
+
 test('customer Wallet transaction amounts use readable red/green bold styling', () => {
   const start=appSource.indexOf('const transactions=Array.isArray(transactionResult?.transactions)?');
   assert.ok(start>=0, 'customer Wallet transaction rendering should exist');
@@ -175,7 +193,7 @@ test('Customer Dashboard CTA uses its own component layout and Desktop Header bu
 });
 
 test('main page cache versions point to the audited theme assets', () => {
-  assert.ok(html.includes('smvastro.css?v=20261112-d1-read-optimization-5000-customers-v1'));
+  assert.ok(html.includes('smvastro.css?v=20261114-blog-image-top-full-width-v1'));
   assert.ok(html.includes('android-app-install.css?v=20261110-icon-png-v3'));
   assert.ok(html.includes('smv-ui.css?v=20261112-customer-dashboard-source-ui-v2'));
   assert.ok(html.includes('dashboard-typography.css?v=20261114-live-settlement-recovery-v1'));
