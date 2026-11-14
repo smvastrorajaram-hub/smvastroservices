@@ -2,20 +2,19 @@
 
 **Audit date:** 14 November 2026  
 **Audited source:** `smvastrorajaram-hub/smvastroservices`  
-**Main baseline:** `f9aa9befb81cc67f43e815b941ac27358b60884a` (after PR #491)  
+**Main baseline:** `ff73618d650d2bdce1d0f5971e7d13f60ad201f8` (after PR #494; includes PRs #491 and #494)  
 **Status:** Documentation-only audit. No runtime source, configuration, secrets, production data, database migrations, or deployments are changed by this document.
 
 ## 1. Objective and conclusion
 
 The objective is to establish a measurable path to **5,000 distinct customers per day while remaining inside the Cloudflare D1 Workers Free daily quota**. This audit does not claim the target is already proven.
 
-The current source already contains two important D1 read-amplification fixes from PRs #473 and #474. The next audit priorities are:
+The current source includes the D1 read-amplification fixes from PRs #473/#474 and the Live Chat polling reduction from PR #494. Remaining priorities are:
 
-1. Remove or bound the remaining 1.5-second Live Chat recovery polling while Server-Sent Events (SSE) is healthy.
-2. Resolve the source-level mismatch between the optional 0014 Live query-index migration and SQL paths that force those indexes.
-3. Verify current production Row Metrics after the approved code deployment; the historical Query Insights values in PR #473/#474 are not a current post-fix baseline.
-4. Keep Firebase Project 1 registration/identity separate. A Firestore phone-registry miss can still fall back to a full `smv_users` scan, which is a distinct Firebase read-scaling risk, not D1 usage.
-5. Measure the large SMV ASTRO UI bundle and stylesheet separately. These affect loading and browser responsiveness, not D1 rows-read directly.
+1. Read actual Production D1 Rows Read / Rows Written and Query Insights using Cloudflare Account Analytics Read permission; do not substitute historic query snapshots for current use.
+2. Align the Live route/health readiness contract with the six 0014 indexes that the current SQL forces. All six indexes have already been confirmed in Production; no migration is needed.
+3. Keep Firebase Project 1 registration/identity separate. A Firestore phone-registry miss can still fall back to a full `smv_users` scan, which is a distinct Firebase read-scaling risk, not D1 usage.
+4. Measure the large SMV ASTRO UI bundle and stylesheet separately. These affect loading and browser responsiveness, not D1 rows-read directly.
 
 **Important distinction:** 5,000 customers/day is not the same as 5,000 simultaneous users. A daily active-user target, peak concurrent sessions, and peak Live Chat/Call concurrency need separate workload tests.
 
@@ -76,33 +75,52 @@ PR #473 added a 30-second Worker-isolate schema cache with in-flight request coa
 
 PR #474 further consolidated schema object checks, schema-version reads and Bonus Credit table-column checks into fewer materialized metadata scans/aggregations. Its PR description recorded a subsequent Query Insights snapshot in which the repeated readiness probes accounted for approximately 3.96M rows read.
 
-**Current evidence gap:** this audit did not access the Cloudflare account's live D1 Query Insights / Row Metrics. Therefore it cannot confirm the actual post-#474 daily row-read total or claim that the historic 5.64M/3.96M costs are now reduced to a particular number. A before/after Query Insights comparison is still required after the relevant production code is deployed.
+**Current evidence gap:** this audit did not access the Cloudflare account's live D1 Query Insights / Row Metrics. Therefore it cannot confirm the actual post-#474/#494 daily row-read total or claim that the historic 5.64M/3.96M costs are now reduced to a particular number. A before/after Query Insights comparison is still required.
+
+
+### Production read-only verification — 14 November 2026
+
+The Production Worker endpoints were queried directly (read-only):
+
+- `GET https://smvastroservices.astroservices.workers.dev/healthz`
+- `GET https://smvastroservices.astroservices.workers.dev/api/backend/migration-status`
+
+Observed at approximately 04:49:54–04:49:55 UTC:
+
+- `environment=production`, D1 binding present, schema ready, and Firebase connectivity true.
+- Migration markers `0002` through `0014` were all reported true.
+- `0014_live_session_query_indexes` was true and the six Live query indexes were ready.
+- Live/Wallet/Recharge routes and Production financial readiness were reported ready.
+- The global `productionTrafficEnabled=false` remained unchanged.
+
+**Result:** Production already has all six 0014 indexes. No Production D1 migration, index creation, or row write was needed or performed for this work.
+
+The Production main Pages deployment for PR #494 subsequently passed (GitHub run `43559595015`); the two satellite PWA deployments also passed (Horoscope `43559633769`, Calendar `43559635904`). The deployed `.in` main script and all three Service Workers returned the new synchronized cache markers.
+
+**Rows Read / Rows Written are still unverified.** Cloudflare documents that D1 account analytics comes from the GraphQL Analytics API and that `wrangler d1 insights` requires an API token with **Account Analytics Read** permission. The existing D1-only token's analytics permission has not been verified; do not change or re-upload any secret. A dedicated Analytics Read permission/token may be required for the next read-only metrics report. See [Cloudflare D1 Metrics and Analytics](https://developers.cloudflare.com/d1/observability/metrics-analytics/) and [Find slow and expensive queries](https://developers.cloudflare.com/d1/observability/find-expensive-queries/).
 
 ## 4. Current source findings
 
-### P1 — Active Live Chat continues 1.5-second message polling while SSE is healthy
+### P1 — Active Live Chat polling reduced by PR #494 (merged and deployed)
 
 **Source paths:**
 - `public/smvastro.mjs`: `smvLiveStartChatRecovery()`, `smvLivePollMessages()`, `smvLiveApplySession()`
 - `cloudflare/backend-api/src/live-session-routes.mjs`: `GET /live/sessions/:id/messages`
 - `shared/backend-platform/d1-live-session-service.mjs`: `listMessages()` and `getSession()`
-- `public/smvastro.mjs`: `smvApiBackend()` routes registered `/live/sessions` paths to the Cloudflare Worker when the configured Cloudflare financial API switch is on.
 
-The current client starts `smvLiveStartChatRecovery()` for every active Chat session and calls `smvLivePollMessages()` every 1,500 ms. The timer checks that the session and message element still exist, but does not check whether `smvLiveEventStreamConnected` is already true.
+Before PR #494, the client made a cursor-based message recovery call every 1,500 ms for each active Chat panel even while the existing SSE stream was healthy. The D1 `listMessages()` path reads the session and then the bounded message list, so each recovery HTTP request normally issued at least two D1 statements.
 
-The same client already uses SSE as the primary event transport. On SSE reconnect, `smvLiveReconcileAfterEventStreamConnect()` performs a message-history reconciliation after the stored cursor. In spite of that, the 1.5-second recovery timer remains active while the SSE stream is healthy.
+PR #494 changed the healthy-SSE safety reconciliation to 15,000 ms and checks `smvLiveEventStreamConnected` before issuing that poll. SSE continues to deliver new messages immediately. If SSE disconnects, the pre-existing faster fallback poller remains active; it was not removed or slowed.
 
-The D1 `listMessages()` service first reads the session with `getSession()`, then executes a separate query against `smv_domain_live_messages`. Thus each message-poll HTTP request executes at least two D1 statements on the normal D1-backed path.
+**Expected request-count change while SSE is healthy (not a measured rows-read saving):**
+- Before: 40 recovery polls/minute/client.
+- After: 4 recovery polls/minute/client.
+- For both Customer and Astrologer panels: 80 → 8 recovery HTTP requests/minute/session.
+- At two D1 statements per request, the illustrative ceiling changes from about 9,600 to 960 statement executions per fully observed two-sided active Chat hour.
 
-**Query-count illustration (not a rows-read estimate):**
+Actual rows read depend on the index/query plan and the number of message rows scanned. This 90% reduction applies only to the redundant cursor-reconciliation polling while SSE is healthy; it is not a 90% reduction in all D1 usage.
 
-- 1,500 ms interval = 40 polls/minute/client.
-- If both Customer and Astrologer keep an active Chat panel open: 80 poll requests/minute/session.
-- At two D1 statements per poll request: approximately 160 D1 statement executions/minute, or **9,600 statement executions for one active session-hour**.
-
-Actual D1 rows read depend on the index/query plan and the number of messages scanned; the query-count estimate must not be misrepresented as 9,600 rows read.
-
-**Recommended next implementation PR (not included here):** make SSE the only steady-state message transport while healthy; retain bounded polling only during SSE disconnection; and use the existing cursor-based reconnect reconciliation to recover missed messages. Before changing the timer, add regression tests for missed SSE events, reconnects, multiple Worker instances, delayed message delivery, offline/online transitions and both participants. Keep the existing no-manual-refresh behavior. Do not weaken session authorization or message ownership checks.
+PR #494's 16 GitHub Actions checks passed. The Production GitHub Pages deployment and the independent Horoscope and Calendar PWA deployments all passed. No Worker/D1 code, migration, financial write, or traffic gate was changed by this UI transport optimization.
 
 ### P1 — 0014 query-index readiness does not consistently match SQL's forced-index dependency
 
@@ -157,7 +175,8 @@ The existing #226 source audit already recommended narrow CSS consolidation and 
 - **PR #226:** broad source-level report-only audit already covered request body limits, CORS, storage/Service Worker safety, Horoscope lazy loading, Calendar build scope, CSS cascade and browser baselines.
 - **PR #473:** D1 readiness caching/single-flight, bounded status route and Live indexes.
 - **PR #474:** consolidation of D1 schema metadata scans.
-- **PR #491:** booked session settlement, Android receipt margins and numeric Session IDs. Main baseline here includes this merge.
+- **PR #491:** booked session settlement, Android receipt margins and numeric Session IDs.
+- **PR #494:** reduced healthy-SSE Live Chat recovery polling to 15 seconds, synchronized all three PWA cache releases, and deployed the main site plus both satellite PWAs.
 
 The old branch `perf/d1-read-architecture-5000-customers-20261112` is not reused. This follow-up audit starts from current main to avoid pulling in a branch that has diverged from main.
 
@@ -207,8 +226,8 @@ Production capacity is judged from passive real-traffic observations, not an art
 
 | Priority | Separate scoped task | Gate |
 |---|---|---|
-| P0 | Confirm 0014 index presence and align route/health/readiness gate with forced-index SQL | Read-only Production schema evidence; local D1 unit fixtures for present/missing-index behavior |
-| P1 | Reduce active Chat message polling while SSE is healthy | Multi-instance/reconnect/message-loss tests; both users receive updates without refresh |
+| P0 | Align route/health/readiness gate with forced-index SQL | Production index presence is already confirmed; source gate + local D1 unit fixtures for present/missing-index behavior |
+| P1 | Measure the Production Row Read / Row Written effect of PR #494 after deployment | Cloudflare D1 Analytics Read permission; compare the same 1-day and 7-day Query Insights windows before/after; no synthetic Production stress traffic |
 | P1 (separate domain) | Reconcile Project 1 phone registry before changing the full-scan fallback | Read-only Production aggregate completeness evidence and a separately reviewed identity proposal; no identity cutover in this D1 work |
 | P2 | Measure then split main SMV ASTRO modules and consolidate CSS in small batches | Real browser baselines, mobile/desktop screenshots, existing dashboard/live/print regressions |
 
