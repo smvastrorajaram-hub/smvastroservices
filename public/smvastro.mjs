@@ -5469,14 +5469,11 @@ function smvLiveStartChatConnectRecovery(id,session){
 function smvLiveStartChatRecovery(id,session){
  const key=String(id||''),current=session||smvLiveCurrentSession;
  if(!key||String(current?.id||'')!==key||current?.state!=='active'||smvLiveCanonicalMode(current)!=='chat'){smvLiveStopChatRecovery();return;}
- if(smvLiveChatRecoveryTimer&&smvLiveChatRecoverySessionId===key)return;
- smvLiveStopChatRecovery();smvLiveChatRecoverySessionId=key;
- // SSE delivers immediately. This bounded read-after-cursor catches missed events across instances/reconnects.
- smvLiveChatRecoveryTimer=setInterval(()=>{
-  const activeSession=smvLiveCurrentSession;
-  if(smvLivePanelSessionId!==key||!activeSession||activeSession.state!=='active'||smvLiveCanonicalMode(activeSession)!=='chat'||!$('smvLiveMessages')){smvLiveStopChatRecovery();return;}
-  smvLivePollMessages(key).catch(()=>{});
- },1500);
+ // The SSE stream is the steady-state message transport. The shared fallback
+ // poller is the sole recovery path while SSE is disconnected; do not keep a
+ // second 1.5-second per-session poller running alongside it.
+ smvLiveStopChatRecovery();
+ if(!smvLiveEventStreamConnected)smvLiveStartFallbackPolling();
 }
 async function smvLivePollMessages(id){
  const key=String(id||'');if(!key||!$('smvLiveMessages'))return;
@@ -5631,6 +5628,7 @@ function smvLiveStartEventStream(){
       if(event?.type==='live.ready'&&!smvLiveEventStreamConnected){
        smvLiveEventStreamConnected=true;
        smvLiveSaveEventCursor(uid,event.cursor??eventCursor,event.resetCursor===true);
+       smvLiveStopChatRecovery();
        smvLiveStopFallbackPolling();
        // Reconcile authoritative session state and chat/signal history after every replay or reconnect.
        smvLiveReconcileAfterEventStreamConnect().catch(()=>{});
