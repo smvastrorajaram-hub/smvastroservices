@@ -431,7 +431,21 @@ export function registerD1LiveSessionRoutes({
     try {
       await assertReady();
       const user=await requireRole(req,['customer','astrologer']);
-      const session=await liveService.getSessionForParticipant({sessionId:req.params.id,uid:user.uid});
+      let session=await liveService.getSessionForParticipant({sessionId:req.params.id,uid:user.uid});
+      // The legacy Firestore reader performs this expiry reconciliation itself.
+      // Mirror it here for D1 so a missed/delayed Durable Object alarm cannot
+      // leave a Book Call/Chat active until the next message or WebRTC action.
+      const startedAt=Date.parse(session?.startedAt||'');
+      const minutes=Number(session?.minutes);
+      if(session?.state==='active'&&Number.isFinite(startedAt)&&Number.isSafeInteger(minutes)&&minutes>0&&
+         Date.now()>=startedAt+minutes*60_000) {
+        const settled=await liveService.endSession({
+          sessionId:req.params.id,reason:'duration_complete',system:true
+        });
+        session=settled.session||session;
+        await cancelAll(req.params.id);
+        await publishSession(session);
+      }
       return res.set('Cache-Control','no-store').json({success:true,session});
     } catch(error) { return replyError(res,error,'Unable to load this Live Session receipt.'); }
   });
