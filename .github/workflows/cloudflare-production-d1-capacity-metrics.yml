@@ -1,0 +1,202 @@
+name: Production D1 capacity metrics (read-only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: Complete UTC days to report (maximum 30 days)
+        type: choice
+        required: true
+        default: "30"
+        options: ["7", "30"]
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/cloudflare-production-d1-capacity-metrics.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-d1-capacity-metrics
+  cancel-in-progress: false
+
+jobs:
+  report-production-d1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_D1_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CAPACITY_DAYS: ${{ github.event.inputs.days || '30' }}
+      PRODUCTION_D1_ID: b1d5684c-3fcd-48fe-9571-ea41fc605c7d
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Confirm Production analytics credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${CLOUDFLARE_API_TOKEN:-}" || {
+            echo "::error::Missing CLOUDFLARE_D1_API_TOKEN in the GitHub production environment."
+            exit 1
+          }
+          if [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+            account_id="$(node .github/scripts/resolve-cloudflare-account-from-production-d1.mjs)"
+            test -n "$account_id" || {
+              echo "::error::Could not resolve the Production D1 account ID."
+              exit 1
+            }
+            echo "CLOUDFLARE_ACCOUNT_ID=$account_id" >> "$GITHUB_ENV"
+          fi
+
+      - name: Read Production D1 daily rows and query metrics from Cloudflare Analytics
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+
+          const token = process.env.CLOUDFLARE_API_TOKEN || '';
+          const accountTag = process.env.CLOUDFLARE_ACCOUNT_ID || '';
+          const databaseId = process.env.PRODUCTION_D1_ID || '';
+          const days = Number(process.env.CAPACITY_DAYS || 30);
+          if (!token || !accountTag || !databaseId) throw new Error('Production Cloudflare analytics configuration is incomplete.');
+          if (![7, 30].includes(days)) throw new Error('CAPACITY_DAYS must be 7 or 30.');
+
+          const end = new Date();
+          end.setUTCHours(0, 0, 0, 0);
+          end.setUTCDate(end.getUTCDate() - 1);
+          const start = new Date(end);
+          start.setUTCDate(start.getUTCDate() - (days - 1));
+          const date = value => value.toISOString().slice(0, 10);
+
+          const query = `
+            query ProductionD1DailyMetrics(
+              $accountTag: String!,
+              $start: Date,
+              $end: Date,
+              $databaseId: String!
+            ) {
+              viewer {
+                accounts(filter: { accountTag: $accountTag }) {
+                  d1AnalyticsAdaptiveGroups(
+                    limit: 10000,
+                    filter: { date_geq: $start, date_leq: $end, databaseId: $databaseId },
+                    orderBy: [date_DESC]
+                  ) {
+                    sum {
+                      rowsRead
+                      rowsWritten
+                      readQueries
+                      writeQueries
+                    }
+                    quantiles {
+                      queryBatchTimeMsP90
+                    }
+                    dimensions {
+                      date
+                      databaseId
+                    }
+                  }
+                }
+              }
+            }`;
+
+          const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+            method: 'POST',
+            headers: {
+              Authorization: 'Bearer ' + token,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              query,
+              variables: {
+                accountTag,
+                start: date(start),
+                end: date(end),
+                databaseId
+              }
+            })
+          });
+          let payload;
+          try { payload = await response.json(); }
+          catch { throw new Error('Cloudflare Analytics API returned a non-JSON response (HTTP ' + response.status + ').'); }
+          if (!response.ok || payload.errors?.length) {
+            const detail = (payload.errors || []).map(item => item.message || 'GraphQL error').join('; ');
+            if (/permission|forbidden|unauthorized|authentication/i.test(detail) || response.status === 401 || response.status === 403) {
+              throw new Error('Cloudflare token requires Account Analytics Read permission. No D1 query or database write was performed. ' + detail);
+            }
+            throw new Error('Cloudflare Analytics API request failed (HTTP ' + response.status + '): ' + detail);
+          }
+
+          const groups = payload.data?.viewer?.accounts?.[0]?.d1AnalyticsAdaptiveGroups || [];
+          const daily = groups.map(group => ({
+            date: group.dimensions?.date || null,
+            databaseId: group.dimensions?.databaseId || databaseId,
+            rowsRead: Number(group.sum?.rowsRead || 0),
+            rowsWritten: Number(group.sum?.rowsWritten || 0),
+            readQueries: Number(group.sum?.readQueries || 0),
+            writeQueries: Number(group.sum?.writeQueries || 0),
+            queryBatchTimeMsP90: Number(group.quantiles?.queryBatchTimeMsP90 || 0)
+          })).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+
+          const totals = daily.reduce((sum, item) => ({
+            rowsRead: sum.rowsRead + item.rowsRead,
+            rowsWritten: sum.rowsWritten + item.rowsWritten,
+            readQueries: sum.readQueries + item.readQueries,
+            writeQueries: sum.writeQueries + item.writeQueries
+          }), { rowsRead: 0, rowsWritten: 0, readQueries: 0, writeQueries: 0 });
+
+          const report = {
+            environment: 'production',
+            databaseId,
+            period: { start: date(start), end: date(end), completeUtcDays: days },
+            scope: 'Production D1 database only; no Staging database is queried.',
+            quotaNote: 'Workers Free D1 rows-read and rows-written quotas are account-wide. This report measures only the Production D1 database and does not claim account-wide remaining quota.',
+            totals,
+            daily
+          };
+          fs.writeFileSync('production-d1-capacity-metrics.json', JSON.stringify(report, null, 2) + '\n');
+          await fs.promises.appendFile(process.env.GITHUB_STEP_SUMMARY, [
+            '# Production D1 capacity metrics',
+            '',
+            `Period: ${report.period.start} to ${report.period.end} UTC (${days} complete days)`,
+            '',
+            `- Production DB rows read: **${totals.rowsRead.toLocaleString('en-IN')}**`,
+            `- Production DB rows written: **${totals.rowsWritten.toLocaleString('en-IN')}**`,
+            `- Read queries: **${totals.readQueries.toLocaleString('en-IN')}**`,
+            `- Write queries: **${totals.writeQueries.toLocaleString('en-IN')}**`,
+            '',
+            '**Scope:** Production D1 only. The account-wide Free quota is shared by other D1 databases; their metrics are not queried or included here.',
+            ''
+          ].join('\n'));
+          console.log(JSON.stringify(report, null, 2));
+          NODE
+
+      - name: Read top Production D1 query insights (read-only)
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          npx --yes wrangler@4.156.0 d1 insights "$PRODUCTION_D1_ID" \
+            --sort-type=sum --sort-by=reads --limit=20 --time-period=7d --json \
+            > production-d1-top-query-insights.json
+          test -s production-d1-top-query-insights.json
+
+      - name: Upload Production D1 metrics report
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-d1-capacity-metrics
+          path: |
+            production-d1-capacity-metrics.json
+            production-d1-top-query-insights.json
+          if-no-files-found: warn
+          retention-days: 30
