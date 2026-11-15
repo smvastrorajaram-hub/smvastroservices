@@ -29,7 +29,7 @@ test('Blog and Media load by default on Home and the Blog navigation button togg
 
 test('Register opens Customer and Astrologer registration and the same button closes the registration area', () => {
   const frontend = read('public/smvastro.mjs');
-  assert.match(frontend, /const customerFlow=\$\('register-flow'\),astrologerFlow=\$\('astro-register-form'\)/);
+  assert.match(frontend, /const customerFlow=\$\(["']register-flow["']\),astrologerFlow=\$\(["']astro-register-form["']\)/);
   assert.match(frontend, /if\(registrationVisible\)\{smvReturnHome\(true\);return;\}/);
   assert.match(frontend, /openCustomerRegistration\(\);/);
 });
