@@ -236,7 +236,7 @@ test('Live Chat uses canonical mode/state and native visibility instead of a cha
   assert.equal(frontend.includes('smv-live-chat-active'), false, 'no chat-only modal class should be toggled by JavaScript');
   assert.equal(css.includes('.smv-live-chat-active'), false, 'Chat must not depend on a special CSS override block');
   assert.ok(html.includes('smvastro.css?v=20261114-blog-image-top-full-width-v1'));
-  assert.ok(html.includes('smvastro.mjs?v=20261114-private-chat-answer-viewed-live-reviews-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261115-public-content-anonymous-read-v1'));
 });
 
 test('Live Chat connected confirmation requires a rendered message pane and does not open a separate Chat window', () => {
@@ -310,7 +310,7 @@ test('Live Session uses SSE as primary transport and reserves polling for recove
   assert.ok(frontend.includes('smvLiveStartCustomerPendingStatusPoll(s.id);'));
   assert.ok(frontend.includes('setInterval(()=>void reconcile(),2500)'));
   assert.ok(frontend.includes('Astrologer Generating Horoscope · '));
-  assert.ok(html.includes('smvastro.mjs?v=20261114-private-chat-answer-viewed-live-reviews-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261115-public-content-anonymous-read-v1'));
 });
 
 test('Live Chat recovers a missed connecting-to-active event while SSE remains connected', () => {
@@ -357,7 +357,7 @@ test('Customer and Astrologer Dashboard open without Dashboard-wide loading or q
   assert.equal(frontend.includes('Loading your dashboard...'), false);
   assert.ok(!frontend.includes("because Firebase could not be read."));
   assert.ok(!frontend.includes("Dashboard is open. Astrologer profile and data"));
-  assert.ok(html.includes('smvastro.mjs?v=20261114-private-chat-answer-viewed-live-reviews-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261115-public-content-anonymous-read-v1'));
 });
 
 test('Explicit login keeps the fast role shell mounted and does not hide/reopen Dashboard', () => {
@@ -401,7 +401,7 @@ test('Astrologer Dashboard keeps one heading and parallelizes its first profile 
   assert.ok(dashboard.includes('const astrologerProfilePromise=shouldPreloadAstroProfile?readAstrologerProfile():null;'));
   assert.ok(dashboard.includes('astrologerProfileResult=profileResult;'));
   assert.ok(!dashboard.includes("const a=await withTimeout(\n     getDoc(doc(db,'smv_astrologers',currentUser.uid))"));
-  assert.ok(html.includes('smvastro.mjs?v=20261114-private-chat-answer-viewed-live-reviews-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261115-public-content-anonymous-read-v1'));
 });
 
 test('Astrologer Dashboard renders its main UI before earnings and withdrawal history resolve', () => {
@@ -421,7 +421,7 @@ test('Astrologer Dashboard renders its main UI before earnings and withdrawal hi
   assert.ok(dashboard.includes('id="smvAstroEarningsHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalHistory"'));
   assert.ok(dashboard.includes('id="smvAstroWithdrawalStatus"'));
-  assert.ok(html.includes('smvastro.mjs?v=20261114-private-chat-answer-viewed-live-reviews-v1'));
+  assert.ok(html.includes('smvastro.mjs?v=20261115-public-content-anonymous-read-v1'));
 });
 
 test('Customer fast shell binds Wallet actions without starting a duplicate initial Wallet read', () => {
@@ -767,10 +767,39 @@ test('retired Q&A histories are removed while published public content keeps its
   assert.ok(server.includes('contentStoreDb(){return multiProjectFirestore.contentBackfillComplete?multiProjectFirestore.contentDb:db;}'));
   assert.ok(server.includes("app.get('/public/content'"));
   assert.ok(server.includes(".where('published','==',true).where('language','==','en')"));
-  assert.ok(frontend.includes("renderApi('/public/content',{method:'GET'})"));
+  assert.ok(frontend.includes("await smvFetchPublicContentFromApi()"));
+  assert.equal(frontend.includes("renderApi('/public/content',{method:'GET'})"), false,
+    'published public content must not wait for an authenticated Firebase user');
   assert.ok(!frontend.includes('getDocs(query(collection(db,SMV_CONTENT_COLLECTION),where("published","==",true)'));
   assert.ok(!frontend.includes("renderApi('/customer/consultations'"));
   assert.ok(!frontend.includes("renderApi('/customer/private-consultations'"));
+});
+
+test('Published Blog and Media reads are anonymous, bounded and use a last-good fallback', () => {
+  const frontend = read('public/smvastro.mjs');
+  const start = frontend.indexOf('async function smvFetchPublicContentFromApi(){');
+  const end = frontend.indexOf('\nasync function smvGetPublishedContent', start);
+  assert.ok(start >= 0 && end > start, 'The anonymous published-content transport must exist.');
+  const transport = frontend.slice(start, end);
+  assert.ok(transport.includes("smvApiBackend('/public/content')+'/public/content'"));
+  assert.ok(transport.includes("method:'GET'"));
+  assert.ok(transport.includes("headers:{Accept:'application/json'}"));
+  assert.ok(transport.includes("credentials:'omit'"));
+  assert.ok(transport.includes('for(let attempt=0;attempt<3;attempt++)'), 'Retries must remain bounded.');
+  assert.ok(transport.includes('setTimeout(()=>controller.abort(),8000)'), 'Each request must have a timeout.');
+  assert.equal(transport.includes('renderApi('), false,
+    'Anonymous public content must not depend on Firebase Auth.');
+  assert.ok(frontend.includes("const SMV_PUBLIC_CONTENT_CACHE_KEY='smv-public-content-last-good-v1';"));
+  assert.ok(frontend.includes('smvSaveLastGoodPublicContent(items)'));
+  assert.ok(frontend.includes('const cached=smvReadLastGoodPublicContent();'));
+  assert.ok(frontend.includes('window.localStorage.setItem(SMV_PUBLIC_CONTENT_CACHE_KEY,value)'));
+  assert.ok(frontend.includes("renderApi('/admin/content',{method:'GET'})"),
+    'Admin content must keep its authenticated API transport.');
+  assert.ok(frontend.includes('async function smvUploadBlogText'));
+  assert.ok(frontend.includes('async function smvUploadFile'));
+  assert.equal(frontend.includes('localStorage.clear('), false);
+  assert.equal(frontend.includes('sessionStorage.clear('), false);
+  assert.equal(frontend.includes('WebView.clearCache('), false);
 });
 
 test('Live fallback polling deduplicates same-session in-flight message and signal reads', () => {

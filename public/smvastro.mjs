@@ -2865,15 +2865,82 @@ async function smvUploadFile(file,type,id){
   n=Number(n)||0;if(n<1024)return `${n} B`;if(n<1024*1024)return `${(n/1024).toFixed(1)} KB`;return `${(n/1024/1024).toFixed(1)} MB`;
 }
 let smvPublishedContentItems=null,smvPublishedContentRequest=null,smvPublicContentRendered=false;
+const SMV_PUBLIC_CONTENT_CACHE_KEY='smv-public-content-last-good-v1';
+function smvReadLastGoodPublicContent(){
+  try{
+    const cached=JSON.parse(window.localStorage.getItem(SMV_PUBLIC_CONTENT_CACHE_KEY)||'null');
+    return cached?.version===1&&Array.isArray(cached.items)?cached.items:null;
+  }catch(error){
+    console.warn('Last-good public content cache could not be read:',error);
+    return null;
+  }
+}
+function smvSaveLastGoodPublicContent(items){
+  try{
+    const value=JSON.stringify({version:1,savedAt:Date.now(),items});
+    // Keep this public metadata cache modest; a full cache quota must never block rendering.
+    if(value.length<=1500000)window.localStorage.setItem(SMV_PUBLIC_CONTENT_CACHE_KEY,value);
+  }catch(error){
+    console.warn('Last-good public content cache could not be saved:',error);
+  }
+}
+async function smvFetchPublicContentFromApi(){
+  const endpoint=smvApiBackend('/public/content')+'/public/content';
+  let lastError=null;
+  for(let attempt=0;attempt<3;attempt++){
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),8000);
+    try{
+      // /public/content is deliberately anonymous. Do not wait for Firebase Auth
+      // initialization or attach an ID token to this published-only read.
+      const response=await fetch(endpoint,{
+        method:'GET',
+        headers:{Accept:'application/json'},
+        cache:'no-store',
+        credentials:'omit',
+        signal:controller.signal
+      });
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok){
+        const error=new Error(data?.error||'Published content request failed ('+response.status+').');
+        error.status=response.status;
+        throw error;
+      }
+      if(data?.success!==true||!Array.isArray(data.items)){
+        throw new Error(data?.error||'Published content returned an invalid response.');
+      }
+      return data.items.slice().sort((a,b)=>smvDashboardActivityMs(b)-smvDashboardActivityMs(a));
+    }catch(error){
+      lastError=error;
+      const status=Number(error?.status)||0;
+      const retryable=!status||status>=500||status===408||status===429;
+      if(!retryable||attempt===2)break;
+    }finally{
+      clearTimeout(timeout);
+    }
+    await new Promise(resolve=>setTimeout(resolve,attempt===0?250:650));
+  }
+  throw lastError||new Error('Published content is temporarily unavailable.');
+}
 async function smvGetPublishedContent(force=false){
   if(force){smvPublishedContentItems=null;smvPublishedContentRequest=null;}
   if(smvPublishedContentItems)return smvPublishedContentItems;
   if(smvPublishedContentRequest)return smvPublishedContentRequest;
   smvPublishedContentRequest=(async()=>{
-    const response=await renderApi('/public/content',{method:'GET'});
-    if(!response?.success||!Array.isArray(response.items))throw new Error(response?.error||'Published content is temporarily unavailable.');
-    const items=response.items.sort((a,b)=>smvDashboardActivityMs(b)-smvDashboardActivityMs(a));
-    smvPublishedContentItems=items;return items;
+    try{
+      const items=await smvFetchPublicContentFromApi();
+      smvPublishedContentItems=items;
+      smvSaveLastGoodPublicContent(items);
+      return items;
+    }catch(error){
+      const cached=smvReadLastGoodPublicContent();
+      if(cached){
+        smvPublishedContentItems=cached;
+        console.warn('Published content API is unavailable; using the last successful public-content snapshot.',error);
+        return cached;
+      }
+      throw error;
+    }
   })().finally(()=>{smvPublishedContentRequest=null;});
   return smvPublishedContentRequest;
 }
