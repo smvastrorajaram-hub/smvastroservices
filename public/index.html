@@ -121,7 +121,7 @@ if(location.hostname==='smvastroservices.pages.dev'){
 </a>
 <nav aria-label="Main navigation" class="smv9-menu">
 <a class="active" href="#home">Home</a>
-<button data-smv-route="publicBlogs" id="contentNav" type="button">Blog</button>
+<button aria-expanded="true" data-smv-route="publicBlogs" id="contentNav" type="button">Blog</button>
 <a class="products-nav" href="https://smvastroservices.store.shoopy.in/" target="_blank" rel="noopener noreferrer" aria-label="SMV ASTRO PRODUCTS">Products</a>
 <a href="https://calendar.smvastroservices.in/" rel="noopener" target="_blank">Calendar</a>
 <a class="hidden" href="#dashboard" id="dashLink">Dashboard</a>
@@ -528,7 +528,7 @@ if(location.hostname==='smvastroservices.pages.dev'){
 <script src="./dashboard-window.js"></script>
 <script id="smv-apk-release-api-config">window.SMV_APK_RELEASE_API_URL = window.SMV_APK_RELEASE_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev"; window.SMV_APK_RELEASE_ADMIN_API_URL = window.SMV_APK_RELEASE_ADMIN_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev";</script>
 <script id="smv-financial-backend-routing-config">window.SMV_CLOUDFLARE_FINANCIAL_API_ENABLED = true;</script>
-<script src="./smvastro.mjs?v=20261115-public-content-anonymous-read-v1" type="module"></script>
+<script src="./smvastro.mjs?v=20261115-navigation-auto-restore-live-booking-v1" type="module"></script>
 <!-- Legacy fallback authentication block removed in V109. Main Firebase auth is the single login system. -->
 <script>
 (function(){
@@ -1163,7 +1163,7 @@ else initFAQ();
 </script>
 
 <script defer="" src="./interface.js"></script><script defer="" src="./android-app-install.js?v=20261110-icon-png-v3"></script>
-<script src="./public-navigation.js?v=20261102-consult-route-cleanup-v1"></script>
+<script src="./public-navigation.js?v=20261115-navigation-auto-restore-live-booking-v1"></script>
 <script id="smv-v350-pages-only-links">
 (()=>{
  if(location.hostname!=='smvastroservices.pages.dev')return;
