@@ -767,10 +767,37 @@ test('retired Q&A histories are removed while published public content keeps its
   assert.ok(server.includes('contentStoreDb(){return multiProjectFirestore.contentBackfillComplete?multiProjectFirestore.contentDb:db;}'));
   assert.ok(server.includes("app.get('/public/content'"));
   assert.ok(server.includes(".where('published','==',true).where('language','==','en')"));
-  assert.ok(frontend.includes("renderApi('/public/content',{method:'GET'})"));
+  assert.ok(frontend.includes("await smvFetchPublicContentFromApi()"));
+  assert.equal(frontend.includes("renderApi('/public/content',{method:'GET'})"), false,
+    'published public content must not wait for an authenticated Firebase user');
   assert.ok(!frontend.includes('getDocs(query(collection(db,SMV_CONTENT_COLLECTION),where("published","==",true)'));
   assert.ok(!frontend.includes("renderApi('/customer/consultations'"));
   assert.ok(!frontend.includes("renderApi('/customer/private-consultations'"));
+});
+
+test('Published Blog and Media reads are anonymous, bounded and use a last-good fallback', () => {
+  const frontend = read('public/smvastro.mjs');
+  const start = frontend.indexOf('async function smvFetchPublicContentFromApi(){');
+  const end = frontend.indexOf('\nasync function smvGetPublishedContent', start);
+  assert.ok(start >= 0 && end > start, 'The anonymous published-content transport must exist.');
+  const transport = frontend.slice(start, end);
+  assert.ok(transport.includes("smvApiBackend('/public/content')+'/public/content'"));
+  assert.ok(transport.includes("method:'GET'"));
+  assert.ok(transport.includes("headers:{Accept:'application/json'}"));
+  assert.ok(transport.includes("credentials:'omit'"));
+  assert.ok(transport.includes('for(let attempt=0;attempt<3;attempt++)'), 'Retries must remain bounded.');
+  assert.ok(transport.includes('setTimeout(()=>controller.abort(),8000)'), 'Each request must have a timeout.');
+  assert.doesNotMatch(transport, /renderApi\\(|Authorization|getIdToken|currentUser/,
+    'Anonymous public content must not depend on Firebase Auth.');
+  assert.ok(frontend.includes("const SMV_PUBLIC_CONTENT_CACHE_KEY='smv-public-content-last-good-v1';"));
+  assert.ok(frontend.includes('smvSaveLastGoodPublicContent(items)'));
+  assert.ok(frontend.includes('const cached=smvReadLastGoodPublicContent();'));
+  assert.ok(frontend.includes('window.localStorage.setItem(SMV_PUBLIC_CONTENT_CACHE_KEY,value)'));
+  assert.ok(frontend.includes("renderApi('/admin/content',{method:'GET'})"),
+    'Admin content must keep its authenticated API transport.');
+  assert.ok(frontend.includes('async function smvUploadBlogText'));
+  assert.ok(frontend.includes('async function smvUploadFile'));
+  assert.doesNotMatch(frontend, /localStorage\\.clear\\(|sessionStorage\\.clear\\(|WebView\\.clearCache\\(/);
 });
 
 test('Live fallback polling deduplicates same-session in-flight message and signal reads', () => {
