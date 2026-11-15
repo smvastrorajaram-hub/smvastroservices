@@ -797,7 +797,9 @@ test('Published Blog and Media reads are anonymous, bounded and use a last-good 
     'Admin content must keep its authenticated API transport.');
   assert.ok(frontend.includes('async function smvUploadBlogText'));
   assert.ok(frontend.includes('async function smvUploadFile'));
-  assert.equal(frontend.includes('localStorage.clear('), false);\n  assert.equal(frontend.includes('sessionStorage.clear('), false);\n  assert.equal(frontend.includes('WebView.clearCache('), false);
+  assert.equal(frontend.includes('localStorage.clear('), false);
+  assert.equal(frontend.includes('sessionStorage.clear('), false);
+  assert.equal(frontend.includes('WebView.clearCache('), false);
 });
 
 test('Live fallback polling deduplicates same-session in-flight message and signal reads', () => {
