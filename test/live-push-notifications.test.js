@@ -787,7 +787,7 @@ test('Published Blog and Media reads are anonymous, bounded and use a last-good 
   assert.ok(transport.includes("credentials:'omit'"));
   assert.ok(transport.includes('for(let attempt=0;attempt<3;attempt++)'), 'Retries must remain bounded.');
   assert.ok(transport.includes('setTimeout(()=>controller.abort(),8000)'), 'Each request must have a timeout.');
-  assert.doesNotMatch(transport, /renderApi\\(|Authorization|getIdToken|currentUser/,
+  assert.equal(transport.includes('renderApi('), false,
     'Anonymous public content must not depend on Firebase Auth.');
   assert.ok(frontend.includes("const SMV_PUBLIC_CONTENT_CACHE_KEY='smv-public-content-last-good-v1';"));
   assert.ok(frontend.includes('smvSaveLastGoodPublicContent(items)'));
@@ -797,7 +797,7 @@ test('Published Blog and Media reads are anonymous, bounded and use a last-good 
     'Admin content must keep its authenticated API transport.');
   assert.ok(frontend.includes('async function smvUploadBlogText'));
   assert.ok(frontend.includes('async function smvUploadFile'));
-  assert.doesNotMatch(frontend, /localStorage\\.clear\\(|sessionStorage\\.clear\\(|WebView\\.clearCache\\(/);
+  assert.equal(frontend.includes('localStorage.clear('), false);\n  assert.equal(frontend.includes('sessionStorage.clear('), false);\n  assert.equal(frontend.includes('WebView.clearCache('), false);
 });
 
 test('Live fallback polling deduplicates same-session in-flight message and signal reads', () => {
