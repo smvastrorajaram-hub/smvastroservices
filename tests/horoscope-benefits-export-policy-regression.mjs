@@ -93,19 +93,19 @@ test("All three apps use one synchronized cache release; Horoscope runtime revis
   const versions = workers.map(source => /const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(source));
   assert.ok(versions.every(Boolean));
   assert.deepEqual(versions.map(match => match[1]), [
-    "20261115-public-content-anonymous-read-pages-v1",
-    "20261115-public-content-anonymous-read-pages-v1",
-    "20261115-public-content-anonymous-read-pages-v1"
+    "20261115-navigation-auto-restore-live-booking-pages-v1",
+    "20261115-navigation-auto-restore-live-booking-pages-v1",
+    "20261115-navigation-auto-restore-live-booking-pages-v1"
   ]);
   assert.deepEqual(versions.map(match => match[2]), [
-    "20261115-public-content-anonymous-read-in-v1",
-    "20261115-public-content-anonymous-read-in-v1",
-    "20261115-public-content-anonymous-read-in-v1"
+    "20261115-navigation-auto-restore-live-booking-in-v1",
+    "20261115-navigation-auto-restore-live-booking-in-v1",
+    "20261115-navigation-auto-restore-live-booking-in-v1"
   ]);
   const runtime = /const RUNTIME_REVISION\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(workers[1]);
   assert.ok(runtime);
-  assert.equal(runtime[1], "v282-pages-dev-public-content-20261115");
-  assert.equal(runtime[2], "v277-in-public-content-20261115");
+  assert.equal(runtime[1], "v283-pages-dev-navigation-20261115");
+  assert.equal(runtime[2], "v278-in-navigation-20261115");
 });
 
 test("No origin-wide browser data or Cache API clearing is introduced", () => {

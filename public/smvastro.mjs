@@ -291,8 +291,10 @@ function hideHomeSurface(){
   document.querySelectorAll('header a[href="#home"], header a[href="#contact"], header a[href="#services"], #contactNav').forEach(el=>hideElement(el));
 }
 function showHomeSurface(){
-  ["home","smvWalletOffersBanner","askNowSection","approved-astrologers","faq"].forEach(id=>show(id));
+  ["home","smvWalletOffersBanner","askNowSection","approved-astrologers","faq","smv-content-hub"].forEach(id=>show(id));
+  window.__smvContentVisible=true;
   smvLoadHomeWalletRechargeOffers().catch(()=>{});
+  window.__smvEnsurePublicContent?.().catch(err=>console.warn("Public content initial load deferred:",err));
   hide("register-flow");
   document.querySelectorAll('header a[href="#home"], header a[href="#contact"], header a[href="#services"], #contactNav').forEach(el=>showElement(el));
 }
@@ -378,7 +380,9 @@ function smvReturnHome(restoreRoleNav=true){
   // Restore the COMPLETE public Home surface.
   ["home","smvWalletOffersBanner","askNowSection","approved-astrologers","faq","smv-content-hub",
    "english-horoscope"].forEach(id=>{const el=$(id);if(el)el.classList.remove("hidden");});
+  window.__smvContentVisible=true;
   smvLoadHomeWalletRechargeOffers().catch(()=>{});
+  window.__smvEnsurePublicContent?.().catch(err=>console.warn("Public content Home restore deferred:",err));
   hide("horoscope-tools");
   hide("tamil-horoscope");
   const tr=$("tamilHoroscopeResult"), er=$("englishHoroscopeResult");
@@ -537,7 +541,15 @@ function hidePublicHoroscopeSections(){
   ['tamilHoroscopeResult','englishHoroscopeResult'].forEach(id=>{const el=$(id);if(el){el.classList.add('hidden');el.innerHTML='';}});
 }
 if($("authBtn") && $("authBtn").dataset.smvAuthBound!=="1"){ $("authBtn").dataset.smvAuthBound="1"; $("authBtn").addEventListener("click",async()=>{try{hidePublicHoroscopeSections();if(currentUser){await logoutToHome();}else{openAuth("login");}}catch(e){console.error("SMV login action failed",e);}}); }
-$("registerNav")?.addEventListener("click",()=>openCustomerRegistration());
+$("registerNav")?.addEventListener("click",()=>{
+  const customerFlow=$("register-flow"),astrologerFlow=$("astro-register-form");
+  const registrationVisible=!!(
+    (customerFlow&&!customerFlow.classList.contains("hidden"))||
+    (astrologerFlow&&!astrologerFlow.classList.contains("hidden"))
+  );
+  if(registrationVisible){smvReturnHome(true);return;}
+  openCustomerRegistration();
+});
 document.querySelectorAll('header a[href="#home"]').forEach(el=>{
   el.addEventListener("click",e=>{e.preventDefault();smvReturnHome(true);});
 });
@@ -569,8 +581,15 @@ function setHeaderRoleLabel(role){
 // temporarily hides them. It does not change the website-wide language.
 $("contentNav")?.addEventListener("click",(e)=>{
   e.preventDefault();e.stopPropagation();
-  const hub=$("smv-content-hub");if(!hub)return;
+  const hub=$("smv-content-hub"),button=$("contentNav");if(!hub)return;
+  const currentlyVisible=!hub.classList.contains("hidden");
+  if(currentlyVisible){
+    hub.classList.add("hidden");window.__smvContentVisible=false;
+    button?.setAttribute("aria-expanded","false");
+    return;
+  }
   hub.classList.remove("hidden");window.__smvContentVisible=true;
+  button?.setAttribute("aria-expanded","true");
   window.__smvEnsurePublicContent?.().catch(err=>console.warn("Public content lazy load failed:",err));
   requestAnimationFrame(()=>hub.scrollIntoView({behavior:"smooth",block:"start"}));
 });
@@ -1002,14 +1021,10 @@ function smvRequestNativeGoogleIdToken(){
     catch(error){finish(reject,new Error(error?.message||'Unable to open native Google Sign-In.'));}
   });
 }
-// The first Firebase auth callback after a fresh page/app start is session
-// restoration, not an explicit Login action. Keep the authenticated session,
-// but start on Home. Explicit Email/Google login continues to own Dashboard routing.
+// A persisted Firebase session restores the user's role-owned Dashboard on a
+// fresh website/PWA launch. The Home lock is reserved for an explicit logout transition.
 let smvInitialAuthStateHandled=false;
-// A persisted Firebase session starts at Home until the user explicitly opens a Dashboard.
-let smvColdStartHomeLock=true;if(smvColdStartHomeLock && /^(#dashboard|#admin)$/i.test(location.hash||'')){
-  try{history.replaceState({smvView:'home'},'',location.pathname+location.search);}catch(_e){}
-}
+let smvColdStartHomeLock=false;
 function smvUnlockDashboardNavigation(){ smvColdStartHomeLock=false; }
 async function finishGoogleRoleLogin(googleUser){
   if(!googleUser) throw new Error("Google Sign-In did not return a Firebase user. Please try again.");
@@ -4490,12 +4505,9 @@ if(auth){ onAuthStateChanged(auth,async user=>{
      // signInWithPopup also fires this listener. Let the explicit Google role
      // resolver own navigation until the registered SMV role is verified.
      if(smvGoogleLoginInProgress || smvEmailLoginInProgress){ armIdleTimer(); return; }
-     // Fresh website/PWA launch with a persisted Firebase user is NOT a new
-     // login. Preserve authentication, but never reopen the last Customer,
-     // Astrologer or Admin dashboard automatically. The user starts at Home
-     // and can open Dashboard explicitly. This branch is intentionally after
-     // the explicit-login guard so first-time Login still opens its dashboard.
-     if(isInitialAuthState){
+     // A persisted Firebase session restores its role-owned Dashboard by
+     // default. Only a deliberate logout transition may keep the cold-start Home lock.
+     if(isInitialAuthState && smvColdStartHomeLock){
        hide('dashboard'); hide('admin');
        smvInternalView='home';
        try{history.replaceState({smvView:'home'},'',location.pathname+location.search);}catch(_e){}
@@ -4504,10 +4516,7 @@ if(auth){ onAuthStateChanged(auth,async user=>{
        armIdleTimer();
        return;
      }
-     // Firebase can emit another auth callback after the initial restore. Keep a
-     // freshly opened website on Home until the user explicitly requests a
-     // dashboard. This prevents a late token/profile callback from restoring the
-     // previous dashboard after a tab/app reopen.
+     // Ignore stale auth callbacks during an explicit logout transition only.
      if(smvColdStartHomeLock){
        hide('dashboard'); hide('admin');
        smvInternalView='home';
@@ -4517,7 +4526,8 @@ if(auth){ onAuthStateChanged(auth,async user=>{
        armIdleTimer();
        return;
      }
-     if(window.__SMV_PUBLIC_ROUTE){smvShowRoleNav();armIdleTimer();return;}
+     if(window.__SMV_PUBLIC_ROUTE && !isInitialAuthState){smvShowRoleNav();armIdleTimer();return;}
+     if(isInitialAuthState)window.__SMV_PUBLIC_ROUTE=null;
      const listenerEpoch=smvNavigationEpoch;
      const headerRole=await resolveSmvRole(user);
      const adminUser=headerRole==='admin';
@@ -4558,7 +4568,6 @@ if(auth){ onAuthStateChanged(auth,async user=>{
      hide('dashLink');hide('adminLink');hide('dashboard');hide('admin');
      setHeaderRoleLabel('');
      smvSyncHeaderAuthNav(null);
-     show('smv-content-hub'); window.__smvContentVisible=false;
      showHomeSurface();
      smvInternalView="home";
    }
@@ -5198,8 +5207,52 @@ function smvLiveChatBoxIsVisible(){
  const style=typeof window.getComputedStyle==='function'?window.getComputedStyle(chat):null;
  return (!style||(style.display!=='none'&&style.visibility!=='hidden'))&&chat.getClientRects().length>0&&chatRect.width>0&&chatRect.height>0&&messagesRect.width>0&&messagesRect.height>0;
 }
+let smvLiveAutoDashboardPromise=null;
+async function smvLiveEnsureAstrologerDashboard(){
+ const user=auth?.currentUser||currentUser;
+ if(!user||!currentUser||user.uid!==currentUser.uid||String(window.__smvCurrentRole||'').toLowerCase()!=='astrologer')return false;
+ const dashboard=$('dashboard');
+ if(dashboard&&!dashboard.classList.contains('hidden'))return true;
+ if(smvLiveAutoDashboardPromise)return smvLiveAutoDashboardPromise;
+ smvLiveAutoDashboardPromise=(async()=>{
+  ++smvNavigationEpoch;
+  pendingAfterLogin=null;
+  window.__SMV_PUBLIC_ROUTE=null;
+  hidePrimarySections('dashboard');
+  show('dashboard');show('dashboardContent');show('dashLink');hide('adminLink');
+  if($('dashboardTitle'))$('dashboardTitle').textContent='ASTROLOGER DASHBOARD';
+  setHeaderRoleLabel('astrologer');
+  smvInternalView='dashboard';
+  smvShowRoleNav();
+  try{history.replaceState({smvView:'dashboard'},'','#dashboard');}catch(_e){}
+  await loadDashboard('astrologer');
+  return !!$('dashboard')&&!$('dashboard').classList.contains('hidden');
+ })().catch(error=>{
+  console.warn('Astrologer Dashboard auto-restore failed:',error?.message||error);
+  return false;
+ }).finally(()=>{smvLiveAutoDashboardPromise=null;});
+ return smvLiveAutoDashboardPromise;
+}
+function smvLiveFocusDashboardSection(id){
+ const target=$(id);if(!target)return false;
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  const dashboard=$('dashboard');
+  if(!dashboard||dashboard.classList.contains('hidden'))return;
+  target.scrollIntoView?.({behavior:'smooth',block:'center'});
+ }));
+ return true;
+}
 function smvLiveOpenSession(session,wallet,incoming){
  if(!session)return;const id=String(session.id||session.sessionId||'');if(!id)return;
+ const activeRole=String(window.__smvCurrentRole||'').toLowerCase();
+ const dashboard=$('dashboard');
+ if(activeRole==='astrologer'&&(!dashboard||dashboard.classList.contains('hidden'))){
+  if(incoming&&String(session.state||session.status||'')==='ringing')smvLiveStartRingtone(id);
+  smvLiveEnsureAstrologerDashboard().then(opened=>{
+   if(opened)smvLiveOpenSession(session,wallet,incoming);
+  }).catch(error=>console.warn('Astrologer Live Dashboard restore deferred:',error?.message||error));
+  return;
+ }
  smvLiveUpdateDashboardSessionStatus({...session,id});
  const samePanelSession=smvLivePanelSessionId===id;
  if(!samePanelSession){smvLiveCloseMedia();smvLiveClearTransport();}
@@ -5653,7 +5706,12 @@ function smvLiveHandleEvent(ev){
    if(Number.isFinite(ms))smvLiveSignalSinceMs=Math.max(smvLiveSignalSinceMs,ms);
   }).catch(smvLiveShowError);
  }
- else if(ev.type==='live.booking.pending'||ev.type==='live.booking.updated'){if(ev.type==='live.booking.pending')smvLiveStartRingtone();smvLivePollSessions().catch(()=>{});}
+ else if(ev.type==='live.booking.pending'||ev.type==='live.booking.updated'){
+  if(ev.type==='live.booking.pending')smvLiveStartRingtone();
+  const restore=String(window.__smvCurrentRole||'').toLowerCase()==='astrologer'
+   ?smvLiveEnsureAstrologerDashboard():Promise.resolve(true);
+  restore.then(()=>smvLivePollSessions()).catch(error=>console.warn('Booking Dashboard auto-restore deferred:',error?.message||error));
+ }
 }
 function smvLiveStopEventStream(){
  if(smvLiveEventRetry){clearTimeout(smvLiveEventRetry);smvLiveEventRetry=null;}
@@ -5892,6 +5950,11 @@ async function smvLivePollSessions(statusOnly=false){
    const b=await renderApi('/live/bookings/pending',{method:'GET',timeoutMs:12000});smvLiveRenderBookings(b.bookings||[]);
    const pendingSession=(list.sessions||[]).find(x=>x.astrologerUid===currentUser.uid&&x.state==='ringing'&&!smvLiveRingSuppressedIds.has(String(x.id||'')));
    const pendingBooking=(b.bookings||[]).find(x=>!smvLiveRingSuppressedIds.has(String(x.id||x.bookingId||'')));
+   if(pendingBooking){
+    void smvLiveEnsureAstrologerDashboard().then(opened=>{
+     if(opened)smvLiveFocusDashboardSection('smvLiveBookings');
+    });
+   }
    const ringSourceId=String(pendingSession?.id||pendingBooking?.id||pendingBooking?.bookingId||'');
    if(ringSourceId)smvLiveStartRingtone(ringSourceId);else if(smvLiveRingActive)smvLiveStopRingtone();
    if($('smvScheduledBookings')&&Date.now()-smvLiveScheduledPollAt>12000){smvLiveScheduledPollAt=Date.now();try{await smvLiveLoadScheduledAppointments();}catch(scheduleError){console.warn('Scheduled booking refresh skipped:',scheduleError?.message||scheduleError);}}
@@ -6083,7 +6146,15 @@ function smvLiveRenderScheduledBookings(appointments){
 async function smvLiveLoadScheduledAppointments(){
  const host=$('smvScheduledBookings');if(!host||String(window.__smvCurrentRole||'').toLowerCase()!=='astrologer')return;
  const [r,live]=await Promise.all([renderApi('/astrologer/appointments',{method:'GET',timeoutMs:12000}),renderApi('/live/sessions',{method:'GET',timeoutMs:12000})]);
- smvLiveRenderScheduledBookings(smvLiveNormalizeScheduledAppointments(r.appointments||[],live.sessions||[]));
+ const appointments=smvLiveNormalizeScheduledAppointments(r.appointments||[],live.sessions||[]);
+ smvLiveRenderScheduledBookings(appointments);
+ const hasOpenScheduledBooking=appointments.some(item=>['requested','accepted','waiting_for_online','in_progress'].includes(String(item.bookingStatus||item.status||'').toLowerCase()));
+ const hasPendingLiveBooking=!!document.querySelector('#smvLiveBookings [data-live-booking-accept]');
+ if(hasOpenScheduledBooking&&!hasPendingLiveBooking){
+  void smvLiveEnsureAstrologerDashboard().then(opened=>{
+   if(opened)smvLiveFocusDashboardSection('smvScheduledBookings');
+  });
+ }
 }
 function smvLiveRenderBookings(bookings){
  const host=$('smvLiveBookings');if(!host)return;
@@ -6373,6 +6444,7 @@ async function smvLiveHandlePushOpen(payload = {}){
   if(role!=='astrologer')return;
   window.__smvCurrentRole='astrologer';
  }
+ await smvLiveEnsureAstrologerDashboard();
  if(!$('smvLiveDashboardCard')&&typeof loadDashboard==='function')await loadDashboard('astrologer',true);
  if(!$('smvLiveDashboardCard'))throw new Error('Open the Astrologer Dashboard after logging in to respond to this request.');
  await smvLiveLoadDashboard('astrologer');

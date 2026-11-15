@@ -44,7 +44,11 @@
   }
   if(id==='contact')target.classList.remove('hidden');
   if(id==='home')window.dispatchEvent(new Event('smv:payment-ui-reset'));
-  if(['publicBlogs','publicMedia','smv-content-hub'].includes(id)){window.__smvContentVisible=true;window.__smvEnsurePublicContent?.().catch(err=>console.warn('Public content lazy load failed:',err));}
+  if(['publicBlogs','publicMedia','smv-content-hub'].includes(id)){
+   window.__smvContentVisible=true;
+   document.getElementById('contentNav')?.setAttribute('aria-expanded','true');
+   window.__smvEnsurePublicContent?.().catch(err=>console.warn('Public content lazy load failed:',err));
+  }
   if(id==='english-horoscope')window.__smvPublicHoroscopeVisible=true;
   for(let el=target;el&&el!==document.body;el=el.parentElement){
    el.classList.remove('hidden','smv-v173-home-collapsed','smv-v173-sub-collapsed','smv-v174-faq-collapsed');
@@ -68,6 +72,19 @@
   if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
   const control=event.target.closest?.('a[href^="#"],[data-smv-route]');if(!control)return;
   const id=control.dataset.smvRoute||(control.getAttribute('href')||'').slice(1);if(!targets.has(id))return;
+  if(control.id==='contentNav'&&id==='publicBlogs'){
+   const hub=document.getElementById('smv-content-hub');
+   if(hub&&!hub.classList.contains('hidden')){
+    hub.classList.add('hidden');
+    window.__smvContentVisible=false;
+    control.setAttribute('aria-expanded','false');
+    selection('home');
+    const url=new URL(location.href);url.searchParams.delete('view');url.hash='home';
+    if(location.hash!=='#home')history.pushState({smvView:'public',section:'home'},'',url);
+    event.preventDefault();event.stopImmediatePropagation();return;
+   }
+   control.setAttribute('aria-expanded','true');
+  }
   if(id==='consult'){
    event.preventDefault();event.stopImmediatePropagation();navigate(id);return;
   }
