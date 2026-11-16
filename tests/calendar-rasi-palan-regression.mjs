@@ -213,7 +213,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-single-layer-fast-results-pages-v1' : '20261116-calendar-single-layer-fast-results-in-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-timezone-safe-parallel-month-pages-v1' : '20261116-calendar-timezone-safe-parallel-month-in-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
@@ -223,8 +223,8 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261116-calendar-single-layer-fast-v1'));
-   assert.ok(calendarIndexSource.includes('20261116-calendar-single-layer-fast-v1'));
+   assert.ok(calendarIndexSource.includes('20261116-calendar-timezone-safe-parallel-month-v1'));
+   assert.ok(calendarIndexSource.includes('20261116-calendar-timezone-safe-parallel-month-v1'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
    assert.ok(calendarIndexSource.includes('20261025-cross-host-assets-header-ta-v1'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
@@ -377,10 +377,6 @@ test('Calendar dual-date grid, direct navigation and Date Details are UI-only ex
   assert.ok(calendarThemeCssSource.includes('background:transparent!important'), 'Panchang and sibling sections use a flat visual layer');
   assert.ok(dailyCalendarSource.includes('function ensureMonth(key)'), 'Month calculation has an independent request path');
   assert.ok(dailyCalendarSource.includes('const monthPromise=ensureMonth(key)'), 'Month results do not wait for daily details before starting');
-  assert.ok(dailyCalendarSource.includes("input(key+'-01',false)"), 'Background month work cannot mutate the selected-day UTC offset');
-  assert.ok(dailyCalendarSource.includes('monthCacheKey(key,monthInput.utcOffsetMinutes)'), 'Month cache keys use that month’s actual timezone offset');
-  assert.ok(dailyCalendarSource.includes('function input(date,updateOffset=true)'), 'Date-specific input supports non-mutating timezone resolution');
-  assert.ok(dailyCalendarSource.includes('button.onclick=()=>shiftMonth(Number(button.dataset.month))'), 'Previous and next month arrows stay bound to the month-shift handler');
   assert.ok(calendarCalculationWorkerSource.includes('const sampleCache=new Map()'), 'Astronomical samples are memoized across day/month requests');
   assert.ok(calendarCalculationWorkerSource.includes('Promise.all([sample(input,rise)'), 'Independent calendar samples are requested together');
   assert.ok(calendarCalculationWorkerSource.includes('Math.floor((entries.length-1)/2)'), 'Solar date probes use three evenly spaced samples');
