@@ -833,6 +833,7 @@ export async function calculateAscendantAt({date,time,lat,lon,utcOffsetMinutes=3
   }
   const jd=upgUtcJd(date,time,offset);
   if(!jd)throw new Error('சூரிய ராசி நுழைவு தேதி / நேரம் சரியாக இல்லை.');
+  if(typeof swe.set_sid_mode==='function' && C.SE_SIDM_LAHIRI!==undefined) swe.set_sid_mode(C.SE_SIDM_LAHIRI,0,0);
   const longitudeSidereal=upgAscAtJd(jd,latitude,longitude,houseSystem);
   if(!Number.isFinite(longitudeSidereal))throw new Error('Swiss Ephemeris லக்ன நிலையை வழங்கவில்லை.');
   const z=zodiac(longitudeSidereal);
