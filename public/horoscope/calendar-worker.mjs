@@ -1,4 +1,3 @@
-import {getSwe} from './offline/wasm-provider.mjs';
 import {calculateSwiss,calculateSunMoon,calculateAscendantAt} from './offline/swiss_vedic.browser.mjs';
 import {panchang,transit,calendarTamil,solarNoaa,tamilSolarDate,nextSolarIngress} from './offline/transit_panchang.browser.mjs';
 const norm=n=>(n%360+360)%360;
@@ -32,7 +31,11 @@ function localPartsFromTs(ts,offset){
 }
 const ingressLagnaCache=new Map();
 async function calculateIngressLagnaBalance(input){
- await getSwe();
+ // Initialize the Swiss calculation adapter as well as the underlying WASM
+ // provider before the synchronous solar-ingress sampling path is called.
+ // getSwe() alone initializes the provider but leaves swiss_vedic's local
+ // adapter unset in a fresh dedicated worker.
+ await calculateSunMoon({...input,time:String(input.time||'12:00')});
  const ingress=nextSolarIngress(input);
  if(!ingress||!Number.isFinite(ingress.timestamp))return null;
  const cacheKey=[Number(input.lat).toFixed(5),Number(input.lon).toFixed(5),Number(input.utcOffsetMinutes),ingress.timestamp].join('|');
