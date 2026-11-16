@@ -161,14 +161,34 @@ try {
       });
     };
     const start = await ascendantAt(ingressTimestamp);
-    const before = await ascendantAt(ingressTimestamp + Math.max(0, Number(calculated.balanceSeconds) - 3) * 1000);
-    const after = await ascendantAt(ingressTimestamp + (Number(calculated.balanceSeconds) + 3) * 1000);
+    let low = ingressTimestamp;
+    let high = null;
+    for (let minute = 1; minute <= 360; minute++) {
+      const candidateTime = ingressTimestamp + minute * 60000;
+      const candidate = await ascendantAt(candidateTime);
+      if (candidate.signIndex !== start.signIndex) {
+        low = candidateTime - 60000;
+        high = candidateTime;
+        break;
+      }
+    }
+    if (high === null) throw new Error('Independent Swiss ascendant scan did not reach the next Rasi boundary.');
+    for (let iteration = 0; iteration < 18; iteration++) {
+      const middle = (low + high) / 2;
+      const candidate = await ascendantAt(middle);
+      if (candidate.signIndex === start.signIndex) low = middle;
+      else high = middle;
+    }
+    const independentBoundarySeconds = (high - ingressTimestamp) / 1000;
+    const before = await ascendantAt(ingressTimestamp + Math.max(0, Number(calculated.balanceSeconds) - 90) * 1000);
+    const after = await ascendantAt(ingressTimestamp + (Number(calculated.balanceSeconds) + 90) * 1000);
     return {
       ...calculated,
       independentCheck: {
         startSignIndex: start.signIndex,
         beforeBoundarySignIndex: before.signIndex,
-        afterBoundarySignIndex: after.signIndex
+        afterBoundarySignIndex: after.signIndex,
+        independentBoundarySeconds
       }
     };
   }, {
@@ -184,6 +204,11 @@ try {
   assert.equal(ingressLagnaFixture.sunSignIndex, 7, 'The defining Sun ingress must be into Scorpio.');
   assert.match(ingressLagnaFixture.ingressTime, /^\d{2}:\d{2}:\d{2}$/, 'Ingress time must retain seconds.');
   assert.match(ingressLagnaFixture.sunrise, /^\d{2}:\d{2}$/, 'The selected town sunrise must be returned.');
+  assert.equal(ingressLagnaFixture.method, 'oblique-ascension', 'Calendar must use the shared Oblique Ascension Rasi Mana method.');
+  assert.equal(ingressLagnaFixture.rasiManaAvailable, true, 'Perambalur must return the complete 12-sign Rasi Mana table.');
+  assert.equal(ingressLagnaFixture.rasiMana.length, 12, 'All 12 Rasi Mana rows must be returned.');
+  assert.equal(ingressLagnaFixture.rasiMana.reduce((sum, row) => sum + row.totalVighati, 0), 3600,
+    'The full Rasi Mana table must total 60 nazhigai.');
   assert.ok(Number.isInteger(ingressLagnaFixture.balanceSeconds) &&
     ingressLagnaFixture.balanceSeconds >= 1800 && ingressLagnaFixture.balanceSeconds <= 18000,
     'Ingress Lagna balance must be a plausible positive numerical duration: ' + JSON.stringify(ingressLagnaFixture));
@@ -196,9 +221,12 @@ try {
     'The independently calculated ascendant at exact solar ingress must match the returned ingress Lagna.');
   assert.equal(ingressLagnaFixture.independentCheck.beforeBoundarySignIndex, ingressLagnaFixture.lagnaSignIndex,
     'The ascendant immediately before the reported balance must remain in the ingress Lagna.');
+  assert.ok(Math.abs(ingressLagnaFixture.balanceSeconds -
+    ingressLagnaFixture.independentCheck.independentBoundarySeconds) <= 60,
+    'Oblique Ascension balance must match an independent Swiss ascendant boundary within one minute.');
   assert.equal(ingressLagnaFixture.independentCheck.afterBoundarySignIndex,
     (ingressLagnaFixture.lagnaSignIndex + 1) % 12,
-    'The ascendant immediately after the reported balance must have entered the next Rasi.');
+    'The independently calculated ascendant after the reported balance must have entered the next Rasi.');
   console.log('CALENDAR_INGRESS_LAGNA_NUMERICAL_REGRESSION ' + JSON.stringify(ingressLagnaFixture));
 
 
