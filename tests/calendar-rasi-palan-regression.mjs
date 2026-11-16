@@ -223,8 +223,8 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261116-calendar-dual-date-ui-v3'));
-   assert.ok(calendarIndexSource.includes('20261116-calendar-dual-date-ui-v3'));
+   assert.ok(calendarIndexSource.includes('20261116-calendar-single-layer-fast-v1'));
+   assert.ok(calendarIndexSource.includes('20261116-calendar-single-layer-fast-v1'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
    assert.ok(calendarIndexSource.includes('20261025-cross-host-assets-header-ta-v1'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
@@ -422,7 +422,7 @@ test('Kari Naal and Thaniya Naal are separate fixed Tamil-month date flags', () 
 });
 
 test('Monthly Tamil solar labels safely handle more than one boundary inside a Gregorian month', () => {
-  assert.match(calendarCalculationWorkerSource, /const probeIndexes=\[\.\.\.new Set\(\[0,7,14,21,28,entries\.length-1\]/);
+  assert.match(calendarCalculationWorkerSource, /const probeIndexes=\[\.\.\.new Set\(\[0,Math\.floor\(\(entries\.length-1\)\/2\),entries\.length-1\]/);
   assert.match(calendarCalculationWorkerSource, /while\(lo<hi\)/);
   assert.match(calendarCalculationWorkerSource, /boundaries\.push\(\{index:lo,state\}\)/);
   assert.match(calendarCalculationWorkerSource, /day:state\.offset\+dateDistance\(entries\[i\]\.date,firstDate\)/);
