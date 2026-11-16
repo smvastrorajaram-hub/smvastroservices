@@ -247,8 +247,14 @@ try {
   }
   await checkMuhurthamDate('2026-11-11', /Valarpirai Subha Muhurtham day|வளர்பிறை சுபமுகூர்த்த நாள்/);
   await checkMuhurthamDate('2026-11-13', /Valarpirai Subha Muhurtham day|வளர்பிறை சுபமுகூர்த்த நாள்/);
-  await checkMuhurthamDate('2026-11-12', /No Subha Muhurtham day|சுபமுகூர்த்த நாள் இல்லை/);
-  await checkMuhurthamDate(calendarDate, /Subha Muhurtham day|சுபமுகூர்த்த நாள்/);
+  await checkMuhurthamDate('2026-11-12', /^No$|^இல்லை$/);
+  const negativeMuhurtham = await page.$eval('#calMuhurtaLagna', el => ({
+    verdict: el.querySelector('.cal-subha-verdict')?.textContent.trim() || '',
+    phase: el.querySelector('.cal-subha-verdict')?.nextElementSibling?.textContent.trim() || ''
+  }));
+  assert.ok(['No','இல்லை'].includes(negativeMuhurtham.verdict), 'A non-Muhurtham date must show only No / இல்லை.');
+  assert.equal(negativeMuhurtham.phase, '', 'A non-Muhurtham date must not append a paksha label.');
+  await checkMuhurthamDate(calendarDate, /Subha Muhurtham day|சுபமுகூர்த்த நாள்|^No$|^இல்லை$/);
   assert.equal(publicUi.separateAdminLink, false, 'Calendar should not link to a separate Admin page');
   assert.equal(publicUi.hasRasiPicker, true, 'Public Rasi Palan must include the selected-Rasi dropdown');
 
