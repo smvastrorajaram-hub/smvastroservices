@@ -182,8 +182,8 @@ try {
 
   assert.equal(ingressLagnaFixture.ingressDate, '2026-11-16', 'The selected 17 Nov 2026 sunrise must use the preceding Scorpio ingress.');
   assert.equal(ingressLagnaFixture.sunSignIndex, 7, 'The defining Sun ingress must be into Scorpio.');
-  assert.match(ingressLagnaFixture.ingressTime, /^\\d{2}:\\d{2}:\\d{2}$/, 'Ingress time must retain seconds.');
-  assert.match(ingressLagnaFixture.sunrise, /^\\d{2}:\\d{2}$/, 'The selected town sunrise must be returned.');
+  assert.match(ingressLagnaFixture.ingressTime, /^\d{2}:\d{2}:\d{2}$/, 'Ingress time must retain seconds.');
+  assert.match(ingressLagnaFixture.sunrise, /^\d{2}:\d{2}$/, 'The selected town sunrise must be returned.');
   assert.ok(Number.isInteger(ingressLagnaFixture.balanceSeconds) &&
     ingressLagnaFixture.balanceSeconds >= 1800 && ingressLagnaFixture.balanceSeconds <= 18000,
     'Ingress Lagna balance must be a plausible positive numerical duration: ' + JSON.stringify(ingressLagnaFixture));
