@@ -221,3 +221,87 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-name-yoga-result{display:inline-block;margin-top:4px;font-size:12px;line-height:1.45;font-weight:700}
 #smvDailyCalendar .cal-name-yoga-result.is-favourable{color:#247246}
 #smvDailyCalendar .cal-name-yoga-result.is-caution{color:#a12b27}
+
+/* 2026-11 Calendar visual corrections: balanced Date Details, selected-day border and equal year actions. */
+#smvDailyCalendar .cal-date-details-head{
+ display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+ width:100%;margin:0 auto 14px;padding:17px 14px 16px;border-radius:10px;
+ background:#76131f;color:#f7ead0;
+}
+#smvDailyCalendar .cal-date-details-head>div{
+ display:flex;flex:1 1 auto;flex-direction:column;align-items:center;justify-content:center;
+ width:100%;max-width:100%;text-align:center;
+}
+#smvDailyCalendar .cal-date-details-head h3.cal-date-details-title{
+ display:flex;align-items:center;justify-content:center;gap:12px;
+ width:100%;margin:0 auto 8px;padding:0;
+ color:#f6e6c3;-webkit-text-fill-color:#f6e6c3;
+ font-size:clamp(18px,4.5vw,22px);font-weight:850;line-height:1.35;text-align:center;
+}
+#smvDailyCalendar .cal-date-details-head h3.cal-date-details-title::before,
+#smvDailyCalendar .cal-date-details-head h3.cal-date-details-title::after{
+ content:"";display:block;flex:1 1 0;min-width:18px;max-width:110px;height:1px;
+ background:#d9b65f;
+}
+#smvDailyCalendar .cal-date-details-head p{
+ width:100%;max-width:40rem;margin:0 auto 7px;padding:0;
+ color:#f5ead8;-webkit-text-fill-color:#f5ead8;
+ font-size:13px;font-weight:600;line-height:1.55;text-align:center;
+}
+#smvDailyCalendar .cal-details-summary article{
+ align-items:center;justify-content:center;text-align:center;
+}
+#smvDailyCalendar .cal-details-summary article>small,
+#smvDailyCalendar .cal-details-summary article>strong,
+#smvDailyCalendar .cal-details-summary article>span{
+ width:100%;text-align:center;
+}
+#smvDailyCalendar #calDateDetails #calDaily h3,
+#smvDailyCalendar #calDateDetails #calReadings h3,
+#smvDailyCalendar #calDateDetails #calEvents h3{
+ justify-content:center;text-align:center;
+}
+#smvDailyCalendar #calDateDetails #calDaily h3::after,
+#smvDailyCalendar #calDateDetails #calReadings h3::after,
+#smvDailyCalendar #calDateDetails #calEvents h3::after{
+ display:none;content:none;
+}
+#smvDailyCalendar #calDateDetails #calDaily .panchang-data-table th,
+#smvDailyCalendar #calDateDetails #calDaily .panchang-data-table td{
+ text-align:center;vertical-align:middle;
+}
+#smvDailyCalendar #calDateDetails #calDaily .panchang-data-table tr.cal-name-yoga-row td.cal-name-yoga-label{
+ color:#174f47;font-weight:850;
+}
+#smvDailyCalendar #calDateDetails #calDaily .panchang-data-table .cal-name-yoga-result{
+ display:inline-block;font-weight:750;text-align:center;
+}
+#smvDailyCalendar #calDateDetails #calReadings .cal-summary article{
+ text-align:center;
+}
+#smvDailyCalendar #calDateDetails #calEvents .cal-tags{
+ justify-content:center;
+}
+#smvDailyCalendar .cal-jump-year-actions{
+ grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;
+}
+#smvDailyCalendar .cal-jump-year-actions button{
+ display:flex;align-items:center;justify-content:center;
+ width:100%;min-width:0;height:58px;min-height:58px;
+ padding:8px 10px;text-align:center;white-space:normal;line-height:1.25;
+ box-sizing:border-box;
+}
+#smvDailyCalendar .cal-month-grid button[aria-current="date"].cal-date-past:not(.cal-today){
+ border:2px solid #ad773c;outline:2px solid #f1dfc8;outline-offset:-5px;
+}
+#smvDailyCalendar .cal-month-grid button[aria-current="date"].cal-date-future:not(.cal-today){
+ border:2px solid #327d68;outline:2px solid #d5e9df;outline-offset:-5px;
+}
+@media(max-width:420px){
+ #smvDailyCalendar .cal-date-details-head{padding:14px 9px}
+ #smvDailyCalendar .cal-date-details-head h3.cal-date-details-title{gap:8px}
+ #smvDailyCalendar .cal-date-details-head h3.cal-date-details-title::before,
+ #smvDailyCalendar .cal-date-details-head h3.cal-date-details-title::after{max-width:54px}
+ #smvDailyCalendar #calDateDetails #calDaily .panchang-data-table th,
+ #smvDailyCalendar #calDateDetails #calDaily .panchang-data-table td{padding-left:6px;padding-right:6px}
+}
