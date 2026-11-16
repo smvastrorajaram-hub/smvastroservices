@@ -280,7 +280,7 @@ if(host){
     '<div class="cal-muhurta-lagna-item"><small>'+esc(lagnaHeading)+'</small><strong>'+esc(lagnaName)+'</strong><span>'+L('Calculated at','கணக்கீட்டு நேரம்')+' '+esc(calculationTime)+'</span></div>'+
     '<div class="cal-muhurta-lagna-item"><small>'+L('Rasi Mana Lagna Balance','ராசி மான லக்ன இருப்பு')+'</small><strong class="cal-rasi-balance-line">'+esc(balanceLine)+'</strong><span class="cal-rasi-balance-meta">'+esc(balanceMeta)+'</span></div>'+
    '</div>'+
-   '<p class="cal-muhurta-explanation">'+esc(sourceSummary)+' · <a href="'+esc(classification.source||'https://tamilcalendarapp.com/subha-muhurtham-dates/')+'" target="_blank" rel="noopener">'+L('Source list','ஆதாரப் பட்டியல்')+'</a></p>'
+   '<p class="cal-muhurta-explanation">'+esc(sourceSummary)+' · <a href="'+esc(classification.source||'https://tamilcalendarapp.com/subha-muhurtham-dates/')+'" target="_blank" rel="noopener">'+L('Source list','ஆதாரப் பட்டியல்')+'</a></p>';
  }
 
  function renderDateDetails(){
