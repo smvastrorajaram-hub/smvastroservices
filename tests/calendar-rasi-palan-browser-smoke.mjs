@@ -108,13 +108,18 @@ try {
   await page.waitForSelector('#calMuhurtaLagna .cal-muhurta-lagna-grid .cal-muhurta-lagna-item', { timeout: 30000 });
   const resultPlacement = await page.$eval('#calMuhurtaLagna', el => {
     const dateDetails = document.querySelector('#calDateDetails');
+    const summary = document.querySelector('#calDateDetailsExtra');
+    const shoolam = summary?.querySelector('.cal-shoolam-card');
+    const flags = shoolam?.querySelectorAll('.cal-day-flag') || [];
     return {
-      sameParent: Boolean(dateDetails && el.parentElement === dateDetails.parentElement),
-      immediatelyAfter: Boolean(dateDetails && dateDetails.nextElementSibling === el)
+      insideDateDetails: Boolean(dateDetails && el.parentElement === dateDetails),
+      immediatelyAfterShoolamAndDayFlags: Boolean(summary && summary.nextElementSibling === el && shoolam && flags.length === 2),
+      immediatelyBeforePanchang: el.nextElementSibling?.id === 'calDaily'
     };
   });
-  assert.equal(resultPlacement.sameParent, true, 'The three result sections must sit outside Date Details at the same level.');
-  assert.equal(resultPlacement.immediatelyAfter, true, 'The three result sections must appear immediately below Date Details.');
+  assert.equal(resultPlacement.insideDateDetails, true, 'The three result sections must remain inside Date Details.');
+  assert.equal(resultPlacement.immediatelyAfterShoolamAndDayFlags, true, 'The three result sections must immediately follow Travel Shoolam and Kari/Thaniya day flags.');
+  assert.equal(resultPlacement.immediatelyBeforePanchang, true, 'The three result sections must appear before the Panchang details.');
   const muhurtaLagnaUi = await page.$eval('#calMuhurtaLagna', el => ({
     labels: [...el.querySelectorAll('.cal-muhurta-lagna-item > small')].map(node => node.textContent.trim()),
     verdict: el.querySelector('.cal-subha-verdict')?.textContent.trim() || '',
