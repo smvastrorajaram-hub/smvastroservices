@@ -241,8 +241,7 @@ if(host){
   const dayStar=Number(daily.dayStar)||Number(p?.nakshatra?.number);
   const dayYoga=dayYogaFor(weekday,dayStar);
   const sunrise=clockMinutes(p?.sunrise),sunset=clockMinutes(p?.sunset);
-  const dateBefore=new Date(Date.parse(selected+'T12:00:00Z')-86400000).toISOString().slice(0,10);
-  const priorSunset=clockMinutes(solarNoaa(dateBefore,+cfg.lat,+cfg.lon,+cfg.offset,false));
+  const priorSunset=clockMinutes(daily.previousSunset);
   const nightLength=sunrise!=null&&priorSunset!=null?sunrise+1440-priorSunset:null;
   const nightMuhurta=nightLength>0?nightLength/15:null;
   const brahma=nightMuhurta? [clockText(sunrise+1440-nightMuhurta*2),clockText(sunrise+1440-nightMuhurta)]:null;
@@ -253,7 +252,7 @@ if(host){
    {directionEn:'East',directionTa:'கிழக்கு',remedyEn:'Curd',remedyTa:'தயிர்'},
    {directionEn:'North',directionTa:'வடக்கு',remedyEn:'Milk',remedyTa:'பால்'},
    {directionEn:'North',directionTa:'வடக்கு',remedyEn:'Milk',remedyTa:'பால்'},
-   {directionEn:'South',directionTa:'தெற்கு',remedyEn:'Sesame oil',remedyTa:'எள்ளெண்ணெய்'},
+   {directionEn:'South',directionTa:'தெற்கு',remedyEn:'Sesame oil',remedyTa:'தைலம்'},
    {directionEn:'West',directionTa:'மேற்கு',remedyEn:'Jaggery',remedyTa:'வெல்லம்'},
    {directionEn:'East',directionTa:'கிழக்கு',remedyEn:'Curd',remedyTa:'தயிர்'}
   ][weekday];
