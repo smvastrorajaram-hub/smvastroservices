@@ -141,8 +141,8 @@ try {
   assert.ok(!/unavailable|கணக்கிட முடியவில்லை/i.test(completedLagnaBalance), 'Solar-ingress Lagna balance must calculate successfully: ' + completedLagnaBalance);
   assert.ok(/Lagna balance|லக்ன இருப்பு/.test(completedLagnaBalance), 'The completed result must contain the Lagna balance value.');
 
-  // A non-current selected date has no live clock. Preview its Rasi Mana at
-  // local sunrise, not at the noon time used for the separate Panchang Lagna.
+  // A non-current selected date uses the current local clock as its preview time;
+  // Panchang's separate selected-time Lagna remains at its noon reference.
   const originalCalendarDate = await page.$eval('#calDate', el => el.value);
   const originalBalanceText = await page.$eval('#calMuhurtaLagna .cal-rasi-balance-line', el => el.textContent.trim());
   const selectedTestDate = '2027-02-10';
@@ -157,8 +157,16 @@ try {
       !/being calculated|கணக்கிடப்படுகிறது/i.test(line);
   }, { timeout: 90000 }, {date:selectedTestDate,oldBalance:originalBalanceText});
   const selectedDateBalance = await page.$eval('#calMuhurtaLagna .cal-rasi-balance-line', el => el.textContent.trim());
-  assert.doesNotMatch(selectedDateBalance, /0 na 0 vi|0 நா 0 வி/,
-    'A non-current selected date must show its full nonzero initial Rasi Mana at local sunrise.');
+  const selectedDateBalanceMeta = await page.$eval('#calMuhurtaLagna .cal-rasi-balance-meta', el => el.textContent.trim());
+  const selectedDateClockMatch = selectedDateBalanceMeta.match(/(?:Local time|உள்ளூர் நேரம்):\s*(\d{2}):(\d{2})/);
+  assert.ok(selectedDateClockMatch, 'The balance must disclose the current local clock time used for the selected-date preview: ' + selectedDateBalanceMeta);
+  const expectedLocalMinute = await page.$eval('#calOffset', el => {
+    const now = new Date(Date.now() + Number(el.value) * 3600000);
+    return now.getUTCHours() * 60 + now.getUTCMinutes();
+  });
+  const displayedLocalMinute = Number(selectedDateClockMatch[1]) * 60 + Number(selectedDateClockMatch[2]);
+  const minuteDifference = Math.min((displayedLocalMinute - expectedLocalMinute + 1440) % 1440, (expectedLocalMinute - displayedLocalMinute + 1440) % 1440);
+  assert.ok(minuteDifference <= 2, 'The selected-date balance must use the current local clock, not sunrise or noon.');
   const selectedDateLagnaTime = await page.$eval('#calMuhurtaLagna .cal-muhurta-lagna-item:nth-child(2) span', el => el.textContent.trim());
   assert.match(selectedDateLagnaTime, /12:00/,
     'The separate selected-time Lagna must remain at the unchanged noon Panchang time.');

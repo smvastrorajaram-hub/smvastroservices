@@ -176,14 +176,14 @@ test('all three PWA cache releases are synchronized for Pages.dev and .in conten
     return { pages: match[1], legacy: match[2] };
   });
   assert.deepEqual(releases.map(item => item.pages), [
-    '20261116-calendar-solar-sign-rasi-mana-selected-date-sunrise-pages-v4',
-    '20261116-calendar-solar-sign-rasi-mana-selected-date-sunrise-pages-v4',
-    '20261116-calendar-solar-sign-rasi-mana-selected-date-sunrise-pages-v4'
+    '20261116-calendar-selected-date-current-clock-pages-v5',
+    '20261116-calendar-selected-date-current-clock-pages-v5',
+    '20261116-calendar-selected-date-current-clock-pages-v5'
   ]);
   assert.deepEqual(releases.map(item => item.legacy), [
-    '20261116-calendar-solar-sign-rasi-mana-selected-date-sunrise-in-v4',
-    '20261116-calendar-solar-sign-rasi-mana-selected-date-sunrise-in-v4',
-    '20261116-calendar-solar-sign-rasi-mana-selected-date-sunrise-in-v4'
+    '20261116-calendar-selected-date-current-clock-in-v5',
+    '20261116-calendar-selected-date-current-clock-in-v5',
+    '20261116-calendar-selected-date-current-clock-in-v5'
   ]);
 });
 test('each installer creates its own 256x256 Windows icon', () => {
