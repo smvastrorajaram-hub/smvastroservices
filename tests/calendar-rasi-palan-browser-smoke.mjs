@@ -143,26 +143,46 @@ try {
 
   // Numerical regression: the ingress Sun sign, not the actual local Ascendant,
   // selects the complete place-based OA Rasi Mana for each sunrise interval.
-  const solarSignRasiManaFixtures = await page.evaluate(async fixtures => {
+  const solarSignRasiManaCheck = await page.evaluate(async fixtures => {
     const worker = new Worker('/horoscope/calendar-worker.mjs', { type: 'module' });
     try {
+      const request = (id, input) => new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error('Solar-sign Rasi Mana worker timed out.')), 120000);
+        const handler = event => {
+          if (event.data?.id !== id) return;
+          clearTimeout(timeout);
+          worker.removeEventListener('message', handler);
+          if (event.data.error) reject(new Error(event.data.error));
+          else resolve(event.data.result);
+        };
+        worker.addEventListener('message', handler);
+        worker.postMessage({ id, kind: 'solar-sign-rasi-mana', input });
+      });
       const results = [];
       for (let index = 0; index < fixtures.length; index++) {
-        const id = 'calendar-solar-sign-rasi-mana-' + index;
-        const result = await new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => reject(new Error('Solar-sign Rasi Mana worker timed out.')), 120000);
-          worker.addEventListener('message', event => {
-            if (event.data?.id !== id) return;
-            clearTimeout(timeout);
-            if (event.data.error) reject(new Error(event.data.error));
-            else resolve(event.data.result);
-          });
-          worker.postMessage({ id, kind: 'solar-sign-rasi-mana', input: fixtures[index] });
-        });
+        const result = await request('calendar-solar-sign-rasi-mana-' + index, fixtures[index]);
         if (!result) throw new Error('Solar-sign Rasi Mana worker returned no result for ' + fixtures[index].date);
         results.push(result);
       }
-      return results;
+      // Reuse the same Worker and its ingress cache while requesting multiple
+      // times on the same date. The remaining balance must still change.
+      const reference = results[2];
+      const addMinutes = (clock, amount) => {
+        const [hour, minute] = clock.split(':').map(Number);
+        const total = hour * 60 + minute + amount;
+        return String(Math.floor(total / 60) % 24).padStart(2, '0') + ':' +
+          String(total % 60).padStart(2, '0');
+      };
+      const atSunrise = await request('calendar-rasi-mana-at-sunrise', {
+        ...fixtures[2], time: reference.sunrise
+      });
+      const afterOneHour = await request('calendar-rasi-mana-after-one-hour', {
+        ...fixtures[2], time: addMinutes(reference.sunrise, 60)
+      });
+      const afterExhaustion = await request('calendar-rasi-mana-after-exhaustion', {
+        ...fixtures[2], time: addMinutes(reference.sunrise, 240)
+      });
+      return { results, countdown: { atSunrise, afterOneHour, afterExhaustion } };
     } finally {
       worker.terminate();
     }
@@ -171,6 +191,8 @@ try {
     { date:'2026-11-16', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 },
     { date:'2026-11-17', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 }
   ]);
+  const solarSignRasiManaFixtures = solarSignRasiManaCheck.results;
+  const { atSunrise, afterOneHour, afterExhaustion } = solarSignRasiManaCheck.countdown;
   const [libraOn15, libraAt16Sunrise, scorpioAt17Sunrise] = solarSignRasiManaFixtures;
   console.log('CALENDAR_SOLAR_SIGN_RASI_MANA_BOUNDARY_FIXTURE ' + JSON.stringify(
     solarSignRasiManaFixtures.map(result => ({
@@ -189,6 +211,22 @@ try {
   assert.equal(scorpioAt17Sunrise.sunSignIndex, 7, '17 Nov sunrise interval must use the Sun in Scorpio after its 16 Nov local-evening ingress.');
   assert.equal(scorpioAt17Sunrise.rasiManaSignIndex, 7, 'Scorpio must select Scorpio Rasi Mana from the next sunrise.');
   assert.equal(scorpioAt17Sunrise.ingressDate, '2026-11-16', 'The 17 Nov interval must use the Scorpio ingress that occurred on 16 Nov.');
+  assert.equal(atSunrise.sunSignIndex, 7);
+  assert.equal(atSunrise.elapsedSinceSunriseSeconds, 0);
+  assert.equal(atSunrise.balanceSeconds, atSunrise.fullBalanceSeconds,
+    'At local sunrise the complete selected solar-sign Rasi Mana must be available.');
+  assert.equal(afterOneHour.sunSignIndex, atSunrise.sunSignIndex);
+  assert.equal(afterOneHour.fullBalanceSeconds, atSunrise.fullBalanceSeconds,
+    'The full OA duration must not change as the requested time advances.');
+  assert.equal(afterOneHour.elapsedSinceSunriseSeconds, 3600);
+  assert.equal(afterOneHour.balanceSeconds, Math.max(0, atSunrise.fullBalanceSeconds - 3600),
+    'One hour after sunrise must subtract one real hour from the initial balance.');
+  assert.equal(afterOneHour.balanceNazhigai * 60 + afterOneHour.balanceVinazhigai,
+    atSunrise.fullBalanceVighati - 150);
+  assert.equal(afterExhaustion.balanceNazhigai, 0);
+  assert.equal(afterExhaustion.balanceVinazhigai, 0,
+    'The remaining balance must clamp to zero after its full OA interval is elapsed.');
+
   for (const result of solarSignRasiManaFixtures) {
     assert.match(result.ingressTime, /^\d{2}:\d{2}:\d{2}$/, 'Solar ingress time must retain seconds.');
     assert.match(result.sunrise, /^\d{2}:\d{2}$/, 'The selected town sunrise must be returned.');
@@ -200,10 +238,10 @@ try {
     const selected = result.rasiMana[result.sunSignIndex];
     assert.equal(selected.signIndex, result.sunSignIndex);
     assert.equal(result.selectedRasiMana.signIndex, result.sunSignIndex);
-    assert.equal(result.balanceNazhigai, selected.nazhigai);
-    assert.equal(result.balanceVinazhigai, selected.vinazhigai);
-    assert.equal(result.balanceSeconds, selected.totalVighati * 24,
-      'The displayed balance must be the full OA Rasi Mana of the selected solar sign.');
+    assert.equal(result.fullBalanceVighati, selected.totalVighati);
+    assert.equal(result.fullBalanceSeconds, selected.totalVighati * 24);
+    assert.ok(result.balanceSeconds >= 0 && result.balanceSeconds <= result.fullBalanceSeconds,
+      'Remaining Rasi Mana must stay between zero and the complete OA duration.');
   }
   console.log('CALENDAR_SOLAR_SIGN_RASI_MANA_REGRESSION ' + JSON.stringify(
     solarSignRasiManaFixtures.map(result => ({
