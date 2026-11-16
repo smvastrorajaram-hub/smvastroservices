@@ -78,8 +78,16 @@ async function calculateSolarSignRasiManaForIngress(input){
  const sunrise=solarNoaa(input.date,input.lat,input.lon,input.utcOffsetMinutes,true);
  if(!sunrise)return null;
  const sunriseSun=await calculateSunMoon({...input,time:sunrise});
+ const sunriseSunLongitude=Number(sunriseSun.sunLongitude);
+ const sunriseSunSignIndex=Math.floor(norm(sunriseSunLongitude)/30);
+ // A same-day daytime ingress is assigned to this Tamil civil date by the
+ // existing sunrise/sunset boundary rule. Treat that date as month-day 1 (0°)
+ // for this date-level Rasi Mana snapshot; an after-sunset ingress is already
+ // assigned to the following date by nextSolarIngress().
+ const rasiLongitudeAtSunrise=sunriseSunSignIndex===base.sunSignIndex
+  ?sunriseSunLongitude:base.sunSignIndex*30;
  const remaining=calculateRemainingSolarSignRasiMana({
-  solarLongitude:sunriseSun.sunLongitude,
+  solarLongitude:rasiLongitudeAtSunrise,
   solarSignIndex:base.sunSignIndex,
   latitude:input.lat,
   ayanamsaDegrees:base.ayanamsaDegrees,
@@ -91,8 +99,11 @@ async function calculateSolarSignRasiManaForIngress(input){
   ...base,
   sunrise,
   selectedTime:sunrise,
-  sunriseSunLongitude:remaining.solarLongitude,
+  sunriseSunLongitude,
+  sunriseSunSignIndex,
+  sunriseSunDegreeInSign:norm(sunriseSunLongitude)%30,
   sunDegreeInSign:remaining.degreeInSign,
+  sunriseMonthBoundaryApplied:sunriseSunSignIndex!==base.sunSignIndex,
   remainingSignDegrees:remaining.remainingSignDegrees,
   remainingOADegrees:remaining.remainingOADegrees,
   remainingExactVighati:remaining.remainingExactVighati,

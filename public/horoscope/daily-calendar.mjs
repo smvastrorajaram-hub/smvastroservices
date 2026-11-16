@@ -266,16 +266,19 @@ if(host){
      const degrees=Math.floor(total/3600),minutes=Math.floor(total%3600/60),seconds=total%60;
      return degrees+'°'+String(minutes).padStart(2,'0')+'′'+String(seconds).padStart(2,'0')+'″';
     };
-    const sunDegreeText=formatDegrees(balance.sunDegreeInSign);
+    const sunDegreeText=formatDegrees(balance.sunriseSunDegreeInSign);
     const remainingDegreeText=formatDegrees(balance.remainingSignDegrees);
     const ingressTime=String(balance.ingressTime||'—');
+    const sunrisePositionMeta=balance.sunriseMonthBoundaryApplied
+     ? L('Sun at sunrise: '+sunDegreeText+' · Tamil-month start used: 0°','உதயத்தில் சூரியன்: '+sunDegreeText+' · தமிழ் மாதத் தொடக்கக் கணக்கு: 0°')
+     : L('Sun at sunrise: '+sunDegreeText,'உதயத்தில் சூரியன்: '+sunDegreeText);
     balanceLine=L(
      solarSign+' Lagna balance: '+n+' na '+v+' vi',
      solarSign+' லக்ன இருப்பு: '+n+' நா '+v+' வி'
     );
     balanceMeta=L(
-     'Solar ingress: '+ingressTime+' · Sun at sunrise: '+sunDegreeText+' · Remaining sign arc: '+remainingDegreeText+' · Full 30° Rasi Mana: '+fullN+' na '+fullV+' vi · Sunrise: '+sunrise+' · Fixed until next sunrise',
-     'சூரிய பெயர்ச்சி: '+ingressTime+' · உதயத்தில் சூரியன்: '+sunDegreeText+' · மீத ராசிப் பாகை: '+remainingDegreeText+' · முழு 30° ராசி மானம்: '+fullN+' நா '+fullV+' வி · சூ.உதயம்: '+sunrise+' · அடுத்த சூ.உதயம் வரை மாறாது'
+     'Solar ingress: '+ingressTime+' · '+sunrisePositionMeta+' · Remaining sign arc: '+remainingDegreeText+' · Full 30° Rasi Mana: '+fullN+' na '+fullV+' vi · Sunrise: '+sunrise+' · Fixed until next sunrise',
+     'சூரிய பெயர்ச்சி: '+ingressTime+' · '+sunrisePositionMeta+' · மீத ராசிப் பாகை: '+remainingDegreeText+' · முழு 30° ராசி மானம்: '+fullN+' நா '+fullV+' வி · சூ.உதயம்: '+sunrise+' · அடுத்த சூ.உதயம் வரை மாறாது'
     );
    }else{
     balanceLine=L('Lagna balance is unavailable for this location/date.','இந்த ஊர் / தேதிக்கான லக்ன இருப்பைக் கணக்கிட முடியவில்லை.');

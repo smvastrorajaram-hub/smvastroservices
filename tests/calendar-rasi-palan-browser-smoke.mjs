@@ -265,6 +265,12 @@ try {
   assert.equal(scorpioAtKarthigaiEnd.fullBalanceVighati, scorpioAt17Sunrise.fullBalanceVighati,
     'Scorpio full Rasi Mana must remain constant through Karthigai.');
   assert.equal(sagittariusAtMargazhiStart.sunSignIndex, 8, 'The daytime Dhanu ingress starts Margazhi on 16 Dec 2026.');
+  assert.equal(sagittariusAtMargazhiStart.sunriseSunSignIndex, 7,
+    'On 16 Dec the physical sunrise Sun is still in Scorpio before the daytime Dhanu ingress.');
+  assert.equal(sagittariusAtMargazhiStart.sunriseMonthBoundaryApplied, true,
+    'The existing date-level Tamil rule treats the daytime ingress date as Margazhi 1 at 0° for its sunrise snapshot.');
+  assert.equal(sagittariusAtMargazhiStart.sunDegreeInSign, 0,
+    'Margazhi 1 starts its selected Rasi Mana progression at 0°.');
   assert.equal(sagittariusAtMargazhiEnd.sunSignIndex, 8, 'Sagittarius remains selected through the end of Margazhi.');
   assert.equal(sagittariusAtMargazhiEnd.fullBalanceVighati, sagittariusAtMargazhiStart.fullBalanceVighati,
     'Sagittarius full Rasi Mana must remain constant through Margazhi.');

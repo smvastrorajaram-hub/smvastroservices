@@ -185,7 +185,10 @@ test('Calendar Rasi Mana selects the complete OA duration for the local solar-in
   assert.match(calendarCalculationWorkerSource, /calculateRemainingSolarSignRasiMana/);
   assert.match(calendarCalculationWorkerSource, /time:sunrise/,
     'The worker must calculate the Sun position at the selected local sunrise.');
-  assert.match(calendarCalculationWorkerSource, /sunriseSunLongitude:remaining\.solarLongitude/);
+  assert.match(calendarCalculationWorkerSource, /sunriseSunLongitude,/);
+  assert.match(calendarCalculationWorkerSource, /sunriseMonthBoundaryApplied:sunriseSunSignIndex!==base\.sunSignIndex/);
+  assert.match(dailyCalendarSource, /Tamil-month start used: 0°/);
+  assert.match(dailyCalendarSource, /தமிழ் மாதத் தொடக்கக் கணக்கு: 0°/);
   assert.match(calendarCalculationWorkerSource, /balanceNazhigai:remaining\.balanceNazhigai/);
   assert.doesNotMatch(calendarCalculationWorkerSource, /calculateRemainingRasiMana|balanceAtSunrise/,
     'Solar-sign remaining balance must not be derived by subtracting wall-clock time.');
