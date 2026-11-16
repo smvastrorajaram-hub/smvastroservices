@@ -117,6 +117,15 @@ try {
   assert.ok(muhurtaLagnaUi.verdict.length > 0, 'The Panchanga day assessment must render a result.');
   assert.ok(muhurtaLagnaUi.balanceLine.length > 0, 'The solar-ingress Lagna-balance line must render a status.');
 
+  await page.waitForFunction(() => {
+    const line = document.querySelector('#calMuhurtaLagna .cal-rasi-balance-line')?.textContent || '';
+    return line && !/being calculated|கணக்கிடப்படுகிறது/i.test(line);
+  }, { timeout: 90000 });
+  const completedLagnaBalance = await page.$eval('#calMuhurtaLagna .cal-rasi-balance-line', el => el.textContent.trim());
+  assert.ok(!/unavailable|கணக்கிட முடியவில்லை/i.test(completedLagnaBalance), 'Solar-ingress Lagna balance must calculate successfully: ' + completedLagnaBalance);
+  assert.ok(/Lagna balance|லக்ன இருப்பு/.test(completedLagnaBalance), 'The completed result must contain the Lagna balance value.');
+
+
   assert.ok(!/Unable to calculate|கணக்கிட முடியவில்லை/.test(calendarCalculationStatus), 'Daily Calendar must calculate successfully after the Sun/Moon validation fix: ' + calendarCalculationStatus);
 
   const publicUi = await page.evaluate(() => ({
@@ -141,6 +150,27 @@ try {
   assert.equal(publicUi.givenNote, false, 'The specified calculation note must be removed');
   assert.equal(publicUi.tabs.length, 4, 'All four Rasi Palan sections should be present');
   assert.deepEqual(publicUi.navLabels, ['Services', 'Horoscope'], 'Calendar navigation should contain only Services and Horoscope');
+
+  // Confirm the published Tamil annual list controls the two requested 2026
+  // examples; no live Panchanga score may override the published date table.
+  async function checkMuhurthamDate(date, expectedPattern) {
+    await page.$eval('#calDate', (el, value) => {
+      el.value = value;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }, date);
+    await page.waitForFunction(value => {
+      const status = document.querySelector('#calStatus')?.textContent || '';
+      const verdict = document.querySelector('#calMuhurtaLagna .cal-subha-verdict')?.textContent || '';
+      return status.includes(value) && verdict.length > 0 &&
+        !/Calculating Panchang|பஞ்சாங்கம், ஹோரை/.test(status);
+    }, { timeout: 90000 }, date);
+    const verdict = await page.$eval('#calMuhurtaLagna .cal-subha-verdict', el => el.textContent.trim());
+    assert.match(verdict, expectedPattern, 'Published Muhurtham list classification for ' + date);
+  }
+  await checkMuhurthamDate('2026-11-11', /Valarpirai Subha Muhurtham day|வளர்பிறை சுபமுகூர்த்த நாள்/);
+  await checkMuhurthamDate('2026-11-13', /Valarpirai Subha Muhurtham day|வளர்பிறை சுபமுகூர்த்த நாள்/);
+  await checkMuhurthamDate('2026-11-12', /No Subha Muhurtham day|சுபமுகூர்த்த நாள் இல்லை/);
+  await checkMuhurthamDate(calendarDate, /Subha Muhurtham day|சுபமுகூர்த்த நாள்/);
   assert.equal(publicUi.separateAdminLink, false, 'Calendar should not link to a separate Admin page');
   assert.equal(publicUi.hasRasiPicker, true, 'Public Rasi Palan must include the selected-Rasi dropdown');
 
