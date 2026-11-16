@@ -596,9 +596,10 @@ test('Amirthadi timeline uses Panchang Nakshatra boundaries from local sunrise t
     const item=timeline.intervals[i];
     assert.ok(item.nakshatraNumber>=1&&item.nakshatraNumber<=27);
     assert.ok(item.endTimestamp>item.startTimestamp);
+    assert.ok(item.fullEndTimestamp>item.fullStartTimestamp);
     if(i) {
-      assert.equal(timeline.intervals[i-1].endTimestamp+60000,item.startTimestamp,
-        'The next Nakshatra starts on the minute following the previous Nakshatra end, matching Panchang time precision');
+      assert.equal(timeline.intervals[i-1].endTimestamp+1,item.startTimestamp,
+        'The next Nakshatra interval starts immediately after the preceding interval ends');
       assert.notEqual(timeline.intervals[i-1].nakshatraNumber,item.nakshatraNumber,
         'A new period must begin only when Nakshatra changes');
     }
