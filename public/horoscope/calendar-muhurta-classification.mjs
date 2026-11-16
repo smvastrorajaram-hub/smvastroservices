@@ -60,7 +60,7 @@ function weekdayOf(date) {
 function karanaName(number) {
   const n = numeric(number);
   if (n === null || n < 1 || n > 60) return null;
-  if (n === 1 || n === 60) return 'Kimstughna';
+  if (n === 1) return 'Kimstughna';
   if (n === 58) return 'Shakuni';
   if (n === 59) return 'Chatushpada';
   if (n === 60) return 'Naga';
