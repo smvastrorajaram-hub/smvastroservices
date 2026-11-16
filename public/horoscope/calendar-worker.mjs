@@ -28,8 +28,8 @@ function clock(n){n=(Math.round(n)%1440+1440)%1440;return String(Math.floor(n/60
 function localPartsFromTs(ts,offset){
  const d=new Date(Number(ts)+Number(offset??330)*60000);
  return {
-  date:\`\${d.getUTCFullYear()}-\${String(d.getUTCMonth()+1).padStart(2,'0')}-\${String(d.getUTCDate()).padStart(2,'0')}\`,
-  time:\`\${String(d.getUTCHours()).padStart(2,'0')}:\${String(d.getUTCMinutes()).padStart(2,'0')}:\${String(d.getUTCSeconds()).padStart(2,'0')}\`
+  date:String(d.getUTCFullYear())+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0'),
+  time:String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0')+':'+String(d.getUTCSeconds()).padStart(2,'0')
  };
 }
 const ingressLagnaCache=new Map();
