@@ -51,10 +51,10 @@ test('Website, Horoscope and Calendar receive one synchronized cache release wit
     read('public/horoscope/calendar/sw.js')
   ];
   for (const source of serviceWorkers) {
-    assert.match(source, /20261115-navigation-auto-restore-live-booking-pages-v1/);
+    assert.match(source, /20261116-tamil-solar-after-sunset-pages-v1/);
     assert.match(source, /20261115-navigation-auto-restore-live-booking-in-v1/);
     assert.doesNotMatch(source, /localStorage\.clear\(|sessionStorage\.clear\(|indexedDB\.deleteDatabase\(/);
   }
-  assert.match(serviceWorkers[1], /v283-pages-dev-navigation-20261115/);
+  assert.match(serviceWorkers[1], /v284-pages-dev-tamil-solar-20261116/);
   assert.match(serviceWorkers[1], /v278-in-navigation-20261115/);
 });
