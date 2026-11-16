@@ -50,7 +50,7 @@ function addDaysLocal(date,days){
 }
 function localTimeStringFromTsPrecise(ts,offset){
  const d=new Date(Math.round(Number(ts)/1000)*1000+Number(offset??330)*60000);
- return \`\${String(d.getUTCHours()).padStart(2,'0')}:\${String(d.getUTCMinutes()).padStart(2,'0')}:\${String(d.getUTCSeconds()).padStart(2,'0')}\`;
+ return String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0')+':'+String(d.getUTCSeconds()).padStart(2,'0');
 }
 function preciseSunLongitudeAtTs(input,ts,offset){
  const date=localDateStringFromTs(ts,offset),time=localTimeStringFromTsPrecise(ts,offset);
@@ -65,7 +65,7 @@ export function nextSolarIngress(input){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(lat)||!Number.isFinite(lon))return null;
  const rise=solarNoaa(date,lat,lon,offset,true);
  if(!rise)return null;
- const startTs=Date.parse(date+\`T\${rise}:00Z\`)-offset*60000;
+ const startTs=Date.parse(date+'T'+rise+':00Z')-offset*60000;
  const startSun=norm360(preciseSunLongitudeAtTs(input,startTs,offset));
  if(!Number.isFinite(startSun))return null;
  const currentSign=Math.floor(startSun/30),nextSign=(currentSign+1)%12;
