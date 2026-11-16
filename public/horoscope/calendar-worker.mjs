@@ -72,11 +72,11 @@ async function calculateSolarSignRasiManaForIngress(input){
   solarSignRasiManaCache.set(cacheKey,base);
   if(solarSignRasiManaCache.size>12)solarSignRasiManaCache.delete(solarSignRasiManaCache.keys().next().value);
  }
- // The full OA duration is cached by ingress, but sunrise and elapsed time
- // are selected-day values and must be recalculated for every requested time.
+ // The full OA duration is cached by ingress. Each selected local date is
+ // anchored at its own sunrise and held constant until the following sunrise.
  const sunrise=solarNoaa(input.date,input.lat,input.lon,input.utcOffsetMinutes,true);
  if(!sunrise)return null;
- const selectedTime=String(input.time||'12:00');
+ const selectedTime=sunrise;
  const remaining=calculateRemainingRasiMana({
   totalVighati:base.fullBalanceVighati,
   sunrise,

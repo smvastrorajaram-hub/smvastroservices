@@ -155,13 +155,16 @@ test('Calendar Rasi Mana selects the complete OA duration for the local solar-in
   assert.match(calendarCalculationWorkerSource, /calculateRemainingRasiMana/);
   assert.match(calendarCalculationWorkerSource, /fullBalanceVighati:rasi\.totalVighati/);
   assert.match(dailyCalendarSource, /calculateRemainingRasiMana/);
-  assert.match(dailyCalendarSource, /const balanceTime=localNowAt\(dayInput\.utcOffsetMinutes\)\.slice\(11,19\)/,
-    'Every selected date must subtract elapsed time from its local sunrise through the current local clock.');
-  assert.match(dailyCalendarSource, /workerCall\('solar-sign-rasi-mana',\{\.\.\.dayInput,time:balanceTime\}\)/);
-  assert.match(dailyCalendarSource, /balance\.selectedTime\|\|sunrise\|\|calculationTime/,
-    'The displayed balance must use the time actually sent to the Rasi Mana worker.');
-  assert.match(dailyCalendarSource, /Local time: '\+displayTime/,
-    'The balance metadata must identify the local clock time used for elapsed-time subtraction.');
+  assert.match(calendarCalculationWorkerSource, /const selectedTime=sunrise/,
+    'Each selected date must use its own local sunrise as the fixed Rasi Mana reference time.');
+  assert.doesNotMatch(dailyCalendarSource, /const balanceTime=localNowAt/,
+    'The current clock must not be used to count down the selected date\'s Rasi Mana.');
+  assert.match(dailyCalendarSource, /workerCall\('solar-sign-rasi-mana',dayInput\)/,
+    'The unchanged day input is sent; the Rasi Mana worker anchors its balance to sunrise.');
+  assert.match(dailyCalendarSource, /balance\.selectedTime\|\|sunrise/,
+    'The rendered balance must use the sunrise reference returned by the worker.');
+  assert.match(dailyCalendarSource, /Balance fixed until next sunrise/);
+  assert.match(dailyCalendarSource, /அடுத்த சூ\.உதயம் வரை இருப்பு மாறாது/);
 
   assert.match(dailyCalendarSource, /renderMuhurtaLagna\(\)\}/,
     'The current-day balance must refresh using the existing minute timer.');
@@ -347,7 +350,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-selected-date-current-clock-pages-v5' : '20261116-calendar-selected-date-current-clock-in-v5'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-sunrise-constant-rasi-mana-pages-v1' : '20261116-calendar-sunrise-constant-rasi-mana-in-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
@@ -357,8 +360,8 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261116-calendar-selected-date-current-clock-v5'));
-   assert.ok(calendarIndexSource.includes('20261116-calendar-selected-date-current-clock-v5'));
+   assert.ok(calendarIndexSource.includes('20261116-calendar-sunrise-constant-rasi-mana-v1'));
+   assert.ok(calendarIndexSource.includes('20261116-calendar-sunrise-constant-rasi-mana-v1'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
    assert.ok(calendarIndexSource.includes('20261025-cross-host-assets-header-ta-v1'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
