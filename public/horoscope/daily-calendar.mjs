@@ -242,15 +242,12 @@ if(host){
   let balanceLine=L('Solar-sign ingress lagna balance is being calculated…','சூரிய ராசி நுழைவு நேர லக்ன இருப்பு கணக்கிடப்படுகிறது…');
   if(daily.ingressLagnaBalanceLoaded){
    if(balance){
-    const sunSign=signs[Number(balance.sunSignIndex)]?.[ta()?1:0]||'—';
     const ingressLagna=signs[Number(balance.lagnaSignIndex)]?.[ta()?1:0]||'—';
     const n=Number(balance.balanceNazhigai),v=Number(balance.balanceVinazhigai);
-    const ingressDate=String(balance.ingressDate||'—');
-    const ingressTime=String(balance.ingressTime||'—');
     const sunrise=String(balance.sunrise||daily.en.p?.sunrise||'—');
     balanceLine=L(
-     'Sun sign ingress: '+sunSign+' · '+ingressDate+' '+ingressTime+' · '+ingressLagna+' Lagna balance: '+n+' na '+v+' vi · Sunrise: '+sunrise,
-     'சூரிய ராசி நுழைவு: '+sunSign+' · '+ingressDate+' '+ingressTime+' · '+ingressLagna+' லக்ன இருப்பு: '+n+' நா '+v+' வி · சூ.உதயம்: '+sunrise
+     ingressLagna+' Lagna balance: '+n+' na '+v+' vi · Sunrise: '+sunrise,
+     ingressLagna+' லக்ன இருப்பு: '+n+' நா '+v+' வி · சூ.உதயம்: '+sunrise
     );
    }else{
     balanceLine=L('Lagna balance is unavailable for this location/date.','இந்த ஊர் / தேதிக்கான லக்ன இருப்பைக் கணக்கிட முடியவில்லை.');
