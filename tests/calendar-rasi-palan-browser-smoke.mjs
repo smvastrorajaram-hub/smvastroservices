@@ -105,6 +105,18 @@ try {
     return status && (/Unable to calculate|கணக்கிட முடியவில்லை/.test(status) || (!/Calculating Panchang|பஞ்சாங்கம், ஹோரை/.test(status) && !/Loading monthly calendar|மாத நாட்காட்டி தயாராகிறது/.test(document.querySelector('#calMonth')?.textContent||'')));
   }, { timeout: 90000 });
   const calendarCalculationStatus = await page.$eval('#calStatus', el => el.textContent || '');
+  await page.waitForSelector('#calMuhurtaLagna .cal-muhurta-lagna-grid .cal-muhurta-lagna-item', { timeout: 30000 });
+  const muhurtaLagnaUi = await page.$eval('#calMuhurtaLagna', el => ({
+    labels: [...el.querySelectorAll('.cal-muhurta-lagna-item > small')].map(node => node.textContent.trim()),
+    verdict: el.querySelector('.cal-subha-verdict')?.textContent.trim() || '',
+    balanceLine: el.querySelector('.cal-rasi-balance-line')?.textContent.trim() || ''
+  }));
+  assert.equal(muhurtaLagnaUi.labels.length, 2, 'Date Details must show the Subha Muhurtham and Lagna items side by side.');
+  assert.ok(/Subha Muhurtham|சுபமுகூர்த்தம்/.test(muhurtaLagnaUi.labels[0]), 'Left item must identify the Subha Muhurtham day.');
+  assert.ok(/Lagna|லக்னம்/.test(muhurtaLagnaUi.labels[1]), 'Right item must identify the current or selected-time Lagna.');
+  assert.ok(muhurtaLagnaUi.verdict.length > 0, 'The Panchanga day assessment must render a result.');
+  assert.ok(muhurtaLagnaUi.balanceLine.length > 0, 'The solar-ingress Lagna-balance line must render a status.');
+
   assert.ok(!/Unable to calculate|கணக்கிட முடியவில்லை/.test(calendarCalculationStatus), 'Daily Calendar must calculate successfully after the Sun/Moon validation fix: ' + calendarCalculationStatus);
 
   const publicUi = await page.evaluate(() => ({
