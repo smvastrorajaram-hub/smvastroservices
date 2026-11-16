@@ -14,7 +14,7 @@ import {
 } from '../public/horoscope/calendar-rasi-palan-rules.mjs';
 import { currentWeek, periodReference } from '../public/horoscope/calendar/rasi-palan-periods.mjs';
 import { calculateSwiss, calculateSunMoonSync } from '../public/horoscope/offline/swiss_vedic.browser.mjs';
-import { panchang, solarNoaa } from '../public/horoscope/offline/transit_panchang.browser.mjs';
+import { panchang, solarNoaa, nakshatraIntervalsForLocalDay } from '../public/horoscope/offline/transit_panchang.browser.mjs';
 import { calculateRasiManaForLocation, calculateSolarSignRasiMana, calculateRemainingRasiMana, calculateRemainingSolarSignRasiMana, meanObliquityAtJulianDay } from '../public/horoscope/offline/rasi-mana.browser.mjs';
 import { TAMIL_DAY_YOGA_TABLE, getTamilDayYoga, getTamilCalendarDayFlags } from '../public/horoscope/tamil-day-classifications.mjs';
 
@@ -524,7 +524,7 @@ test('Calendar dual-date grid, direct navigation and Date Details are UI-only ex
   assert.match(dailyCalendarSource, /Brahma Muhurtham/);
   assert.match(dailyCalendarSource, /Abhijit Muhurtham/);
   assert.match(dailyCalendarSource, /Travel Shoolam/);
-  assert.match(dailyCalendarSource, /getTamilDayYoga\(weekday,dayStar\)/);
+  assert.match(dailyCalendarSource, /daily\.amirthadiYogaSegments/);
   assert.match(dailyCalendarSource, /getTamilCalendarDayFlags\(solar\)/);
   assert.match(dailyCalendarSource, /class="cal-day-yoga-card/);
   assert.match(dailyCalendarSource, /class="cal-day-flags"/);
@@ -558,18 +558,41 @@ test('Calendar dual-date grid, direct navigation and Date Details are UI-only ex
   assert.doesNotMatch(dailyCalendarSource, /solarNoaa\(/, 'Daily UI must reuse worker-provided sunrise and sunset rather than invent separate calculations');
 });
 
-test('Tamil Amirthathi yoga lookup covers all weekdays and 27 sunrise stars without a Siddha fallback', () => {
+test('TTD Tirukanitha Amirthadi matrix covers 7 weekdays x 27 Nakshatras and the expected reference cells', () => {
   assert.equal(TAMIL_DAY_YOGA_TABLE.length, 7);
   assert.ok(TAMIL_DAY_YOGA_TABLE.every(row => row.length === 27));
   assert.deepEqual(new Set(TAMIL_DAY_YOGA_TABLE.join('')), new Set(['S', 'A', 'M', 'P']));
-  assert.equal(getTamilDayYoga(1, 22).key, 'amirtha', 'Monday + Thiruvonam must resolve to Amirtha');
-  assert.equal(getTamilDayYoga(0, 10).key, 'marana');
-  assert.equal(getTamilDayYoga(0, 2).key, 'prabalarishta');
+  assert.equal(getTamilDayYoga(0, 1).key, 'siddha', 'Sunday + Ashwini is Siddha');
+  assert.equal(getTamilDayYoga(0, 2).key, 'prabalarishta', 'Sunday + Bharani is Prabalarishta');
+  assert.equal(getTamilDayYoga(0, 10).key, 'marana', 'Sunday + Magha is Marana');
+  assert.equal(getTamilDayYoga(1, 22).key, 'amirtha', 'Monday + Thiruvonam is Amirtha');
   assert.equal(getTamilDayYoga(1, 0).key, 'unknown');
   assert.equal(getTamilDayYoga(7, 22).key, 'unknown');
-  assert.match(dailyCalendarSource, /const dayStar=Number\(daily\.dayStar\)/);
-  assert.doesNotMatch(dailyCalendarSource, /Number\(daily\.dayStar\)\|\|Number\(p\?\.nakshatra\?\.number\)/);
-  assert.doesNotMatch(tamilDayClassificationsSource, /\|\|\s*YOGA_BY_CODE\.S/);
+  assert.match(tamilDayClassificationsSource, /prabalarishta[\\s\\S]*?bad: true/);
+  assert.match(dailyCalendarSource, /daily\\.amirthadiYogaSegments/);
+  assert.doesNotMatch(dailyCalendarSource, /getTamilDayYoga\\(weekday,dayStar\\)/);
+});
+
+test('Amirthadi timeline uses Panchang Nakshatra boundaries from local sunrise to following sunrise', () => {
+  const input = { lat: 11.2342, lon: 78.8808, utcOffsetMinutes: 330, date: '2026-11-16', time: '12:00' };
+  const timeline = nakshatraIntervalsForLocalDay(input);
+  assert.equal(timeline.available, true);
+  assert.ok(timeline.intervals.length >= 1 && timeline.intervals.length <= 3);
+  assert.ok(timeline.intervals[0].start.endsWith(' '+timeline.sunrise));
+  assert.ok(timeline.intervals.at(-1).end.endsWith(' '+timeline.nextSunrise));
+  for (let i=0;i<timeline.intervals.length;i++) {
+    const item=timeline.intervals[i];
+    assert.ok(item.nakshatraNumber>=1&&item.nakshatraNumber<=27);
+    assert.ok(item.endTimestamp>item.startTimestamp);
+    if(i) {
+      assert.equal(timeline.intervals[i-1].endTimestamp,item.startTimestamp,
+        'Adjacent Nakshatra intervals must meet exactly with no gap or overlap');
+      assert.notEqual(timeline.intervals[i-1].nakshatraNumber,item.nakshatraNumber,
+        'A new period must begin only when Nakshatra changes');
+    }
+  }
+  assert.ok(dailyCalendarSource.includes('cal-yoga-segment-time'));
+  assert.ok(calendarCalculationWorkerSource.includes('amirthadiYogaSegments'));
 });
 
 test('16 November 2026 sunrise weekday and Thiruvonam produce Amirtha, not the Siddha fallback', async () => {
