@@ -2,7 +2,7 @@ import {offsetMinutesAt} from './offline/places/timezone.mjs';
 import {signs,stars,planets,holidays2026,holidaySource,favorable} from './calendar-data.mjs';
 import {getTamilDayYoga,getTamilCalendarDayFlags} from './tamil-day-classifications.mjs';
 import {classifySubhaMuhurtham} from './calendar-muhurta-classification.mjs';
-import {calculateRemainingRasiMana} from './offline/rasi-mana.browser.mjs';
+
 const host=document.getElementById('smvDailyCalendar');
 if(host){
  const $=s=>host.querySelector(s),ta=()=>document.documentElement.lang==='ta',L=(en,tamil)=>ta()?tamil:en;
@@ -259,28 +259,23 @@ if(host){
    if(balance){
     const solarSign=signs[Number(balance.sunSignIndex)]?.[ta()?1:0]||'—';
     const sunrise=String(balance.sunrise||daily.en.p?.sunrise||'—');
-    const balanceClock=localNowAt(cfg.offset);
-    const isCurrentDate=selected===balanceClock.slice(0,10);
-    const displayTime=isCurrentDate?balanceClock.slice(11,19):String(balance.selectedTime||sunrise);
-    const remaining=calculateRemainingRasiMana({
-     totalVighati:Number(balance.fullBalanceVighati??balance.selectedRasiMana?.totalVighati),
-     sunrise,
-     selectedTime:displayTime
-    });
-    const n=remaining.balanceNazhigai,v=remaining.balanceVinazhigai;
-    const fullN=Number(balance.fullBalanceNazhigai??balance.selectedRasiMana?.nazhigai??0);
-    const fullV=Number(balance.fullBalanceVinazhigai??balance.selectedRasiMana?.vinazhigai??0);
+    const n=Number(balance.balanceNazhigai??0),v=Number(balance.balanceVinazhigai??0);
+    const fullN=Number(balance.fullBalanceNazhigai??0),fullV=Number(balance.fullBalanceVinazhigai??0);
+    const formatDegrees=value=>{
+     const total=Math.max(0,Math.round(Number(value||0)*3600));
+     const degrees=Math.floor(total/3600),minutes=Math.floor(total%3600/60),seconds=total%60;
+     return degrees+'°'+String(minutes).padStart(2,'0')+'′'+String(seconds).padStart(2,'0')+'″';
+    };
+    const sunDegreeText=formatDegrees(balance.sunDegreeInSign);
+    const remainingDegreeText=formatDegrees(balance.remainingSignDegrees);
     const ingressTime=String(balance.ingressTime||'—');
     balanceLine=L(
      solarSign+' Lagna balance: '+n+' na '+v+' vi',
      solarSign+' லக்ன இருப்பு: '+n+' நா '+v+' வி'
     );
-    const balanceClockMeta=isCurrentDate
-     ? L('Local time: '+displayTime+' · balance counts down from sunrise','உள்ளூர் நேரம்: '+displayTime+' · சூரிய உதயத்திலிருந்து இருப்பு குறையும்')
-     : L('Selected-date sunrise value','தேர்ந்தெடுத்த நாளின் சூரிய உதய இருப்பு');
     balanceMeta=L(
-     'Solar ingress: '+ingressTime+' · Full Rasi Mana: '+fullN+' na '+fullV+' vi · Sunrise: '+sunrise+' · '+balanceClockMeta,
-     'சூரிய பெயர்ச்சி: '+ingressTime+' · முழு ராசி மானம்: '+fullN+' நா '+fullV+' வி · சூ.உதயம்: '+sunrise+' · '+balanceClockMeta
+     'Solar ingress: '+ingressTime+' · Sun at sunrise: '+sunDegreeText+' · Remaining sign arc: '+remainingDegreeText+' · Full 30° Rasi Mana: '+fullN+' na '+fullV+' vi · Sunrise: '+sunrise+' · Fixed until next sunrise',
+     'சூரிய பெயர்ச்சி: '+ingressTime+' · உதயத்தில் சூரியன்: '+sunDegreeText+' · மீத ராசிப் பாகை: '+remainingDegreeText+' · முழு 30° ராசி மானம்: '+fullN+' நா '+fullV+' வி · சூ.உதயம்: '+sunrise+' · அடுத்த சூ.உதயம் வரை மாறாது'
     );
    }else{
     balanceLine=L('Lagna balance is unavailable for this location/date.','இந்த ஊர் / தேதிக்கான லக்ன இருப்பைக் கணக்கிட முடியவில்லை.');
@@ -437,9 +432,7 @@ if(host){
    daily=resultDay;
    $('#calStatus').textContent=`${cfg.place} · ${requestedDate} · ${daily.en.t.requested.time} · UTC ${+dayInput.utcOffsetMinutes/60}`;
    renderDaily();
-   const balanceClock=localNowAt(dayInput.utcOffsetMinutes);
-   const balanceInput=requestedDate===balanceClock.slice(0,10)?dayInput:{...dayInput,balanceAtSunrise:true};
-   void workerCall('solar-sign-rasi-mana',balanceInput).then(balance=>{
+   void workerCall('solar-sign-rasi-mana',dayInput).then(balance=>{
     if(request!==dayRequest||selected!==requestedDate)return;
     daily.solarSignRasiMana=balance;
     daily.solarSignRasiManaLoaded=true;

@@ -141,12 +141,14 @@ try {
   assert.ok(!/unavailable|கணக்கிட முடியவில்லை/i.test(completedLagnaBalance), 'Solar-ingress Lagna balance must calculate successfully: ' + completedLagnaBalance);
   assert.ok(/Lagna balance|லக்ன இருப்பு/.test(completedLagnaBalance), 'The completed result must contain the Lagna balance value.');
   const currentBalanceMeta = await page.$eval('#calMuhurtaLagna .cal-rasi-balance-meta', el => el.textContent.trim());
-  assert.match(currentBalanceMeta, /Local time: \d{2}:\d{2}|உள்ளூர் நேரம்: \d{2}:\d{2}/,
-    'The live date must show the current local clock used for the remaining balance.');
-  assert.match(currentBalanceMeta, /counts down from sunrise|சூரிய உதயத்திலிருந்து இருப்பு குறையும்/,
-    'The live remaining balance must count down after local sunrise.');
+  assert.match(currentBalanceMeta, /Sun at sunrise|உதயத்தில் சூரியன்/,
+    'The current date must show the Sun longitude used at local sunrise.');
+  assert.match(currentBalanceMeta, /Fixed until next sunrise|அடுத்த சூ\.உதயம் வரை மாறாது/,
+    'The selected sunrise remainder must remain constant until the following sunrise.');
+  assert.match(currentBalanceMeta, /Full 30° Rasi Mana|முழு 30° ராசி மானம்/,
+    'The full month-start value must be shown separately from the remaining balance.');
 
-  // A past/future selected date is a sunrise snapshot; the live date counts down.
+  // Every selected date is a sunrise snapshot; wall-clock minutes do not decrement it.
   const originalCalendarDate = await page.$eval('#calDate', el => el.value);
   const originalBalanceText = await page.$eval('#calMuhurtaLagna .cal-rasi-balance-line', el => el.textContent.trim());
   const selectedTestDate = '2027-02-10';
@@ -164,10 +166,12 @@ try {
   const selectedDateBalanceMeta = await page.$eval('#calMuhurtaLagna .cal-rasi-balance-meta', el => el.textContent.trim());
   const selectedDateSunriseMatch = selectedDateBalanceMeta.match(/(?:Sunrise|சூ\.உதயம்):\s*(\d{2}):(\d{2})/);
   assert.ok(selectedDateSunriseMatch, 'The selected-date balance must disclose that date\'s local sunrise: ' + selectedDateBalanceMeta);
-  assert.match(selectedDateBalanceMeta, /Selected-date sunrise value|தேர்ந்தெடுத்த நாளின் சூரிய உதய இருப்பு/,
-    'A non-current selected date must show its full balance at that date\'s sunrise.');
-  assert.match(selectedDateBalanceMeta, /Full Rasi Mana|முழு ராசி மானம்/,
-    'The full solar-month Rasi Mana must be disclosed separately from the remaining balance.');
+  assert.match(selectedDateBalanceMeta, /Sun at sunrise|உதயத்தில் சூரியன்/,
+    'The selected date must calculate its Sun longitude at the local sunrise.');
+  assert.match(selectedDateBalanceMeta, /Remaining sign arc|மீத ராசிப் பாகை/,
+    'The selected date must calculate only the untraversed portion of the sign.');
+  assert.match(selectedDateBalanceMeta, /Full 30° Rasi Mana|முழு 30° ராசி மானம்/,
+    'The full solar-month value must be kept separate from the remaining sunrise balance.');
   const selectedDateLagnaTime = await page.$eval('#calMuhurtaLagna .cal-muhurta-lagna-item:nth-child(2) span', el => el.textContent.trim());
   assert.match(selectedDateLagnaTime, /12:00/,
     'The separate selected-time Lagna must remain at the unchanged noon Panchang time.');
@@ -219,7 +223,7 @@ try {
       const atEvening = await request('calendar-rasi-mana-at-evening', {
         ...fixtures[2], time: '21:10'
       });
-      return { results, countdown: { atSunrise, atMidday, atEvening } };
+      return { results, sunriseRemainders: { atSunrise, atMidday, atEvening } };
     } finally {
       worker.terminate();
     }
@@ -230,14 +234,15 @@ try {
     { date:'2026-12-15', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 },
     { date:'2026-12-16', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 },
     { date:'2027-01-15', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 },
-    { date:'2027-01-16', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 }
+    { date:'2027-01-16', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 },
+    { date:'2026-11-25', time:'12:00', lat:11.2342, lon:78.8808, utcOffsetMinutes:330 }
   ]);
   const solarSignRasiManaFixtures = solarSignRasiManaCheck.results;
-  const { atSunrise, atMidday, atEvening } = solarSignRasiManaCheck.countdown;
+  const { atSunrise, atMidday, atEvening } = solarSignRasiManaCheck.sunriseRemainders;
   const [
     libraOn15, libraAt16Sunrise, scorpioAt17Sunrise,
     scorpioAtKarthigaiEnd, sagittariusAtMargazhiStart,
-    sagittariusAtMargazhiEnd, capricornAtThaiStart
+    sagittariusAtMargazhiEnd, capricornAtThaiStart, scorpioAt25November
   ] = solarSignRasiManaFixtures;
   console.log('CALENDAR_SOLAR_SIGN_RASI_MANA_BOUNDARY_FIXTURE ' + JSON.stringify(
     solarSignRasiManaFixtures.map(result => ({
@@ -265,27 +270,39 @@ try {
     'Sagittarius full Rasi Mana must remain constant through Margazhi.');
   assert.equal(capricornAtThaiStart.sunSignIndex, 9, 'The after-sunset Makara ingress starts the next sunrise interval on 16 Jan 2027.');
 
+  assert.equal(scorpioAt25November.sunSignIndex, 7,
+    '25 Nov 2026 sunrise belongs to Scorpio after the evening ingress on 16 Nov.');
+  assert.ok(scorpioAt25November.sunDegreeInSign > 8 && scorpioAt25November.sunDegreeInSign < 9,
+    'The 25 Nov Perambalur sunrise must use the progressed Scorpio longitude, not 0°.');
+  assert.ok(scorpioAt25November.remainingSignDegrees > 21 && scorpioAt25November.remainingSignDegrees < 22,
+    'The remainder must cover only the degrees from the 25 Nov sunrise Sun position to 30° Scorpio.');
+  assert.ok(scorpioAt25November.balanceVighati > 0 &&
+    scorpioAt25November.balanceVighati < scorpioAt25November.fullBalanceVighati,
+    '25 Nov balance must be less than the full Scorpio month-start value (5 na 29 vi).');
+  console.log('SMV_CALENDAR_2026_11_25_RASI_MANA ' + JSON.stringify({
+    sunrise:scorpioAt25November.sunrise,
+    sunLongitudeAtSunrise:scorpioAt25November.sunriseSunLongitude,
+    sunDegreeInSign:scorpioAt25November.sunDegreeInSign,
+    remainingSignDegrees:scorpioAt25November.remainingSignDegrees,
+    fullRasiManaVighati:scorpioAt25November.fullBalanceVighati,
+    remainingOADegrees:scorpioAt25November.remainingOADegrees,
+    remainingVighati:scorpioAt25November.balanceVighati,
+    balanceNazhigai:scorpioAt25November.balanceNazhigai,
+    balanceVinazhigai:scorpioAt25November.balanceVinazhigai
+  }));
+
   assert.equal(atSunrise.sunSignIndex, 7);
   for (const [label, result] of [['sunrise', atSunrise], ['midday', atMidday], ['evening', atEvening]]) {
-    assert.equal(result.sunSignIndex, atSunrise.sunSignIndex, label + ' must retain the selected date solar sign through the same sunrise interval.');
+    assert.equal(result.sunSignIndex, atSunrise.sunSignIndex, label + ' must retain the selected date solar sign.');
     assert.equal(result.sunrise, atSunrise.sunrise, label + ' must use the same selected-date sunrise.');
-    assert.equal(result.fullBalanceSeconds, atSunrise.fullBalanceSeconds, label + ' must retain the same complete OA duration.');
+    assert.equal(result.selectedTime, result.sunrise, label + ' must use the sunrise as the calculation instant.');
+    assert.equal(result.sunriseSunLongitude, atSunrise.sunriseSunLongitude,
+      label + ' must use the same sunrise longitude, regardless of the request clock.');
+    assert.equal(result.balanceVighati, atSunrise.balanceVighati,
+      label + ' must show the same sunrise remainder throughout the sunrise interval.');
+    assert.equal(result.fullBalanceVighati, atSunrise.fullBalanceVighati,
+      label + ' must preserve the same full solar-month OA value.');
   }
-  assert.equal(atSunrise.selectedTime, atSunrise.sunrise);
-  assert.equal(atSunrise.elapsedSinceSunriseSeconds, 0);
-  assert.equal(atSunrise.balanceSeconds, atSunrise.fullBalanceSeconds,
-    'The full Rasi Mana is available at local sunrise.');
-  const sunriseMinutes = Number(atSunrise.sunrise.slice(0,2))*60 + Number(atSunrise.sunrise.slice(3,5));
-  assert.equal(atMidday.selectedTime, '12:00');
-  assert.equal(atMidday.elapsedSinceSunriseSeconds, (12*60-sunriseMinutes)*60,
-    'At noon, elapsed local time must be subtracted from the sunrise balance.');
-  assert.equal(atEvening.selectedTime, '21:10');
-  assert.equal(atEvening.elapsedSinceSunriseSeconds, (21*60+10-sunriseMinutes)*60,
-    'The same sunrise interval keeps counting down after sunset even if the Sun has entered the next sign.');
-  assert.ok(atMidday.remainingVighati < atSunrise.remainingVighati);
-  assert.ok(atEvening.remainingVighati <= atMidday.remainingVighati);
-  assert.equal(atMidday.fullBalanceSeconds, atSunrise.fullBalanceSeconds,
-    'The full month-long Rasi Mana remains constant while its remaining balance decreases.');
 
   for (const result of solarSignRasiManaFixtures) {
     assert.match(result.ingressTime, /^\d{2}:\d{2}:\d{2}$/, 'Solar ingress time must retain seconds.');

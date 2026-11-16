@@ -160,6 +160,59 @@ export function calculateRasiManaForLocation({
   };
 }
 
+/**
+ * Remaining OA Rasi Mana at local sunrise from the Sun's progressed sidereal
+ * longitude within its current sign. This is not a clock-time countdown:
+ * the next sunrise gets a new solar longitude and therefore a new remainder.
+ */
+export function calculateRemainingSolarSignRasiMana({
+  solarLongitude,solarSignIndex,latitude,ayanamsaDegrees,obliquityDegrees,fullBalanceVighati
+}){
+  const siderealSun=normalizeDegrees(solarLongitude);
+  const signIndex=Number(solarSignIndex);
+  const lat=Number(latitude),ayanamsa=Number(ayanamsaDegrees),obliquity=Number(obliquityDegrees);
+  if(!Number.isFinite(siderealSun)||!Number.isInteger(signIndex)||signIndex<0||signIndex>11||
+     Math.floor(siderealSun/30)!==signIndex||!Number.isFinite(lat)||Math.abs(lat)>90||
+     !Number.isFinite(ayanamsa)||!Number.isFinite(obliquity)){
+    return {available:false,reason:'invalid-sunrise-solar-sign-input'};
+  }
+  const degreeInSign=siderealSun-signIndex*30;
+  const remainingSignDegrees=Math.max(0,30-degreeInSign);
+  const full=Number(fullBalanceVighati);
+  // At 0° the remaining arc is exactly the full sign. Reuse the allocated
+  // whole-vighati table value so month-start agrees with the published table.
+  let remainingOADegrees,remainingExactVighati,remainingVighati;
+  if(degreeInSign<=1e-9&&Number.isInteger(full)&&full>=0){
+    remainingVighati=full;
+    remainingExactVighati=full;
+    remainingOADegrees=full/10;
+  }else if(remainingSignDegrees<=1e-10){
+    remainingOADegrees=0;
+    remainingExactVighati=0;
+    remainingVighati=0;
+  }else{
+    const tropicalStart=normalizeDegrees(siderealSun+ayanamsa);
+    const oa=risingArcDegrees(tropicalStart,tropicalStart+remainingSignDegrees,lat,obliquity);
+    if(oa===null)return {available:false,reason:'remaining-rising-arc-unavailable'};
+    remainingOADegrees=oa;
+    remainingExactVighati=oa*VIGHATI_PER_OA_DEGREE;
+    remainingVighati=Math.max(0,Math.round(remainingExactVighati));
+  }
+  return {
+    available:true,method:'sunrise-sidereal-longitude-to-sign-end-oa',
+    signIndex,solarLongitude:Number(siderealSun.toFixed(8)),
+    degreeInSign:Number(degreeInSign.toFixed(8)),
+    remainingSignDegrees:Number(remainingSignDegrees.toFixed(8)),
+    remainingOADegrees:Number(remainingOADegrees.toFixed(10)),
+    remainingExactVighati:Number(remainingExactVighati.toFixed(8)),
+    remainingVighati,
+    remainingSeconds:remainingVighati*24,
+    balanceSeconds:remainingVighati*24,
+    balanceNazhigai:Math.floor(remainingVighati/60),
+    balanceVinazhigai:remainingVighati%60
+  };
+}
+
 export function calculateSolarSignRasiMana({
   solarSignIndex,latitude,ayanamsaDegrees,obliquityDegrees
 }){

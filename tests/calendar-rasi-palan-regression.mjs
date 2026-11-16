@@ -15,7 +15,7 @@ import {
 import { currentWeek, periodReference } from '../public/horoscope/calendar/rasi-palan-periods.mjs';
 import { calculateSwiss, calculateSunMoonSync } from '../public/horoscope/offline/swiss_vedic.browser.mjs';
 import { panchang, solarNoaa } from '../public/horoscope/offline/transit_panchang.browser.mjs';
-import { calculateRasiManaForLocation, calculateSolarSignRasiMana, calculateRemainingRasiMana, meanObliquityAtJulianDay } from '../public/horoscope/offline/rasi-mana.browser.mjs';
+import { calculateRasiManaForLocation, calculateSolarSignRasiMana, calculateRemainingRasiMana, calculateRemainingSolarSignRasiMana, meanObliquityAtJulianDay } from '../public/horoscope/offline/rasi-mana.browser.mjs';
 import { TAMIL_DAY_YOGA_TABLE, getTamilDayYoga, getTamilCalendarDayFlags } from '../public/horoscope/tamil-day-classifications.mjs';
 
 const dailyCalendarSource = await readFile(new URL('../public/horoscope/daily-calendar.mjs', import.meta.url), 'utf8');
@@ -139,6 +139,35 @@ test('Solar-sign Rasi Mana starts full at local sunrise and counts down by elaps
     'An exhausted balance must clamp to zero, never become negative.');
 });
 
+test('Sunrise Rasi Mana uses only the untraversed sidereal solar arc', () => {
+  const atMonthStart = calculateRemainingSolarSignRasiMana({
+    solarLongitude:210, solarSignIndex:7, latitude:11.2342,
+    ayanamsaDegrees:24.25, obliquityDegrees:23.436, fullBalanceVighati:329
+  });
+  assert.equal(atMonthStart.available,true);
+  assert.equal(atMonthStart.degreeInSign,0);
+  assert.equal(atMonthStart.remainingSignDegrees,30);
+  assert.equal(atMonthStart.remainingVighati,329,
+    'At 0° Scorpio, the remaining Rasi Mana equals the complete 30° value (5 na 29 vi).');
+
+  const atMonthEnd = calculateRemainingSolarSignRasiMana({
+    solarLongitude:239 + 59/60 + 59/3600, solarSignIndex:7, latitude:11.2342,
+    ayanamsaDegrees:24.25, obliquityDegrees:23.436, fullBalanceVighati:329
+  });
+  assert.equal(atMonthEnd.available,true);
+  assert.ok(atMonthEnd.remainingSignDegrees < 0.0003);
+  assert.equal(atMonthEnd.remainingVighati,0,
+    'At approximately 29°59\'59\", the remaining Rasi Mana rounds to zero, not 5 na 29 vi.');
+
+  const on25November = calculateRemainingSolarSignRasiMana({
+    solarLongitude:218.5, solarSignIndex:7, latitude:11.2342,
+    ayanamsaDegrees:24.25, obliquityDegrees:23.436, fullBalanceVighati:329
+  });
+  assert.equal(on25November.degreeInSign,8.5);
+  assert.ok(on25November.remainingVighati>0&&on25November.remainingVighati<329,
+    'A progressed Sun on 25 November must show only the residual OA arc, smaller than the complete Scorpio value.');
+});
+
 test('Calendar Rasi Mana selects the complete OA duration for the local solar-ingress sign, independently of current Lagna', () => {
   assert.match(calendarCalculationWorkerSource, /calculateSolarSignRasiMana/);
   assert.match(calendarCalculationWorkerSource, /calculateLahiriContextAt/);
@@ -155,18 +184,21 @@ test('Calendar Rasi Mana selects the complete OA duration for the local solar-in
   assert.match(calendarCalculationWorkerSource, /calculateRemainingRasiMana/);
   assert.match(calendarCalculationWorkerSource, /fullBalanceVighati:rasi\.totalVighati/);
   assert.match(dailyCalendarSource, /calculateRemainingRasiMana/);
-  assert.match(calendarCalculationWorkerSource, /const selectedTime=input\.balanceAtSunrise\?sunrise:String\(input\.time\|\|'12:00'\)/,
-    'The worker counts down from sunrise at the supplied local time, or returns the full sunrise value for a non-live selected date.');
-  assert.match(dailyCalendarSource, /const balanceClock=localNowAt\(cfg\.offset\)/,
-    'The live balance must use the current local clock on the current date.');
-  assert.match(dailyCalendarSource, /const isCurrentDate=selected===balanceClock\.slice\(0,10\)/);
-  assert.match(dailyCalendarSource, /balance counts down from sunrise/);
-  assert.match(dailyCalendarSource, /சூரிய உதயத்திலிருந்து இருப்பு குறையும்/);
-  assert.match(dailyCalendarSource, /Full Rasi Mana/);
-  assert.match(dailyCalendarSource, /முழு ராசி மானம்/);
-  assert.match(dailyCalendarSource, /balanceAtSunrise:true/,
-    'Historical/future date selection must show that selected date\'s full sunrise balance.');
-  assert.match(dailyCalendarSource, /balance\.selectedTime\|\|sunrise/);
+  assert.match(calendarCalculationWorkerSource, /calculateRemainingSolarSignRasiMana/);
+  assert.match(calendarCalculationWorkerSource, /time:sunrise/,
+    'The worker must calculate the Sun position at the selected local sunrise.');
+  assert.match(calendarCalculationWorkerSource, /sunriseSunLongitude:remaining\.solarLongitude/);
+  assert.match(calendarCalculationWorkerSource, /balanceNazhigai:remaining\.balanceNazhigai/);
+  assert.doesNotMatch(calendarCalculationWorkerSource, /calculateRemainingRasiMana|balanceAtSunrise/,
+    'Solar-sign remaining balance must not be derived by subtracting wall-clock time.');
+  assert.match(dailyCalendarSource, /Full 30° Rasi Mana/);
+  assert.match(dailyCalendarSource, /முழு 30° ராசி மானம்/);
+  assert.match(dailyCalendarSource, /Sun at sunrise/);
+  assert.match(dailyCalendarSource, /உதயத்தில் சூரியன்/);
+  assert.match(dailyCalendarSource, /Fixed until next sunrise/);
+  assert.match(dailyCalendarSource, /அடுத்த சூ\.உதயம் வரை மாறாது/);
+  assert.doesNotMatch(dailyCalendarSource, /calculateRemainingRasiMana|balance counts down from sunrise/,
+    'Daily UI must display the worker-computed sunrise remainder, without a live clock countdown.');
 
   assert.match(dailyCalendarSource, /renderMuhurtaLagna\(\)\}/,
     'The current-day balance must refresh using the existing minute timer.');
