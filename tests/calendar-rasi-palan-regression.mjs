@@ -561,6 +561,15 @@ test('Calendar dual-date grid, direct navigation and Date Details are UI-only ex
 test('TTD Tirukanitha Amirthadi matrix covers 7 weekdays x 27 Nakshatras and the expected reference cells', () => {
   assert.equal(TAMIL_DAY_YOGA_TABLE.length, 7);
   assert.ok(TAMIL_DAY_YOGA_TABLE.every(row => row.length === 27));
+  assert.deepEqual(TAMIL_DAY_YOGA_TABLE, [
+    'SPSSSSSSSMSAASSMMMASAAMSSAA',
+    'SSMAASASSMSSSPAMSSSSMASSMSS',
+    'SSSASMSSSSSASSSMSSASPSSMMAS',
+    'MSASSSSSSSAAMSSSSSMAASPSASM',
+    'ASMMMMAASASMSSASSPSSSSSMSSS',
+    'ASSMSSSMMMSSASSSSMAPSMSSSSA',
+    'SSAASSSSMASMMMASSSSSSSSAMSP'
+  ], 'The complete TTD 7×27 table must be transcribed in Sunday–Saturday row order');
   assert.deepEqual(new Set(TAMIL_DAY_YOGA_TABLE.join('')), new Set(['S', 'A', 'M', 'P']));
   assert.equal(getTamilDayYoga(0, 1).key, 'siddha', 'Sunday + Ashwini is Siddha');
   assert.equal(getTamilDayYoga(1, 2).key, 'siddha', 'Monday + Bharani is Siddha; weekday row and star column must not be transposed');
@@ -570,6 +579,8 @@ test('TTD Tirukanitha Amirthadi matrix covers 7 weekdays x 27 Nakshatras and the
   assert.equal(getTamilDayYoga(1, 0).key, 'unknown');
   assert.equal(getTamilDayYoga(7, 22).key, 'unknown');
   assert.match(tamilDayClassificationsSource, /prabalarishta[\s\S]*?bad: true/);
+  assert.match(calendarThemeCssSource, /cal-yoga-segment\.is-auspicious\{border-left-color:#27804c\}/);
+  assert.match(calendarThemeCssSource, /cal-yoga-segment\.is-inauspicious\{border-left-color:#b52f2b\}/);
   assert.match(dailyCalendarSource, /daily\.amirthadiYogaSegments/);
   assert.doesNotMatch(dailyCalendarSource, /getTamilDayYoga\\(weekday,dayStar\\)/);
 });
@@ -586,8 +597,8 @@ test('Amirthadi timeline uses Panchang Nakshatra boundaries from local sunrise t
     assert.ok(item.nakshatraNumber>=1&&item.nakshatraNumber<=27);
     assert.ok(item.endTimestamp>item.startTimestamp);
     if(i) {
-      assert.equal(timeline.intervals[i-1].endTimestamp,item.startTimestamp,
-        'Adjacent Nakshatra intervals must meet exactly with no gap or overlap');
+      assert.equal(timeline.intervals[i-1].endTimestamp+60000,item.startTimestamp,
+        'The next Nakshatra starts on the minute following the previous Nakshatra end, matching Panchang time precision');
       assert.notEqual(timeline.intervals[i-1].nakshatraNumber,item.nakshatraNumber,
         'A new period must begin only when Nakshatra changes');
     }
