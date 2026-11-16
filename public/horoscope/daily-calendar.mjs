@@ -163,37 +163,65 @@ if(host){
 
  const tamilCycleEn=['Prabhava','Vibhava','Shukla','Pramodoota','Prajotpatti','Angirasa','Srimukha','Bhava','Yuva','Dhata','Ishvara','Bahudhanya','Pramadi','Vikrama','Vrisha','Chitrabhanu','Svabhanu','Tarana','Parthiva','Vyaya','Sarvajit','Sarvadhari','Virodhi','Vikruti','Khara','Nandana','Vijaya','Jaya','Manmatha','Durmukhi','Hevilambi','Vilambi','Vikari','Sharvari','Plava','Shubhakrit','Shobhakrit','Krodhi','Vishvavasu','Parabhava','Plavanga','Kilaka','Saumya','Sadharana','Virodhikrit','Paridhavi','Pramadicha','Ananda','Rakshasa','Nala','Pingala','Kalayukti','Siddharthi','Raudri','Durmati','Dundubhi','Rudhirodgari','Raktakshi','Krodhana','Akshaya'];
  const tamilCycleTa=['பிரபவ','விபவ','சுக்ல','பிரமோதூத','பிரசோற்பத்தி','ஆங்கீரச','ஸ்ரீமுக','பவ','யுவ','தாது','ஈஸ்வர','வெகுதானிய','பிரமாதி','விக்கிரம','விஷு','சித்திரபானு','சுபானு','தாரண','பார்த்திப','விய','சர்வஜித்','சர்வதாரி','விரோதி','விகிருதி','கர','நந்தன','விஜய','ஜய','மன்மத','துன்முகி','ஹேவிளம்பி','விளம்பி','விகாரி','சார்வரி','பிலவ','சுபகிருது','சோபகிருது','குரோதி','விசுவாவசு','பராபவ','பிலவங்க','கீலக','சௌமிய','சாதாரண','விரோதிகிருது','பரிதாபி','பிரமாதீச','ஆனந்த','ராட்சச','நள','பிங்கள','காளயுக்தி','சித்தார்த்தி','ரௌத்திரி','துன்மதி','துந்துபி','ருத்ரோத்காரி','ரக்தாட்சி','குரோதன','அட்சய'];
+
  function getTamilYearName(solar,date,tamil){
   if(!solar)return '—';
-  const gregorianYear=Number(String(date).slice(0,4))-(Number(solar.index)>=9?1:0);
-  const index=((gregorianYear-1987)%60+60)%60;
+  const parts=String(date||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!parts)return '—';
+  const y=Number(parts[1]),m=Number(parts[2]),d=Number(parts[3]);
+  const traditionalStart=(m>4||(m===4&&d>=14))?y:y-1;
+  const index=((traditionalStart-1987)%60+60)%60;
   return (tamil?tamilCycleTa:tamilCycleEn)[index]||'—';
  }
- const tamilDayYogaTables=[
-  {siddha:[1,3,4,5,6,7,8,9,11,13,14,15,20,24,25],amrita:[12,19,21,22,26,27],marana:[10,16,17,18,23],prabalarishta:[2]},
-  {siddha:[1,2,5,6,8,9,11,12,13,17,18,19,23,24,26,27],amrita:[4,7,15,22],marana:[3,10,16,20,21,25],prabalarishta:[14]},
-  {siddha:[1,2,3,5,7,8,9,10,11,13,14,15,17,20,22,23,27],amrita:[4,12,19,26],marana:[6,16,18,24,25],prabalarishta:[21]},
-  {siddha:[2,4,5,6,7,8,9,10,14,15,16,17,18,22,24,26],amrita:[3,11,12,20,21,25],marana:[1,13,19,27],prabalarishta:[23]},
-  {siddha:[2,8,9,11,13,14,16,17,19,20,21,22,23,25,26,27],amrita:[1,7,10,15],marana:[3,4,5,6,12,24],prabalarishta:[18]},
-  {siddha:[2,3,5,6,7,11,12,14,15,16,17,21,23,24,25,26,27],amrita:[1,13,19],marana:[4,8,9,10,18,22],prabalarishta:[20]},
-  {siddha:[1,2,3,5,6,7,8,11,15,16,17,18,19,20,21,22,23,26],amrita:[4,10,24],marana:[9,12,13,14,25],prabalarishta:[27]}
+ const tamilDayYogaTable=[
+  'SPSSSSSSSMSASSSMMMASAAMSSAA',
+  'SSMASSASSMSSSPAMSSSMMASSMSS',
+  'SSSASMSSSSSASSSMSMASPSSMMAS',
+  'MSASSSSSSSAAMSSSSSMAASPSASM',
+  'ASMMMMASSASMSSASSPSSSSSMSSS',
+  'ASSMSSSMMMSSASSSSMAPSMSSSSS',
+  'SSSASSSSMASMMMSSSSSSSSSAMSP'
  ];
+ const tamilDayYogaNames={
+  S:{key:'siddha',en:'Siddha Yogam',ta:'சித்த யோகம்',resultEn:'Accomplishment · auspicious',resultTa:'காரிய சித்தி · சுபமானது',bad:false},
+  A:{key:'amirtha',en:'Amirtha Yogam',ta:'அமிர்த யோகம்',resultEn:'Nectar · highly auspicious',resultTa:'அமிர்தம் · மிகச் சிறந்த சுப யோகம்',bad:false},
+  M:{key:'marana',en:'Marana Yogam',ta:'மரண யோகம்',resultEn:'Traditionally avoided for new auspicious beginnings',resultTa:'சுப காரியத் தொடக்கத்திற்கு பாரம்பரியமாகத் தவிர்க்கப்படும்',bad:true},
+  P:{key:'prabalarishta',en:'Prabalarishta Yogam',ta:'பிரபலாரிஷ்ட யோகம்',resultEn:'Traditionally considered strongly inauspicious',resultTa:'பாரம்பரியமாக வலுவான அசுப யோகம்',bad:false}
+ };
  function dayYogaFor(weekday,star){
-  const table=tamilDayYogaTables[weekday],number=Number(star);
-  if(!table||!Number.isInteger(number)||number<1||number>27)return {key:'unknown',en:'Unavailable',ta:'கிடைக்கவில்லை',resultEn:'—',resultTa:'—',bad:false};
-  for(const key of ['amrita','siddha','marana','prabalarishta']){
-   if(table[key].includes(number)){
-    const labels={
-     siddha:{en:'Siddha Yogam',ta:'சித்த யோகம்',resultEn:'Accomplishment / success',resultTa:'காரிய சித்தி'},
-     amrita:{en:'Amrita Yogam',ta:'அமிர்த யோகம்',resultEn:'Highly auspicious',resultTa:'மிகவும் சுபமான யோகம்'},
-     marana:{en:'Marana Yogam',ta:'மரண யோகம்',resultEn:'Traditionally avoided for auspicious beginnings',resultTa:'சுப காரியத் தொடக்கத்திற்கு தவிர்க்கப்படும் யோகம்'},
-     prabalarishta:{en:'Prabalarishta Yogam',ta:'பிரபலாரிஷ்ட யோகம்',resultEn:'Traditionally considered strongly inauspicious',resultTa:'பாரம்பரியமாக வலுவான அசுப யோகம்'}
-    };
-    return {key:key,en:labels[key].en,ta:labels[key].ta,resultEn:labels[key].resultEn,resultTa:labels[key].resultTa,bad:key==='marana'||key==='prabalarishta'};
-   }
-  }
-  return {key:'unknown',en:'Unavailable',ta:'கிடைக்கவில்லை',resultEn:'—',resultTa:'—',bad:false};
+  const row=tamilDayYogaTable[weekday],number=Number(star);
+  if(!row||!Number.isInteger(number)||number<1||number>27)return {key:'unknown',en:'Unavailable',ta:'கிடைக்கவில்லை',resultEn:'—',resultTa:'—',bad:false};
+  return tamilDayYogaNames[row[number-1]]||tamilDayYogaNames.S;
  }
+ const nityaYogaResults={
+  Vishkumbha:['Support · opening portion calls for care','தாங்குதல் · தொடக்கப் பகுதியில் கவனம் தேவை',true],
+  Priti:['Affection and harmony','அன்பும் ஒற்றுமையும்',false],
+  Ayushman:['Vitality and longevity','ஆயுள் மற்றும் உறுதி',false],
+  Saubhagya:['Good fortune','நற்பேறு',false],
+  Shobhana:['Splendour and grace','அழகும் மங்களமும்',false],
+  Atiganda:['Major obstacles · traditionally avoided','பெரிய இடையூறு · பாரம்பரியமாகத் தவிர்க்கப்படும்',true],
+  Sukarma:['Good deeds and constructive work','நற்செயலும் பயனுள்ள முயற்சியும்',false],
+  Dhriti:['Steadiness and determination','உறுதியும் நிலைத்தன்மையும்',false],
+  Shula:['Sharpness and difficulty · use care','கூர்மை மற்றும் சிரமம் · கவனம் தேவை',true],
+  Ganda:['Obstruction and complications','தடை மற்றும் சிக்கல்கள்',true],
+  Vriddhi:['Growth and increase','வளர்ச்சியும் பெருக்கமும்',false],
+  Dhruva:['Stability and firmness','நிலைத்தன்மையும் உறுதியும்',false],
+  Vyaghata:['Impact and obstruction','தாக்கமும் இடையூறும்',true],
+  Harshana:['Joy and happiness','மகிழ்ச்சியும் சந்தோஷமும்',false],
+  Vajra:['Forceful or difficult conditions','கடினமான சூழ்நிலை',true],
+  Siddhi:['Achievement and success','சாதனையும் வெற்றியும்',false],
+  Vyatipata:['Disruption · traditionally avoided','சீர்குலைவு · பாரம்பரியமாகத் தவிர்க்கப்படும்',true],
+  Variyana:['Comfort and excellence','சௌகரியமும் மேன்மையும்',false],
+  Parigha:['Obstruction · first half traditionally avoided','தடை · முதல் பாதி பாரம்பரியமாகத் தவிர்க்கப்படும்',true],
+  Shiva:['Auspiciousness and calm','மங்களமும் அமைதியும்',false],
+  Siddha:['Accomplishment','காரிய நிறைவேற்றம்',false],
+  Sadhya:['Attainable goals and effort','அடையக்கூடிய இலக்கும் முயற்சியும்',false],
+  Shubha:['Auspiciousness and goodness','சுபமும் நன்மையும்',false],
+  Shukla:['Clarity and brightness','தெளிவும் ஒளியும்',false],
+  Brahma:['Sacred learning and knowledge','புனிதக் கல்வியும் அறிவும்',false],
+  Indra:['Leadership and strength','தலைமையும் வலிமையும்',false],
+  Vaidhriti:['Separation or obstruction · traditionally avoided','பிரிவும் தடையும் · பாரம்பரியமாகத் தவிர்க்கப்படும்',true]
+ };
  function clockMinutes(value){
   const match=String(value??'').match(/(\d{1,2}):(\d{2})/);
   return match?Number(match[1])*60+Number(match[2]):null;
@@ -236,8 +264,19 @@ if(host){
     '<article class="cal-muhurta-card"><small>'+L('Abhijit Muhurtham','அபிஜித் முகூர்த்தம்')+'</small><strong>'+(abhijit?abhijit.join(' – '):'—')+'</strong><span>'+L('The 8th of 15 equal daytime Muhurtas','பகல் நேரத்தின் 15 சம முகூர்த்தங்களில் 8-வது')+'</span></article>'+
     '<article class="cal-shoolam-card"><small>'+L('Travel Shoolam','பயண சூலம்')+'</small><strong>'+(ta()?shool.directionTa:shool.directionEn)+'</strong><span>'+L('Pariharam','பரிகாரம்')+': '+(ta()?shool.remedyTa:shool.remedyEn)+'</span></article>'+
    '</div>';
+
   const yogaRow=[...($('#calDaily')?.querySelectorAll('.panchang-data-table tbody tr')||[])].find(row=>/^(Yoga|யோகம்)$/i.test(row.cells?.[0]?.textContent?.trim()||''));
-  if(yogaRow) yogaRow.cells[0].textContent=L('Name Yoga','நாம யோகம்');
+  if(yogaRow){
+   yogaRow.cells[0].textContent=L('Name Yoga','நாம யோகம்');
+   const yogaName=String(p?.yoga?.name||'').trim();
+   const yogaResult=nityaYogaResults[yogaName];
+   if(yogaResult&&yogaRow.cells[1]){
+    const result=document.createElement('small');
+    result.className='cal-name-yoga-result '+(yogaResult[2]?'is-caution':'is-favourable');
+    result.textContent=ta()?yogaResult[1]:yogaResult[0];
+    yogaRow.cells[1].append(document.createElement('br'),result);
+   }
+  }
  }
 
  function renderDaily(){if(!daily)return;const lang=ta()?'ta':'en';const now=localNow(),minute=+now.slice(11,13)*60+ +now.slice(14,16),sunrise=Number(String(daily.en.p.sunrise||'').slice(0,2))*60+Number(String(daily.en.p.sunrise||'').slice(3,5)),beforeSunrise=selected===now.slice(0,10)&&Number.isFinite(sunrise)&&minute<sunrise,horaOverride=beforeSunrise?daily.en.previousNight:null;window.SMVRenderDaily(daily[lang].t,daily[lang].p,lang,'calDaily',horaOverride);
