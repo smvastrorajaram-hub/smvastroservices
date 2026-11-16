@@ -15,7 +15,7 @@ export function normalizeDegrees(value){
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
 
 function localClockSeconds(value,label){
-  const match=String(value??'').match(/^(\\d{1,2}):(\\d{2})(?::(\\d{2}))?$/);
+  const match=String(value??'').match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
   if(!match)throw new TypeError('A valid local '+label+' time (HH:mm[:ss]) is required.');
   const hour=Number(match[1]),minute=Number(match[2]),second=Number(match[3]||0);
   if(hour>23||minute>59||second>59)throw new TypeError('The local '+label+' time is out of range.');
