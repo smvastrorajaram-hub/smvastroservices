@@ -15,7 +15,7 @@ import {
 import { currentWeek, periodReference } from '../public/horoscope/calendar/rasi-palan-periods.mjs';
 import { calculateSwiss, calculateSunMoonSync } from '../public/horoscope/offline/swiss_vedic.browser.mjs';
 import { panchang, solarNoaa } from '../public/horoscope/offline/transit_panchang.browser.mjs';
-import { calculateRasiManaForLocation, calculateSolarSignRasiMana, calculateRemainingRasiMana, meanObliquityAtJulianDay } from '../public/horoscope/offline/rasi-mana.browser.mjs';
+import { calculateRasiManaForLocation, calculateSolarSignRasiMana, calculateRemainingRasiMana, calculateRemainingSolarSignRasiMana, meanObliquityAtJulianDay } from '../public/horoscope/offline/rasi-mana.browser.mjs';
 import { TAMIL_DAY_YOGA_TABLE, getTamilDayYoga, getTamilCalendarDayFlags } from '../public/horoscope/tamil-day-classifications.mjs';
 
 const dailyCalendarSource = await readFile(new URL('../public/horoscope/daily-calendar.mjs', import.meta.url), 'utf8');
@@ -139,6 +139,35 @@ test('Solar-sign Rasi Mana starts full at local sunrise and counts down by elaps
     'An exhausted balance must clamp to zero, never become negative.');
 });
 
+test('Sunrise Rasi Mana uses only the untraversed sidereal solar arc', () => {
+  const atMonthStart = calculateRemainingSolarSignRasiMana({
+    solarLongitude:210, solarSignIndex:7, latitude:11.2342,
+    ayanamsaDegrees:24.25, obliquityDegrees:23.436, fullBalanceVighati:329
+  });
+  assert.equal(atMonthStart.available,true);
+  assert.equal(atMonthStart.degreeInSign,0);
+  assert.equal(atMonthStart.remainingSignDegrees,30);
+  assert.equal(atMonthStart.remainingVighati,329,
+    'At 0° Scorpio, the remaining Rasi Mana equals the complete 30° value (5 na 29 vi).');
+
+  const atMonthEnd = calculateRemainingSolarSignRasiMana({
+    solarLongitude:239 + 59/60 + 59/3600, solarSignIndex:7, latitude:11.2342,
+    ayanamsaDegrees:24.25, obliquityDegrees:23.436, fullBalanceVighati:329
+  });
+  assert.equal(atMonthEnd.available,true);
+  assert.ok(atMonthEnd.remainingSignDegrees < 0.0003);
+  assert.equal(atMonthEnd.remainingVighati,0,
+    'At approximately 29°59\'59\", the remaining Rasi Mana rounds to zero, not 5 na 29 vi.');
+
+  const on25November = calculateRemainingSolarSignRasiMana({
+    solarLongitude:218.5, solarSignIndex:7, latitude:11.2342,
+    ayanamsaDegrees:24.25, obliquityDegrees:23.436, fullBalanceVighati:329
+  });
+  assert.equal(on25November.degreeInSign,8.5);
+  assert.ok(on25November.remainingVighati>0&&on25November.remainingVighati<329,
+    'A progressed Sun on 25 November must show only the residual OA arc, smaller than the complete Scorpio value.');
+});
+
 test('Calendar Rasi Mana selects the complete OA duration for the local solar-ingress sign, independently of current Lagna', () => {
   assert.match(calendarCalculationWorkerSource, /calculateSolarSignRasiMana/);
   assert.match(calendarCalculationWorkerSource, /calculateLahiriContextAt/);
@@ -152,19 +181,25 @@ test('Calendar Rasi Mana selects the complete OA duration for the local solar-in
     'An ingress after local sunset must move to the next sunrise interval.');
   assert.ok(calendarWorkerSource.includes('../offline/rasi-mana.browser.mjs'),
     'The calculation module must be included in the Calendar PWA cache');
-  assert.match(calendarCalculationWorkerSource, /calculateRemainingRasiMana/);
   assert.match(calendarCalculationWorkerSource, /fullBalanceVighati:rasi\.totalVighati/);
-  assert.match(dailyCalendarSource, /calculateRemainingRasiMana/);
-  assert.match(calendarCalculationWorkerSource, /const selectedTime=sunrise/,
-    'Each selected date must use its own local sunrise as the fixed Rasi Mana reference time.');
-  assert.doesNotMatch(dailyCalendarSource, /const balanceTime=localNowAt/,
-    'The current clock must not be used to count down the selected date\'s Rasi Mana.');
-  assert.match(dailyCalendarSource, /workerCall\('solar-sign-rasi-mana',dayInput\)/,
-    'The unchanged day input is sent; the Rasi Mana worker anchors its balance to sunrise.');
-  assert.match(dailyCalendarSource, /balance\.selectedTime\|\|sunrise/,
-    'The rendered balance must use the sunrise reference returned by the worker.');
-  assert.match(dailyCalendarSource, /Balance fixed until next sunrise/);
-  assert.match(dailyCalendarSource, /அடுத்த சூ\.உதயம் வரை இருப்பு மாறாது/);
+  assert.match(calendarCalculationWorkerSource, /calculateRemainingSolarSignRasiMana/);
+  assert.match(calendarCalculationWorkerSource, /time:sunrise/,
+    'The worker must calculate the Sun position at the selected local sunrise.');
+  assert.match(calendarCalculationWorkerSource, /sunriseSunLongitude,/);
+  assert.match(calendarCalculationWorkerSource, /sunriseMonthBoundaryApplied:sunriseSunSignIndex!==base\.sunSignIndex/);
+  assert.match(dailyCalendarSource, /Tamil-month start used: 0°/);
+  assert.match(dailyCalendarSource, /தமிழ் மாதத் தொடக்கக் கணக்கு: 0°/);
+  assert.match(calendarCalculationWorkerSource, /balanceNazhigai:remaining\.balanceNazhigai/);
+  assert.doesNotMatch(calendarCalculationWorkerSource, /calculateRemainingRasiMana|balanceAtSunrise/,
+    'Solar-sign remaining balance must not be derived by subtracting wall-clock time.');
+  assert.match(dailyCalendarSource, /Full 30° Rasi Mana/);
+  assert.match(dailyCalendarSource, /முழு 30° ராசி மானம்/);
+  assert.match(dailyCalendarSource, /Sun at sunrise/);
+  assert.match(dailyCalendarSource, /உதயத்தில் சூரியன்/);
+  assert.match(dailyCalendarSource, /Fixed until next sunrise/);
+  assert.match(dailyCalendarSource, /அடுத்த சூ\.உதயம் வரை மாறாது/);
+  assert.doesNotMatch(dailyCalendarSource, /calculateRemainingRasiMana|balance counts down from sunrise/,
+    'Daily UI must display the worker-computed sunrise remainder, without a live clock countdown.');
 
   assert.match(dailyCalendarSource, /renderMuhurtaLagna\(\)\}/,
     'The current-day balance must refresh using the existing minute timer.');
@@ -350,7 +385,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-sunrise-constant-rasi-mana-pages-v1' : '20261116-calendar-sunrise-constant-rasi-mana-in-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-rasi-mana-sunrise-arc-v2' : '20261116-calendar-rasi-mana-sunrise-arc-v2'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
@@ -360,8 +395,8 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261116-calendar-sunrise-constant-rasi-mana-v1'));
-   assert.ok(calendarIndexSource.includes('20261116-calendar-sunrise-constant-rasi-mana-v1'));
+   assert.ok(calendarIndexSource.includes('20261116-calendar-rasi-mana-sunrise-arc-v2'));
+   assert.ok(calendarIndexSource.includes('20261116-calendar-rasi-mana-sunrise-arc-v2'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
    assert.ok(calendarIndexSource.includes('20261025-cross-host-assets-header-ta-v1'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));

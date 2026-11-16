@@ -1,7 +1,7 @@
 import {getSwe} from './offline/wasm-provider.mjs';
 import {calculateSwiss,calculateSunMoon,calculateLahiriContextAt} from './offline/swiss_vedic.browser.mjs';
 import {panchang,transit,calendarTamil,solarNoaa,tamilSolarDate,nextSolarIngress} from './offline/transit_panchang.browser.mjs';
-import {meanObliquityAtJulianDay,calculateSolarSignRasiMana,calculateRemainingRasiMana} from './offline/rasi-mana.browser.mjs';
+import {meanObliquityAtJulianDay,calculateSolarSignRasiMana,calculateRemainingSolarSignRasiMana} from './offline/rasi-mana.browser.mjs';
 const norm=n=>(n%360+360)%360;
 const cache=new Map();
 const sampleCache=new Map();
@@ -72,21 +72,41 @@ async function calculateSolarSignRasiManaForIngress(input){
   solarSignRasiManaCache.set(cacheKey,base);
   if(solarSignRasiManaCache.size>12)solarSignRasiManaCache.delete(solarSignRasiManaCache.keys().next().value);
  }
- // The full OA duration is cached by ingress. Each selected local date is
- // anchored at its own sunrise and held constant until the following sunrise.
+ // The solar sign is fixed by the selected local-sunrise interval. Resolve
+ // the Sun's exact sidereal longitude at this sunrise and integrate only the
+ // remaining OA arc from that longitude to the end of the solar sign.
  const sunrise=solarNoaa(input.date,input.lat,input.lon,input.utcOffsetMinutes,true);
  if(!sunrise)return null;
- const selectedTime=sunrise;
- const remaining=calculateRemainingRasiMana({
-  totalVighati:base.fullBalanceVighati,
-  sunrise,
-  selectedTime
+ const sunriseSun=await calculateSunMoon({...input,time:sunrise});
+ const sunriseSunLongitude=Number(sunriseSun.sunLongitude);
+ const sunriseSunSignIndex=Math.floor(norm(sunriseSunLongitude)/30);
+ // A same-day daytime ingress is assigned to this Tamil civil date by the
+ // existing sunrise/sunset boundary rule. Treat that date as month-day 1 (0°)
+ // for this date-level Rasi Mana snapshot; an after-sunset ingress is already
+ // assigned to the following date by nextSolarIngress().
+ const rasiLongitudeAtSunrise=sunriseSunSignIndex===base.sunSignIndex
+  ?sunriseSunLongitude:base.sunSignIndex*30;
+ const remaining=calculateRemainingSolarSignRasiMana({
+  solarLongitude:rasiLongitudeAtSunrise,
+  solarSignIndex:base.sunSignIndex,
+  latitude:input.lat,
+  ayanamsaDegrees:base.ayanamsaDegrees,
+  obliquityDegrees:base.obliquityDegrees,
+  fullBalanceVighati:base.fullBalanceVighati
  });
+ if(!remaining.available)return null;
  return {
   ...base,
   sunrise,
-  selectedTime,
-  elapsedSinceSunriseSeconds:remaining.elapsedSeconds,
+  selectedTime:sunrise,
+  sunriseSunLongitude,
+  sunriseSunSignIndex,
+  sunriseSunDegreeInSign:norm(sunriseSunLongitude)%30,
+  sunDegreeInSign:remaining.degreeInSign,
+  sunriseMonthBoundaryApplied:sunriseSunSignIndex!==base.sunSignIndex,
+  remainingSignDegrees:remaining.remainingSignDegrees,
+  remainingOADegrees:remaining.remainingOADegrees,
+  remainingExactVighati:remaining.remainingExactVighati,
   remainingSeconds:remaining.remainingSeconds,
   remainingVighati:remaining.remainingVighati,
   balanceSeconds:remaining.balanceSeconds,
