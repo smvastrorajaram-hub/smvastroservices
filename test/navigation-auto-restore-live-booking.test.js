@@ -51,7 +51,7 @@ test('Website, Horoscope and Calendar receive one synchronized cache release wit
     read('public/horoscope/calendar/sw.js')
   ];
   for (const source of serviceWorkers) {
-    assert.match(source, /20261116-calendar-dual-date-details-pages-v1/);
+    assert.match(source, /20261116-calendar-dual-date-details-pages-v2/);
     assert.match(source, /20261115-navigation-auto-restore-live-booking-in-v1/);
     assert.doesNotMatch(source, /localStorage\.clear\(|sessionStorage\.clear\(|indexedDB\.deleteDatabase\(/);
   }
