@@ -176,9 +176,9 @@ test('all three PWA cache releases are synchronized for Pages.dev and .in conten
     return { pages: match[1], legacy: match[2] };
   });
   assert.deepEqual(releases.map(item => item.pages), [
-    '20261116-calendar-dual-date-details-pages-v2',
-    '20261116-calendar-dual-date-details-pages-v2',
-    '20261116-calendar-dual-date-details-pages-v2'
+    '20261116-calendar-dual-date-details-pages-v3',
+    '20261116-calendar-dual-date-details-pages-v3',
+    '20261116-calendar-dual-date-details-pages-v3'
   ]);
   assert.deepEqual(releases.map(item => item.legacy), [
     '20261115-navigation-auto-restore-live-booking-in-v1',
