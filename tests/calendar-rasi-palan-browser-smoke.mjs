@@ -158,10 +158,11 @@ try {
       el.value = value;
       el.dispatchEvent(new Event('change', { bubbles: true }));
     }, date);
-    await page.waitForFunction(pattern => {
+    await page.waitForFunction(({ date: value, pattern }) => {
+      const status = document.querySelector('#calStatus')?.textContent || '';
       const verdict = document.querySelector('#calMuhurtaLagna .cal-subha-verdict')?.textContent || '';
-      return new RegExp(pattern).test(verdict);
-    }, { timeout: 90000 }, expectedPattern.source);
+      return status.includes(value) && new RegExp(pattern).test(verdict);
+    }, { timeout: 90000 }, { date, pattern: expectedPattern.source });
     const verdict = await page.$eval('#calMuhurtaLagna .cal-subha-verdict', el => el.textContent.trim());
     assert.match(verdict, expectedPattern, 'Published Muhurtham list classification for ' + date);
   }
