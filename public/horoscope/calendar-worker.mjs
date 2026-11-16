@@ -76,7 +76,7 @@ async function calculateSolarSignRasiManaForIngress(input){
  // anchored at its own sunrise and held constant until the following sunrise.
  const sunrise=solarNoaa(input.date,input.lat,input.lon,input.utcOffsetMinutes,true);
  if(!sunrise)return null;
- const selectedTime=sunrise;
+ const selectedTime=input.balanceAtSunrise?sunrise:String(input.time||'12:00');
  const remaining=calculateRemainingRasiMana({
   totalVighati:base.fullBalanceVighati,
   sunrise,

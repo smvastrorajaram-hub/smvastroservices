@@ -155,16 +155,18 @@ test('Calendar Rasi Mana selects the complete OA duration for the local solar-in
   assert.match(calendarCalculationWorkerSource, /calculateRemainingRasiMana/);
   assert.match(calendarCalculationWorkerSource, /fullBalanceVighati:rasi\.totalVighati/);
   assert.match(dailyCalendarSource, /calculateRemainingRasiMana/);
-  assert.match(calendarCalculationWorkerSource, /const selectedTime=sunrise/,
-    'Each selected date must use its own local sunrise as the fixed Rasi Mana reference time.');
-  assert.doesNotMatch(dailyCalendarSource, /const balanceTime=localNowAt/,
-    'The current clock must not be used to count down the selected date\'s Rasi Mana.');
-  assert.match(dailyCalendarSource, /workerCall\('solar-sign-rasi-mana',dayInput\)/,
-    'The unchanged day input is sent; the Rasi Mana worker anchors its balance to sunrise.');
-  assert.match(dailyCalendarSource, /balance\.selectedTime\|\|sunrise/,
-    'The rendered balance must use the sunrise reference returned by the worker.');
-  assert.match(dailyCalendarSource, /Balance fixed until next sunrise/);
-  assert.match(dailyCalendarSource, /அடுத்த சூ\.உதயம் வரை இருப்பு மாறாது/);
+  assert.match(calendarCalculationWorkerSource, /const selectedTime=input\.balanceAtSunrise\?sunrise:String\(input\.time\|\|'12:00'\)/,
+    'The worker counts down from sunrise at the supplied local time, or returns the full sunrise value for a non-live selected date.');
+  assert.match(dailyCalendarSource, /const balanceClock=localNowAt\(cfg\.offset\)/,
+    'The live balance must use the current local clock on the current date.');
+  assert.match(dailyCalendarSource, /const isCurrentDate=selected===balanceClock\.slice\(0,10\)/);
+  assert.match(dailyCalendarSource, /balance counts down from sunrise/);
+  assert.match(dailyCalendarSource, /சூரிய உதயத்திலிருந்து இருப்பு குறையும்/);
+  assert.match(dailyCalendarSource, /Full Rasi Mana/);
+  assert.match(dailyCalendarSource, /முழு ராசி மானம்/);
+  assert.match(dailyCalendarSource, /balanceAtSunrise:true/,
+    'Historical/future date selection must show that selected date\'s full sunrise balance.');
+  assert.match(dailyCalendarSource, /balance\.selectedTime\|\|sunrise/);
 
   assert.match(dailyCalendarSource, /renderMuhurtaLagna\(\)\}/,
     'The current-day balance must refresh using the existing minute timer.');

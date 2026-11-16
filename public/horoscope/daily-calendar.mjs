@@ -259,21 +259,28 @@ if(host){
    if(balance){
     const solarSign=signs[Number(balance.sunSignIndex)]?.[ta()?1:0]||'—';
     const sunrise=String(balance.sunrise||daily.en.p?.sunrise||'—');
-    const displayTime=String(balance.selectedTime||sunrise);
+    const balanceClock=localNowAt(cfg.offset);
+    const isCurrentDate=selected===balanceClock.slice(0,10);
+    const displayTime=isCurrentDate?balanceClock.slice(11,19):String(balance.selectedTime||sunrise);
     const remaining=calculateRemainingRasiMana({
      totalVighati:Number(balance.fullBalanceVighati??balance.selectedRasiMana?.totalVighati),
      sunrise,
      selectedTime:displayTime
     });
     const n=remaining.balanceNazhigai,v=remaining.balanceVinazhigai;
+    const fullN=Number(balance.fullBalanceNazhigai??balance.selectedRasiMana?.nazhigai??0);
+    const fullV=Number(balance.fullBalanceVinazhigai??balance.selectedRasiMana?.vinazhigai??0);
     const ingressTime=String(balance.ingressTime||'—');
     balanceLine=L(
      solarSign+' Lagna balance: '+n+' na '+v+' vi',
      solarSign+' லக்ன இருப்பு: '+n+' நா '+v+' வி'
     );
+    const balanceClockMeta=isCurrentDate
+     ? L('Local time: '+displayTime+' · balance counts down from sunrise','உள்ளூர் நேரம்: '+displayTime+' · சூரிய உதயத்திலிருந்து இருப்பு குறையும்')
+     : L('Selected-date sunrise value','தேர்ந்தெடுத்த நாளின் சூரிய உதய இருப்பு');
     balanceMeta=L(
-     'Solar ingress: '+ingressTime+' · Sunrise: '+sunrise+' · Balance fixed until next sunrise',
-     'சூரிய பெயர்ச்சி: '+ingressTime+' · சூ.உதயம்: '+sunrise+' · அடுத்த சூ.உதயம் வரை இருப்பு மாறாது'
+     'Solar ingress: '+ingressTime+' · Full Rasi Mana: '+fullN+' na '+fullV+' vi · Sunrise: '+sunrise+' · '+balanceClockMeta,
+     'சூரிய பெயர்ச்சி: '+ingressTime+' · முழு ராசி மானம்: '+fullN+' நா '+fullV+' வி · சூ.உதயம்: '+sunrise+' · '+balanceClockMeta
     );
    }else{
     balanceLine=L('Lagna balance is unavailable for this location/date.','இந்த ஊர் / தேதிக்கான லக்ன இருப்பைக் கணக்கிட முடியவில்லை.');
@@ -430,7 +437,9 @@ if(host){
    daily=resultDay;
    $('#calStatus').textContent=`${cfg.place} · ${requestedDate} · ${daily.en.t.requested.time} · UTC ${+dayInput.utcOffsetMinutes/60}`;
    renderDaily();
-   void workerCall('solar-sign-rasi-mana',dayInput).then(balance=>{
+   const balanceClock=localNowAt(dayInput.utcOffsetMinutes);
+   const balanceInput=requestedDate===balanceClock.slice(0,10)?dayInput:{...dayInput,balanceAtSunrise:true};
+   void workerCall('solar-sign-rasi-mana',balanceInput).then(balance=>{
     if(request!==dayRequest||selected!==requestedDate)return;
     daily.solarSignRasiMana=balance;
     daily.solarSignRasiManaLoaded=true;
