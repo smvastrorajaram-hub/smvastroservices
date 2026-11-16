@@ -1,6 +1,6 @@
 import {getSwe} from './offline/wasm-provider.mjs';
 import {calculateSwiss,calculateSunMoon} from './offline/swiss_vedic.browser.mjs';
-import {panchang,transit,calendarTamil,solarNoaa} from './offline/transit_panchang.browser.mjs';
+import {panchang,transit,calendarTamil,solarNoaa,tamilSolarDate} from './offline/transit_panchang.browser.mjs';
 const norm=n=>(n%360+360)%360;
 const cache=new Map();
 async function sample(input,time){const {sunLongitude:sun,moonLongitude:moon}=await calculateSunMoon({...input,time});return {tithi:Math.floor(norm(moon-sun)/12)+1,star:Math.floor(norm(moon)/(360/27))+1,moon:Math.floor(norm(moon)/30),solar:Math.floor(norm(sun)/30)};}
@@ -39,8 +39,54 @@ async function events(input){
  if(r.solar===5&&mid.tithi===30)add('Mahalaya Amavasya','மகாளய அமாவாசை','midday');
  return {date:input.date,events:ev,moon:r.moon,star:r.star};
 }
+
+function dateDistance(date,reference){
+ const current=Date.parse(String(date)+'T00:00:00Z'),base=Date.parse(String(reference)+'T00:00:00Z');
+ return Number.isFinite(current)&&Number.isFinite(base)?Math.round((current-base)/86400000):0;
+}
+async function attachTamilSolarDates(input,entries){
+ if(!entries.length)return entries;
+ const firstDate=entries[0].date,lastDate=entries[entries.length-1].date;
+ const first=await tamilSolarDate({...input,date:firstDate});
+ const last=await tamilSolarDate({...input,date:lastDate});
+ if(!first||!last){
+  for(const entry of entries)entry.tamilSolar=null;
+  return entries;
+ }
+ const firstOffset=Number(first.day);
+ const residual=(solar,date)=>Number(solar.day)-dateDistance(date,firstDate);
+ const signature=(solar,offset)=>String(solar.monthStartDate)+'|'+String(solar.index)+'|'+String(offset);
+ const firstSignature=signature(first,residual(first,firstDate));
+ const lastSignature=signature(last,residual(last,lastDate));
+ let boundary=entries.length,second=last;
+ if(firstSignature!==lastSignature){
+  let lo=1,hi=entries.length-1;
+  while(lo<hi){
+   const mid=Math.floor((lo+hi)/2);
+   const date=entries[mid].date;
+   const probe=await tamilSolarDate({...input,date});
+   const same=probe&&signature(probe,residual(probe,date))===firstSignature;
+   if(same)lo=mid+1;else hi=mid;
+  }
+  boundary=lo;
+  second=await tamilSolarDate({...input,date:entries[boundary].date})||last;
+ }
+ const secondOffset=boundary<entries.length
+  ? Number(second.day)-dateDistance(entries[boundary].date,firstDate)
+  : residual(last,lastDate);
+ for(let i=0;i<entries.length;i++){
+  const date=entries[i].date,active=i<boundary?first:second;
+  const offset=i<boundary?residual(first,firstDate):secondOffset;
+  const day=offset+dateDistance(date,firstDate);
+  entries[i].tamilSolar={
+   index:active.index,monthTa:active.monthTa,monthEn:active.monthEn,
+   day,monthStartDate:active.monthStartDate
+  };
+ }
+ return entries;
+}
 self.onmessage=async({data})=>{const {id,kind,input}=data;try{const key=JSON.stringify([kind,input]);if(cache.has(key)){self.postMessage({id,result:cache.get(key)});return}let result;
- if(kind==='month'){const [y,m]=input.date.split('-').map(Number),days=new Date(Date.UTC(y,m,0)).getUTCDate();result=[];for(let d=1;d<=days;d++){result.push(await events({...input,date:`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`}));}}
+ if(kind==='month'){const [y,m]=input.date.split('-').map(Number),days=new Date(Date.UTC(y,m,0)).getUTCDate();result=[];for(let d=1;d<=days;d++){result.push(await events({...input,date:`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`}));}result=await attachTamilSolarDates(input,result);}
  else {const chart=await calculateSwiss(input);const p=panchang(input,chart),t=transit(input,chart);const ev=await events(input);const beforeSunrise=minute(input.time)<minute(p.sunrise);let previousNight=null;if(beforeSunrise){const yesterday=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);previousNight=panchang({...input,date:yesterday,time:'12:00'});}result={en:{p,t,previousNight},ta:{p:calendarTamil(p),t:calendarTamil(t)},events:ev.events};}
  cache.set(key,result);if(cache.size>36)cache.delete(cache.keys().next().value);self.postMessage({id,result});
  }catch(e){self.postMessage({id,error:e.message})}};
