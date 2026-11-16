@@ -17,7 +17,8 @@ const inHostSourceChanged = changed.has('public/index.html')
   || changed.has('public/dashboard-typography.css')
   || changed.has('public/sitemap.xml')
   || changed.has('public/sitemap.html')
-  || [...changed].some(path => path.startsWith('public/astrology-guides/'));
+  || [...changed].some(path => path.startsWith('public/astrology-guides/'))
+  || [...changed].some(path => path.startsWith('public/horoscope/'));
 if (!publicSourceChanged) {
   console.log('PASS: No public website/PWA source changed; no cache-version bump is required.');
   process.exit(0);
