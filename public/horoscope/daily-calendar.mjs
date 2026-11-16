@@ -89,7 +89,7 @@ if(host){
   const cells=month.map(d=>{
    const names=[...holidays(d.date),...d.events.map(e=>e.name)];
    const labels=names.map(n=>n[ta()?1:0]),tamilDay=d.tamilSolar?.day??'—';
-   const classes=[names.length?'cal-special':'',d.date===today?'cal-today':''].filter(Boolean).join(' ');
+   const classes=[names.length?'cal-special':'',d.date===today?'cal-today':(d.date<today?'cal-date-past':'cal-date-future')].filter(Boolean).join(' ');
    const aria=[d.date,L('Tamil date','தமிழ் தேதி')+' '+tamilDay,...labels].join(' · ');
    const eventHtml=labels.length?'<small class="cal-event-name">'+esc(labels[0])+'</small>':'';
    const moreHtml=labels.length>1?'<small class="cal-event-more">+'+(labels.length-1)+'</small>':'';
@@ -268,6 +268,8 @@ if(host){
 
   const yogaRow=[...($('#calDaily')?.querySelectorAll('.panchang-data-table tbody tr')||[])].find(row=>/^(Yoga|யோகம்)$/i.test(row.cells?.[0]?.textContent?.trim()||''));
   if(yogaRow){
+   yogaRow.classList.add('cal-name-yoga-row');
+   yogaRow.cells[0].classList.add('cal-name-yoga-label');
    yogaRow.cells[0].textContent=L('Name Yoga','நாம யோகம்');
    const yogaName=String(p?.yoga?.name||'').trim();
    const yogaResult=nityaYogaResults[yogaName];
