@@ -223,8 +223,8 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261116-calendar-timezone-safe-parallel-month-v1'));
-   assert.ok(calendarIndexSource.includes('20261116-calendar-timezone-safe-parallel-month-v1'));
+   assert.ok(calendarIndexSource.includes('20261116-calendar-single-layer-fast-v1'), 'Calendar CSS assets keep their existing synchronized stylesheet version');
+   assert.ok(calendarIndexSource.includes('20261116-calendar-timezone-safe-parallel-month-v1'), 'Calendar daily module gets a fresh URL after the timezone-safe loader change');
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
    assert.ok(calendarIndexSource.includes('20261025-cross-host-assets-header-ta-v1'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
