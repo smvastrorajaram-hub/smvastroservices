@@ -331,7 +331,7 @@ if(host){
   };
   const thyajyamIntervals=Array.isArray(daily.thyajyamIntervals)?daily.thyajyamIntervals:[];
   const thyajyamBoundaryLabel=value=>{
-   const match=String(value??'').match(/^(\\d{2})-(\\d{2})-(\\d{4})\\s+(\\d{2}:\\d{2})$/);
+   const match=String(value??'').match(/^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}:\d{2})$/);
    if(!match)return String(value??'—');
    const boundaryDate=match[3]+'-'+match[2]+'-'+match[1];
    return match[4]+(boundaryDate===selected?'':' ('+match[1]+'/'+match[2]+')');
