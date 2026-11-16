@@ -164,6 +164,10 @@ try {
       ...localDateTimeAt(timestamp)
     });
     const start = await ascendantAt(ingressTimestamp);
+    const oneSecondLater = await ascendantAt(ingressTimestamp + 1000);
+    const swissOneSecondStep = (oneSecondLater.julianDayUt - start.julianDayUt) * 86400;
+    assert.ok(Math.abs(swissOneSecondStep - 1) < 0.1,
+      'Swiss UTC conversion must preserve a one-second step, not add seconds as whole minutes: ' + swissOneSecondStep);
     let low = ingressTimestamp;
     let high = null;
     for (let minute = 5; minute <= 360; minute += 5) {
@@ -205,6 +209,7 @@ try {
         beforeBoundarySignIndex: before.signIndex,
         afterBoundarySignIndex: after.signIndex,
         independentBoundarySeconds,
+        swissOneSecondStepSeconds:swissOneSecondStep,
         startLocal: localDateTimeAt(ingressTimestamp),
         boundaryLocal: localDateTimeAt(ingressTimestamp + independentBoundarySeconds * 1000),
         predictedLocal: localDateTimeAt(ingressTimestamp + Number(calculated.balanceSeconds) * 1000),
@@ -256,6 +261,7 @@ try {
     armcDegrees: ingressLagnaFixture.armcDegrees,
     currentObliqueAscension: ingressLagnaFixture.currentObliqueAscension,
     startLocal: ingressLagnaFixture.independentCheck.startLocal,
+    swissOneSecondStepSeconds: ingressLagnaFixture.independentCheck.swissOneSecondStepSeconds,
     boundaryLocal: ingressLagnaFixture.independentCheck.boundaryLocal,
     predictedLocal: ingressLagnaFixture.independentCheck.predictedLocal,
     startSwissInput: ingressLagnaFixture.independentCheck.startSwissInput,
