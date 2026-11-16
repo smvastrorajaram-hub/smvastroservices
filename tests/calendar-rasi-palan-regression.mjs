@@ -14,9 +14,13 @@ import {
 } from '../public/horoscope/calendar-rasi-palan-rules.mjs';
 import { currentWeek, periodReference } from '../public/horoscope/calendar/rasi-palan-periods.mjs';
 import { calculateSwiss } from '../public/horoscope/offline/swiss_vedic.browser.mjs';
-import { panchang } from '../public/horoscope/offline/transit_panchang.browser.mjs';
+import { panchang, solarNoaa } from '../public/horoscope/offline/transit_panchang.browser.mjs';
+import { TAMIL_DAY_YOGA_TABLE, getTamilDayYoga, getTamilCalendarDayFlags } from '../public/horoscope/tamil-day-classifications.mjs';
 
 const dailyCalendarSource = await readFile(new URL('../public/horoscope/daily-calendar.mjs', import.meta.url), 'utf8');
+const dailyCalendarCssSource = await readFile(new URL('../public/horoscope/daily-calendar.css', import.meta.url), 'utf8');
+const calendarThemeCssSource = await readFile(new URL('../public/horoscope/calendar-theme.css', import.meta.url), 'utf8');
+const tamilDayClassificationsSource = await readFile(new URL('../public/horoscope/tamil-day-classifications.mjs', import.meta.url), 'utf8');
 const periodsSource = await readFile(new URL('../public/horoscope/calendar/rasi-palan-periods.mjs', import.meta.url), 'utf8');
 const publicRasiPalanSource = await readFile(new URL('../public/horoscope/calendar-rasi-palan.mjs', import.meta.url), 'utf8');
 const calendarIndexSource = await readFile(new URL('../public/horoscope/calendar/index.html', import.meta.url), 'utf8');
@@ -209,8 +213,9 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-dual-date-details-pages-v2' : '20261115-navigation-auto-restore-live-booking-in-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-dual-date-details-pages-v3' : '20261115-navigation-auto-restore-live-booking-in-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
+   assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
    assert.ok(calendarWorkerSource.includes('const REQUIRED_CORE = new Set(['));
    assert.ok(calendarWorkerSource.includes('await preserveCachedIndiaPlaces(target)'), 'Previously cached India place shards must survive cache migration');
@@ -218,8 +223,8 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261116-calendar-dual-date-ui-v1'));
-   assert.ok(calendarIndexSource.includes('20261116-calendar-dual-date-ui-v1'));
+   assert.ok(calendarIndexSource.includes('20261116-calendar-dual-date-ui-v3'));
+   assert.ok(calendarIndexSource.includes('20261116-calendar-dual-date-ui-v3'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
    assert.ok(calendarIndexSource.includes('20261025-cross-host-assets-header-ta-v1'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
@@ -337,23 +342,62 @@ test('Calendar dual-date grid, direct navigation and Date Details are UI-only ex
   assert.match(dailyCalendarSource, /Brahma Muhurtham/);
   assert.match(dailyCalendarSource, /Abhijit Muhurtham/);
   assert.match(dailyCalendarSource, /Travel Shoolam/);
+  assert.match(dailyCalendarSource, /getTamilDayYoga\(weekday,dayStar\)/);
+  assert.match(dailyCalendarSource, /getTamilCalendarDayFlags\(solar\)/);
+  assert.match(dailyCalendarSource, /class="cal-day-yoga-card/);
+  assert.match(dailyCalendarSource, /class="cal-day-flags"/);
+  assert.match(dailyCalendarSource, /Kari Naal/);
+  assert.match(dailyCalendarSource, /Thaniya Naal/);
   assert.match(dailyCalendarSource, /Name Yoga/);
+  assert.match(dailyCalendarSource, /cal-name-yoga-label/);
   assert.match(dailyCalendarSource, /nityaYogaResults/);
   assert.match(calendarCalculationWorkerSource, /attachTamilSolarDates/);
   assert.match(calendarCalculationWorkerSource, /dayStar:ev\.star,previousSunset/);
+  assert.match(calendarWorkerSource, /tamil-day-classifications\.mjs/);
   assert.match(transitPanchangSource, /export \{transit,panchang,tamilSolarDate\}/);
-  assert.doesNotMatch(dailyCalendarSource, /solarNoaa\(/, 'Daily UI must reuse the worker-provided sunset rather than invent a separate calculation');
+  assert.match(dailyCalendarCssSource, /h3:not\(\.cal-date-details-title\)/);
+  assert.match(calendarThemeCssSource, /h3\.cal-date-details-title::before/);
+  assert.match(calendarThemeCssSource, /\.cal-jump-year-actions button/);
+  assert.match(calendarThemeCssSource, /height:58px;min-height:58px/);
+  assert.match(calendarThemeCssSource, /aria-current="date"\.cal-date-past/);
+  assert.match(calendarThemeCssSource, /aria-current="date"\.cal-date-future/);
+  assert.match(calendarThemeCssSource, /\.cal-day-yoga-card\.is-unknown/);
+  assert.doesNotMatch(dailyCalendarSource, /solarNoaa\(/, 'Daily UI must reuse worker-provided sunrise and sunset rather than invent separate calculations');
 });
 
-test('Tamil Amirthathi yoga lookup covers all seven weekdays and all 27 sunrise stars', () => {
-  const table = dailyCalendarSource.match(/const tamilDayYogaTable=\[([\s\S]*?)\];/);
-  assert.ok(table, 'The Tamil day-yoga reference table must be present');
-  const rows = [...table[1].matchAll(/'([SAPM]+)'/g)].map(match => match[1]);
-  assert.equal(rows.length, 7);
-  assert.ok(rows.every(row => row.length === 27));
-  assert.match(dailyCalendarSource, /M:\{key:'marana'[\s\S]*?bad:true/);
-  assert.match(dailyCalendarSource, /P:\{key:'prabalarishta'[\s\S]*?bad:false/);
-  assert.match(dailyCalendarSource, /traditionalStart=\(m>4\|\|\(m===4&&d>=14\)\)\?y:y-1/);
+test('Tamil Amirthathi yoga lookup covers all weekdays and 27 sunrise stars without a Siddha fallback', () => {
+  assert.equal(TAMIL_DAY_YOGA_TABLE.length, 7);
+  assert.ok(TAMIL_DAY_YOGA_TABLE.every(row => row.length === 27));
+  assert.deepEqual(new Set(TAMIL_DAY_YOGA_TABLE.join('')), new Set(['S', 'A', 'M', 'P']));
+  assert.equal(getTamilDayYoga(1, 22).key, 'amirtha', 'Monday + Thiruvonam must resolve to Amirtha');
+  assert.equal(getTamilDayYoga(0, 10).key, 'marana');
+  assert.equal(getTamilDayYoga(0, 2).key, 'prabalarishta');
+  assert.equal(getTamilDayYoga(1, 0).key, 'unknown');
+  assert.equal(getTamilDayYoga(7, 22).key, 'unknown');
+  assert.match(dailyCalendarSource, /const dayStar=Number\(daily\.dayStar\)/);
+  assert.doesNotMatch(dailyCalendarSource, /Number\(daily\.dayStar\)\|\|Number\(p\?\.nakshatra\?\.number\)/);
+  assert.doesNotMatch(tamilDayClassificationsSource, /\|\|\s*YOGA_BY_CODE\.S/);
+});
+
+test('16 November 2026 sunrise weekday and Thiruvonam produce Amirtha, not the Siddha fallback', async () => {
+  const input = { lat: 11.2342, lon: 78.8808, utcOffsetMinutes: 330, language: 'en', houseSystem: 'S' };
+  const date = '2026-11-16';
+  const sunrise = solarNoaa(date, input.lat, input.lon, input.utcOffsetMinutes, true);
+  assert.ok(sunrise, 'Perambalur sunrise must be available for the known-date regression');
+  const chart = await calculateSwiss({ ...input, date, time: sunrise });
+  const p = panchang({ ...input, date, time: sunrise }, chart);
+  assert.equal(p.nakshatra?.number, 22, 'Thiruvonam is the sunrise Nakshatra on this date');
+  assert.equal(getTamilDayYoga(new Date(date + 'T12:00:00Z').getUTCDay(), p.nakshatra.number).key, 'amirtha');
+});
+
+test('Kari Naal and Thaniya Naal are separate fixed Tamil-month date flags', () => {
+  const bothAippasi20 = getTamilCalendarDayFlags({ index: 6, day: 20 });
+  assert.deepEqual(bothAippasi20, { available: true, kari: true, thaniya: true });
+  const bothKarthigai1 = getTamilCalendarDayFlags({ index: 7, day: 1 });
+  assert.deepEqual(bothKarthigai1, { available: true, kari: true, thaniya: true });
+  const thaniyaOnlyChithirai10 = getTamilCalendarDayFlags({ index: 0, day: 10 });
+  assert.deepEqual(thaniyaOnlyChithirai10, { available: true, kari: false, thaniya: true });
+  assert.deepEqual(getTamilCalendarDayFlags(null), { available: false, kari: false, thaniya: false });
 });
 
 test('Monthly Tamil solar labels safely handle more than one boundary inside a Gregorian month', () => {
