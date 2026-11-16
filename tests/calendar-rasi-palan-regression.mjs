@@ -377,6 +377,10 @@ test('Calendar dual-date grid, direct navigation and Date Details are UI-only ex
   assert.ok(calendarThemeCssSource.includes('background:transparent!important'), 'Panchang and sibling sections use a flat visual layer');
   assert.ok(dailyCalendarSource.includes('function ensureMonth(key)'), 'Month calculation has an independent request path');
   assert.ok(dailyCalendarSource.includes('const monthPromise=ensureMonth(key)'), 'Month results do not wait for daily details before starting');
+  assert.ok(dailyCalendarSource.includes("input(key+'-01',false)"), 'Background month work cannot mutate the selected-day UTC offset');
+  assert.ok(dailyCalendarSource.includes('monthCacheKey(key,monthInput.utcOffsetMinutes)'), 'Month cache keys use that month’s actual timezone offset');
+  assert.ok(dailyCalendarSource.includes('function input(date,updateOffset=true)'), 'Date-specific input supports non-mutating timezone resolution');
+  assert.ok(dailyCalendarSource.includes('button.onclick=()=>shiftMonth(Number(button.dataset.month))'), 'Previous and next month arrows stay bound to the month-shift handler');
   assert.ok(calendarCalculationWorkerSource.includes('const sampleCache=new Map()'), 'Astronomical samples are memoized across day/month requests');
   assert.ok(calendarCalculationWorkerSource.includes('Promise.all([sample(input,rise)'), 'Independent calendar samples are requested together');
   assert.ok(calendarCalculationWorkerSource.includes('Math.floor((entries.length-1)/2)'), 'Solar date probes use three evenly spaced samples');
