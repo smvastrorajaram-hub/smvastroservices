@@ -221,7 +221,3 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-name-yoga-result{display:inline-block;margin-top:4px;font-size:12px;line-height:1.45;font-weight:700}
 #smvDailyCalendar .cal-name-yoga-result.is-favourable{color:#247246}
 #smvDailyCalendar .cal-name-yoga-result.is-caution{color:#a12b27}
-#smvDailyCalendar .cal-day-yoga-card.is-inauspicious{border-left:4px solid #b52f2b;background:#fff0ed}
-#smvDailyCalendar .cal-day-yoga-card.is-inauspicious>strong{color:#a32220}
-#smvDailyCalendar .cal-day-yoga-card.is-auspicious{border-left:4px solid #27804c;background:#f2faf2}
-#smvDailyCalendar .cal-day-yoga-card.is-auspicious>strong{color:#207444}
