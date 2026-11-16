@@ -849,7 +849,10 @@ export async function calculateAscendantAt({date,time,lat,lon,utcOffsetMinutes=3
     degree:z.degree,
     ayanamsa:Number(ayanamsa.toFixed(8)),
     armcDegrees:Number(norm360(armc).toFixed(8)),
-    julianDayUt:Number(jd[0].toFixed(8))
+    julianDayUt:Number(jd[0].toFixed(8)),
+    inputLocalDate:String(date),
+    inputLocalTime:String(time),
+    utcOffsetMinutesUsed:offset
   };
 }
 
