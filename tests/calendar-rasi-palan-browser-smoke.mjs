@@ -141,6 +141,39 @@ try {
   assert.ok(!/unavailable|கணக்கிட முடியவில்லை/i.test(completedLagnaBalance), 'Solar-ingress Lagna balance must calculate successfully: ' + completedLagnaBalance);
   assert.ok(/Lagna balance|லக்ன இருப்பு/.test(completedLagnaBalance), 'The completed result must contain the Lagna balance value.');
 
+  // A non-current selected date has no live clock. Preview its Rasi Mana at
+  // local sunrise, not at the noon time used for the separate Panchang Lagna.
+  const originalCalendarDate = await page.$eval('#calDate', el => el.value);
+  const originalBalanceText = await page.$eval('#calMuhurtaLagna .cal-rasi-balance-line', el => el.textContent.trim());
+  const selectedTestDate = '2027-02-10';
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, selectedTestDate);
+  await page.waitForFunction(({date,oldBalance}) => {
+    const status = document.querySelector('#calStatus')?.textContent || '';
+    const line = document.querySelector('#calMuhurtaLagna .cal-rasi-balance-line')?.textContent || '';
+    return status.includes(date) && line && line !== oldBalance &&
+      !/being calculated|கணக்கிடப்படுகிறது/i.test(line);
+  }, { timeout: 90000 }, {date:selectedTestDate,oldBalance:originalBalanceText});
+  const selectedDateBalance = await page.$eval('#calMuhurtaLagna .cal-rasi-balance-line', el => el.textContent.trim());
+  assert.doesNotMatch(selectedDateBalance, /0 na 0 vi|0 நா 0 வி/,
+    'A non-current selected date must show its full nonzero initial Rasi Mana at local sunrise.');
+  const selectedDateLagnaTime = await page.$eval('#calMuhurtaLagna .cal-muhurta-lagna-item:nth-child(2) span', el => el.textContent.trim());
+  assert.match(selectedDateLagnaTime, /12:00/,
+    'The separate selected-time Lagna must remain at the unchanged noon Panchang time.');
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, originalCalendarDate);
+  await page.waitForFunction(({date,oldBalance}) => {
+    const status = document.querySelector('#calStatus')?.textContent || '';
+    const line = document.querySelector('#calMuhurtaLagna .cal-rasi-balance-line')?.textContent || '';
+    return status.includes(date) && line && line !== oldBalance &&
+      !/being calculated|கணக்கிடப்படுகிறது/i.test(line);
+  }, { timeout: 90000 }, {date:originalCalendarDate,oldBalance:selectedDateBalance});
+
+
   // Numerical regression: the ingress Sun sign, not the actual local Ascendant,
   // selects the complete place-based OA Rasi Mana for each sunrise interval.
   const solarSignRasiManaCheck = await page.evaluate(async fixtures => {
