@@ -137,19 +137,19 @@ test("All three apps use one synchronized cache release; Horoscope runtime revis
   const versions = workers.map(source => /const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(source));
   assert.ok(versions.every(Boolean));
   assert.deepEqual(versions.map(match => match[1]), [
-    "20261116-tamil-solar-after-sunset-v1",
-    "20261116-tamil-solar-after-sunset-v1",
-    "20261116-tamil-solar-after-sunset-v1"
+    "20261116-tamil-solar-after-sunset-pages-v1",
+    "20261116-tamil-solar-after-sunset-pages-v1",
+    "20261116-tamil-solar-after-sunset-pages-v1"
   ]);
   assert.deepEqual(versions.map(match => match[2]), [
-    "20261116-tamil-solar-after-sunset-v1",
-    "20261116-tamil-solar-after-sunset-v1",
-    "20261116-tamil-solar-after-sunset-v1"
+    "20261115-navigation-auto-restore-live-booking-in-v1",
+    "20261115-navigation-auto-restore-live-booking-in-v1",
+    "20261115-navigation-auto-restore-live-booking-in-v1"
   ]);
   const runtime = /const RUNTIME_REVISION\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(workers[1]);
   assert.ok(runtime);
   assert.equal(runtime[1], "v284-pages-dev-tamil-solar-20261116");
-  assert.equal(runtime[2], "v279-in-tamil-solar-20261116");
+  assert.equal(runtime[2], "v278-in-navigation-20261115");
 });
 
 test("No origin-wide local storage, Cache API or IndexedDB deletion is introduced", () => {
