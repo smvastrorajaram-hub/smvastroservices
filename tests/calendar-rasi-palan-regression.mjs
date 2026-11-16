@@ -155,6 +155,12 @@ test('Calendar Rasi Mana selects the complete OA duration for the local solar-in
   assert.match(calendarCalculationWorkerSource, /calculateRemainingRasiMana/);
   assert.match(calendarCalculationWorkerSource, /fullBalanceVighati:rasi\.totalVighati/);
   assert.match(dailyCalendarSource, /calculateRemainingRasiMana/);
+  assert.match(dailyCalendarSource, /const balanceTime=requestedDate===localNowAt\(dayInput\.utcOffsetMinutes\)\.slice\(0,10\)/,
+    'A date other than today must preview its Rasi Mana at local sunrise, not the Panchang noon time.');
+  assert.match(dailyCalendarSource, /workerCall\('solar-sign-rasi-mana',\{\.\.\.dayInput,time:balanceTime\}\)/);
+  assert.match(dailyCalendarSource, /balance\.selectedTime\|\|sunrise\|\|calculationTime/,
+    'The displayed balance must use the time actually sent to the Rasi Mana worker.');
+
   assert.match(dailyCalendarSource, /renderMuhurtaLagna\(\)\}/,
     'The current-day balance must refresh using the existing minute timer.');
 });;
