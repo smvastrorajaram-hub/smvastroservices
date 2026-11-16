@@ -57,20 +57,19 @@ function preciseSunLongitudeAtTs(input,ts,offset){
  return Number(calculateSunMoonSync({...input,date,time,utcOffsetMinutes:offset}).sunLongitude);
 }
 
-// Exact upcoming sidereal solar ingress for the separate Calendar lagna-balance
-// task. Kept out of tamilSolarDate() so month rendering does not gain extra work.
-// Return the ingress that defines the selected date's active solar sign.
-// If the selected civil date itself contains an ingress after sunrise, prefer
-// that same-day ingress; otherwise use the most recent ingress into the Sun's
-// sign at selected-date sunrise. Thus a date after ingress still shows the
-// Lagna balance measured at the ingress into its current Sun sign.
+// Exact sidereal solar ingress that defines the selected date's sunrise-based
+// solar-sign Rasi Mana. A same-day ingress belongs to this date only when it
+// occurs after local sunrise and before local sunset. An evening ingress starts
+// the next sunrise interval, matching the Tamil solar-date boundary rule.
 export function nextSolarIngress(input){
  const date=String(input.date||''),offset=Number(input.utcOffsetMinutes??330);
  const lat=Number(input.lat),lon=Number(input.lon);
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(lat)||!Number.isFinite(lon))return null;
  const rise=solarNoaa(date,lat,lon,offset,true);
- if(!rise)return null;
+ const set=solarNoaa(date,lat,lon,offset,false);
+ if(!rise||!set)return null;
  const sunriseTs=Date.parse(date+'T'+rise+':00Z')-offset*60000;
+ const sunsetTs=Date.parse(date+'T'+set+':00Z')-offset*60000;
  const sunriseLongitude=norm360(preciseSunLongitudeAtTs(input,sunriseTs,offset));
  if(!Number.isFinite(sunriseLongitude))return null;
  const currentSign=Math.floor(sunriseLongitude/30);
@@ -111,8 +110,8 @@ export function nextSolarIngress(input){
   }
   lower=upperTime;lowerLongitude=upperLongitudeAtProbe;
  }
- const chosen=nextIngress!==null&&localDateStringFromTs(nextIngress,offset)===date
-  ? nextIngress : previousIngress;
+ const chosen=nextIngress!==null&&localDateStringFromTs(nextIngress,offset)===date&&
+  nextIngress<sunsetTs ? nextIngress : previousIngress;
  if(chosen===null)return null;
  const timestamp=chosen;
  const longitude=Number(preciseSunLongitudeAtTs(input,timestamp,offset).toFixed(8));
