@@ -13,6 +13,8 @@ import {
   selectReading
 } from '../public/horoscope/calendar-rasi-palan-rules.mjs';
 import { currentWeek, periodReference } from '../public/horoscope/calendar/rasi-palan-periods.mjs';
+import { calculateSwiss } from '../public/horoscope/offline/swiss_vedic.browser.mjs';
+import { panchang } from '../public/horoscope/offline/transit_panchang.browser.mjs';
 
 const dailyCalendarSource = await readFile(new URL('../public/horoscope/daily-calendar.mjs', import.meta.url), 'utf8');
 const periodsSource = await readFile(new URL('../public/horoscope/calendar/rasi-palan-periods.mjs', import.meta.url), 'utf8');
@@ -28,6 +30,7 @@ const calendarWorkerSource = await readFile(new URL('../public/horoscope/calenda
 const calendarCalculationWorkerSource = await readFile(new URL('../public/horoscope/calendar-worker.mjs', import.meta.url), 'utf8');
 const swissCalculationSource = await readFile(new URL('../public/horoscope/offline/swiss_vedic.browser.mjs', import.meta.url), 'utf8');
 const transitPanchangSource = await readFile(new URL('../public/horoscope/offline/transit_panchang.browser.mjs', import.meta.url), 'utf8');
+const rootTransitPanchangSource = await readFile(new URL('../transit_panchang.js', import.meta.url), 'utf8');
 const rasiPalanCss = await readFile(new URL('../public/horoscope/calendar-rasi-palan.css', import.meta.url), 'utf8');
 const horoscopeIndexSource = await readFile(new URL('../public/horoscope/index.html', import.meta.url), 'utf8');
 const horoscopeLanguageSource = await readFile(new URL('../public/horoscope/horoscope-language.js', import.meta.url), 'utf8');
@@ -285,4 +288,29 @@ test('Weekly and monthly date ranges use valid digit classes for DD/MM/YYYY form
   const dateMatcher = String.raw`match(/^(\d{4})-(\d{2})-(\d{2})$/)`;
   assert.ok(publicRasiPalanSource.includes(dateMatcher), 'ISO dates must parse before formatting weekly/monthly period ranges');
   assert.doesNotMatch(publicRasiPalanSource, /match\(\/\^\(\\\\d\{4\}\)/, 'Date-range regex must not match literal backslash-d');
+});
+
+
+test('Same-day solar ingress after sunset starts the Tamil month on the next sunrise', () => {
+  const expected = /if\(nextDate===referenceDate\)\{\s*const nextIngressTime=localTimeStringFromTs\(nextIngressTs,offset\);\s*\/\/ An ingress at or after local sunset belongs to the next sunrise interval\.\s*if\(nextIngressTime < refSunset\)\{/;
+  assert.match(transitPanchangSource, expected);
+  assert.match(rootTransitPanchangSource, expected);
+});
+
+test('16 November 2026 is Aippasi 30 and 17 November begins Karthigai 1', async () => {
+  const input = {
+    time: '12:00',
+    lat: 11.23,
+    lon: 78.88,
+    utcOffsetMinutes: 330,
+    language: 'ta',
+    houseSystem: 'S'
+  };
+  await calculateSwiss({ ...input, date: '2026-11-16' });
+  const aippasiEnd = panchang({ ...input, date: '2026-11-16' }).tamilSolar;
+  const karthigaiStart = panchang({ ...input, date: '2026-11-17' }).tamilSolar;
+  assert.equal(aippasiEnd?.monthTa, 'ஐப்பசி');
+  assert.equal(aippasiEnd?.day, 30);
+  assert.equal(karthigaiStart?.monthTa, 'கார்த்திகை');
+  assert.equal(karthigaiStart?.day, 1);
 });
