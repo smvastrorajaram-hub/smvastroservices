@@ -109,11 +109,13 @@ try {
   const muhurtaLagnaUi = await page.$eval('#calMuhurtaLagna', el => ({
     labels: [...el.querySelectorAll('.cal-muhurta-lagna-item > small')].map(node => node.textContent.trim()),
     verdict: el.querySelector('.cal-subha-verdict')?.textContent.trim() || '',
-    balanceLine: el.querySelector('.cal-rasi-balance-line')?.textContent.trim() || ''
+    balanceLine: el.querySelector('.cal-rasi-balance-line')?.textContent.trim() || '',
+    phaseLabel: el.querySelector('.cal-subha-verdict')?.nextElementSibling?.textContent.trim() || ''
   }));
-  assert.equal(muhurtaLagnaUi.labels.length, 2, 'Date Details must show the Subha Muhurtham and Lagna items side by side.');
+  assert.equal(muhurtaLagnaUi.labels.length, 3, 'Date Details must show Subha Muhurtham, current Lagna, and Rasi Mana Lagna balance separately.');
   assert.ok(/Subha Muhurtham|சுபமுகூர்த்தம்/.test(muhurtaLagnaUi.labels[0]), 'Left item must identify the Subha Muhurtham day.');
-  assert.ok(/Lagna|லக்னம்/.test(muhurtaLagnaUi.labels[1]), 'Right item must identify the current or selected-time Lagna.');
+  assert.ok(/Lagna|லக்னம்/.test(muhurtaLagnaUi.labels[1]), 'Middle item must identify the current or selected-time Lagna.');
+  assert.ok(/Rasi Mana|ராசி மான/.test(muhurtaLagnaUi.labels[2]), 'Third item must identify the solar-sign Rasi Mana balance.');
   assert.ok(muhurtaLagnaUi.verdict.length > 0, 'The Panchanga day assessment must render a result.');
   assert.ok(muhurtaLagnaUi.balanceLine.length > 0, 'The solar-ingress Lagna-balance line must render a status.');
 
@@ -125,176 +127,70 @@ try {
   assert.ok(!/unavailable|கணக்கிட முடியவில்லை/i.test(completedLagnaBalance), 'Solar-ingress Lagna balance must calculate successfully: ' + completedLagnaBalance);
   assert.ok(/Lagna balance|லக்ன இருப்பு/.test(completedLagnaBalance), 'The completed result must contain the Lagna balance value.');
 
-  // Numerical ingress-Lagna regression: calculate a fixed Perambalur fixture in
-  // the real Calendar worker, then independently re-evaluate the ascendant on
-  // both sides of the reported sign-boundary time using the local Swiss WASM.
-  const ingressLagnaFixture = await page.evaluate(async fixture => {
+  // Numerical regression: the ingress Sun sign, not the actual local Ascendant,
+  // selects the complete place-based OA Rasi Mana for each sunrise interval.
+  const solarSignRasiManaFixtures = await page.evaluate(async fixtures => {
     const worker = new Worker('/horoscope/calendar-worker.mjs', { type: 'module' });
-    const requestId = 'calendar-ingress-lagna-numerical-regression';
-    let calculated;
     try {
-      calculated = await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error('Ingress Lagna worker timed out.')), 120000);
-        worker.addEventListener('message', event => {
-          if (event.data?.id !== requestId) return;
-          clearTimeout(timeout);
-          if (event.data.error) reject(new Error(event.data.error));
-          else resolve(event.data.result);
+      const results = [];
+      for (let index = 0; index < fixtures.length; index++) {
+        const id = 'calendar-solar-sign-rasi-mana-' + index;
+        const result = await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('Solar-sign Rasi Mana worker timed out.')), 120000);
+          worker.addEventListener('message', event => {
+            if (event.data?.id !== id) return;
+            clearTimeout(timeout);
+            if (event.data.error) reject(new Error(event.data.error));
+            else resolve(event.data.result);
+          });
+          worker.postMessage({ id, kind: 'solar-sign-rasi-mana', input: fixtures[index] });
         });
-        worker.postMessage({ id: requestId, kind: 'lagna-balance', input: fixture });
-      });
+        if (!result) throw new Error('Solar-sign Rasi Mana worker returned no result for ' + fixtures[index].date);
+        results.push(result);
+      }
+      return results;
     } finally {
       worker.terminate();
     }
-
-    if (!calculated) throw new Error('Ingress Lagna worker returned no numerical result.');
-    const swiss = await import('/horoscope/offline/swiss_vedic.browser.mjs');
-    const ingressTimestamp = Date.parse(calculated.ingressDate + 'T' + calculated.ingressTime + 'Z') -
-      Number(fixture.utcOffsetMinutes) * 60000;
-    const localDateTimeAt = timestamp => {
-      const local = new Date(timestamp + Number(fixture.utcOffsetMinutes) * 60000);
-      const pad = value => String(value).padStart(2, '0');
-      return {
-        date: local.getUTCFullYear() + '-' + pad(local.getUTCMonth() + 1) + '-' + pad(local.getUTCDate()),
-        time: pad(local.getUTCHours()) + ':' + pad(local.getUTCMinutes()) + ':' + pad(local.getUTCSeconds())
-      };
-    };
-    const ascendantAt = timestamp => swiss.calculateAscendantAt({
-      ...fixture,
-      ...localDateTimeAt(timestamp)
-    });
-    const start = await ascendantAt(ingressTimestamp);
-    const oneSecondLater = await ascendantAt(ingressTimestamp + 1000);
-    const swissOneSecondStep = (oneSecondLater.julianDayUt - start.julianDayUt) * 86400;
-    let low = ingressTimestamp;
-    let high = null;
-    for (let minute = 5; minute <= 360; minute += 5) {
-      const candidateTime = ingressTimestamp + minute * 60000;
-      const candidate = await ascendantAt(candidateTime);
-      if (candidate.signIndex !== start.signIndex) {
-        low = candidateTime - 5 * 60000;
-        high = candidateTime;
-        break;
-      }
-    }
-    if (high === null) throw new Error('Independent Swiss ascendant scan did not reach the next Rasi boundary.');
-    for (let iteration = 0; iteration < 18; iteration++) {
-      const middle = (low + high) / 2;
-      const candidate = await ascendantAt(middle);
-      if (candidate.signIndex === start.signIndex) low = middle;
-      else high = middle;
-    }
-    const independentBoundarySeconds = (high - ingressTimestamp) / 1000;
-    const boundary = await ascendantAt(high);
-    const predicted = await ascendantAt(ingressTimestamp + Number(calculated.balanceSeconds) * 1000);
-    const before = await ascendantAt(ingressTimestamp + Math.max(0, Number(calculated.balanceSeconds) - 90) * 1000);
-    const after = await ascendantAt(ingressTimestamp + (Number(calculated.balanceSeconds) + 90) * 1000);
-    return {
-      ...calculated,
-      independentCheck: {
-        startSignIndex: start.signIndex,
-        startLongitude: start.longitude,
-        startArmcDegrees: start.armcDegrees,
-        startJulianDayUt: start.julianDayUt,
-        boundarySignIndex: boundary.signIndex,
-        boundaryLongitude: boundary.longitude,
-        boundaryArmcDegrees: boundary.armcDegrees,
-        boundaryJulianDayUt: boundary.julianDayUt,
-        predictedSignIndex: predicted.signIndex,
-        predictedLongitude: predicted.longitude,
-        predictedArmcDegrees: predicted.armcDegrees,
-        predictedJulianDayUt: predicted.julianDayUt,
-        beforeBoundarySignIndex: before.signIndex,
-        afterBoundarySignIndex: after.signIndex,
-        independentBoundarySeconds,
-        swissOneSecondStepSeconds:swissOneSecondStep,
-        startLocal: localDateTimeAt(ingressTimestamp),
-        boundaryLocal: localDateTimeAt(ingressTimestamp + independentBoundarySeconds * 1000),
-        predictedLocal: localDateTimeAt(ingressTimestamp + Number(calculated.balanceSeconds) * 1000),
-        startSwissInput: {date:start.inputLocalDate,time:start.inputLocalTime,offset:start.utcOffsetMinutesUsed},
-        boundarySwissInput: {date:boundary.inputLocalDate,time:boundary.inputLocalTime,offset:boundary.utcOffsetMinutesUsed},
-        predictedSwissInput: {date:predicted.inputLocalDate,time:predicted.inputLocalTime,offset:predicted.utcOffsetMinutesUsed}
-      }
-    };
-  }, {
-    date: '2026-11-17',
-    time: '12:00',
-    lat: 11.23,
-    lon: 78.88,
-    utcOffsetMinutes: 330,
-    houseSystem: 'S'
-  });
-
-  assert.equal(ingressLagnaFixture.ingressDate, '2026-11-16', 'The selected 17 Nov 2026 sunrise must use the preceding Scorpio ingress.');
-  assert.equal(ingressLagnaFixture.sunSignIndex, 7, 'The defining Sun ingress must be into Scorpio.');
-  assert.match(ingressLagnaFixture.ingressTime, /^\d{2}:\d{2}:\d{2}$/, 'Ingress time must retain seconds.');
-  assert.match(ingressLagnaFixture.sunrise, /^\d{2}:\d{2}$/, 'The selected town sunrise must be returned.');
-  assert.equal(ingressLagnaFixture.method, 'oblique-ascension', 'Calendar must use the shared Oblique Ascension Rasi Mana method.');
-  assert.equal(ingressLagnaFixture.rasiManaAvailable, true, 'Perambalur must return the complete 12-sign Rasi Mana table.');
-  assert.equal(ingressLagnaFixture.rasiMana.length, 12, 'All 12 Rasi Mana rows must be returned.');
-  assert.equal(ingressLagnaFixture.rasiMana.reduce((sum, row) => sum + row.totalVighati, 0), 3600,
-    'The full Rasi Mana table must total 60 nazhigai.');
-  assert.ok(Math.abs(ingressLagnaFixture.independentCheck.swissOneSecondStepSeconds - 1) < 0.1,
-    'Swiss UTC conversion must preserve a one-second step, not add seconds as whole minutes: ' +
-    ingressLagnaFixture.independentCheck.swissOneSecondStepSeconds);
-  console.log('CALENDAR_OA_BOUNDARY_DIAGNOSTIC ' + JSON.stringify({
-    reportedBalanceSeconds: ingressLagnaFixture.balanceSeconds,
-    independentBoundarySeconds: ingressLagnaFixture.independentCheck.independentBoundarySeconds,
-    differenceSeconds: ingressLagnaFixture.balanceSeconds - ingressLagnaFixture.independentCheck.independentBoundarySeconds,
-    startSignIndex: ingressLagnaFixture.independentCheck.startSignIndex,
-    startLongitude: ingressLagnaFixture.independentCheck.startLongitude,
-    startArmcDegrees: ingressLagnaFixture.independentCheck.startArmcDegrees,
-    startJulianDayUt: ingressLagnaFixture.independentCheck.startJulianDayUt,
-    boundarySignIndex: ingressLagnaFixture.independentCheck.boundarySignIndex,
-    boundaryJulianDayUt: ingressLagnaFixture.independentCheck.boundaryJulianDayUt,
-    predictedSignIndex: ingressLagnaFixture.independentCheck.predictedSignIndex,
-    predictedLongitude: ingressLagnaFixture.independentCheck.predictedLongitude,
-    predictedArmcDegrees: ingressLagnaFixture.independentCheck.predictedArmcDegrees,
-    predictedJulianDayUt: ingressLagnaFixture.independentCheck.predictedJulianDayUt,
-    boundaryLongitude: ingressLagnaFixture.independentCheck.boundaryLongitude,
-    boundaryArmcDegrees: ingressLagnaFixture.independentCheck.boundaryArmcDegrees,
-    beforeBoundarySignIndex: ingressLagnaFixture.independentCheck.beforeBoundarySignIndex,
-    afterBoundarySignIndex: ingressLagnaFixture.independentCheck.afterBoundarySignIndex,
-    lagnaSignIndex: ingressLagnaFixture.lagnaSignIndex,
-    ayanamsaDegrees: ingressLagnaFixture.ayanamsaDegrees,
-    obliquityDegrees: ingressLagnaFixture.obliquityDegrees,
-    lagnaLongitude: ingressLagnaFixture.lagnaLongitude,
-    armcDegrees: ingressLagnaFixture.armcDegrees,
-    currentObliqueAscension: ingressLagnaFixture.currentObliqueAscension,
-    startLocal: ingressLagnaFixture.independentCheck.startLocal,
-    swissOneSecondStepSeconds: ingressLagnaFixture.independentCheck.swissOneSecondStepSeconds,
-    boundaryLocal: ingressLagnaFixture.independentCheck.boundaryLocal,
-    predictedLocal: ingressLagnaFixture.independentCheck.predictedLocal,
-    startSwissInput: ingressLagnaFixture.independentCheck.startSwissInput,
-    boundarySwissInput: ingressLagnaFixture.independentCheck.boundarySwissInput,
-    predictedSwissInput: ingressLagnaFixture.independentCheck.predictedSwissInput
-  }));
-  assert.ok(Math.abs(ingressLagnaFixture.balanceSeconds -
-    ingressLagnaFixture.independentCheck.independentBoundarySeconds) <= 60,
-    'OA balance must match independent Swiss boundary within 60 seconds: ' +
-    JSON.stringify({reported:ingressLagnaFixture.balanceSeconds,independent:ingressLagnaFixture.independentCheck.independentBoundarySeconds}));
-  assert.ok(Number.isInteger(ingressLagnaFixture.balanceSeconds) &&
-    ingressLagnaFixture.balanceSeconds > 0 &&
-    ingressLagnaFixture.balanceSeconds < ingressLagnaFixture.rasiMana[ingressLagnaFixture.lagnaSignIndex].durationSeconds,
-    'Ingress Lagna balance must be positive and smaller than the complete place-based Rasi Mana interval: ' + JSON.stringify(ingressLagnaFixture));
-  const expectedTotalVighati = Math.round(ingressLagnaFixture.balanceSeconds / 24);
-  assert.equal(ingressLagnaFixture.balanceNazhigai, Math.floor(expectedTotalVighati / 60),
-    'Nazhigai must be derived from the reported balance seconds.');
-  assert.equal(ingressLagnaFixture.balanceVinazhigai, expectedTotalVighati % 60,
-    'Vinazhigai must be derived from the reported balance seconds.');
-  assert.equal(ingressLagnaFixture.independentCheck.startSignIndex, ingressLagnaFixture.lagnaSignIndex,
-    'The independently calculated ascendant at exact solar ingress must match the returned ingress Lagna.');
-  assert.equal(ingressLagnaFixture.independentCheck.beforeBoundarySignIndex, ingressLagnaFixture.lagnaSignIndex,
-    'The ascendant immediately before the reported balance must remain in the ingress Lagna.');
-  assert.ok(Math.abs(ingressLagnaFixture.balanceSeconds -
-    ingressLagnaFixture.independentCheck.independentBoundarySeconds) <= 60,
-    'Oblique Ascension balance must match an independent Swiss ascendant boundary within one minute.');
-  assert.equal(ingressLagnaFixture.independentCheck.afterBoundarySignIndex,
-    (ingressLagnaFixture.lagnaSignIndex + 1) % 12,
-    'The independently calculated ascendant after the reported balance must have entered the next Rasi.');
-  console.log('CALENDAR_INGRESS_LAGNA_NUMERICAL_REGRESSION ' + JSON.stringify(ingressLagnaFixture));
-
-
+  }, [
+    { date:'2026-11-15', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 },
+    { date:'2026-11-16', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 },
+    { date:'2026-11-17', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 }
+  ]);
+  const [libraIngress, scorpioIngressDay, scorpioAfterIngress] = solarSignRasiManaFixtures;
+  assert.equal(libraIngress.sunSignIndex, 6, '15 Nov sunrise interval must use the Sun in Libra.');
+  assert.equal(libraIngress.rasiManaSignIndex, 6, 'Libra must select Libra Rasi Mana, not the clock-time Ascendant.');
+  assert.equal(scorpioIngressDay.sunSignIndex, 7, '16 Nov 2026 solar ingress must select Scorpio.');
+  assert.equal(scorpioIngressDay.rasiManaSignIndex, 7, 'The same-day ingress must select Scorpio Rasi Mana.');
+  assert.equal(scorpioIngressDay.ingressDate, '2026-11-16', 'The local sunrise-to-sunset ingress belongs to 16 Nov.');
+  assert.equal(scorpioAfterIngress.sunSignIndex, 7, '17 Nov sunrise interval must remain in Scorpio.');
+  assert.equal(scorpioAfterIngress.ingressDate, '2026-11-16', 'The 17 Nov interval must retain the preceding Scorpio ingress.');
+  for (const result of solarSignRasiManaFixtures) {
+    assert.match(result.ingressTime, /^\d{2}:\d{2}:\d{2}$/, 'Solar ingress time must retain seconds.');
+    assert.match(result.sunrise, /^\d{2}:\d{2}$/, 'The selected town sunrise must be returned.');
+    assert.equal(result.method, 'solar-sign-oblique-ascension');
+    assert.equal(result.rasiManaAvailable, true);
+    assert.equal(result.rasiMana.length, 12);
+    assert.equal(result.rasiMana.reduce((sum, row) => sum + row.totalVighati, 0), 3600,
+      'All 12 sign measures must total exactly 60 nazhigai.');
+    const selected = result.rasiMana[result.sunSignIndex];
+    assert.equal(selected.signIndex, result.sunSignIndex);
+    assert.equal(result.selectedRasiMana.signIndex, result.sunSignIndex);
+    assert.equal(result.balanceNazhigai, selected.nazhigai);
+    assert.equal(result.balanceVinazhigai, selected.vinazhigai);
+    assert.equal(result.balanceSeconds, selected.totalVighati * 24,
+      'The displayed balance must be the full OA Rasi Mana of the selected solar sign.');
+  }
+  console.log('CALENDAR_SOLAR_SIGN_RASI_MANA_REGRESSION ' + JSON.stringify(
+    solarSignRasiManaFixtures.map(result => ({
+      ingressDate:result.ingressDate,
+      ingressTime:result.ingressTime,
+      sunSignIndex:result.sunSignIndex,
+      rasiManaSignIndex:result.rasiManaSignIndex,
+      balanceNazhigai:result.balanceNazhigai,
+      balanceVinazhigai:result.balanceVinazhigai
+    }))
+  ));
 
   assert.ok(!/Unable to calculate|கணக்கிட முடியவில்லை/.test(calendarCalculationStatus), 'Daily Calendar must calculate successfully after the Sun/Moon validation fix: ' + calendarCalculationStatus);
 
