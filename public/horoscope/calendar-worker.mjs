@@ -3,7 +3,23 @@ import {calculateSwiss,calculateSunMoon} from './offline/swiss_vedic.browser.mjs
 import {panchang,transit,calendarTamil,solarNoaa,tamilSolarDate} from './offline/transit_panchang.browser.mjs';
 const norm=n=>(n%360+360)%360;
 const cache=new Map();
-async function sample(input,time){const {sunLongitude:sun,moonLongitude:moon}=await calculateSunMoon({...input,time});return {tithi:Math.floor(norm(moon-sun)/12)+1,star:Math.floor(norm(moon)/(360/27))+1,moon:Math.floor(norm(moon)/30),solar:Math.floor(norm(sun)/30)};}
+const sampleCache=new Map();
+async function sample(input,time){
+ const key=[Number(input.lat).toFixed(5),Number(input.lon).toFixed(5),Number(input.utcOffsetMinutes),input.date,time].join('|');
+ let pendingSample=sampleCache.get(key);
+ if(!pendingSample){
+  pendingSample=calculateSunMoon({...input,time}).then(({sunLongitude:sun,moonLongitude:moon})=>({
+   tithi:Math.floor(norm(moon-sun)/12)+1,
+   star:Math.floor(norm(moon)/(360/27))+1,
+   moon:Math.floor(norm(moon)/30),
+   solar:Math.floor(norm(sun)/30)
+  }));
+  sampleCache.set(key,pendingSample);
+  if(sampleCache.size>4096)sampleCache.delete(sampleCache.keys().next().value);
+ }
+ try{return await pendingSample;}
+ catch(error){if(sampleCache.get(key)===pendingSample)sampleCache.delete(key);throw error;}
+}
 function minute(t){return +t.slice(0,2)*60+ +t.slice(3,5)}
 function clock(n){n=(Math.round(n)%1440+1440)%1440;return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')}
 // Geocentric lunar rise threshold (mean refraction + horizontal parallax).
@@ -16,7 +32,7 @@ async function moonrise(input){
 async function events(input){
  const rise=solarNoaa(input.date,input.lat,input.lon,input.utcOffsetMinutes,true),set=solarNoaa(input.date,input.lat,input.lon,input.utcOffsetMinutes,false);
  if(!rise||!set)return {date:input.date,events:[],unavailable:true};
- const r=await sample(input,rise),mid=await sample(input,'12:00'),s=await sample(input,set),night=await sample(input,'23:50');
+ const [r,mid,s,night]=await Promise.all([sample(input,rise),sample(input,'12:00'),sample(input,set),sample(input,'23:50')]);
  const ev=[];const add=(en,ta,basis)=>ev.push({name:[en,ta],basis});
  if([11,26].includes(r.tithi))add('Ekadashi','ஏகாதசி','sunrise');
  if(r.tithi===6)add('Shashti','சஷ்டி','sunrise');
@@ -24,8 +40,8 @@ async function events(input){
  if(mid.tithi===30)add('Amavasya','அமாவாசை','midday');
  if(s.tithi===15)add('Pournami','பௌர்ணமி','sunset');
  // Pradosha is Trayodashi overlapping the post-sunset period, not noon tithi.
- const later=await sample(input,clock(minute(set)+90));
- if([13,28].includes(s.tithi)||[13,28].includes(later.tithi))add('Pradosham','பிரதோஷம்','sunset');
+ const later=[13,28].includes(s.tithi)?null:await sample(input,clock(minute(set)+90));
+ if([13,28].includes(s.tithi)||(later&&[13,28].includes(later.tithi)))add('Pradosham','பிரதோஷம்','sunset');
  if(night.tithi===29)add('Monthly Shivaratri','மாத சிவராத்திரி','night');
  if(r.star===3)add('Krittika Vrat','கார்த்திகை விரதம்','sunrise');
  if(r.star===8&&r.solar===9)add('Thai Poosam','தைப்பூசம்','sunrise');
@@ -60,9 +76,9 @@ async function attachTamilSolarDates(input,entries){
    signature:[solar.index,solar.monthStartDate,offset].join('|')
   };
  };
- // Probe at seven-day intervals. A Tamil solar month is longer than this,
- // so each interval can contain at most one solar-month boundary.
- const probeIndexes=[...new Set([0,7,14,21,28,entries.length-1].filter(i=>i>=0&&i<entries.length))].sort((a,b)=>a-b);
+ // Three evenly spaced probes keep each interval under 16 days, shorter than
+ // the minimum interval between consecutive sidereal solar ingresses.
+ const probeIndexes=[...new Set([0,Math.floor((entries.length-1)/2),entries.length-1].filter(i=>i>=0&&i<entries.length))].sort((a,b)=>a-b);
  const probes=[];
  for(const index of probeIndexes){
   const date=entries[index].date;

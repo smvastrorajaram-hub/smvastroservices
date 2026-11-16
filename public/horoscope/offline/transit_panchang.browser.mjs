@@ -50,9 +50,8 @@ function addDaysLocal(date,days){
 }
 function sunLongitudeAtTs(input,ts,offset){
  const date=localDateStringFromTs(ts,offset), time=localTimeStringFromTs(ts,offset);
- const c=SwissVedic.calculateSwiss({...input,date,time,utcOffsetMinutes:offset});
- const sun=(c.planets||[]).find(x=>x.name==='சூரியன்');
- return Number(sun?.longitude||0);
+ const sample=calculateSunMoonSync({...input,date,time,utcOffsetMinutes:offset});
+ return Number(sample.sunLongitude);
 }
 function tamilSolarDate(input){
  const date=String(input.date||'');
@@ -93,7 +92,7 @@ function tamilSolarDate(input){
      if(Number.isFinite(loLon) && Number.isFinite(hiLon) &&
         Math.floor(hiLon/30)===currentSign && Math.floor(loLon/30)!==currentSign){
        let a=lo,b=hi;
-       for(let j=0;j<55;j++){
+       for(let j=0;j<24;j++){
          const mid=(a+b)/2;
          const lm=norm360(sunLongitudeAtTs(input,mid,offset));
          if(Math.floor(lm/30)===currentSign) b=mid; else a=mid;
@@ -115,7 +114,7 @@ function tamilSolarDate(input){
      if(Number.isFinite(loLon) && Number.isFinite(hiLon) &&
         Math.floor(loLon/30)===currentSign && Math.floor(hiLon/30)===nextSign){
        let a=lo,b=hi;
-       for(let j=0;j<55;j++){
+       for(let j=0;j<24;j++){
          const mid=(a+b)/2;
          const lm=norm360(sunLongitudeAtTs(input,mid,offset));
          if(Math.floor(lm/30)===nextSign) b=mid; else a=mid;
@@ -271,8 +270,8 @@ function panchangBoundary(input, ts, kind, direction){
     if(!s) continue;
     if(s.index!==cur.index){
       let lo=Math.min(probe-direction*step,probe), hi=Math.max(probe-direction*step,probe);
-      // Binary search the transition to sub-second accuracy.
-      for(let j=0;j<42;j++){
+      // Twenty-four steps keep the two-hour bracket comfortably below one millisecond.
+      for(let j=0;j<24;j++){
         const mid=(lo+hi)/2;
         const sm=panchangEventState(input,mid,kind);
         if(sm && sm.index===cur.index){

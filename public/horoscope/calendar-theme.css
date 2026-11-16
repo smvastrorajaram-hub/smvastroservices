@@ -336,3 +336,88 @@ html body.calendar-only>header.calendar-topbar{
  #smvDailyCalendar .cal-date-details .cal-details-summary .cal-shoolam-card{grid-template-columns:minmax(0,1fr)}
  #smvDailyCalendar .cal-day-flags{padding:8px 0 0;border-left:0;border-top:1px solid #e6ddcf}
 }
+
+
+/* 2026-11-16 — one calm Date Details layer, bright title-only emphasis and full-width month jump controls. */
+#smvDailyCalendar .cal-date-details{
+ background:var(--cal-paper,#fffdf8)!important;border:1px solid var(--cal-line,#d9e5df)!important;border-radius:14px!important;box-shadow:none!important;
+}
+#smvDailyCalendar .cal-date-details-head{
+ display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;
+ margin:0 0 12px!important;padding:5px 0 12px!important;background:transparent!important;
+ border:0!important;border-bottom:1px solid var(--cal-line,#d9e5df)!important;border-radius:0!important;
+ box-shadow:none!important;color:inherit!important;text-align:center!important;
+}
+#smvDailyCalendar .cal-date-details-head>div{width:100%!important;max-width:none!important}
+#smvDailyCalendar .cal-date-details-head h3.cal-date-details-title{
+ display:block!important;width:100%!important;margin:0!important;padding:0!important;
+ color:#087f46!important;-webkit-text-fill-color:#087f46!important;
+ font-size:clamp(20px,4.6vw,24px)!important;font-weight:950!important;line-height:1.3!important;
+ text-align:center!important;text-shadow:none!important;
+}
+#smvDailyCalendar .cal-date-details-head h3.cal-date-details-title::before,
+#smvDailyCalendar .cal-date-details-head h3.cal-date-details-title::after{display:none!important;content:none!important}
+#smvDailyCalendar .cal-date-details-head p{display:none!important}
+#smvDailyCalendar #calDateDetailsExtra .cal-details-summary article,
+#smvDailyCalendar #calDateDetails #calDaily .card,
+#smvDailyCalendar #calDateDetails #calReadings .cal-summary article{
+ background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;
+}
+#smvDailyCalendar #calDateDetailsExtra .cal-details-summary article{padding:11px 4px!important;border-bottom:1px solid var(--cal-line,#d9e5df)!important}
+#smvDailyCalendar #calDateDetailsExtra .cal-details-summary article.cal-shoolam-card{border-bottom:0!important}
+#smvDailyCalendar #calDateDetailsExtra .cal-day-yoga-card.is-auspicious{border-left:3px solid #27804c!important;background:transparent!important}
+#smvDailyCalendar #calDateDetailsExtra .cal-day-yoga-card.is-inauspicious{border-left:3px solid #b52f2b!important;background:transparent!important}
+#smvDailyCalendar #calDateDetailsExtra .cal-day-yoga-card.is-unknown{border-left:3px solid #a9a394!important;background:transparent!important}
+#smvDailyCalendar #calDateDetailsExtra .cal-shoolam-card{padding:10px 4px!important}
+#smvDailyCalendar #calDateDetailsExtra .cal-day-flag{padding:7px 3px!important;border:0!important;border-radius:0!important;background:transparent!important}
+#smvDailyCalendar #calDateDetails #calDaily .card{margin:10px 0!important;padding:12px 0!important;border-bottom:1px solid var(--cal-line,#d9e5df)!important}
+#smvDailyCalendar #calDateDetails #calDaily .card:last-child{border-bottom:0!important}
+#smvDailyCalendar #calDateDetails #calReadings .cal-summary article{padding:10px 4px!important}
+#smvDailyCalendar #calDateDetails #calReadings .cal-summary{gap:0!important}
+#smvDailyCalendar #calDateDetails #calEvents{padding-top:4px!important}
+#smvDailyCalendar .cal-month-title{
+ display:grid!important;grid-template-columns:46px minmax(0,1fr) 46px!important;align-items:center!important;
+ gap:8px!important;width:100%!important;margin-top:20px!important;padding:8px 6px!important;
+ border:0!important;border-bottom:1px solid var(--cal-line,#d9e5df)!important;border-radius:0!important;
+ background:transparent!important;box-shadow:none!important;
+}
+#smvDailyCalendar .cal-month-title>[data-month]{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ width:44px!important;min-width:44px!important;height:44px!important;min-height:44px!important;
+ padding:0!important;border:1px solid #b9cec4!important;border-radius:50%!important;
+ background:#fffdf8!important;color:#0f514c!important;font-size:27px!important;line-height:1!important;
+ touch-action:manipulation!important;-webkit-tap-highlight-color:transparent;
+}
+#smvDailyCalendar .cal-month-title>[data-month]:active{background:#eaf3ed!important}
+#smvDailyCalendar .cal-month-title .cal-month-current{
+ display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;
+ min-width:0!important;min-height:48px!important;padding:4px 8px!important;border:0!important;
+ border-radius:8px!important;background:transparent!important;box-shadow:none!important;cursor:pointer!important;
+}
+#smvDailyCalendar .cal-month-jump{
+ display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:12px!important;width:100%!important;
+ margin:0!important;padding:14px 8px!important;border:0!important;border-bottom:1px solid var(--cal-line,#d9e5df)!important;
+ border-radius:0!important;background:transparent!important;box-shadow:none!important;
+}
+#smvDailyCalendar .cal-jump-year-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+#smvDailyCalendar .cal-jump-date-row{grid-template-columns:minmax(0,1fr) auto!important;gap:10px!important;align-items:end!important}
+#smvDailyCalendar .cal-jump-date-row label,
+#smvDailyCalendar .cal-jump-date-row button,
+#smvDailyCalendar .cal-jump-month-row button{grid-column:auto!important}
+#smvDailyCalendar .cal-jump-month-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto!important;gap:10px!important;align-items:end!important}
+#smvDailyCalendar .cal-month-jump input,#smvDailyCalendar .cal-month-jump select{width:100%!important;min-width:0!important}
+#smvDailyCalendar .cal-month-jump button{min-width:0!important;white-space:normal!important}
+@media(max-width:680px){
+ #smvDailyCalendar .cal-date-details{padding:10px!important}
+ #smvDailyCalendar #calDateDetailsExtra .cal-details-summary{gap:5px!important}
+ #smvDailyCalendar #calDateDetailsExtra .cal-details-summary article{padding:9px 2px!important}
+ #smvDailyCalendar #calDateDetailsExtra .cal-shoolam-card{padding:8px 2px!important}
+ #smvDailyCalendar .cal-month-title{grid-template-columns:40px minmax(0,1fr) 40px!important;gap:5px!important;padding:6px 2px!important}
+ #smvDailyCalendar .cal-month-title>[data-month]{width:38px!important;min-width:38px!important;height:38px!important;min-height:38px!important}
+ #smvDailyCalendar .cal-month-title .cal-month-current{min-height:44px!important;padding:3px!important}
+ #smvDailyCalendar .cal-month-jump{padding:10px 2px!important;gap:10px!important}
+ #smvDailyCalendar .cal-jump-date-row{grid-template-columns:minmax(0,1fr)!important}
+ #smvDailyCalendar .cal-jump-date-row button{width:100%!important}
+ #smvDailyCalendar .cal-jump-month-row{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ #smvDailyCalendar .cal-jump-month-row button{grid-column:1/-1!important;width:100%!important}
+}
