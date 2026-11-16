@@ -359,8 +359,8 @@ test('Calendar dual-date grid, direct navigation and Date Details are UI-only ex
   assert.match(calendarThemeCssSource, /h3\.cal-date-details-title::before/);
   assert.match(calendarThemeCssSource, /\.cal-jump-year-actions button/);
   assert.match(calendarThemeCssSource, /height:58px;min-height:58px/);
-  assert.match(calendarThemeCssSource, /aria-current="date"\.cal-date-past/);
-  assert.match(calendarThemeCssSource, /aria-current="date"\.cal-date-future/);
+  assert.match(calendarThemeCssSource, /aria-current="date"\]\.cal-date-past/);
+  assert.match(calendarThemeCssSource, /aria-current="date"\]\.cal-date-future/);
   assert.match(calendarThemeCssSource, /\.cal-day-yoga-card\.is-unknown/);
   assert.doesNotMatch(dailyCalendarSource, /solarNoaa\(/, 'Daily UI must reuse worker-provided sunrise and sunset rather than invent separate calculations');
 });
