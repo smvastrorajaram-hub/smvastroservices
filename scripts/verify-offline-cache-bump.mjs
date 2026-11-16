@@ -70,15 +70,30 @@ assert.equal(new Set(releases.map(item => item.pages)).size, 1,
 assert.equal(new Set(releases.map(item => item.legacy)).size, 1,
   'ASTRO, HOROSCOPE and CALENDAR must preserve one synchronized .in cache release marker.');
 const previous = workers.map(baseRelease);
+// A production-only cache release refresh is intentionally allowed to keep the
+// already-current Pages.dev release unchanged. This is used when the public UI
+// source is already deployed to Pages.dev and only production .in clients need
+// to rotate their independently scoped static shell caches.
+const productionOnlyCacheBump = workers.every((path, index) =>
+  releases[index].pages === previous[index].pages &&
+  releases[index].legacy !== previous[index].legacy
+);
 for (let i = 0; i < workers.length; i++) {
-  assert.notEqual(releases[i].pages, previous[i].pages,
-    workers[i] + ' must bump the Pages.dev cache release for this public-source change.');
-  if (inHostSourceChanged) {
+  if (productionOnlyCacheBump) {
+    assert.equal(releases[i].pages, previous[i].pages,
+      workers[i] + ' must preserve the Pages.dev cache release for a production-only .in cache bump.');
     assert.notEqual(releases[i].legacy, previous[i].legacy,
-      workers[i] + ' must bump the .in cache release when .in pages/content change.');
+      workers[i] + ' must bump the .in cache release for a production-only cache refresh.');
   } else {
-    assert.equal(releases[i].legacy, previous[i].legacy,
-      workers[i] + ' must preserve the .in cache release when the change is Pages.dev-only.');
+    assert.notEqual(releases[i].pages, previous[i].pages,
+      workers[i] + ' must bump the Pages.dev cache release for this public-source change.');
+    if (inHostSourceChanged) {
+      assert.notEqual(releases[i].legacy, previous[i].legacy,
+        workers[i] + ' must bump the .in cache release when .in pages/content change.');
+    } else {
+      assert.equal(releases[i].legacy, previous[i].legacy,
+        workers[i] + ' must preserve the .in cache release when the change is Pages.dev-only.');
+    }
   }
 }
 const expectedCacheNames = [
@@ -90,4 +105,4 @@ for (let i = 0; i < workers.length; i++) {
   const source = readFileSync(workers[i], 'utf8');
   assert.ok(source.includes(expectedCacheNames[i]), workers[i] + ' must derive its own cache namespace from SMV_CACHE_RELEASE.');
 }
-console.log('PASS: Pages.dev cache release ' + releases[0].pages + ' is synchronized across all three apps; .in cache release ' + releases[0].legacy + (inHostSourceChanged ? ' was also bumped for .in content.' : ' was preserved for a Pages.dev-only change.') );
+console.log('PASS: Pages.dev cache release ' + releases[0].pages + ' is synchronized across all three apps; .in cache release ' + releases[0].legacy + (productionOnlyCacheBump ? ' was bumped across all three production apps while Pages.dev stayed unchanged.' : inHostSourceChanged ? ' was also bumped for .in content.' : ' was preserved for a Pages.dev-only change.') );
