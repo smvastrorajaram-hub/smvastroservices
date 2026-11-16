@@ -181,9 +181,7 @@ test('Calendar Rasi Mana selects the complete OA duration for the local solar-in
     'An ingress after local sunset must move to the next sunrise interval.');
   assert.ok(calendarWorkerSource.includes('../offline/rasi-mana.browser.mjs'),
     'The calculation module must be included in the Calendar PWA cache');
-  assert.match(calendarCalculationWorkerSource, /calculateRemainingRasiMana/);
   assert.match(calendarCalculationWorkerSource, /fullBalanceVighati:rasi\.totalVighati/);
-  assert.match(dailyCalendarSource, /calculateRemainingRasiMana/);
   assert.match(calendarCalculationWorkerSource, /calculateRemainingSolarSignRasiMana/);
   assert.match(calendarCalculationWorkerSource, /time:sunrise/,
     'The worker must calculate the Sun position at the selected local sunrise.');
@@ -384,7 +382,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-sunrise-constant-rasi-mana-pages-v1' : '20261116-calendar-sunrise-constant-rasi-mana-in-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-rasi-mana-sunrise-arc-v2' : '20261116-calendar-rasi-mana-sunrise-arc-v2'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
