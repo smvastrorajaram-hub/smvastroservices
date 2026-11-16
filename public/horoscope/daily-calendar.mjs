@@ -343,12 +343,13 @@ if(host){
   daily=null;
   host.setAttribute('aria-busy','true');
   $('#calStatus').textContent=L('Calculating Panchang, Hora and transits…','பஞ்சாங்கம், ஹோரை மற்றும் கோச்சாரக் கணக்கீடு நடைபெறுகிறது…');
+  const dayInput=input(requestedDate);
   const monthPromise=ensureMonth(key);
   try{
-   const resultDay=await workerCall('day',input(requestedDate));
+   const resultDay=await workerCall('day',dayInput);
    if(request!==dayRequest)return;
    daily=resultDay;
-   $('#calStatus').textContent=`${cfg.place} · ${requestedDate} · ${daily.en.t.requested.time} · UTC ${+cfg.offset/60}`;
+   $('#calStatus').textContent=`${cfg.place} · ${requestedDate} · ${daily.en.t.requested.time} · UTC ${+dayInput.utcOffsetMinutes/60}`;
    renderDaily();
    host.removeAttribute('aria-busy');
    await monthPromise;
