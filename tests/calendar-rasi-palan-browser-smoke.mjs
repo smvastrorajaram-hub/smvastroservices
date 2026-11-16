@@ -141,6 +141,33 @@ try {
   assert.ok(!/unavailable|கணக்கிட முடியவில்லை/i.test(completedLagnaBalance), 'Solar-ingress Lagna balance must calculate successfully: ' + completedLagnaBalance);
   assert.ok(/Lagna balance|லக்ன இருப்பு/.test(completedLagnaBalance), 'The completed result must contain the Lagna balance value.');
 
+  // A non-current selected date has no live clock. Its Rasi Mana preview must
+  // start at that date's local sunrise, not the existing noon Panchang time.
+  const originalCalendarDate = await page.$eval('#calDate', el => el.value);
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, '2027-02-10');
+  await page.waitForFunction(() => {
+    const line = document.querySelector('#calMuhurtaLagna .cal-rasi-balance-line')?.textContent || '';
+    return line && !/being calculated|கணக்கிடப்படுகிறது/i.test(line);
+  }, { timeout: 90000 });
+  const selectedDateBalance = await page.$eval('#calMuhurtaLagna .cal-rasi-balance-line', el => el.textContent.trim());
+  assert.doesNotMatch(selectedDateBalance, /0 na 0 vi|0 நா 0 வி/,
+    'A non-current selected date must show its full nonzero starting Rasi Mana at local sunrise.');
+  const selectedDateLagnaTime = await page.$eval('#calMuhurtaLagna .cal-muhurta-lagna-item:nth-child(2) span', el => el.textContent.trim());
+  assert.match(selectedDateLagnaTime, /12:00/,
+    'The separate selected-time Lagna must remain at the unchanged noon Panchang time.');
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, originalCalendarDate);
+  await page.waitForFunction(() => {
+    const line = document.querySelector('#calMuhurtaLagna .cal-rasi-balance-line')?.textContent || '';
+    return line && !/being calculated|கணக்கிடப்படுகிறது/i.test(line);
+  }, { timeout: 90000 });
+
+
   // Numerical regression: the ingress Sun sign, not the actual local Ascendant,
   // selects the complete place-based OA Rasi Mana for each sunrise interval.
   const solarSignRasiManaCheck = await page.evaluate(async fixtures => {
