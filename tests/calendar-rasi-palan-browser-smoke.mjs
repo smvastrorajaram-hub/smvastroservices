@@ -106,6 +106,15 @@ try {
   }, { timeout: 90000 });
   const calendarCalculationStatus = await page.$eval('#calStatus', el => el.textContent || '');
   await page.waitForSelector('#calMuhurtaLagna .cal-muhurta-lagna-grid .cal-muhurta-lagna-item', { timeout: 30000 });
+  const resultPlacement = await page.$eval('#calMuhurtaLagna', el => {
+    const dateDetails = document.querySelector('#calDateDetails');
+    return {
+      sameParent: Boolean(dateDetails && el.parentElement === dateDetails.parentElement),
+      immediatelyAfter: Boolean(dateDetails && dateDetails.nextElementSibling === el)
+    };
+  });
+  assert.equal(resultPlacement.sameParent, true, 'The three result sections must sit outside Date Details at the same level.');
+  assert.equal(resultPlacement.immediatelyAfter, true, 'The three result sections must appear immediately below Date Details.');
   const muhurtaLagnaUi = await page.$eval('#calMuhurtaLagna', el => ({
     labels: [...el.querySelectorAll('.cal-muhurta-lagna-item > small')].map(node => node.textContent.trim()),
     verdict: el.querySelector('.cal-subha-verdict')?.textContent.trim() || '',
