@@ -13,7 +13,7 @@ import {
   selectReading
 } from '../public/horoscope/calendar-rasi-palan-rules.mjs';
 import { currentWeek, periodReference } from '../public/horoscope/calendar/rasi-palan-periods.mjs';
-import { calculateSwiss } from '../public/horoscope/offline/swiss_vedic.browser.mjs';
+import { calculateSwiss, calculateSunMoonSync } from '../public/horoscope/offline/swiss_vedic.browser.mjs';
 import { panchang, solarNoaa } from '../public/horoscope/offline/transit_panchang.browser.mjs';
 import { TAMIL_DAY_YOGA_TABLE, getTamilDayYoga, getTamilCalendarDayFlags } from '../public/horoscope/tamil-day-classifications.mjs';
 
@@ -213,7 +213,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-dual-date-details-pages-v3' : '20261116-calendar-date-details-in-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-single-layer-fast-results-pages-v1' : '20261116-calendar-single-layer-fast-results-in-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
@@ -223,8 +223,8 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261116-calendar-dual-date-ui-v3'));
-   assert.ok(calendarIndexSource.includes('20261116-calendar-dual-date-ui-v3'));
+   assert.ok(calendarIndexSource.includes('20261116-calendar-single-layer-fast-v1'));
+   assert.ok(calendarIndexSource.includes('20261116-calendar-single-layer-fast-v1'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
    assert.ok(calendarIndexSource.includes('20261025-cross-host-assets-header-ta-v1'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
@@ -255,6 +255,16 @@ test('The lightweight Sun/Moon path accepts ordinary Calendar date/time formats 
   assert.ok(validation.includes('ts.match(/^(' + slash + 'd{1,2}):(' + slash + 'd{2})$/);'));
   assert.ok(validation.includes('if(!/^' + slash + 'd{4}-' + slash + 'd{2}-' + slash + 'd{2}$/.test(ds)||!m)'));
   assert.doesNotMatch(validation, /\\\\d/, 'Regexes must not match literal backslash-d sequences');
+});
+
+test('Fast Sun longitude for Tamil ingress search matches the full Swiss Lahiri chart', async () => {
+  const input = { date: '2026-11-16', time: '06:10', lat: 11.2342, lon: 78.8808, utcOffsetMinutes: 330 };
+  const chart = await calculateSwiss(input);
+  const fullSun = chart.planets.find(planet => planet.name === 'சூரியன்');
+  const fast = calculateSunMoonSync(input);
+  assert.ok(fullSun && Number.isFinite(Number(fullSun.longitude)));
+  const difference = Math.abs(((fast.sunLongitude - Number(fullSun.longitude) + 540) % 360) - 180);
+  assert.ok(difference < 1e-6, 'Lightweight and full chart Sun longitudes must be equivalent');
 });
 
 test('Panchang boundary searches use cached lightweight Sun/Moon calculations and share one full daily chart', () => {
@@ -362,6 +372,17 @@ test('Calendar dual-date grid, direct navigation and Date Details are UI-only ex
   assert.match(calendarThemeCssSource, /aria-current="date"\]\.cal-date-past/);
   assert.match(calendarThemeCssSource, /aria-current="date"\]\.cal-date-future/);
   assert.match(calendarThemeCssSource, /\.cal-day-yoga-card\.is-unknown/);
+  assert.ok(calendarThemeCssSource.includes('font-weight:950!important'), 'Date Details title is bright and bold');
+  assert.ok(calendarThemeCssSource.includes('.cal-month-jump') && calendarThemeCssSource.includes('grid-template-columns:minmax(0,1fr)'), 'Month/year/date selector panel is full-width and flat');
+  assert.ok(calendarThemeCssSource.includes('background:transparent!important'), 'Panchang and sibling sections use a flat visual layer');
+  assert.ok(dailyCalendarSource.includes('function ensureMonth(key)'), 'Month calculation has an independent request path');
+  assert.ok(dailyCalendarSource.includes('const monthPromise=ensureMonth(key)'), 'Month results do not wait for daily details before starting');
+  assert.ok(calendarCalculationWorkerSource.includes('const sampleCache=new Map()'), 'Astronomical samples are memoized across day/month requests');
+  assert.ok(calendarCalculationWorkerSource.includes('Promise.all([sample(input,rise)'), 'Independent calendar samples are requested together');
+  assert.ok(calendarCalculationWorkerSource.includes('Math.floor((entries.length-1)/2)'), 'Solar date probes use three evenly spaced samples');
+  assert.ok(transitPanchangSource.includes('calculateSunMoonSync({...input,date,time,utcOffsetMinutes:offset})'), 'Ingress search uses the lightweight Swiss Sun/Moon path');
+  assert.ok(transitPanchangSource.includes('for(let j=0;j<24;j++)'), 'Panchang and solar ingress searches use sub-second bisection precision');
+  assert.doesNotMatch(transitPanchangSource, /for\(let j=0;j<(42|55);j\+\+\)/, 'Long redundant bisection loops are removed');
   assert.doesNotMatch(dailyCalendarSource, /solarNoaa\(/, 'Daily UI must reuse worker-provided sunrise and sunset rather than invent separate calculations');
 });
 
@@ -401,7 +422,7 @@ test('Kari Naal and Thaniya Naal are separate fixed Tamil-month date flags', () 
 });
 
 test('Monthly Tamil solar labels safely handle more than one boundary inside a Gregorian month', () => {
-  assert.match(calendarCalculationWorkerSource, /const probeIndexes=\[\.\.\.new Set\(\[0,7,14,21,28,entries\.length-1\]/);
+  assert.match(calendarCalculationWorkerSource, /const probeIndexes=\[\.\.\.new Set\(\[0,Math\.floor\(\(entries\.length-1\)\/2\),entries\.length-1\]/);
   assert.match(calendarCalculationWorkerSource, /while\(lo<hi\)/);
   assert.match(calendarCalculationWorkerSource, /boundaries\.push\(\{index:lo,state\}\)/);
   assert.match(calendarCalculationWorkerSource, /day:state\.offset\+dateDistance\(entries\[i\]\.date,firstDate\)/);

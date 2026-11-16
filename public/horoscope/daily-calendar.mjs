@@ -8,6 +8,7 @@ if(host){
  const storage={get(){try{return JSON.parse(localStorage.getItem('smv-calendar-settings')||'{}')}catch{return {}}},set(v){try{localStorage.setItem('smv-calendar-settings',JSON.stringify(v))}catch{}}};
  let cfg={lat:11.2342,lon:78.8808,offset:330,place:'Perambalur',rasi:0,star:0,...storage.get()},daily=null,month=null,seq=0,pending=new Map(),worker=null,dayRequest=0,monthRequest=0,locationSearchTimer=0,locationSearchAbort=null;
  const monthCache=new Map();
+ let pendingMonthCacheKey='',pendingMonthPromise=null;
  const monthCacheKey=key=>[Number(cfg.lat).toFixed(5),Number(cfg.lon).toFixed(5),Number(cfg.offset),key].join('|');
  const rememberMonth=(key,value)=>{monthCache.set(key,value);while(monthCache.size>6)monthCache.delete(monthCache.keys().next().value);};
  const localNow=()=>new Date(Date.now()+Number(cfg.offset)*60000).toISOString();let selected=localNow().slice(0,10),monthKey=selected.slice(0,7);
@@ -270,7 +271,7 @@ if(host){
  // Calendar localisation is isolated from the stored horoscope and never recalculates it.
  const dict=new Map([...signs,...stars,...planets,...[['Transit Chart','கோச்சாரச் சக்கரம்'],['Transit Planetary Positions','கோச்சார கிரக நிலைகள்'],['Planet','கிரகம்'],['Rasi','ராசி'],['Degree','பாகை'],['Nakshatra','நட்சத்திரம்'],['Pada','பாதம்'],['Status','நிலை'],['Retrograde','வக்கிரம்'],['Direct','நேர்கதி'],['Asc','லக்னம்'],['Su','சூ'],['Mo','சந்'],['Ma','செ'],['Me','பு'],['Ju','கு'],['Ve','சு'],['Sa','சனி'],['Ra(R)','ரா(R)'],['Ke(R)','கே(R)']]]);
  if(ta()){for(const [a,b] of [['Su','சூ'],['Mo','சந்'],['Ma','செ'],['Me','பு'],['Ju','கு'],['Ve','சு'],['Sa','சனி']])dict.set(a+'(R)',b+'(R)');const walker=document.createTreeWalker($('#calDaily'),NodeFilter.SHOW_TEXT);while(walker.nextNode()){const node=walker.currentNode;node.textContent=node.textContent.replace('Transit தேதி/நேரம்:','கோச்சார தேதி/நேரம்:').replace(/\bto\b/g,'முதல்');for(const [en,tamil]of dict)if(node.textContent.trim()===en||node.textContent.trim()==='🪐 '+en){node.textContent=node.textContent.replace(en,tamil);break}}}
- updateHora();renderExtra();renderMonth();
+ updateHora();renderExtra();if(month&&monthKey===selected.slice(0,7))renderMonth();
  }
  function updateHora(){
   if(!daily)return;
@@ -293,7 +294,79 @@ if(host){
    td.setAttribute('aria-label',`${h.range}${current?L(' · Current Hora',' · தற்போதைய ஹோரை'):''}`);
   });
  }
- async function load(anchor=null){const request=++dayRequest;daily=null;host.setAttribute('aria-busy','true');$('#calStatus').textContent=L('Calculating Panchang, Hora and transits…','பஞ்சாங்கம், ஹோரை மற்றும் கோச்சாரக் கணக்கீடு நடைபெறுகிறது…');try{const resultDay=await workerCall('day',input(selected));if(request!==dayRequest)return;daily=resultDay;$('#calStatus').textContent=`${cfg.place} · ${selected} · ${daily.en.t.requested.time} · UTC ${+cfg.offset/60}`;renderDaily();const key=selected.slice(0,7);if(!month||monthKey!==key){const mr=++monthRequest,hadMonth=!!month;if(!hadMonth)$('#calMonth').textContent=L('Loading monthly calendar…','மாத நாட்காட்டி தயாராகிறது…');const ck=monthCacheKey(key);let result=monthCache.get(ck);if(!result){result=await workerCall('month',input(key+'-01'));rememberMonth(ck,result);}if(request!==dayRequest||mr!==monthRequest)return;monthKey=key;month=result;renderMonth();}if(request===dayRequest){host.removeAttribute('aria-busy');restoreViewport(anchor)}}catch(e){if(request===dayRequest){host.removeAttribute('aria-busy');$('#calStatus').textContent=L('Unable to calculate. Check the location and retry.','கணக்கிட முடியவில்லை. இட விவரங்களைச் சரிபார்த்து மீண்டும் முயலவும்.');const b=document.createElement('button');b.textContent=L('Retry','மீண்டும் முயல்க');b.onclick=()=>load(anchor);$('#calStatus').append(b);restoreViewport(anchor);console.error(e)}}}
+ function ensureMonth(key){
+  const cacheKey=monthCacheKey(key);
+  if(month&&monthKey===key){
+   if(pendingMonthCacheKey&&pendingMonthCacheKey!==cacheKey){
+    monthRequest++;
+    pendingMonthCacheKey='';pendingMonthPromise=null;
+    renderMonth();
+   }
+   return Promise.resolve(month);
+  }
+  if(pendingMonthCacheKey===cacheKey&&pendingMonthPromise)return pendingMonthPromise;
+  const cached=monthCache.get(cacheKey);
+  if(cached){
+   monthRequest++;
+   pendingMonthCacheKey='';pendingMonthPromise=null;
+   month=cached;monthKey=key;renderMonth();
+   return Promise.resolve(cached);
+  }
+  const request=++monthRequest;
+  pendingMonthCacheKey=cacheKey;
+  const target=$('#calMonth');
+  target.setAttribute('aria-busy','true');
+  target.textContent=L('Loading monthly calendar…','மாத நாட்காட்டி தயாராகிறது…');
+  const promise=workerCall('month',input(key+'-01')).then(result=>{
+   if(request!==monthRequest)return null;
+   month=result;monthKey=key;rememberMonth(cacheKey,result);renderMonth();
+   return result;
+  }).catch(error=>{
+   if(request===monthRequest){
+    target.removeAttribute('aria-busy');
+    target.textContent=L('Unable to load the monthly calendar.','மாத நாட்காட்டியை ஏற்ற முடியவில்லை.');
+    pendingMonthCacheKey='';pendingMonthPromise=null;
+    console.error(error);
+   }
+   return null;
+  }).finally(()=>{
+   if(request===monthRequest){
+    $('#calMonth').removeAttribute('aria-busy');
+    pendingMonthCacheKey='';pendingMonthPromise=null;
+   }
+  });
+  pendingMonthPromise=promise;
+  return promise;
+ }
+ async function load(anchor=null){
+  const request=++dayRequest,requestedDate=selected,key=selected.slice(0,7);
+  daily=null;
+  host.setAttribute('aria-busy','true');
+  $('#calStatus').textContent=L('Calculating Panchang, Hora and transits…','பஞ்சாங்கம், ஹோரை மற்றும் கோச்சாரக் கணக்கீடு நடைபெறுகிறது…');
+  const dayInput=input(requestedDate);
+  const monthPromise=ensureMonth(key);
+  try{
+   const resultDay=await workerCall('day',dayInput);
+   if(request!==dayRequest)return;
+   daily=resultDay;
+   $('#calStatus').textContent=`${cfg.place} · ${requestedDate} · ${daily.en.t.requested.time} · UTC ${+dayInput.utcOffsetMinutes/60}`;
+   renderDaily();
+   host.removeAttribute('aria-busy');
+   await monthPromise;
+   if(request===dayRequest)restoreViewport(anchor);
+  }catch(error){
+   if(request===dayRequest){
+    host.removeAttribute('aria-busy');
+    $('#calStatus').textContent=L('Unable to calculate. Check the location and retry.','கணக்கிட முடியவில்லை. இட விவரங்களைச் சரிபார்த்து மீண்டும் முயலவும்.');
+    const button=document.createElement('button');
+    button.textContent=L('Retry','மீண்டும் முயல்க');
+    button.onclick=()=>load(anchor);
+    $('#calStatus').append(button);
+    restoreViewport(anchor);
+    console.error(error);
+   }
+  }
+ }
  shell();load();window.addEventListener('smv-language',()=>{shell();renderDaily();renderMonth()});
  let lastDate=localNow().slice(0,10);setInterval(()=>{if(document.hidden)return;const date=localNow().slice(0,10);if(lastDate!==date&&selected===lastDate){selected=date;$('#calDate').value=date;lastDate=date;load()}else updateHora()},60000);
  addEventListener('pagehide',()=>{locationSearchAbort?.abort();clearTimeout(locationSearchTimer);try{worker?.terminate()}catch{}worker=null;pending.clear()},{once:true});
