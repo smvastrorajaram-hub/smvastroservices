@@ -15,7 +15,7 @@ import {
 import { currentWeek, periodReference } from '../public/horoscope/calendar/rasi-palan-periods.mjs';
 import { calculateSwiss, calculateSunMoonSync } from '../public/horoscope/offline/swiss_vedic.browser.mjs';
 import { panchang, solarNoaa } from '../public/horoscope/offline/transit_panchang.browser.mjs';
-import { calculateRasiManaForLocation, calculateLagnaBalanceFromRasiMana, meanObliquityAtJulianDay } from '../public/horoscope/offline/rasi-mana.browser.mjs';
+import { calculateRasiManaForLocation, calculateSolarSignRasiMana, meanObliquityAtJulianDay } from '../public/horoscope/offline/rasi-mana.browser.mjs';
 import { TAMIL_DAY_YOGA_TABLE, getTamilDayYoga, getTamilCalendarDayFlags } from '../public/horoscope/tamil-day-classifications.mjs';
 
 const dailyCalendarSource = await readFile(new URL('../public/horoscope/daily-calendar.mjs', import.meta.url), 'utf8');
@@ -73,17 +73,22 @@ test('Place-based Rasi Mana uses Oblique Ascension consistently for Indian and w
   assert.ok(perambalur.some((row, index) =>
     Math.abs(row.durationDegrees - chennai[index].durationDegrees) > 1e-5),
     'Changing latitude from Perambalur to Chennai must change Rasi Mana');
-  const balance = calculateLagnaBalanceFromRasiMana({
-    siderealLongitude: 7 * 30 + 13.25,
-    latitude: 11.2342,
-    ayanamsaDegrees: 24.25,
-    obliquityDegrees: 23.436
-  });
-  assert.equal(balance.available, true);
-  assert.equal(balance.method, 'oblique-ascension');
-  assert.equal(balance.signIndex, 7);
-  assert.ok(balance.balanceSeconds > 0);
-  assert.ok(balance.balanceSeconds < balance.rasiMana.rows[7].durationSeconds);
+  for (const solarSignIndex of [6, 7]) {
+    const balance = calculateSolarSignRasiMana({
+      solarSignIndex,
+      latitude: 11.2342,
+      ayanamsaDegrees: 24.25,
+      obliquityDegrees: 23.436
+    });
+    assert.equal(balance.available, true);
+    assert.equal(balance.method, 'solar-sign-oblique-ascension');
+    assert.equal(balance.signIndex, solarSignIndex);
+    assert.equal(balance.selectedRasiMana.signIndex, solarSignIndex);
+    assert.equal(balance.balanceNazhigai, balance.selectedRasiMana.nazhigai);
+    assert.equal(balance.balanceVinazhigai, balance.selectedRasiMana.vinazhigai);
+    assert.equal(balance.balanceSeconds, balance.selectedRasiMana.totalVighati * 24);
+    assert.equal(balance.rasiMana.rows.reduce((sum, row) => sum + row.totalVighati, 0), 3600);
+  }
 });
 
 test('Polar Rasi Mana explicitly reports signs that do not rise instead of fabricating durations', () => {
@@ -101,19 +106,29 @@ test('Mean obliquity is calculated from the selected UT Julian Day', () => {
   assert.ok(value > 23.4 && value < 23.5);
 });
 
-test('Calendar Lagna balance uses the shared Oblique Ascension Rasi Mana engine', () => {
-  assert.match(calendarCalculationWorkerSource, /calculateLagnaBalanceFromRasiMana/);
-  assert.match(calendarCalculationWorkerSource, /meanObliquityAtJulianDay/);
-  assert.match(calendarCalculationWorkerSource, /armcDegrees:ascendant\.armcDegrees/,
-    'Remaining OA must be anchored to Swiss local sidereal angle (ARMC).');
-  assert.match(swissCalculationSource, /armcDegrees:Number\(norm360\(armc\)\.toFixed\(8\)\)/,
-    'Swiss ascendant adapter must expose the matching local sidereal angle.');
-  assert.doesNotMatch(calendarCalculationWorkerSource, /for\(let elapsed=10;/,
-    'The old ten-minute Swiss ascendant scan must not be used for Rasi Mana');
+test('Calendar Rasi Mana selects the complete OA duration for the local solar-ingress sign, independently of current Lagna', () => {
+  assert.match(calendarCalculationWorkerSource, /calculateSolarSignRasiMana/);
+  assert.match(calendarCalculationWorkerSource, /calculateLahiriContextAt/);
+  assert.match(calendarCalculationWorkerSource, /rasiManaSignIndex:rasi\.signIndex/);
+  assert.doesNotMatch(calendarCalculationWorkerSource, /calculateAscendantAt|calculateLagnaBalanceFromRasiMana|armcDegrees:/,
+    'The solar-sign Rasi Mana path must not use the actual Ascendant or ARMC remainder.');
+  assert.match(swissCalculationSource, /export async function calculateLahiriContextAt/);
+  assert.doesNotMatch(swissCalculationSource, /export async function calculateAscendantAt/,
+    'The old ascendant-only solar-ingress source must be removed.');
+  assert.match(transitPanchangSource, /nextIngress<sunsetTs/,
+    'An ingress after local sunset must move to the next sunrise interval.');
   assert.ok(calendarWorkerSource.includes('../offline/rasi-mana.browser.mjs'),
     'The calculation module must be included in the Calendar PWA cache');
-});
+});;
 
+
+test('Date Details displays three separate results and uses only the concise negative Muhurtham value', () => {
+  assert.match(dailyCalendarSource, /L\('No','இல்லை'\)/);
+  assert.match(dailyCalendarSource, /ராசி மான லக்ன இருப்பு/);
+  assert.match(dailyCalendarSource, /daily\.solarSignRasiMana/);
+  assert.match(calendarThemeCssSource, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(calendarThemeCssSource, /grid-template-columns:1fr/);
+});
 test('The Horoscope Matching navigation label uses the requested concise Tamil wording', () => {
   assert.match(horoscopeLanguageSource, /'Matching':'பொருத்தம்'/);
   assert.doesNotMatch(horoscopeLanguageSource, /'Matching':'திருமணப் பொருத்தம்'/);
