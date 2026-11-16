@@ -42,6 +42,28 @@ export function obliqueAscension(tropicalLongitude,latitude,obliquityDegrees){
   return normalizeDegrees(rightAscension-ascensionalDifference*RAD);
 }
 
+
+// Integrate the OA change along the ecliptic arc instead of trusting only its
+// endpoints. This detects a circumpolar gap inside a sign at high latitudes.
+function risingArcDegrees(startLongitude,endLongitude,latitude,obliquityDegrees){
+  const start=normalizeDegrees(startLongitude),span=normalizeDegrees(endLongitude-start);
+  if(!(span>1e-10&&span<=30+1e-10))return null;
+  const segments=Math.max(1,Math.ceil(span*2));
+  let previous=obliqueAscension(start,latitude,obliquityDegrees);
+  if(previous===null)return null;
+  let total=0;
+  for(let index=1;index<=segments;index++){
+    const longitude=start+span*index/segments;
+    const current=obliqueAscension(longitude,latitude,obliquityDegrees);
+    if(current===null)return null;
+    const step=normalizeDegrees(current-previous);
+    if(!(step>1e-10&&step<=15))return null;
+    total+=step;
+    previous=current;
+  }
+  return total>0&&total<=60?total:null;
+}
+
 function allocateWholeVighati(rows){
   // Largest-remainder allocation keeps the rounded 12-sign table at exactly
   // 3,600 vighati (60 nazhigai) without biasing one particular sign.
@@ -63,14 +85,11 @@ export function calculateRasiManaForLocation({
   }
   const rows=Array.from({length:12},(_,signIndex)=>{
     const siderealStart=signIndex*30;
-    const start=obliqueAscension(siderealStart+ayanamsa,lat,obliquity);
-    const end=obliqueAscension((siderealStart+30)+ayanamsa,lat,obliquity);
-    if(start===null||end===null){
-      return {signIndex,available:false,reason:'circumpolar',durationDegrees:null,durationSeconds:null,exactVighati:null};
-    }
-    const durationDegrees=normalizeDegrees(end-start);
-    if(!(durationDegrees>0&&durationDegrees<=60)){
-      return {signIndex,available:false,reason:'invalid-oblique-ascension',durationDegrees:null,durationSeconds:null,exactVighati:null};
+    const durationDegrees=risingArcDegrees(
+      siderealStart+ayanamsa,siderealStart+30+ayanamsa,lat,obliquity
+    );
+    if(durationDegrees===null){
+      return {signIndex,available:false,reason:'circumpolar-or-invalid-rising-arc',durationDegrees:null,durationSeconds:null,exactVighati:null};
     }
     return {
       signIndex,available:true,
@@ -118,14 +137,11 @@ export function calculateLagnaBalanceFromRasiMana({
   const signIndex=Math.floor(longitude/30);
   const tropicalLagna=normalizeDegrees(longitude+ayanamsa);
   const tropicalSignEnd=normalizeDegrees((signIndex+1)*30+ayanamsa);
-  const currentOA=obliqueAscension(tropicalLagna,lat,obliquity);
-  const endOA=obliqueAscension(tropicalSignEnd,lat,obliquity);
-  if(currentOA===null||endOA===null){
-    return {available:false,reason:'circumpolar',signIndex,longitude};
-  }
-  const remainingDegrees=normalizeDegrees(endOA-currentOA);
-  if(!(remainingDegrees>0&&remainingDegrees<=60)){
-    return {available:false,reason:'non-rising-rasi',signIndex,longitude};
+  const remainingDegrees=risingArcDegrees(
+    tropicalLagna,tropicalSignEnd,lat,obliquity
+  );
+  if(remainingDegrees===null){
+    return {available:false,reason:'circumpolar-or-invalid-rising-arc',signIndex,longitude};
   }
   const balanceSecondsExact=remainingDegrees*SECONDS_PER_OA_DEGREE;
   const balanceVighati=Math.max(0,Math.round(remainingDegrees*VIGHATI_PER_OA_DEGREE));
