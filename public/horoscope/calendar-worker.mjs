@@ -32,6 +32,7 @@ function localPartsFromTs(ts,offset){
 }
 const ingressLagnaCache=new Map();
 async function calculateIngressLagnaBalance(input){
+ await getSwe();
  const ingress=nextSolarIngress(input);
  if(!ingress||!Number.isFinite(ingress.timestamp))return null;
  const cacheKey=[Number(input.lat).toFixed(5),Number(input.lon).toFixed(5),Number(input.utcOffsetMinutes),ingress.timestamp].join('|');
