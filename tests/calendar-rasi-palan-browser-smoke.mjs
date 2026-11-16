@@ -233,8 +233,8 @@ try {
     { date:'2026-11-17', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 },
     { date:'2026-12-15', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 },
     { date:'2026-12-16', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 },
+    { date:'2027-01-14', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 },
     { date:'2027-01-15', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 },
-    { date:'2027-01-16', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 },
     { date:'2026-11-25', time:'12:00', lat:11.2342, lon:78.8808, utcOffsetMinutes:330 }
   ]);
   const solarSignRasiManaFixtures = solarSignRasiManaCheck.results;
@@ -274,7 +274,8 @@ try {
   assert.equal(sagittariusAtMargazhiEnd.sunSignIndex, 8, 'Sagittarius remains selected through the end of Margazhi.');
   assert.equal(sagittariusAtMargazhiEnd.fullBalanceVighati, sagittariusAtMargazhiStart.fullBalanceVighati,
     'Sagittarius full Rasi Mana must remain constant through Margazhi.');
-  assert.equal(capricornAtThaiStart.sunSignIndex, 9, 'The after-sunset Makara ingress starts the next sunrise interval on 16 Jan 2027.');
+  assert.equal(capricornAtThaiStart.sunSignIndex, 9, 'The after-sunset Makara ingress starts the next sunrise interval on 15 Jan 2027.');
+  assert.equal(capricornAtThaiStart.ingressDate, '2027-01-14', 'The 15 Jan interval must use the Makara ingress from the previous evening.');
 
   assert.equal(scorpioAt25November.sunSignIndex, 7,
     '25 Nov 2026 sunrise belongs to Scorpio after the evening ingress on 16 Nov.');
