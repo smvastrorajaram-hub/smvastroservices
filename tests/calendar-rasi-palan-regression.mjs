@@ -569,8 +569,8 @@ test('TTD Tirukanitha Amirthadi matrix covers 7 weekdays x 27 Nakshatras and the
   assert.equal(getTamilDayYoga(1, 22).key, 'amirtha', 'Monday + Thiruvonam is Amirtha');
   assert.equal(getTamilDayYoga(1, 0).key, 'unknown');
   assert.equal(getTamilDayYoga(7, 22).key, 'unknown');
-  assert.match(tamilDayClassificationsSource, /prabalarishta[\\s\\S]*?bad: true/);
-  assert.match(dailyCalendarSource, /daily\\.amirthadiYogaSegments/);
+  assert.match(tamilDayClassificationsSource, /prabalarishta[\s\S]*?bad: true/);
+  assert.match(dailyCalendarSource, /daily\.amirthadiYogaSegments/);
   assert.doesNotMatch(dailyCalendarSource, /getTamilDayYoga\\(weekday,dayStar\\)/);
 });
 
