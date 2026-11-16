@@ -219,7 +219,9 @@ try {
     lagnaSignIndex: ingressLagnaFixture.lagnaSignIndex,
     ayanamsaDegrees: ingressLagnaFixture.ayanamsaDegrees,
     obliquityDegrees: ingressLagnaFixture.obliquityDegrees,
-    lagnaLongitude: ingressLagnaFixture.lagnaLongitude
+    lagnaLongitude: ingressLagnaFixture.lagnaLongitude,
+    armcDegrees: ingressLagnaFixture.armcDegrees,
+    currentObliqueAscension: ingressLagnaFixture.currentObliqueAscension
   }));
   assert.ok(Math.abs(ingressLagnaFixture.balanceSeconds -
     ingressLagnaFixture.independentCheck.independentBoundarySeconds) <= 60,
