@@ -181,6 +181,7 @@ try {
     }
     const independentBoundarySeconds = (high - ingressTimestamp) / 1000;
     const boundary = await ascendantAt(high);
+    const predicted = await ascendantAt(ingressTimestamp + Number(calculated.balanceSeconds) * 1000);
     const before = await ascendantAt(ingressTimestamp + Math.max(0, Number(calculated.balanceSeconds) - 90) * 1000);
     const after = await ascendantAt(ingressTimestamp + (Number(calculated.balanceSeconds) + 90) * 1000);
     return {
@@ -189,9 +190,15 @@ try {
         startSignIndex: start.signIndex,
         startLongitude: start.longitude,
         startArmcDegrees: start.armcDegrees,
+        startJulianDayUt: start.julianDayUt,
         boundarySignIndex: boundary.signIndex,
         boundaryLongitude: boundary.longitude,
         boundaryArmcDegrees: boundary.armcDegrees,
+        boundaryJulianDayUt: boundary.julianDayUt,
+        predictedSignIndex: predicted.signIndex,
+        predictedLongitude: predicted.longitude,
+        predictedArmcDegrees: predicted.armcDegrees,
+        predictedJulianDayUt: predicted.julianDayUt,
         beforeBoundarySignIndex: before.signIndex,
         afterBoundarySignIndex: after.signIndex,
         independentBoundarySeconds
@@ -222,7 +229,13 @@ try {
     startSignIndex: ingressLagnaFixture.independentCheck.startSignIndex,
     startLongitude: ingressLagnaFixture.independentCheck.startLongitude,
     startArmcDegrees: ingressLagnaFixture.independentCheck.startArmcDegrees,
+    startJulianDayUt: ingressLagnaFixture.independentCheck.startJulianDayUt,
     boundarySignIndex: ingressLagnaFixture.independentCheck.boundarySignIndex,
+    boundaryJulianDayUt: ingressLagnaFixture.independentCheck.boundaryJulianDayUt,
+    predictedSignIndex: ingressLagnaFixture.independentCheck.predictedSignIndex,
+    predictedLongitude: ingressLagnaFixture.independentCheck.predictedLongitude,
+    predictedArmcDegrees: ingressLagnaFixture.independentCheck.predictedArmcDegrees,
+    predictedJulianDayUt: ingressLagnaFixture.independentCheck.predictedJulianDayUt,
     boundaryLongitude: ingressLagnaFixture.independentCheck.boundaryLongitude,
     boundaryArmcDegrees: ingressLagnaFixture.independentCheck.boundaryArmcDegrees,
     beforeBoundarySignIndex: ingressLagnaFixture.independentCheck.beforeBoundarySignIndex,
