@@ -19,7 +19,7 @@ ok(css.includes('@media(max-width:600px)')&&css.includes('#smvSavedReports .smv-
 ok(css.includes('background:#8b1717!important;color:#fff!important;-webkit-text-fill-color:#fff!important'),'Saved-list buttons use high-contrast red boxes with white text');
 ok(css.includes('overflow-wrap:anywhere!important'),'Long saved report names wrap instead of collapsing into individual letters');
 ok(html.includes('20261106-saved-list-full-width-red-v1'),'Horoscope stylesheet URL has a new cache-busting version');
-ok(sw.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-solar-sign-rasi-mana-pages-v2' : '20261116-calendar-solar-sign-rasi-mana-in-v2';"),'Pages.dev UI cache is bumped while the established .in release is preserved for this preview-only change');
+ok(sw.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-solar-sign-rasi-mana-countdown-pages-v3' : '20261116-calendar-solar-sign-rasi-mana-countdown-in-v3';"),'Pages.dev UI cache is bumped while the established .in release is preserved for this preview-only change');
 ok(sw.includes("const RUNTIME_REVISION = IS_PAGES_DEV_HOST ? 'v284-pages-dev-tamil-solar-20261116' : 'v278-in-navigation-20261115';"),'Horoscope runtime revision is bumped for both primary .in content and Pages.dev preview.');
 ok(store.includes("const DB='smv-reports-v2',STORE='reports',DB_VERSION=3;"),'Saved report database schema is unchanged');
 console.log(JSON.stringify({pass:true,assertions:n,scope:'Saved Reports placement, responsive layout, contrast and cache-version source checks; no saved data migration or deletion'}));

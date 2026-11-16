@@ -2,6 +2,7 @@ import {offsetMinutesAt} from './offline/places/timezone.mjs';
 import {signs,stars,planets,holidays2026,holidaySource,favorable} from './calendar-data.mjs';
 import {getTamilDayYoga,getTamilCalendarDayFlags} from './tamil-day-classifications.mjs';
 import {classifySubhaMuhurtham} from './calendar-muhurta-classification.mjs';
+import {calculateRemainingRasiMana} from './offline/rasi-mana.browser.mjs';
 const host=document.getElementById('smvDailyCalendar');
 if(host){
  const $=s=>host.querySelector(s),ta=()=>document.documentElement.lang==='ta',L=(en,tamil)=>ta()?tamil:en;
@@ -257,8 +258,14 @@ if(host){
   if(daily.solarSignRasiManaLoaded){
    if(balance){
     const solarSign=signs[Number(balance.sunSignIndex)]?.[ta()?1:0]||'—';
-    const n=Number(balance.balanceNazhigai),v=Number(balance.balanceVinazhigai);
     const sunrise=String(balance.sunrise||daily.en.p?.sunrise||'—');
+    const displayTime=isToday?localNow().slice(11,19):calculationTime;
+    const remaining=calculateRemainingRasiMana({
+     totalVighati:Number(balance.fullBalanceVighati??balance.selectedRasiMana?.totalVighati),
+     sunrise,
+     selectedTime:displayTime
+    });
+    const n=remaining.balanceNazhigai,v=remaining.balanceVinazhigai;
     const ingressTime=String(balance.ingressTime||'—');
     balanceLine=L(
      solarSign+' Lagna balance: '+n+' na '+v+' vi',
@@ -452,6 +459,6 @@ if(host){
   }
  }
  shell();load();window.addEventListener('smv-language',()=>{shell();renderDaily();renderMonth()});
- let lastDate=localNow().slice(0,10);setInterval(()=>{if(document.hidden)return;const date=localNow().slice(0,10);if(lastDate!==date&&selected===lastDate){selected=date;$('#calDate').value=date;lastDate=date;load()}else updateHora()},60000);
+ let lastDate=localNow().slice(0,10);setInterval(()=>{if(document.hidden)return;const date=localNow().slice(0,10);if(lastDate!==date&&selected===lastDate){selected=date;$('#calDate').value=date;lastDate=date;load()}else{updateHora();if(selected===date&&daily?.solarSignRasiManaLoaded)renderMuhurtaLagna()}},60000);
  addEventListener('pagehide',()=>{locationSearchAbort?.abort();clearTimeout(locationSearchTimer);try{worker?.terminate()}catch{}worker=null;pending.clear()},{once:true});
 }

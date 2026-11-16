@@ -1,7 +1,7 @@
 import {getSwe} from './offline/wasm-provider.mjs';
 import {calculateSwiss,calculateSunMoon,calculateLahiriContextAt} from './offline/swiss_vedic.browser.mjs';
 import {panchang,transit,calendarTamil,solarNoaa,tamilSolarDate,nextSolarIngress} from './offline/transit_panchang.browser.mjs';
-import {meanObliquityAtJulianDay,calculateSolarSignRasiMana} from './offline/rasi-mana.browser.mjs';
+import {meanObliquityAtJulianDay,calculateSolarSignRasiMana,calculateRemainingRasiMana} from './offline/rasi-mana.browser.mjs';
 const norm=n=>(n%360+360)%360;
 const cache=new Map();
 const sampleCache=new Map();
@@ -33,44 +33,66 @@ function localPartsFromTs(ts,offset){
 }
 const solarSignRasiManaCache=new Map();
 async function calculateSolarSignRasiManaForIngress(input){
- // Initialize Swiss WASM before exact sidereal Sun-longitude ingress sampling.
+ // The solar sign is selected from the exact local-sunrise interval.
  await calculateSunMoon({...input,time:String(input.time||'12:00')});
  const ingress=nextSolarIngress(input);
  if(!ingress||!Number.isFinite(ingress.timestamp))return null;
  const cacheKey=[Number(input.lat).toFixed(5),Number(input.lon).toFixed(5),Number(input.utcOffsetMinutes),ingress.timestamp].join('|');
- if(solarSignRasiManaCache.has(cacheKey))return solarSignRasiManaCache.get(cacheKey);
- const local=localPartsFromTs(ingress.timestamp,input.utcOffsetMinutes);
- const epoch=await calculateLahiriContextAt({
-  ...input,date:local.date,time:local.time
+ let base=solarSignRasiManaCache.get(cacheKey);
+ if(!base){
+  const local=localPartsFromTs(ingress.timestamp,input.utcOffsetMinutes);
+  const epoch=await calculateLahiriContextAt({
+   ...input,date:local.date,time:local.time
+  });
+  const obliquityDegrees=meanObliquityAtJulianDay(epoch.julianDayUt);
+  const rasi=calculateSolarSignRasiMana({
+   solarSignIndex:ingress.signIndex,
+   latitude:input.lat,
+   ayanamsaDegrees:epoch.ayanamsaDegrees,
+   obliquityDegrees
+  });
+  if(!rasi.available)return null;
+  base={
+   sunSignIndex:ingress.signIndex,
+   rasiManaSignIndex:rasi.signIndex,
+   ingressDate:ingress.date,
+   ingressTime:ingress.time,
+   ingressSunLongitude:ingress.sunLongitude,
+   ayanamsaDegrees:epoch.ayanamsaDegrees,
+   obliquityDegrees,
+   fullBalanceSeconds:rasi.balanceSeconds,
+   fullBalanceVighati:rasi.totalVighati,
+   fullBalanceNazhigai:rasi.nazhigai,
+   fullBalanceVinazhigai:rasi.vinazhigai,
+   selectedRasiMana:rasi.selectedRasiMana,
+   rasiMana:rasi.rasiMana.rows,
+   rasiManaAvailable:rasi.rasiMana.available,
+   method:rasi.method
+  };
+  solarSignRasiManaCache.set(cacheKey,base);
+  if(solarSignRasiManaCache.size>12)solarSignRasiManaCache.delete(solarSignRasiManaCache.keys().next().value);
+ }
+ // The full OA duration is cached by ingress, but sunrise and elapsed time
+ // are selected-day values and must be recalculated for every requested time.
+ const sunrise=solarNoaa(input.date,input.lat,input.lon,input.utcOffsetMinutes,true);
+ if(!sunrise)return null;
+ const selectedTime=String(input.time||'12:00');
+ const remaining=calculateRemainingRasiMana({
+  totalVighati:base.fullBalanceVighati,
+  sunrise,
+  selectedTime
  });
- const obliquityDegrees=meanObliquityAtJulianDay(epoch.julianDayUt);
- const rasi=calculateSolarSignRasiMana({
-  solarSignIndex:ingress.signIndex,
-  latitude:input.lat,
-  ayanamsaDegrees:epoch.ayanamsaDegrees,
-  obliquityDegrees
- });
- if(!rasi.available)return null;
- const result={
-  sunSignIndex:ingress.signIndex,
-  rasiManaSignIndex:rasi.signIndex,
-  ingressDate:ingress.date,
-  ingressTime:ingress.time,
-  ingressSunLongitude:ingress.sunLongitude,
-  ayanamsaDegrees:epoch.ayanamsaDegrees,
-  obliquityDegrees,
-  balanceSeconds:rasi.balanceSeconds,
-  balanceNazhigai:rasi.balanceNazhigai,
-  balanceVinazhigai:rasi.balanceVinazhigai,
-  selectedRasiMana:rasi.selectedRasiMana,
-  rasiMana:rasi.rasiMana.rows,
-  rasiManaAvailable:rasi.rasiMana.available,
-  sunrise:solarNoaa(input.date,input.lat,input.lon,input.utcOffsetMinutes,true),
-  method:rasi.method
+ return {
+  ...base,
+  sunrise,
+  selectedTime,
+  elapsedSinceSunriseSeconds:remaining.elapsedSeconds,
+  remainingSeconds:remaining.remainingSeconds,
+  remainingVighati:remaining.remainingVighati,
+  balanceSeconds:remaining.balanceSeconds,
+  balanceNazhigai:remaining.balanceNazhigai,
+  balanceVinazhigai:remaining.balanceVinazhigai
  };
- solarSignRasiManaCache.set(cacheKey,result);
- if(solarSignRasiManaCache.size>12)solarSignRasiManaCache.delete(solarSignRasiManaCache.keys().next().value);
- return result;
 }
 
 // Geocentric lunar rise threshold (mean refraction + horizontal parallax).

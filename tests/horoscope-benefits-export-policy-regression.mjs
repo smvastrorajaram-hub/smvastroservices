@@ -93,14 +93,14 @@ test("All three apps use one synchronized cache release; Horoscope runtime revis
   const versions = workers.map(source => /const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(source));
   assert.ok(versions.every(Boolean));
   assert.deepEqual(versions.map(match => match[1]), [
-    "20261116-calendar-solar-sign-rasi-mana-pages-v2",
-    "20261116-calendar-solar-sign-rasi-mana-pages-v2",
-    "20261116-calendar-solar-sign-rasi-mana-pages-v2"
+    "20261116-calendar-solar-sign-rasi-mana-countdown-pages-v3",
+    "20261116-calendar-solar-sign-rasi-mana-countdown-pages-v3",
+    "20261116-calendar-solar-sign-rasi-mana-countdown-pages-v3"
   ]);
   assert.deepEqual(versions.map(match => match[2]), [
-    "20261116-calendar-solar-sign-rasi-mana-in-v2",
-    "20261116-calendar-solar-sign-rasi-mana-in-v2",
-    "20261116-calendar-solar-sign-rasi-mana-in-v2"
+    "20261116-calendar-solar-sign-rasi-mana-countdown-in-v3",
+    "20261116-calendar-solar-sign-rasi-mana-countdown-in-v3",
+    "20261116-calendar-solar-sign-rasi-mana-countdown-in-v3"
   ]);
   const runtime = /const RUNTIME_REVISION\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(workers[1]);
   assert.ok(runtime);

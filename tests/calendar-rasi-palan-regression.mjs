@@ -15,7 +15,7 @@ import {
 import { currentWeek, periodReference } from '../public/horoscope/calendar/rasi-palan-periods.mjs';
 import { calculateSwiss, calculateSunMoonSync } from '../public/horoscope/offline/swiss_vedic.browser.mjs';
 import { panchang, solarNoaa } from '../public/horoscope/offline/transit_panchang.browser.mjs';
-import { calculateRasiManaForLocation, calculateSolarSignRasiMana, meanObliquityAtJulianDay } from '../public/horoscope/offline/rasi-mana.browser.mjs';
+import { calculateRasiManaForLocation, calculateSolarSignRasiMana, calculateRemainingRasiMana, meanObliquityAtJulianDay } from '../public/horoscope/offline/rasi-mana.browser.mjs';
 import { TAMIL_DAY_YOGA_TABLE, getTamilDayYoga, getTamilCalendarDayFlags } from '../public/horoscope/tamil-day-classifications.mjs';
 
 const dailyCalendarSource = await readFile(new URL('../public/horoscope/daily-calendar.mjs', import.meta.url), 'utf8');
@@ -106,6 +106,39 @@ test('Mean obliquity is calculated from the selected UT Julian Day', () => {
   assert.ok(value > 23.4 && value < 23.5);
 });
 
+test('Solar-sign Rasi Mana starts full at local sunrise and counts down by elapsed local time', () => {
+  const atSunrise = calculateRemainingRasiMana({
+    totalVighati: 329, sunrise: '06:00', selectedTime: '06:00'
+  });
+  assert.equal(atSunrise.balanceNazhigai, 5);
+  assert.equal(atSunrise.balanceVinazhigai, 29);
+  assert.equal(atSunrise.elapsedSeconds, 0);
+  assert.equal(atSunrise.balanceSeconds, 329 * 24);
+
+  const beforeSunrise = calculateRemainingRasiMana({
+    totalVighati: 329, sunrise: '06:00', selectedTime: '05:30'
+  });
+  assert.equal(beforeSunrise.balanceSeconds, atSunrise.fullBalanceSeconds,
+    'Before sunrise the new day has not consumed any of its Rasi Mana.');
+
+  const oneHourLater = calculateRemainingRasiMana({
+    totalVighati: 329, sunrise: '06:00', selectedTime: '07:00'
+  });
+  assert.equal(oneHourLater.elapsedSeconds, 3600);
+  assert.equal(oneHourLater.remainingVighati, 179,
+    'One elapsed hour must subtract exactly 150 vighati (one hour / 24 seconds).');
+  assert.equal(oneHourLater.balanceNazhigai, 2);
+  assert.equal(oneHourLater.balanceVinazhigai, 59);
+
+  const exhausted = calculateRemainingRasiMana({
+    totalVighati: 329, sunrise: '06:00', selectedTime: '08:30'
+  });
+  assert.equal(exhausted.remainingVighati, 0);
+  assert.equal(exhausted.balanceNazhigai, 0);
+  assert.equal(exhausted.balanceVinazhigai, 0,
+    'An exhausted balance must clamp to zero, never become negative.');
+});
+
 test('Calendar Rasi Mana selects the complete OA duration for the local solar-ingress sign, independently of current Lagna', () => {
   assert.match(calendarCalculationWorkerSource, /calculateSolarSignRasiMana/);
   assert.match(calendarCalculationWorkerSource, /calculateLahiriContextAt/);
@@ -119,6 +152,11 @@ test('Calendar Rasi Mana selects the complete OA duration for the local solar-in
     'An ingress after local sunset must move to the next sunrise interval.');
   assert.ok(calendarWorkerSource.includes('../offline/rasi-mana.browser.mjs'),
     'The calculation module must be included in the Calendar PWA cache');
+  assert.match(calendarCalculationWorkerSource, /calculateRemainingRasiMana/);
+  assert.match(calendarCalculationWorkerSource, /fullBalanceVighati:rasi\.totalVighati/);
+  assert.match(dailyCalendarSource, /calculateRemainingRasiMana/);
+  assert.match(dailyCalendarSource, /renderMuhurtaLagna\(\)\}/,
+    'The current-day balance must refresh using the existing minute timer.');
 });;
 
 
@@ -301,7 +339,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-results-after-shoolam-days-pages-v2' : '20261116-calendar-results-after-shoolam-days-in-v2'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-solar-sign-rasi-mana-countdown-pages-v3' : '20261116-calendar-solar-sign-rasi-mana-countdown-in-v3'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
@@ -311,8 +349,8 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261116-calendar-results-after-shoolam-days-v2'));
-   assert.ok(calendarIndexSource.includes('20261116-calendar-results-after-shoolam-days-v2'));
+   assert.ok(calendarIndexSource.includes('20261116-calendar-solar-sign-rasi-mana-countdown-v3'));
+   assert.ok(calendarIndexSource.includes('20261116-calendar-solar-sign-rasi-mana-countdown-v3'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
    assert.ok(calendarIndexSource.includes('20261025-cross-host-assets-header-ta-v1'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
