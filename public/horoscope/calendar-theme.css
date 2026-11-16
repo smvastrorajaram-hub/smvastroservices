@@ -421,3 +421,47 @@ html body.calendar-only>header.calendar-topbar{
  #smvDailyCalendar .cal-jump-month-row{grid-template-columns:repeat(2,minmax(0,1fr))!important}
  #smvDailyCalendar .cal-jump-month-row button{grid-column:1/-1!important;width:100%!important}
 }
+
+
+/* Subha Muhurtham and solar-ingress Lagna summary: keep the existing single-layer surface. */
+#smvDailyCalendar .cal-muhurta-lagna-section{
+ margin:12px 0 2px;padding:12px 2px 2px;
+ border-top:1px solid var(--cal-line,#d9e5df);
+ background:transparent!important;box-shadow:none!important;
+}
+#smvDailyCalendar .cal-muhurta-lagna-grid{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:10px;align-items:stretch;text-align:center;
+}
+#smvDailyCalendar .cal-muhurta-lagna-item{
+ display:flex;min-width:0;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+ padding:7px 5px;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;
+}
+#smvDailyCalendar .cal-muhurta-lagna-item+ .cal-muhurta-lagna-item{
+ border-left:1px solid var(--cal-line,#d9e5df)!important;
+}
+#smvDailyCalendar .cal-muhurta-lagna-item>small{
+ color:#65766d;font-size:12px;font-weight:750;line-height:1.35;text-align:center;
+}
+#smvDailyCalendar .cal-muhurta-lagna-item>strong{
+ color:#174f47;font-size:clamp(15px,3.6vw,18px);font-weight:900;line-height:1.35;text-align:center;overflow-wrap:anywhere;
+}
+#smvDailyCalendar .cal-muhurta-lagna-item>strong.is-subha{color:#207444}
+#smvDailyCalendar .cal-muhurta-lagna-item>strong.is-not-subha{color:#a32220}
+#smvDailyCalendar .cal-muhurta-lagna-item>strong.is-unknown{color:#716d61}
+#smvDailyCalendar .cal-muhurta-lagna-item>span{color:#65766d;font-size:11px;line-height:1.35;text-align:center}
+#smvDailyCalendar .cal-rasi-balance-line{
+ margin:9px auto 0;padding:0;max-width:100%;color:#174f47;
+ font-size:clamp(12px,3.2vw,14px);font-weight:800;line-height:1.6;text-align:center;
+ overflow-wrap:anywhere;
+}
+#smvDailyCalendar .cal-muhurta-explanation{
+ margin:5px auto 0;padding:0;max-width:58rem;color:#65766d;
+ font-size:11px;font-weight:600;line-height:1.55;text-align:center;
+}
+@media(max-width:420px){
+ #smvDailyCalendar .cal-muhurta-lagna-section{margin-top:10px;padding:10px 0 0}
+ #smvDailyCalendar .cal-muhurta-lagna-grid{gap:4px}
+ #smvDailyCalendar .cal-muhurta-lagna-item{padding:7px 3px}
+ #smvDailyCalendar .cal-rasi-balance-line{font-size:12px}
+}
