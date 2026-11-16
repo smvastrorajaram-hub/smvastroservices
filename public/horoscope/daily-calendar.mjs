@@ -219,19 +219,19 @@ if(host){
  function renderMuhurtaLagna(){
   const target=$('#calMuhurtaLagna');
   if(!target||!daily)return;
-  const classification=classifySubhaMuhurtham({
-   date:selected,
-   sunrisePanchang:daily.sunrisePanchang,
-   middayPanchang:daily.middayPanchang
-  });
-  const paksha=classification.available
-   ? (classification.paksha==='shukla'?L('Valarpirai · Shukla Paksha','வளர்பிறை'):L('Theipirai · Krishna Paksha','தேய்பிறை'))
-   : '—';
+  const classification=classifySubhaMuhurtham({date:selected});
+  const phaseLabel=classification.paksha==='valarpirai'
+   ? L('Valarpirai','வளர்பிறை')
+   : classification.paksha==='theipirai'
+    ? L('Theipirai','தேய்பிறை')
+    : '—';
   const verdict=classification.available
    ? (classification.isSubhaMuhurtham
-      ? (ta()?paksha+' சுபமுகூர்த்த நாள்':paksha+' Subha Muhurtham day')
-      : L('சுபமுகூர்த்த நாள் இல்லை','No Subha Muhurtham day'))
-   : L('பஞ்சாங்கத் தரவு கிடைக்கவில்லை','Panchanga data unavailable');
+      ? (classification.paksha==='valarpirai'
+        ? L('Valarpirai Subha Muhurtham day','வளர்பிறை சுபமுகூர்த்த நாள்')
+        : L('Theipirai Subha Muhurtham day','தேய்பிறை சுபமுகூர்த்த நாள்'))
+      : L('No Subha Muhurtham day','சுபமுகூர்த்த நாள் இல்லை'))
+   : L('Annual Muhurtham list unavailable','இந்த ஆண்டிற்கான முகூர்த்தப் பட்டியல் கிடைக்கவில்லை');
   const lagnaRaw=String(daily.en?.t?.lagna?.rasi||'');
   const lagnaIndex=signs.findIndex(s=>s[0]===lagnaRaw||s[1]===lagnaRaw);
   const lagnaName=lagnaIndex>=0?signs[lagnaIndex][ta()?1:0]:'—';
@@ -249,27 +249,25 @@ if(host){
     const ingressTime=String(balance.ingressTime||'—');
     const sunrise=String(balance.sunrise||daily.en.p?.sunrise||'—');
     balanceLine=L(
-     'Next Sun-sign ingress: '+sunSign+' · '+ingressDate+' '+ingressTime+' · '+ingressLagna+' Lagna balance: '+n+' na '+v+' vi · Sunrise: '+sunrise,
-     'அடுத்த சூரிய ராசி நுழைவு: '+sunSign+' · '+ingressDate+' '+ingressTime+' · '+ingressLagna+' லக்ன இருப்பு: '+n+' நா '+v+' வி · சூ.உதயம்: '+sunrise
+     'Sun sign ingress: '+sunSign+' · '+ingressDate+' '+ingressTime+' · '+ingressLagna+' Lagna balance: '+n+' na '+v+' vi · Sunrise: '+sunrise,
+     'சூரிய ராசி நுழைவு: '+sunSign+' · '+ingressDate+' '+ingressTime+' · '+ingressLagna+' லக்ன இருப்பு: '+n+' நா '+v+' வி · சூ.உதயம்: '+sunrise
     );
    }else{
     balanceLine=L('Lagna balance is unavailable for this location/date.','இந்த ஊர் / தேதிக்கான லக்ன இருப்பைக் கணக்கிட முடியவில்லை.');
    }
   }
-  const explanation=classification.available
-   ? (ta()
-      ? ((classification.favourableFactors.length?'சாதக அம்சங்கள்: '+classification.favourableFactors.join(' · '):'')+
-         (classification.cautions.length?(classification.favourableFactors.length?' · ':'')+'கவனிக்க: '+classification.cautions.join(' · '):''))
-      : 'Assessment: sunrise Tithi, Nakshatra, weekday, Karana and Nitya Yoga are evaluated separately. Time-specific restrictions must still be avoided.')
-   : '';
+  const sourceSummary=classification.available
+   ? L('Published Tamil Muhurtham list · '+classification.year+' · '+classification.publishedCount+' dates','வெளியிடப்பட்ட தமிழ் முகூர்த்தப் பட்டியல் · '+classification.year+' · '+classification.publishedCount+' நாட்கள்')
+   : L('The published list is currently available for 2026 and 2027 only.','தற்போது 2026, 2027 ஆண்டுகளுக்கான வெளியிடப்பட்ட பட்டியல் மட்டுமே இணைக்கப்பட்டுள்ளது.');
   target.innerHTML=
    '<div class="cal-muhurta-lagna-grid">'+
-    '<div class="cal-muhurta-lagna-item"><small>'+L('Subha Muhurtham day','சுபமுகூர்த்த நாள்')+'</small><strong class="cal-subha-verdict '+(classification.available?(classification.isSubhaMuhurtham?'is-subha':'is-not-subha'):'is-unknown')+'">'+esc(verdict)+'</strong><span>'+esc(paksha)+'</span></div>'+
+    '<div class="cal-muhurta-lagna-item"><small>'+L('Subha Muhurtham day','சுபமுகூர்த்த நாள்')+'</small><strong class="cal-subha-verdict '+(classification.available?(classification.isSubhaMuhurtham?'is-subha':'is-not-subha'):'is-unknown')+'">'+esc(verdict)+'</strong><span>'+esc(phaseLabel)+'</span></div>'+
     '<div class="cal-muhurta-lagna-item"><small>'+esc(lagnaHeading)+'</small><strong>'+esc(lagnaName)+'</strong><span>'+L('Calculated at','கணக்கீட்டு நேரம்')+' '+esc(calculationTime)+'</span></div>'+
    '</div>'+
    '<p class="cal-rasi-balance-line">'+esc(balanceLine)+'</p>'+
-   (explanation?'<p class="cal-muhurta-explanation">'+esc(explanation)+'</p>':'');
+   '<p class="cal-muhurta-explanation">'+esc(sourceSummary)+' · <a href="'+esc(classification.source||'https://tamilcalendarapp.com/subha-muhurtham-dates/')+'" target="_blank" rel="noopener">'+L('Source list','ஆதாரப் பட்டியல்')+'</a></p>';
  }
+
  function renderDateDetails(){
   if(!daily)return;
   const p=daily.en.p,solar=p?.tamilSolar,weekday=new Date(selected+'T12:00:00Z').getUTCDay();
