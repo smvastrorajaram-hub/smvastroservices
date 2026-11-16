@@ -9,11 +9,21 @@ if(host){
  let cfg={lat:11.2342,lon:78.8808,offset:330,place:'Perambalur',rasi:0,star:0,...storage.get()},daily=null,month=null,seq=0,pending=new Map(),worker=null,dayRequest=0,monthRequest=0,locationSearchTimer=0,locationSearchAbort=null;
  const monthCache=new Map();
  let pendingMonthCacheKey='',pendingMonthPromise=null;
- const monthCacheKey=key=>[Number(cfg.lat).toFixed(5),Number(cfg.lon).toFixed(5),Number(cfg.offset),key].join('|');
+ const monthCacheKey=(key,offset=cfg.offset)=>[Number(cfg.lat).toFixed(5),Number(cfg.lon).toFixed(5),Number(offset),key].join('|');
  const rememberMonth=(key,value)=>{monthCache.set(key,value);while(monthCache.size>6)monthCache.delete(monthCache.keys().next().value);};
- const localNow=()=>new Date(Date.now()+Number(cfg.offset)*60000).toISOString();let selected=localNow().slice(0,10),monthKey=selected.slice(0,7);
+ const localNowAt=offset=>new Date(Date.now()+Number(offset)*60000).toISOString();
+ const localNow=()=>localNowAt(cfg.offset);let selected=localNow().slice(0,10),monthKey=selected.slice(0,7);
  const workerCall=(kind,input)=>new Promise((resolve,reject)=>{if(!worker){worker=new Worker(new URL('./calendar-worker.mjs',import.meta.url),{type:'module'});worker.onmessage=({data})=>{const p=pending.get(data.id);if(p){pending.delete(data.id);data.error?p.reject(new Error(data.error)):p.resolve(data.result)}};worker.onerror=()=>{for(const p of pending.values())p.reject(new Error('Calendar engine unavailable'));pending.clear();worker.terminate();worker=null;}}const id=++seq;pending.set(id,{resolve,reject});worker.postMessage({id,kind,input});});
- function input(date){if(cfg.timezone){try{cfg.offset=offsetMinutesAt(cfg.timezone,date,'12:00')}catch(e){console.warn('Calendar timezone unavailable',e)}}return {date,time:date===localNow().slice(0,10)?localNow().slice(11,16):'12:00',lat:+cfg.lat,lon:+cfg.lon,utcOffsetMinutes:+cfg.offset,language:'en'}}
+ function input(date,updateOffset=true){
+  let offset=Number(cfg.offset);
+  if(cfg.timezone){
+   try{offset=offsetMinutesAt(cfg.timezone,date,'12:00')}
+   catch(error){console.warn('Calendar timezone unavailable',error)}
+  }
+  if(updateOffset)cfg.offset=offset;
+  const now=localNowAt(offset);
+  return {date,time:date===now.slice(0,10)?now.slice(11,16):'12:00',lat:+cfg.lat,lon:+cfg.lon,utcOffsetMinutes:offset,language:'en'};
+ }
  function settings(){cfg.rasi=+$('#calRasi').value;cfg.star=+$('#calStar').value;storage.set(cfg);renderExtra()}
  function viewportAnchor(selector){const el=selector?$(selector):null;return el?{selector,top:el.getBoundingClientRect().top}:null}
  function restoreViewport(anchor){if(!anchor)return;requestAnimationFrame(()=>requestAnimationFrame(()=>{const el=$(anchor.selector);if(!el)return;const delta=el.getBoundingClientRect().top-anchor.top;if(Math.abs(delta)>1)window.scrollBy(0,delta)}))}
@@ -295,7 +305,8 @@ if(host){
   });
  }
  function ensureMonth(key){
-  const cacheKey=monthCacheKey(key);
+  const monthInput=input(key+'-01',false);
+  const cacheKey=monthCacheKey(key,monthInput.utcOffsetMinutes);
   if(month&&monthKey===key){
    if(pendingMonthCacheKey&&pendingMonthCacheKey!==cacheKey){
     monthRequest++;
@@ -317,7 +328,7 @@ if(host){
   const target=$('#calMonth');
   target.setAttribute('aria-busy','true');
   target.textContent=L('Loading monthly calendar…','மாத நாட்காட்டி தயாராகிறது…');
-  const promise=workerCall('month',input(key+'-01')).then(result=>{
+  const promise=workerCall('month',monthInput).then(result=>{
    if(request!==monthRequest)return null;
    month=result;monthKey=key;rememberMonth(cacheKey,result);renderMonth();
    return result;
