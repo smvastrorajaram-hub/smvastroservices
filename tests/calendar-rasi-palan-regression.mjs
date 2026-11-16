@@ -104,6 +104,10 @@ test('Mean obliquity is calculated from the selected UT Julian Day', () => {
 test('Calendar Lagna balance uses the shared Oblique Ascension Rasi Mana engine', () => {
   assert.match(calendarCalculationWorkerSource, /calculateLagnaBalanceFromRasiMana/);
   assert.match(calendarCalculationWorkerSource, /meanObliquityAtJulianDay/);
+  assert.match(calendarCalculationWorkerSource, /armcDegrees:ascendant\\.armcDegrees/,
+    'Remaining OA must be anchored to Swiss local sidereal angle (ARMC).');
+  assert.match(swissCalculationSource, /armcDegrees:Number\\(norm360\\(armc\\)\\.toFixed\\(8\\)\\)/,
+    'Swiss ascendant adapter must expose the matching local sidereal angle.');
   assert.doesNotMatch(calendarCalculationWorkerSource, /for\(let elapsed=10;/,
     'The old ten-minute Swiss ascendant scan must not be used for Rasi Mana');
   assert.ok(calendarWorkerSource.includes('../offline/rasi-mana.browser.mjs'),
