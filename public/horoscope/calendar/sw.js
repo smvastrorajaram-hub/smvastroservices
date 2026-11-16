@@ -1,5 +1,5 @@
 const IS_PAGES_DEV_HOST = self.location.hostname === 'smvastroservices.pages.dev' || self.location.hostname.endsWith('.smvastroservices.pages.dev') || self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
-const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-dual-date-details-pages-v1' : '20261115-navigation-auto-restore-live-booking-in-v1';
+const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-dual-date-details-pages-v3' : '20261115-navigation-auto-restore-live-booking-in-v1';
 const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE;
 const LOCATION_CACHE='smv-shared-india-places';
 const PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['../../pages-dev-host-independence.js','../../pages-dev-apk-pwa-icons.js']:[];
@@ -23,7 +23,7 @@ const REQUIRED_CORE = new Set([
  '../android-apk-download.mjs','../android-apk-icons.css',
  '../assets/favicon-calendar.png','../assets/favicon-calendar.ico',
  '../assets/smv-calendar-website.webp',
- './rasi-palan-periods.mjs','../daily-calendar.mjs','../calendar-rasi-palan.mjs',
+ './rasi-palan-periods.mjs','../daily-calendar.mjs','../tamil-day-classifications.mjs','../calendar-rasi-palan.mjs',
  '../calendar-rasi-palan.css','../calendar-rasi-palan-rules.mjs','../daily-calendar.css',
  '../calendar-data.mjs','../calendar-worker.mjs','../offline/wasm-provider.mjs','../offline/places/timezone.mjs','../offline/places/tz-boundary-lookup.mjs',
  '../offline/places/place-search.mjs','../offline/places/place-display.mjs','../offline/places/india-manifest.json',
