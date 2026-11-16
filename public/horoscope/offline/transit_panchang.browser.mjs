@@ -137,8 +137,12 @@ function tamilSolarDate(input){
  if(nextIngressTs!==null){
    const nextDate=localDateStringFromTs(nextIngressTs,offset);
    if(nextDate===referenceDate){
-     monthStartTs=nextIngressTs;
-     monthSign=(currentSign+1)%12;
+     const nextIngressTime=localTimeStringFromTs(nextIngressTs,offset);
+     // An ingress at or after local sunset belongs to the next sunrise interval.
+     if(nextIngressTime < refSunset){
+       monthStartTs=nextIngressTs;
+       monthSign=(currentSign+1)%12;
+     }
    }
  }
  if(monthStartTs===null || !Number.isFinite(monthStartTs)) return null;
