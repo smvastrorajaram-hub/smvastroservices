@@ -176,14 +176,14 @@ test('all three PWA cache releases are synchronized for Pages.dev and .in conten
     return { pages: match[1], legacy: match[2] };
   });
   assert.deepEqual(releases.map(item => item.pages), [
-    '20261116-tamil-solar-after-sunset-pages-v1',
-    '20261116-tamil-solar-after-sunset-pages-v1',
-    '20261116-tamil-solar-after-sunset-pages-v1'
+    '20261116-calendar-dual-date-details-pages-v1',
+    '20261116-calendar-dual-date-details-pages-v1',
+    '20261116-calendar-dual-date-details-pages-v1'
   ]);
   assert.deepEqual(releases.map(item => item.legacy), [
-    '20261115-navigation-auto-restore-live-booking-in-v1',
-    '20261115-navigation-auto-restore-live-booking-in-v1',
-    '20261115-navigation-auto-restore-live-booking-in-v1'
+    '20261116-calendar-dual-date-details-in-v1',
+    '20261116-calendar-dual-date-details-in-v1',
+    '20261116-calendar-dual-date-details-in-v1'
   ]);
 });
 test('each installer creates its own 256x256 Windows icon', () => {
