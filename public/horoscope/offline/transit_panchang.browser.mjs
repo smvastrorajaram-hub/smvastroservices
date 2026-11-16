@@ -396,12 +396,15 @@ export function nakshatraIntervalsForLocalDay(input){
   if(!Number.isFinite(dayStart)||!Number.isFinite(dayEnd)||dayEnd<=dayStart)
     return {available:false,reason:'invalid-local-solar-day',intervals:[]};
   const intervals=[];
-  let segmentStart=dayStart,probe=dayStart+60000;
-  for(let index=0;index<8&&probe<dayEnd;index++){
-    const state=panchangEventState(input,probe,'nakshatra');
+  let segmentStart=dayStart;
+  for(let index=0;index<8&&segmentStart<dayEnd;index++){
+    const state=panchangEventState(input,segmentStart,'nakshatra');
     if(!state||!Number.isInteger(state.index)||state.index<0||state.index>=27)
       return {available:false,reason:'nakshatra-state-unavailable',intervals:[]};
-    const boundary=panchangBoundary(input,probe,'nakshatra',1);
+    // panchangBoundary() returns the final minute belonging to the current
+    // Nakshatra. The next Nakshatra therefore starts at the following minute,
+    // matching the existing Panchang Nakshatra start/end display precision.
+    const boundary=panchangBoundary(input,segmentStart,'nakshatra',1);
     const segmentEnd=boundary==null?dayEnd:Math.min(boundary,dayEnd);
     if(!Number.isFinite(segmentEnd)||segmentEnd<=segmentStart)
       return {available:false,reason:'nakshatra-boundary-unavailable',intervals:[]};
@@ -413,8 +416,13 @@ export function nakshatraIntervalsForLocalDay(input){
       endTimestamp:segmentEnd
     });
     if(segmentEnd>=dayEnd)break;
-    segmentStart=segmentEnd;
-    probe=segmentStart+60000;
+    const nextStart=segmentEnd+60000;
+    if(nextStart>=dayEnd){
+      intervals[intervals.length-1].end= formatPanchangBoundary(dayEnd,offset,true);
+      intervals[intervals.length-1].endTimestamp=dayEnd;
+      break;
+    }
+    segmentStart=nextStart;
   }
   if(!intervals.length||intervals[intervals.length-1].endTimestamp!==dayEnd)
     return {available:false,reason:'incomplete-nakshatra-timeline',intervals:[]};
