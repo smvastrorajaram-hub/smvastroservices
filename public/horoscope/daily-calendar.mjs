@@ -208,9 +208,14 @@ if(host){
   const yearName=getTamilYearName(solar,selected,ta());
   const solarDay=Number(solar?.day),monthTa=solar?.monthTa||'—',monthEn=solar?.monthEn||'—';
   const tamilDate=Number.isFinite(solarDay)?String(solarDay)+' · '+(ta()?monthTa:monthEn)+' · '+yearName:'—';
-  const dayYoga=dayYogaFor(weekday,p?.nakshatra?.number);
+  const dayStar=Number(daily.dayStar)||Number(p?.nakshatra?.number);
+  const dayYoga=dayYogaFor(weekday,dayStar);
   const sunrise=clockMinutes(p?.sunrise),sunset=clockMinutes(p?.sunset);
-  const brahma=sunrise==null?null:[clockText(sunrise-96),clockText(sunrise-48)];
+  const dateBefore=new Date(Date.parse(selected+'T12:00:00Z')-86400000).toISOString().slice(0,10);
+  const priorSunset=clockMinutes(solarNoaa(dateBefore,+cfg.lat,+cfg.lon,+cfg.offset,false));
+  const nightLength=sunrise!=null&&priorSunset!=null?sunrise+1440-priorSunset:null;
+  const nightMuhurta=nightLength>0?nightLength/15:null;
+  const brahma=nightMuhurta? [clockText(sunrise+1440-nightMuhurta*2),clockText(sunrise+1440-nightMuhurta)]:null;
   const daylight=sunrise!=null&&sunset!=null?(sunset-sunrise+1440)%1440:null;
   const abhijit=daylight>0?[clockText(sunrise+daylight*7/15),clockText(sunrise+daylight*8/15)]:null;
   const shool=[
@@ -226,8 +231,8 @@ if(host){
   $('#calDateDetailsExtra').innerHTML=
    '<div class="cal-details-summary">'+
     '<article class="cal-tamil-date-card"><small>'+L('Tamil date · month · year','தமிழ் தேதி · மாதம் · ஆண்டு')+'</small><strong>'+esc(tamilDate)+'</strong><span>'+esc((ta()?monthTa:monthEn)+' · '+yearName)+'</span></article>'+
-    '<article class="cal-day-yoga-card '+(dayYoga.bad?'is-inauspicious':'is-auspicious')+'"><small>'+L('Tamil day yoga','தமிழ் நாள் யோகம்')+'</small><strong>'+esc(yogaName)+'</strong><span>'+esc(yogaResult)+'</span><small>'+L('Based on weekday and Nakshatra','கிழமை மற்றும் நட்சத்திர இணைவு அடிப்படையில்')+'</small></article>'+
-    '<article class="cal-muhurta-card"><small>'+L('Brahma Muhurtham','பிரம்ம முகூர்த்தம்')+'</small><strong>'+(brahma?brahma.join(' – '):'—')+'</strong><span>'+L('96 to 48 minutes before sunrise','சூரிய உதயத்திற்கு 96 முதல் 48 நிமிடங்களுக்கு முன்')+'</span></article>'+
+    '<article class="cal-day-yoga-card '+(dayYoga.bad?'is-inauspicious':'is-auspicious')+'"><small>'+L('Tamil day yoga','தமிழ் நாள் யோகம்')+'</small><strong>'+esc(yogaName)+'</strong><span>'+esc(yogaResult)+'</span><small>'+L('Weekday + Nakshatra at sunrise','சூரிய உதயக் கிழமை + நட்சத்திரம்')+'</small></article>'+
+    '<article class="cal-muhurta-card"><small>'+L('Brahma Muhurtham','பிரம்ம முகூர்த்தம்')+'</small><strong>'+(brahma?brahma.join(' – '):'—')+'</strong><span>'+L('14th of 15 equal parts of the preceding night','முந்தைய இரவின் 15 சம முகூர்த்தங்களில் 14-வது')+'</span></article>'+
     '<article class="cal-muhurta-card"><small>'+L('Abhijit Muhurtham','அபிஜித் முகூர்த்தம்')+'</small><strong>'+(abhijit?abhijit.join(' – '):'—')+'</strong><span>'+L('The 8th of 15 equal daytime Muhurtas','பகல் நேரத்தின் 15 சம முகூர்த்தங்களில் 8-வது')+'</span></article>'+
     '<article class="cal-shoolam-card"><small>'+L('Travel Shoolam','பயண சூலம்')+'</small><strong>'+(ta()?shool.directionTa:shool.directionEn)+'</strong><span>'+L('Pariharam','பரிகாரம்')+': '+(ta()?shool.remedyTa:shool.remedyEn)+'</span></article>'+
    '</div>';
