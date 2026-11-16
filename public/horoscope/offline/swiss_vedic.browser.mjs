@@ -837,7 +837,15 @@ export async function calculateAscendantAt({date,time,lat,lon,utcOffsetMinutes=3
   const longitudeSidereal=upgAscAtJd(jd,latitude,longitude,houseSystem);
   if(!Number.isFinite(longitudeSidereal))throw new Error('Swiss Ephemeris லக்ன நிலையை வழங்கவில்லை.');
   const z=zodiac(longitudeSidereal);
-  return {longitude:Number(longitudeSidereal.toFixed(8)),signIndex:z.index,degree:z.degree};
+  const ayanamsa=Number(swe.get_ayanamsa_ut(jd[0]));
+  if(!Number.isFinite(ayanamsa))throw new Error('Swiss Ephemeris Lahiri ayanamsa is unavailable.');
+  return {
+    longitude:Number(longitudeSidereal.toFixed(8)),
+    signIndex:z.index,
+    degree:z.degree,
+    ayanamsa:Number(ayanamsa.toFixed(8)),
+    julianDayUt:Number(jd[0].toFixed(8))
+  };
 }
 
 
