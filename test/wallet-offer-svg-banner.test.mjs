@@ -72,8 +72,8 @@ test('existing offer SVG assets are precached across the synchronized SMV app re
   for (const theme of themes) {
     assert.ok(worker.includes("'./assets/offers/" + theme + ".svg'"), theme + ' SVG must be part of the main app cache');
   }
-  const pagesRelease = '20261116-calendar-solar-sign-rasi-mana-countdown-pages-v3';
-  const productionRelease = '20261116-calendar-solar-sign-rasi-mana-countdown-in-v3';
+  const pagesRelease = '20261116-calendar-solar-sign-rasi-mana-selected-date-sunrise-pages-v4';
+  const productionRelease = '20261116-calendar-solar-sign-rasi-mana-selected-date-sunrise-in-v4';
   for (const source of [worker, horoscopeWorker, calendarWorker]) {
     assert.ok(source.includes(pagesRelease), 'All three apps must bump the Pages.dev preview cache together');
     assert.ok(source.includes(productionRelease), 'All three apps must bump the .in Production cache in sync with Pages.dev');
