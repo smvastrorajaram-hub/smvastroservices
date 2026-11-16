@@ -151,15 +151,18 @@ try {
     const swiss = await import('/horoscope/offline/swiss_vedic.browser.mjs');
     const ingressTimestamp = Date.parse(calculated.ingressDate + 'T' + calculated.ingressTime + 'Z') -
       Number(fixture.utcOffsetMinutes) * 60000;
-    const ascendantAt = timestamp => {
+    const localDateTimeAt = timestamp => {
       const local = new Date(timestamp + Number(fixture.utcOffsetMinutes) * 60000);
       const pad = value => String(value).padStart(2, '0');
-      return swiss.calculateAscendantAt({
-        ...fixture,
+      return {
         date: local.getUTCFullYear() + '-' + pad(local.getUTCMonth() + 1) + '-' + pad(local.getUTCDate()),
         time: pad(local.getUTCHours()) + ':' + pad(local.getUTCMinutes()) + ':' + pad(local.getUTCSeconds())
-      });
+      };
     };
+    const ascendantAt = timestamp => swiss.calculateAscendantAt({
+      ...fixture,
+      ...localDateTimeAt(timestamp)
+    });
     const start = await ascendantAt(ingressTimestamp);
     let low = ingressTimestamp;
     let high = null;
@@ -201,7 +204,10 @@ try {
         predictedJulianDayUt: predicted.julianDayUt,
         beforeBoundarySignIndex: before.signIndex,
         afterBoundarySignIndex: after.signIndex,
-        independentBoundarySeconds
+        independentBoundarySeconds,
+        startLocal: localDateTimeAt(ingressTimestamp),
+        boundaryLocal: localDateTimeAt(ingressTimestamp + independentBoundarySeconds * 1000),
+        predictedLocal: localDateTimeAt(ingressTimestamp + Number(calculated.balanceSeconds) * 1000)
       }
     };
   }, {
@@ -245,7 +251,10 @@ try {
     obliquityDegrees: ingressLagnaFixture.obliquityDegrees,
     lagnaLongitude: ingressLagnaFixture.lagnaLongitude,
     armcDegrees: ingressLagnaFixture.armcDegrees,
-    currentObliqueAscension: ingressLagnaFixture.currentObliqueAscension
+    currentObliqueAscension: ingressLagnaFixture.currentObliqueAscension,
+    startLocal: ingressLagnaFixture.independentCheck.startLocal,
+    boundaryLocal: ingressLagnaFixture.independentCheck.boundaryLocal,
+    predictedLocal: ingressLagnaFixture.independentCheck.predictedLocal
   }));
   assert.ok(Math.abs(ingressLagnaFixture.balanceSeconds -
     ingressLagnaFixture.independentCheck.independentBoundarySeconds) <= 60,
