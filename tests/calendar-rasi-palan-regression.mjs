@@ -15,7 +15,7 @@ import {
 import { currentWeek, periodReference } from '../public/horoscope/calendar/rasi-palan-periods.mjs';
 import { calculateSwiss, calculateSunMoonSync } from '../public/horoscope/offline/swiss_vedic.browser.mjs';
 import { panchang, solarNoaa } from '../public/horoscope/offline/transit_panchang.browser.mjs';
-import { calculateRasiManaForLocation, calculateSolarSignRasiMana, meanObliquityAtJulianDay } from '../public/horoscope/offline/rasi-mana.browser.mjs';
+import { calculateRasiManaForLocation, calculateSolarSignRasiMana, calculateRemainingRasiMana, meanObliquityAtJulianDay } from '../public/horoscope/offline/rasi-mana.browser.mjs';
 import { TAMIL_DAY_YOGA_TABLE, getTamilDayYoga, getTamilCalendarDayFlags } from '../public/horoscope/tamil-day-classifications.mjs';
 
 const dailyCalendarSource = await readFile(new URL('../public/horoscope/daily-calendar.mjs', import.meta.url), 'utf8');
@@ -106,6 +106,39 @@ test('Mean obliquity is calculated from the selected UT Julian Day', () => {
   assert.ok(value > 23.4 && value < 23.5);
 });
 
+test('Solar-sign Rasi Mana starts full at local sunrise and counts down by elapsed local time', () => {
+  const atSunrise = calculateRemainingRasiMana({
+    totalVighati: 329, sunrise: '06:00', selectedTime: '06:00'
+  });
+  assert.equal(atSunrise.balanceNazhigai, 5);
+  assert.equal(atSunrise.balanceVinazhigai, 29);
+  assert.equal(atSunrise.elapsedSeconds, 0);
+  assert.equal(atSunrise.balanceSeconds, 329 * 24);
+
+  const beforeSunrise = calculateRemainingRasiMana({
+    totalVighati: 329, sunrise: '06:00', selectedTime: '05:30'
+  });
+  assert.equal(beforeSunrise.balanceSeconds, atSunrise.fullBalanceSeconds,
+    'Before sunrise the new day has not consumed any of its Rasi Mana.');
+
+  const oneHourLater = calculateRemainingRasiMana({
+    totalVighati: 329, sunrise: '06:00', selectedTime: '07:00'
+  });
+  assert.equal(oneHourLater.elapsedSeconds, 3600);
+  assert.equal(oneHourLater.remainingVighati, 179,
+    'One elapsed hour must subtract exactly 150 vighati (one hour / 24 seconds).');
+  assert.equal(oneHourLater.balanceNazhigai, 2);
+  assert.equal(oneHourLater.balanceVinazhigai, 59);
+
+  const exhausted = calculateRemainingRasiMana({
+    totalVighati: 329, sunrise: '06:00', selectedTime: '08:30'
+  });
+  assert.equal(exhausted.remainingVighati, 0);
+  assert.equal(exhausted.balanceNazhigai, 0);
+  assert.equal(exhausted.balanceVinazhigai, 0,
+    'An exhausted balance must clamp to zero, never become negative.');
+});
+
 test('Calendar Rasi Mana selects the complete OA duration for the local solar-ingress sign, independently of current Lagna', () => {
   assert.match(calendarCalculationWorkerSource, /calculateSolarSignRasiMana/);
   assert.match(calendarCalculationWorkerSource, /calculateLahiriContextAt/);
@@ -119,6 +152,11 @@ test('Calendar Rasi Mana selects the complete OA duration for the local solar-in
     'An ingress after local sunset must move to the next sunrise interval.');
   assert.ok(calendarWorkerSource.includes('../offline/rasi-mana.browser.mjs'),
     'The calculation module must be included in the Calendar PWA cache');
+  assert.match(calendarCalculationWorkerSource, /calculateRemainingRasiMana/);
+  assert.match(calendarCalculationWorkerSource, /fullBalanceVighati:rasi\.totalVighati/);
+  assert.match(dailyCalendarSource, /calculateRemainingRasiMana/);
+  assert.match(dailyCalendarSource, /renderMuhurtaLagna\(\)\}/,
+    'The current-day balance must refresh using the existing minute timer.');
 });;
 
 
