@@ -563,6 +563,7 @@ test('TTD Tirukanitha Amirthadi matrix covers 7 weekdays x 27 Nakshatras and the
   assert.ok(TAMIL_DAY_YOGA_TABLE.every(row => row.length === 27));
   assert.deepEqual(new Set(TAMIL_DAY_YOGA_TABLE.join('')), new Set(['S', 'A', 'M', 'P']));
   assert.equal(getTamilDayYoga(0, 1).key, 'siddha', 'Sunday + Ashwini is Siddha');
+  assert.equal(getTamilDayYoga(1, 2).key, 'siddha', 'Monday + Bharani is Siddha; weekday row and star column must not be transposed');
   assert.equal(getTamilDayYoga(0, 2).key, 'prabalarishta', 'Sunday + Bharani is Prabalarishta');
   assert.equal(getTamilDayYoga(0, 10).key, 'marana', 'Sunday + Magha is Marana');
   assert.equal(getTamilDayYoga(1, 22).key, 'amirtha', 'Monday + Thiruvonam is Amirtha');
