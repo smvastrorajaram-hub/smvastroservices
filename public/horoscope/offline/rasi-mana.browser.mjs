@@ -15,7 +15,7 @@ export function normalizeDegrees(value){
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
 
 // IAU/Meeus mean obliquity polynomial, adequate for rising-time intervals.
-// JD must be UT and is supplied by the same Swiss Ephemeris instant as Lagna.
+// JD must be UT and is supplied by the exact solar-ingress instant.
 export function meanObliquityAtJulianDay(julianDayUt){
   const jd=Number(julianDayUt);
   if(!Number.isFinite(jd))throw new TypeError('A finite UT Julian Day is required.');
