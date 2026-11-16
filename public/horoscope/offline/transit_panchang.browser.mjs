@@ -48,6 +48,50 @@ function addDaysLocal(date,days){
  const d=new Date(`${date}T00:00:00Z`); d.setUTCDate(d.getUTCDate()+Number(days));
  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
 }
+function localTimeStringFromTsPrecise(ts,offset){
+ const d=new Date(Math.round(Number(ts)/1000)*1000+Number(offset??330)*60000);
+ return \`\${String(d.getUTCHours()).padStart(2,'0')}:\${String(d.getUTCMinutes()).padStart(2,'0')}:\${String(d.getUTCSeconds()).padStart(2,'0')}\`;
+}
+function preciseSunLongitudeAtTs(input,ts,offset){
+ const date=localDateStringFromTs(ts,offset),time=localTimeStringFromTsPrecise(ts,offset);
+ return Number(calculateSunMoonSync({...input,date,time,utcOffsetMinutes:offset}).sunLongitude);
+}
+
+// Exact upcoming sidereal solar ingress for the separate Calendar lagna-balance
+// task. Kept out of tamilSolarDate() so month rendering does not gain extra work.
+export function nextSolarIngress(input){
+ const date=String(input.date||''),offset=Number(input.utcOffsetMinutes??330);
+ const lat=Number(input.lat),lon=Number(input.lon);
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(lat)||!Number.isFinite(lon))return null;
+ const rise=solarNoaa(date,lat,lon,offset,true);
+ if(!rise)return null;
+ const startTs=Date.parse(date+\`T\${rise}:00Z\`)-offset*60000;
+ const startSun=norm360(preciseSunLongitudeAtTs(input,startTs,offset));
+ if(!Number.isFinite(startSun))return null;
+ const currentSign=Math.floor(startSun/30),nextSign=(currentSign+1)%12;
+ let lo=startTs,loSun=startSun;
+ for(let step=1;step<=120;step++){
+  const hi=lo+3*86400000;
+  const hiSun=norm360(preciseSunLongitudeAtTs(input,hi,offset));
+  if(Number.isFinite(hiSun)&&Math.floor(loSun/30)===currentSign&&Math.floor(hiSun/30)===nextSign){
+   let a=lo,b=hi;
+   for(let j=0;j<22;j++){
+    const mid=(a+b)/2,midSun=norm360(preciseSunLongitudeAtTs(input,mid,offset));
+    if(Math.floor(midSun/30)===nextSign)b=mid;else a=mid;
+   }
+   const timestamp=Math.round(b/1000)*1000;
+   return {
+    timestamp,date:localDateStringFromTs(timestamp,offset),
+    time:localTimeStringFromTsPrecise(timestamp,offset),
+    signIndex:nextSign,
+    sunLongitude:Number(preciseSunLongitudeAtTs(input,timestamp,offset).toFixed(8))
+   };
+  }
+  lo=hi;loSun=hiSun;
+ }
+ return null;
+}
+
 function sunLongitudeAtTs(input,ts,offset){
  const date=localDateStringFromTs(ts,offset), time=localTimeStringFromTs(ts,offset);
  const sample=calculateSunMoonSync({...input,date,time,utcOffsetMinutes:offset});
