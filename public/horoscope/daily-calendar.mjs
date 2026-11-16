@@ -1,6 +1,7 @@
 import {offsetMinutesAt} from './offline/places/timezone.mjs';
 import {signs,stars,planets,holidays2026,holidaySource,favorable} from './calendar-data.mjs';
 import {getTamilDayYoga,getTamilCalendarDayFlags} from './tamil-day-classifications.mjs';
+import {classifySubhaMuhurtham} from './calendar-muhurta-classification.mjs';
 const host=document.getElementById('smvDailyCalendar');
 if(host){
  const $=s=>host.querySelector(s),ta=()=>document.documentElement.lang==='ta',L=(en,tamil)=>ta()?tamil:en;
@@ -54,7 +55,7 @@ if(host){
   place.onkeydown=e=>{if(e.key==='Escape')closePlaceResults()};
   if(host.dataset.placeOutsideBound!=='1'){host.dataset.placeOutsideBound='1';document.addEventListener('pointerdown',e=>{const b=document.getElementById('calPlaceResults'),i=document.getElementById('calPlace');if(b&&i&&e.target!==i&&!b.contains(e.target)){b.replaceChildren();b.classList.remove('is-open')}},{passive:true});}
  }
- function shell(){const pagesDevHost=location.hostname==='smvastroservices.pages.dev'||location.hostname.endsWith('.smvastroservices.pages.dev');const calendarAppPage=location.hostname==='calendar.smvastroservices.in'||location.pathname.startsWith('/horoscope/calendar/');host.innerHTML=`<header class="cal-header"><div><p>SMV CALENDAR</p><h2>${L('Your day, guided by the sky','உங்கள் நாளுக்கான ஜோதிட வழிகாட்டி')}</h2><span>${L('Panchang · Hora · Transits · Tamil calendar','பஞ்சாங்கம் · ஹோரை · கோச்சாரம் · தமிழ் நாட்காட்டி')}</span></div><a class="cal-download-app-link"${calendarAppPage&&pagesDevHost?' hidden aria-hidden="true"':''} href="${calendarAppPage?'#smvCalendarAndroidApkSection':(location.hostname==='smvastroservices.pages.dev'?'/horoscope/calendar/?lang=':'https://calendar.smvastroservices.in/?lang=')+(ta()?'ta':'en')}"${calendarAppPage?'':' target="_blank" rel="noopener"'}><span class="cal-app-badge" aria-hidden="true">APK</span>${calendarAppPage?L('Download Android App','Android App பதிவிறக்கம்'):L('Open Calendar','காலண்டரைத் திறக்க')}</a></header><section class="cal-input-zone" aria-label="${L('Daily reading inputs','தினசரி பலன் உள்ளீடுகள்')}"><div class="cal-controls"><label>${L('Date','தேதி')}<input id="calDate" type="date" min="1800-01-01" max="2399-12-31" value="${selected}"></label><label>${L('Your Moon sign','உங்கள் சந்திர ராசி')}<select id="calRasi">${signs.map((s,i)=>`<option value="${i}" ${i===+cfg.rasi?'selected':''}>${s[ta()?1:0]}</option>`).join('')}</select></label><label>${L('Birth star · Tara','பிறந்த நட்சத்திரம் · தாராபலம்')}<select id="calStar">${stars.map((s,i)=>`<option value="${i}" ${i===+cfg.star?'selected':''}>${s[ta()?1:0]}</option>`).join('')}</select></label><button type="button" id="calToday">${L('Today','இன்று')}</button></div><details class="cal-location"><summary>${L('Location','இடம்')}: ${esc(cfg.place)} · UTC ${(+cfg.offset/60>=0?'+':'')+ +cfg.offset/60}</summary><form id="calLocation"><label class="cal-place-label">${L('Place','இடம்')}<span class="cal-place-search"><input id="calPlace" name="place" value="${esc(cfg.place)}" required maxlength="80"><span id="calPlaceResults" class="cal-place-results" role="listbox"></span></span></label><label>${L('Latitude','அட்சரேகை')}<input id="calLat" name="lat" type="number" min="-89" max="89" step="any" value="${cfg.lat}" required></label><label>${L('Longitude','தீர்க்கரேகை')}<input id="calLon" name="lon" type="number" min="-180" max="180" step="any" value="${cfg.lon}" required></label><label>UTC ${L('hours','மணி')}<input id="calOffset" name="offset" type="number" min="-12" max="14" step=".25" value="${+cfg.offset/60}" required></label><button>${L('Apply location','இடத்தைப் பயன்படுத்து')}</button><button type="button" id="calGeo">${L('Use my location','என் இருப்பிடம்')}</button></form></details><p id="calStatus" role="status"></p></section><div id="calMonth"></div><section id="calDateDetails" class="cal-date-details" aria-label="${L('Date Details','தேதி விவரங்கள்')}"><header class="cal-date-details-head"><div><h3 class="cal-date-details-title">${L('Date Details','தேதி விவரங்கள்')}</h3><p>${L('Panchangam, Tamil date and daily muhurthas','பஞ்சாங்கம், தமிழ் தேதி மற்றும் தினசரி முகூர்த்தங்கள்')}</p></div></header><div id="calDateDetailsExtra"></div><div id="calDaily"></div><section id="calReadings"></section><section id="calEvents"></section></section>`;
+ function shell(){const pagesDevHost=location.hostname==='smvastroservices.pages.dev'||location.hostname.endsWith('.smvastroservices.pages.dev');const calendarAppPage=location.hostname==='calendar.smvastroservices.in'||location.pathname.startsWith('/horoscope/calendar/');host.innerHTML=`<header class="cal-header"><div><p>SMV CALENDAR</p><h2>${L('Your day, guided by the sky','உங்கள் நாளுக்கான ஜோதிட வழிகாட்டி')}</h2><span>${L('Panchang · Hora · Transits · Tamil calendar','பஞ்சாங்கம் · ஹோரை · கோச்சாரம் · தமிழ் நாட்காட்டி')}</span></div><a class="cal-download-app-link"${calendarAppPage&&pagesDevHost?' hidden aria-hidden="true"':''} href="${calendarAppPage?'#smvCalendarAndroidApkSection':(location.hostname==='smvastroservices.pages.dev'?'/horoscope/calendar/?lang=':'https://calendar.smvastroservices.in/?lang=')+(ta()?'ta':'en')}"${calendarAppPage?'':' target="_blank" rel="noopener"'}><span class="cal-app-badge" aria-hidden="true">APK</span>${calendarAppPage?L('Download Android App','Android App பதிவிறக்கம்'):L('Open Calendar','காலண்டரைத் திறக்க')}</a></header><section class="cal-input-zone" aria-label="${L('Daily reading inputs','தினசரி பலன் உள்ளீடுகள்')}"><div class="cal-controls"><label>${L('Date','தேதி')}<input id="calDate" type="date" min="1800-01-01" max="2399-12-31" value="${selected}"></label><label>${L('Your Moon sign','உங்கள் சந்திர ராசி')}<select id="calRasi">${signs.map((s,i)=>`<option value="${i}" ${i===+cfg.rasi?'selected':''}>${s[ta()?1:0]}</option>`).join('')}</select></label><label>${L('Birth star · Tara','பிறந்த நட்சத்திரம் · தாராபலம்')}<select id="calStar">${stars.map((s,i)=>`<option value="${i}" ${i===+cfg.star?'selected':''}>${s[ta()?1:0]}</option>`).join('')}</select></label><button type="button" id="calToday">${L('Today','இன்று')}</button></div><details class="cal-location"><summary>${L('Location','இடம்')}: ${esc(cfg.place)} · UTC ${(+cfg.offset/60>=0?'+':'')+ +cfg.offset/60}</summary><form id="calLocation"><label class="cal-place-label">${L('Place','இடம்')}<span class="cal-place-search"><input id="calPlace" name="place" value="${esc(cfg.place)}" required maxlength="80"><span id="calPlaceResults" class="cal-place-results" role="listbox"></span></span></label><label>${L('Latitude','அட்சரேகை')}<input id="calLat" name="lat" type="number" min="-89" max="89" step="any" value="${cfg.lat}" required></label><label>${L('Longitude','தீர்க்கரேகை')}<input id="calLon" name="lon" type="number" min="-180" max="180" step="any" value="${cfg.lon}" required></label><label>UTC ${L('hours','மணி')}<input id="calOffset" name="offset" type="number" min="-12" max="14" step=".25" value="${+cfg.offset/60}" required></label><button>${L('Apply location','இடத்தைப் பயன்படுத்து')}</button><button type="button" id="calGeo">${L('Use my location','என் இருப்பிடம்')}</button></form></details><p id="calStatus" role="status"></p></section><div id="calMonth"></div><section id="calDateDetails" class="cal-date-details" aria-label="${L('Date Details','தேதி விவரங்கள்')}"><header class="cal-date-details-head"><div><h3 class="cal-date-details-title">${L('Date Details','தேதி விவரங்கள்')}</h3><p>${L('Panchangam, Tamil date and daily muhurthas','பஞ்சாங்கம், தமிழ் தேதி மற்றும் தினசரி முகூர்த்தங்கள்')}</p></div></header><div id="calDateDetailsExtra"></div><div id="calDaily"></div><section id="calReadings"></section><section id="calEvents"></section><div id="calMuhurtaLagna" class="cal-muhurta-lagna-section" aria-live="polite"></div></section>`;
   if(calendarAppPage&&!pagesDevHost){const appLink=$('.cal-download-app-link');if(appLink)appLink.hidden=false;}
  bindPlaceSearch();
  $('#calDate').onchange=()=>{if(!$('#calDate').checkValidity()||!$('#calDate').value)return;selected=$('#calDate').value;loadFrom('#calDate')};$('#calToday').onclick=()=>{selected=localNow().slice(0,10);$('#calDate').value=selected;loadFrom('.cal-controls')};$('#calRasi').onchange=settings;$('#calStar').onchange=settings;
@@ -224,6 +225,56 @@ if(host){
   const minute=((Math.round(Number(value))%1440)+1440)%1440;
   return String(Math.floor(minute/60)).padStart(2,'0')+':'+String(minute%60).padStart(2,'0');
  }
+
+ function renderMuhurtaLagna(){
+  const target=$('#calMuhurtaLagna');
+  if(!target||!daily)return;
+  const classification=classifySubhaMuhurtham({date:selected});
+  const phaseLabel=classification.paksha==='valarpirai'
+   ? L('Valarpirai','வளர்பிறை')
+   : classification.paksha==='theipirai'
+    ? L('Theipirai','தேய்பிறை')
+    : '—';
+  const verdict=classification.available
+   ? (classification.isSubhaMuhurtham
+      ? (classification.paksha==='valarpirai'
+        ? L('Valarpirai Subha Muhurtham day','வளர்பிறை சுபமுகூர்த்த நாள்')
+        : L('Theipirai Subha Muhurtham day','தேய்பிறை சுபமுகூர்த்த நாள்'))
+      : L('No Subha Muhurtham day','சுபமுகூர்த்த நாள் இல்லை'))
+   : L('Annual Muhurtham list unavailable','இந்த ஆண்டிற்கான முகூர்த்தப் பட்டியல் கிடைக்கவில்லை');
+  const lagnaRaw=String(daily.en?.t?.lagna?.rasi||'');
+  const lagnaIndex=signs.findIndex(s=>s[0]===lagnaRaw||s[1]===lagnaRaw);
+  const lagnaName=lagnaIndex>=0?signs[lagnaIndex][ta()?1:0]:'—';
+  const calculationTime=String(daily.en?.t?.requested?.time||daily.en?.p?.requested?.time||'—');
+  const isToday=selected===localNow().slice(0,10);
+  const lagnaHeading=isToday?L('Current Lagna','நடப்பு லக்னம்'):L('Lagna at selected time','தேர்ந்தெடுத்த நேர லக்னம்');
+  const balance=daily.ingressLagnaBalance;
+  let balanceLine=L('Solar-sign ingress lagna balance is being calculated…','சூரிய ராசி நுழைவு நேர லக்ன இருப்பு கணக்கிடப்படுகிறது…');
+  if(daily.ingressLagnaBalanceLoaded){
+   if(balance){
+    const ingressLagna=signs[Number(balance.lagnaSignIndex)]?.[ta()?1:0]||'—';
+    const n=Number(balance.balanceNazhigai),v=Number(balance.balanceVinazhigai);
+    const sunrise=String(balance.sunrise||daily.en.p?.sunrise||'—');
+    balanceLine=L(
+     ingressLagna+' Lagna balance: '+n+' na '+v+' vi · Sunrise: '+sunrise,
+     ingressLagna+' லக்ன இருப்பு: '+n+' நா '+v+' வி · சூ.உதயம்: '+sunrise
+    );
+   }else{
+    balanceLine=L('Lagna balance is unavailable for this location/date.','இந்த ஊர் / தேதிக்கான லக்ன இருப்பைக் கணக்கிட முடியவில்லை.');
+   }
+  }
+  const sourceSummary=classification.available
+   ? L('Published Tamil Muhurtham list · '+classification.year+' · '+classification.publishedCount+' dates','வெளியிடப்பட்ட தமிழ் முகூர்த்தப் பட்டியல் · '+classification.year+' · '+classification.publishedCount+' நாட்கள்')
+   : L('The published list is currently available for 2026 and 2027 only.','தற்போது 2026, 2027 ஆண்டுகளுக்கான வெளியிடப்பட்ட பட்டியல் மட்டுமே இணைக்கப்பட்டுள்ளது.');
+  target.innerHTML=
+   '<div class="cal-muhurta-lagna-grid">'+
+    '<div class="cal-muhurta-lagna-item"><small>'+L('Subha Muhurtham day','சுபமுகூர்த்த நாள்')+'</small><strong class="cal-subha-verdict '+(classification.available?(classification.isSubhaMuhurtham?'is-subha':'is-not-subha'):'is-unknown')+'">'+esc(verdict)+'</strong><span>'+esc(phaseLabel)+'</span></div>'+
+    '<div class="cal-muhurta-lagna-item"><small>'+esc(lagnaHeading)+'</small><strong>'+esc(lagnaName)+'</strong><span>'+L('Calculated at','கணக்கீட்டு நேரம்')+' '+esc(calculationTime)+'</span></div>'+
+   '</div>'+
+   '<p class="cal-rasi-balance-line">'+esc(balanceLine)+'</p>'+
+   '<p class="cal-muhurta-explanation">'+esc(sourceSummary)+' · <a href="'+esc(classification.source||'https://tamilcalendarapp.com/subha-muhurtham-dates/')+'" target="_blank" rel="noopener">'+L('Source list','ஆதாரப் பட்டியல்')+'</a></p>';
+ }
+
  function renderDateDetails(){
   if(!daily)return;
   const p=daily.en.p,solar=p?.tamilSolar,weekday=new Date(selected+'T12:00:00Z').getUTCDay();
@@ -275,6 +326,7 @@ if(host){
     yogaRow.cells[1].append(document.createElement('br'),result);
    }
   }
+  renderMuhurtaLagna();
  }
 
  function renderDaily(){if(!daily)return;const lang=ta()?'ta':'en';const now=localNow(),minute=+now.slice(11,13)*60+ +now.slice(14,16),sunrise=Number(String(daily.en.p.sunrise||'').slice(0,2))*60+Number(String(daily.en.p.sunrise||'').slice(3,5)),beforeSunrise=selected===now.slice(0,10)&&Number.isFinite(sunrise)&&minute<sunrise,horaOverride=beforeSunrise?daily.en.previousNight:null;window.SMVRenderDaily(daily[lang].t,daily[lang].p,lang,'calDaily',horaOverride);
@@ -362,6 +414,18 @@ if(host){
    daily=resultDay;
    $('#calStatus').textContent=`${cfg.place} · ${requestedDate} · ${daily.en.t.requested.time} · UTC ${+dayInput.utcOffsetMinutes/60}`;
    renderDaily();
+   void workerCall('lagna-balance',dayInput).then(balance=>{
+    if(request!==dayRequest||selected!==requestedDate)return;
+    daily.ingressLagnaBalance=balance;
+    daily.ingressLagnaBalanceLoaded=true;
+    renderMuhurtaLagna();
+   }).catch(error=>{
+    if(request!==dayRequest||selected!==requestedDate)return;
+    daily.ingressLagnaBalance=null;
+    daily.ingressLagnaBalanceLoaded=true;
+    renderMuhurtaLagna();
+    console.warn('Calendar solar-ingress lagna balance unavailable.',error);
+   });
    host.removeAttribute('aria-busy');
    await monthPromise;
    if(request===dayRequest)restoreViewport(anchor);
