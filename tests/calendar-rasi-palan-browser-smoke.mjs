@@ -157,14 +157,24 @@ try {
     { date:'2026-11-16', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 },
     { date:'2026-11-17', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 }
   ]);
-  const [libraIngress, scorpioIngressDay, scorpioAfterIngress] = solarSignRasiManaFixtures;
-  assert.equal(libraIngress.sunSignIndex, 6, '15 Nov sunrise interval must use the Sun in Libra.');
-  assert.equal(libraIngress.rasiManaSignIndex, 6, 'Libra must select Libra Rasi Mana, not the clock-time Ascendant.');
-  assert.equal(scorpioIngressDay.sunSignIndex, 7, '16 Nov 2026 solar ingress must select Scorpio.');
-  assert.equal(scorpioIngressDay.rasiManaSignIndex, 7, 'The same-day ingress must select Scorpio Rasi Mana.');
-  assert.equal(scorpioIngressDay.ingressDate, '2026-11-16', 'The local sunrise-to-sunset ingress belongs to 16 Nov.');
-  assert.equal(scorpioAfterIngress.sunSignIndex, 7, '17 Nov sunrise interval must remain in Scorpio.');
-  assert.equal(scorpioAfterIngress.ingressDate, '2026-11-16', 'The 17 Nov interval must retain the preceding Scorpio ingress.');
+  const [libraOn15, libraAt16Sunrise, scorpioAt17Sunrise] = solarSignRasiManaFixtures;
+  console.log('CALENDAR_SOLAR_SIGN_RASI_MANA_BOUNDARY_FIXTURE ' + JSON.stringify(
+    solarSignRasiManaFixtures.map(result => ({
+      date:result.sunrise,
+      sunSignIndex:result.sunSignIndex,
+      rasiManaSignIndex:result.rasiManaSignIndex,
+      ingressDate:result.ingressDate,
+      ingressTime:result.ingressTime
+    }))
+  ));
+  assert.equal(libraOn15.sunSignIndex, 6, '15 Nov sunrise interval must use the Sun in Libra.');
+  assert.equal(libraOn15.rasiManaSignIndex, 6, 'Libra must select Libra Rasi Mana.');
+  assert.equal(libraAt16Sunrise.sunSignIndex, 6, '16 Nov sunrise still has the Sun in Libra because Scorpio ingress is after local sunset.');
+  assert.equal(libraAt16Sunrise.rasiManaSignIndex, 6, 'The 16 Nov sunrise interval must retain Libra Rasi Mana.');
+  assert.notEqual(libraAt16Sunrise.ingressDate, '2026-11-16', 'The after-sunset 16 Nov ingress must not be assigned to the 16 Nov sunrise interval.');
+  assert.equal(scorpioAt17Sunrise.sunSignIndex, 7, '17 Nov sunrise interval must use the Sun in Scorpio after its 16 Nov local-evening ingress.');
+  assert.equal(scorpioAt17Sunrise.rasiManaSignIndex, 7, 'Scorpio must select Scorpio Rasi Mana from the next sunrise.');
+  assert.equal(scorpioAt17Sunrise.ingressDate, '2026-11-16', 'The 17 Nov interval must use the Scorpio ingress that occurred on 16 Nov.');
   for (const result of solarSignRasiManaFixtures) {
     assert.match(result.ingressTime, /^\d{2}:\d{2}:\d{2}$/, 'Solar ingress time must retain seconds.');
     assert.match(result.sunrise, /^\d{2}:\d{2}$/, 'The selected town sunrise must be returned.');
