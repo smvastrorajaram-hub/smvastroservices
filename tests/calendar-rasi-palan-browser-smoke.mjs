@@ -274,8 +274,9 @@ try {
     'OA balance must match independent Swiss boundary within 60 seconds: ' +
     JSON.stringify({reported:ingressLagnaFixture.balanceSeconds,independent:ingressLagnaFixture.independentCheck.independentBoundarySeconds}));
   assert.ok(Number.isInteger(ingressLagnaFixture.balanceSeconds) &&
-    ingressLagnaFixture.balanceSeconds >= 1800 && ingressLagnaFixture.balanceSeconds <= 18000,
-    'Ingress Lagna balance must be a plausible positive numerical duration: ' + JSON.stringify(ingressLagnaFixture));
+    ingressLagnaFixture.balanceSeconds > 0 &&
+    ingressLagnaFixture.balanceSeconds < ingressLagnaFixture.rasiMana[ingressLagnaFixture.lagnaSignIndex].durationSeconds,
+    'Ingress Lagna balance must be positive and smaller than the complete place-based Rasi Mana interval: ' + JSON.stringify(ingressLagnaFixture));
   const expectedTotalVighati = Math.round(ingressLagnaFixture.balanceSeconds / 24);
   assert.equal(ingressLagnaFixture.balanceNazhigai, Math.floor(expectedTotalVighati / 60),
     'Nazhigai must be derived from the reported balance seconds.');
