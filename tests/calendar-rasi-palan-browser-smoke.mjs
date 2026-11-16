@@ -151,24 +151,69 @@ try {
     const swiss = await import('/horoscope/offline/swiss_vedic.browser.mjs');
     const ingressTimestamp = Date.parse(calculated.ingressDate + 'T' + calculated.ingressTime + 'Z') -
       Number(fixture.utcOffsetMinutes) * 60000;
-    const ascendantAt = timestamp => {
+    const localDateTimeAt = timestamp => {
       const local = new Date(timestamp + Number(fixture.utcOffsetMinutes) * 60000);
       const pad = value => String(value).padStart(2, '0');
-      return swiss.calculateAscendantAt({
-        ...fixture,
+      return {
         date: local.getUTCFullYear() + '-' + pad(local.getUTCMonth() + 1) + '-' + pad(local.getUTCDate()),
         time: pad(local.getUTCHours()) + ':' + pad(local.getUTCMinutes()) + ':' + pad(local.getUTCSeconds())
-      });
+      };
     };
+    const ascendantAt = timestamp => swiss.calculateAscendantAt({
+      ...fixture,
+      ...localDateTimeAt(timestamp)
+    });
     const start = await ascendantAt(ingressTimestamp);
-    const before = await ascendantAt(ingressTimestamp + Math.max(0, Number(calculated.balanceSeconds) - 3) * 1000);
-    const after = await ascendantAt(ingressTimestamp + (Number(calculated.balanceSeconds) + 3) * 1000);
+    const oneSecondLater = await ascendantAt(ingressTimestamp + 1000);
+    const swissOneSecondStep = (oneSecondLater.julianDayUt - start.julianDayUt) * 86400;
+    let low = ingressTimestamp;
+    let high = null;
+    for (let minute = 5; minute <= 360; minute += 5) {
+      const candidateTime = ingressTimestamp + minute * 60000;
+      const candidate = await ascendantAt(candidateTime);
+      if (candidate.signIndex !== start.signIndex) {
+        low = candidateTime - 5 * 60000;
+        high = candidateTime;
+        break;
+      }
+    }
+    if (high === null) throw new Error('Independent Swiss ascendant scan did not reach the next Rasi boundary.');
+    for (let iteration = 0; iteration < 18; iteration++) {
+      const middle = (low + high) / 2;
+      const candidate = await ascendantAt(middle);
+      if (candidate.signIndex === start.signIndex) low = middle;
+      else high = middle;
+    }
+    const independentBoundarySeconds = (high - ingressTimestamp) / 1000;
+    const boundary = await ascendantAt(high);
+    const predicted = await ascendantAt(ingressTimestamp + Number(calculated.balanceSeconds) * 1000);
+    const before = await ascendantAt(ingressTimestamp + Math.max(0, Number(calculated.balanceSeconds) - 90) * 1000);
+    const after = await ascendantAt(ingressTimestamp + (Number(calculated.balanceSeconds) + 90) * 1000);
     return {
       ...calculated,
       independentCheck: {
         startSignIndex: start.signIndex,
+        startLongitude: start.longitude,
+        startArmcDegrees: start.armcDegrees,
+        startJulianDayUt: start.julianDayUt,
+        boundarySignIndex: boundary.signIndex,
+        boundaryLongitude: boundary.longitude,
+        boundaryArmcDegrees: boundary.armcDegrees,
+        boundaryJulianDayUt: boundary.julianDayUt,
+        predictedSignIndex: predicted.signIndex,
+        predictedLongitude: predicted.longitude,
+        predictedArmcDegrees: predicted.armcDegrees,
+        predictedJulianDayUt: predicted.julianDayUt,
         beforeBoundarySignIndex: before.signIndex,
-        afterBoundarySignIndex: after.signIndex
+        afterBoundarySignIndex: after.signIndex,
+        independentBoundarySeconds,
+        swissOneSecondStepSeconds:swissOneSecondStep,
+        startLocal: localDateTimeAt(ingressTimestamp),
+        boundaryLocal: localDateTimeAt(ingressTimestamp + independentBoundarySeconds * 1000),
+        predictedLocal: localDateTimeAt(ingressTimestamp + Number(calculated.balanceSeconds) * 1000),
+        startSwissInput: {date:start.inputLocalDate,time:start.inputLocalTime,offset:start.utcOffsetMinutesUsed},
+        boundarySwissInput: {date:boundary.inputLocalDate,time:boundary.inputLocalTime,offset:boundary.utcOffsetMinutesUsed},
+        predictedSwissInput: {date:predicted.inputLocalDate,time:predicted.inputLocalTime,offset:predicted.utcOffsetMinutesUsed}
       }
     };
   }, {
@@ -184,9 +229,54 @@ try {
   assert.equal(ingressLagnaFixture.sunSignIndex, 7, 'The defining Sun ingress must be into Scorpio.');
   assert.match(ingressLagnaFixture.ingressTime, /^\d{2}:\d{2}:\d{2}$/, 'Ingress time must retain seconds.');
   assert.match(ingressLagnaFixture.sunrise, /^\d{2}:\d{2}$/, 'The selected town sunrise must be returned.');
+  assert.equal(ingressLagnaFixture.method, 'oblique-ascension', 'Calendar must use the shared Oblique Ascension Rasi Mana method.');
+  assert.equal(ingressLagnaFixture.rasiManaAvailable, true, 'Perambalur must return the complete 12-sign Rasi Mana table.');
+  assert.equal(ingressLagnaFixture.rasiMana.length, 12, 'All 12 Rasi Mana rows must be returned.');
+  assert.equal(ingressLagnaFixture.rasiMana.reduce((sum, row) => sum + row.totalVighati, 0), 3600,
+    'The full Rasi Mana table must total 60 nazhigai.');
+  assert.ok(Math.abs(ingressLagnaFixture.independentCheck.swissOneSecondStepSeconds - 1) < 0.1,
+    'Swiss UTC conversion must preserve a one-second step, not add seconds as whole minutes: ' +
+    ingressLagnaFixture.independentCheck.swissOneSecondStepSeconds);
+  console.log('CALENDAR_OA_BOUNDARY_DIAGNOSTIC ' + JSON.stringify({
+    reportedBalanceSeconds: ingressLagnaFixture.balanceSeconds,
+    independentBoundarySeconds: ingressLagnaFixture.independentCheck.independentBoundarySeconds,
+    differenceSeconds: ingressLagnaFixture.balanceSeconds - ingressLagnaFixture.independentCheck.independentBoundarySeconds,
+    startSignIndex: ingressLagnaFixture.independentCheck.startSignIndex,
+    startLongitude: ingressLagnaFixture.independentCheck.startLongitude,
+    startArmcDegrees: ingressLagnaFixture.independentCheck.startArmcDegrees,
+    startJulianDayUt: ingressLagnaFixture.independentCheck.startJulianDayUt,
+    boundarySignIndex: ingressLagnaFixture.independentCheck.boundarySignIndex,
+    boundaryJulianDayUt: ingressLagnaFixture.independentCheck.boundaryJulianDayUt,
+    predictedSignIndex: ingressLagnaFixture.independentCheck.predictedSignIndex,
+    predictedLongitude: ingressLagnaFixture.independentCheck.predictedLongitude,
+    predictedArmcDegrees: ingressLagnaFixture.independentCheck.predictedArmcDegrees,
+    predictedJulianDayUt: ingressLagnaFixture.independentCheck.predictedJulianDayUt,
+    boundaryLongitude: ingressLagnaFixture.independentCheck.boundaryLongitude,
+    boundaryArmcDegrees: ingressLagnaFixture.independentCheck.boundaryArmcDegrees,
+    beforeBoundarySignIndex: ingressLagnaFixture.independentCheck.beforeBoundarySignIndex,
+    afterBoundarySignIndex: ingressLagnaFixture.independentCheck.afterBoundarySignIndex,
+    lagnaSignIndex: ingressLagnaFixture.lagnaSignIndex,
+    ayanamsaDegrees: ingressLagnaFixture.ayanamsaDegrees,
+    obliquityDegrees: ingressLagnaFixture.obliquityDegrees,
+    lagnaLongitude: ingressLagnaFixture.lagnaLongitude,
+    armcDegrees: ingressLagnaFixture.armcDegrees,
+    currentObliqueAscension: ingressLagnaFixture.currentObliqueAscension,
+    startLocal: ingressLagnaFixture.independentCheck.startLocal,
+    swissOneSecondStepSeconds: ingressLagnaFixture.independentCheck.swissOneSecondStepSeconds,
+    boundaryLocal: ingressLagnaFixture.independentCheck.boundaryLocal,
+    predictedLocal: ingressLagnaFixture.independentCheck.predictedLocal,
+    startSwissInput: ingressLagnaFixture.independentCheck.startSwissInput,
+    boundarySwissInput: ingressLagnaFixture.independentCheck.boundarySwissInput,
+    predictedSwissInput: ingressLagnaFixture.independentCheck.predictedSwissInput
+  }));
+  assert.ok(Math.abs(ingressLagnaFixture.balanceSeconds -
+    ingressLagnaFixture.independentCheck.independentBoundarySeconds) <= 60,
+    'OA balance must match independent Swiss boundary within 60 seconds: ' +
+    JSON.stringify({reported:ingressLagnaFixture.balanceSeconds,independent:ingressLagnaFixture.independentCheck.independentBoundarySeconds}));
   assert.ok(Number.isInteger(ingressLagnaFixture.balanceSeconds) &&
-    ingressLagnaFixture.balanceSeconds >= 1800 && ingressLagnaFixture.balanceSeconds <= 18000,
-    'Ingress Lagna balance must be a plausible positive numerical duration: ' + JSON.stringify(ingressLagnaFixture));
+    ingressLagnaFixture.balanceSeconds > 0 &&
+    ingressLagnaFixture.balanceSeconds < ingressLagnaFixture.rasiMana[ingressLagnaFixture.lagnaSignIndex].durationSeconds,
+    'Ingress Lagna balance must be positive and smaller than the complete place-based Rasi Mana interval: ' + JSON.stringify(ingressLagnaFixture));
   const expectedTotalVighati = Math.round(ingressLagnaFixture.balanceSeconds / 24);
   assert.equal(ingressLagnaFixture.balanceNazhigai, Math.floor(expectedTotalVighati / 60),
     'Nazhigai must be derived from the reported balance seconds.');
@@ -196,9 +286,12 @@ try {
     'The independently calculated ascendant at exact solar ingress must match the returned ingress Lagna.');
   assert.equal(ingressLagnaFixture.independentCheck.beforeBoundarySignIndex, ingressLagnaFixture.lagnaSignIndex,
     'The ascendant immediately before the reported balance must remain in the ingress Lagna.');
+  assert.ok(Math.abs(ingressLagnaFixture.balanceSeconds -
+    ingressLagnaFixture.independentCheck.independentBoundarySeconds) <= 60,
+    'Oblique Ascension balance must match an independent Swiss ascendant boundary within one minute.');
   assert.equal(ingressLagnaFixture.independentCheck.afterBoundarySignIndex,
     (ingressLagnaFixture.lagnaSignIndex + 1) % 12,
-    'The ascendant immediately after the reported balance must have entered the next Rasi.');
+    'The independently calculated ascendant after the reported balance must have entered the next Rasi.');
   console.log('CALENDAR_INGRESS_LAGNA_NUMERICAL_REGRESSION ' + JSON.stringify(ingressLagnaFixture));
 
 

@@ -16,6 +16,7 @@ on:
       - 'public/horoscope/daily-calendar.css'
       - 'public/horoscope/calendar-worker.mjs'
       - 'public/horoscope/offline/swiss_vedic.browser.mjs'
+      - 'public/horoscope/offline/rasi-mana.browser.mjs'
       - 'public/horoscope/offline/transit_panchang.browser.mjs'
       - 'tests/calendar-rasi-palan-regression.mjs'
       - 'tests/calendar-rasi-palan-browser-smoke.mjs'
@@ -38,6 +39,7 @@ on:
       - 'public/horoscope/daily-calendar.css'
       - 'public/horoscope/calendar-worker.mjs'
       - 'public/horoscope/offline/swiss_vedic.browser.mjs'
+      - 'public/horoscope/offline/rasi-mana.browser.mjs'
       - 'public/horoscope/offline/transit_panchang.browser.mjs'
       - 'tests/calendar-rasi-palan-regression.mjs'
       - 'tests/calendar-rasi-palan-browser-smoke.mjs'
@@ -69,6 +71,7 @@ jobs:
           node --check public/horoscope/calendar-muhurta-classification.mjs
           node --check tests/calendar-muhurta-lagna-regression.mjs
           node --check public/horoscope/offline/swiss_vedic.browser.mjs
+          node --check public/horoscope/offline/rasi-mana.browser.mjs
           node --check public/horoscope/offline/transit_panchang.browser.mjs
           node --check public/horoscope/calendar-rasi-palan-admin.mjs
           node --check public/horoscope/prediction-admin-workbench.mjs

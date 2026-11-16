@@ -1,6 +1,7 @@
 import {getSwe} from './offline/wasm-provider.mjs';
 import {calculateSwiss,calculateSunMoon,calculateAscendantAt} from './offline/swiss_vedic.browser.mjs';
 import {panchang,transit,calendarTamil,solarNoaa,tamilSolarDate,nextSolarIngress} from './offline/transit_panchang.browser.mjs';
+import {meanObliquityAtJulianDay,calculateLagnaBalanceFromRasiMana} from './offline/rasi-mana.browser.mjs';
 const norm=n=>(n%360+360)%360;
 const cache=new Map();
 const sampleCache=new Map();
@@ -32,54 +33,41 @@ function localPartsFromTs(ts,offset){
 }
 const ingressLagnaCache=new Map();
 async function calculateIngressLagnaBalance(input){
- // Initialize the Swiss calculation adapter as well as the underlying WASM
- // provider before the synchronous solar-ingress sampling path is called.
- // getSwe() alone initializes the provider but leaves swiss_vedic's local
- // adapter unset in a fresh dedicated worker.
+ // Initialize the Swiss adapter before precise solar-ingress and Lagna sampling.
  await calculateSunMoon({...input,time:String(input.time||'12:00')});
  const ingress=nextSolarIngress(input);
  if(!ingress||!Number.isFinite(ingress.timestamp))return null;
  const cacheKey=[Number(input.lat).toFixed(5),Number(input.lon).toFixed(5),Number(input.utcOffsetMinutes),ingress.timestamp].join('|');
  if(ingressLagnaCache.has(cacheKey))return ingressLagnaCache.get(cacheKey);
- const at=(timestamp)=>{
-  const local=localPartsFromTs(timestamp,input.utcOffsetMinutes);
-  return calculateAscendantAt({...input,date:local.date,time:local.time,houseSystem:'S'});
- };
- const start=await at(ingress.timestamp);
- const startLongitude=norm(start.longitude),startSign=start.signIndex;
- const targetArc=norm(((startSign+1)*30)-startLongitude);
- if(!(targetArc>0&&targetArc<=30))return null;
- const maxMinutes=Math.abs(Number(input.lat))>60?1440:480;
- let low=ingress.timestamp,high=null;
- for(let elapsed=10;elapsed<=maxMinutes;elapsed+=10){
-  const candidateTime=ingress.timestamp+elapsed*60000;
-  const candidate=await at(candidateTime);
-  const travelled=norm(candidate.longitude-startLongitude);
-  if(travelled>=targetArc){high=candidateTime;break;}
-  low=candidateTime;
- }
- if(high===null)return null;
- for(let i=0;i<20;i++){
-  const middle=(low+high)/2;
-  const candidate=await at(middle);
-  const travelled=norm(candidate.longitude-startLongitude);
-  if(travelled>=targetArc)high=middle;else low=middle;
- }
- const durationSeconds=Math.max(0,(high-ingress.timestamp)/1000);
- const totalVighati=Math.max(0,Math.round(durationSeconds/24));
- const balanceNazhigai=Math.floor(totalVighati/60);
- const balanceVinazhigai=totalVighati%60;
+ const local=localPartsFromTs(ingress.timestamp,input.utcOffsetMinutes);
+ const ascendant=await calculateAscendantAt({...input,date:local.date,time:local.time,houseSystem:'S'});
+ const obliquityDegrees=meanObliquityAtJulianDay(ascendant.julianDayUt);
+ const balance=calculateLagnaBalanceFromRasiMana({
+  siderealLongitude:ascendant.longitude,
+  latitude:input.lat,
+  ayanamsaDegrees:ascendant.ayanamsa,
+  obliquityDegrees,
+  armcDegrees:ascendant.armcDegrees
+ });
+ if(!balance.available)return null;
+ const totalVighati=Math.max(0,Math.round(balance.balanceSeconds/24));
  const result={
   sunSignIndex:ingress.signIndex,
   ingressDate:ingress.date,
   ingressTime:ingress.time,
   ingressSunLongitude:ingress.sunLongitude,
-  lagnaSignIndex:startSign,
-  lagnaLongitude:start.longitude,
-  balanceSeconds:Math.round(durationSeconds),
-  balanceNazhigai,
-  balanceVinazhigai,
-  sunrise:solarNoaa(input.date,input.lat,input.lon,input.utcOffsetMinutes,true)
+  lagnaSignIndex:balance.signIndex,
+  lagnaLongitude:ascendant.longitude,
+  armcDegrees:ascendant.armcDegrees,
+  ayanamsaDegrees:ascendant.ayanamsa,
+  obliquityDegrees,
+  balanceSeconds:balance.balanceSeconds,
+  balanceNazhigai:Math.floor(totalVighati/60),
+  balanceVinazhigai:totalVighati%60,
+  rasiMana:balance.rasiMana.rows,
+  rasiManaAvailable:balance.rasiMana.available,
+  sunrise:solarNoaa(input.date,input.lat,input.lon,input.utcOffsetMinutes,true),
+  method:balance.method
  };
  ingressLagnaCache.set(cacheKey,result);
  if(ingressLagnaCache.size>12)ingressLagnaCache.delete(ingressLagnaCache.keys().next().value);

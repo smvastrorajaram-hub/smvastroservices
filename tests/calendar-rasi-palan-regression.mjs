@@ -15,6 +15,7 @@ import {
 import { currentWeek, periodReference } from '../public/horoscope/calendar/rasi-palan-periods.mjs';
 import { calculateSwiss, calculateSunMoonSync } from '../public/horoscope/offline/swiss_vedic.browser.mjs';
 import { panchang, solarNoaa } from '../public/horoscope/offline/transit_panchang.browser.mjs';
+import { calculateRasiManaForLocation, calculateLagnaBalanceFromRasiMana, meanObliquityAtJulianDay } from '../public/horoscope/offline/rasi-mana.browser.mjs';
 import { TAMIL_DAY_YOGA_TABLE, getTamilDayYoga, getTamilCalendarDayFlags } from '../public/horoscope/tamil-day-classifications.mjs';
 
 const dailyCalendarSource = await readFile(new URL('../public/horoscope/daily-calendar.mjs', import.meta.url), 'utf8');
@@ -40,6 +41,78 @@ const rasiPalanCss = await readFile(new URL('../public/horoscope/calendar-rasi-p
 const horoscopeIndexSource = await readFile(new URL('../public/horoscope/index.html', import.meta.url), 'utf8');
 const horoscopeLanguageSource = await readFile(new URL('../public/horoscope/horoscope-language.js', import.meta.url), 'utf8');
 const publicHeadersSource = await readFile(new URL('../public/_headers', import.meta.url), 'utf8');
+
+test('Place-based Rasi Mana uses Oblique Ascension consistently for Indian and worldwide latitudes', () => {
+  const places = [
+    ['Perambalur', 11.2342], ['Chennai', 13.0827], ['Tiruchirappalli', 10.79],
+    ['London', 51.5074], ['New York', 40.7128], ['Sydney', -33.8688],
+    ['Tokyo', 35.6762], ['Quito', -0.1807]
+  ];
+  const results = places.map(([name, latitude]) => ({
+    name,
+    result: calculateRasiManaForLocation({
+      latitude, ayanamsaDegrees: 24.25, obliquityDegrees: 23.436
+    })
+  }));
+  for (const {name, result} of results) {
+    assert.equal(result.available, true, name + ' must have all 12 rising signs');
+    assert.equal(result.rows.length, 12, name + ' must calculate all 12 Rasi durations');
+    assert.ok(Math.abs(result.rows.reduce((sum, row) => sum + row.durationDegrees, 0) - 360) < 1e-8,
+      name + ' OA durations must cover exactly 360 degrees');
+    assert.equal(result.rows.reduce((sum, row) => sum + row.totalVighati, 0), 3600,
+      name + ' rounded Rasi Mana must total exactly 60 nazhigai');
+    for (const row of result.rows) {
+      assert.ok(row.durationSeconds > 0 && row.durationSeconds < 6 * 3600,
+        name + ' Rasi duration must be a positive and plausible rising interval');
+      assert.equal(row.nazhigai * 60 + row.vinazhigai, row.totalVighati,
+        name + ' nazhigai/vinazhigai must agree with the allocated vighati');
+    }
+  }
+  const perambalur = results[0].result.rows;
+  const chennai = results[1].result.rows;
+  assert.ok(perambalur.some((row, index) =>
+    Math.abs(row.durationDegrees - chennai[index].durationDegrees) > 1e-5),
+    'Changing latitude from Perambalur to Chennai must change Rasi Mana');
+  const balance = calculateLagnaBalanceFromRasiMana({
+    siderealLongitude: 7 * 30 + 13.25,
+    latitude: 11.2342,
+    ayanamsaDegrees: 24.25,
+    obliquityDegrees: 23.436
+  });
+  assert.equal(balance.available, true);
+  assert.equal(balance.method, 'oblique-ascension');
+  assert.equal(balance.signIndex, 7);
+  assert.ok(balance.balanceSeconds > 0);
+  assert.ok(balance.balanceSeconds < balance.rasiMana.rows[7].durationSeconds);
+});
+
+test('Polar Rasi Mana explicitly reports signs that do not rise instead of fabricating durations', () => {
+  const result = calculateRasiManaForLocation({
+    latitude: 75, ayanamsaDegrees: 24.25, obliquityDegrees: 23.436
+  });
+  assert.equal(result.available, false);
+  assert.ok(result.rows.some(row => !row.available),
+    'Circumpolar signs must be marked unavailable');
+  assert.ok(result.rows.some(row => row.reason === 'circumpolar-or-invalid-rising-arc'));
+});
+
+test('Mean obliquity is calculated from the selected UT Julian Day', () => {
+  const value = meanObliquityAtJulianDay(2461360.0);
+  assert.ok(value > 23.4 && value < 23.5);
+});
+
+test('Calendar Lagna balance uses the shared Oblique Ascension Rasi Mana engine', () => {
+  assert.match(calendarCalculationWorkerSource, /calculateLagnaBalanceFromRasiMana/);
+  assert.match(calendarCalculationWorkerSource, /meanObliquityAtJulianDay/);
+  assert.match(calendarCalculationWorkerSource, /armcDegrees:ascendant\.armcDegrees/,
+    'Remaining OA must be anchored to Swiss local sidereal angle (ARMC).');
+  assert.match(swissCalculationSource, /armcDegrees:Number\(norm360\(armc\)\.toFixed\(8\)\)/,
+    'Swiss ascendant adapter must expose the matching local sidereal angle.');
+  assert.doesNotMatch(calendarCalculationWorkerSource, /for\(let elapsed=10;/,
+    'The old ten-minute Swiss ascendant scan must not be used for Rasi Mana');
+  assert.ok(calendarWorkerSource.includes('../offline/rasi-mana.browser.mjs'),
+    'The calculation module must be included in the Calendar PWA cache');
+});
 
 test('The Horoscope Matching navigation label uses the requested concise Tamil wording', () => {
   assert.match(horoscopeLanguageSource, /'Matching':'பொருத்தம்'/);
@@ -213,7 +286,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-muhurta-lagna-pages-v1' : '20261116-calendar-muhurta-lagna-in-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-rasi-mana-oblique-ascension-pages-v1' : '20261116-calendar-rasi-mana-oblique-ascension-in-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');

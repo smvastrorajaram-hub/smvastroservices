@@ -652,7 +652,9 @@ const UPAGRAHA_NIGHT = {
 const TA_TO_ID = {Sun:C.SE_SUN,Moon:C.SE_MOON,Mars:C.SE_MARS,Mercury:C.SE_MERCURY,Jupiter:C.SE_JUPITER,Venus:C.SE_VENUS,Saturn:C.SE_SATURN};
 function upgUtcJd(date,time,offsetMinutes){
   const [y,mo,d]=String(date).split('-').map(Number), m=String(time).match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-  if(!m)return null; const local=Number(m[1])*60+Number(m[2])+Number(m[3]||0); const utcTotal=local-offsetMinutes;
+  // Convert seconds to fractional minutes. Adding the seconds integer
+  // directly here shifts Swiss Ephemeris timestamps by up to 59 minutes.
+  if(!m)return null; const local=Number(m[1])*60+Number(m[2])+Number(m[3]||0)/60; const utcTotal=local-offsetMinutes;
   const shift=Math.floor(utcTotal/1440), mins=((utcTotal%1440)+1440)%1440; const base=new Date(Date.UTC(y,mo-1,d)); base.setUTCDate(base.getUTCDate()+shift);
   const yy=base.getUTCFullYear(), mm=base.getUTCMonth()+1, dd=base.getUTCDate(), hh=Math.floor(mins/60), mi=Math.floor(mins%60), sec=(mins-Math.floor(mins))*60;
   const r=swe.utc_to_jd(yy,mm,dd,hh,mi,sec,C.SE_GREG_CAL); return r&&r.data?[r.data[1],r.data[0]]:null;
@@ -834,10 +836,26 @@ export async function calculateAscendantAt({date,time,lat,lon,utcOffsetMinutes=3
   const jd=upgUtcJd(date,time,offset);
   if(!jd)throw new Error('சூரிய ராசி நுழைவு தேதி / நேரம் சரியாக இல்லை.');
   if(typeof swe.set_sid_mode==='function' && C.SE_SIDM_LAHIRI!==undefined) swe.set_sid_mode(C.SE_SIDM_LAHIRI,0,0);
-  const longitudeSidereal=upgAscAtJd(jd,latitude,longitude,houseSystem);
+  const houses=swe.houses_ex2(jd[0],C.SEFLG_SIDEREAL,latitude,longitude,houseSystem||'S');
+  const points=houses?.data?.points||houses?.data?.ascmc||{};
+  const longitudeSidereal=extractPoint(points,['ascendant','ASC','asc'],0);
   if(!Number.isFinite(longitudeSidereal))throw new Error('Swiss Ephemeris லக்ன நிலையை வழங்கவில்லை.');
+  const armc=Number(houses?.data?.ascmc?.[2]??points?.armc);
+  if(!Number.isFinite(armc))throw new Error('Swiss Ephemeris local sidereal angle (ARMC) is unavailable.');
   const z=zodiac(longitudeSidereal);
-  return {longitude:Number(longitudeSidereal.toFixed(8)),signIndex:z.index,degree:z.degree};
+  const ayanamsa=Number(swe.get_ayanamsa_ut(jd[0]));
+  if(!Number.isFinite(ayanamsa))throw new Error('Swiss Ephemeris Lahiri ayanamsa is unavailable.');
+  return {
+    longitude:Number(longitudeSidereal.toFixed(8)),
+    signIndex:z.index,
+    degree:z.degree,
+    ayanamsa:Number(ayanamsa.toFixed(8)),
+    armcDegrees:Number(norm360(armc).toFixed(8)),
+    julianDayUt:Number(jd[0].toFixed(8)),
+    inputLocalDate:String(date),
+    inputLocalTime:String(time),
+    utcOffsetMinutesUsed:offset
+  };
 }
 
 
