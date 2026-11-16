@@ -141,8 +141,8 @@ try {
   assert.ok(!/unavailable|கணக்கிட முடியவில்லை/i.test(completedLagnaBalance), 'Solar-ingress Lagna balance must calculate successfully: ' + completedLagnaBalance);
   assert.ok(/Lagna balance|லக்ன இருப்பு/.test(completedLagnaBalance), 'The completed result must contain the Lagna balance value.');
 
-  // A non-current selected date uses the current local clock as its preview time;
-  // Panchang's separate selected-time Lagna remains at its noon reference.
+  // Every selected date shows its own sunrise-anchored balance, held constant
+  // until the following local sunrise. Panchang's separate Lagna stays at noon.
   const originalCalendarDate = await page.$eval('#calDate', el => el.value);
   const originalBalanceText = await page.$eval('#calMuhurtaLagna .cal-rasi-balance-line', el => el.textContent.trim());
   const selectedTestDate = '2027-02-10';
@@ -158,15 +158,10 @@ try {
   }, { timeout: 90000 }, {date:selectedTestDate,oldBalance:originalBalanceText});
   const selectedDateBalance = await page.$eval('#calMuhurtaLagna .cal-rasi-balance-line', el => el.textContent.trim());
   const selectedDateBalanceMeta = await page.$eval('#calMuhurtaLagna .cal-rasi-balance-meta', el => el.textContent.trim());
-  const selectedDateClockMatch = selectedDateBalanceMeta.match(/(?:Local time|உள்ளூர் நேரம்):\s*(\d{2}):(\d{2})/);
-  assert.ok(selectedDateClockMatch, 'The balance must disclose the current local clock time used for the selected-date preview: ' + selectedDateBalanceMeta);
-  const expectedLocalMinute = await page.$eval('#calOffset', el => {
-    const now = new Date(Date.now() + Number(el.value) * 3600000);
-    return now.getUTCHours() * 60 + now.getUTCMinutes();
-  });
-  const displayedLocalMinute = Number(selectedDateClockMatch[1]) * 60 + Number(selectedDateClockMatch[2]);
-  const minuteDifference = Math.min((displayedLocalMinute - expectedLocalMinute + 1440) % 1440, (expectedLocalMinute - displayedLocalMinute + 1440) % 1440);
-  assert.ok(minuteDifference <= 2, 'The selected-date balance must use the current local clock, not sunrise or noon.');
+  const selectedDateSunriseMatch = selectedDateBalanceMeta.match(/(?:Sunrise|சூ\.உதயம்):\s*(\d{2}):(\d{2})/);
+  assert.ok(selectedDateSunriseMatch, 'The selected-date balance must disclose that date\'s local sunrise: ' + selectedDateBalanceMeta);
+  assert.match(selectedDateBalanceMeta, /Balance fixed until next sunrise|அடுத்த சூ\.உதயம் வரை இருப்பு மாறாது/,
+    'The balance must be explicitly marked constant until the next local sunrise.');
   const selectedDateLagnaTime = await page.$eval('#calMuhurtaLagna .cal-muhurta-lagna-item:nth-child(2) span', el => el.textContent.trim());
   assert.match(selectedDateLagnaTime, /12:00/,
     'The separate selected-time Lagna must remain at the unchanged noon Panchang time.');
@@ -205,25 +200,20 @@ try {
         if (!result) throw new Error('Solar-sign Rasi Mana worker returned no result for ' + fixtures[index].date);
         results.push(result);
       }
-      // Reuse the same Worker and its ingress cache while requesting multiple
-      // times on the same date. The remaining balance must still change.
+      // Reuse the same Worker and its ingress cache while requesting sunrise,
+      // midday and evening clock times on one date. Its displayed Rasi Mana
+      // must remain fixed at the selected date's local-sunrise value.
       const reference = results[2];
-      const addMinutes = (clock, amount) => {
-        const [hour, minute] = clock.split(':').map(Number);
-        const total = hour * 60 + minute + amount;
-        return String(Math.floor(total / 60) % 24).padStart(2, '0') + ':' +
-          String(total % 60).padStart(2, '0');
-      };
       const atSunrise = await request('calendar-rasi-mana-at-sunrise', {
         ...fixtures[2], time: reference.sunrise
       });
-      const afterOneHour = await request('calendar-rasi-mana-after-one-hour', {
-        ...fixtures[2], time: addMinutes(reference.sunrise, 60)
+      const atMidday = await request('calendar-rasi-mana-at-midday', {
+        ...fixtures[2], time: '12:00'
       });
-      const afterExhaustion = await request('calendar-rasi-mana-after-exhaustion', {
-        ...fixtures[2], time: addMinutes(reference.sunrise, 240)
+      const atEvening = await request('calendar-rasi-mana-at-evening', {
+        ...fixtures[2], time: '21:10'
       });
-      return { results, countdown: { atSunrise, afterOneHour, afterExhaustion } };
+      return { results, fixedBalance: { atSunrise, atMidday, atEvening } };
     } finally {
       worker.terminate();
     }
@@ -233,7 +223,7 @@ try {
     { date:'2026-11-17', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 }
   ]);
   const solarSignRasiManaFixtures = solarSignRasiManaCheck.results;
-  const { atSunrise, afterOneHour, afterExhaustion } = solarSignRasiManaCheck.countdown;
+  const { atSunrise, atMidday, atEvening } = solarSignRasiManaCheck.fixedBalance;
   const [libraOn15, libraAt16Sunrise, scorpioAt17Sunrise] = solarSignRasiManaFixtures;
   console.log('CALENDAR_SOLAR_SIGN_RASI_MANA_BOUNDARY_FIXTURE ' + JSON.stringify(
     solarSignRasiManaFixtures.map(result => ({
@@ -253,20 +243,18 @@ try {
   assert.equal(scorpioAt17Sunrise.rasiManaSignIndex, 7, 'Scorpio must select Scorpio Rasi Mana from the next sunrise.');
   assert.equal(scorpioAt17Sunrise.ingressDate, '2026-11-16', 'The 17 Nov interval must use the Scorpio ingress that occurred on 16 Nov.');
   assert.equal(atSunrise.sunSignIndex, 7);
-  assert.equal(atSunrise.elapsedSinceSunriseSeconds, 0);
-  assert.equal(atSunrise.balanceSeconds, atSunrise.fullBalanceSeconds,
-    'At local sunrise the complete selected solar-sign Rasi Mana must be available.');
-  assert.equal(afterOneHour.sunSignIndex, atSunrise.sunSignIndex);
-  assert.equal(afterOneHour.fullBalanceSeconds, atSunrise.fullBalanceSeconds,
-    'The full OA duration must not change as the requested time advances.');
-  assert.equal(afterOneHour.elapsedSinceSunriseSeconds, 3600);
-  assert.equal(afterOneHour.balanceSeconds, Math.max(0, atSunrise.fullBalanceSeconds - 3600),
-    'One hour after sunrise must subtract one real hour from the initial balance.');
-  assert.equal(afterOneHour.balanceNazhigai * 60 + afterOneHour.balanceVinazhigai,
-    Math.max(0, atSunrise.fullBalanceVighati - 150));
-  assert.equal(afterExhaustion.balanceNazhigai, 0);
-  assert.equal(afterExhaustion.balanceVinazhigai, 0,
-    'The remaining balance must clamp to zero after its full OA interval is elapsed.');
+  for (const [label, result] of [['sunrise', atSunrise], ['midday', atMidday], ['evening', atEvening]]) {
+    assert.equal(result.sunSignIndex, atSunrise.sunSignIndex, label + ' must retain the selected date solar sign.');
+    assert.equal(result.sunrise, atSunrise.sunrise, label + ' must use the same selected-date sunrise.');
+    assert.equal(result.selectedTime, result.sunrise, label + ' must anchor the balance calculation at local sunrise.');
+    assert.equal(result.elapsedSinceSunriseSeconds, 0, label + ' must not consume Rasi Mana after sunrise.');
+    assert.equal(result.balanceSeconds, result.fullBalanceSeconds, label + ' must retain the complete OA duration.');
+    assert.equal(result.balanceNazhigai, atSunrise.balanceNazhigai);
+    assert.equal(result.balanceVinazhigai, atSunrise.balanceVinazhigai);
+  }
+  assert.equal(atMidday.fullBalanceSeconds, atSunrise.fullBalanceSeconds);
+  assert.equal(atEvening.fullBalanceSeconds, atSunrise.fullBalanceSeconds,
+    'A same-date evening ingress preview must not alter the sunrise-fixed balance.');
 
   for (const result of solarSignRasiManaFixtures) {
     assert.match(result.ingressTime, /^\d{2}:\d{2}:\d{2}$/, 'Solar ingress time must retain seconds.');
