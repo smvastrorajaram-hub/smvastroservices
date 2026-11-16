@@ -652,7 +652,9 @@ const UPAGRAHA_NIGHT = {
 const TA_TO_ID = {Sun:C.SE_SUN,Moon:C.SE_MOON,Mars:C.SE_MARS,Mercury:C.SE_MERCURY,Jupiter:C.SE_JUPITER,Venus:C.SE_VENUS,Saturn:C.SE_SATURN};
 function upgUtcJd(date,time,offsetMinutes){
   const [y,mo,d]=String(date).split('-').map(Number), m=String(time).match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-  if(!m)return null; const local=Number(m[1])*60+Number(m[2])+Number(m[3]||0); const utcTotal=local-offsetMinutes;
+  // Convert seconds to fractional minutes. Adding the seconds integer
+  // directly here shifts Swiss Ephemeris timestamps by up to 59 minutes.
+  if(!m)return null; const local=Number(m[1])*60+Number(m[2])+Number(m[3]||0)/60; const utcTotal=local-offsetMinutes;
   const shift=Math.floor(utcTotal/1440), mins=((utcTotal%1440)+1440)%1440; const base=new Date(Date.UTC(y,mo-1,d)); base.setUTCDate(base.getUTCDate()+shift);
   const yy=base.getUTCFullYear(), mm=base.getUTCMonth()+1, dd=base.getUTCDate(), hh=Math.floor(mins/60), mi=Math.floor(mins%60), sec=(mins-Math.floor(mins))*60;
   const r=swe.utc_to_jd(yy,mm,dd,hh,mi,sec,C.SE_GREG_CAL); return r&&r.data?[r.data[1],r.data[0]]:null;
