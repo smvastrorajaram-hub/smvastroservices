@@ -822,35 +822,26 @@ function calculateSwissReady({date,time,lat,lon,height=0,houseSystem,timezone='A
 export async function calculateSwiss(input){ await ensureSwe(); return calculateSwissReady(input); }
 export function calculateSwissSync(input){ return calculateSwissReady(input); }
 
-// Lightweight Lahiri ascendant-only calculation for the Calendar's solar-ingress
-// lagna-balance display. It reuses the existing Swiss Ephemeris / Sripati houses
-// path without recalculating planetary strengths, charts, or horoscope reports.
-export async function calculateAscendantAt({date,time,lat,lon,utcOffsetMinutes=330,houseSystem='S'}){
+// Lightweight Lahiri epoch context for the Calendar's solar-ingress Rasi Mana.
+// The Rasi Mana selection is the Sun's ingress sign; it does not need a local
+// Ascendant, house calculation, or ARMC value.
+export async function calculateLahiriContextAt({date,time,utcOffsetMinutes=330}){
   await ensureSwe();
-  const latitude=Number(lat),longitude=Number(lon),offset=Number(utcOffsetMinutes);
-  if(!Number.isFinite(latitude)||latitude < -90||latitude > 90||
-     !Number.isFinite(longitude)||longitude < -180||longitude > 180||
-     !Number.isFinite(offset)||offset < -720||offset > 840){
-    throw new Error('லக்ன கணக்கீட்டிற்கு இட விவரங்கள் சரியாக இல்லை.');
+  const offset=Number(utcOffsetMinutes);
+  if(!Number.isFinite(offset)||offset < -720||offset > 840){
+    throw new Error('சூரிய ராசி மானக் கணக்கீட்டிற்கு UTC offset சரியாக இல்லை.');
   }
   const jd=upgUtcJd(date,time,offset);
   if(!jd)throw new Error('சூரிய ராசி நுழைவு தேதி / நேரம் சரியாக இல்லை.');
-  if(typeof swe.set_sid_mode==='function' && C.SE_SIDM_LAHIRI!==undefined) swe.set_sid_mode(C.SE_SIDM_LAHIRI,0,0);
-  const houses=swe.houses_ex2(jd[0],C.SEFLG_SIDEREAL,latitude,longitude,houseSystem||'S');
-  const points=houses?.data?.points||houses?.data?.ascmc||{};
-  const longitudeSidereal=extractPoint(points,['ascendant','ASC','asc'],0);
-  if(!Number.isFinite(longitudeSidereal))throw new Error('Swiss Ephemeris லக்ன நிலையை வழங்கவில்லை.');
-  const armc=Number(houses?.data?.ascmc?.[2]??points?.armc);
-  if(!Number.isFinite(armc))throw new Error('Swiss Ephemeris local sidereal angle (ARMC) is unavailable.');
-  const z=zodiac(longitudeSidereal);
-  const ayanamsa=Number(swe.get_ayanamsa_ut(jd[0]));
-  if(!Number.isFinite(ayanamsa))throw new Error('Swiss Ephemeris Lahiri ayanamsa is unavailable.');
+  if(typeof swe.set_sid_mode==='function' && C.SE_SIDM_LAHIRI!==undefined){
+    swe.set_sid_mode(C.SE_SIDM_LAHIRI,0,0);
+  }
+  const ayanamsaDegrees=Number(swe.get_ayanamsa_ut(jd[0]));
+  if(!Number.isFinite(ayanamsaDegrees)){
+    throw new Error('Swiss Ephemeris Lahiri ayanamsa is unavailable.');
+  }
   return {
-    longitude:Number(longitudeSidereal.toFixed(8)),
-    signIndex:z.index,
-    degree:z.degree,
-    ayanamsa:Number(ayanamsa.toFixed(8)),
-    armcDegrees:Number(norm360(armc).toFixed(8)),
+    ayanamsaDegrees:Number(ayanamsaDegrees.toFixed(8)),
     julianDayUt:Number(jd[0].toFixed(8)),
     inputLocalDate:String(date),
     inputLocalTime:String(time),
