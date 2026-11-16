@@ -534,7 +534,7 @@ test('Calendar dual-date grid, direct navigation and Date Details are UI-only ex
   assert.match(dailyCalendarSource, /cal-name-yoga-label/);
   assert.match(dailyCalendarSource, /nityaYogaResults/);
   assert.match(calendarCalculationWorkerSource, /attachTamilSolarDates/);
-  assert.match(calendarCalculationWorkerSource, /dayStar:ev\.star,previousSunset/);
+  assert.match(calendarCalculationWorkerSource, /dayStar:ev\.star,amirthadiYogaAvailable:nakshatraTimeline\.available,amirthadiYogaSegments,previousSunset/);
   assert.match(calendarWorkerSource, /tamil-day-classifications\.mjs/);
   assert.match(transitPanchangSource, /export \{transit,panchang,tamilSolarDate\}/);
   assert.match(dailyCalendarCssSource, /h3:not\(\.cal-date-details-title\)/);
