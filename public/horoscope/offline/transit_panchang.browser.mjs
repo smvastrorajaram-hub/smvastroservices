@@ -444,8 +444,8 @@ export function nakshatraIntervalsForLocalDay(input){
 // the ghati's clock duration scales with that star's actual Swiss/Lahiri span.
 // Return every window overlapping this local sunrise-to-next-sunrise day,
 // including a carried remainder such as Mula's 57th-ghati Thyajyam.
-export function thyajyamIntervalsForLocalDay(input){
-  const timeline=nakshatraIntervalsForLocalDay(input);
+export function thyajyamIntervalsForLocalDay(input,providedTimeline=null){
+  const timeline=providedTimeline||nakshatraIntervalsForLocalDay(input);
   if(!timeline.available)return {...timeline,intervals:[]};
   const windows=[];
   const addWindow=(nakshatraNumber,fullStart,fullEnd)=>{
