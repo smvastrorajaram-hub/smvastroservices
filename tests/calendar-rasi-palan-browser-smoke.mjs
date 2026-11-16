@@ -163,11 +163,11 @@ try {
     const start = await ascendantAt(ingressTimestamp);
     let low = ingressTimestamp;
     let high = null;
-    for (let minute = 1; minute <= 360; minute++) {
+    for (let minute = 5; minute <= 360; minute += 5) {
       const candidateTime = ingressTimestamp + minute * 60000;
       const candidate = await ascendantAt(candidateTime);
       if (candidate.signIndex !== start.signIndex) {
-        low = candidateTime - 60000;
+        low = candidateTime - 5 * 60000;
         high = candidateTime;
         break;
       }
