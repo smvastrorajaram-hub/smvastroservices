@@ -448,24 +448,35 @@ export function thyajyamIntervalsForLocalDay(input){
   const timeline=nakshatraIntervalsForLocalDay(input);
   if(!timeline.available)return {...timeline,intervals:[]};
   const windows=[];
-  for(const star of timeline.intervals){
-    const startGhati=NAKSHATRA_THYAJYAM_START_GHATIS[star.nakshatraNumber-1];
-    const fullDuration=star.fullEndTimestamp-star.fullStartTimestamp;
-    if(!Number.isFinite(fullDuration)||fullDuration<=0||!Number.isInteger(startGhati))
-      return {available:false,reason:'invalid-thyajyam-star-span',intervals:[]};
-    const start=star.fullStartTimestamp+fullDuration*startGhati/60;
-    const end=star.fullStartTimestamp+fullDuration*(startGhati+4)/60;
+  const addWindow=(nakshatraNumber,fullStart,fullEnd)=>{
+    const startGhati=NAKSHATRA_THYAJYAM_START_GHATIS[nakshatraNumber-1];
+    const fullDuration=fullEnd-fullStart;
+    if(!Number.isFinite(fullDuration)||fullDuration<=0||!Number.isInteger(startGhati))return false;
+    const start=fullStart+fullDuration*startGhati/60;
+    const end=fullStart+fullDuration*(startGhati+4)/60;
     if(end>timeline.dayStartTimestamp&&start<timeline.dayEndTimestamp){
       windows.push({
-        nakshatraNumber:star.nakshatraNumber,
-        startGhati,
-        endGhati:startGhati+4,
+        nakshatraNumber,startGhati,endGhati:startGhati+4,
         start:formatPanchangBoundary(start,Number(input.utcOffsetMinutes??330),true),
         end:formatPanchangBoundary(end,Number(input.utcOffsetMinutes??330),true),
-        startTimestamp:start,
-        endTimestamp:end
+        startTimestamp:start,endTimestamp:end
       });
     }
+    return true;
+  };
+  // Include the immediately preceding star too: Mula's 57th-ghati window
+  // can leave a Sesha-Thyajyam remainder after that star ends, crossing sunrise.
+  const first=timeline.intervals[0];
+  if(first){
+    const previousProbe=first.fullStartTimestamp-1;
+    const previousState=panchangEventState(input,previousProbe,'nakshatra');
+    const previousStart=panchangBoundary(input,previousProbe,'nakshatra',-1);
+    if(previousState&&previousStart!=null&&!addWindow(previousState.index+1,previousStart,first.fullStartTimestamp))
+      return {available:false,reason:'invalid-previous-thyajyam-star-span',intervals:[]};
+  }
+  for(const star of timeline.intervals){
+    if(!addWindow(star.nakshatraNumber,star.fullStartTimestamp,star.fullEndTimestamp))
+      return {available:false,reason:'invalid-thyajyam-star-span',intervals:[]};
   }
   windows.sort((a,b)=>a.startTimestamp-b.startTimestamp);
   return {
@@ -482,7 +493,7 @@ export function thyajyamIntervalsForLocalDay(input){
 // location's local sunrise to sunset and expressed in Nazhigai/Vinazhigai.
 export function calculateAhasNazhigai(sunrise,sunset){
   const minutes=value=>{
-    const match=String(value??'').match(/^(\\d{1,2}):(\\d{2})$/);
+    const match=String(value??'').match(/^(\d{1,2}):(\d{2})$/);
     return match?Number(match[1])*60+Number(match[2]):null;
   };
   const rise=minutes(sunrise),set=minutes(sunset);
