@@ -11,6 +11,8 @@ on:
       - 'public/horoscope/calendar-rasi-palan-admin.mjs'
       - 'public/horoscope/prediction-admin-workbench.mjs'
       - 'public/horoscope/daily-calendar.mjs'
+      - 'public/horoscope/calendar-muhurta-classification.mjs'
+      - 'tests/calendar-muhurta-lagna-regression.mjs'
       - 'public/horoscope/daily-calendar.css'
       - 'public/horoscope/calendar-worker.mjs'
       - 'public/horoscope/offline/swiss_vedic.browser.mjs'
@@ -31,6 +33,8 @@ on:
       - 'public/horoscope/calendar-rasi-palan-admin.mjs'
       - 'public/horoscope/prediction-admin-workbench.mjs'
       - 'public/horoscope/daily-calendar.mjs'
+      - 'public/horoscope/calendar-muhurta-classification.mjs'
+      - 'tests/calendar-muhurta-lagna-regression.mjs'
       - 'public/horoscope/daily-calendar.css'
       - 'public/horoscope/calendar-worker.mjs'
       - 'public/horoscope/offline/swiss_vedic.browser.mjs'
@@ -62,6 +66,8 @@ jobs:
           set -euo pipefail
           node --check public/horoscope/calendar-rasi-palan.mjs
           node --check public/horoscope/calendar-worker.mjs
+          node --check public/horoscope/calendar-muhurta-classification.mjs
+          node --check tests/calendar-muhurta-lagna-regression.mjs
           node --check public/horoscope/offline/swiss_vedic.browser.mjs
           node --check public/horoscope/offline/transit_panchang.browser.mjs
           node --check public/horoscope/calendar-rasi-palan-admin.mjs
@@ -74,6 +80,8 @@ jobs:
           node --check tests/serve-public.mjs
       - name: Run scoped Calendar Rasi Palan regression
         run: node tests/calendar-rasi-palan-regression.mjs
+      - name: Run Subha Muhurtham and Lagna balance regression
+        run: node tests/calendar-muhurta-lagna-regression.mjs
   browser-preview:
     runs-on: ubuntu-latest
     timeout-minutes: 35
