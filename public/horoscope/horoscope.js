@@ -2209,7 +2209,7 @@ function renderBirthTimePanchang(p,lang,fallbackDate='',fallbackTime=''){
       if(ts && ts.monthTa && Number.isFinite(Number(ts.day))){
         text=`${ta?ts.monthTa:ts.monthEn} - ${ts.day}, ${ta?taM[gm-1]:enM[gm-1]} ${gd}, ${gy}`;
       } else {
-        text=`${ta?'தமிழ் தேதி':'Tamil date'}, ${ta?taM[gm-1]:enM[gm-1]} ${gd}, ${gy}`;
+        text='—';
       }
     }
 
