@@ -144,14 +144,18 @@ try {
   // A non-current selected date has no live clock. Preview its Rasi Mana at
   // local sunrise, not at the noon time used for the separate Panchang Lagna.
   const originalCalendarDate = await page.$eval('#calDate', el => el.value);
+  const originalBalanceText = await page.$eval('#calMuhurtaLagna .cal-rasi-balance-line', el => el.textContent.trim());
+  const selectedTestDate = '2027-02-10';
   await page.$eval('#calDate', (el, date) => {
     el.value = date;
     el.dispatchEvent(new Event('change', { bubbles: true }));
-  }, '2027-02-10');
-  await page.waitForFunction(() => {
+  }, selectedTestDate);
+  await page.waitForFunction(({date,oldBalance}) => {
+    const status = document.querySelector('#calStatus')?.textContent || '';
     const line = document.querySelector('#calMuhurtaLagna .cal-rasi-balance-line')?.textContent || '';
-    return line && !/being calculated|கணக்கிடப்படுகிறது/i.test(line);
-  }, { timeout: 90000 });
+    return status.includes(date) && line && line !== oldBalance &&
+      !/being calculated|கணக்கிடப்படுகிறது/i.test(line);
+  }, { timeout: 90000 }, {date:selectedTestDate,oldBalance:originalBalanceText});
   const selectedDateBalance = await page.$eval('#calMuhurtaLagna .cal-rasi-balance-line', el => el.textContent.trim());
   assert.doesNotMatch(selectedDateBalance, /0 na 0 vi|0 நா 0 வி/,
     'A non-current selected date must show its full nonzero initial Rasi Mana at local sunrise.');
@@ -162,10 +166,12 @@ try {
     el.value = date;
     el.dispatchEvent(new Event('change', { bubbles: true }));
   }, originalCalendarDate);
-  await page.waitForFunction(() => {
+  await page.waitForFunction(({date,oldBalance}) => {
+    const status = document.querySelector('#calStatus')?.textContent || '';
     const line = document.querySelector('#calMuhurtaLagna .cal-rasi-balance-line')?.textContent || '';
-    return line && !/being calculated|கணக்கிடப்படுகிறது/i.test(line);
-  }, { timeout: 90000 });
+    return status.includes(date) && line && line !== oldBalance &&
+      !/being calculated|கணக்கிடப்படுகிறது/i.test(line);
+  }, { timeout: 90000 }, {date:originalCalendarDate,oldBalance:selectedDateBalance});
 
 
   // Numerical regression: the ingress Sun sign, not the actual local Ascendant,
