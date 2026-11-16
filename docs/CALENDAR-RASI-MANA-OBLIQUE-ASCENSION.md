@@ -19,7 +19,7 @@ Calendar uses the current Swiss Ephemeris Lahiri ayanamsa to convert each niraya
 
 The traditional conversion used in the display is 360 OA degrees = 60 nazhigai = 3,600 vighati. Therefore 1 OA degree = 10 vighati, or 4 minutes. The 12 rounded sign values use a largest-remainder allocation so the complete set always adds to exactly 60 nazhigai without accumulating rounding drift.
 
-At the solar ingress that defines the selected date's Sun sign, Calendar calculates the Lahiri sidereal ascendant. It converts that longitude to tropical longitude using the same ayanamsa and calculates the OA difference from the ascendant to the end of its current nirayana sign. That remaining difference becomes the displayed Lagna balance in nazhigai and vighati.
+At the solar ingress that defines the selected date's Sun sign, Calendar calculates the Lahiri sidereal ascendant and retains the matching Swiss local sidereal angle (ARMC). The current OA at the rising horizon is ARMC + 90 degrees. Calendar then calculates OA for the end of the current nirayana sign and takes the forward difference from that same-epoch current OA. This avoids reconstructing the horizon position from a rounded ascendant longitude and keeps the remaining balance tied to the exact Swiss horizon solution. The difference becomes the displayed Lagna balance in nazhigai and vighati.
 
 ## Place coverage
 
