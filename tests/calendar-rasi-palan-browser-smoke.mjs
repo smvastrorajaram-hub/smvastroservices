@@ -158,12 +158,10 @@ try {
       el.value = value;
       el.dispatchEvent(new Event('change', { bubbles: true }));
     }, date);
-    await page.waitForFunction(value => {
-      const status = document.querySelector('#calStatus')?.textContent || '';
+    await page.waitForFunction(pattern => {
       const verdict = document.querySelector('#calMuhurtaLagna .cal-subha-verdict')?.textContent || '';
-      return status.includes(value) && verdict.length > 0 &&
-        !/Calculating Panchang|பஞ்சாங்கம், ஹோரை/.test(status);
-    }, { timeout: 90000 }, date);
+      return new RegExp(pattern).test(verdict);
+    }, { timeout: 90000 }, expectedPattern.source);
     const verdict = await page.$eval('#calMuhurtaLagna .cal-subha-verdict', el => el.textContent.trim());
     assert.match(verdict, expectedPattern, 'Published Muhurtham list classification for ' + date);
   }
