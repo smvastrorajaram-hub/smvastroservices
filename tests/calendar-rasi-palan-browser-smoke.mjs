@@ -279,6 +279,15 @@ try {
 
   assert.equal(scorpioAt25November.sunSignIndex, 7,
     '25 Nov 2026 sunrise belongs to Scorpio after the evening ingress on 16 Nov.');
+  assert.equal(scorpioAt25November.sunrise, '06:15');
+  assert.ok(Math.abs(scorpioAt25November.sunriseSunLongitude-218.51611163)<0.000001,
+    '25 Nov Perambalur sunrise sidereal Sun longitude must match the Swiss Lahiri result.');
+  assert.equal(scorpioAt25November.fullBalanceVighati,329,
+    'The complete Scorpio 30° OA balance at month start is 329 vighati (5 na 29 vi).');
+  assert.equal(scorpioAt25November.remainingVighati,236,
+    '25 Nov 2026 sunrise must leave 236 vighati after the Sun progresses to 8°30′58″ Scorpio.');
+  assert.equal(scorpioAt25November.balanceNazhigai,3);
+  assert.equal(scorpioAt25November.balanceVinazhigai,56);
   assert.ok(scorpioAt25November.sunDegreeInSign > 8 && scorpioAt25November.sunDegreeInSign < 9,
     'The 25 Nov Perambalur sunrise must use the progressed Scorpio longitude, not 0°.');
   assert.ok(scorpioAt25November.remainingSignDegrees > 21 && scorpioAt25November.remainingSignDegrees < 22,
@@ -310,6 +319,35 @@ try {
     assert.equal(result.fullBalanceVighati, atSunrise.fullBalanceVighati,
       label + ' must preserve the same full solar-month OA value.');
   }
+
+  // Verify the actual public Date Details text for the requested date/value.
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, '2026-11-25');
+  await page.waitForFunction(() => {
+    const status = document.querySelector('#calStatus')?.textContent || '';
+    const line = document.querySelector('#calMuhurtaLagna .cal-rasi-balance-line')?.textContent || '';
+    return status.includes('2026-11-25') && /3 na 56 vi|3 நா 56 வி/.test(line);
+  }, { timeout: 90000 });
+  const nov25Rendered = await page.$eval('#calMuhurtaLagna', el => ({
+    balance:el.querySelector('.cal-rasi-balance-line')?.textContent.trim()||'',
+    meta:el.querySelector('.cal-rasi-balance-meta')?.textContent.trim()||''
+  }));
+  assert.match(nov25Rendered.balance, /3 na 56 vi|3 நா 56 வி/,
+    'The public Calendar UI must render 25 Nov 2026 as 3 nazhigai 56 vinazhigai, not 5 na 29 vi.');
+  assert.match(nov25Rendered.meta, /8°30′58″/,
+    'The public Calendar UI must expose the progressed Sun degree at the selected sunrise.');
+  assert.match(nov25Rendered.meta, /5 na 29 vi|5 நா 29 வி/,
+    'The public Calendar UI must show the complete Scorpio month-start value separately.');
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, originalCalendarDate);
+  await page.waitForFunction(date =>
+    (document.querySelector('#calStatus')?.textContent || '').includes(date),
+    { timeout: 90000 }, originalCalendarDate);
+
 
   for (const result of solarSignRasiManaFixtures) {
     assert.match(result.ingressTime, /^\d{2}:\d{2}:\d{2}$/, 'Solar ingress time must retain seconds.');
