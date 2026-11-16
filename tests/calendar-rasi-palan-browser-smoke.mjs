@@ -283,8 +283,8 @@ try {
     'The 25 Nov Perambalur sunrise must use the progressed Scorpio longitude, not 0°.');
   assert.ok(scorpioAt25November.remainingSignDegrees > 21 && scorpioAt25November.remainingSignDegrees < 22,
     'The remainder must cover only the degrees from the 25 Nov sunrise Sun position to 30° Scorpio.');
-  assert.ok(scorpioAt25November.balanceVighati > 0 &&
-    scorpioAt25November.balanceVighati < scorpioAt25November.fullBalanceVighati,
+  assert.ok(scorpioAt25November.remainingVighati > 0 &&
+    scorpioAt25November.remainingVighati < scorpioAt25November.fullBalanceVighati,
     '25 Nov balance must be less than the full Scorpio month-start value (5 na 29 vi).');
   console.log('SMV_CALENDAR_2026_11_25_RASI_MANA ' + JSON.stringify({
     sunrise:scorpioAt25November.sunrise,
@@ -293,7 +293,7 @@ try {
     remainingSignDegrees:scorpioAt25November.remainingSignDegrees,
     fullRasiManaVighati:scorpioAt25November.fullBalanceVighati,
     remainingOADegrees:scorpioAt25November.remainingOADegrees,
-    remainingVighati:scorpioAt25November.balanceVighati,
+    remainingVighati:scorpioAt25November.remainingVighati,
     balanceNazhigai:scorpioAt25November.balanceNazhigai,
     balanceVinazhigai:scorpioAt25November.balanceVinazhigai
   }));
@@ -305,7 +305,7 @@ try {
     assert.equal(result.selectedTime, result.sunrise, label + ' must use the sunrise as the calculation instant.');
     assert.equal(result.sunriseSunLongitude, atSunrise.sunriseSunLongitude,
       label + ' must use the same sunrise longitude, regardless of the request clock.');
-    assert.equal(result.balanceVighati, atSunrise.balanceVighati,
+    assert.equal(result.remainingVighati, atSunrise.remainingVighati,
       label + ' must show the same sunrise remainder throughout the sunrise interval.');
     assert.equal(result.fullBalanceVighati, atSunrise.fullBalanceVighati,
       label + ' must preserve the same full solar-month OA value.');
