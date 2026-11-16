@@ -355,3 +355,10 @@ test('Tamil Amirthathi yoga lookup covers all seven weekdays and all 27 sunrise 
   assert.match(dailyCalendarSource, /P:\{key:'prabalarishta'[\s\S]*?bad:false/);
   assert.match(dailyCalendarSource, /traditionalStart=\(m>4\|\|\(m===4&&d>=14\)\)\?y:y-1/);
 });
+
+test('Monthly Tamil solar labels safely handle more than one boundary inside a Gregorian month', () => {
+  assert.match(calendarCalculationWorkerSource, /const probeIndexes=\[\.\.\.new Set\(\[0,7,14,21,28,entries\.length-1\]/);
+  assert.match(calendarCalculationWorkerSource, /while\(lo<hi\)/);
+  assert.match(calendarCalculationWorkerSource, /boundaries\.push\(\{index:lo,state\}\)/);
+  assert.match(calendarCalculationWorkerSource, /day:state\.offset\+dateDistance\(entries\[i\]\.date,firstDate\)/);
+});
