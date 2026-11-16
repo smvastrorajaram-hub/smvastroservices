@@ -93,8 +93,7 @@ test('Polar Rasi Mana explicitly reports signs that do not rise instead of fabri
   assert.equal(result.available, false);
   assert.ok(result.rows.some(row => !row.available),
     'Circumpolar signs must be marked unavailable');
-  assert.ok(result.rows.some(row => row.reason === 'circumpolar' ||
-    row.reason === 'invalid-oblique-ascension'));
+  assert.ok(result.rows.some(row => row.reason === 'circumpolar-or-invalid-rising-arc'));
 });
 
 test('Mean obliquity is calculated from the selected UT Julian Day', () => {
