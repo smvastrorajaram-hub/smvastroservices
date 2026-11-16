@@ -430,7 +430,7 @@ html body.calendar-only>header.calendar-topbar{
  background:transparent!important;box-shadow:none!important;
 }
 #smvDailyCalendar .cal-muhurta-lagna-grid{
- display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
  gap:10px;align-items:stretch;text-align:center;
 }
 #smvDailyCalendar .cal-muhurta-lagna-item{
@@ -449,19 +449,18 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-muhurta-lagna-item>strong.is-subha{color:#207444}
 #smvDailyCalendar .cal-muhurta-lagna-item>strong.is-not-subha{color:#a32220}
 #smvDailyCalendar .cal-muhurta-lagna-item>strong.is-unknown{color:#716d61}
-#smvDailyCalendar .cal-muhurta-lagna-item>span{color:#65766d;font-size:11px;line-height:1.35;text-align:center}
-#smvDailyCalendar .cal-rasi-balance-line{
- margin:9px auto 0;padding:0;max-width:100%;color:#174f47;
- font-size:clamp(12px,3.2vw,14px);font-weight:800;line-height:1.6;text-align:center;
- overflow-wrap:anywhere;
+#smvDailyCalendar .cal-muhurta-lagna-item>span{color:#65766d;font-size:11px;line-height:1.35;text-align:center;overflow-wrap:anywhere}
+#smvDailyCalendar .cal-muhurta-lagna-item>strong.cal-rasi-balance-line{
+ color:#174f47;font-size:clamp(13px,3vw,17px);font-weight:900;line-height:1.45;
 }
+#smvDailyCalendar .cal-muhurta-lagna-item>.cal-rasi-balance-meta{font-size:10.5px}
 #smvDailyCalendar .cal-muhurta-explanation{
  margin:5px auto 0;padding:0;max-width:58rem;color:#65766d;
  font-size:11px;font-weight:600;line-height:1.55;text-align:center;
 }
 @media(max-width:420px){
  #smvDailyCalendar .cal-muhurta-lagna-section{margin-top:10px;padding:10px 0 0}
- #smvDailyCalendar .cal-muhurta-lagna-grid{gap:4px}
- #smvDailyCalendar .cal-muhurta-lagna-item{padding:7px 3px}
- #smvDailyCalendar .cal-rasi-balance-line{font-size:12px}
+ #smvDailyCalendar .cal-muhurta-lagna-grid{grid-template-columns:1fr;gap:0}
+ #smvDailyCalendar .cal-muhurta-lagna-item{padding:10px 3px}
+ #smvDailyCalendar .cal-muhurta-lagna-item+ .cal-muhurta-lagna-item{border-left:0!important;border-top:1px solid var(--cal-line,#d9e5df)!important}
 }
