@@ -230,34 +230,42 @@ if(host){
   const target=$('#calMuhurtaLagna');
   if(!target||!daily)return;
   const classification=classifySubhaMuhurtham({date:selected});
-  const phaseLabel=classification.paksha==='valarpirai'
-   ? L('Valarpirai','வளர்பிறை')
-   : classification.paksha==='theipirai'
-    ? L('Theipirai','தேய்பிறை')
-    : '—';
+  const phaseLabel=classification.available&&classification.isSubhaMuhurtham
+   ? (classification.paksha==='valarpirai'
+      ? L('Valarpirai','வளர்பிறை')
+      : classification.paksha==='theipirai'
+       ? L('Theipirai','தேய்பிறை')
+       : '')
+   : '';
   const verdict=classification.available
    ? (classification.isSubhaMuhurtham
       ? (classification.paksha==='valarpirai'
         ? L('Valarpirai Subha Muhurtham day','வளர்பிறை சுபமுகூர்த்த நாள்')
         : L('Theipirai Subha Muhurtham day','தேய்பிறை சுபமுகூர்த்த நாள்'))
-      : L('No Subha Muhurtham day','சுபமுகூர்த்த நாள் இல்லை'))
-   : L('Annual Muhurtham list unavailable','இந்த ஆண்டிற்கான முகூர்த்தப் பட்டியல் கிடைக்கவில்லை');
+      : L('No','இல்லை'))
+   : L('Annual Muhurtham list unavailable','இந்த ஆண்டிற்கான வெளியிடப்பட்ட பட்டியல் கிடைக்கவில்லை');
   const lagnaRaw=String(daily.en?.t?.lagna?.rasi||'');
   const lagnaIndex=signs.findIndex(s=>s[0]===lagnaRaw||s[1]===lagnaRaw);
   const lagnaName=lagnaIndex>=0?signs[lagnaIndex][ta()?1:0]:'—';
   const calculationTime=String(daily.en?.t?.requested?.time||daily.en?.p?.requested?.time||'—');
   const isToday=selected===localNow().slice(0,10);
   const lagnaHeading=isToday?L('Current Lagna','நடப்பு லக்னம்'):L('Lagna at selected time','தேர்ந்தெடுத்த நேர லக்னம்');
-  const balance=daily.ingressLagnaBalance;
-  let balanceLine=L('Solar-sign ingress lagna balance is being calculated…','சூரிய ராசி நுழைவு நேர லக்ன இருப்பு கணக்கிடப்படுகிறது…');
-  if(daily.ingressLagnaBalanceLoaded){
+  const balance=daily.solarSignRasiMana;
+  let balanceLine=L('Solar-sign Rasi Mana is being calculated…','சூரிய ராசி மானம் கணக்கிடப்படுகிறது…');
+  let balanceMeta='';
+  if(daily.solarSignRasiManaLoaded){
    if(balance){
-    const ingressLagna=signs[Number(balance.lagnaSignIndex)]?.[ta()?1:0]||'—';
+    const solarSign=signs[Number(balance.sunSignIndex)]?.[ta()?1:0]||'—';
     const n=Number(balance.balanceNazhigai),v=Number(balance.balanceVinazhigai);
     const sunrise=String(balance.sunrise||daily.en.p?.sunrise||'—');
+    const ingressTime=String(balance.ingressTime||'—');
     balanceLine=L(
-     ingressLagna+' Lagna balance: '+n+' na '+v+' vi · Sunrise: '+sunrise,
-     ingressLagna+' லக்ன இருப்பு: '+n+' நா '+v+' வி · சூ.உதயம்: '+sunrise
+     solarSign+' Lagna balance: '+n+' na '+v+' vi',
+     solarSign+' லக்ன இருப்பு: '+n+' நா '+v+' வி'
+    );
+    balanceMeta=L(
+     'Solar ingress: '+ingressTime+' · Sunrise: '+sunrise,
+     'சூரிய பெயர்ச்சி: '+ingressTime+' · சூ.உதயம்: '+sunrise
     );
    }else{
     balanceLine=L('Lagna balance is unavailable for this location/date.','இந்த ஊர் / தேதிக்கான லக்ன இருப்பைக் கணக்கிட முடியவில்லை.');
@@ -270,9 +278,9 @@ if(host){
    '<div class="cal-muhurta-lagna-grid">'+
     '<div class="cal-muhurta-lagna-item"><small>'+L('Subha Muhurtham day','சுபமுகூர்த்த நாள்')+'</small><strong class="cal-subha-verdict '+(classification.available?(classification.isSubhaMuhurtham?'is-subha':'is-not-subha'):'is-unknown')+'">'+esc(verdict)+'</strong><span>'+esc(phaseLabel)+'</span></div>'+
     '<div class="cal-muhurta-lagna-item"><small>'+esc(lagnaHeading)+'</small><strong>'+esc(lagnaName)+'</strong><span>'+L('Calculated at','கணக்கீட்டு நேரம்')+' '+esc(calculationTime)+'</span></div>'+
+    '<div class="cal-muhurta-lagna-item"><small>'+L('Rasi Mana Lagna Balance','ராசி மான லக்ன இருப்பு')+'</small><strong class="cal-rasi-balance-line">'+esc(balanceLine)+'</strong><span class="cal-rasi-balance-meta">'+esc(balanceMeta)+'</span></div>'+
    '</div>'+
-   '<p class="cal-rasi-balance-line">'+esc(balanceLine)+'</p>'+
-   '<p class="cal-muhurta-explanation">'+esc(sourceSummary)+' · <a href="'+esc(classification.source||'https://tamilcalendarapp.com/subha-muhurtham-dates/')+'" target="_blank" rel="noopener">'+L('Source list','ஆதாரப் பட்டியல்')+'</a></p>';
+   '<p class="cal-muhurta-explanation">'+esc(sourceSummary)+' · <a href="'+esc(classification.source||'https://tamilcalendarapp.com/subha-muhurtham-dates/')+'" target="_blank" rel="noopener">'+L('Source list','ஆதாரப் பட்டியல்')+'</a></p>'
  }
 
  function renderDateDetails(){
@@ -414,17 +422,17 @@ if(host){
    daily=resultDay;
    $('#calStatus').textContent=`${cfg.place} · ${requestedDate} · ${daily.en.t.requested.time} · UTC ${+dayInput.utcOffsetMinutes/60}`;
    renderDaily();
-   void workerCall('lagna-balance',dayInput).then(balance=>{
+   void workerCall('solar-sign-rasi-mana',dayInput).then(balance=>{
     if(request!==dayRequest||selected!==requestedDate)return;
-    daily.ingressLagnaBalance=balance;
-    daily.ingressLagnaBalanceLoaded=true;
+    daily.solarSignRasiMana=balance;
+    daily.solarSignRasiManaLoaded=true;
     renderMuhurtaLagna();
    }).catch(error=>{
     if(request!==dayRequest||selected!==requestedDate)return;
-    daily.ingressLagnaBalance=null;
-    daily.ingressLagnaBalanceLoaded=true;
+    daily.solarSignRasiMana=null;
+    daily.solarSignRasiManaLoaded=true;
     renderMuhurtaLagna();
-    console.warn('Calendar solar-ingress lagna balance unavailable.',error);
+    console.warn('Calendar solar-sign Rasi Mana unavailable.',error);
    });
    host.removeAttribute('aria-busy');
    await monthPromise;
