@@ -166,8 +166,6 @@ try {
     const start = await ascendantAt(ingressTimestamp);
     const oneSecondLater = await ascendantAt(ingressTimestamp + 1000);
     const swissOneSecondStep = (oneSecondLater.julianDayUt - start.julianDayUt) * 86400;
-    assert.ok(Math.abs(swissOneSecondStep - 1) < 0.1,
-      'Swiss UTC conversion must preserve a one-second step, not add seconds as whole minutes: ' + swissOneSecondStep);
     let low = ingressTimestamp;
     let high = null;
     for (let minute = 5; minute <= 360; minute += 5) {
@@ -236,6 +234,9 @@ try {
   assert.equal(ingressLagnaFixture.rasiMana.length, 12, 'All 12 Rasi Mana rows must be returned.');
   assert.equal(ingressLagnaFixture.rasiMana.reduce((sum, row) => sum + row.totalVighati, 0), 3600,
     'The full Rasi Mana table must total 60 nazhigai.');
+  assert.ok(Math.abs(ingressLagnaFixture.independentCheck.swissOneSecondStepSeconds - 1) < 0.1,
+    'Swiss UTC conversion must preserve a one-second step, not add seconds as whole minutes: ' +
+    ingressLagnaFixture.independentCheck.swissOneSecondStepSeconds);
   console.log('CALENDAR_OA_BOUNDARY_DIAGNOSTIC ' + JSON.stringify({
     reportedBalanceSeconds: ingressLagnaFixture.balanceSeconds,
     independentBoundarySeconds: ingressLagnaFixture.independentCheck.independentBoundarySeconds,
