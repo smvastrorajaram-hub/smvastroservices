@@ -259,7 +259,7 @@ if(host){
    if(balance){
     const solarSign=signs[Number(balance.sunSignIndex)]?.[ta()?1:0]||'—';
     const sunrise=String(balance.sunrise||daily.en.p?.sunrise||'—');
-    const displayTime=String(balance.selectedTime||sunrise||calculationTime);
+    const displayTime=String(balance.selectedTime||sunrise);
     const remaining=calculateRemainingRasiMana({
      totalVighati:Number(balance.fullBalanceVighati??balance.selectedRasiMana?.totalVighati),
      sunrise,
@@ -272,8 +272,8 @@ if(host){
      solarSign+' லக்ன இருப்பு: '+n+' நா '+v+' வி'
     );
     balanceMeta=L(
-     'Solar ingress: '+ingressTime+' · Sunrise: '+sunrise+' · Local time: '+displayTime,
-     'சூரிய பெயர்ச்சி: '+ingressTime+' · சூ.உதயம்: '+sunrise+' · உள்ளூர் நேரம்: '+displayTime
+     'Solar ingress: '+ingressTime+' · Sunrise: '+sunrise+' · Balance fixed until next sunrise',
+     'சூரிய பெயர்ச்சி: '+ingressTime+' · சூ.உதயம்: '+sunrise+' · அடுத்த சூ.உதயம் வரை இருப்பு மாறாது'
     );
    }else{
     balanceLine=L('Lagna balance is unavailable for this location/date.','இந்த ஊர் / தேதிக்கான லக்ன இருப்பைக் கணக்கிட முடியவில்லை.');
@@ -430,8 +430,7 @@ if(host){
    daily=resultDay;
    $('#calStatus').textContent=`${cfg.place} · ${requestedDate} · ${daily.en.t.requested.time} · UTC ${+dayInput.utcOffsetMinutes/60}`;
    renderDaily();
-   const balanceTime=localNowAt(dayInput.utcOffsetMinutes).slice(11,19);
-   void workerCall('solar-sign-rasi-mana',{...dayInput,time:balanceTime}).then(balance=>{
+   void workerCall('solar-sign-rasi-mana',dayInput).then(balance=>{
     if(request!==dayRequest||selected!==requestedDate)return;
     daily.solarSignRasiMana=balance;
     daily.solarSignRasiManaLoaded=true;
