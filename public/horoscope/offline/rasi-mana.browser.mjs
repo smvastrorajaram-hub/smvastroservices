@@ -14,6 +14,41 @@ export function normalizeDegrees(value){
 
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
 
+function localClockSeconds(value,label){
+  const match=String(value??'').match(/^(\\d{1,2}):(\\d{2})(?::(\\d{2}))?$/);
+  if(!match)throw new TypeError('A valid local '+label+' time (HH:mm[:ss]) is required.');
+  const hour=Number(match[1]),minute=Number(match[2]),second=Number(match[3]||0);
+  if(hour>23||minute>59||second>59)throw new TypeError('The local '+label+' time is out of range.');
+  return hour*3600+minute*60+second;
+}
+
+// The day's full solar-sign Rasi Mana starts at local sunrise. Thereafter,
+// subtract elapsed local-clock seconds and display the nearest vighati (24s).
+// Once the interval is exhausted, the remaining balance stays at zero.
+export function calculateRemainingRasiMana({totalVighati,sunrise,selectedTime}){
+  const fullVighati=Number(totalVighati);
+  if(!Number.isInteger(fullVighati)||fullVighati<0){
+    throw new TypeError('A non-negative full Rasi Mana vighati value is required.');
+  }
+  const sunriseSeconds=localClockSeconds(sunrise,'sunrise');
+  const selectedSeconds=localClockSeconds(selectedTime,'selected');
+  const elapsedSeconds=Math.max(0,selectedSeconds-sunriseSeconds);
+  const fullBalanceSeconds=fullVighati*24;
+  const remainingSeconds=Math.max(0,fullBalanceSeconds-elapsedSeconds);
+  const remainingVighati=Math.max(0,Math.round(remainingSeconds/24));
+  return {
+    fullBalanceVighati:fullVighati,
+    fullBalanceSeconds,
+    elapsedSeconds,
+    remainingSeconds,
+    remainingVighati,
+    balanceSeconds:remainingVighati*24,
+    balanceNazhigai:Math.floor(remainingVighati/60),
+    balanceVinazhigai:remainingVighati%60
+  };
+}
+
+
 // IAU/Meeus mean obliquity polynomial, adequate for rising-time intervals.
 // JD must be UT and is supplied by the exact solar-ingress instant.
 export function meanObliquityAtJulianDay(julianDayUt){
