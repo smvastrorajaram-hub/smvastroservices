@@ -1,7 +1,7 @@
 import {getSwe} from './offline/wasm-provider.mjs';
-import {calculateSwiss,calculateSunMoon,calculateAscendantAt} from './offline/swiss_vedic.browser.mjs';
+import {calculateSwiss,calculateSunMoon,calculateLahiriContextAt} from './offline/swiss_vedic.browser.mjs';
 import {panchang,transit,calendarTamil,solarNoaa,tamilSolarDate,nextSolarIngress} from './offline/transit_panchang.browser.mjs';
-import {meanObliquityAtJulianDay,calculateLagnaBalanceFromRasiMana} from './offline/rasi-mana.browser.mjs';
+import {meanObliquityAtJulianDay,calculateSolarSignRasiMana} from './offline/rasi-mana.browser.mjs';
 const norm=n=>(n%360+360)%360;
 const cache=new Map();
 const sampleCache=new Map();
@@ -31,46 +31,45 @@ function localPartsFromTs(ts,offset){
   time:String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0')+':'+String(d.getUTCSeconds()).padStart(2,'0')
  };
 }
-const ingressLagnaCache=new Map();
-async function calculateIngressLagnaBalance(input){
- // Initialize the Swiss adapter before precise solar-ingress and Lagna sampling.
+const solarSignRasiManaCache=new Map();
+async function calculateSolarSignRasiManaForIngress(input){
+ // Initialize Swiss WASM before exact sidereal Sun-longitude ingress sampling.
  await calculateSunMoon({...input,time:String(input.time||'12:00')});
  const ingress=nextSolarIngress(input);
  if(!ingress||!Number.isFinite(ingress.timestamp))return null;
  const cacheKey=[Number(input.lat).toFixed(5),Number(input.lon).toFixed(5),Number(input.utcOffsetMinutes),ingress.timestamp].join('|');
- if(ingressLagnaCache.has(cacheKey))return ingressLagnaCache.get(cacheKey);
+ if(solarSignRasiManaCache.has(cacheKey))return solarSignRasiManaCache.get(cacheKey);
  const local=localPartsFromTs(ingress.timestamp,input.utcOffsetMinutes);
- const ascendant=await calculateAscendantAt({...input,date:local.date,time:local.time,houseSystem:'S'});
- const obliquityDegrees=meanObliquityAtJulianDay(ascendant.julianDayUt);
- const balance=calculateLagnaBalanceFromRasiMana({
-  siderealLongitude:ascendant.longitude,
-  latitude:input.lat,
-  ayanamsaDegrees:ascendant.ayanamsa,
-  obliquityDegrees,
-  armcDegrees:ascendant.armcDegrees
+ const epoch=await calculateLahiriContextAt({
+  ...input,date:local.date,time:local.time
  });
- if(!balance.available)return null;
- const totalVighati=Math.max(0,Math.round(balance.balanceSeconds/24));
+ const obliquityDegrees=meanObliquityAtJulianDay(epoch.julianDayUt);
+ const rasi=calculateSolarSignRasiMana({
+  solarSignIndex:ingress.signIndex,
+  latitude:input.lat,
+  ayanamsaDegrees:epoch.ayanamsaDegrees,
+  obliquityDegrees
+ });
+ if(!rasi.available)return null;
  const result={
   sunSignIndex:ingress.signIndex,
+  rasiManaSignIndex:rasi.signIndex,
   ingressDate:ingress.date,
   ingressTime:ingress.time,
   ingressSunLongitude:ingress.sunLongitude,
-  lagnaSignIndex:balance.signIndex,
-  lagnaLongitude:ascendant.longitude,
-  armcDegrees:ascendant.armcDegrees,
-  ayanamsaDegrees:ascendant.ayanamsa,
+  ayanamsaDegrees:epoch.ayanamsaDegrees,
   obliquityDegrees,
-  balanceSeconds:balance.balanceSeconds,
-  balanceNazhigai:Math.floor(totalVighati/60),
-  balanceVinazhigai:totalVighati%60,
-  rasiMana:balance.rasiMana.rows,
-  rasiManaAvailable:balance.rasiMana.available,
+  balanceSeconds:rasi.balanceSeconds,
+  balanceNazhigai:rasi.balanceNazhigai,
+  balanceVinazhigai:rasi.balanceVinazhigai,
+  selectedRasiMana:rasi.selectedRasiMana,
+  rasiMana:rasi.rasiMana.rows,
+  rasiManaAvailable:rasi.rasiMana.available,
   sunrise:solarNoaa(input.date,input.lat,input.lon,input.utcOffsetMinutes,true),
-  method:balance.method
+  method:rasi.method
  };
- ingressLagnaCache.set(cacheKey,result);
- if(ingressLagnaCache.size>12)ingressLagnaCache.delete(ingressLagnaCache.keys().next().value);
+ solarSignRasiManaCache.set(cacheKey,result);
+ if(solarSignRasiManaCache.size>12)solarSignRasiManaCache.delete(solarSignRasiManaCache.keys().next().value);
  return result;
 }
 
@@ -175,7 +174,7 @@ async function attachTamilSolarDates(input,entries){
 }
 
 self.onmessage=async({data})=>{const {id,kind,input}=data;try{const key=JSON.stringify([kind,input]);if(cache.has(key)){self.postMessage({id,result:cache.get(key)});return}let result;
- if(kind==='lagna-balance'){result=await calculateIngressLagnaBalance(input);}
+ if(kind==='solar-sign-rasi-mana'){result=await calculateSolarSignRasiManaForIngress(input);}
  else if(kind==='month'){const [y,m]=input.date.split('-').map(Number),days=new Date(Date.UTC(y,m,0)).getUTCDate();result=[];for(let d=1;d<=days;d++){result.push(await events({...input,date:`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`}));}result=await attachTamilSolarDates(input,result);}
  else {const chart=await calculateSwiss(input);const p=panchang(input,chart),t=transit(input,chart);const ev=await events(input);const beforeSunrise=minute(input.time)<minute(p.sunrise);let previousNight=null;if(beforeSunrise){const yesterday=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);previousNight=panchang({...input,date:yesterday,time:'12:00'});}const previousDate=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);const previousSunset=solarNoaa(previousDate,input.lat,input.lon,input.utcOffsetMinutes,false);result={en:{p,t,previousNight},ta:{p:calendarTamil(p),t:calendarTamil(t)},events:ev.events,dayStar:ev.star,previousSunset};}
  cache.set(key,result);if(cache.size>36)cache.delete(cache.keys().next().value);self.postMessage({id,result});

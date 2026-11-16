@@ -15,11 +15,11 @@ For tropical ecliptic longitude \(\lambda\), geographic latitude \(\phi\), and d
 - Ascensional Difference: \(AD=\arcsin(\tan\phi\tan\delta)\)
 - Oblique Ascension: \(OA=\alpha-AD\)
 
-Calendar uses the current Swiss Ephemeris Lahiri ayanamsa to convert each nirayana sign boundary to tropical longitude before calculating OA. Mean obliquity is evaluated for the UT Julian Day of the solar ingress. For a sign, the forward OA difference between its beginning and end is its complete rising measure.
+Calendar uses the Swiss Ephemeris Lahiri ayanamsa at the exact solar-ingress instant to convert each nirayana sign boundary to tropical longitude before calculating OA. Mean obliquity is evaluated for that UT Julian Day. For a sign, the forward OA difference between its beginning and end is its complete rising measure.
 
 The traditional conversion used in the display is 360 OA degrees = 60 nazhigai = 3,600 vighati. Therefore 1 OA degree = 10 vighati, or 4 minutes. The 12 rounded sign values use a largest-remainder allocation so the complete set always adds to exactly 60 nazhigai without accumulating rounding drift.
 
-At the solar ingress that defines the selected date's Sun sign, Calendar calculates the Lahiri sidereal ascendant and retains the matching Swiss local sidereal angle (ARMC). The current OA at the rising horizon is ARMC + 90 degrees. Calendar then calculates OA for the end of the current nirayana sign and takes the forward difference from that same-epoch current OA. This avoids reconstructing the horizon position from a rounded ascendant longitude and keeps the remaining balance tied to the exact Swiss horizon solution. The difference becomes the displayed Lagna balance in nazhigai and vighati.
+The selected place's local sunrise and sunset define the solar-sign date interval. If an ingress occurs after sunrise and before local sunset on the selected date, the incoming sign is used immediately. An ingress at or after local sunset belongs to the next sunrise interval. Calendar finds the exact ingress that defines that interval, then uses the Sun's sidereal sign index to select that sign's complete OA Rasi Mana row. The displayed “Lagna balance” is this full sign measure at the ingress, converted to nazhigai and vighati. The actual time-specific Lagna remains a separate Panchanga result; it must never select or replace the solar-sign Rasi Mana row.
 
 ## Place coverage
 
@@ -39,10 +39,10 @@ At high latitudes, some zodiac signs can be circumpolar and do not rise on that 
 ## Code and verification
 
 - Calculation module: `public/horoscope/offline/rasi-mana.browser.mjs`
-- Swiss Lahiri ascendant metadata: `public/horoscope/offline/swiss_vedic.browser.mjs`
+- Swiss Lahiri ingress-epoch context: `public/horoscope/offline/swiss_vedic.browser.mjs`
 - Calendar worker: `public/horoscope/calendar-worker.mjs`
 - Offline cache: `public/horoscope/calendar/sw.js`
 - Multi-latitude regression: `tests/calendar-rasi-palan-regression.mjs`
-- Browser-level Swiss boundary comparison: `tests/calendar-rasi-palan-browser-smoke.mjs`
+- Browser-level Libra/Scorpio ingress and full-sign OA comparison: `tests/calendar-rasi-palan-browser-smoke.mjs`
 
-The regression set covers Perambalur, Chennai, Tiruchirappalli, London, New York, Sydney, Tokyo, and Quito, and verifies that all 12 sign measures total exactly 60 nazhigai. A polar fixture verifies that non-rising signs are explicitly unavailable.
+The regression set covers Perambalur, Chennai, Tiruchirappalli, London, New York, Sydney, Tokyo, and Quito, and verifies that all 12 sign measures total exactly 60 nazhigai. It separately verifies that Libra selects Libra Rasi Mana and Scorpio selects Scorpio Rasi Mana, including the 16 November 2026 ingress and the following sunrise interval. A polar fixture verifies that non-rising signs are explicitly unavailable.

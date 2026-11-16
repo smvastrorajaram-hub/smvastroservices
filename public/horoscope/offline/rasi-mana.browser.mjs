@@ -15,7 +15,7 @@ export function normalizeDegrees(value){
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
 
 // IAU/Meeus mean obliquity polynomial, adequate for rising-time intervals.
-// JD must be UT and is supplied by the same Swiss Ephemeris instant as Lagna.
+// JD must be UT and is supplied by the exact solar-ingress instant.
 export function meanObliquityAtJulianDay(julianDayUt){
   const jd=Number(julianDayUt);
   if(!Number.isFinite(jd))throw new TypeError('A finite UT Julian Day is required.');
@@ -125,48 +125,43 @@ export function calculateRasiManaForLocation({
   };
 }
 
-export function calculateLagnaBalanceFromRasiMana({
-  siderealLongitude,latitude,ayanamsaDegrees,obliquityDegrees,armcDegrees
+export function calculateSolarSignRasiMana({
+  solarSignIndex,latitude,ayanamsaDegrees,obliquityDegrees
 }){
-  const longitude=normalizeDegrees(siderealLongitude);
-  const lat=Number(latitude),ayanamsa=Number(ayanamsaDegrees),obliquity=Number(obliquityDegrees);
-  if(!Number.isFinite(longitude)||!Number.isFinite(lat)||Math.abs(lat)>=90||
-     !Number.isFinite(ayanamsa)||!Number.isFinite(obliquity)){
-    throw new TypeError('Valid Lagna longitude and place-based astronomy values are required.');
+  const signIndex=Number(solarSignIndex);
+  if(!Number.isInteger(signIndex)||signIndex<0||signIndex>11){
+    throw new TypeError('A valid sidereal solar-sign index (0–11) is required.');
   }
-  const signIndex=Math.floor(longitude/30);
-  const tropicalSignEnd=normalizeDegrees((signIndex+1)*30+ayanamsa);
-  const armc=Number(armcDegrees);
-  // At the rising horizon, local sidereal time (ARMC) plus 90 degrees is
-  // the current oblique ascension. Use the same Swiss horizon solution that
-  // supplied the Lagna, rather than reconstructing it from rounded sidereal
-  // longitude and ayanamsa.
-  const currentOA=Number.isFinite(armc)
-    ? normalizeDegrees(armc+90)
-    : obliqueAscension(normalizeDegrees(longitude+ayanamsa),lat,obliquity);
-  const endOA=obliqueAscension(tropicalSignEnd,lat,obliquity);
-  if(currentOA===null||endOA===null){
-    return {available:false,reason:'circumpolar-or-invalid-rising-arc',signIndex,longitude};
+  const rasiMana=calculateRasiManaForLocation({
+    latitude,ayanamsaDegrees,obliquityDegrees
+  });
+  const selectedRasiMana=rasiMana.rows[signIndex];
+  if(!rasiMana.available||!selectedRasiMana?.available||
+     !Number.isInteger(selectedRasiMana.totalVighati)){
+    return {
+      available:false,
+      method:'solar-sign-oblique-ascension',
+      signIndex,
+      reason:selectedRasiMana?.reason||'complete-rasi-mana-unavailable',
+      rasiMana
+    };
   }
-  const remainingDegrees=normalizeDegrees(endOA-currentOA);
-  if(!(remainingDegrees>0&&remainingDegrees<=60)){
-    return {available:false,reason:'invalid-remaining-oblique-arc',signIndex,longitude};
-  }
-  const balanceSecondsExact=remainingDegrees*SECONDS_PER_OA_DEGREE;
-  const balanceVighati=Math.max(0,Math.round(remainingDegrees*VIGHATI_PER_OA_DEGREE));
-  const mana=calculateRasiManaForLocation({latitude:lat,ayanamsaDegrees:ayanamsa,obliquityDegrees:obliquity});
+  // At the exact ingress the new solar sign begins; its complete place-based
+  // rising measure is therefore the balance shown for that ingress sign.
+  const totalVighati=selectedRasiMana.totalVighati;
   return {
     available:true,
-    method:'oblique-ascension',
+    method:'solar-sign-oblique-ascension',
     signIndex,
-    siderealLongitude:longitude,
-    degreeWithinSign:longitude-signIndex*30,
-    remainingObliqueDegrees:remainingDegrees,
-    currentObliqueAscension:currentOA,
-    armcDegrees:Number.isFinite(armc)?normalizeDegrees(armc):null,
-    balanceSeconds:Math.round(balanceSecondsExact),
-    balanceNazhigai:Math.floor(balanceVighati/60),
-    balanceVinazhigai:balanceVighati%60,
-    rasiMana:mana
+    durationDegrees:selectedRasiMana.durationDegrees,
+    durationSeconds:selectedRasiMana.durationSeconds,
+    totalVighati,
+    nazhigai:selectedRasiMana.nazhigai,
+    vinazhigai:selectedRasiMana.vinazhigai,
+    balanceSeconds:totalVighati*24,
+    balanceNazhigai:selectedRasiMana.nazhigai,
+    balanceVinazhigai:selectedRasiMana.vinazhigai,
+    selectedRasiMana,
+    rasiMana
   };
 }
