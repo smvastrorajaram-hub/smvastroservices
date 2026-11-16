@@ -1,6 +1,6 @@
 import {getSwe} from './offline/wasm-provider.mjs';
-import {calculateSwiss,calculateSunMoon} from './offline/swiss_vedic.browser.mjs';
-import {panchang,transit,calendarTamil,solarNoaa,tamilSolarDate} from './offline/transit_panchang.browser.mjs';
+import {calculateSwiss,calculateSunMoon,calculateAscendantAt} from './offline/swiss_vedic.browser.mjs';
+import {panchang,transit,calendarTamil,solarNoaa,tamilSolarDate,nextSolarIngress} from './offline/transit_panchang.browser.mjs';
 const norm=n=>(n%360+360)%360;
 const cache=new Map();
 const sampleCache=new Map();
@@ -11,6 +11,8 @@ async function sample(input,time){
   pendingSample=calculateSunMoon({...input,time}).then(({sunLongitude:sun,moonLongitude:moon})=>({
    tithi:Math.floor(norm(moon-sun)/12)+1,
    star:Math.floor(norm(moon)/(360/27))+1,
+   yoga:Math.floor(norm(sun+moon)/(360/27))+1,
+   karana:Math.floor(norm(moon-sun)/6)+1,
    moon:Math.floor(norm(moon)/30),
    solar:Math.floor(norm(sun)/30)
   }));
@@ -22,6 +24,65 @@ async function sample(input,time){
 }
 function minute(t){return +t.slice(0,2)*60+ +t.slice(3,5)}
 function clock(n){n=(Math.round(n)%1440+1440)%1440;return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')}
+
+function localPartsFromTs(ts,offset){
+ const d=new Date(Number(ts)+Number(offset??330)*60000);
+ return {
+  date:\`\${d.getUTCFullYear()}-\${String(d.getUTCMonth()+1).padStart(2,'0')}-\${String(d.getUTCDate()).padStart(2,'0')}\`,
+  time:\`\${String(d.getUTCHours()).padStart(2,'0')}:\${String(d.getUTCMinutes()).padStart(2,'0')}:\${String(d.getUTCSeconds()).padStart(2,'0')}\`
+ };
+}
+const ingressLagnaCache=new Map();
+async function calculateIngressLagnaBalance(input){
+ const ingress=nextSolarIngress(input);
+ if(!ingress||!Number.isFinite(ingress.timestamp))return null;
+ const cacheKey=[Number(input.lat).toFixed(5),Number(input.lon).toFixed(5),Number(input.utcOffsetMinutes),ingress.timestamp].join('|');
+ if(ingressLagnaCache.has(cacheKey))return ingressLagnaCache.get(cacheKey);
+ const at=(timestamp)=>{
+  const local=localPartsFromTs(timestamp,input.utcOffsetMinutes);
+  return calculateAscendantAt({...input,date:local.date,time:local.time,houseSystem:'S'});
+ };
+ const start=await at(ingress.timestamp);
+ const startLongitude=norm(start.longitude),startSign=start.signIndex;
+ const targetArc=norm(((startSign+1)*30)-startLongitude);
+ if(!(targetArc>0&&targetArc<=30))return null;
+ const maxMinutes=Math.abs(Number(input.lat))>60?1440:480;
+ let low=ingress.timestamp,high=null;
+ for(let elapsed=10;elapsed<=maxMinutes;elapsed+=10){
+  const candidateTime=ingress.timestamp+elapsed*60000;
+  const candidate=await at(candidateTime);
+  const travelled=norm(candidate.longitude-startLongitude);
+  if(travelled>=targetArc){high=candidateTime;break;}
+  low=candidateTime;
+ }
+ if(high===null)return null;
+ for(let i=0;i<20;i++){
+  const middle=(low+high)/2;
+  const candidate=await at(middle);
+  const travelled=norm(candidate.longitude-startLongitude);
+  if(travelled>=targetArc)high=middle;else low=middle;
+ }
+ const durationSeconds=Math.max(0,(high-ingress.timestamp)/1000);
+ const totalVighati=Math.max(0,Math.round(durationSeconds/24));
+ const balanceNazhigai=Math.floor(totalVighati/60);
+ const balanceVinazhigai=totalVighati%60;
+ const result={
+  sunSignIndex:ingress.signIndex,
+  ingressDate:ingress.date,
+  ingressTime:ingress.time,
+  ingressSunLongitude:ingress.sunLongitude,
+  lagnaSignIndex:startSign,
+  lagnaLongitude:start.longitude,
+  balanceSeconds:Math.round(durationSeconds),
+  balanceNazhigai,
+  balanceVinazhigai,
+  sunrise:solarNoaa(input.date,input.lat,input.lon,input.utcOffsetMinutes,true)
+ };
+ ingressLagnaCache.set(cacheKey,result);
+ if(ingressLagnaCache.size>12)ingressLagnaCache.delete(ingressLagnaCache.keys().next().value);
+ return result;
+}
+
 // Geocentric lunar rise threshold (mean refraction + horizontal parallax).
 // Five-minute bracketing followed by bisection; local civil day, no timezone guessing.
 async function moonrise(input){
@@ -53,7 +114,7 @@ async function events(input){
  if(r.solar===3&&mid.tithi===30)add('Aadi Amavasya','ஆடி அமாவாசை','midday');
  if(r.solar===9&&mid.tithi===30)add('Thai Amavasya','தை அமாவாசை','midday');
  if(r.solar===5&&mid.tithi===30)add('Mahalaya Amavasya','மகாளய அமாவாசை','midday');
- return {date:input.date,events:ev,moon:r.moon,star:r.star};
+ return {date:input.date,events:ev,moon:r.moon,star:r.star,sunrisePanchang:{tithi:r.tithi,star:r.star,yoga:r.yoga,karana:r.karana},middayPanchang:{tithi:mid.tithi,star:mid.star,yoga:mid.yoga,karana:mid.karana}};
 }
 
 function dateDistance(date,reference){
@@ -123,7 +184,8 @@ async function attachTamilSolarDates(input,entries){
 }
 
 self.onmessage=async({data})=>{const {id,kind,input}=data;try{const key=JSON.stringify([kind,input]);if(cache.has(key)){self.postMessage({id,result:cache.get(key)});return}let result;
- if(kind==='month'){const [y,m]=input.date.split('-').map(Number),days=new Date(Date.UTC(y,m,0)).getUTCDate();result=[];for(let d=1;d<=days;d++){result.push(await events({...input,date:`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`}));}result=await attachTamilSolarDates(input,result);}
- else {const chart=await calculateSwiss(input);const p=panchang(input,chart),t=transit(input,chart);const ev=await events(input);const beforeSunrise=minute(input.time)<minute(p.sunrise);let previousNight=null;if(beforeSunrise){const yesterday=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);previousNight=panchang({...input,date:yesterday,time:'12:00'});}const previousDate=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);const previousSunset=solarNoaa(previousDate,input.lat,input.lon,input.utcOffsetMinutes,false);result={en:{p,t,previousNight},ta:{p:calendarTamil(p),t:calendarTamil(t)},events:ev.events,dayStar:ev.star,previousSunset};}
+ if(kind==='lagna-balance'){result=await calculateIngressLagnaBalance(input);}
+ else if(kind==='month'){const [y,m]=input.date.split('-').map(Number),days=new Date(Date.UTC(y,m,0)).getUTCDate();result=[];for(let d=1;d<=days;d++){result.push(await events({...input,date:`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`}));}result=await attachTamilSolarDates(input,result);}
+ else {const chart=await calculateSwiss(input);const p=panchang(input,chart),t=transit(input,chart);const ev=await events(input);const beforeSunrise=minute(input.time)<minute(p.sunrise);let previousNight=null;if(beforeSunrise){const yesterday=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);previousNight=panchang({...input,date:yesterday,time:'12:00'});}const previousDate=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);const previousSunset=solarNoaa(previousDate,input.lat,input.lon,input.utcOffsetMinutes,false);result={en:{p,t,previousNight},ta:{p:calendarTamil(p),t:calendarTamil(t)},events:ev.events,dayStar:ev.star,previousSunset,sunrisePanchang:ev.sunrisePanchang,middayPanchang:ev.middayPanchang};}
  cache.set(key,result);if(cache.size>36)cache.delete(cache.keys().next().value);self.postMessage({id,result});
  }catch(e){self.postMessage({id,error:e.message})}};
