@@ -1,3 +1,4 @@
+import {getSwe} from './offline/wasm-provider.mjs';
 import {calculateSwiss,calculateSunMoon,calculateAscendantAt} from './offline/swiss_vedic.browser.mjs';
 import {panchang,transit,calendarTamil,solarNoaa,tamilSolarDate,nextSolarIngress} from './offline/transit_panchang.browser.mjs';
 const norm=n=>(n%360+360)%360;
