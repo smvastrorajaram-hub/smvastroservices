@@ -259,7 +259,7 @@ if(host){
    if(balance){
     const solarSign=signs[Number(balance.sunSignIndex)]?.[ta()?1:0]||'—';
     const sunrise=String(balance.sunrise||daily.en.p?.sunrise||'—');
-    const displayTime=isToday?localNow().slice(11,19):calculationTime;
+    const displayTime=isToday?localNow().slice(11,19):String(balance.selectedTime||sunrise||calculationTime);
     const remaining=calculateRemainingRasiMana({
      totalVighati:Number(balance.fullBalanceVighati??balance.selectedRasiMana?.totalVighati),
      sunrise,
@@ -430,7 +430,10 @@ if(host){
    daily=resultDay;
    $('#calStatus').textContent=`${cfg.place} · ${requestedDate} · ${daily.en.t.requested.time} · UTC ${+dayInput.utcOffsetMinutes/60}`;
    renderDaily();
-   void workerCall('solar-sign-rasi-mana',dayInput).then(balance=>{
+   const balanceTime=requestedDate===localNowAt(dayInput.utcOffsetMinutes).slice(0,10)
+    ? dayInput.time
+    : String(resultDay.en?.p?.sunrise||dayInput.time);
+   void workerCall('solar-sign-rasi-mana',{...dayInput,time:balanceTime}).then(balance=>{
     if(request!==dayRequest||selected!==requestedDate)return;
     daily.solarSignRasiMana=balance;
     daily.solarSignRasiManaLoaded=true;
