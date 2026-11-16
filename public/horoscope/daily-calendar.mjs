@@ -296,7 +296,14 @@ if(host){
  }
  function ensureMonth(key){
   const cacheKey=monthCacheKey(key);
-  if(month&&monthKey===key)return Promise.resolve(month);
+  if(month&&monthKey===key){
+   if(pendingMonthCacheKey&&pendingMonthCacheKey!==cacheKey){
+    monthRequest++;
+    pendingMonthCacheKey='';pendingMonthPromise=null;
+    renderMonth();
+   }
+   return Promise.resolve(month);
+  }
   if(pendingMonthCacheKey===cacheKey&&pendingMonthPromise)return pendingMonthPromise;
   const cached=monthCache.get(cacheKey);
   if(cached){
