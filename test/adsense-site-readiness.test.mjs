@@ -109,7 +109,7 @@ test('All three app service workers use synchronized new cache releases without 
   ];
   for (const source of workers) {
     assert.match(source, /20261116-tamil-solar-after-sunset-pages-v1/);
-    assert.match(source, /20261116-tamil-solar-after-sunset-pages-v1/);
+    assert.match(source, /20261115-navigation-auto-restore-live-booking-in-v1/);
     assert.doesNotMatch(source, /localStorage\.clear\(|sessionStorage\.clear\(|WebView\.clearCache\(/);
   }
   const releases = workers.map(source => source.match(/SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/));
