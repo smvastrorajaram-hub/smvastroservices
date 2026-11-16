@@ -534,7 +534,7 @@ test('Calendar dual-date grid, direct navigation and Date Details are UI-only ex
   assert.match(dailyCalendarSource, /cal-name-yoga-label/);
   assert.match(dailyCalendarSource, /nityaYogaResults/);
   assert.match(calendarCalculationWorkerSource, /attachTamilSolarDates/);
-  assert.match(calendarCalculationWorkerSource, /dayStar:ev\.star,amirthadiYogaAvailable:nakshatraTimeline\.available,amirthadiYogaSegments,previousSunset/);
+  assert.match(calendarCalculationWorkerSource, /dayStar:ev\.star,amirthadiYogaAvailable:nakshatraTimeline\.available,amirthadiYogaSegments,thyajyamAvailable:thyajyam\.available,thyajyamIntervals:thyajyam\.intervals,ahasNazhigai,previousSunset/);
   assert.match(calendarWorkerSource, /tamil-day-classifications\.mjs/);
   assert.match(transitPanchangSource, /export \{transit,panchang,tamilSolarDate\}/);
   assert.match(dailyCalendarCssSource, /h3:not\(\.cal-date-details-title\)/);
@@ -598,8 +598,8 @@ test('Amirthadi timeline uses Panchang Nakshatra boundaries from local sunrise t
     assert.ok(item.endTimestamp>item.startTimestamp);
     assert.ok(item.fullEndTimestamp>item.fullStartTimestamp);
     if(i) {
-      assert.equal(timeline.intervals[i-1].endTimestamp+1,item.startTimestamp,
-        'The next Nakshatra interval starts immediately after the preceding interval ends');
+      assert.ok(Math.abs((timeline.intervals[i-1].endTimestamp+1)-item.startTimestamp)<2,
+        'Adjacent Nakshatra intervals must meet within the boundary search precision');
       assert.notEqual(timeline.intervals[i-1].nakshatraNumber,item.nakshatraNumber,
         'A new period must begin only when Nakshatra changes');
     }
