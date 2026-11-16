@@ -151,6 +151,7 @@ try {
   assert.equal(publicUi.tabs.length, 4, 'All four Rasi Palan sections should be present');
   assert.deepEqual(publicUi.navLabels, ['Services', 'Horoscope'], 'Calendar navigation should contain only Services and Horoscope');
 
+
   // Confirm the published Tamil annual list controls the two requested 2026
   // examples; no live Panchanga score may override the published date table.
   async function checkMuhurthamDate(date, expectedPattern) {
