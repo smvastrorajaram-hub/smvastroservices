@@ -11,7 +11,7 @@ const CORE=[
  '../assets/pwa-calendar-192.svg','../assets/pwa-calendar-512.png','../assets/pwa-calendar-maskable-192.svg','../assets/pwa-calendar-maskable.svg',
  '../assets/android-app-icon-calendar.svg','../assets/android-app-icon-calendar-source.png',
  '../android-apk-download.mjs','../android-apk-icons.css',
- '../offline/wasm-provider.mjs','../offline/swiss_vedic.browser.mjs','../offline/transit_panchang.browser.mjs',
+ '../offline/wasm-provider.mjs','../offline/swiss_vedic.browser.mjs','../offline/transit_panchang.browser.mjs','../offline/rasi-mana.browser.mjs',
  '../offline/vendor/smv-swisseph-local.mjs','../offline/vendor/wasm/swisseph.mjs','../offline/vendor/wasm/swisseph.js','../offline/vendor/wasm/swisseph.wasm','../offline/vendor/wasm/swisseph.data',
  '../offline/places/place-search.mjs','../offline/places/place-display.mjs','../offline/places/timezone.mjs','../offline/places/tz-boundary-lookup.mjs','../offline/places/india-manifest.json',
 ];
@@ -25,7 +25,7 @@ const REQUIRED_CORE = new Set([
  '../assets/smv-calendar-website.webp',
  './rasi-palan-periods.mjs','../daily-calendar.mjs','../calendar-muhurta-classification.mjs','../tamil-day-classifications.mjs','../calendar-rasi-palan.mjs',
  '../calendar-rasi-palan.css','../calendar-rasi-palan-rules.mjs','../daily-calendar.css',
- '../calendar-data.mjs','../calendar-worker.mjs','../offline/wasm-provider.mjs','../offline/places/timezone.mjs','../offline/places/tz-boundary-lookup.mjs',
+ '../calendar-data.mjs','../calendar-worker.mjs','../offline/rasi-mana.browser.mjs','../offline/wasm-provider.mjs','../offline/places/timezone.mjs','../offline/places/tz-boundary-lookup.mjs',
  '../offline/places/place-search.mjs','../offline/places/place-display.mjs','../offline/places/india-manifest.json',
  '../location-search-online-offline.js',
  '../offline/vendor/wasm/swisseph.js','../offline/vendor/wasm/swisseph.wasm','../offline/vendor/wasm/swisseph.data'
