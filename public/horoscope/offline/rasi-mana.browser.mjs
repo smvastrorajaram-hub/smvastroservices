@@ -126,7 +126,7 @@ export function calculateRasiManaForLocation({
 }
 
 export function calculateLagnaBalanceFromRasiMana({
-  siderealLongitude,latitude,ayanamsaDegrees,obliquityDegrees
+  siderealLongitude,latitude,ayanamsaDegrees,obliquityDegrees,armcDegrees
 }){
   const longitude=normalizeDegrees(siderealLongitude);
   const lat=Number(latitude),ayanamsa=Number(ayanamsaDegrees),obliquity=Number(obliquityDegrees);
@@ -135,13 +135,22 @@ export function calculateLagnaBalanceFromRasiMana({
     throw new TypeError('Valid Lagna longitude and place-based astronomy values are required.');
   }
   const signIndex=Math.floor(longitude/30);
-  const tropicalLagna=normalizeDegrees(longitude+ayanamsa);
   const tropicalSignEnd=normalizeDegrees((signIndex+1)*30+ayanamsa);
-  const remainingDegrees=risingArcDegrees(
-    tropicalLagna,tropicalSignEnd,lat,obliquity
-  );
-  if(remainingDegrees===null){
+  const armc=Number(armcDegrees);
+  // At the rising horizon, local sidereal time (ARMC) plus 90 degrees is
+  // the current oblique ascension. Use the same Swiss horizon solution that
+  // supplied the Lagna, rather than reconstructing it from rounded sidereal
+  // longitude and ayanamsa.
+  const currentOA=Number.isFinite(armc)
+    ? normalizeDegrees(armc+90)
+    : obliqueAscension(normalizeDegrees(longitude+ayanamsa),lat,obliquity);
+  const endOA=obliqueAscension(tropicalSignEnd,lat,obliquity);
+  if(currentOA===null||endOA===null){
     return {available:false,reason:'circumpolar-or-invalid-rising-arc',signIndex,longitude};
+  }
+  const remainingDegrees=normalizeDegrees(endOA-currentOA);
+  if(!(remainingDegrees>0&&remainingDegrees<=60)){
+    return {available:false,reason:'invalid-remaining-oblique-arc',signIndex,longitude};
   }
   const balanceSecondsExact=remainingDegrees*SECONDS_PER_OA_DEGREE;
   const balanceVighati=Math.max(0,Math.round(remainingDegrees*VIGHATI_PER_OA_DEGREE));
@@ -153,6 +162,8 @@ export function calculateLagnaBalanceFromRasiMana({
     siderealLongitude:longitude,
     degreeWithinSign:longitude-signIndex*30,
     remainingObliqueDegrees:remainingDegrees,
+    currentObliqueAscension:currentOA,
+    armcDegrees:Number.isFinite(armc)?normalizeDegrees(armc):null,
     balanceSeconds:Math.round(balanceSecondsExact),
     balanceNazhigai:Math.floor(balanceVighati/60),
     balanceVinazhigai:balanceVighati%60,
