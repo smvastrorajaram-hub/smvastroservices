@@ -67,7 +67,7 @@ function preciseSunLongitudeAtTs(input,ts,offset){
 export function nextSolarIngress(input){
  const date=String(input.date||''),offset=Number(input.utcOffsetMinutes??330);
  const lat=Number(input.lat),lon=Number(input.lon);
- if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||!Number.isFinite(lat)||!Number.isFinite(lon))return null;
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(lat)||!Number.isFinite(lon))return null;
  const rise=solarNoaa(date,lat,lon,offset,true);
  if(!rise)return null;
  const sunriseTs=Date.parse(date+'T'+rise+':00Z')-offset*60000;
