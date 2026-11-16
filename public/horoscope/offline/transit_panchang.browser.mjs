@@ -383,6 +383,135 @@ function panchangEventTimes(input, kind){
 }
 
 
+// Complete local-solar-day Nakshatra intervals, using the same Swiss/Lahiri
+// boundary search as panchang().nakshatra.start/end.
+// Fixed four-ghati Nakshatra Thyajyam start positions, in the same
+// 27-star order used by NAK. Values are the traditional 1-based ghati labels.
+// Reference: Drik Panchang Nakshatra Thyajyam / Varjyam table; Mula starts at 57.
+export const NAKSHATRA_THYAJYAM_START_GHATIS = Object.freeze([
+  51,25,31,41,15,22,31,21,33,31,21,19,22,21,15,15,11,15,57,25,21,11,11,19,17,25,31
+]);
+
+// Complete local-solar-day Nakshatra intervals, using the same Swiss/Lahiri
+// boundary search as panchang().nakshatra.start/end. Each interval also carries
+// the full Nakshatra span, even when the star began before sunrise or ends after
+// the following sunrise; Thyajyam must be measured against that full span.
+export function nakshatraIntervalsForLocalDay(input){
+  const offset=Number(input.utcOffsetMinutes??330);
+  const sunrise=solarNoaa(input.date,input.lat,input.lon,offset,true);
+  const nextDate=new Date(Date.parse(String(input.date)+'T12:00:00Z')+86400000).toISOString().slice(0,10);
+  const nextSunrise=solarNoaa(nextDate,input.lat,input.lon,offset,true);
+  if(!sunrise||!nextSunrise)return {available:false,reason:'local-sunrise-unavailable',intervals:[]};
+  const dayStart=localDateParts(input.date,sunrise,offset).u.getTime();
+  const dayEnd=localDateParts(nextDate,nextSunrise,offset).u.getTime();
+  if(!Number.isFinite(dayStart)||!Number.isFinite(dayEnd)||dayEnd<=dayStart)
+    return {available:false,reason:'invalid-local-solar-day',intervals:[]};
+  const firstBoundary=panchangBoundary(input,dayStart,'nakshatra',-1);
+  let starStart=firstBoundary==null?dayStart:firstBoundary;
+  let segmentStart=dayStart;
+  const intervals=[];
+  for(let index=0;index<8&&segmentStart<dayEnd;index++){
+    const state=panchangEventState(input,segmentStart,'nakshatra');
+    if(!state||!Number.isInteger(state.index)||state.index<0||state.index>=27)
+      return {available:false,reason:'nakshatra-state-unavailable',intervals:[]};
+    const boundary=panchangBoundary(input,segmentStart,'nakshatra',1);
+    if(boundary==null)return {available:false,reason:'nakshatra-boundary-unavailable',intervals:[]};
+    // The forward search returns the last instant still in the current star.
+    // The first instant of the next star is immediately after that boundary.
+    const starEnd=boundary+1;
+    const clippedStart=Math.max(starStart,dayStart);
+    const clippedEnd=Math.min(starEnd,dayEnd);
+    intervals.push({
+      nakshatraNumber:state.index+1,
+      start:formatPanchangBoundary(clippedStart,offset,true),
+      end:formatPanchangBoundary(Math.min(boundary,dayEnd),offset,true),
+      startTimestamp:clippedStart,
+      endTimestamp:clippedEnd,
+      fullStartTimestamp:starStart,
+      fullEndTimestamp:starEnd
+    });
+    if(starEnd>=dayEnd)break;
+    segmentStart=starEnd;
+    starStart=starEnd;
+  }
+  if(!intervals.length||intervals[intervals.length-1].endTimestamp!==dayEnd)
+    return {available:false,reason:'incomplete-nakshatra-timeline',intervals:[]};
+  return {available:true,sunrise,nextSunrise,dayStartTimestamp:dayStart,dayEndTimestamp:dayEnd,intervals};
+}
+
+// Nakshatra Thyajyam is the four-ghati window beginning at the star's
+// tabulated ghati position. A star is divided into 60 equal ghatis; therefore
+// the ghati's clock duration scales with that star's actual Swiss/Lahiri span.
+// Return every window overlapping this local sunrise-to-next-sunrise day,
+// including a carried remainder such as Mula's 57th-ghati Thyajyam.
+export function thyajyamIntervalsForLocalDay(input,providedTimeline=null){
+  const timeline=providedTimeline||nakshatraIntervalsForLocalDay(input);
+  if(!timeline.available)return {...timeline,intervals:[]};
+  const windows=[];
+  const addWindow=(nakshatraNumber,fullStart,fullEnd)=>{
+    const startGhati=NAKSHATRA_THYAJYAM_START_GHATIS[nakshatraNumber-1];
+    const fullDuration=fullEnd-fullStart;
+    if(!Number.isFinite(fullDuration)||fullDuration<=0||!Number.isInteger(startGhati))return false;
+    const start=fullStart+fullDuration*startGhati/60;
+    const end=fullStart+fullDuration*(startGhati+4)/60;
+    if(end>timeline.dayStartTimestamp&&start<timeline.dayEndTimestamp){
+      windows.push({
+        nakshatraNumber,startGhati,endGhati:startGhati+4,
+        start:formatPanchangBoundary(start,Number(input.utcOffsetMinutes??330),true),
+        end:formatPanchangBoundary(end,Number(input.utcOffsetMinutes??330),true),
+        startTimestamp:start,endTimestamp:end
+      });
+    }
+    return true;
+  };
+  // Include the immediately preceding star too: Mula's 57th-ghati window
+  // can leave a Sesha-Thyajyam remainder after that star ends, crossing sunrise.
+  const first=timeline.intervals[0];
+  if(first){
+    const previousProbe=first.fullStartTimestamp-1;
+    const previousState=panchangEventState(input,previousProbe,'nakshatra');
+    const previousStart=panchangBoundary(input,previousProbe,'nakshatra',-1);
+    if(previousState&&previousStart!=null&&!addWindow(previousState.index+1,previousStart,first.fullStartTimestamp))
+      return {available:false,reason:'invalid-previous-thyajyam-star-span',intervals:[]};
+  }
+  for(const star of timeline.intervals){
+    if(!addWindow(star.nakshatraNumber,star.fullStartTimestamp,star.fullEndTimestamp))
+      return {available:false,reason:'invalid-thyajyam-star-span',intervals:[]};
+  }
+  windows.sort((a,b)=>a.startTimestamp-b.startTimestamp);
+  return {
+    available:true,
+    sunrise:timeline.sunrise,
+    nextSunrise:timeline.nextSunrise,
+    dayStartTimestamp:timeline.dayStartTimestamp,
+    dayEndTimestamp:timeline.dayEndTimestamp,
+    intervals:windows
+  };
+}
+
+// Ahas Pramana / daytime length (Tamil: Pagalmanam), measured from the
+// location's local sunrise to sunset and expressed in Nazhigai/Vinazhigai.
+export function calculateAhasNazhigai(sunrise,sunset){
+  const minutes=value=>{
+    const match=String(value??'').match(/^(\d{1,2}):(\d{2})$/);
+    return match?Number(match[1])*60+Number(match[2]):null;
+  };
+  const rise=minutes(sunrise),set=minutes(sunset);
+  if(rise==null||set==null||rise===set)return {available:false};
+  const daylightMinutes=(set-rise+1440)%1440;
+  const totalVighati=Math.round(daylightMinutes*60/24);
+  const normalizedNazhigai=Math.floor(totalVighati/60);
+  const normalizedVinazhigai=totalVighati%60;
+  return {
+    available:true,
+    sunrise:String(sunrise),sunset:String(sunset),
+    daylightMinutes,
+    totalVighati,
+    nazhigai:normalizedNazhigai,
+    vinazhigai:normalizedVinazhigai
+  };
+}
+
 function formatLocalRange(startMin,endMin){
   const fmt=m=>{m=((Math.round(Number(m))%1440)+1440)%1440; const h=Math.floor(m/60), mi=m%60; return `${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}`;};
   return `${fmt(startMin)} - ${fmt(endMin)}`;

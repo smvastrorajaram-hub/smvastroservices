@@ -30,21 +30,24 @@ export function getTamilCalendarDayFlags(tamilSolar) {
   };
 }
 
+// TTD Tirukanitha Panchangam (Subhakritu 2022-23), Amirthadi Yogam matrix, p. 134.
+// Rows are weekdays Sunday=0 through Saturday=6; each character is Nakshatra 1–27.
+// A=Amirtha, S=Siddha, M=Marana, P=Prabalarishta.
 export const TAMIL_DAY_YOGA_TABLE = Object.freeze([
-  'SPSSSSSSSMSASSSMMMASAAMSSAA',
-  'SSMASSASSMSSSPAMSSSMMASSMSS',
-  'SSSASMSSSSSASSSMSMASPSSMMAS',
+  'SPSSSSSSSMSAASSMMMASAAMSSAA',
+  'SSMAASASSMSSSPAMSSSSMASSMSS',
+  'SSSASMSSSSSASSSMSSASPSSMMAS',
   'MSASSSSSSSAAMSSSSSMAASPSASM',
-  'ASMMMMASSASMSSASSPSSSSSMSSS',
-  'ASSMSSSMMMSSASSSSMAPSMSSSSS',
-  'SSSASSSSMASMMMSSSSSSSSSAMSP'
+  'ASMMMMAASASMSSASSPSSSSSMSSS',
+  'ASSMSSSMMMSSASSSSMAPSMSSSSA',
+  'SSAASSSSMASMMMASSSSSSSSAMSP'
 ]);
 
 const YOGA_BY_CODE = Object.freeze({
   S: Object.freeze({ key: 'siddha', en: 'Siddha Yogam', ta: 'சித்த யோகம்', resultEn: 'Accomplishment · auspicious', resultTa: 'காரிய சித்தி · சுபமானது', bad: false }),
   A: Object.freeze({ key: 'amirtha', en: 'Amirtha Yogam', ta: 'அமிர்த யோகம்', resultEn: 'Nectar · highly auspicious', resultTa: 'அமிர்தம் · மிகச் சிறந்த சுப யோகம்', bad: false }),
   M: Object.freeze({ key: 'marana', en: 'Marana Yogam', ta: 'மரண யோகம்', resultEn: 'Traditionally avoided for new auspicious beginnings', resultTa: 'சுப காரியத் தொடக்கத்திற்கு பாரம்பரியமாகத் தவிர்க்கப்படும்', bad: true }),
-  P: Object.freeze({ key: 'prabalarishta', en: 'Prabalarishta Yogam', ta: 'பிரபலாரிஷ்ட யோகம்', resultEn: 'Traditionally considered strongly inauspicious', resultTa: 'பாரம்பரியமாக வலுவான அசுப யோகம்', bad: false })
+  P: Object.freeze({ key: 'prabalarishta', en: 'Prabalarishta Yogam', ta: 'பிரபலாரிஷ்ட யோகம்', resultEn: 'Traditionally considered strongly inauspicious', resultTa: 'பாரம்பரியமாக வலுவான அசுப யோகம்', bad: true })
 });
 
 const UNKNOWN_YOGA = Object.freeze({

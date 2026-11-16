@@ -198,6 +198,19 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-day-yoga-card.is-inauspicious{border-left:4px solid #b52f2b;background:#fff0ed}
 #smvDailyCalendar .cal-day-yoga-card.is-inauspicious>strong{color:#a32220}
 #smvDailyCalendar .cal-day-yoga-card.is-auspicious>strong{color:#207444}
+#smvDailyCalendar .cal-yoga-segments{display:grid;gap:7px;margin:9px 0}
+#smvDailyCalendar .cal-yoga-segment{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-left:4px solid #a9a394;border-radius:8px;background:transparent;min-width:0}
+#smvDailyCalendar .cal-yoga-segment.is-auspicious{border-left-color:#27804c}
+#smvDailyCalendar .cal-yoga-segment.is-inauspicious{border-left-color:#b52f2b}
+#smvDailyCalendar .cal-yoga-segment.is-unknown{border-left-color:#a9a394}
+#smvDailyCalendar .cal-yoga-segment-info{display:grid;gap:3px;min-width:0}
+#smvDailyCalendar .cal-yoga-segment-info strong{font-weight:850}
+#smvDailyCalendar .cal-yoga-segment.is-auspicious .cal-yoga-segment-info strong{color:#207444}
+#smvDailyCalendar .cal-yoga-segment.is-inauspicious .cal-yoga-segment-info strong{color:#a32220}
+#smvDailyCalendar .cal-yoga-segment.is-unknown .cal-yoga-segment-info strong{color:#716d61}
+#smvDailyCalendar .cal-yoga-segment-info small{display:block;line-height:1.35}
+#smvDailyCalendar .cal-yoga-segment-time{flex:0 0 auto;font-variant-numeric:tabular-nums;font-weight:750;white-space:nowrap}
+@media(max-width:600px){#smvDailyCalendar .cal-yoga-segment{align-items:flex-start;flex-direction:column;gap:4px}#smvDailyCalendar .cal-yoga-segment-time{white-space:normal}}
 #smvDailyCalendar #calDaily .card{margin:12px 0;padding:14px}
 #smvDailyCalendar #calReadings{margin-top:12px}
 #smvDailyCalendar #calEvents{margin-top:12px}
