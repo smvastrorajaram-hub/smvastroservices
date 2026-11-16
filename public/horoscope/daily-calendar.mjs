@@ -273,7 +273,7 @@ if(host){
    const yogaResult=nityaYogaResults[yogaName];
    if(yogaResult&&yogaRow.cells[1]){
     const result=document.createElement('small');
-    result.className='cal-name-yoga-result '+(yogaResult[2]?'is-caution':'is-favourable');
+    result.className='cal-name-yoga-result';
     result.textContent=ta()?yogaResult[1]:yogaResult[0];
     yogaRow.cells[1].append(document.createElement('br'),result);
    }
