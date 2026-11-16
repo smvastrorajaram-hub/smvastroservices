@@ -14,7 +14,7 @@ import {
 } from '../public/horoscope/calendar-rasi-palan-rules.mjs';
 import { currentWeek, periodReference } from '../public/horoscope/calendar/rasi-palan-periods.mjs';
 import { calculateSwiss, calculateSunMoonSync } from '../public/horoscope/offline/swiss_vedic.browser.mjs';
-import { panchang, solarNoaa, nakshatraIntervalsForLocalDay } from '../public/horoscope/offline/transit_panchang.browser.mjs';
+import { panchang, solarNoaa, nakshatraIntervalsForLocalDay, thyajyamIntervalsForLocalDay, calculateAhasNazhigai, NAKSHATRA_THYAJYAM_START_GHATIS } from '../public/horoscope/offline/transit_panchang.browser.mjs';
 import { calculateRasiManaForLocation, calculateSolarSignRasiMana, calculateRemainingRasiMana, calculateRemainingSolarSignRasiMana, meanObliquityAtJulianDay } from '../public/horoscope/offline/rasi-mana.browser.mjs';
 import { TAMIL_DAY_YOGA_TABLE, getTamilDayYoga, getTamilCalendarDayFlags } from '../public/horoscope/tamil-day-classifications.mjs';
 
@@ -605,6 +605,43 @@ test('Amirthadi timeline uses Panchang Nakshatra boundaries from local sunrise t
   }
   assert.ok(dailyCalendarSource.includes('cal-yoga-segment-time'));
   assert.ok(calendarCalculationWorkerSource.includes('amirthadiYogaSegments'));
+});
+
+test('Ahas Pramana converts local sunrise-to-sunset duration to Nazhigai and Vinazhigai', () => {
+  assert.deepEqual(calculateAhasNazhigai('06:00','18:00'), {
+    available:true,sunrise:'06:00',sunset:'18:00',daylightMinutes:720,totalVighati:1800,nazhigai:30,vinazhigai:0
+  });
+  assert.equal(calculateAhasNazhigai('06:00','19:00').nazhigai,32);
+  assert.equal(calculateAhasNazhigai('06:00','19:00').vinazhigai,30);
+  assert.equal(calculateAhasNazhigai('06:00','17:00').nazhigai,27);
+  assert.equal(calculateAhasNazhigai('06:00','17:00').vinazhigai,30);
+  assert.equal(calculateAhasNazhigai('—','18:00').available,false);
+});
+
+test('Nakshatra Thyajyam uses the 27-star table, four ghatis, and carries Mula beyond the 60th ghati', async () => {
+  assert.equal(NAKSHATRA_THYAJYAM_START_GHATIS.length,27);
+  assert.deepEqual(NAKSHATRA_THYAJYAM_START_GHATIS.slice(0,5),[51,25,31,41,15]);
+  assert.equal(NAKSHATRA_THYAJYAM_START_GHATIS[18],57,'Mula Thyajyam begins at its 57th ghati');
+  const input={lat:11.2342,lon:78.8808,utcOffsetMinutes:330,date:'2026-11-16',time:'12:00'};
+  const timeline=nakshatraIntervalsForLocalDay(input);
+  const result=thyajyamIntervalsForLocalDay(input);
+  assert.equal(result.available,true);
+  assert.ok(result.intervals.length>=1);
+  for(const item of result.intervals){
+    assert.ok(item.nakshatraNumber>=1&&item.nakshatraNumber<=27);
+    assert.equal(item.endGhati-item.startGhati,4);
+    assert.ok(item.endTimestamp>item.startTimestamp);
+  }
+  assert.equal(timeline.available,true);
+  const star22=timeline.intervals.find(item=>item.nakshatraNumber===22);
+  const thyajyam22=result.intervals.find(item=>item.nakshatraNumber===22);
+  if(star22&&thyajyam22){
+    const duration=star22.fullEndTimestamp-star22.fullStartTimestamp;
+    assert.ok(Math.abs(thyajyam22.startTimestamp-(star22.fullStartTimestamp+duration*11/60))<2);
+    assert.ok(Math.abs(thyajyam22.endTimestamp-(star22.fullStartTimestamp+duration*15/60))<2);
+  }
+  assert.match(dailyCalendarSource,/thyajyamIntervals/);
+  assert.match(dailyCalendarSource,/ahasNazhigai/);
 });
 
 test('16 November 2026 sunrise weekday and Thiruvonam produce Amirtha, not the Siddha fallback', async () => {
