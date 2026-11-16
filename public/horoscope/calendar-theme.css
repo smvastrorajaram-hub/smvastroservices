@@ -154,3 +154,70 @@ html body.calendar-only>header.calendar-topbar{
   .calendar-header-actions .calendar-product-nav a,
   .calendar-header-actions .calendar-language-switch button{font-size:10px!important}
 }
+
+
+/* SMV CALENDAR — dual-date grid and selected-day details. */
+#smvDailyCalendar .cal-month-title{gap:8px;align-items:stretch}
+#smvDailyCalendar .cal-month-title>[data-month]{flex:0 0 42px;min-width:42px;min-height:44px}
+#smvDailyCalendar .cal-month-title .cal-month-current{
+ flex:1 1 auto;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+ gap:3px;padding:5px 8px;background:transparent!important;border:1px solid #e4d8bf!important;
+ border-radius:10px;color:#15564e!important;box-shadow:none!important;text-align:center;white-space:normal
+}
+#smvDailyCalendar .cal-month-current strong{font-size:clamp(15px,3.8vw,20px);line-height:1.2;color:#15564e}
+#smvDailyCalendar .cal-month-current small{font-size:11px;line-height:1.2;color:#8b682a;font-weight:700}
+#smvDailyCalendar .cal-month-grid button{align-items:center;justify-content:center;text-align:center;gap:3px;min-height:82px;padding:6px 2px}
+#smvDailyCalendar .cal-month-grid button>strong{font-size:clamp(18px,4vw,22px);line-height:1.1}
+#smvDailyCalendar .cal-month-grid button>.cal-day-tamil{display:block;margin:0;color:#55766a;font-size:12px;font-weight:800;line-height:1.2}
+#smvDailyCalendar .cal-month-grid button[aria-current="date"]>.cal-day-tamil{color:#15564e}
+#smvDailyCalendar .cal-month-jump{
+ display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin:10px 0 14px;padding:14px;
+ background:#fffaf0;border:1px solid #e5d8bc;border-radius:14px
+}
+#smvDailyCalendar .cal-month-jump[hidden]{display:none!important}
+#smvDailyCalendar .cal-month-jump label{display:grid;gap:5px;min-width:0;color:#315f53;font-size:12px;font-weight:800}
+#smvDailyCalendar .cal-month-jump input,#smvDailyCalendar .cal-month-jump select{
+ width:100%;min-width:0;min-height:42px;padding:8px 10px;background:#fff;border:1px solid #cfc3aa;border-radius:8px;color:#263c35
+}
+#smvDailyCalendar .cal-jump-year-actions,#smvDailyCalendar .cal-jump-date-row,#smvDailyCalendar .cal-jump-month-row{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:end
+}
+#smvDailyCalendar .cal-jump-date-row label{grid-column:1/-1}
+#smvDailyCalendar .cal-jump-date-row button,#smvDailyCalendar .cal-jump-month-row button{grid-column:1/-1}
+#smvDailyCalendar .cal-month-jump button{min-height:40px;padding:8px 10px;border:1px solid #d9c9a9;border-radius:8px;background:#f2e8d4;color:#24594e;font-weight:700}
+#smvDailyCalendar .cal-month-jump .cal-jump-close{background:transparent;border-color:transparent}
+#smvDailyCalendar .cal-date-details{margin:18px 0 24px;padding:14px;background:#fbf7ee;border:1px solid #e5dac5;border-radius:16px}
+#smvDailyCalendar .cal-date-details-head h3{margin:0;color:#15564e}
+#smvDailyCalendar .cal-date-details-head p{margin:4px 0 12px;color:#68796f;font-size:12px}
+#smvDailyCalendar .cal-details-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:14px}
+#smvDailyCalendar .cal-details-summary article{min-width:0;display:flex;flex-direction:column;gap:5px;padding:12px;background:#fff;border:1px solid #e2d9c8;border-radius:11px}
+#smvDailyCalendar .cal-details-summary article>small{font-size:11px;color:#68796f}
+#smvDailyCalendar .cal-details-summary article>strong{font-size:15px;line-height:1.4;color:#174f47;overflow-wrap:anywhere}
+#smvDailyCalendar .cal-details-summary article>span{font-size:12px;color:#576a60;line-height:1.45}
+#smvDailyCalendar .cal-day-yoga-card.is-auspicious{border-left:4px solid #27804c;background:#f2faf2}
+#smvDailyCalendar .cal-day-yoga-card.is-inauspicious{border-left:4px solid #b52f2b;background:#fff0ed}
+#smvDailyCalendar .cal-day-yoga-card.is-inauspicious>strong{color:#a32220}
+#smvDailyCalendar .cal-day-yoga-card.is-auspicious>strong{color:#207444}
+#smvDailyCalendar #calDaily .card{margin:12px 0;padding:14px}
+#smvDailyCalendar #calReadings{margin-top:12px}
+#smvDailyCalendar #calEvents{margin-top:12px}
+@media(max-width:420px){
+ #smvDailyCalendar .cal-month-grid{gap:3px}
+ #smvDailyCalendar .cal-month-grid>b{padding:7px 1px;font-size:11px}
+ #smvDailyCalendar .cal-month-grid button{min-height:65px;padding:5px 1px}
+ #smvDailyCalendar .cal-month-grid button>strong{font-size:18px}
+ #smvDailyCalendar .cal-month-grid button>.cal-day-tamil{font-size:11px}
+ #smvDailyCalendar .cal-date-details{padding:10px}
+ #smvDailyCalendar .cal-details-summary{gap:7px}
+ #smvDailyCalendar .cal-details-summary article{padding:9px}
+}
+@media(max-width:340px){
+ #smvDailyCalendar .cal-details-summary{grid-template-columns:minmax(0,1fr)}
+ #smvDailyCalendar .cal-jump-year-actions,#smvDailyCalendar .cal-jump-date-row,#smvDailyCalendar .cal-jump-month-row{grid-template-columns:minmax(0,1fr)}
+}
+
+
+/* Name-yoga result and the Tamil calendar's four day-yoga classes. */
+#smvDailyCalendar .cal-name-yoga-result{display:inline-block;margin-top:4px;font-size:12px;line-height:1.45;font-weight:700}
+#smvDailyCalendar .cal-name-yoga-result.is-favourable{color:#247246}
+#smvDailyCalendar .cal-name-yoga-result.is-caution{color:#a12b27}

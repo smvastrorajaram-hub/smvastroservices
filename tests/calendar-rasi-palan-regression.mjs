@@ -209,7 +209,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-tamil-solar-after-sunset-pages-v1' : '20261115-navigation-auto-restore-live-booking-in-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-dual-date-details-pages-v1' : '20261115-navigation-auto-restore-live-booking-in-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
    assert.ok(calendarWorkerSource.includes('const REQUIRED_CORE = new Set(['));
@@ -218,8 +218,8 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261024-sunmoon-regex-fix-v3'));
-   assert.ok(calendarIndexSource.includes('20261024-sunmoon-regex-fix-v3'));
+   assert.ok(calendarIndexSource.includes('20261116-calendar-dual-date-ui-v1'));
+   assert.ok(calendarIndexSource.includes('20261116-calendar-dual-date-ui-v1'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
    assert.ok(calendarIndexSource.includes('20261025-cross-host-assets-header-ta-v1'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
@@ -320,4 +320,45 @@ test('16 November 2026 is Aippasi 30 and 17 November begins Karthigai 1', async 
   assert.equal(aippasiEnd?.day, 30);
   assert.equal(karthigaiStart?.monthTa, 'கார்த்திகை');
   assert.equal(karthigaiStart?.day, 1);
+});
+
+test('Calendar dual-date grid, direct navigation and Date Details are UI-only extensions', () => {
+  assert.match(dailyCalendarSource, /min="1800-01-01" max="2399-12-31"/);
+  assert.match(dailyCalendarSource, /class="cal-day-tamil"/);
+  assert.match(dailyCalendarSource, /data-open-jump/);
+  assert.match(dailyCalendarSource, /id="calJumpDate"/);
+  assert.match(dailyCalendarSource, /id="calJumpMonth"/);
+  assert.match(dailyCalendarSource, /id="calJumpYear"/);
+  assert.match(dailyCalendarSource, /data-year="-1"/);
+  assert.match(dailyCalendarSource, /data-year="1"/);
+  assert.match(dailyCalendarSource, /touchstart/);
+  assert.match(dailyCalendarSource, /touchend/);
+  assert.match(dailyCalendarSource, /function renderDateDetails\(\)/);
+  assert.match(dailyCalendarSource, /Brahma Muhurtham/);
+  assert.match(dailyCalendarSource, /Abhijit Muhurtham/);
+  assert.match(dailyCalendarSource, /Travel Shoolam/);
+  assert.match(dailyCalendarSource, /Name Yoga/);
+  assert.match(dailyCalendarSource, /nityaYogaResults/);
+  assert.match(calendarCalculationWorkerSource, /attachTamilSolarDates/);
+  assert.match(calendarCalculationWorkerSource, /dayStar:ev\.star,previousSunset/);
+  assert.match(transitPanchangSource, /export \{transit,panchang,tamilSolarDate\}/);
+  assert.doesNotMatch(dailyCalendarSource, /solarNoaa\(/, 'Daily UI must reuse the worker-provided sunset rather than invent a separate calculation');
+});
+
+test('Tamil Amirthathi yoga lookup covers all seven weekdays and all 27 sunrise stars', () => {
+  const table = dailyCalendarSource.match(/const tamilDayYogaTable=\[([\s\S]*?)\];/);
+  assert.ok(table, 'The Tamil day-yoga reference table must be present');
+  const rows = [...table[1].matchAll(/'([SAPM]+)'/g)].map(match => match[1]);
+  assert.equal(rows.length, 7);
+  assert.ok(rows.every(row => row.length === 27));
+  assert.match(dailyCalendarSource, /M:\{key:'marana'[\s\S]*?bad:true/);
+  assert.match(dailyCalendarSource, /P:\{key:'prabalarishta'[\s\S]*?bad:false/);
+  assert.match(dailyCalendarSource, /traditionalStart=\(m>4\|\|\(m===4&&d>=14\)\)\?y:y-1/);
+});
+
+test('Monthly Tamil solar labels safely handle more than one boundary inside a Gregorian month', () => {
+  assert.match(calendarCalculationWorkerSource, /const probeIndexes=\[\.\.\.new Set\(\[0,7,14,21,28,entries\.length-1\]/);
+  assert.match(calendarCalculationWorkerSource, /while\(lo<hi\)/);
+  assert.match(calendarCalculationWorkerSource, /boundaries\.push\(\{index:lo,state\}\)/);
+  assert.match(calendarCalculationWorkerSource, /day:state\.offset\+dateDistance\(entries\[i\]\.date,firstDate\)/);
 });
