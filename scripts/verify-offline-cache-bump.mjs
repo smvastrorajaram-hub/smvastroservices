@@ -17,6 +17,14 @@ const inHostSourceChanged = changed.has('public/index.html')
   || changed.has('public/dashboard-typography.css')
   || changed.has('public/sitemap.xml')
   || changed.has('public/sitemap.html')
+  || [
+    'public/horoscope/calendar/index.html',
+    'public/horoscope/daily-calendar.css',
+    'public/horoscope/daily-calendar.mjs',
+    'public/horoscope/calendar-theme.css',
+    'public/horoscope/calendar-worker.mjs',
+    'public/horoscope/offline/transit_panchang.browser.mjs'
+  ].some(path => changed.has(path))
   || [...changed].some(path => path.startsWith('public/astrology-guides/'))
 if (!publicSourceChanged) {
   console.log('PASS: No public website/PWA source changed; no cache-version bump is required.');
