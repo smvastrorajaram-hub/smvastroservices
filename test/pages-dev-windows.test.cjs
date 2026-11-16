@@ -181,9 +181,9 @@ test('all three PWA cache releases are synchronized for Pages.dev and .in conten
     '20261116-tamil-solar-after-sunset-v1'
   ]);
   assert.deepEqual(releases.map(item => item.legacy), [
-    '20261116-tamil-solar-after-sunset-v1',
-    '20261116-tamil-solar-after-sunset-v1',
-    '20261116-tamil-solar-after-sunset-v1'
+    '20261115-navigation-auto-restore-live-booking-in-v1',
+    '20261115-navigation-auto-restore-live-booking-in-v1',
+    '20261115-navigation-auto-restore-live-booking-in-v1'
   ]);
 });
 test('each installer creates its own 256x256 Windows icon', () => {
