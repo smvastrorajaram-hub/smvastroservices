@@ -30,6 +30,7 @@ const calendarWorkerSource = await readFile(new URL('../public/horoscope/calenda
 const calendarCalculationWorkerSource = await readFile(new URL('../public/horoscope/calendar-worker.mjs', import.meta.url), 'utf8');
 const swissCalculationSource = await readFile(new URL('../public/horoscope/offline/swiss_vedic.browser.mjs', import.meta.url), 'utf8');
 const transitPanchangSource = await readFile(new URL('../public/horoscope/offline/transit_panchang.browser.mjs', import.meta.url), 'utf8');
+const horoscopeResultSource = await readFile(new URL('../public/horoscope/horoscope.js', import.meta.url), 'utf8');
 const rootTransitPanchangSource = await readFile(new URL('../transit_panchang.js', import.meta.url), 'utf8');
 const rasiPalanCss = await readFile(new URL('../public/horoscope/calendar-rasi-palan.css', import.meta.url), 'utf8');
 const horoscopeIndexSource = await readFile(new URL('../public/horoscope/index.html', import.meta.url), 'utf8');
@@ -290,6 +291,12 @@ test('Weekly and monthly date ranges use valid digit classes for DD/MM/YYYY form
   assert.doesNotMatch(publicRasiPalanSource, /match\(\/\^\(\\\\d\{4\}\)/, 'Date-range regex must not match literal backslash-d');
 });
 
+
+test('Missing Tamil solar dates render only an em dash in daily and birth Panchang', () => {
+  assert.match(horoscopeResultSource, /const dailyTamilDate=\(\(\)=>[\s\S]*?return '—';\}\)\(\);/);
+  assert.match(horoscopeResultSource, /else \{\s*text='—';\s*\}/);
+  assert.doesNotMatch(horoscopeResultSource, /தமிழ் தேதி|Tamil date/);
+});
 
 test('Same-day solar ingress after sunset starts the Tamil month on the next sunrise', () => {
   const expected = /if\(nextDate===referenceDate\)\{\s*const nextIngressTime=localTimeStringFromTs\(nextIngressTs,offset\);\s*\/\/ An ingress at or after local sunset belongs to the next sunrise interval\.\s*if\(nextIngressTime < refSunset\)\{/;
