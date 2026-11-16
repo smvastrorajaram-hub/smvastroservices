@@ -207,7 +207,10 @@ try {
         independentBoundarySeconds,
         startLocal: localDateTimeAt(ingressTimestamp),
         boundaryLocal: localDateTimeAt(ingressTimestamp + independentBoundarySeconds * 1000),
-        predictedLocal: localDateTimeAt(ingressTimestamp + Number(calculated.balanceSeconds) * 1000)
+        predictedLocal: localDateTimeAt(ingressTimestamp + Number(calculated.balanceSeconds) * 1000),
+        startSwissInput: {date:start.inputLocalDate,time:start.inputLocalTime,offset:start.utcOffsetMinutesUsed},
+        boundarySwissInput: {date:boundary.inputLocalDate,time:boundary.inputLocalTime,offset:boundary.utcOffsetMinutesUsed},
+        predictedSwissInput: {date:predicted.inputLocalDate,time:predicted.inputLocalTime,offset:predicted.utcOffsetMinutesUsed}
       }
     };
   }, {
@@ -254,7 +257,10 @@ try {
     currentObliqueAscension: ingressLagnaFixture.currentObliqueAscension,
     startLocal: ingressLagnaFixture.independentCheck.startLocal,
     boundaryLocal: ingressLagnaFixture.independentCheck.boundaryLocal,
-    predictedLocal: ingressLagnaFixture.independentCheck.predictedLocal
+    predictedLocal: ingressLagnaFixture.independentCheck.predictedLocal,
+    startSwissInput: ingressLagnaFixture.independentCheck.startSwissInput,
+    boundarySwissInput: ingressLagnaFixture.independentCheck.boundarySwissInput,
+    predictedSwissInput: ingressLagnaFixture.independentCheck.predictedSwissInput
   }));
   assert.ok(Math.abs(ingressLagnaFixture.balanceSeconds -
     ingressLagnaFixture.independentCheck.independentBoundarySeconds) <= 60,
