@@ -222,7 +222,7 @@ try {
   assert.equal(afterOneHour.balanceSeconds, Math.max(0, atSunrise.fullBalanceSeconds - 3600),
     'One hour after sunrise must subtract one real hour from the initial balance.');
   assert.equal(afterOneHour.balanceNazhigai * 60 + afterOneHour.balanceVinazhigai,
-    atSunrise.fullBalanceVighati - 150);
+    Math.max(0, atSunrise.fullBalanceVighati - 150));
   assert.equal(afterExhaustion.balanceNazhigai, 0);
   assert.equal(afterExhaustion.balanceVinazhigai, 0,
     'The remaining balance must clamp to zero after its full OA interval is elapsed.');
