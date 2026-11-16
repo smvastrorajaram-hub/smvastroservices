@@ -152,6 +152,8 @@ try {
   assert.deepEqual(publicUi.navLabels, ['Services', 'Horoscope'], 'Calendar navigation should contain only Services and Horoscope');
 
 
+  const calendarDate = await page.$eval('#calDate', el => el.value);
+
   // Confirm the published Tamil annual list controls the two requested 2026
   // examples; no live Panchanga score may override the published date table.
   async function checkMuhurthamDate(date, expectedPattern) {
@@ -188,7 +190,6 @@ try {
   await page.select('#calRasiPalan #rpPeriod', 'daily');
   assert.equal(await page.$('#calRasiPalan #rpDate'), null, 'Public forecast must not expose a reference-date picker');
   assert.equal(await page.$('#calRasiPalan #rpYear'), null, 'No separate public year selector should be exposed');
-  const calendarDate = await page.$eval('#calDate', el => el.value);
   await page.click('#calRasiPalan #rpRun');
   await page.waitForSelector('#calRasiPalan .rp-results-title h3', { timeout: 90000 });
   await page.waitForFunction(() => document.querySelectorAll('#calRasiPalan .rp-rasi-card').length === 1, { timeout: 30000 });
