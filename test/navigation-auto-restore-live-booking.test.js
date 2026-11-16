@@ -52,7 +52,7 @@ test('Website, Horoscope and Calendar receive one synchronized cache release wit
   ];
   for (const source of serviceWorkers) {
     assert.match(source, /20261116-calendar-dual-date-details-pages-v3/);
-    assert.match(source, /20261115-navigation-auto-restore-live-booking-in-v1/);
+    assert.match(source, /20261116-calendar-date-details-in-v1/);
     assert.doesNotMatch(source, /localStorage\.clear\(|sessionStorage\.clear\(|indexedDB\.deleteDatabase\(/);
   }
   assert.match(serviceWorkers[1], /v284-pages-dev-tamil-solar-20261116/);
