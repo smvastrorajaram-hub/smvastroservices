@@ -180,12 +180,18 @@ try {
       else high = middle;
     }
     const independentBoundarySeconds = (high - ingressTimestamp) / 1000;
+    const boundary = await ascendantAt(high);
     const before = await ascendantAt(ingressTimestamp + Math.max(0, Number(calculated.balanceSeconds) - 90) * 1000);
     const after = await ascendantAt(ingressTimestamp + (Number(calculated.balanceSeconds) + 90) * 1000);
     return {
       ...calculated,
       independentCheck: {
         startSignIndex: start.signIndex,
+        startLongitude: start.longitude,
+        startArmcDegrees: start.armcDegrees,
+        boundarySignIndex: boundary.signIndex,
+        boundaryLongitude: boundary.longitude,
+        boundaryArmcDegrees: boundary.armcDegrees,
         beforeBoundarySignIndex: before.signIndex,
         afterBoundarySignIndex: after.signIndex,
         independentBoundarySeconds
@@ -214,6 +220,11 @@ try {
     independentBoundarySeconds: ingressLagnaFixture.independentCheck.independentBoundarySeconds,
     differenceSeconds: ingressLagnaFixture.balanceSeconds - ingressLagnaFixture.independentCheck.independentBoundarySeconds,
     startSignIndex: ingressLagnaFixture.independentCheck.startSignIndex,
+    startLongitude: ingressLagnaFixture.independentCheck.startLongitude,
+    startArmcDegrees: ingressLagnaFixture.independentCheck.startArmcDegrees,
+    boundarySignIndex: ingressLagnaFixture.independentCheck.boundarySignIndex,
+    boundaryLongitude: ingressLagnaFixture.independentCheck.boundaryLongitude,
+    boundaryArmcDegrees: ingressLagnaFixture.independentCheck.boundaryArmcDegrees,
     beforeBoundarySignIndex: ingressLagnaFixture.independentCheck.beforeBoundarySignIndex,
     afterBoundarySignIndex: ingressLagnaFixture.independentCheck.afterBoundarySignIndex,
     lagnaSignIndex: ingressLagnaFixture.lagnaSignIndex,
