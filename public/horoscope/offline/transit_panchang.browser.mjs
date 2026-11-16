@@ -383,6 +383,44 @@ function panchangEventTimes(input, kind){
 }
 
 
+// Complete local-solar-day Nakshatra intervals, using the same Swiss/Lahiri
+// boundary search as panchang().nakshatra.start/end.
+export function nakshatraIntervalsForLocalDay(input){
+  const offset=Number(input.utcOffsetMinutes??330);
+  const sunrise=solarNoaa(input.date,input.lat,input.lon,offset,true);
+  const nextDate=new Date(Date.parse(String(input.date)+'T12:00:00Z')+86400000).toISOString().slice(0,10);
+  const nextSunrise=solarNoaa(nextDate,input.lat,input.lon,offset,true);
+  if(!sunrise||!nextSunrise)return {available:false,reason:'local-sunrise-unavailable',intervals:[]};
+  const dayStart=localDateParts(input.date,sunrise,offset).u.getTime();
+  const dayEnd=localDateParts(nextDate,nextSunrise,offset).u.getTime();
+  if(!Number.isFinite(dayStart)||!Number.isFinite(dayEnd)||dayEnd<=dayStart)
+    return {available:false,reason:'invalid-local-solar-day',intervals:[]};
+  const intervals=[];
+  let segmentStart=dayStart,probe=dayStart+60000;
+  for(let index=0;index<8&&probe<dayEnd;index++){
+    const state=panchangEventState(input,probe,'nakshatra');
+    if(!state||!Number.isInteger(state.index)||state.index<0||state.index>=27)
+      return {available:false,reason:'nakshatra-state-unavailable',intervals:[]};
+    const boundary=panchangBoundary(input,probe,'nakshatra',1);
+    const segmentEnd=boundary==null?dayEnd:Math.min(boundary,dayEnd);
+    if(!Number.isFinite(segmentEnd)||segmentEnd<=segmentStart)
+      return {available:false,reason:'nakshatra-boundary-unavailable',intervals:[]};
+    intervals.push({
+      nakshatraNumber:state.index+1,
+      start:formatPanchangBoundary(segmentStart,offset,true),
+      end:formatPanchangBoundary(segmentEnd,offset,true),
+      startTimestamp:segmentStart,
+      endTimestamp:segmentEnd
+    });
+    if(segmentEnd>=dayEnd)break;
+    segmentStart=segmentEnd;
+    probe=segmentStart+60000;
+  }
+  if(!intervals.length||intervals[intervals.length-1].endTimestamp!==dayEnd)
+    return {available:false,reason:'incomplete-nakshatra-timeline',intervals:[]};
+  return {available:true,sunrise,nextSunrise,intervals};
+}
+
 function formatLocalRange(startMin,endMin){
   const fmt=m=>{m=((Math.round(Number(m))%1440)+1440)%1440; const h=Math.floor(m/60), mi=m%60; return `${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}`;};
   return `${fmt(startMin)} - ${fmt(endMin)}`;
