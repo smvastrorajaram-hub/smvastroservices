@@ -46,7 +46,8 @@ async function calculateIngressLagnaBalance(input){
   siderealLongitude:ascendant.longitude,
   latitude:input.lat,
   ayanamsaDegrees:ascendant.ayanamsa,
-  obliquityDegrees
+  obliquityDegrees,
+  armcDegrees:ascendant.armcDegrees
  });
  if(!balance.available)return null;
  const totalVighati=Math.max(0,Math.round(balance.balanceSeconds/24));
@@ -57,6 +58,7 @@ async function calculateIngressLagnaBalance(input){
   ingressSunLongitude:ingress.sunLongitude,
   lagnaSignIndex:balance.signIndex,
   lagnaLongitude:ascendant.longitude,
+  armcDegrees:ascendant.armcDegrees,
   ayanamsaDegrees:ascendant.ayanamsa,
   obliquityDegrees,
   balanceSeconds:balance.balanceSeconds,
