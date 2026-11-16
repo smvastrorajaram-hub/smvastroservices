@@ -124,6 +124,9 @@ export function calculateLagnaBalanceFromRasiMana({
     return {available:false,reason:'circumpolar',signIndex,longitude};
   }
   const remainingDegrees=normalizeDegrees(endOA-currentOA);
+  if(!(remainingDegrees>0&&remainingDegrees<=60)){
+    return {available:false,reason:'non-rising-rasi',signIndex,longitude};
+  }
   const balanceSecondsExact=remainingDegrees*SECONDS_PER_OA_DEGREE;
   const balanceVighati=Math.max(0,Math.round(remainingDegrees*VIGHATI_PER_OA_DEGREE));
   const mana=calculateRasiManaForLocation({latitude:lat,ayanamsaDegrees:ayanamsa,obliquityDegrees:obliquity});
