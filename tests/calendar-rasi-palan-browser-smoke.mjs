@@ -209,6 +209,22 @@ try {
   assert.equal(ingressLagnaFixture.rasiMana.length, 12, 'All 12 Rasi Mana rows must be returned.');
   assert.equal(ingressLagnaFixture.rasiMana.reduce((sum, row) => sum + row.totalVighati, 0), 3600,
     'The full Rasi Mana table must total 60 nazhigai.');
+  console.log('CALENDAR_OA_BOUNDARY_DIAGNOSTIC ' + JSON.stringify({
+    reportedBalanceSeconds: ingressLagnaFixture.balanceSeconds,
+    independentBoundarySeconds: ingressLagnaFixture.independentCheck.independentBoundarySeconds,
+    differenceSeconds: ingressLagnaFixture.balanceSeconds - ingressLagnaFixture.independentCheck.independentBoundarySeconds,
+    startSignIndex: ingressLagnaFixture.independentCheck.startSignIndex,
+    beforeBoundarySignIndex: ingressLagnaFixture.independentCheck.beforeBoundarySignIndex,
+    afterBoundarySignIndex: ingressLagnaFixture.independentCheck.afterBoundarySignIndex,
+    lagnaSignIndex: ingressLagnaFixture.lagnaSignIndex,
+    ayanamsaDegrees: ingressLagnaFixture.ayanamsaDegrees,
+    obliquityDegrees: ingressLagnaFixture.obliquityDegrees,
+    lagnaLongitude: ingressLagnaFixture.lagnaLongitude
+  }));
+  assert.ok(Math.abs(ingressLagnaFixture.balanceSeconds -
+    ingressLagnaFixture.independentCheck.independentBoundarySeconds) <= 60,
+    'OA balance must match independent Swiss boundary within 60 seconds: ' +
+    JSON.stringify({reported:ingressLagnaFixture.balanceSeconds,independent:ingressLagnaFixture.independentCheck.independentBoundarySeconds}));
   assert.ok(Number.isInteger(ingressLagnaFixture.balanceSeconds) &&
     ingressLagnaFixture.balanceSeconds >= 1800 && ingressLagnaFixture.balanceSeconds <= 18000,
     'Ingress Lagna balance must be a plausible positive numerical duration: ' + JSON.stringify(ingressLagnaFixture));
