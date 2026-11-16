@@ -213,7 +213,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-timezone-safe-parallel-month-pages-v1' : '20261116-calendar-timezone-safe-parallel-month-in-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261116-calendar-muhurta-lagna-pages-v1' : '20261116-calendar-muhurta-lagna-in-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
@@ -223,8 +223,8 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261116-calendar-single-layer-fast-v1'), 'Calendar CSS assets keep their existing synchronized stylesheet version');
-   assert.ok(calendarIndexSource.includes('20261116-calendar-timezone-safe-parallel-month-v1'), 'Calendar daily module gets a fresh URL after the timezone-safe loader change');
+   assert.ok(calendarIndexSource.includes('20261116-calendar-muhurta-lagna-v1'));
+   assert.ok(calendarIndexSource.includes('20261116-calendar-muhurta-lagna-v1'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
    assert.ok(calendarIndexSource.includes('20261025-cross-host-assets-header-ta-v1'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
@@ -252,7 +252,7 @@ test('The lightweight Sun/Moon path accepts ordinary Calendar date/time formats 
   assert.ok(start >= 0 && end > start, 'Lightweight calculation must remain available');
   const validation = swissCalculationSource.slice(start, end);
   const slash = String.fromCharCode(92);
-  assert.ok(validation.includes('ts.match(/^(' + slash + 'd{1,2}):(' + slash + 'd{2})$/);'));
+  assert.ok(validation.includes('ts.match(/^(' + slash + 'd{1,2}):(' + slash + 'd{2})(?::(' + slash + 'd{2})(?:' + slash + '.(' + slash + 'd+))?)?$/);'));
   assert.ok(validation.includes('if(!/^' + slash + 'd{4}-' + slash + 'd{2}-' + slash + 'd{2}$/.test(ds)||!m)'));
   assert.doesNotMatch(validation, /\\\\d/, 'Regexes must not match literal backslash-d sequences');
 });

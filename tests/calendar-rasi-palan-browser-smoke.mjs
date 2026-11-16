@@ -105,6 +105,104 @@ try {
     return status && (/Unable to calculate|கணக்கிட முடியவில்லை/.test(status) || (!/Calculating Panchang|பஞ்சாங்கம், ஹோரை/.test(status) && !/Loading monthly calendar|மாத நாட்காட்டி தயாராகிறது/.test(document.querySelector('#calMonth')?.textContent||'')));
   }, { timeout: 90000 });
   const calendarCalculationStatus = await page.$eval('#calStatus', el => el.textContent || '');
+  await page.waitForSelector('#calMuhurtaLagna .cal-muhurta-lagna-grid .cal-muhurta-lagna-item', { timeout: 30000 });
+  const muhurtaLagnaUi = await page.$eval('#calMuhurtaLagna', el => ({
+    labels: [...el.querySelectorAll('.cal-muhurta-lagna-item > small')].map(node => node.textContent.trim()),
+    verdict: el.querySelector('.cal-subha-verdict')?.textContent.trim() || '',
+    balanceLine: el.querySelector('.cal-rasi-balance-line')?.textContent.trim() || ''
+  }));
+  assert.equal(muhurtaLagnaUi.labels.length, 2, 'Date Details must show the Subha Muhurtham and Lagna items side by side.');
+  assert.ok(/Subha Muhurtham|சுபமுகூர்த்தம்/.test(muhurtaLagnaUi.labels[0]), 'Left item must identify the Subha Muhurtham day.');
+  assert.ok(/Lagna|லக்னம்/.test(muhurtaLagnaUi.labels[1]), 'Right item must identify the current or selected-time Lagna.');
+  assert.ok(muhurtaLagnaUi.verdict.length > 0, 'The Panchanga day assessment must render a result.');
+  assert.ok(muhurtaLagnaUi.balanceLine.length > 0, 'The solar-ingress Lagna-balance line must render a status.');
+
+  await page.waitForFunction(() => {
+    const line = document.querySelector('#calMuhurtaLagna .cal-rasi-balance-line')?.textContent || '';
+    return line && !/being calculated|கணக்கிடப்படுகிறது/i.test(line);
+  }, { timeout: 90000 });
+  const completedLagnaBalance = await page.$eval('#calMuhurtaLagna .cal-rasi-balance-line', el => el.textContent.trim());
+  assert.ok(!/unavailable|கணக்கிட முடியவில்லை/i.test(completedLagnaBalance), 'Solar-ingress Lagna balance must calculate successfully: ' + completedLagnaBalance);
+  assert.ok(/Lagna balance|லக்ன இருப்பு/.test(completedLagnaBalance), 'The completed result must contain the Lagna balance value.');
+
+  // Numerical ingress-Lagna regression: calculate a fixed Perambalur fixture in
+  // the real Calendar worker, then independently re-evaluate the ascendant on
+  // both sides of the reported sign-boundary time using the local Swiss WASM.
+  const ingressLagnaFixture = await page.evaluate(async fixture => {
+    const worker = new Worker('/horoscope/calendar-worker.mjs', { type: 'module' });
+    const requestId = 'calendar-ingress-lagna-numerical-regression';
+    let calculated;
+    try {
+      calculated = await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error('Ingress Lagna worker timed out.')), 120000);
+        worker.addEventListener('message', event => {
+          if (event.data?.id !== requestId) return;
+          clearTimeout(timeout);
+          if (event.data.error) reject(new Error(event.data.error));
+          else resolve(event.data.result);
+        });
+        worker.postMessage({ id: requestId, kind: 'lagna-balance', input: fixture });
+      });
+    } finally {
+      worker.terminate();
+    }
+
+    if (!calculated) throw new Error('Ingress Lagna worker returned no numerical result.');
+    const swiss = await import('/horoscope/offline/swiss_vedic.browser.mjs');
+    const ingressTimestamp = Date.parse(calculated.ingressDate + 'T' + calculated.ingressTime + 'Z') -
+      Number(fixture.utcOffsetMinutes) * 60000;
+    const ascendantAt = timestamp => {
+      const local = new Date(timestamp + Number(fixture.utcOffsetMinutes) * 60000);
+      const pad = value => String(value).padStart(2, '0');
+      return swiss.calculateAscendantAt({
+        ...fixture,
+        date: local.getUTCFullYear() + '-' + pad(local.getUTCMonth() + 1) + '-' + pad(local.getUTCDate()),
+        time: pad(local.getUTCHours()) + ':' + pad(local.getUTCMinutes()) + ':' + pad(local.getUTCSeconds())
+      });
+    };
+    const start = await ascendantAt(ingressTimestamp);
+    const before = await ascendantAt(ingressTimestamp + Math.max(0, Number(calculated.balanceSeconds) - 3) * 1000);
+    const after = await ascendantAt(ingressTimestamp + (Number(calculated.balanceSeconds) + 3) * 1000);
+    return {
+      ...calculated,
+      independentCheck: {
+        startSignIndex: start.signIndex,
+        beforeBoundarySignIndex: before.signIndex,
+        afterBoundarySignIndex: after.signIndex
+      }
+    };
+  }, {
+    date: '2026-11-17',
+    time: '12:00',
+    lat: 11.23,
+    lon: 78.88,
+    utcOffsetMinutes: 330,
+    houseSystem: 'S'
+  });
+
+  assert.equal(ingressLagnaFixture.ingressDate, '2026-11-16', 'The selected 17 Nov 2026 sunrise must use the preceding Scorpio ingress.');
+  assert.equal(ingressLagnaFixture.sunSignIndex, 7, 'The defining Sun ingress must be into Scorpio.');
+  assert.match(ingressLagnaFixture.ingressTime, /^\d{2}:\d{2}:\d{2}$/, 'Ingress time must retain seconds.');
+  assert.match(ingressLagnaFixture.sunrise, /^\d{2}:\d{2}$/, 'The selected town sunrise must be returned.');
+  assert.ok(Number.isInteger(ingressLagnaFixture.balanceSeconds) &&
+    ingressLagnaFixture.balanceSeconds >= 1800 && ingressLagnaFixture.balanceSeconds <= 18000,
+    'Ingress Lagna balance must be a plausible positive numerical duration: ' + JSON.stringify(ingressLagnaFixture));
+  const expectedTotalVighati = Math.round(ingressLagnaFixture.balanceSeconds / 24);
+  assert.equal(ingressLagnaFixture.balanceNazhigai, Math.floor(expectedTotalVighati / 60),
+    'Nazhigai must be derived from the reported balance seconds.');
+  assert.equal(ingressLagnaFixture.balanceVinazhigai, expectedTotalVighati % 60,
+    'Vinazhigai must be derived from the reported balance seconds.');
+  assert.equal(ingressLagnaFixture.independentCheck.startSignIndex, ingressLagnaFixture.lagnaSignIndex,
+    'The independently calculated ascendant at exact solar ingress must match the returned ingress Lagna.');
+  assert.equal(ingressLagnaFixture.independentCheck.beforeBoundarySignIndex, ingressLagnaFixture.lagnaSignIndex,
+    'The ascendant immediately before the reported balance must remain in the ingress Lagna.');
+  assert.equal(ingressLagnaFixture.independentCheck.afterBoundarySignIndex,
+    (ingressLagnaFixture.lagnaSignIndex + 1) % 12,
+    'The ascendant immediately after the reported balance must have entered the next Rasi.');
+  console.log('CALENDAR_INGRESS_LAGNA_NUMERICAL_REGRESSION ' + JSON.stringify(ingressLagnaFixture));
+
+
+
   assert.ok(!/Unable to calculate|கணக்கிட முடியவில்லை/.test(calendarCalculationStatus), 'Daily Calendar must calculate successfully after the Sun/Moon validation fix: ' + calendarCalculationStatus);
 
   const publicUi = await page.evaluate(() => ({
@@ -129,6 +227,29 @@ try {
   assert.equal(publicUi.givenNote, false, 'The specified calculation note must be removed');
   assert.equal(publicUi.tabs.length, 4, 'All four Rasi Palan sections should be present');
   assert.deepEqual(publicUi.navLabels, ['Services', 'Horoscope'], 'Calendar navigation should contain only Services and Horoscope');
+
+
+  const calendarDate = await page.$eval('#calDate', el => el.value);
+
+  // Confirm the published Tamil annual list controls the two requested 2026
+  // examples; no live Panchanga score may override the published date table.
+  async function checkMuhurthamDate(date, expectedPattern) {
+    await page.$eval('#calDate', (el, value) => {
+      el.value = value;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }, date);
+    await page.waitForFunction(({ date: value, pattern }) => {
+      const status = document.querySelector('#calStatus')?.textContent || '';
+      const verdict = document.querySelector('#calMuhurtaLagna .cal-subha-verdict')?.textContent || '';
+      return status.includes(value) && new RegExp(pattern).test(verdict);
+    }, { timeout: 90000 }, { date, pattern: expectedPattern.source });
+    const verdict = await page.$eval('#calMuhurtaLagna .cal-subha-verdict', el => el.textContent.trim());
+    assert.match(verdict, expectedPattern, 'Published Muhurtham list classification for ' + date);
+  }
+  await checkMuhurthamDate('2026-11-11', /Valarpirai Subha Muhurtham day|வளர்பிறை சுபமுகூர்த்த நாள்/);
+  await checkMuhurthamDate('2026-11-13', /Valarpirai Subha Muhurtham day|வளர்பிறை சுபமுகூர்த்த நாள்/);
+  await checkMuhurthamDate('2026-11-12', /No Subha Muhurtham day|சுபமுகூர்த்த நாள் இல்லை/);
+  await checkMuhurthamDate(calendarDate, /Subha Muhurtham day|சுபமுகூர்த்த நாள்/);
   assert.equal(publicUi.separateAdminLink, false, 'Calendar should not link to a separate Admin page');
   assert.equal(publicUi.hasRasiPicker, true, 'Public Rasi Palan must include the selected-Rasi dropdown');
 
@@ -146,7 +267,6 @@ try {
   await page.select('#calRasiPalan #rpPeriod', 'daily');
   assert.equal(await page.$('#calRasiPalan #rpDate'), null, 'Public forecast must not expose a reference-date picker');
   assert.equal(await page.$('#calRasiPalan #rpYear'), null, 'No separate public year selector should be exposed');
-  const calendarDate = await page.$eval('#calDate', el => el.value);
   await page.click('#calRasiPalan #rpRun');
   await page.waitForSelector('#calRasiPalan .rp-results-title h3', { timeout: 90000 });
   await page.waitForFunction(() => document.querySelectorAll('#calRasiPalan .rp-rasi-card').length === 1, { timeout: 30000 });

@@ -48,6 +48,82 @@ function addDaysLocal(date,days){
  const d=new Date(`${date}T00:00:00Z`); d.setUTCDate(d.getUTCDate()+Number(days));
  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
 }
+function localTimeStringFromTsPrecise(ts,offset){
+ const d=new Date(Math.round(Number(ts)/1000)*1000+Number(offset??330)*60000);
+ return String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0')+':'+String(d.getUTCSeconds()).padStart(2,'0');
+}
+function preciseSunLongitudeAtTs(input,ts,offset){
+ const date=localDateStringFromTs(ts,offset),time=localTimeStringFromTsPrecise(ts,offset);
+ return Number(calculateSunMoonSync({...input,date,time,utcOffsetMinutes:offset}).sunLongitude);
+}
+
+// Exact upcoming sidereal solar ingress for the separate Calendar lagna-balance
+// task. Kept out of tamilSolarDate() so month rendering does not gain extra work.
+// Return the ingress that defines the selected date's active solar sign.
+// If the selected civil date itself contains an ingress after sunrise, prefer
+// that same-day ingress; otherwise use the most recent ingress into the Sun's
+// sign at selected-date sunrise. Thus a date after ingress still shows the
+// Lagna balance measured at the ingress into its current Sun sign.
+export function nextSolarIngress(input){
+ const date=String(input.date||''),offset=Number(input.utcOffsetMinutes??330);
+ const lat=Number(input.lat),lon=Number(input.lon);
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(lat)||!Number.isFinite(lon))return null;
+ const rise=solarNoaa(date,lat,lon,offset,true);
+ if(!rise)return null;
+ const sunriseTs=Date.parse(date+'T'+rise+':00Z')-offset*60000;
+ const sunriseLongitude=norm360(preciseSunLongitudeAtTs(input,sunriseTs,offset));
+ if(!Number.isFinite(sunriseLongitude))return null;
+ const currentSign=Math.floor(sunriseLongitude/30);
+ const nextSign=(currentSign+1)%12;
+
+ // Find the most recent ingress into the sign occupied at local sunrise.
+ let upper=sunriseTs,upperLongitude=sunriseLongitude,previousIngress=null;
+ for(let step=1;step<=120;step++){
+  const lower=upper-3*86400000;
+  const lowerLongitude=norm360(preciseSunLongitudeAtTs(input,lower,offset));
+  if(Number.isFinite(lowerLongitude)&&Math.floor(lowerLongitude/30)!==currentSign&&Math.floor(upperLongitude/30)===currentSign){
+   let lo=lower,hi=upper;
+   for(let j=0;j<22;j++){
+    const mid=(lo+hi)/2,midLongitude=norm360(preciseSunLongitudeAtTs(input,mid,offset));
+    if(Math.floor(midLongitude/30)===currentSign)hi=mid;else lo=mid;
+   }
+   previousIngress=Math.round(hi/1000)*1000;
+   break;
+  }
+  upper=lower;upperLongitude=lowerLongitude;
+ }
+
+ // If the next ingress occurs on this selected civil date, it is the
+ // relevant transition even though it takes place after the local sunrise.
+ let lower=sunriseTs,lowerLongitude=sunriseLongitude,nextIngress=null;
+ for(let step=1;step<=120;step++){
+  const upperTime=lower+3*86400000;
+  const upperLongitudeAtProbe=norm360(preciseSunLongitudeAtTs(input,upperTime,offset));
+  if(Number.isFinite(lowerLongitude)&&Number.isFinite(upperLongitudeAtProbe)&&
+     Math.floor(lowerLongitude/30)===currentSign&&Math.floor(upperLongitudeAtProbe/30)===nextSign){
+   let lo=lower,hi=upperTime;
+   for(let j=0;j<22;j++){
+    const mid=(lo+hi)/2,midLongitude=norm360(preciseSunLongitudeAtTs(input,mid,offset));
+    if(Math.floor(midLongitude/30)===nextSign)hi=mid;else lo=mid;
+   }
+   nextIngress=Math.round(hi/1000)*1000;
+   break;
+  }
+  lower=upperTime;lowerLongitude=upperLongitudeAtProbe;
+ }
+ const chosen=nextIngress!==null&&localDateStringFromTs(nextIngress,offset)===date
+  ? nextIngress : previousIngress;
+ if(chosen===null)return null;
+ const timestamp=chosen;
+ const longitude=Number(preciseSunLongitudeAtTs(input,timestamp,offset).toFixed(8));
+ const signIndex=Math.floor(norm360(longitude)/30);
+ return {
+  timestamp,date:localDateStringFromTs(timestamp,offset),
+  time:localTimeStringFromTsPrecise(timestamp,offset),
+  signIndex,sunLongitude:longitude
+ };
+}
+
 function sunLongitudeAtTs(input,ts,offset){
  const date=localDateStringFromTs(ts,offset), time=localTimeStringFromTs(ts,offset);
  const sample=calculateSunMoonSync({...input,date,time,utcOffsetMinutes:offset});
