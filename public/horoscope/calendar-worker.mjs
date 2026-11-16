@@ -11,8 +11,6 @@ async function sample(input,time){
   pendingSample=calculateSunMoon({...input,time}).then(({sunLongitude:sun,moonLongitude:moon})=>({
    tithi:Math.floor(norm(moon-sun)/12)+1,
    star:Math.floor(norm(moon)/(360/27))+1,
-   yoga:Math.floor(norm(sun+moon)/(360/27))+1,
-   karana:Math.floor(norm(moon-sun)/6)+1,
    moon:Math.floor(norm(moon)/30),
    solar:Math.floor(norm(sun)/30)
   }));
@@ -114,7 +112,7 @@ async function events(input){
  if(r.solar===3&&mid.tithi===30)add('Aadi Amavasya','ஆடி அமாவாசை','midday');
  if(r.solar===9&&mid.tithi===30)add('Thai Amavasya','தை அமாவாசை','midday');
  if(r.solar===5&&mid.tithi===30)add('Mahalaya Amavasya','மகாளய அமாவாசை','midday');
- return {date:input.date,events:ev,moon:r.moon,star:r.star,sunrisePanchang:{tithi:r.tithi,star:r.star,yoga:r.yoga,karana:r.karana},middayPanchang:{tithi:mid.tithi,star:mid.star,yoga:mid.yoga,karana:mid.karana}};
+ return {date:input.date,events:ev,moon:r.moon,star:r.star};
 }
 
 function dateDistance(date,reference){
@@ -186,6 +184,6 @@ async function attachTamilSolarDates(input,entries){
 self.onmessage=async({data})=>{const {id,kind,input}=data;try{const key=JSON.stringify([kind,input]);if(cache.has(key)){self.postMessage({id,result:cache.get(key)});return}let result;
  if(kind==='lagna-balance'){result=await calculateIngressLagnaBalance(input);}
  else if(kind==='month'){const [y,m]=input.date.split('-').map(Number),days=new Date(Date.UTC(y,m,0)).getUTCDate();result=[];for(let d=1;d<=days;d++){result.push(await events({...input,date:`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`}));}result=await attachTamilSolarDates(input,result);}
- else {const chart=await calculateSwiss(input);const p=panchang(input,chart),t=transit(input,chart);const ev=await events(input);const beforeSunrise=minute(input.time)<minute(p.sunrise);let previousNight=null;if(beforeSunrise){const yesterday=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);previousNight=panchang({...input,date:yesterday,time:'12:00'});}const previousDate=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);const previousSunset=solarNoaa(previousDate,input.lat,input.lon,input.utcOffsetMinutes,false);result={en:{p,t,previousNight},ta:{p:calendarTamil(p),t:calendarTamil(t)},events:ev.events,dayStar:ev.star,previousSunset,sunrisePanchang:ev.sunrisePanchang,middayPanchang:ev.middayPanchang};}
+ else {const chart=await calculateSwiss(input);const p=panchang(input,chart),t=transit(input,chart);const ev=await events(input);const beforeSunrise=minute(input.time)<minute(p.sunrise);let previousNight=null;if(beforeSunrise){const yesterday=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);previousNight=panchang({...input,date:yesterday,time:'12:00'});}const previousDate=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);const previousSunset=solarNoaa(previousDate,input.lat,input.lon,input.utcOffsetMinutes,false);result={en:{p,t,previousNight},ta:{p:calendarTamil(p),t:calendarTamil(t)},events:ev.events,dayStar:ev.star,previousSunset};}
  cache.set(key,result);if(cache.size>36)cache.delete(cache.keys().next().value);self.postMessage({id,result});
  }catch(e){self.postMessage({id,error:e.message})}};
