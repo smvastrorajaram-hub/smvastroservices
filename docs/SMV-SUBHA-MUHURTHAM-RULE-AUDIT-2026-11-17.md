@@ -248,3 +248,58 @@ The browser preview smoke test additionally checks Aadi 11 (27 July 2026) and ve
 3. Other ceremony types remain unavailable until their own source tables are verified.
 
 **This phase is not a production-ready full Muhurtham engine.** The branch shows the separate, source-attributed pieces that can safely be computed now, and leaves all unverified marriage rules as pending rather than presenting a misleading final date/time.
+
+
+## 10. Panchaka / Lagna-Dhruva source comparison — updated after deeper lookup
+
+The user asked specifically what happened to the Panchaka calculation and the complete Dhruva table. The primary-source page has now been located precisely:
+
+**Apsara Publications, Guru's Jothidam, September 2015, printed page 25**, under “பஞ்சகம் பார்த்தல்”. The article explicitly defines five inputs:
+1. weekday count,
+2. Tithi count from Prathama,
+3. Nakshatra count from Ashwini,
+4. Lagna count from Mesha,
+5. the Lagna-Dhruva number.
+
+The printed passage lists these Dhruva values for the Sarva Muhurtha marriage calculation:
+- Mesha = 5
+- Simha = 7
+- Kumbha = 4
+- Meena = 6
+
+It does **not** provide an explicit Dhruva value for the other eight Lagnas in that passage. Those missing cells must remain “not stated by this source” until a matching edition / author confirmation is obtained; they must not be silently filled with zero or copied from a different table.
+
+The same page says that a combined total / remainder of 6 or 7 permits marriage, and names the remainder classes:
+- 1 — Pithru Panchakam
+- 2 — Anna Panchakam
+- 3 — suitable for all activities
+- 4 — Raja Panchakam
+- 5 — suitable for all activities
+- 6 — Soma Panchakam
+- 7 — suitable for all activities
+- 8 — Roga Panchakam
+
+The page also adds time-of-day-specific Panchaka remarks. The extracted passage needs visual print-page verification before the entire day/night exception sentence can safely be hard-coded. The source's full passage does not explicitly spell out “divide by 9” in the visible extracted lines, although other five-factor Panchaka explanations do. Therefore the exact divisor and whether its “6 or 7” sentence means remainders must be visually checked against the printed original before production automation. A screenshot attempt on the hosted PDF timed out; the text extraction remains available.
+
+**Different published traditions — do not merge:**
+
+| Reference | Dhruva table stated | Panchaka method stated |
+|---|---|---|
+| Apsara, Sep 2015, Sarva Muhurtha marriage article, printed p.25 | Mesha 5, Simha 7, Kumbha 4, Meena 6 | Five inputs: weekday + Tithi + star + Lagna + Dhruva; marriage source's own remainder classes |
+| Dinamani, 22 Dec 2017 | Mesha 5, Rishabha 7, Makara 2, Kumbha 4, Meena 6; says remaining signs have no Dhruva | Five inputs, divide total by 9; its article calls remainders 3,4,7,9 “Nishpanchakam” |
+| Maalaimalar / Mr Online Astro | Mesha 5, Rishabha 7, Kumbha 2, Meena 6, others 0 | Five inputs, divide by 9; favourable remainders 0,3,5,7,9 |
+| Current ThirukanithaPanchangam.com online Panchaka calculator | No Dhruva input | Its page explicitly says the live calculator sums only four values: Tithi + weekday + Nakshatra + Lagna, divided by 9. The page's remainder table labels 3,5,7,9/0 as favourable. |
+| Sringeri Vikari 2019–20 Vakya Panchangam | No Dhruva input | Four-factor calculation, with 1,2,4,6,8 listed as inauspicious. This is a different Vakya edition, not the chosen Lahiri/Thirukanitham primary rule. |
+
+References:
+- [Apsara 2015 PDF, printed p.25](https://apsaraepublications.com/e-magz/jothidam/jothidam_sep_2015.pdf)
+- [Dinamani — சுப முகூர்த்தம் குறிக்க சுப பஞ்சகம்](https://www.dinamani.com/weekly-supplements/vellimani/2017/Dec/22/சுப-முகூர்த்தம்-குறிக்க-சுப-பஞ்சகம்-2831143.html)
+- [Maalaimalar — சுபமுகூர்த்தம் அமைப்பது எப்படி?](https://www.maalaimalar.com/news/sirappukatturaigal/prasanna-jothidar-anandhi-special-article-about-puratasi)
+- [Thirukanitha Panchangam — Panchaka Calculator](https://thirukanithapanchangam.com/panchakam-calculator-in-tamil/)
+- [Sringeri Vikari 2019–20 Tamil Vakya Panchangam](https://www.sringeri.net/assets/documents/panchangam/tamil_panchangam_2019_2020_vikari_samvatsara.pdf)
+
+### Decision for SMV CALENDAR
+
+The primary marriage rule remains the user's approved **Suddha Thirukanitha Sarva Muhurtha Panchangam** article, not the no-Dhruva online calculator. Until the eight missing source cells, the exact division wording, and the special day/night cases are confirmed, the Panchaka engine must return “source rule incomplete for this Lagna” rather than fabricate a value. The competing Dinamani / Maalaimalar tables can be kept as documented alternate traditions only.
+
+No Panchaka calculation has yet been presented as a final result in the Calendar UI. The month-filter and Vastu / Pushkara Phase 1 code are separate from this unresolved five-factor Panchaka rule.
