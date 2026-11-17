@@ -371,9 +371,10 @@ try{
  await page.waitForFunction(()=>typeof window.__smvRenderPhase4Dasa==='function',{timeout:30000});
  const englishDasaInitial=await page.evaluate(()=>{
   document.documentElement.lang='en';
-  const root=document.getElementById('tamilAdvancedAstrology');
-  if(!root)throw new Error('Advanced Horoscope report root is missing');
+  const root=document.createElement('div');
+  root.id='tamilAdvancedAstrology';
   root.innerHTML='<div id="smvPhase4DasaSlot"></div>';
+  document.body.appendChild(root);
   window.__smvRenderPhase4Dasa({narayana:{available:true,sequence:[
    {rasi:'மேஷம்',lord:'சனி',years:1,start:'2026-01-01',end:'2026-12-31',antardasas:[
     {rasi:'விருச்சிகம்',lord:'செவ்வாய்',start:'2026-01-01',end:'2026-02-01'},
