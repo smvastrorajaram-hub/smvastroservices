@@ -314,8 +314,7 @@ if(host){
    '</div>'+
    '<p class="cal-muhurta-explanation">'+esc(sourceSummary)+' · <a href="'+esc(classification.source||'https://tamilcalendarapp.com/subha-muhurtham-dates/')+'" target="_blank" rel="noopener">'+L('Source list','ஆதாரப் பட்டியல்')+'</a></p>'+
    '<p class="cal-muhurta-explanation">'+esc(L('Marriage month filter: ','திருமண மாதச் சரிபார்ப்பு: ')+marriageMonthText)+'</p>'+
-   '<p class="cal-muhurta-explanation">'+esc(L('Pushkara Navamsa Lagna: ','புஷ்கர நவாம்ச லக்னம்: ')+pushkaraText+(pushkaraMeta?' · '+pushkaraMeta:''))+'</p>'+
-;
+   '<p class="cal-muhurta-explanation">'+esc(L('Pushkara Navamsa Lagna: ','புஷ்கர நவாம்ச லக்னம்: ')+pushkaraText+(pushkaraMeta?' · '+pushkaraMeta:''))+'</p>';
  }
 
  function renderDateDetails(){
