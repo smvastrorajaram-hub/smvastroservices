@@ -227,6 +227,80 @@ try {
     fullPage: false,
     captureBeyondViewport: false
   });
+  // Verify PR #529 daily Panchang/Hora/transit typography on the real mobile DOM.
+  await page.waitForFunction(() => {
+    const rows = document.querySelectorAll('#calDaily .panchang-data-table tbody tr');
+    const hora = document.querySelectorAll('#calDaily .hora-time.smv-calendar-neutral-time');
+    return rows.length >= 8 && hora.length >= 20 &&
+      document.querySelector('#calDaily .cal-name-yoga-label') &&
+      document.querySelector('#calDaily .panchang-time-result.smv-calendar-bright-red-time') &&
+      document.querySelector('#calDaily .transit-position-table .transit-table-degree.smv-calendar-degree-normal');
+  }, { timeout: 90000 });
+  const dailyTypography = await page.evaluate(() => {
+    const table = document.querySelector('#calDaily .panchang-data-table');
+    const rows = [...(table?.tBodies?.[0]?.rows || [])];
+    const yoga = table?.querySelector('.cal-name-yoga-label');
+    const eventDate = table?.querySelector('.event-date.smv-calendar-neutral-date-time');
+    const eventTime = table?.querySelector('.event-time.smv-calendar-neutral-date-time');
+    const connector = table?.querySelector('.event-to.smv-calendar-normal-connector');
+    const redTimes = [...(table?.querySelectorAll('.panchang-time-result.smv-calendar-bright-red-time') || [])];
+    const normalHora = [...document.querySelectorAll('#calDaily .hora-time.smv-calendar-neutral-time:not(.smv-hora-current-green):not(.smv-hora-bright-green):not(.smv-hora-current-red):not(.smv-hora-bright-red)')];
+    const degree = document.querySelector('#calDaily .transit-position-table .transit-table-degree.smv-calendar-degree-normal');
+    const style = element => element ? getComputedStyle(element) : null;
+    return {
+      primaryResultWeights: rows.slice(0, 8).map(row => style(row.cells[1])?.fontWeight || ''),
+      yogaLabel: yoga?.textContent?.trim() || '',
+      yogaLabelColor: style(yoga)?.color || '',
+      yogaLabelWeight: style(yoga)?.fontWeight || '',
+      eventDateColor: style(eventDate)?.color || '',
+      eventTimeColor: style(eventTime)?.color || '',
+      connectorColor: style(connector)?.color || '',
+      connectorWeight: style(connector)?.fontWeight || '',
+      redTimeColors: redTimes.map(element => style(element)?.color || ''),
+      normalHoraCount: normalHora.length,
+      normalHoraColor: style(normalHora[0])?.color || '',
+      normalHoraWeight: style(normalHora[0])?.fontWeight || '',
+      degreeColor: style(degree)?.color || '',
+      degreeWeight: style(degree)?.fontWeight || ''
+    };
+  });
+  assert.equal(dailyTypography.primaryResultWeights.length, 8, 'Date through Karana must all be present in the Panchang results.');
+  assert.ok(dailyTypography.primaryResultWeights.every(weight => weight === '700'), 'Date through Karana results must be bold.');
+  assert.match(dailyTypography.yogaLabel, /நாம யோகம்/, 'The name-yoga label must be present in Tamil.');
+  assert.equal(dailyTypography.yogaLabelColor, 'rgb(0, 0, 0)', 'Name Yoga must be black.');
+  assert.equal(dailyTypography.yogaLabelWeight, '400', 'Name Yoga must use normal weight.');
+  assert.equal(dailyTypography.eventDateColor, 'rgb(0, 0, 0)', 'Panchang event dates must be black.');
+  assert.equal(dailyTypography.eventTimeColor, 'rgb(0, 0, 0)', 'Panchang event times must be black.');
+  assert.equal(dailyTypography.connectorColor, 'rgb(0, 0, 0)', 'The “முதல்” connector must be black.');
+  assert.equal(dailyTypography.connectorWeight, '400', 'The “முதல்” connector must use normal weight.');
+  assert.equal(dailyTypography.redTimeColors.length, 2, 'Rahu Kalam and Yamagandam must both be present.');
+  assert.ok(dailyTypography.redTimeColors.every(color => color === 'rgb(255, 0, 0)'), 'Rahu Kalam and Yamagandam must be bright red.');
+  assert.ok(dailyTypography.normalHoraCount >= 20, 'Most Hora time cells must use normal presentation.');
+  assert.equal(dailyTypography.normalHoraColor, 'rgb(0, 0, 0)', 'Normal Hora time values must be black.');
+  assert.equal(dailyTypography.normalHoraWeight, '400', 'Normal Hora time values must not be bold.');
+  assert.equal(dailyTypography.degreeColor, 'rgb(0, 0, 0)', 'Transit Degree values must be black.');
+  assert.equal(dailyTypography.degreeWeight, '400', 'Transit Degree values must use normal weight.');
+  process.stdout.write('SMV_CALENDAR_DAILY_TYPOGRAPHY ' + JSON.stringify(dailyTypography) + '\\n');
+
+  await page.$eval('#calDaily .panchang-data-table', el => el.scrollIntoView({ block: 'start' }));
+  await page.screenshot({
+    path: new URL('calendar-daily-panchang-typography-mobile.png', outputDir).pathname,
+    fullPage: false,
+    captureBeyondViewport: false
+  });
+  await page.$eval('#calDaily .hora-section', el => el.scrollIntoView({ block: 'center' }));
+  await page.screenshot({
+    path: new URL('calendar-daily-hora-typography-mobile.png', outputDir).pathname,
+    fullPage: false,
+    captureBeyondViewport: false
+  });
+  await page.$eval('#calDaily .transit-position-table', el => el.scrollIntoView({ block: 'center' }));
+  await page.screenshot({
+    path: new URL('calendar-transit-degree-typography-mobile.png', outputDir).pathname,
+    fullPage: false,
+    captureBeyondViewport: false
+  });
+
   await page.$eval('#calDate', (el, date) => {
     el.value = date;
     el.dispatchEvent(new Event('change', { bubbles: true }));
