@@ -210,7 +210,7 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-yoga-segment.is-unknown .cal-yoga-segment-info strong{color:#716d61}
 #smvDailyCalendar .cal-yoga-segment-info small{display:block;line-height:1.35}
 #smvDailyCalendar .cal-yoga-segment-time{flex:0 0 auto;font-variant-numeric:tabular-nums;font-weight:750;white-space:nowrap}
-@media(max-width:600px){#smvDailyCalendar .cal-yoga-segment{align-items:flex-start;flex-direction:column;gap:4px}#smvDailyCalendar .cal-yoga-segment-time{white-space:normal}}
+@media(max-width:600px){#smvDailyCalendar .cal-yoga-segment{align-items:flex-start;flex-direction:column;gap:4px}#smvDailyCalendar .cal-yoga-segment-time{white-space:normal}#smvDailyCalendar .cal-day-yoga-card.is-inauspicious .cal-yoga-segment-time{align-self:center;text-align:center}}
 #smvDailyCalendar #calDaily .card{margin:12px 0;padding:14px}
 #smvDailyCalendar #calReadings{margin-top:12px}
 #smvDailyCalendar #calEvents{margin-top:12px}
