@@ -535,6 +535,49 @@ export function calculateRatriNazhigai(sunset,nextSunrise,elapsedMinutes=null){
  };
 }
 
+// One sunrise-to-next-sunrise interval is the authoritative 60-ghati day.
+// Allocate its 216,000 Tharparai proportionally between daylight and night,
+// then make night the exact complement so rounding can never lose a unit.
+const TOTAL_SUNRISE_DAY_THARPARAI = 60 * 60 * 60;
+function pramanaUnits(totalTharparai, details){
+ const total=Math.max(0,Math.min(TOTAL_SUNRISE_DAY_THARPARAI,Math.round(totalTharparai)));
+ const totalVinazhigai=Math.floor(total/60);
+ return {
+  available:true,
+  ...details,
+  totalTharparai:total,
+  totalVighati:totalVinazhigai,
+  nazhigai:Math.floor(totalVinazhigai/60),
+  vinazhigai:totalVinazhigai%60,
+  tharparai:total%60
+ };
+}
+
+export function calculateAhasRatriPramana(sunrise,sunset,nextSunrise,elapsedDaySeconds=null,elapsedNightSeconds=null){
+ const rise=clockMinutesForDaylight(sunrise),set=clockMinutesForDaylight(sunset),nextRise=clockMinutesForDaylight(nextSunrise);
+ if(rise==null||set==null||nextRise==null)return {available:false,ahasNazhigai:{available:false},ratriNazhigai:{available:false}};
+ const daylightSeconds=elapsedDaySeconds==null?((set-rise+1440)%1440)*60:Number(elapsedDaySeconds);
+ const nightSeconds=elapsedNightSeconds==null?((nextRise-set+1440)%1440)*60:Number(elapsedNightSeconds);
+ if(!Number.isFinite(daylightSeconds)||!Number.isFinite(nightSeconds)||daylightSeconds<=0||nightSeconds<=0)
+  return {available:false,ahasNazhigai:{available:false},ratriNazhigai:{available:false}};
+ const sunriseToNextSunriseSeconds=daylightSeconds+nightSeconds;
+ if(!Number.isFinite(sunriseToNextSunriseSeconds)||sunriseToNextSunriseSeconds<=0)
+  return {available:false,ahasNazhigai:{available:false},ratriNazhigai:{available:false}};
+ const ahasTotal=Math.max(0,Math.min(TOTAL_SUNRISE_DAY_THARPARAI,Math.round(daylightSeconds/sunriseToNextSunriseSeconds*TOTAL_SUNRISE_DAY_THARPARAI)));
+ const ratriTotal=TOTAL_SUNRISE_DAY_THARPARAI-ahasTotal;
+ const timing={sunrise:String(sunrise),sunset:String(sunset),nextSunrise:String(nextSunrise),daylightSeconds,nightSeconds,sunriseToNextSunriseSeconds};
+ const ahasNazhigai=pramanaUnits(ahasTotal,timing);
+ const ratriNazhigai=pramanaUnits(ratriTotal,timing);
+ return {
+  available:true,
+  totalTharparai:TOTAL_SUNRISE_DAY_THARPARAI,
+  totalVighati:TOTAL_SUNRISE_DAY_THARPARAI/60,
+  totalNazhigai:60,
+  ahasNazhigai,
+  ratriNazhigai
+ };
+}
+
 // Dinantham is the midpoint of the third of four equal night yamas:
 // sunset + 5/8 of the local night interval.
 export function calculateDinantham(sunset,nextSunrise,elapsedMinutes=null){

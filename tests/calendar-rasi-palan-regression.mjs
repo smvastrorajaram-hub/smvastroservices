@@ -14,7 +14,7 @@ import {
 } from '../public/horoscope/calendar-rasi-palan-rules.mjs';
 import { currentWeek, periodReference } from '../public/horoscope/calendar/rasi-palan-periods.mjs';
 import { calculateSwiss, calculateSunMoonSync } from '../public/horoscope/offline/swiss_vedic.browser.mjs';
-import { panchang, solarNoaa, nakshatraIntervalsForLocalDay, thyajyamIntervalsForLocalDay, calculateAhasNazhigai, calculateRatriNazhigai, calculateDinantham, NAKSHATRA_THYAJYAM_START_GHATIS } from '../public/horoscope/offline/transit_panchang.browser.mjs';
+import { panchang, solarNoaa, nakshatraIntervalsForLocalDay, thyajyamIntervalsForLocalDay, calculateAhasNazhigai, calculateRatriNazhigai, calculateAhasRatriPramana, calculateDinantham, NAKSHATRA_THYAJYAM_START_GHATIS } from '../public/horoscope/offline/transit_panchang.browser.mjs';
 import { calculateRasiManaForLocation, calculateSolarSignRasiMana, calculateRemainingRasiMana, calculateRemainingSolarSignRasiMana, meanObliquityAtJulianDay } from '../public/horoscope/offline/rasi-mana.browser.mjs';
 import { TAMIL_DAY_YOGA_TABLE, getTamilDayYoga, getTamilCalendarDayFlags, getNakshatraDirection, getNethiramJeevan } from '../public/horoscope/tamil-day-classifications.mjs';
 
@@ -385,7 +385,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261117-english-report-language-consistency-v1' : '20261117-english-report-language-consistency-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261117-english-report-ahas-ratri-60-ghati-v1' : '20261117-english-report-ahas-ratri-60-ghati-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
@@ -395,10 +395,10 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261117-english-report-language-consistency-v1'));
-   assert.ok(calendarIndexSource.includes('20261117-english-report-language-consistency-v1'));
+   assert.ok(calendarIndexSource.includes('20261117-english-report-ahas-ratri-60-ghati-v1'));
+   assert.ok(calendarIndexSource.includes('20261117-english-report-ahas-ratri-60-ghati-v1'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
-   assert.ok(calendarIndexSource.includes('20261117-english-report-language-consistency-v1'));
+   assert.ok(calendarIndexSource.includes('20261117-english-report-ahas-ratri-60-ghati-v1'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'runPeriodForecast\')'));
    assert.ok(calendarIndexSource.includes('The deployed forecast assets could not be loaded from this Calendar host.'));
@@ -619,6 +619,33 @@ test('Ahas Pramana converts local sunrise-to-sunset duration to Nazhigai and Vin
   assert.equal(calculateAhasNazhigai('—','18:00').available,false);
 });
 
+test('Ahas and Ratri Pramana exactly partition sunrise-to-next-sunrise into 60 ghatis down to Tharparai', () => {
+  const equal = calculateAhasRatriPramana('06:00','18:00','06:00',12*3600,12*3600);
+  assert.equal(equal.available,true);
+  assert.equal(equal.totalNazhigai,60);
+  assert.equal(equal.totalVighati,3600);
+  assert.equal(equal.totalTharparai,216000);
+  assert.deepEqual([equal.ahasNazhigai.nazhigai,equal.ahasNazhigai.vinazhigai,equal.ahasNazhigai.tharparai],[30,0,0]);
+  assert.deepEqual([equal.ratriNazhigai.nazhigai,equal.ratriNazhigai.vinazhigai,equal.ratriNazhigai.tharparai],[30,0,0]);
+
+  const unequal = calculateAhasRatriPramana('06:00','19:00','06:00',13*3600,11*3600);
+  assert.deepEqual([unequal.ahasNazhigai.nazhigai,unequal.ahasNazhigai.vinazhigai,unequal.ahasNazhigai.tharparai],[32,30,0]);
+  assert.deepEqual([unequal.ratriNazhigai.nazhigai,unequal.ratriNazhigai.vinazhigai,unequal.ratriNazhigai.tharparai],[27,30,0]);
+
+  const subsecond = calculateAhasRatriPramana('06:00','18:00','06:00',43200.4,43199.6);
+  assert.deepEqual([subsecond.ahasNazhigai.nazhigai,subsecond.ahasNazhigai.vinazhigai,subsecond.ahasNazhigai.tharparai],[30,0,1]);
+  assert.deepEqual([subsecond.ratriNazhigai.nazhigai,subsecond.ratriNazhigai.vinazhigai,subsecond.ratriNazhigai.tharparai],[29,59,59]);
+  assert.equal(subsecond.ahasNazhigai.totalTharparai+subsecond.ratriNazhigai.totalTharparai,216000,
+    'Day and night must add to exactly 60 Nazhigai even after rounding to Tharparai');
+});
+
+test('Calendar Date Details use the requested Ahas day/night labels and show Tharparai', () => {
+  assert.ok(dailyCalendarSource.includes("L('Ahas : Day length','அகஸ் :- பகல் மானம்')"));
+  assert.ok(dailyCalendarSource.includes("L('Ahas : Night length','அகஸ் :- இரவு மானம்')"));
+  assert.ok(dailyCalendarSource.includes("L('Tharparai','தற்பரை')"));
+  assert.ok(calendarCalculationWorkerSource.includes('calculateAhasRatriPramana(p.sunrise,p.sunset,nextSunrise,actualDaySeconds,actualNightSeconds)'));
+});
+
 test('Nakshatra Thyajyam uses the 27-star table, four ghatis, and carries Mula beyond the 60th ghati', async () => {
   assert.equal(NAKSHATRA_THYAJYAM_START_GHATIS.length,27);
   assert.deepEqual(NAKSHATRA_THYAJYAM_START_GHATIS.slice(0,5),[51,25,31,41,15]);
@@ -726,13 +753,13 @@ test('All 27 Nakshatras map exactly once to upward, downward or equal-facing day
 
 test('Calendar Date Details render sunrise Nethiram/Jeevan, direction, Dinantham and Ratri Pramana', () => {
   assert.ok(dailyCalendarSource.includes('getNethiramJeevan(sunStar,dayStar)'));
-  assert.ok(dailyCalendarSource.includes('ராத்திரி மானம்'));
+  assert.ok(dailyCalendarSource.includes('அகஸ் :- இரவு மானம்'));
   assert.ok(dailyCalendarSource.includes('தினாந்தம் (இரவு)'));
   assert.ok(dailyCalendarSource.includes('நேத்திரம்'));
   assert.ok(dailyCalendarSource.includes('ஜீவன்'));
   assert.ok(dailyCalendarSource.includes('நட்சத்திர நோக்கு நாள்'));
   assert.ok(calendarCalculationWorkerSource.includes('sunStar:r.sunStar'));
-  assert.ok(calendarCalculationWorkerSource.includes('calculateRatriNazhigai(p.sunset,nextSunrise,actualNightMinutes)'));
+  assert.ok(calendarCalculationWorkerSource.includes('calculateAhasRatriPramana(p.sunrise,p.sunset,nextSunrise,actualDaySeconds,actualNightSeconds)'));
   assert.ok(calendarCalculationWorkerSource.includes("offsetMinutesAt(input.timezone,nextDate,'12:00')"));
 });
 
