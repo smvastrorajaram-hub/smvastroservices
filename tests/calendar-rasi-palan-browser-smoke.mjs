@@ -120,6 +120,74 @@ try {
   assert.equal(resultPlacement.insideDateDetails, true, 'The three result sections must remain inside Date Details.');
   assert.equal(resultPlacement.immediatelyAfterShoolamAndDayFlags, true, 'The three result sections must immediately follow Travel Shoolam and Kari/Thaniya day flags.');
   assert.equal(resultPlacement.immediatelyBeforePanchang, true, 'The three result sections must appear before the Panchang details.');
+
+  // Capture and assert the Date Details grid itself, using the same mobile
+  // viewport as the user's screenshots. Short cards must start at the same
+  // top edge as their longer partner, not be vertically centered in its row.
+  const detailsOriginalDate = await page.$eval('#calDate', el => el.value);
+  const detailsOriginalLanguage = await page.evaluate(() => document.documentElement.lang || 'en');
+  const detailsOriginalViewport = page.viewport();
+  if (detailsOriginalLanguage !== 'ta') {
+    await page.click('#calTamil');
+    await page.waitForFunction(() => document.documentElement.lang === 'ta', { timeout: 15000 });
+  }
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, '2026-11-17');
+  await page.waitForFunction(() => {
+    const status = document.querySelector('#calStatus')?.textContent || '';
+    const cards = document.querySelectorAll('#calDateDetailsExtra .cal-details-summary > article');
+    return status.includes('2026-11-17') && cards.length >= 2;
+  }, { timeout: 90000 });
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+  const dateDetailsAlignment = await page.evaluate(() => {
+    const grid = document.querySelector('#calDateDetailsExtra .cal-details-summary');
+    const cards = [...(grid?.querySelectorAll(':scope > article') || [])];
+    const left = cards[0], right = cards[1];
+    if (!grid || !left || !right) return { available: false };
+    const leftRect = left.getBoundingClientRect(), rightRect = right.getBoundingClientRect();
+    const leftLabel = left.querySelector('small')?.getBoundingClientRect();
+    const rightLabel = right.querySelector('small')?.getBoundingClientRect();
+    return {
+      available: true,
+      columns: getComputedStyle(grid).gridTemplateColumns.trim().split(/\\s+/).length,
+      leftTop: leftRect.top,
+      rightTop: rightRect.top,
+      leftLabelTop: leftLabel?.top ?? null,
+      rightLabelTop: rightLabel?.top ?? null,
+      firstPairLabels: [left.querySelector('small')?.textContent.trim(), right.querySelector('small')?.textContent.trim()]
+    };
+  });
+  assert.equal(dateDetailsAlignment.available, true, 'Date Details must render the first two cards.');
+  assert.equal(dateDetailsAlignment.columns, 2, 'Mobile Date Details must keep its established two-column paired layout.');
+  assert.ok(Math.abs(dateDetailsAlignment.leftTop - dateDetailsAlignment.rightTop) < 1,
+    'The first left/right Date Details cards must start on the same row: ' + JSON.stringify(dateDetailsAlignment));
+  assert.ok(Math.abs(dateDetailsAlignment.leftLabelTop - dateDetailsAlignment.rightLabelTop) < 1,
+    'The first left/right Date Details labels must be top-aligned: ' + JSON.stringify(dateDetailsAlignment));
+  await page.$eval('#calDateDetails', el => el.scrollIntoView({ block: 'start' }));
+  await page.screenshot({
+    path: new URL('calendar-date-details-mobile.png', outputDir).pathname,
+    fullPage: false,
+    captureBeyondViewport: false
+  });
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, detailsOriginalDate);
+  await page.waitForFunction(date => (document.querySelector('#calStatus')?.textContent || '').includes(date),
+    { timeout: 90000 }, detailsOriginalDate);
+  if (detailsOriginalLanguage !== 'ta') {
+    await page.click('#calEnglish');
+    await page.waitForFunction(() => document.documentElement.lang === 'en', { timeout: 15000 });
+  }
+  if (detailsOriginalViewport) {
+    await page.setViewport({
+      width: detailsOriginalViewport.width,
+      height: detailsOriginalViewport.height,
+      deviceScaleFactor: detailsOriginalViewport.deviceScaleFactor || 1
+    });
+  }
   const muhurtaLagnaUi = await page.$eval('#calMuhurtaLagna', el => ({
     labels: [...el.querySelectorAll('.cal-muhurta-lagna-item > small')].map(node => node.textContent.trim()),
     verdict: el.querySelector('.cal-subha-verdict')?.textContent.trim() || '',
