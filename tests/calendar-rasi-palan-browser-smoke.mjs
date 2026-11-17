@@ -236,6 +236,14 @@ try {
       document.querySelector('#calDaily .panchang-time-result.smv-calendar-bright-red-time') &&
       document.querySelector('#calDaily .transit-position-table .transit-table-degree.smv-calendar-degree-normal');
   }, { timeout: 90000 });
+  const tamilYogaLabel = await page.$eval('#calDaily .cal-name-yoga-label', el => el.textContent.trim());
+  assert.equal(tamilYogaLabel, 'நாம யோகம்', 'Tamil Calendar must display the complete localized label “நாம யோகம்”.');
+  await page.click('#calEnglish');
+  await page.waitForFunction(() => document.documentElement.lang === 'en' &&
+    document.querySelector('#calDaily .cal-name-yoga-label')?.textContent.trim() === 'Namah Yoga', { timeout: 15000 });
+  await page.click('#calTamil');
+  await page.waitForFunction(() => document.documentElement.lang === 'ta' &&
+    document.querySelector('#calDaily .cal-name-yoga-label')?.textContent.trim() === 'நாம யோகம்', { timeout: 15000 });
   const dailyTypography = await page.evaluate(() => {
     const table = document.querySelector('#calDaily .panchang-data-table');
     const rows = [...(table?.tBodies?.[0]?.rows || [])];
@@ -269,7 +277,7 @@ try {
   });
   assert.equal(dailyTypography.primaryResultWeights.length, 8, 'Date through Karana must all be present in the Panchang results.');
   assert.ok(dailyTypography.primaryResultWeights.every(weight => weight === '700'), 'Date through Karana results must be bold.');
-  assert.equal(dailyTypography.yogaLabel, 'Namah Yoga', 'The Calendar yoga row must display Namah Yoga.');
+  assert.equal(dailyTypography.yogaLabel, 'நாம யோகம்', 'The Tamil Calendar yoga row must display the complete label நாம யோகம்.');
   assert.equal(dailyTypography.yogaLabelColor, 'rgb(0, 0, 0)', 'Namah Yoga must be black.');
   assert.equal(dailyTypography.yogaLabelWeight, '700', 'Namah Yoga must be bold.');
   assert.equal(dailyTypography.yogaLabelFontSize, dailyTypography.varaLabelFontSize, 'Namah Yoga must use the same font size as the Vara label.');
