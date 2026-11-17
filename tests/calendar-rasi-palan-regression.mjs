@@ -753,7 +753,7 @@ test('All 27 Nakshatras map exactly once to upward, downward or equal-facing day
 
 test('Calendar Date Details render sunrise Nethiram/Jeevan, direction, Dinantham and Ratri Pramana', () => {
   assert.ok(dailyCalendarSource.includes('getNethiramJeevan(sunStar,dayStar)'));
-  assert.ok(dailyCalendarSource.includes('ராத்திரி மானம்'));
+  assert.ok(dailyCalendarSource.includes('அகஸ் :- இரவு மானம்'));
   assert.ok(dailyCalendarSource.includes('தினாந்தம் (இரவு)'));
   assert.ok(dailyCalendarSource.includes('நேத்திரம்'));
   assert.ok(dailyCalendarSource.includes('ஜீவன்'));
