@@ -61,7 +61,16 @@ function isOnlineOnlyRequest(url){
 }
 function sharedOfflineRoot(){return new URL('../offline/',self.registration.scope).pathname;}
 function isSharedOfflineAsset(url){return url.origin===self.location.origin&&url.pathname.startsWith(sharedOfflineRoot());}
-function isIndiaPlaceAsset(url){return isSharedOfflineAsset(url)&&url.pathname.includes('/places/');}
+function isIndiaPlaceAsset(url){
+ return isSharedOfflineAsset(url)&&(
+  /\/offline\/places\/india\//.test(url.pathname)||
+  url.pathname.endsWith('/offline/places/india-manifest.json')
+ );
+}
+function isIndiaPlaceCachePath(path){
+ return /\/offline\/places\/india\//.test(path)||
+  path.endsWith('/offline/places/india-manifest.json');
+}
 
 function isStaticPresentationRequest(req,url){
  if(url.origin!==self.location.origin||isOnlineOnlyRequest(url))return false;
@@ -117,7 +126,7 @@ async function cacheCore(concurrency=6){
   const path=CORE[i++],url=cacheURL(path);
   try{
    const r=await fetch(new Request(url,{cache:'reload'}));
-   if(r.ok){const target=path.includes('/offline/places/')?await caches.open(LOCATION_CACHE):(path.includes('/offline/')?await caches.open(OFFLINE_CACHE):c);await target.put(url,fixed(url,r));}
+   if(r.ok){const target=isIndiaPlaceCachePath(path)?await caches.open(LOCATION_CACHE):(path.includes('/offline/')?await caches.open(OFFLINE_CACHE):c);await target.put(url,fixed(url,r));}
    else if(REQUIRED_CORE.has(path))failures.push(path+' (HTTP '+r.status+')');
   }catch(error){if(REQUIRED_CORE.has(path))failures.push(path+' ('+String(error?.message||error)+')');}
  }};
