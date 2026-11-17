@@ -384,6 +384,7 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar #calDateDetailsExtra .cal-details-summary article.cal-shoolam-card{border-bottom:0!important}
 #smvDailyCalendar #calDateDetailsExtra .cal-day-yoga-card.is-auspicious{border-left:3px solid #27804c!important;background:transparent!important}
 #smvDailyCalendar #calDateDetailsExtra .cal-day-yoga-card.is-inauspicious{border-left:0!important;background:transparent!important}
+#smvDailyCalendar #calDateDetailsExtra .cal-day-yoga-card.is-inauspicious .cal-yoga-segment.is-inauspicious{border-left:0!important}
 #smvDailyCalendar #calDateDetailsExtra .cal-day-yoga-card.is-unknown{border-left:3px solid #a9a394!important;background:transparent!important}
 #smvDailyCalendar #calDateDetailsExtra .cal-shoolam-card{padding:10px 4px!important}
 #smvDailyCalendar #calDateDetailsExtra .cal-day-flag{padding:7px 3px!important;border:0!important;border-radius:0!important;background:transparent!important}
