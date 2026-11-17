@@ -379,7 +379,7 @@ if(host){
   if(yogaRow){
    yogaRow.classList.add('cal-name-yoga-row');
    yogaRow.cells[0].classList.add('cal-name-yoga-label');
-   yogaRow.cells[0].textContent=L('Name Yoga','நாம யோகம்');
+   yogaRow.cells[0].textContent='Namah Yoga';
    const yogaName=String(p?.yoga?.name||'').trim();
    const yogaResult=nityaYogaResults[yogaName];
    if(yogaResult&&yogaRow.cells[1]){
