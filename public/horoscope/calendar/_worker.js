@@ -12,11 +12,14 @@ export function mapCalendarHostAssetPath(pathname) {
     '/admin.html',
     '/sw.js',
     '/calendar-pwa.mjs',
+    '/rasi-palan-periods.mjs',
     '/manifest-en.webmanifest',
     '/manifest-ta.webmanifest'
   ].includes(path)) return CANONICAL_CALENDAR_ROOT + path;
   // Calendar's existing assets are stored under public/horoscope/assets.
   if (path.startsWith('/assets/')) return '/horoscope' + path;
+  // Explicit canonical paths may also be requested by compatibility fallbacks.
+  if (path.startsWith('/horoscope/')) return path;
   // Shared forecast modules, the existing /horoscope/offline source tree,
   // daily-calendar assets and the Calendar calculation worker all keep their
   // familiar root-relative paths on this separate origin.
