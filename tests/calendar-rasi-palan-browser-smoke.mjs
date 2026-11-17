@@ -660,7 +660,8 @@ try {
   assert.equal(toMinutes(vastuTimes[0][2]) - toMinutes(vastuTimes[0][1]), 90, 'Vastu waking interval must be 90 minutes');
   assert.equal(toMinutes(vastuTimes[1][2]) - toMinutes(vastuTimes[1][1]), 36, 'Final Vastu puja interval must be 36 minutes');
   const pushkaraCheck = await page.$eval('#calMuhurtaLagna', el => el.textContent || '');
-  assert.match(pushkaraCheck, /Selected-time Lagna Pushkara check|தேர்ந்தெடுத்த நேர லக்ன புஷ்கரச் சரிபார்ப்பு/, 'Selected-time Pushkara Navamsa check must be visible');
+  assert.match(pushkaraCheck, /Pushkara Navamsa Lagna|புஷ்கர நவாம்ச லக்னம்/, 'Pushkara Navamsa Lagna must be visible');
+  assert.doesNotMatch(pushkaraCheck, /not yet a calculated Thali-tying time|இன்னும் தாலி கட்டும் நேரக் கணக்கீடு அல்ல/, 'Do not display the Thali-time disclaimer in the Calendar UI');
   await checkMuhurthamDate(calendarDate, /Subha Muhurtham day|சுபமுகூர்த்த நாள்|^No$|^இல்லை$/);
   assert.equal(publicUi.separateAdminLink, false, 'Calendar should not link to a separate Admin page');
   assert.equal(publicUi.hasRasiPicker, true, 'Public Rasi Palan must include the selected-Rasi dropdown');
