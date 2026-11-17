@@ -140,7 +140,7 @@ try {
     const cards = document.querySelectorAll('#calDateDetailsExtra .cal-details-summary > article');
     return status.includes('2026-11-17') && cards.length >= 2;
   }, { timeout: 90000 });
-  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+  await page.setViewport({ width: 480, height: 900, deviceScaleFactor: 1 });
   const dateDetailsAlignment = await page.evaluate(() => {
     const grid = document.querySelector('#calDateDetailsExtra .cal-details-summary');
     const cards = [...(grid?.querySelectorAll(':scope > article') || [])];
@@ -151,6 +151,9 @@ try {
     const rightLabel = right.querySelector('small')?.getBoundingClientRect();
     return {
       available: true,
+      windowWidth: window.innerWidth,
+      gridWidth: grid.getBoundingClientRect().width,
+      computedGridTemplateColumns: getComputedStyle(grid).gridTemplateColumns,
       columns: getComputedStyle(grid).gridTemplateColumns.trim().split(/\\s+/).length,
       leftTop: leftRect.top,
       rightTop: rightRect.top,
