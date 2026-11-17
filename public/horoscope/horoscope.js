@@ -1697,12 +1697,13 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
 
   function renderPhase4Dasa(data,lang,slot){
     const ta=lang==='ta', escSafe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const englishValue=value=>typeof window.__smvEnglishTextNode==='function'?window.__smvEnglishTextNode(value):String(value??'—');
     const names=ta?['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்']:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
     const planetNames=ta?{Sun:'சூரியன்',Moon:'சந்திரன்',Mars:'செவ்வாய்',Mercury:'புதன்',Jupiter:'குரு',Venus:'சுக்கிரன்',Saturn:'சனி',Rahu:'ராகு',Ketu:'கேது'}:{};
     const label=x=>{
       if(typeof x==='number'&&x>=0&&x<12)return names[x];
       const raw=String(x??'—');
-      return ta?(planetNames[raw]||raw):englishTextNode(raw);
+      return ta?(planetNames[raw]||raw):englishValue(raw);
     };
     const modules=[['ashtottari','🌙','Ashtottari Dasa','108-year Nakshatra Dasa'],['narayana','🪐','Narayana Dasa','Rasi Dasa'],['lagnaKendradi','🧭','Lagna Kendradi Rasi Dasa','Kendra → Panaphara → Apoklima'],['sudasa','💰','Sudasa','Sree Lagna based'],['drigdasa','👁️','Drigdasa','9th/10th/11th house groups'],['niryaanaShoola','⚔️','Niryaana Shoola Dasa','longevity timing reference'],['shoola','🕉️','Shoola Dasa','9-year rasi Dasa'],['kalachakra','⏳','Kalachakra Dasa','Nakshatra/Savya-Apasavya']];
     let h=`<h3>🕉️ ${ta?'Special Dasa System':'Special Dasa System'}</h3>`;
@@ -1716,9 +1717,9 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
     if(pvr){
       const longevity=pvr.longevity||{},timing=pvr.sodhyaPindaEventTiming||{};
       const catName=c=>ta?({short:'குறுகிய ஆயுள் வகை',middle:'மத்திய ஆயுள் வகை',long:'நீண்ட ஆயுள் வகை'}[c]||'—'):(c||'—');
-      const pairRows=(longevity.pairs||[]).map(x=>`<tr><td>${escSafe(ta?x.label:englishTextNode(x.label))}</td><td>${escSafe(catName(x.category))}</td></tr>`).join('');
+      const pairRows=(longevity.pairs||[]).map(x=>`<tr><td>${escSafe(ta?x.label:englishValue(x.label))}</td><td>${escSafe(catName(x.category))}</td></tr>`).join('');
       const special=longevity.specialIndicators;
-      const specialPlanetName=name=>(ta?({'Sun':'சூரியன்','Moon':'சந்திரன்','Mars':'செவ்வாய்','Mercury':'புதன்','Jupiter':'குரு','Venus':'சுக்கிரன்','Saturn':'சனி','Rahu':'ராகு','Ketu':'கேது'}[name]||name):englishTextNode(name));
+      const specialPlanetName=name=>(ta?({'Sun':'சூரியன்','Moon':'சந்திரன்','Mars':'செவ்வாய்','Mercury':'புதன்','Jupiter':'குரு','Venus':'சுக்கிரன்','Saturn':'சனி','Rahu':'ராகு','Ketu':'கேது'}[name]||name):englishValue(name));
       const rudraText=(special?.rudra||[]).map(x=>`${specialPlanetName(x.planet)} (${escSafe(label(x.signIndex))})`).join(' · ');
       const trishoolaText=(special?.trishoola||[]).map(x=>`${specialPlanetName(x.rudraPlanet)}: ${x.signIndices.map(i=>label(i)).map(escSafe).join(', ')}`).join(' · ');
       const mahText=special?.maheswara?.planet?`${specialPlanetName(special.maheswara.planet)} (${escSafe(label(special.maheswara.signIndex))})`:'—';
@@ -1736,7 +1737,7 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
       const timingRowsByDasa=dt?focusRows('Niryaana Shoola',dt.niryaanaShoola)+focusRows('Shoola Dasa',dt.shoola):'';
       const dasaTimingPanel=dt?`<h4>${ta?'ஆயுள் வகைக்கு ஏற்ப தசா காலச் சாளரம்':'Dasa timing windows by longevity category'}</h4><p class="small">${ta?'வயது வரம்பு':'Age band'}: ${escSafe(ageBand?.start)}–${escSafe(ageBand?.end)} ${ta?'ஆண்டுகள்':'years'}</p><div class="adv-table-wrap"><table class="adv-wide"><thead><tr><th>${ta?'தசா முறை':'Dasa system'}</th><th>${ta?'ராசி':'Rasi'}</th><th>${ta?'வயது இடைவெளி':'Age interval'}</th><th>${ta?'ஆண்டுகள்':'Years'}</th><th>${ta?'தொடக்கம்':'Start'}</th><th>${ta?'முடிவு':'End'}</th></tr></thead><tbody>${timingRowsByDasa||`<tr><td colspan="6">${ta?'இந்த வயது வரம்பில் தசா காலம் இல்லை.':'No Dasa interval overlaps this age band.'}</td></tr>`}</tbody></table></div><p class="small">${escSafe(ta?'இவை தேர்ந்தெடுக்கப்பட்ட வயது வரம்புடன் ஒப்பிட்ட தசா காலக் கணக்குகள் மட்டுமே; உறுதியான ஆயுள் முடிவைக் குறிக்காது.':(dt.caution||'Dasa timing windows are not a certain lifespan prediction.'))}</p>`:'';
       const elon=longevity.eighthLordMethod;
-      const eLord=elon?`<p class="small">${ta?'எட்டாம் அதிபதி முறை':'Eighth Lord Method'}: ${escSafe(ta?(elon.referenceSignTamil||elon.referenceSign):englishTextNode(elon.referenceSign))} · ${escSafe(ta?elon.eighthLord:englishTextNode(elon.eighthLord))} · ${escSafe(catName(elon.category))}. ${ta?'ராசி பல மதிப்பீடு SMV heuristic என்பதால் இது சான்றளிக்கப்பட்ட விதி முடிவு அல்ல.':'Sign-strength comparison uses an SMV heuristic and is not book-certified.'}</p>`:'';
+      const eLord=elon?`<p class="small">${ta?'எட்டாம் அதிபதி முறை':'Eighth Lord Method'}: ${escSafe(ta?(elon.referenceSignTamil||elon.referenceSign):englishValue(elon.referenceSign))} · ${escSafe(ta?elon.eighthLord:englishValue(elon.eighthLord))} · ${escSafe(catName(elon.category))}. ${ta?'ராசி பல மதிப்பீடு SMV heuristic என்பதால் இது சான்றளிக்கப்பட்ட விதி முடிவு அல்ல.':'Sign-strength comparison uses an SMV heuristic and is not book-certified.'}</p>`:'';
       const transitCalendar=timing.transitCalendar;
       const formatTransitWindows=windows=>windows?.length?windows.map(w=>`${escSafe(w.startLocal)} → ${escSafe(w.endLocal)}${w.startClipped?(ta?' (வரம்பின் தொடக்கம்)':' (range start)'):''}${w.endClipped?(ta?' (வரம்பின் முடிவு)':' (range end)'):''}`).join('<br>'):(ta?'இந்த காலவரம்பில் சஞ்சாரம் இல்லை':'No crossing in range');
       const transitCell=(item,bodyName)=>{
@@ -1744,13 +1745,13 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
         if(!body)return `<span class="small">${ta?'கணக்கிடப்படுகிறது…':'Calculating…'}</span>`;
         const pick=key=>body.nakshatras?.find(n=>n.key===key);
         const primary=pick('primary'),tenth=pick('10th'),nineteenth=pick('19th');
-        const nLabel=n=>ta?(n?.nameTamil||n?.name||'—'):englishTextNode(n?.name||n?.nameTamil||'—');
+        const nLabel=n=>ta?(n?.nameTamil||n?.name||'—'):englishValue(n?.name||n?.nameTamil||'—');
         return `<div class="small"><b>${escSafe(ta?(bodyName==='Saturn'?'சனி':'குரு'):bodyName)}</b><br>${escSafe(ta?'முதன்மை நட்சத்திரம்':'Target nakshatra')} (${escSafe(nLabel(primary))}):<br>${formatTransitWindows(primary?.windows)}<br>${escSafe(ta?'10-ஆம் நட்சத்திர மாற்று':'10th-star alternative')} (${escSafe(nLabel(tenth))}):<br>${formatTransitWindows(tenth?.windows)}<br>${escSafe(ta?'19-ஆம் நட்சத்திர மாற்று':'19th-star alternative')} (${escSafe(nLabel(nineteenth))}):<br>${formatTransitWindows(nineteenth?.windows)}<br>${escSafe(ta?'இலக்கு ராசி':'Target rasi')} (${escSafe(ta?(body.rasi?.nameTamil||body.rasi?.name):body.rasi?.name)}):<br>${formatTransitWindows(body.rasi?.windows)}</div>`;
       };
-      const eventRows=(timing.rows||[]).map(x=>{const trow=transitCalendar?.rows?.find(r=>r.planet===x.planet);return `<tr><td>${escSafe(ta?x.planetTamil:englishTextNode(x.planet))}</td><td>${escSafe(ta?x.topicTamil:englishTextNode(x.topic))}</td><td>${escSafe(x.houseFromPlanet)}</td><td>${escSafe(x.rawBavRekhas)}</td><td>${escSafe(x.sodhyaPinda)}</td><td><b>${escSafe(x.product)}</b></td><td>${escSafe(ta?x.targetNakshatraTamil:englishTextNode(x.targetNakshatra))}</td><td>${escSafe(ta?x.targetRasiTamil:englishTextNode(x.targetRasi))}</td><td>${transitCell(trow,'Saturn')}</td><td>${transitCell(trow,'Jupiter')}</td></tr>`;}).join('');
+      const eventRows=(timing.rows||[]).map(x=>{const trow=transitCalendar?.rows?.find(r=>r.planet===x.planet);return `<tr><td>${escSafe(ta?x.planetTamil:englishValue(x.planet))}</td><td>${escSafe(ta?x.topicTamil:englishValue(x.topic))}</td><td>${escSafe(x.houseFromPlanet)}</td><td>${escSafe(x.rawBavRekhas)}</td><td>${escSafe(x.sodhyaPinda)}</td><td><b>${escSafe(x.product)}</b></td><td>${escSafe(ta?x.targetNakshatraTamil:englishValue(x.targetNakshatra))}</td><td>${escSafe(ta?x.targetRasiTamil:englishValue(x.targetRasi))}</td><td>${transitCell(trow,'Saturn')}</td><td>${transitCell(trow,'Jupiter')}</td></tr>`;}).join('');
       const caution=ta
         ?'இந்தக் காலக் குறிகள் உறுதியான நிகழ்வு தேதி அல்லது ஆயுள் முடிவைக் குறிக்காது.'
-        :englishTextNode(dt?.caution||'These timing indicators are not certain event dates or a lifespan prediction.');
+        :englishValue(dt?.caution||'These timing indicators are not certain event dates or a lifespan prediction.');
       let panel=`<div class="adv-section v5-module pvr-research-panel"><h3>🕉️ ${ta?'ஜாதக அடிப்படையிலான ஆயுள் கணக்கீடு':'Chart-based Longevity Calculation'}</h3>
       ${narayanaSourceWarning?`<p class="small phase4-warning">${narayanaSourceWarning}</p>`:''}
       <h4>${ta?'மூன்று ஜோடி ஆயுள் வகை':'Method of Three Pairs — Longevity Category'}</h4>
@@ -1768,13 +1769,13 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
     const previousResearch=(slot.closest('.horoscope-result')||slot.parentElement)?.querySelector('.pvr-research-panel');
     previousResearch?.remove();
     slot.innerHTML=h;
-    if(!ta)applyEnglishToHoroscope(slot);
+    if(!ta)window.__smvApplyEnglishToHoroscope?.(slot);
     const researchPanel=slot.querySelector('.pvr-research-panel');
     const reportRoot=slot.closest('.horoscope-result')||slot.parentElement;
     const advancedTarget=reportRoot?.querySelector('.smv-advanced-part.chart-analysis > .smv-advanced-part-content');
     const sodhyaSection=Array.from(advancedTarget?.querySelectorAll('.adv-section')||[]).find(n=>String(n.querySelector('h3')?.textContent||'').toLowerCase().includes('sodhya pinda')||String(n.querySelector('h3')?.textContent||'').includes('சோத்ய பிண்டம்'));
     if(researchPanel&&sodhyaSection) sodhyaSection.insertAdjacentElement('afterend',researchPanel);
-    slot.querySelectorAll('.smv-dasa-expand').forEach(btn=>btn.addEventListener('click',()=>{const key=btn.dataset.key,idx=Number(btn.dataset.index),md=data[key]?.sequence?.[idx],box=btn.nextElementSibling;if(!md||!box)return; if(!box.classList.contains('hidden')){box.classList.add('hidden');return;} const subs=Array.isArray(md.antardasas)?md.antardasas:[]; box.innerHTML=subs.map((a,j)=>{const nm=a.rasi!=null?label(typeof a.rasi==='string'?(({'Ar':0,'Ta':1,'Ge':2,'Cn':3,'Le':4,'Vi':5,'Li':6,'Sc':7,'Sg':8,'Cp':9,'Aq':10,'Pi':11}[a.rasi] ?? a.rasi)):a.rasi):label(a.lord);return `<div class="small" style="padding:4px 0;border-bottom:1px solid #eee">${j+1}. <b>${escSafe(nm)}</b> · ${escSafe(a.start)} → ${escSafe(a.end)}</div>`;}).join('')||`<div class="small">${ta?'தரவு இல்லை':'No sub-period data.'}</div>`;if(!ta)applyEnglishToHoroscope(box);window.__smvLocalizeTamilResult?.(box,lang);box.classList.remove('hidden');}));
+    slot.querySelectorAll('.smv-dasa-expand').forEach(btn=>btn.addEventListener('click',()=>{const key=btn.dataset.key,idx=Number(btn.dataset.index),md=data[key]?.sequence?.[idx],box=btn.nextElementSibling;if(!md||!box)return; if(!box.classList.contains('hidden')){box.classList.add('hidden');return;} const subs=Array.isArray(md.antardasas)?md.antardasas:[]; box.innerHTML=subs.map((a,j)=>{const nm=a.rasi!=null?label(typeof a.rasi==='string'?(({'Ar':0,'Ta':1,'Ge':2,'Cn':3,'Le':4,'Vi':5,'Li':6,'Sc':7,'Sg':8,'Cp':9,'Aq':10,'Pi':11}[a.rasi] ?? a.rasi)):a.rasi):label(a.lord);return `<div class="small" style="padding:4px 0;border-bottom:1px solid #eee">${j+1}. <b>${escSafe(nm)}</b> · ${escSafe(a.start)} → ${escSafe(a.end)}</div>`;}).join('')||`<div class="small">${ta?'தரவு இல்லை':'No sub-period data.'}</div>`;if(!ta)window.__smvApplyEnglishToHoroscope?.(box);window.__smvLocalizeTamilResult?.(box,lang);box.classList.remove('hidden');}));
   }
   window.__smvLoadPhase4Dasa=loadPhase4Dasa;
   window.__smvRenderPhase4Dasa=(data,lang,rootId)=>{const root=document.getElementById(rootId);const slot=root?.querySelector('#smvPhase4DasaSlot');if(slot){const result=data||{};completePvrTransitCalendar(result,lang,slot);renderPhase4Dasa(result,lang,slot);}};
