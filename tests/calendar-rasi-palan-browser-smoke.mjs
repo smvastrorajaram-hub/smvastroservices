@@ -154,7 +154,10 @@ try {
       windowWidth: window.innerWidth,
       gridWidth: grid.getBoundingClientRect().width,
       computedGridTemplateColumns: getComputedStyle(grid).gridTemplateColumns,
-      columns: getComputedStyle(grid).gridTemplateColumns.trim().split(/\\s+/).length,
+      windowWidth: window.innerWidth,
+      gridWidth: grid.getBoundingClientRect().width,
+      computedGridTemplateColumns: getComputedStyle(grid).gridTemplateColumns,
+      columns: cards.filter(card => Math.abs(card.getBoundingClientRect().top - leftRect.top) < 1).length,
       leftTop: leftRect.top,
       rightTop: rightRect.top,
       leftLabelTop: leftLabel?.top ?? null,
@@ -163,7 +166,7 @@ try {
     };
   });
   assert.equal(dateDetailsAlignment.available, true, 'Date Details must render the first two cards.');
-  assert.equal(dateDetailsAlignment.columns, 2, 'Mobile Date Details must keep its established two-column paired layout.');
+  assert.equal(dateDetailsAlignment.columns, 2, 'Date Details must place its first two cards in one row at the mobile preview width: ' + JSON.stringify(dateDetailsAlignment));
   assert.ok(Math.abs(dateDetailsAlignment.leftTop - dateDetailsAlignment.rightTop) < 1,
     'The first left/right Date Details cards must start on the same row: ' + JSON.stringify(dateDetailsAlignment));
   assert.ok(Math.abs(dateDetailsAlignment.leftLabelTop - dateDetailsAlignment.rightLabelTop) < 1,
