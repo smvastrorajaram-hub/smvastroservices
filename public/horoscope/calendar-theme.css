@@ -284,7 +284,7 @@ html body.calendar-only>header.calendar-topbar{
  text-align:center;vertical-align:middle;
 }
 #smvDailyCalendar #calDateDetails #calDaily .panchang-data-table tr.cal-name-yoga-row td.cal-name-yoga-label{
- color:#000!important;-webkit-text-fill-color:#000!important;font-weight:400!important;font-size:inherit!important;line-height:inherit!important;
+ color:#000!important;-webkit-text-fill-color:#000!important;font-weight:700!important;font-size:inherit!important;line-height:inherit!important;
 }
 #smvDailyCalendar #calDateDetails #calDaily .panchang-data-table .cal-name-yoga-result{
  display:inline-block;font-weight:750;text-align:center;
