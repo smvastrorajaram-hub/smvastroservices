@@ -41,7 +41,8 @@ export const VASTU_DAY_RULES = Object.freeze({
   6: Object.freeze({ day: 11, sunriseOffsetNazhigai: 2 }),  // Aippasi
   7: Object.freeze({ day: 8, sunriseOffsetNazhigai: 10 }),  // Karthigai
   9: Object.freeze({ day: 12, sunriseOffsetNazhigai: 8 }),  // Thai
-  10: Object.freeze({ day: 22, sunriseOffsetNazhigai: 8 }) // Masi
+  10: Object.freeze({ day: 22, sunriseOffsetNazhigai: 8 }), // Masi
+  11: Object.freeze({ day: 22, sunriseOffsetNazhigai: 8 })  // Panguni (2026–27 annual edition)
 });
 export const VASTU_WAKE_MINUTES = 90;
 export const VASTU_PUJA_MINUTES = 36;
