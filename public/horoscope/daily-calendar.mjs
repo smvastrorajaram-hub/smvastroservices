@@ -414,7 +414,7 @@ if(host){
    if(b<=a)b+=1440;
    const current=selected===today&&timelineMinute>=a&&timelineMinute<b;
    const green=['Mercury','Jupiter','Venus'].includes(h.planetEn)||(h.planetEn==='Moon'&&horaP.tithi.number<=15);
-   td.className='hora-time'+(h.planetEn===lord?' smv-hora-bright-'+(green?'green':'red'):current?' smv-hora-current-'+(green?'green':'red'):'');
+   td.className='hora-time smv-calendar-neutral-time'+(h.planetEn===lord?' smv-hora-bright-'+(green?'green':'red'):current?' smv-hora-current-'+(green?'green':'red'):'');
    td.closest('tr').classList.toggle('cal-current-hora',current);
    td.setAttribute('aria-label',`${h.range}${current?L(' · Current Hora',' · தற்போதைய ஹோரை'):''}`);
   });
