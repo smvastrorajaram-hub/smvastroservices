@@ -794,7 +794,7 @@ test('SMV CALENDAR daily Panchang and Hora use scoped black/red result typograph
   assert.match(horoscopeRendererSource, /smv-calendar-bright-red-time/);
   assert.match(horoscopeRendererSource, /smv-calendar-degree-normal/);
   assert.match(dailyCalendarSource, /hora-time smv-calendar-neutral-time/);
-  assert.match(calendarThemeCssSource, /cal-name-yoga-label\{\s*color:#000!important;[\s\S]*?font-weight:400!important;[\\s\\S]*?font-size:inherit!important;/);
+  assert.match(calendarThemeCssSource, /cal-name-yoga-label\{\s*color:#000!important;[\s\S]*?font-weight:400!important;[\s\S]*?font-size:inherit!important;/);
   assert.match(calendarThemeCssSource, /smv-calendar-primary-result-row>td:nth-child\(2\)\{\s*color:#000;[^}]*font-weight:700/);
   assert.match(calendarThemeCssSource, /smv-calendar-bright-red-time\{\s*color:#f00/);
   assert.match(calendarThemeCssSource, /smv-calendar-normal-connector\{\s*color:#000;[^}]*font-weight:400/);
