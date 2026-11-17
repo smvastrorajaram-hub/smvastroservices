@@ -19,6 +19,10 @@ import { calculateRasiManaForLocation, calculateSolarSignRasiMana, calculateRema
 import { TAMIL_DAY_YOGA_TABLE, getTamilDayYoga, getTamilCalendarDayFlags, getNakshatraDirection, getNethiramJeevan } from '../public/horoscope/tamil-day-classifications.mjs';
 
 const dailyCalendarSource = await readFile(new URL('../public/horoscope/daily-calendar.mjs', import.meta.url), 'utf8');
+const horoscopeRendererSource = await readFile(new URL('../public/horoscope/horoscope.js', import.meta.url), 'utf8');
+const sharedHoroscopeCssSource = await readFile(new URL('../public/horoscope/horoscope.css', import.meta.url), 'utf8');
+const astroServiceWorkerSource = await readFile(new URL('../public/sw.js', import.meta.url), 'utf8');
+const horoscopeServiceWorkerSource = await readFile(new URL('../public/horoscope/sw.js', import.meta.url), 'utf8');
 const dailyCalendarCssSource = await readFile(new URL('../public/horoscope/daily-calendar.css', import.meta.url), 'utf8');
 const calendarThemeCssSource = await readFile(new URL('../public/horoscope/calendar-theme.css', import.meta.url), 'utf8');
 const tamilDayClassificationsSource = await readFile(new URL('../public/horoscope/tamil-day-classifications.mjs', import.meta.url), 'utf8');
@@ -779,4 +783,31 @@ test('Calendar Date Details restores centred cards and positions day flags besid
   assert.ok(shoolamMarkup, 'Travel Shoolam must render in its own full-width card.');
   assert.doesNotMatch(shoolamMarkup, /cal-day-flag/, 'Kari and Thaniya flags must be separate from Travel Shoolam.');
   assert.match(calendarThemeCssSource, /@media\(max-width:340px\)[\s\S]*?\.cal-details-summary\{grid-template-columns:minmax\(0,1fr\)\}/);
+});
+
+test('SMV CALENDAR daily Panchang and Hora use scoped black/red result typography', () => {
+  assert.match(horoscopeRendererSource, /const calendarPresentation = rootId === 'calDaily';/);
+  assert.match(horoscopeRendererSource, /smv-calendar-neutral-date-time/);
+  assert.match(horoscopeRendererSource, /smv-calendar-normal-connector/);
+  assert.match(horoscopeRendererSource, /smv-calendar-primary-result-row/);
+  assert.match(horoscopeRendererSource, /i<=7/);
+  assert.match(horoscopeRendererSource, /smv-calendar-bright-red-time/);
+  assert.match(horoscopeRendererSource, /smv-calendar-degree-normal/);
+  assert.match(dailyCalendarSource, /hora-time smv-calendar-neutral-time/);
+  assert.match(calendarThemeCssSource, /cal-name-yoga-label\{\s*color:#000;font-weight:400;/);
+  assert.match(calendarThemeCssSource, /smv-calendar-primary-result-row>td:nth-child\(2\)\{\s*color:#000;[^}]*font-weight:700/);
+  assert.match(calendarThemeCssSource, /smv-calendar-bright-red-time\{\s*color:#f00/);
+  assert.match(calendarThemeCssSource, /smv-calendar-normal-connector\{\s*color:#000;[^}]*font-weight:400/);
+  assert.match(sharedHoroscopeCssSource, /event-date:not\(\.smv-calendar-neutral-date-time\)/);
+  assert.match(sharedHoroscopeCssSource, /event-time:not\(\.smv-calendar-neutral-date-time\)/);
+  assert.match(sharedHoroscopeCssSource, /hora-time:not\(\.smv-calendar-neutral-time\)/);
+  assert.match(sharedHoroscopeCssSource, /transit-table-degree:not\(\.smv-calendar-degree-normal\)/);
+  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261117-calendar-panchang-hora-colors-v1/);
+  const releases = [astroServiceWorkerSource, horoscopeServiceWorkerSource, calendarWorkerSource]
+    .map(source => source.match(/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '([^']+)' : '([^']+)';/));
+  assert.ok(releases.every(Boolean), 'All three service workers must define the synchronized release marker.');
+  assert.equal(new Set(releases.map(match => match[1])).size, 1, 'Pages.dev cache release must match across all apps.');
+  assert.equal(new Set(releases.map(match => match[2])).size, 1, 'Production cache release must match across all apps.');
+  assert.equal(releases[0][1], '20261117-calendar-panchang-hora-colors-v1');
+  assert.equal(releases[0][2], '20261117-calendar-panchang-hora-colors-v1');
 });
