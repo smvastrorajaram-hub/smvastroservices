@@ -252,6 +252,9 @@ try {
       yogaLabel: yoga?.textContent?.trim() || '',
       yogaLabelColor: style(yoga)?.color || '',
       yogaLabelWeight: style(yoga)?.fontWeight || '',
+      yogaLabelFontSize: style(yoga)?.fontSize || '',
+      varaLabelFontSize: style(rows[3]?.cells?.[0])?.fontSize || '',
+      tithiLabelFontSize: style(rows[4]?.cells?.[0])?.fontSize || '',
       eventDateColor: style(eventDate)?.color || '',
       eventTimeColor: style(eventTime)?.color || '',
       connectorColor: style(connector)?.color || '',
@@ -266,9 +269,11 @@ try {
   });
   assert.equal(dailyTypography.primaryResultWeights.length, 8, 'Date through Karana must all be present in the Panchang results.');
   assert.ok(dailyTypography.primaryResultWeights.every(weight => weight === '700'), 'Date through Karana results must be bold.');
-  assert.match(dailyTypography.yogaLabel, /நாம யோகம்/, 'The name-yoga label must be present in Tamil.');
+  assert.equal(dailyTypography.yogaLabel, 'Namah Yoga', 'The Calendar yoga row must display Namah Yoga.');
   assert.equal(dailyTypography.yogaLabelColor, 'rgb(0, 0, 0)', 'Name Yoga must be black.');
   assert.equal(dailyTypography.yogaLabelWeight, '400', 'Name Yoga must use normal weight.');
+  assert.equal(dailyTypography.yogaLabelFontSize, dailyTypography.varaLabelFontSize, 'Namah Yoga must use the same font size as the Vara label.');
+  assert.equal(dailyTypography.yogaLabelFontSize, dailyTypography.tithiLabelFontSize, 'Namah Yoga must use the same font size as the Tithi label.');
   assert.equal(dailyTypography.eventDateColor, 'rgb(0, 0, 0)', 'Panchang event dates must be black.');
   assert.equal(dailyTypography.eventTimeColor, 'rgb(0, 0, 0)', 'Panchang event times must be black.');
   assert.equal(dailyTypography.connectorColor, 'rgb(0, 0, 0)', 'The “முதல்” connector must be black.');
