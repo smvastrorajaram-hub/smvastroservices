@@ -166,6 +166,7 @@ try {
       shoolamFullWidth: Math.abs(shoolamRect.width - gridRect.width) < 1,
       shoolamContentCentered: Math.abs((mainRect.left + mainRect.width / 2) - (shoolamRect.left + shoolamRect.width / 2)) < 1,
       thyajyamBorderLeftWidth: getComputedStyle(thyajyam).borderLeftWidth,
+      thyajyamSegmentBorderLeftWidth: getComputedStyle(thyajyam.querySelector('.cal-yoga-segment.is-inauspicious')).borderLeftWidth,
       cardJustifyContent: getComputedStyle(grid.querySelector('article')).justifyContent
     };
   });
@@ -174,7 +175,8 @@ try {
   assert.equal(requestedLayout.flagsAndAbhijitShareRow, true, 'Kari/Thaniya and Abhijit must share one row.');
   assert.equal(requestedLayout.shoolamFullWidth, true, 'Travel Shoolam must occupy its own full-width row.');
   assert.equal(requestedLayout.shoolamContentCentered, true, 'Travel Shoolam content must be centered.');
-  assert.equal(requestedLayout.thyajyamBorderLeftWidth, '0px', 'The long red left line on Nakshatra Thyajyam must be removed.');
+  assert.equal(requestedLayout.thyajyamBorderLeftWidth, '0px', 'The long red left line on the Nakshatra Thyajyam card must be removed.');
+  assert.equal(requestedLayout.thyajyamSegmentBorderLeftWidth, '0px', 'The inner red Thyajyam interval stripe must also be removed.');
   assert.equal(requestedLayout.cardJustifyContent, 'center', 'PR #524 vertical card alignment must be reverted.');
 
   const monthNumberAlignment = await page.evaluate(() => {
@@ -208,6 +210,12 @@ try {
   await page.$eval('#calDateDetails', el => el.scrollIntoView({ block: 'start' }));
   await page.screenshot({
     path: new URL('calendar-date-details-mobile.png', outputDir).pathname,
+    fullPage: false,
+    captureBeyondViewport: false
+  });
+  await page.$eval('.cal-day-flags-card', el => el.scrollIntoView({ block: 'center' }));
+  await page.screenshot({
+    path: new URL('calendar-date-details-flags-shoolam-mobile.png', outputDir).pathname,
     fullPage: false,
     captureBeyondViewport: false
   });
