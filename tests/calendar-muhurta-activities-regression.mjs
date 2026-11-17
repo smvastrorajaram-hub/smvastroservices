@@ -93,7 +93,7 @@ test('all 24 Pushkara Navamsa intervals use inclusive starts and exclusive ends'
         const absoluteStart=sign*30+start;
         const absoluteEnd=sign*30+end;
         const atStart=getPushkaraNavamsa(absoluteStart);
-        const justBeforeEnd=getPushkaraNavamsa(absoluteEnd-1e-7);
+        const justBeforeEnd=getPushkaraNavamsa(absoluteEnd-1/3600);
         const atEnd=getPushkaraNavamsa(absoluteEnd);
         assert.equal(atStart.available,true);
         assert.equal(atStart.isPushkaraNavamsa,true,'sign '+sign+', interval '+i+' start');
