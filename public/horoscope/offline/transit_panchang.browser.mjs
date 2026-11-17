@@ -512,6 +512,46 @@ export function calculateAhasNazhigai(sunrise,sunset){
   };
 }
 
+function clockMinutesForDaylight(value){
+ const match=String(value??'').match(/^(\d{1,2}):([0-5]\d)$/);
+ if(!match)return null;
+ const hour=Number(match[1]),minute=Number(match[2]);
+ return hour<=23?hour*60+minute:null;
+}
+
+// Night length from local sunset to the next local sunrise, in Nazhigai/Vinazhigai.
+// An optional elapsed-minute value preserves real elapsed time across DST changes.
+export function calculateRatriNazhigai(sunset,nextSunrise,elapsedMinutes=null){
+ const set=clockMinutesForDaylight(sunset),rise=clockMinutesForDaylight(nextSunrise);
+ if(set==null||rise==null||set===rise)return {available:false};
+ const nightMinutes=elapsedMinutes==null?(rise-set+1440)%1440:Number(elapsedMinutes);
+ if(!Number.isFinite(nightMinutes)||nightMinutes<=0||nightMinutes>1440)return {available:false};
+ const totalVighati=Math.round(nightMinutes*60/24);
+ return {
+  available:true,sunset:String(sunset),nextSunrise:String(nextSunrise),
+  nightMinutes,totalVighati,
+  nazhigai:Math.floor(totalVighati/60),
+  vinazhigai:totalVighati%60
+ };
+}
+
+// Dinantham is the midpoint of the third of four equal night yamas:
+// sunset + 5/8 of the local night interval.
+export function calculateDinantham(sunset,nextSunrise,elapsedMinutes=null){
+ const night=calculateRatriNazhigai(sunset,nextSunrise,elapsedMinutes);
+ if(!night.available)return {available:false};
+ const set=clockMinutesForDaylight(sunset);
+ const elapsedMinutesToDinantham=Math.round(night.nightMinutes*5/8);
+ const total=(set+elapsedMinutesToDinantham)%1440;
+ return {
+  available:true,
+  time:String(Math.floor(total/60)).padStart(2,'0')+':'+String(total%60).padStart(2,'0'),
+  elapsedMinutes:elapsedMinutesToDinantham,
+  nightMinutes:night.nightMinutes,
+  thirdYamaFraction:5/8
+ };
+}
+
 function formatLocalRange(startMin,endMin){
   const fmt=m=>{m=((Math.round(Number(m))%1440)+1440)%1440; const h=Math.floor(m/60), mi=m%60; return `${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}`;};
   return `${fmt(startMin)} - ${fmt(endMin)}`;

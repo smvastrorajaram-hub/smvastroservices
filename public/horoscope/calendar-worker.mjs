@@ -1,6 +1,7 @@
 import {getSwe} from './offline/wasm-provider.mjs';
+import {offsetMinutesAt} from './offline/places/timezone.mjs';
 import {calculateSwiss,calculateSunMoon,calculateLahiriContextAt} from './offline/swiss_vedic.browser.mjs';
-import {panchang,transit,calendarTamil,solarNoaa,tamilSolarDate,nextSolarIngress,nakshatraIntervalsForLocalDay,thyajyamIntervalsForLocalDay,calculateAhasNazhigai} from './offline/transit_panchang.browser.mjs';
+import {panchang,transit,calendarTamil,solarNoaa,tamilSolarDate,nextSolarIngress,nakshatraIntervalsForLocalDay,thyajyamIntervalsForLocalDay,calculateAhasNazhigai,calculateRatriNazhigai,calculateDinantham} from './offline/transit_panchang.browser.mjs';
 import {getTamilDayYoga} from './tamil-day-classifications.mjs';
 import {meanObliquityAtJulianDay,calculateSolarSignRasiMana,calculateRemainingSolarSignRasiMana} from './offline/rasi-mana.browser.mjs';
 const norm=n=>(n%360+360)%360;
@@ -14,7 +15,8 @@ async function sample(input,time){
    tithi:Math.floor(norm(moon-sun)/12)+1,
    star:Math.floor(norm(moon)/(360/27))+1,
    moon:Math.floor(norm(moon)/30),
-   solar:Math.floor(norm(sun)/30)
+   solar:Math.floor(norm(sun)/30),
+   sunStar:Math.floor(norm(sun)/(360/27)) + 1
   }));
   sampleCache.set(key,pendingSample);
   if(sampleCache.size>4096)sampleCache.delete(sampleCache.keys().next().value);
@@ -147,7 +149,7 @@ async function events(input){
  if(r.solar===3&&mid.tithi===30)add('Aadi Amavasya','ஆடி அமாவாசை','midday');
  if(r.solar===9&&mid.tithi===30)add('Thai Amavasya','தை அமாவாசை','midday');
  if(r.solar===5&&mid.tithi===30)add('Mahalaya Amavasya','மகாளய அமாவாசை','midday');
- return {date:input.date,events:ev,moon:r.moon,star:r.star};
+ return {date:input.date,events:ev,moon:r.moon,star:r.star,sunStar:r.sunStar};
 }
 
 function dateDistance(date,reference){
@@ -219,6 +221,34 @@ async function attachTamilSolarDates(input,entries){
 self.onmessage=async({data})=>{const {id,kind,input}=data;try{const key=JSON.stringify([kind,input]);if(cache.has(key)){self.postMessage({id,result:cache.get(key)});return}let result;
  if(kind==='solar-sign-rasi-mana'){result=await calculateSolarSignRasiManaForIngress(input);}
  else if(kind==='month'){const [y,m]=input.date.split('-').map(Number),days=new Date(Date.UTC(y,m,0)).getUTCDate();result=[];for(let d=1;d<=days;d++){result.push(await events({...input,date:`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`}));}result=await attachTamilSolarDates(input,result);}
- else {const chart=await calculateSwiss(input);const p=panchang(input,chart),t=transit(input,chart);const ev=await events(input);const beforeSunrise=minute(input.time)<minute(p.sunrise);let previousNight=null;if(beforeSunrise){const yesterday=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);previousNight=panchang({...input,date:yesterday,time:'12:00'});}const previousDate=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);const previousSunset=solarNoaa(previousDate,input.lat,input.lon,input.utcOffsetMinutes,false);const weekday=new Date(input.date+'T12:00:00Z').getUTCDay();const nakshatraTimeline=nakshatraIntervalsForLocalDay(input);const amirthadiYogaSegments=nakshatraTimeline.available?nakshatraTimeline.intervals.map(interval=>({...interval,...getTamilDayYoga(weekday,interval.nakshatraNumber)})):[];const thyajyam=thyajyamIntervalsForLocalDay(input,nakshatraTimeline);const ahasNazhigai=calculateAhasNazhigai(p.sunrise,p.sunset);result={en:{p,t,previousNight},ta:{p:calendarTamil(p),t:calendarTamil(t)},events:ev.events,dayStar:ev.star,amirthadiYogaAvailable:nakshatraTimeline.available,amirthadiYogaSegments,thyajyamAvailable:thyajyam.available,thyajyamIntervals:thyajyam.intervals,ahasNazhigai,previousSunset};}
+ else {const chart=await calculateSwiss(input);const p=panchang(input,chart),t=transit(input,chart);const ev=await events(input);const beforeSunrise=minute(input.time)<minute(p.sunrise);let previousNight=null;if(beforeSunrise){const yesterday=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);previousNight=panchang({...input,date:yesterday,time:'12:00'});}const previousDate=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);const previousSunset=solarNoaa(previousDate,input.lat,input.lon,input.utcOffsetMinutes,false);const weekday=new Date(input.date+'T12:00:00Z').getUTCDay();const nakshatraTimeline=nakshatraIntervalsForLocalDay(input);const amirthadiYogaSegments=nakshatraTimeline.available?nakshatraTimeline.intervals.map(interval=>({...interval,...getTamilDayYoga(weekday,interval.nakshatraNumber)})):[];const thyajyam=thyajyamIntervalsForLocalDay(input,nakshatraTimeline);const ahasNazhigai=calculateAhasNazhigai(p.sunrise,p.sunset);const nextDate=new Date(Date.parse(input.date+'T12:00:00Z')+86400000).toISOString().slice(0,10);
+ let nextOffset=Number(input.utcOffsetMinutes??330);
+ if(input.timezone){
+  try{nextOffset=offsetMinutesAt(input.timezone,nextDate,'12:00');}
+  catch(error){nextOffset=Number(input.utcOffsetMinutes??330);}
+ }
+ const nextSunrise=solarNoaa(nextDate,input.lat,input.lon,nextOffset,true);
+ let ratriNazhigai={available:false},dinantham={available:false};
+ if(p.sunset&&nextSunrise){
+  const sunsetTimestamp=Date.parse(input.date+'T'+p.sunset+':00Z')-Number(input.utcOffsetMinutes??330)*60000;
+  const nextSunriseTimestamp=Date.parse(nextDate+'T'+nextSunrise+':00Z')-nextOffset*60000;
+  const actualNightMinutes=(nextSunriseTimestamp-sunsetTimestamp)/60000;
+  if(Number.isFinite(actualNightMinutes)&&actualNightMinutes>0&&actualNightMinutes<1440){
+   ratriNazhigai=calculateRatriNazhigai(p.sunset,nextSunrise,actualNightMinutes);
+   dinantham=calculateDinantham(p.sunset,nextSunrise,actualNightMinutes);
+   if(dinantham.available){
+    const dinanthamTimestamp=sunsetTimestamp+Math.round(actualNightMinutes*5/8)*60000;
+    let dinanthamLocal=localPartsFromTs(dinanthamTimestamp,input.utcOffsetMinutes);
+    if(input.timezone){
+     try{
+      const dinanthamOffset=offsetMinutesAt(input.timezone,dinanthamLocal.date,dinanthamLocal.time.slice(0,5));
+      dinanthamLocal=localPartsFromTs(dinanthamTimestamp,dinanthamOffset);
+     }catch(error){}
+    }
+    dinantham={...dinantham,time:dinanthamLocal.time.slice(0,5),date:dinanthamLocal.date};
+   }
+  }
+ }
+ result={en:{p,t,previousNight},ta:{p:calendarTamil(p),t:calendarTamil(t)},events:ev.events,dayStar:ev.star,sunStar:ev.sunStar,nextSunrise,ratriNazhigai,dinantham,amirthadiYogaAvailable:nakshatraTimeline.available,amirthadiYogaSegments,thyajyamAvailable:thyajyam.available,thyajyamIntervals:thyajyam.intervals,ahasNazhigai,previousSunset};}
  cache.set(key,result);if(cache.size>36)cache.delete(cache.keys().next().value);self.postMessage({id,result});
  }catch(e){self.postMessage({id,error:e.message})}};
