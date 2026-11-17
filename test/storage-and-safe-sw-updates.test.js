@@ -37,7 +37,7 @@ test('Horoscope Service Worker does not force-reload open report/form tabs and p
 test('main SMV ASTRO caches only the offline UI shell while leaving online-only routes and Horoscope scope isolated', () => {
   const sw = read('public/sw.js');
   assert.ok(sw.includes("APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE"));
-  assert.ok(sw.includes("SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261117-amirthadi-yoga-ttd-table-v1' : '20261117-amirthadi-yoga-ttd-table-v1'"));
+  assert.ok(sw.includes("SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261117-calendar-offline-rasi-location-v1' : '20261117-calendar-offline-rasi-location-v1'"));
   assert.ok(sw.includes('APP_SHELL_FILES'));
   for (const icon of ['./assets/pwa-astro-192.svg','./assets/pwa-astro-512.png','./assets/pwa-astro-maskable-192.svg','./assets/pwa-astro-maskable.svg','./assets/favicon-astro.png','./assets/favicon-astro.ico']) {
     assert.ok(sw.includes(icon), 'SMV ASTRO must precache its manifest icon/favicon: '+icon);
@@ -58,10 +58,9 @@ test('main SMV ASTRO caches only the offline UI shell while leaving online-only 
 test('Horoscope precaches its UI and required local calculation/WASM assets without caching online services', () => {
   const sw = read('public/horoscope/sw.js');
   assert.ok(sw.includes("SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE"));
-  assert.ok(sw.includes("SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261117-amirthadi-yoga-ttd-table-v1' : '20261117-amirthadi-yoga-ttd-table-v1'"));
+  assert.ok(sw.includes("SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261117-calendar-offline-rasi-location-v1' : '20261117-calendar-offline-rasi-location-v1'"));
   assert.ok(sw.includes("OFFLINE_CACHE='smv-horoscope-offline'"));
   assert.ok(sw.includes("LOCATION_CACHE='smv-shared-india-places'"));
-  assert.ok(sw.includes('prefetchIndiaPlaceShards'));
   for (const asset of [
     './assets/pwa-horoscope-192.svg','./assets/pwa-horoscope-512.png','./assets/pwa-horoscope-maskable-192.svg','./assets/pwa-horoscope-maskable.svg',
     './assets/favicon-horoscope.png','./assets/favicon-horoscope.ico','./assets/smv-horoscope-header-logo.png',
@@ -86,10 +85,32 @@ test('Horoscope precaches its UI and required local calculation/WASM assets with
 test('Calendar keeps its offline UI/WASM precache and India shard migration while bypassing online-only API routes', () => {
   const sw = read('public/horoscope/calendar/sw.js');
   assert.ok(sw.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"));
-  assert.ok(sw.includes("SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261117-amirthadi-yoga-ttd-table-v1' : '20261117-amirthadi-yoga-ttd-table-v1'"));
+  assert.ok(sw.includes("SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261117-calendar-offline-rasi-location-v1' : '20261117-calendar-offline-rasi-location-v1'"));
   assert.ok(sw.includes('const REQUIRED_CORE = new Set(['));
   assert.ok(sw.includes('await preserveCachedIndiaPlaces(target)'));
   assert.ok(sw.includes("LOCATION_CACHE='smv-shared-india-places'"));
+  assert.ok(sw.includes("OFFLINE_CACHE='smv-horoscope-offline'"),
+    'Calendar must share the existing Horoscope offline calculation cache rather than create a calendar/offline copy.');
+  assert.ok(sw.includes("new URL('../offline/',self.registration.scope).pathname"),
+    'The same existing offline source folder must resolve from both Pages.dev and the custom Calendar host scope.');
+  assert.ok(sw.includes('if(isSharedOfflineAsset(u))'),
+    'Calendar worker must intercept shared /offline assets even though they are outside the Calendar scope path.');
+  assert.ok(sw.includes("isIndiaPlaceCachePath(path)?await caches.open(LOCATION_CACHE):(path.includes('/offline/')?await caches.open(OFFLINE_CACHE):c)"),
+    'Only India place-manifest/shard assets use the shared place cache; astronomy and timezone dependencies use the existing Horoscope offline cache.');
+  assert.ok(sw.includes("url.pathname.endsWith('/offline/places/india-manifest.json')"),
+    'The India place cache must be limited to the manifest and India shard data.');
+  assert.ok(sw.includes('RASI_PALAN_PERIODS_ASSET=IS_PAGES_DEV_HOST?\'./rasi-palan-periods.mjs\':\'./calendar/rasi-palan-periods.mjs\''),
+    'The same source dependency must resolve under the Pages.dev and custom-host deployment roots.');
+  for (const asset of [
+    '../offline/wasm-provider.mjs','../offline/swiss_vedic.browser.mjs','../offline/transit_panchang.browser.mjs',
+    '../offline/bv-raman-shadbala.browser.mjs','../offline/uttara-kalamrita-six-bala.browser.mjs',
+    '../offline/bphs-shadbala-rectification.browser.mjs','../offline/bphs-sputa-drishti.browser.mjs',
+    '../offline/cg-rajan-jathaka-kanitham-shadbala.browser.mjs','../offline/bphs-swiss-solar-cheshta.browser.mjs',
+    '../offline/saura-classical-mean-motion.browser.mjs','../offline/bv-raman-ishta-kashta.browser.mjs',
+    '../offline/uttara-kalamrita-shadbala.browser.mjs','../offline/vendor/smv-swisseph-local.mjs',
+    '../offline/vendor/wasm/swisseph.mjs','../offline/vendor/wasm/swisseph.js',
+    '../offline/vendor/wasm/swisseph.wasm','../offline/vendor/wasm/swisseph.data'
+  ]) assert.ok(sw.includes(asset), 'Missing required shared Calendar calculation dependency: '+asset);
   assert.ok(sw.includes('prefetchIndiaPlaceShards'));
   for (const asset of [
     '../assets/pwa-calendar-192.svg','../assets/pwa-calendar-512.png','../assets/pwa-calendar-maskable-192.svg','../assets/pwa-calendar-maskable.svg',
@@ -125,14 +146,14 @@ test('All three app workers use synchronized Pages.dev and .in cache releases', 
     return { pages: match[1], legacy: match[2] };
   });
   assert.deepEqual(releases.map(item => item.pages), [
-    '20261117-amirthadi-yoga-ttd-table-v1',
-    '20261117-amirthadi-yoga-ttd-table-v1',
-    '20261117-amirthadi-yoga-ttd-table-v1'
+    '20261117-calendar-offline-rasi-location-v1',
+    '20261117-calendar-offline-rasi-location-v1',
+    '20261117-calendar-offline-rasi-location-v1'
   ]);
   assert.deepEqual(releases.map(item => item.legacy), [
-    '20261117-amirthadi-yoga-ttd-table-v1',
-    '20261117-amirthadi-yoga-ttd-table-v1',
-    '20261117-amirthadi-yoga-ttd-table-v1'
+    '20261117-calendar-offline-rasi-location-v1',
+    '20261117-calendar-offline-rasi-location-v1',
+    '20261117-calendar-offline-rasi-location-v1'
   ]);
   assert.ok(workers[0].includes("APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE"));
   assert.ok(workers[0].includes("'./assets/android-app-icon-astro-source.png'"), 'ASTRO directly precaches its launcher PNG');

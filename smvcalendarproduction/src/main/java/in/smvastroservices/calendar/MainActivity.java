@@ -1,14 +1,17 @@
 package in.smvastroservices.calendar;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
+import android.webkit.GeolocationPermissions;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -28,10 +31,13 @@ public class MainActivity extends Activity {
     private static final String OWN_HOST = "calendar.smvastroservices.in";
     private static final String EXTRA_URL = "smv_open_url";
     private static final int FILE_CHOOSER_REQUEST = 6001;
+    private static final int LOCATION_PERMISSION_REQUEST = 6002;
 
     private WebView webView;
     private ProgressBar progress;
     private ValueCallback<Uri[]> fileChooserCallback;
+    private GeolocationPermissions.Callback pendingGeolocationCallback;
+    private String pendingGeolocationOrigin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +82,7 @@ public class MainActivity extends Activity {
         serviceWorkerSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
         serviceWorkerSettings.setBlockNetworkLoads(false);
         settings.setJavaScriptEnabled(true);
+        settings.setGeolocationEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
         settings.setAllowContentAccess(true);
@@ -117,6 +124,33 @@ public class MainActivity extends Activity {
 
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
+            public void onGeolocationPermissionsShowPrompt(String origin,
+                                                           GeolocationPermissions.Callback callback) {
+                if (!isTrustedCalendarOrigin(origin)) {
+                    callback.invoke(origin, false, false);
+                    return;
+                }
+                if (hasLocationPermission()) {
+                    callback.invoke(origin, true, false);
+                    return;
+                }
+
+                if (pendingGeolocationCallback != null) {
+                    pendingGeolocationCallback.invoke(pendingGeolocationOrigin, false, false);
+                }
+                pendingGeolocationOrigin = origin;
+                pendingGeolocationCallback = callback;
+                try {
+                    requestPermissions(new String[] {
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                    }, LOCATION_PERMISSION_REQUEST);
+                } catch (RuntimeException error) {
+                    finishGeolocationPermission(false);
+                }
+            }
+
+            @Override
             public void onProgressChanged(WebView view, int newProgress) {
                 progress.setProgress(newProgress);
                 progress.setVisibility(newProgress >= 100 ? android.view.View.GONE : android.view.View.VISIBLE);
@@ -139,6 +173,36 @@ public class MainActivity extends Activity {
         });
 
         webView.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> openExternal(Uri.parse(url)));
+    }
+
+    private boolean hasLocationPermission() {
+        return checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                || checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private boolean isTrustedCalendarOrigin(String origin) {
+        try {
+            Uri uri = Uri.parse(origin);
+            return "https".equalsIgnoreCase(uri.getScheme())
+                    && OWN_HOST.equalsIgnoreCase(uri.getHost());
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private void finishGeolocationPermission(boolean granted) {
+        GeolocationPermissions.Callback callback = pendingGeolocationCallback;
+        String origin = pendingGeolocationOrigin;
+        pendingGeolocationCallback = null;
+        pendingGeolocationOrigin = null;
+        if (callback != null && origin != null) callback.invoke(origin, granted, false);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode != LOCATION_PERMISSION_REQUEST) return;
+        finishGeolocationPermission(hasLocationPermission());
     }
 
     private void hidePwaInstallUi(WebView view) {
@@ -299,6 +363,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        finishGeolocationPermission(false);
         if (fileChooserCallback != null) {
             fileChooserCallback.onReceiveValue(null);
             fileChooserCallback = null;

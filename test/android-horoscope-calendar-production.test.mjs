@@ -284,3 +284,38 @@ test('All three production Android WebViews use network-first Service Worker cac
     assert.doesNotMatch(activity, /localStorage\.clear|sessionStorage\.clear|caches\.delete/, path + ' must not clear web app or customer data');
   }
 });
+
+
+test('SMV CALENDAR Android alone requests device location and grants WebView geolocation only to its own HTTPS origin', () => {
+  const calendarManifest = read('smvcalendarproduction/src/main/AndroidManifest.xml');
+  const calendarActivity = read('smvcalendarproduction/src/main/java/in/smvastroservices/calendar/MainActivity.java');
+  assert.ok(calendarManifest.includes('android.permission.ACCESS_COARSE_LOCATION'));
+  assert.ok(calendarManifest.includes('android.permission.ACCESS_FINE_LOCATION'));
+  assert.ok(calendarActivity.includes('settings.setGeolocationEnabled(true)'));
+  assert.ok(calendarActivity.includes('onGeolocationPermissionsShowPrompt'));
+  assert.ok(calendarActivity.includes('isTrustedCalendarOrigin(origin)'));
+  assert.ok(calendarActivity.includes('"https".equalsIgnoreCase(uri.getScheme())'));
+  assert.ok(calendarActivity.includes('OWN_HOST.equalsIgnoreCase(uri.getHost())'));
+  assert.ok(calendarActivity.includes('requestPermissions(new String[] {'));
+  assert.ok(calendarActivity.includes('Manifest.permission.ACCESS_FINE_LOCATION'));
+  assert.ok(calendarActivity.includes('Manifest.permission.ACCESS_COARSE_LOCATION'));
+  assert.ok(calendarActivity.includes('finishGeolocationPermission(hasLocationPermission())'));
+  assert.ok(calendarActivity.includes('callback.invoke(origin, true, false)'));
+
+  const otherManifests = [
+    read('smvastroproduction/src/main/AndroidManifest.xml'),
+    read('smvhoroscopeproduction/src/main/AndroidManifest.xml')
+  ];
+  for (const manifest of otherManifests) {
+    assert.doesNotMatch(manifest, /android\.permission\.ACCESS_(?:COARSE|FINE)_LOCATION/,
+      'Location permission must be added to SMV CALENDAR only.');
+  }
+  const otherActivities = [
+    read('smvastroproduction/src/main/java/in/smvastroservices/smvastro/MainActivity.java'),
+    read('smvhoroscopeproduction/src/main/java/in/smvastroservices/horoscope/MainActivity.java')
+  ];
+  for (const activity of otherActivities) {
+    assert.doesNotMatch(activity, /setGeolocationEnabled|onGeolocationPermissionsShowPrompt/,
+      'The Calendar geolocation bridge must not change ASTRO or HOROSCOPE.');
+  }
+});

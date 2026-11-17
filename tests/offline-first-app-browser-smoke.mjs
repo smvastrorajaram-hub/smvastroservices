@@ -4,7 +4,7 @@ import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 
 const origin = process.env.SMV_OFFLINE_PREVIEW_ORIGIN || 'http://127.0.0.1:4173';
-const release = '20261117-amirthadi-yoga-ttd-table-v1';
+const release = '20261117-calendar-offline-rasi-location-v1';
 const apps = [
   {
     name: 'SMV ASTRO',
@@ -34,9 +34,32 @@ const apps = [
     url: origin + '/horoscope/calendar/',
     cacheName: 'smv-calendar-forecast-assets-' + release,
     placeCacheName: 'smv-shared-india-places',
+    offlineCacheName: 'smv-horoscope-offline',
+    offlineAssets: [
+      '/horoscope/offline/wasm-provider.mjs',
+      '/horoscope/offline/swiss_vedic.browser.mjs',
+      '/horoscope/offline/transit_panchang.browser.mjs',
+      '/horoscope/offline/rasi-mana.browser.mjs',
+      '/horoscope/offline/bv-raman-shadbala.browser.mjs',
+      '/horoscope/offline/uttara-kalamrita-six-bala.browser.mjs',
+      '/horoscope/offline/bphs-shadbala-rectification.browser.mjs',
+      '/horoscope/offline/bphs-sputa-drishti.browser.mjs',
+      '/horoscope/offline/cg-rajan-jathaka-kanitham-shadbala.browser.mjs',
+      '/horoscope/offline/bphs-swiss-solar-cheshta.browser.mjs',
+      '/horoscope/offline/saura-classical-mean-motion.browser.mjs',
+      '/horoscope/offline/bv-raman-ishta-kashta.browser.mjs',
+      '/horoscope/offline/uttara-kalamrita-shadbala.browser.mjs',
+      '/horoscope/offline/vendor/smv-swisseph-local.mjs',
+      '/horoscope/offline/vendor/wasm/swisseph.mjs',
+      '/horoscope/offline/vendor/wasm/swisseph.js',
+      '/horoscope/offline/vendor/wasm/swisseph.wasm',
+      '/horoscope/offline/vendor/wasm/swisseph.data',
+      '/horoscope/offline/places/timezone.mjs',
+      '/horoscope/offline/places/tz-boundary-lookup.mjs'
+    ],
     requiredAssets: [
       '/horoscope/calendar-rasi-palan.mjs',
-      '/horoscope/offline/vendor/wasm/swisseph.wasm',
+      '/horoscope/calendar/rasi-palan-periods.mjs',
       '/horoscope/assets/pwa-calendar-192.svg',
       '/horoscope/assets/pwa-calendar-512.png',
       '/horoscope/assets/pwa-calendar-maskable-192.svg',
@@ -275,6 +298,56 @@ for (const app of apps) {
     assert.equal(offlineState.indexed, 'keep-indexeddb', app.name + ' IndexedDB data must be preserved.');
     assert.equal(offlineState.probe.ok, true, app.name + ' local calculation/UI asset must load offline: ' + app.probeAsset);
     assert.ok(offlineState.offlineLocations.some(place => /chennai/i.test(place)), app.name + ' must return a real Chennai India location result with the browser offline.');
+
+    if (app.name === 'SMV CALENDAR') {
+      const forecastChecks = await page.evaluate(async () => {
+        const waitForResult = async label => {
+          const button = document.getElementById('rpRun');
+          const deadline = Date.now() + 180000;
+          while (Date.now() < deadline) {
+            if (!button?.disabled) {
+              const status = document.getElementById('rpStatus')?.textContent || '';
+              if (/Calculation could not be completed|கணக்கீடு முடிக்கப்படவில்லை/.test(status)) {
+                throw new Error(label + ' failed offline: ' + status);
+              }
+              if (/Calculation completed|கணக்கீடு முடிந்தது|Sunrise unavailable|சூரிய உதயம் கிடைக்காததால்/.test(status)) {
+                const text = document.getElementById('rpResults')?.textContent?.trim() || '';
+                if (!text) throw new Error(label + ' returned no offline forecast content.');
+                return { label, resultLength: text.length, status };
+              }
+            }
+            await new Promise(resolve => setTimeout(resolve, 200));
+          }
+          throw new Error(label + ' timed out while calculating offline.');
+        };
+        const selectSection = section => {
+          const tab = document.querySelector('[data-section="' + section + '"]');
+          if (!tab) throw new Error('Missing Calendar forecast section: ' + section);
+          tab.click();
+        };
+        const runPeriod = async period => {
+          selectSection('period');
+          const control = document.getElementById('rpPeriod');
+          control.value = period;
+          control.dispatchEvent(new Event('change', { bubbles: true }));
+          document.getElementById('rpRun').click();
+          return waitForResult('period:' + period);
+        };
+        const results = [];
+        results.push(await runPeriod('daily'));
+        results.push(await runPeriod('weekly'));
+        results.push(await runPeriod('monthly'));
+        for (const section of ['tamilNewYear', 'englishNewYear', 'ingress']) {
+          selectSection(section);
+          document.getElementById('rpRun').click();
+          results.push(await waitForResult(section));
+        }
+        return results;
+      });
+      assert.deepEqual(forecastChecks.map(result => result.label), [
+        'period:daily','period:weekly','period:monthly','tamilNewYear','englishNewYear','ingress'
+      ], 'All Calendar Rasi Palan categories must calculate from the local Swiss Ephemeris while offline.');
+    }
 
     results.push({
       app: app.name,
