@@ -275,7 +275,7 @@ try {
   assert.equal(dailyTypography.connectorWeight, '400', 'The “முதல்” connector must use normal weight.');
   assert.equal(dailyTypography.redTimeColors.length, 2, 'Rahu Kalam and Yamagandam must both be present.');
   assert.ok(dailyTypography.redTimeColors.every(color => color === 'rgb(255, 0, 0)'), 'Rahu Kalam and Yamagandam must be bright red.');
-  assert.equal(await page.$eval('#calDaily .hora-time.smv-calendar-neutral-time', nodes => nodes.length), 24, 'All 24 day/night Hora time cells must carry the Calendar typography marker.');
+  assert.equal(await page.$$eval('#calDaily .hora-time.smv-calendar-neutral-time', nodes => nodes.length), 24, 'All 24 day/night Hora time cells must carry the Calendar typography marker.');
   assert.ok(dailyTypography.normalHoraCount >= 12, 'At least twelve ordinary Hora cells must remain in the normal black presentation while preserving weekday/current special colors.')
   assert.equal(dailyTypography.normalHoraColor, 'rgb(0, 0, 0)', 'Normal Hora time values must be black.');
   assert.equal(dailyTypography.normalHoraWeight, '400', 'Normal Hora time values must not be bold.');
