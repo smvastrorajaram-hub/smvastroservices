@@ -204,12 +204,12 @@ export function getPushkaraNavamsa(siderealLongitude) {
   const normalized = ((value % 360) + 360) % 360;
   const signIndex = Math.floor(normalized / 30);
   const degreeInSign = normalized - signIndex * 30;
-  const part = Math.min(8, Math.floor(degreeInSign / (30 / 9)));
+  const degreeInSignArcseconds = Math.round(degreeInSign * 3600);
+  const part = Math.min(8, Math.floor(degreeInSignArcseconds / 12000));
   const navamsaIndex = navamsaSignIndex(signIndex, part);
   const intervals = PUSHKARA_INTERVALS[signIndex];
   // Work in integer arc-seconds so an exact Navamsa boundary is stable
   // across IEEE-754 longitude fractions; lower edge inclusive, upper edge exclusive.
-  const degreeInSignArcseconds = Math.round(degreeInSign * 3600);
   const matchIndex = intervals.findIndex(([start, end]) =>
     degreeInSignArcseconds >= Math.round(start * 3600) &&
     degreeInSignArcseconds < Math.round(end * 3600)
