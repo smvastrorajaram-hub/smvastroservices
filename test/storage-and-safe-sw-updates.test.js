@@ -95,8 +95,10 @@ test('Calendar keeps its offline UI/WASM precache and India shard migration whil
     'The same existing offline source folder must resolve from both Pages.dev and the custom Calendar host scope.');
   assert.ok(sw.includes('if(isSharedOfflineAsset(u))'),
     'Calendar worker must intercept shared /offline assets even though they are outside the Calendar scope path.');
-  assert.ok(sw.includes("path.includes('/offline/')?await caches.open(OFFLINE_CACHE):c"),
-    'Shared astronomy dependencies must be stored in the existing Horoscope offline cache.');
+  assert.ok(sw.includes("isIndiaPlaceCachePath(path)?await caches.open(LOCATION_CACHE):(path.includes('/offline/')?await caches.open(OFFLINE_CACHE):c)"),
+    'Only India place-manifest/shard assets use the shared place cache; astronomy and timezone dependencies use the existing Horoscope offline cache.');
+  assert.ok(sw.includes("url.pathname.endsWith('/offline/places/india-manifest.json')"),
+    'The India place cache must be limited to the manifest and India shard data.');
   assert.ok(sw.includes('RASI_PALAN_PERIODS_ASSET=IS_PAGES_DEV_HOST?\'./rasi-palan-periods.mjs\':\'./calendar/rasi-palan-periods.mjs\''),
     'The same source dependency must resolve under the Pages.dev and custom-host deployment roots.');
   for (const asset of [
