@@ -641,6 +641,27 @@ try {
   assert.ok(['No','இல்லை'].includes(negativeMuhurtham.verdict), 'A non-Muhurtham date must show only No / இல்லை.');
   assert.equal(negativeMuhurtham.phase, '', 'A non-Muhurtham date must not append a paksha label.');
   await checkMuhurthamDate(calendarDate, /Subha Muhurtham day|சுபமுகூர்த்த நாள்|^No$|^இல்லை$/);
+
+  // Vastu timing is tested as a Tamil-solar-date + local-sunrise calculation.
+  // 27 Jul 2026 is Aadi 11 in the selected Thirukanitha Vastu table.
+  await page.$eval('#calDate', (el, value) => {
+    el.value = value;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, '2026-07-27');
+  await page.waitForFunction(() => (document.querySelector('#calStatus')?.textContent || '').includes('2026-07-27'), { timeout: 90000 });
+  const vastuCardText = await page.$eval('#calDateDetailsExtra .cal-details-summary', el => {
+    const card = [...el.querySelectorAll('article')].find(item => /Vastu Day|வாஸ்து நாள்/.test(item.textContent || ''));
+    return card?.textContent.replace(/\\s+/g, ' ').trim() || '';
+  });
+  assert.match(vastuCardText, /Vastu day|வாஸ்து நாள்/, 'Aadi 11 must be identified as a Vastu day');
+  const vastuTimes = [...vastuCardText.matchAll(/(\\d{2}:\\d{2})\\s*[–-]\\s*(\\d{2}:\\d{2})/g)];
+  assert.equal(vastuTimes.length, 2, 'Vastu card must show separate waking and puja intervals');
+  const toMinutes = value => Number(value.slice(0, 2)) * 60 + Number(value.slice(3, 5));
+  assert.equal(toMinutes(vastuTimes[0][2]) - toMinutes(vastuTimes[0][1]), 90, 'Vastu waking interval must be 90 minutes');
+  assert.equal(toMinutes(vastuTimes[1][2]) - toMinutes(vastuTimes[1][1]), 36, 'Final Vastu puja interval must be 36 minutes');
+  const pushkaraCheck = await page.$eval('#calMuhurtaLagna', el => el.textContent || '');
+  assert.match(pushkaraCheck, /Selected-time Lagna Pushkara check|தேர்ந்தெடுத்த நேர லக்ன புஷ்கரச் சரிபார்ப்பு/, 'Selected-time Pushkara Navamsa check must be visible');
+  await checkMuhurthamDate(calendarDate, /Subha Muhurtham day|சுபமுகூர்த்த நாள்|^No$|^இல்லை$/);
   assert.equal(publicUi.separateAdminLink, false, 'Calendar should not link to a separate Admin page');
   assert.equal(publicUi.hasRasiPicker, true, 'Public Rasi Palan must include the selected-Rasi dropdown');
 
