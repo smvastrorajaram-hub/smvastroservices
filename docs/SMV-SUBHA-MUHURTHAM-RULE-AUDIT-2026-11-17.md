@@ -80,3 +80,140 @@ The eventual calculation should be introduced as a separately tested engine, not
 - Horoscope, Calendar and Android release files
 
 **Decision:** No production calculation was changed in this audit. The evidence confirms the current lookup is not a Thirukanitham calculation, but the cited traditions disagree on important rule details. Implementing one of them without fixing the canonical source would risk publishing incorrect Muhurtham dates. The next safe coding step is to lock the exact rule edition and then build the engine behind tests, while retaining the published-list fallback until validation passes.
+
+
+---
+
+# Addendum — Approved source and expanded Muhurtham scope
+
+**User direction confirmed:** Use the *Suddha Thirukanitha Sarva Muhurtha Panchangam* marriage rules as the primary rule tradition, and include Vastu days, Pushkara Navamsa, and the exact Pushkara Navamsa window for tying the Mangalyam (Thali). The user's month policy is that ordinary auspicious activities are generally avoided in Aadi and Margazhi; any exception must be explicit and activity-specific.
+
+## 1. Canonical rule source and marriage filter
+
+The primary reference is the article **“திருமண முகூர்த்த நல்ல நாள் குறித்து”** in *Guru’s Jothidam*, September 2015, pp. 21–25, followed by the titled *சுத்த திருக்கணித சர்வமுகூர்த்த பஞ்சாங்கம்* material and Tara Bala table (pp. 22–23).
+
+The article's general marriage screening list states:
+
+- **Tamil months excluded for marriage:** Aadi, Purattasi, Margazhi and Maasi (the article cites *Kala Vidhana Paddhati*, rules 132–134).
+- **Tithi:** Dwitiya, Tritiya, Panchami, Shashti, Saptami, Dashami, Dwadashi and Trayodashi.
+- **Nakshatra:** Ashwini, Rohini, Uttara, Uttarashada, Mrigashirsha, Magha, Moola, Anuradha, Uttarabhadra and Revati.
+- **Tara Bala:** It explicitly distinguishes a north/Andhra counting list from the Tamil Nadu rule. For the Tamil Nadu method, the article lists counts 2, 4, 6, 8, 9, 11, 13, 15, 17, 18, 20, 22, 24, 26 and 27 from the groom's star to the bride's star. This must be coded as the chosen Tamil convention rather than silently substituting the other list.
+- **Lagna and planets:** The article lists preferred marriage Lagnas and conditions for other Lagnas, and gives planetary placement / dosha-removal conditions. Those placements must be transcribed from the printed pages and tested before coding; the extracted text has ambiguous OCR in some planetary-house notation, so no uncertain house sequence is to be guessed.
+- **Panchaka:** The article's own method adds the weekday count, Tithi count, Nakshatra count, marriage Lagna number and Lagna-Dhruva number. It specifically gives Dhruva values for Mesha, Simha, Kumbha and Meena as 5, 7, 4 and 6 respectively in the extracted passage, then classifies the total into Panchaka outcomes. The full Lagna-Dhruva mapping for all twelve signs and all exception handling must be verified from the printed rule table before implementation.
+
+**Internal source inconsistency to resolve:** On p. 21 the general weekday line says Tuesday and Saturday are excluded. On p. 24 the exception paragraph appears to state Saturday and Friday are excluded, with an early-morning exception. This discrepancy must be checked against the printed page / original author or a matching edition before a weekday hard filter is enabled. Do not resolve it by choosing whichever version yields more dates.
+
+The 2015 article also says that personal Tara Bala and the couple's birth stars matter. Therefore a date-only public calendar cannot claim that a day is personally suitable for a particular couple. Without the birth-star inputs, the UI must state “general Panchang suitability”; a couple-specific result requires both relevant birth-star inputs and the source's Tamil counting convention.
+
+Reference: [Apsara Publications — Guru's Jothidam, September 2015 PDF](https://apsaraepublications.com/e-magz/jothidam/jothidam_sep_2015.pdf), pp. 21–25. Relevant extracted sections include the month/Tithi/star list and Tara Bala on pp. 21–22, Lagna/planetary conditions on p. 23–24, and the five-part Panchaka calculation on p. 25.
+
+## 2. Aadi and Margazhi are category-specific restrictions, not one global switch
+
+The user's general policy is retained: **ordinary auspicious functions are not to be recommended in Aadi or Margazhi.** However, the named source material contains a distinct Vastu-day rule that identifies Aadi 11 as one of the annual Vastu days. This is a specific Vastu exception only; it must not make ordinary marriage, engagement, housewarming, or unrelated ceremonies eligible in Aadi.
+
+Apply month rules by activity:
+
+| Activity | Month policy to encode |
+|---|---|
+| Marriage / Mangalyam | Follow the primary 2015 source's exclusion of Aadi, Purattasi, Margazhi and Maasi, subject to its documented, source-backed exceptions |
+| Vastu / Bhoomi Pooja | Use the dedicated Vastu-day calendar; Aadi 11 is a specific listed Vastu day, not a general Aadi exception |
+| Ordinary general Subha Karyam | Default block Aadi and Margazhi as requested; apply any other month restriction only when the selected activity's source requires it |
+| Other Samskaras / Grahapravesam / business / travel | Their own Sarva Muhurtha / Dharma Shastra rule tables are required; do not copy the marriage month filter blindly |
+
+Margazhi remains excluded for the Vastu schedule cited below as well. The Vastu-day reference also identifies Aani, Purattasi and Panguni as non-Vastu months. This makes the distinction explicit: Aadi 11 may qualify for its narrow Vastu purpose while ordinary Aadi activities remain blocked.
+
+The existing imported annual list must not be relabelled as marriage approval. For example, its February 2026 dates include dates in Maasi, which conflicts with the selected marriage article's general Maasi exclusion. Keep the existing public-list data visible as a *published-list reference* until each activity-specific rule is reconciled; do not silently convert those dates to approved marriage dates.
+
+## 3. Vastu days — a separate Sunrise-based calculator
+
+The Vastu feature is not simply a “good date” badge. It should expose the traditional date and the location-specific waking / ritual interval.
+
+The Tamil Vastu reference examined lists these eight Tamil-date anchors:
+
+| Tamil month | Tamil date |
+|---|---:|
+| Chithirai | 10 |
+| Vaikasi | 21 |
+| Aadi | 11 |
+| Avani | 6 |
+| Aippasi | 11 |
+| Karthigai | 8 |
+| Thai | 12 |
+| Maasi | 22 |
+
+The reference describes a **90-minute Vastu-Purusha waking window**, with the first 54 minutes excluded for the actual puja and the **last 36 minutes** as the preferred Bhoomi Pooja / foundation / threshold ritual interval. It states that the interval is calculated from the selected place's local sunrise and gives the traditional month-day anchors. It excludes Aani, Purattasi, Margazhi and Panguni for the Vastu observance.
+
+Reference: [Thirukanitha Panchangam — Vastu Naatkal 2026](https://thirukanithapanchangam.com/vastu-natkal-in-tamil/?t_year=2026), especially the explanatory sections on the 90-minute waking window, last 36-minute ritual interval, eight Tamil dates and sunrise dependency.
+
+**Implementation constraints:**
+
+1. Determine the selected place's correct local solar month/date and sunrise using the existing SMV Lahiri / Thirukanitham calculation boundary; do not use Chennai's published clock times for every user.
+2. Compute the Vastu 90-minute interval from the canonical source's exact month-specific offset / nazhigai table. The secondary web page's prose confirms the sunrise dependency, but its full month-offset table must be checked against the selected primary Panchangam edition before production use.
+3. Present both the 90-minute waking span and the last 36-minute ritual span. Do not label all 90 minutes as the best puja time.
+4. Keep this result under the Vastu / Bhoomi Pooja activity type. Do not override the general Aadi or Margazhi restriction for other activities.
+5. Cross-check Gregorian dates, weekday, local sunrise and the computed 36-minute window against a published Thirukanitham Vastu table for Perambalur and at least one second Tamil Nadu location.
+
+**Known data disagreement:** Public 2026 Vastu tables differ by one civil day for the Avani 6 observance (one source publishes 22 August; other common lists show 23 August). The selected source edition and location's solar-day boundary must decide the result. Do not hard-code the disagreement away.
+
+## 4. Pushkara Navamsa — distinct from Pushkara Bhaga
+
+The Pushkara Navamsa table is supported by C. S. Patel's *Navamsa in Astrology*, Chapter IV, and its cited Vidyamadhaviyam tradition. That source states that there are two Pushkara Navamsas in each sign, 24 in total, and that they are auspicious in Muhurta as well as other branches. It also notes that standard texts use them rarely while Deva-Keralam / Chandra Kala Nadi uses them more freely.
+
+Use the following 24 intervals, measured from the start of each **sidereal Rasi**:
+
+| Rasi group | Pushkara Navamsa | Degree interval inside each listed Rasi |
+|---|---|---|
+| Mesha, Simha, Dhanus | 7th (Tula), 9th (Dhanus) | 20°00′–23°20′; 26°40′–30°00′ |
+| Rishabha, Kanya, Makara | 3rd (Meena), 5th (Rishabha) | 6°40′–10°00′; 13°20′–16°40′ |
+| Mithuna, Tula, Kumbha | 6th (Meena), 8th (Rishabha) | 16°40′–20°00′; 23°20′–26°40′ |
+| Kataka, Vrischika, Meena | 1st (Kataka), 3rd (Kanya) | 0°00′–3°20′; 6°40′–10°00′ |
+
+Reference: C. S. Patel, *Navamsa in Astrology*, Chapter IV, “Pushkara Navamsas,” printed pp. 31–33; [accessible PDF copy](https://storage.yandexcloud.net/j108/library/tpg6o28l/C.S._Patel_-_Navamsa_in_Astrology.pdf). The source's mapping and degree intervals must be encoded with boundary tests (inclusive start, exclusive end, and exact sign-transition handling).
+
+Do not confuse:
+- **Pushkara Navamsa:** an entire 3°20′ Navamsa interval, two in each sign.
+- **Pushkara Bhaga / Pushkaramsa:** a specific degree or degree point with its own source table.
+
+The two concepts require separate labels, calculations and evidence. Do not substitute a Pushkara Bhaga degree for a Pushkara Navamsa interval.
+
+## 5. Special “Thali tying Pushkara Navamsa” timing
+
+Treat the Thali / Mangalyam tying moment as a distinct critical instant inside the already-approved marriage muhurta — not as a second independent date-selection system.
+
+Proposed calculation sequence:
+
+1. Find a marriage date and valid marriage-time window using the full primary Thirukanitham marriage rules first.
+2. Within that approved interval, calculate the local sidereal rising degree continuously using the selected Lahiri ayanamsa, location and time zone.
+3. Find every sub-interval during which the rising Lagna degree falls inside one of the 24 Pushkara Navamsa arcs above.
+4. Intersect that interval with all marriage restrictions (Tithi / Nakshatra / weekday transitions, prohibited periods, Lagna Thyajya, Panchaka, planetary conditions and the source's exception rules).
+5. Show the remaining exact Thali-tying time window, including start/end seconds and the Rasi + Navamsa labels. If there is no overlap, show “No valid Thali Pushkara interval within this marriage muhurta”; never move the time outside the approved marriage window just to force Pushkara.
+6. Keep the actual tying moment distinct from the broader arrival / garland / homam / wedding programme time.
+
+Murari Publications' *Sarva Muhurtha Naadi* contents explicitly list **“Necessity of Pushkara Navamsa in marriage”** as a topic, which supports treating this as an important marriage-specific requirement. The actual chapter's full procedure was not freely available in the page inspected, so the source's exact special rule (whether it requires only the rising Navamsa, or additional Moon / Navamsa-lord conditions) remains to be verified before claiming full compliance.
+
+References: [Murari Publications — Sarva Muhurtha Naadi contents](https://muraripublications.com/books/); [C. S. Patel, *Navamsa in Astrology*, Chapter IV](https://storage.yandexcloud.net/j108/library/tpg6o28l/C.S._Patel_-_Navamsa_in_Astrology.pdf).
+
+## 6. Product and calculation architecture
+
+The future Calendar experience must separate these outputs:
+
+- **Marriage / Mangalyam:** date eligibility, candidate time window, couple Tara Bala, marriage Lagna and planetary checks, Panchaka, and separate Thali Pushkara interval.
+- **Vastu / Bhoomi Pooja:** Tamil Vastu date, local 90-minute waking interval and last 36-minute puja interval.
+- **General Subha Karyam:** its own month and Panchanga rules; no inferred approval from the marriage or Vastu results.
+- **Other named ceremonies:** independent rule modules and source tables for Grahapravesam, Seemantham, Upanayanam, Namakaranam, business commencement, etc.
+
+Every result must show its activity type, rule-source edition, location, time zone, local sunrise, transition-sensitive Tithi / Nakshatra / Yoga / Karana, relevant Lagna, exact accepted/rejected interval and reasons. If any essential ephemeris or source table is absent, report unavailable / needs verification rather than inventing a favourable day.
+
+## 7. Validation gates before runtime implementation
+
+- Obtain and transcribe the complete Lagna-Dhruva mapping, Panchaka remainder table, planetary placement table and exceptions from the approved 2015 edition.
+- Resolve the primary source's weekday contradiction (p. 21 versus p. 24) and verify the unclear planetary-house notation visually.
+- Obtain the exact Vastu month-offset / nazhigai table from the same approved Panchangam edition and reconcile the Avani 6 date discrepancy.
+- Verify the exact marriage-specific Pushkara Navamsa / Thali moment procedure from *Sarva Muhurtha Naadi* or an equivalent primary passage.
+- Confirm whether Moon Pushkara placement, Pushkara Bhaga, Navamsa Lagna lord dignity or other additional conditions are required; do not add modern web-site rules without source support.
+- Add unit tests for all 24 Pushkara intervals, all 12 sign changes, exact boundaries, local sunrise, time-zone / longitude variations, Vastu 90-minute and 36-minute windows, each activity-specific month block, and no-overlap cases.
+- Run the existing Calendar calculation and browser tests; then perform the required cache-version bump for all affected Calendar delivery surfaces and relevant Android app assets. Do not clear origin storage or user data.
+
+## 8. Current implementation decision
+
+This addendum records the user's approved scope and the additional rule evidence. **No runtime calculation, published date, service-worker cache, PWA, Android, Horoscope, or production file has been changed.** The current 2026/2027 annual-list lookup remains untouched as a clearly identified legacy reference while the full activity-specific calculator is built and validated in a separate implementation change. The Draft PR must remain unmerged until the source contradictions and missing primary tables above are resolved.
