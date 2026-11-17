@@ -32,7 +32,7 @@ test('general ordinary auspicious month filter blocks only Aadi and Margazhi',()
 });
 
 test('the eight Vastu solar dates and sunrise offsets are explicit',()=>{
-  assert.deepEqual(Object.keys(VASTU_DAY_RULES).map(Number).sort((a,b)=>a-b),[0,1,3,4,6,7,9,10]);
+  assert.deepEqual(Object.keys(VASTU_DAY_RULES).map(Number).sort((a,b)=>a-b),[0,1,3,4,6,7,9,10,11]);
   assert.deepEqual(
     Object.entries(VASTU_DAY_RULES).map(([month,rule])=>[Number(month),rule.day,rule.sunriseOffsetNazhigai]),
     [[0,10,5],[1,21,8],[3,11,2],[4,6,21],[6,11,2],[7,8,10],[9,12,8],[10,22,8],[11,22,8]]
@@ -97,7 +97,7 @@ test('all 24 Pushkara Navamsa intervals use inclusive starts and exclusive ends'
         const atEnd=getPushkaraNavamsa(absoluteEnd);
         assert.equal(atStart.available,true);
         assert.equal(atStart.isPushkaraNavamsa,true,'sign '+sign+', interval '+i+' start');
-        assert.equal(atStart.navamsaSignIndex,expectedNavamsa);
+        assert.equal(atStart.navamsaSignIndex,expectedNavamsa,'sign '+sign+', interval '+i+' Navamsa sign');
         assert.equal(justBeforeEnd.isPushkaraNavamsa,true,'sign '+sign+', interval '+i+' before end');
         assert.equal(atEnd.isPushkaraNavamsa,false,'sign '+sign+', interval '+i+' exclusive end');
         count++;
