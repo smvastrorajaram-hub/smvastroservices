@@ -137,6 +137,8 @@ function mmPlanetEn(n){return ({[P.Sun]:'Sun',[P.Moon]:'Moon',[P.Mars]:'Mars',[P
 function mmPlanetTa(n){return ({[P.Sun]:'சூரியன்',[P.Moon]:'சந்திரன்',[P.Mars]:'செவ்வாய்',[P.Mercury]:'புதன்',[P.Jupiter]:'குரு',[P.Venus]:'சுக்கிரன்',[P.Saturn]:'சனி',[P.Rahu]:'ராகு',[P.Ketu]:'கேது'})[n]||String(n||'');}
 function mmPlanetText(n){return T(mmPlanetEn(n),mmPlanetTa(n));}
 const MM_ENGLISH_ASTRO_VALUES=Object.freeze({
+ 'சூரியன்':'Sun','சந்திரன்':'Moon','செவ்வாய்':'Mars','புதன்':'Mercury','குரு':'Jupiter',
+ 'சுக்கிரன்':'Venus','சனி':'Saturn','ராகு':'Rahu','கேது':'Ketu','லக்னம்':'Ascendant',
  'அசுவினி':'Ashwini','அஸ்வினி':'Ashwini','அஷ்வினி':'Ashwini',
  'பரணி':'Bharani','கார்த்திகை':'Krittika','ரோகிணி':'Rohini','மிருகசீரிடம்':'Mrigashira',
  'திருவாதிரை':'Ardra','புனர்பூசம்':'Punarvasu','பூசம்':'Pushya','ஆயில்யம்':'Ashlesha','மகம்':'Magha',
@@ -149,7 +151,6 @@ const MM_ENGLISH_ASTRO_VALUES=Object.freeze({
 });
 function mmEnglishReportText(value){
  let out=String(value??'').trim();if(!out)return '—';
- for(const [key,tamil] of Object.entries(P))out=out.split(tamil).join(key);
  for(let i=0;i<SIGNS_TA.length;i++)out=out.split(SIGNS_TA[i]).join(SIGNS_EN[i]);
  for(const [tamil,english] of Object.entries(MM_ENGLISH_ASTRO_VALUES).sort((a,b)=>b[0].length-a[0].length))out=out.split(tamil).join(english);
  out=out.replace(/(\d+)-ஆம்/gu,(_match,digits)=>{
