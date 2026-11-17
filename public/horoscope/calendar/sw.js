@@ -4,8 +4,9 @@ const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE;
 const OFFLINE_CACHE='smv-horoscope-offline';
 const LOCATION_CACHE='smv-shared-india-places';
 const PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['../../pages-dev-host-independence.js','../../pages-dev-apk-pwa-icons.js']:[];
+const RASI_PALAN_PERIODS_ASSET=IS_PAGES_DEV_HOST?'./rasi-palan-periods.mjs':'./calendar/rasi-palan-periods.mjs';
 const CORE=[
- './','./index.html','./admin.html',...PAGES_DEV_HELPER_FILES,'./rasi-palan-periods.mjs','../calendar-rasi-palan-manual.json','./calendar-pwa.mjs','./manifest-en.webmanifest','./manifest-ta.webmanifest',
+ './','./index.html','./admin.html',...PAGES_DEV_HELPER_FILES,RASI_PALAN_PERIODS_ASSET,'../calendar-rasi-palan-manual.json','./calendar-pwa.mjs','./manifest-en.webmanifest','./manifest-ta.webmanifest',
  '../assets/favicon-calendar.png','../assets/favicon-calendar.ico',
  '../assets/smv-calendar-website.webp',
  '../daily-calendar.mjs','../calendar-muhurta-classification.mjs','../tamil-day-classifications.mjs','../daily-calendar.css','../calendar-rasi-palan.mjs','../calendar-rasi-palan.css','../calendar-rasi-palan-rules.mjs','../calendar-theme.css','../calendar-data.mjs','../calendar-worker.mjs','../horoscope.js','../horoscope.css','../location-search-online-offline.js',
@@ -30,7 +31,7 @@ const REQUIRED_CORE = new Set([
  '../android-apk-download.mjs','../android-apk-icons.css',
  '../assets/favicon-calendar.png','../assets/favicon-calendar.ico',
  '../assets/smv-calendar-website.webp',
- './rasi-palan-periods.mjs','../daily-calendar.mjs','../calendar-muhurta-classification.mjs','../tamil-day-classifications.mjs','../calendar-rasi-palan.mjs',
+ RASI_PALAN_PERIODS_ASSET,'../daily-calendar.mjs','../calendar-muhurta-classification.mjs','../tamil-day-classifications.mjs','../calendar-rasi-palan.mjs',
  '../calendar-rasi-palan.css','../calendar-rasi-palan-rules.mjs','../daily-calendar.css',
  '../calendar-data.mjs','../calendar-worker.mjs','../calendar-rasi-palan-manual.json',
  '../offline/rasi-mana.browser.mjs','../offline/wasm-provider.mjs','../offline/swiss_vedic.browser.mjs',
@@ -43,8 +44,7 @@ const REQUIRED_CORE = new Set([
  '../offline/places/place-search.mjs','../offline/places/place-display.mjs','../offline/places/india-manifest.json',
  '../offline/vendor/smv-swisseph-local.mjs','../offline/vendor/wasm/swisseph.mjs',
  '../offline/vendor/wasm/swisseph.js','../offline/vendor/wasm/swisseph.wasm','../offline/vendor/wasm/swisseph.data',
- '../location-search-online-offline.js',
- '../offline/vendor/wasm/swisseph.js','../offline/vendor/wasm/swisseph.wasm','../offline/vendor/wasm/swisseph.data'
+ '../location-search-online-offline.js'
 ]);
 const cacheURL = path => new URL(path, self.registration.scope).href;
 const ONLINE_ONLY_ROOTS=new Set([
