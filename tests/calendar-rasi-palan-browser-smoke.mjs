@@ -270,8 +270,8 @@ try {
   assert.equal(dailyTypography.primaryResultWeights.length, 8, 'Date through Karana must all be present in the Panchang results.');
   assert.ok(dailyTypography.primaryResultWeights.every(weight => weight === '700'), 'Date through Karana results must be bold.');
   assert.equal(dailyTypography.yogaLabel, 'Namah Yoga', 'The Calendar yoga row must display Namah Yoga.');
-  assert.equal(dailyTypography.yogaLabelColor, 'rgb(0, 0, 0)', 'Name Yoga must be black.');
-  assert.equal(dailyTypography.yogaLabelWeight, '400', 'Name Yoga must use normal weight.');
+  assert.equal(dailyTypography.yogaLabelColor, 'rgb(0, 0, 0)', 'Namah Yoga must be black.');
+  assert.equal(dailyTypography.yogaLabelWeight, '700', 'Namah Yoga must be bold.');
   assert.equal(dailyTypography.yogaLabelFontSize, dailyTypography.varaLabelFontSize, 'Namah Yoga must use the same font size as the Vara label.');
   assert.equal(dailyTypography.yogaLabelFontSize, dailyTypography.tithiLabelFontSize, 'Namah Yoga must use the same font size as the Tithi label.');
   assert.equal(dailyTypography.eventDateColor, 'rgb(0, 0, 0)', 'Panchang event dates must be black.');
