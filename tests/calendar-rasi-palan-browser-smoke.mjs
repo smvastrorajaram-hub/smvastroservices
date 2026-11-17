@@ -289,7 +289,7 @@ try {
     fullPage: false,
     captureBeyondViewport: false
   });
-  await page.$eval('#calDaily .hora-section', el => el.scrollIntoView({ block: 'center' }));
+  await page.$eval('#calDaily .hora-vertical-block', el => el.scrollIntoView({ block: 'center' }));
   await page.screenshot({
     path: new URL('calendar-daily-hora-typography-mobile.png', outputDir).pathname,
     fullPage: false,
