@@ -1,10 +1,11 @@
 const IS_PAGES_DEV_HOST = self.location.hostname === 'smvastroservices.pages.dev' || self.location.hostname.endsWith('.smvastroservices.pages.dev') || self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
-const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261117-amirthadi-yoga-ttd-table-v1' : '20261117-amirthadi-yoga-ttd-table-v1';
+const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261117-calendar-offline-rasi-location-v1' : '20261117-calendar-offline-rasi-location-v1';
 const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE;
+const OFFLINE_CACHE='smv-horoscope-offline';
 const LOCATION_CACHE='smv-shared-india-places';
 const PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['../../pages-dev-host-independence.js','../../pages-dev-apk-pwa-icons.js']:[];
 const CORE=[
- './','./index.html','./admin.html',...PAGES_DEV_HELPER_FILES,'./rasi-palan-periods.mjs','./calendar-pwa.mjs','./manifest-en.webmanifest','./manifest-ta.webmanifest',
+ './','./index.html','./admin.html',...PAGES_DEV_HELPER_FILES,'./rasi-palan-periods.mjs','../calendar-rasi-palan-manual.json','./calendar-pwa.mjs','./manifest-en.webmanifest','./manifest-ta.webmanifest',
  '../assets/favicon-calendar.png','../assets/favicon-calendar.ico',
  '../assets/smv-calendar-website.webp',
  '../daily-calendar.mjs','../calendar-muhurta-classification.mjs','../tamil-day-classifications.mjs','../daily-calendar.css','../calendar-rasi-palan.mjs','../calendar-rasi-palan.css','../calendar-rasi-palan-rules.mjs','../calendar-theme.css','../calendar-data.mjs','../calendar-worker.mjs','../horoscope.js','../horoscope.css','../location-search-online-offline.js',
@@ -12,7 +13,13 @@ const CORE=[
  '../assets/android-app-icon-calendar.svg','../assets/android-app-icon-calendar-source.png',
  '../android-apk-download.mjs','../android-apk-icons.css',
  '../offline/wasm-provider.mjs','../offline/swiss_vedic.browser.mjs','../offline/transit_panchang.browser.mjs','../offline/rasi-mana.browser.mjs',
- '../offline/vendor/smv-swisseph-local.mjs','../offline/vendor/wasm/swisseph.mjs','../offline/vendor/wasm/swisseph.js','../offline/vendor/wasm/swisseph.wasm','../offline/vendor/wasm/swisseph.data',
+ '../offline/bv-raman-shadbala.browser.mjs','../offline/uttara-kalamrita-six-bala.browser.mjs',
+ '../offline/bphs-shadbala-rectification.browser.mjs','../offline/bphs-sputa-drishti.browser.mjs',
+ '../offline/cg-rajan-jathaka-kanitham-shadbala.browser.mjs','../offline/bphs-swiss-solar-cheshta.browser.mjs',
+ '../offline/saura-classical-mean-motion.browser.mjs','../offline/bv-raman-ishta-kashta.browser.mjs',
+ '../offline/uttara-kalamrita-shadbala.browser.mjs',
+ '../offline/vendor/smv-swisseph-local.mjs','../offline/vendor/wasm/swisseph.mjs',
+ '../offline/vendor/wasm/swisseph.js','../offline/vendor/wasm/swisseph.wasm','../offline/vendor/wasm/swisseph.data',
  '../offline/places/place-search.mjs','../offline/places/place-display.mjs','../offline/places/timezone.mjs','../offline/places/tz-boundary-lookup.mjs','../offline/places/india-manifest.json',
 ];
 function fixed(url,r){const h=new Headers(r.headers),p=new URL(url,self.location.origin).pathname.toLowerCase();if(/\.m?js$/.test(p))h.set('Content-Type','text/javascript; charset=utf-8');if(/\.webmanifest$/.test(p))h.set('Content-Type','application/manifest+json; charset=utf-8');if(/\.json$/.test(p))h.set('Content-Type','application/json; charset=utf-8');if(/\.wasm$/.test(p))h.set('Content-Type','application/wasm');if(/\.data$/.test(p))h.set('Content-Type','application/octet-stream');return new Response(r.clone().body,{status:r.status,statusText:r.statusText,headers:h});}
@@ -25,8 +32,17 @@ const REQUIRED_CORE = new Set([
  '../assets/smv-calendar-website.webp',
  './rasi-palan-periods.mjs','../daily-calendar.mjs','../calendar-muhurta-classification.mjs','../tamil-day-classifications.mjs','../calendar-rasi-palan.mjs',
  '../calendar-rasi-palan.css','../calendar-rasi-palan-rules.mjs','../daily-calendar.css',
- '../calendar-data.mjs','../calendar-worker.mjs','../offline/rasi-mana.browser.mjs','../offline/wasm-provider.mjs','../offline/places/timezone.mjs','../offline/places/tz-boundary-lookup.mjs',
+ '../calendar-data.mjs','../calendar-worker.mjs','../calendar-rasi-palan-manual.json',
+ '../offline/rasi-mana.browser.mjs','../offline/wasm-provider.mjs','../offline/swiss_vedic.browser.mjs',
+ '../offline/transit_panchang.browser.mjs','../offline/bv-raman-shadbala.browser.mjs',
+ '../offline/uttara-kalamrita-six-bala.browser.mjs','../offline/bphs-shadbala-rectification.browser.mjs',
+ '../offline/bphs-sputa-drishti.browser.mjs','../offline/cg-rajan-jathaka-kanitham-shadbala.browser.mjs',
+ '../offline/bphs-swiss-solar-cheshta.browser.mjs','../offline/saura-classical-mean-motion.browser.mjs',
+ '../offline/bv-raman-ishta-kashta.browser.mjs','../offline/uttara-kalamrita-shadbala.browser.mjs',
+ '../offline/places/timezone.mjs','../offline/places/tz-boundary-lookup.mjs',
  '../offline/places/place-search.mjs','../offline/places/place-display.mjs','../offline/places/india-manifest.json',
+ '../offline/vendor/smv-swisseph-local.mjs','../offline/vendor/wasm/swisseph.mjs',
+ '../offline/vendor/wasm/swisseph.js','../offline/vendor/wasm/swisseph.wasm','../offline/vendor/wasm/swisseph.data',
  '../location-search-online-offline.js',
  '../offline/vendor/wasm/swisseph.js','../offline/vendor/wasm/swisseph.wasm','../offline/vendor/wasm/swisseph.data'
 ]);
@@ -43,6 +59,10 @@ function isOnlineOnlyRequest(url){
  if(ONLINE_ONLY_ROOTS.has(first))return true;
  return [...url.searchParams.keys()].some(key=>/^(?:token|access_token|id_token|auth|uid|userid|sessionid|bookingid|paymentid|orderid|customerid|wallet|email|phone)$/i.test(key));
 }
+function sharedOfflineRoot(){return new URL('../offline/',self.registration.scope).pathname;}
+function isSharedOfflineAsset(url){return url.origin===self.location.origin&&url.pathname.startsWith(sharedOfflineRoot());}
+function isIndiaPlaceAsset(url){return isSharedOfflineAsset(url)&&url.pathname.includes('/places/');}
+
 function isStaticPresentationRequest(req,url){
  if(url.origin!==self.location.origin||isOnlineOnlyRequest(url))return false;
  if(req.mode==='navigate')return true;
@@ -97,7 +117,7 @@ async function cacheCore(concurrency=6){
   const path=CORE[i++],url=cacheURL(path);
   try{
    const r=await fetch(new Request(url,{cache:'reload'}));
-   if(r.ok){const target=path.includes('/offline/places/')?await caches.open(LOCATION_CACHE):c;await target.put(url,fixed(url,r));}
+   if(r.ok){const target=path.includes('/offline/places/')?await caches.open(LOCATION_CACHE):(path.includes('/offline/')?await caches.open(OFFLINE_CACHE):c);await target.put(url,fixed(url,r));}
    else if(REQUIRED_CORE.has(path))failures.push(path+' (HTTP '+r.status+')');
   }catch(error){if(REQUIRED_CORE.has(path))failures.push(path+' ('+String(error?.message||error)+')');}
  }};
@@ -131,6 +151,20 @@ self.addEventListener('fetch',e=>{
  if(e.request.method!=='GET')return;
  const u=new URL(e.request.url);
  if(u.origin!==self.location.origin)return;
+ // The forecast modules import the existing parent /offline engine. Cache that
+ // shared path explicitly because it lies outside /horoscope/calendar/'s scope.
+ if(isSharedOfflineAsset(u)){
+  e.respondWith((async()=>{
+   const target=await caches.open(isIndiaPlaceAsset(u)?LOCATION_CACHE:OFFLINE_CACHE);
+   try{
+    const r=await fetch(e.request,{cache:'no-store'});
+    if(r?.ok){await target.put(e.request,r.clone());return fixed(u.href,r);}
+   }catch(_){}
+   const hit=await target.match(e.request,{ignoreSearch:true})||await target.match(u.pathname,{ignoreSearch:true});
+   return hit?fixed(u.href,hit):new Response('Shared SMV offline calculation asset is not cached. Reconnect once to complete the first download.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});
+  })());
+  return;
+ }
  // Keep authenticated/admin data, payments, booking and consultation APIs online-only.
  if(!isStaticPresentationRequest(e.request,u))return;
  if(e.request.mode==='navigate'){
