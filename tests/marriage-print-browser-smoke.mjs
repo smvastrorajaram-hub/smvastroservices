@@ -364,6 +364,34 @@ try{
  assert.ok(horoscopePdfPages>=2,'Standalone Horoscope should paginate to multiple pages');
  await page.screenshot({path:fileURLToPath(new URL('horoscope-print-strength6.png',output)),fullPage:false});
 
+ // V1: English Special Dasa must not leak Tamil source values into late-rendered or expanded rows.
+ const englishDasaFixture=new URL('__horoscope_english_dasa_language_temp.html',root);
+ await writeFile(englishDasaFixture,rendererOnlyHtml,'utf8');
+ await page.goto(new URL('__horoscope_english_dasa_language_temp.html',origin).href,{waitUntil:'load',timeout:45000});
+ await page.waitForFunction(()=>typeof window.__smvRenderPhase4Dasa==='function',{timeout:30000});
+ const englishDasaInitial=await page.evaluate(()=>{
+  document.documentElement.lang='en';
+  const root=document.getElementById('tamilAdvancedAstrology');
+  if(!root)throw new Error('Advanced Horoscope report root is missing');
+  root.innerHTML='<div id="smvPhase4DasaSlot"></div>';
+  window.__smvRenderPhase4Dasa({narayana:{available:true,sequence:[
+   {rasi:'மேஷம்',lord:'சனி',years:1,start:'2026-01-01',end:'2026-12-31',antardasas:[
+    {rasi:'விருச்சிகம்',lord:'செவ்வாய்',start:'2026-01-01',end:'2026-02-01'},
+    {lord:'செவ்வாய்',start:'2026-02-01',end:'2026-03-01'}
+   ]},
+   {lord:'சனி',years:1,start:'2027-01-01',end:'2027-12-31'}
+  ]}},'en','tamilAdvancedAstrology');
+  return root.innerText;
+ });
+ const containsTamilText=value=>Array.from(String(value||'')).some(ch=>{const n=ch.codePointAt(0);return n>=0x0B80&&n<=0x0BFF;});
+ assert.ok(englishDasaInitial.includes('Aries')&&englishDasaInitial.includes('Saturn'),'English Special Dasa initial rows translate Tamil Rasi and planet names');
+ assert.equal(containsTamilText(englishDasaInitial),false,'English Special Dasa initial report contains no Tamil script');
+ await page.click('#smvPhase4DasaSlot .smv-dasa-expand');
+ await page.waitForFunction(()=>document.querySelector('#smvPhase4DasaSlot .smv-dasa-sub')?.textContent.includes('Mars'),{timeout:10000});
+ const englishDasaExpanded=await page.$eval('#smvPhase4DasaSlot',el=>el.innerText);
+ assert.ok(englishDasaExpanded.includes('Scorpio')&&englishDasaExpanded.includes('Mars'),'Expanded English Antardasa rows translate Tamil Rasi and planet names');
+ assert.equal(containsTamilText(englishDasaExpanded),false,'Expanded English Special Dasa contains no Tamil script');
+
  console.log(JSON.stringify({pass:true,styles:results.map(x=>x.style),pdfBytes:results.map(x=>x.pdfBytes),charts:8,tables:results[0].mobile.tables,mobileAndPrint:true,coverCenters:coverMeasurements,formLayers:form.length,horoscopePdf:true,horoscopePdfRows:horoscopePrint.rows.length,horoscopePdfHeaders:horoscopePrint.headers,tamilFontReady:horoscopePrint.tamilFontReady}));
 
 }finally{await browser.close();await new Promise(resolvePromise=>server.close(resolvePromise));}

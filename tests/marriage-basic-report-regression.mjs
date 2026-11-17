@@ -109,6 +109,9 @@ ok(!en.includes('AMSA AYURDAYAM'),'English Matching report uses the required Ams
 ok(en.includes('Marriage Matching — Basic Calculation Report'),'English title');
 ok(en.includes('mm-base-east')&&en.includes('mm-base-north'),'East and North combinations');
 ok(en.includes('Shadbala')&&en.includes('Sarvashtakavarga')&&en.includes('Nakshatra')&&en.includes('Bhukti')&&en.includes('Antaram'),'English report contains Bhukti and Antaram labels');
+const englishVisibleText=en.replace(/<script\b[\s\S]*?<\/script>/gi,' ').replace(/<style\b[\s\S]*?<\/style>/gi,' ').replace(/<[^>]*>/g,' ');
+const englishTamilLeak=englishVisibleText.match(/[\u0B80-\u0BFF]+/u);
+ok(!englishTamilLeak,'English Basic Matching report has no remaining Tamil-script text: '+(englishTamilLeak?.[0]||''));
 ok(!en.includes('திருமணப் பொருத்தம் — அடிப்படைக் கணக்கீட்டு அறிக்கை'),'No Tamil title in English');
 eq(values.length,2,'TA and EN views reuse both earlier transit results without recomputation');
 const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');

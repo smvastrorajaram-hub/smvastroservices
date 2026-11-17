@@ -236,9 +236,10 @@ if(lat===''||lon===''){
             window.__smvBindHoroscopeInteractions(target,generated,reportName,next);
             if(completedFull){
               await window.__smvLoadAdvancedAstrology({...originalBirth,lang:next,rootId:'englishAdvancedAstrology',name:reportName,chart:generated,generationId,cachedFull:completedFull,cachedBasic:basicSnapshot});
+              if(next==='en')window.__smvApplyEnglishToHoroscope?.(target);
             }
             else if(adv){adv.classList.remove('hidden');await window.__smvRequireHoroscopeFeatureAccess('advanced_analysis',adv,()=>{window.__smvSwitchHoroscopeLanguage=null;$('generateEnglishHoroscope').click();});}
-            window.__smvLocalizeTamilResult?.(target,next);target.dataset.resultLanguage=next;target.dataset.generationLanguage=next;target.classList.remove('hidden');target.setAttribute('aria-busy','false');
+            window.__smvLocalizeTamilResult?.(target,next);if(next==='en')window.__smvApplyEnglishToHoroscope?.(target);target.dataset.resultLanguage=next;target.dataset.generationLanguage=next;target.classList.remove('hidden');target.setAttribute('aria-busy','false');
             // V92: the report may be rendered later in the other language from the already-cached
             // calculation. Save/generate ONLY that language now; never recalculate or build both languages.
             if(completedFull){
@@ -280,13 +281,14 @@ if(lat===''||lon===''){
             englishAdvancedRoot.innerHTML='';
             phase='full-advanced-calculation';
             await window.__smvLoadAdvancedAstrology({date,time:normalizedTime,lat,lon,lang,rootId:'englishAdvancedAstrology',name:($('englishAstroName')?.value||'').trim(),chart:generated||null,generationId,cachedBasic:basicSnapshot,birthPlace:place,currentWork,maritalStatus,currentResidence});
+            if(generationLanguage==='en')window.__smvApplyEnglishToHoroscope?.(target);
             // The 15-year refinement continues inside Section X instead of
             // blocking the whole report. Section X shows a pending state and the
             // capture-phase guard keeps Save/Print waiting for the real timeline.
             phase='advanced-content-validation';
             verifyCompleteAdvanced();
             completedFull=window.__smvLastFullReport;
-            window.__smvLocalizeTamilResult?.(target,generationLanguage);target.dataset.resultLanguage=generationLanguage;target.dataset.generationLanguage=generationLanguage;
+            window.__smvLocalizeTamilResult?.(target,generationLanguage);if(generationLanguage==='en')window.__smvApplyEnglishToHoroscope?.(target);target.dataset.resultLanguage=generationLanguage;target.dataset.generationLanguage=generationLanguage;
             target.classList.remove('hidden'); target.setAttribute('aria-busy','false');
             window.dispatchEvent(new CustomEvent('smv:report-ready',{detail:{feature:'advanced_analysis',root:target,generationLanguage,prepareViews:buildViews,birthIdentity:window.__smvGetReportContext('advanced_analysis'),name:($('englishAstroName')?.value||'Horoscope').trim(),calculation:window.__smvLastFullReport||generated}}));
           };

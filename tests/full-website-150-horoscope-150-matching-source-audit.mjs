@@ -132,13 +132,44 @@ const publishedRuleCount=Array.isArray(publishedRuleContext.window.SMVPUBLISHED_
 const predictionRulesEmpty=publishedRuleCount===0;
 ok(matchingSource.includes('function porutham(')&&matchingSource.includes('function fullVerdict(')&&matchingSource.includes('function marriageStrengthMatrix('),
   'production Matching source exposes porutham, final verdict and marriage-strength evaluation');
-const matchingTestSource=matchingSource.replace(/\}\)\(\);\s*$/,'globalThis.TEST={porutham,kuja,kujaSamyam,dashaSandhi,dashaDoshaSync,chartFacts,fullVerdict,marriageStrengthMatrix};})();');
+const matchingTestSource=matchingSource.replace(/\}\)\(\);\s*$/,'globalThis.TEST={porutham,kuja,kujaSamyam,dashaSandhi,dashaDoshaSync,chartFacts,fullVerdict,marriageStrengthMatrix,mmTimingConfirmation,mm281TranslateHit,mmEnglishReportText};})();');
 ok(matchingTestSource!==matchingSource,'production Matching functions can be isolated for deterministic audit without altering production code');
 const matchingContext={document:{readyState:'loading',documentElement:{lang:'en'},body:{classList:{contains:()=>false}},addEventListener(){}},window:{addEventListener(){}}};
 vm.runInNewContext(matchingTestSource,matchingContext,{timeout:20000});
 const matchingAudit=matchingContext.TEST;
 ok(typeof matchingAudit?.porutham==='function'&&typeof matchingAudit?.fullVerdict==='function',
   'existing Matching functions load in isolated test context');
+const englishTiming=matchingAudit.mmTimingConfirmation({
+  advanced:{
+    tajaka:{yearLord:'சனி',muntha:{house:3}},
+    v5:{sahams:{items:[{name:'விவாஹ',rasi:'மேஷம்',degreeDms:'05°'}]}},
+    sarvatobhadra:{centerNakshatra:'அவிட்டம்'}
+  }
+},{},null).join(' ');
+ok(englishTiming.includes('Saturn')&&englishTiming.includes('Aries')&&englishTiming.includes('Dhanishta')&&englishTiming.includes('Vivaha'),
+  'English Matching converts raw Tamil Year Lord, Saham name, sign and Sarvatobhadra Nakshatra values');
+ok(!/[\u0B80-\u0BFF]/u.test(englishTiming),
+  'English Matching timing confirmation contains no Tamil-script values from calculation objects');
+ok(matchingAudit.mm281TranslateHit('சனி H7')==='Saturn H7',
+  'English Matching converts raw Tamil planet names in dosha evidence');
+ok(matchingAudit.mm281TranslateHit('5-ஆம் அதிபதி H7')==='5th lord H7',
+  'English Matching converts raw Tamil house-lord ordinal evidence');
+const horoscopeFormSource=readFileSync(new URL('../public/horoscope/horoscope-form.js',import.meta.url),'utf8');
+const switchStart=horoscopeFormSource.indexOf('window.__smvSwitchHoroscopeLanguage=async');
+const switchEnd=horoscopeFormSource.indexOf('const buildViews=async()=>',switchStart);
+const switchBody=horoscopeFormSource.slice(switchStart,switchEnd);
+const switchLoad=switchBody.indexOf('await window.__smvLoadAdvancedAstrology');
+const switchEnglishPass=switchBody.indexOf("if(next==='en')window.__smvApplyEnglishToHoroscope?.(target)",switchLoad);
+ok(switchLoad>=0&&switchEnglishPass>switchLoad,
+  'Horoscope language switch reapplies English after asynchronous Advanced Analysis is mounted');
+const initialStart=horoscopeFormSource.indexOf('const runEnglishAdvanced=async()=>');
+const initialEnd=horoscopeFormSource.indexOf('window.__smvPaidFullReportLaunch=',initialStart);
+const initialBody=horoscopeFormSource.slice(initialStart,initialEnd);
+const initialLoad=initialBody.indexOf('await window.__smvLoadAdvancedAstrology');
+const initialEnglishPass=initialBody.indexOf("if(generationLanguage==='en')window.__smvApplyEnglishToHoroscope?.(target)",initialLoad);
+ok(initialLoad>=0&&initialEnglishPass>initialLoad,
+  'Initial English Horoscope generation reapplies English after Advanced Analysis is mounted');
+
 
 
 const maleBirths = buildBirths('male',75);
@@ -496,6 +527,9 @@ for (const pair of pairs) {
     poruthamRows:[],
     transitFn:transit
   });
+  const englishVisibleText=html.replace(/<script\b[\s\S]*?<\/script>/gi,' ').replace(/<style\b[\s\S]*?<\/style>/gi,' ').replace(/<[^>]*>/g,' ');
+  const firstTamilLeak=englishVisibleText.match(/[\u0B80-\u0BFF]/u);
+  ok(!firstTamilLeak,'English Basic Matching report contains no Tamil-script text for pair '+pair.pairIndex+': '+(firstTamilLeak?.[0]||''));
   const cgSections=(html.match(/data-smv-cg-rajan-ayurdaya="1"/g)||[]).length;
   const bvSections=(html.match(/data-smv-bv-raman-ayurdaya-section="1"/g)||[]).length;
   const shadbalaTieSections=(html.match(/data-ayurdaya-selection="shadbala-tie"/g)||[]).length;
