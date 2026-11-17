@@ -61,6 +61,26 @@ test('Horoscope precaches its UI and required local calculation/WASM assets with
   assert.ok(sw.includes("SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261117-calendar-offline-rasi-location-v1' : '20261117-calendar-offline-rasi-location-v1'"));
   assert.ok(sw.includes("OFFLINE_CACHE='smv-horoscope-offline'"));
   assert.ok(sw.includes("LOCATION_CACHE='smv-shared-india-places'"));
+  assert.ok(sw.includes("OFFLINE_CACHE='smv-horoscope-offline'"),
+    'Calendar must share the existing Horoscope offline calculation cache rather than create a calendar/offline copy.');
+  assert.ok(sw.includes("new URL('../offline/',self.registration.scope).pathname"),
+    'The same existing offline source folder must resolve from both Pages.dev and the custom Calendar host scope.');
+  assert.ok(sw.includes('if(isSharedOfflineAsset(u))'),
+    'Calendar worker must intercept shared /offline assets even though they are outside the Calendar scope path.');
+  assert.ok(sw.includes("path.includes('/offline/')?await caches.open(OFFLINE_CACHE):c"),
+    'Shared astronomy dependencies must be stored in the existing Horoscope offline cache.');
+  assert.ok(sw.includes('RASI_PALAN_PERIODS_ASSET=IS_PAGES_DEV_HOST?\'./rasi-palan-periods.mjs\':\'./calendar/rasi-palan-periods.mjs\''),
+    'The same source dependency must resolve under the Pages.dev and custom-host deployment roots.');
+  for (const asset of [
+    '../offline/wasm-provider.mjs','../offline/swiss_vedic.browser.mjs','../offline/transit_panchang.browser.mjs',
+    '../offline/bv-raman-shadbala.browser.mjs','../offline/uttara-kalamrita-six-bala.browser.mjs',
+    '../offline/bphs-shadbala-rectification.browser.mjs','../offline/bphs-sputa-drishti.browser.mjs',
+    '../offline/cg-rajan-jathaka-kanitham-shadbala.browser.mjs','../offline/bphs-swiss-solar-cheshta.browser.mjs',
+    '../offline/saura-classical-mean-motion.browser.mjs','../offline/bv-raman-ishta-kashta.browser.mjs',
+    '../offline/uttara-kalamrita-shadbala.browser.mjs','../offline/vendor/smv-swisseph-local.mjs',
+    '../offline/vendor/wasm/swisseph.mjs','../offline/vendor/wasm/swisseph.js',
+    '../offline/vendor/wasm/swisseph.wasm','../offline/vendor/wasm/swisseph.data'
+  ]) assert.ok(sw.includes(asset), 'Missing required shared Calendar calculation dependency: '+asset);
   assert.ok(sw.includes('prefetchIndiaPlaceShards'));
   for (const asset of [
     './assets/pwa-horoscope-192.svg','./assets/pwa-horoscope-512.png','./assets/pwa-horoscope-maskable-192.svg','./assets/pwa-horoscope-maskable.svg',
