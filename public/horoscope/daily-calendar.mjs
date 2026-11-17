@@ -379,7 +379,7 @@ if(host){
   if(yogaRow){
    yogaRow.classList.add('cal-name-yoga-row');
    yogaRow.cells[0].classList.add('cal-name-yoga-label');
-   yogaRow.cells[0].textContent=L('Name Yoga','நாம யோகம்');
+   yogaRow.cells[0].textContent='Namah Yoga';
    const yogaName=String(p?.yoga?.name||'').trim();
    const yogaResult=nityaYogaResults[yogaName];
    if(yogaResult&&yogaRow.cells[1]){
@@ -414,7 +414,7 @@ if(host){
    if(b<=a)b+=1440;
    const current=selected===today&&timelineMinute>=a&&timelineMinute<b;
    const green=['Mercury','Jupiter','Venus'].includes(h.planetEn)||(h.planetEn==='Moon'&&horaP.tithi.number<=15);
-   td.className='hora-time'+(h.planetEn===lord?' smv-hora-bright-'+(green?'green':'red'):current?' smv-hora-current-'+(green?'green':'red'):'');
+   td.className='hora-time smv-calendar-neutral-time'+(h.planetEn===lord?' smv-hora-bright-'+(green?'green':'red'):current?' smv-hora-current-'+(green?'green':'red'):'');
    td.closest('tr').classList.toggle('cal-current-hora',current);
    td.setAttribute('aria-label',`${h.range}${current?L(' · Current Hora',' · தற்போதைய ஹோரை'):''}`);
   });
