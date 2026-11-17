@@ -2531,9 +2531,9 @@ html body.smv-v12-theme #home .smv33-trust{color:rgb(23, 23, 23);font-weight:700
 .birth-hora-single:where(:not(.smv-css-island,.smv-css-island *)){border:0px!important;background:transparent!important;padding:0px!important;box-shadow:none!important}
 .birth-hora-result:where(:not(.smv-css-island,.smv-css-island *)){display:inline!important;margin-left:7px!important;padding:0px!important;border:0px!important;background:transparent!important;color:rgb(8, 124, 255)!important;-webkit-text-fill-color:rgb(8, 124, 255)!important;font-weight:900!important}
 .panchang-event-range:where(:not(.smv-css-island,.smv-css-island *)){display:block!important;margin-top:5px!important;line-height:1.45!important;white-space:normal!important}
-.panchang-event-range .event-date:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(8, 124, 255)!important;-webkit-text-fill-color:rgb(8, 124, 255)!important;font-weight:800!important}
-.panchang-event-range .event-time:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 20, 147)!important;-webkit-text-fill-color:rgb(255, 20, 147)!important}
-.panchang-event-range .event-to:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 0, 0)!important;-webkit-text-fill-color:rgb(0, 0, 0)!important;font-weight:900!important;margin:0px 4px!important}
+.panchang-event-range .event-date:not(.smv-calendar-neutral-date-time):where(:not(.smv-css-island,.smv-css-island *)){color:rgb(8, 124, 255)!important;-webkit-text-fill-color:rgb(8, 124, 255)!important;font-weight:800!important}
+.panchang-event-range .event-time:not(.smv-calendar-neutral-date-time):where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 20, 147)!important;-webkit-text-fill-color:rgb(255, 20, 147)!important}
+.panchang-event-range .event-to:not(.smv-calendar-normal-connector):where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 0, 0)!important;-webkit-text-fill-color:rgb(0, 0, 0)!important;font-weight:900!important;margin:0px 4px!important}
 .hora-table-wrap:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;overflow-x:auto!important}
 .hora-table:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;background:rgb(255, 255, 255)!important;border-collapse:collapse!important;table-layout:auto!important}
 .hora-table th:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(192, 0, 0)!important;color:rgb(255, 255, 0)!important;-webkit-text-fill-color:rgb(255, 255, 0)!important;font-weight:900!important}
@@ -2561,8 +2561,8 @@ html body.smv-v12-theme #home .smv33-trust{color:rgb(23, 23, 23);font-weight:700
 @media (max-width: 900px){
 .transit-card .transit-chart:where(:not(.smv-css-island,.smv-css-island *)){width:min(100%, 430px)!important}
 .hora-table th:where(:not(.smv-css-island,.smv-css-island *)), .hora-table td:where(:not(.smv-css-island,.smv-css-island *)){padding:8px 7px!important;font-size:13px!important}}
-.panchang-event-range .event-date:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(34, 34, 34)!important;-webkit-text-fill-color:rgb(34, 34, 34)!important;font-weight:700!important}
-.panchang-event-range .event-time:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 168, 255)!important;-webkit-text-fill-color:rgb(0, 168, 255)!important;font-weight:900!important}
+.panchang-event-range .event-date:not(.smv-calendar-neutral-date-time):where(:not(.smv-css-island,.smv-css-island *)){color:rgb(34, 34, 34)!important;-webkit-text-fill-color:rgb(34, 34, 34)!important;font-weight:700!important}
+.panchang-event-range .event-time:not(.smv-calendar-neutral-date-time):where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 168, 255)!important;-webkit-text-fill-color:rgb(0, 168, 255)!important;font-weight:900!important}
 .birth-current-hora > b:where(:not(.smv-css-island,.smv-css-island *)){font-weight:900!important}
 .birth-hora-result:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 168, 255)!important;-webkit-text-fill-color:rgb(0, 168, 255)!important}
 .hora-horizontal-block:where(:not(.smv-css-island,.smv-css-island *)){margin:0px 0px 14px!important;background:rgb(255, 255, 255)!important}
@@ -2587,9 +2587,9 @@ html body.smv-v12-theme #home .smv33-trust{color:rgb(23, 23, 23);font-weight:700
 .hora-vertical:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;min-width:0px!important;table-layout:fixed!important;background:rgb(255, 255, 255)!important}
 .hora-vertical th:where(:not(.smv-css-island,.smv-css-island *)), .hora-vertical td:where(:not(.smv-css-island,.smv-css-island *)){padding:8px 10px!important;text-align:center!important;white-space:nowrap!important}
 .hora-vertical th:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(192, 0, 0)!important;color:rgb(255, 255, 0)!important;-webkit-text-fill-color:rgb(255, 255, 0)!important}
-.hora-vertical .hora-time:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 168, 255)!important;-webkit-text-fill-color:rgb(0, 168, 255)!important;font-weight:900!important}
-.panchang-date-result:where(:not(.smv-css-island,.smv-css-island *)), .panchang-event-range .event-date:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(8, 124, 255)!important;-webkit-text-fill-color:rgb(8, 124, 255)!important;font-weight:900!important}
-.panchang-time-result:where(:not(.smv-css-island,.smv-css-island *)), .panchang-event-range .event-time:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 168, 255)!important;-webkit-text-fill-color:rgb(0, 168, 255)!important}
+.hora-vertical .hora-time:not(.smv-calendar-neutral-time):where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 168, 255)!important;-webkit-text-fill-color:rgb(0, 168, 255)!important;font-weight:900!important}
+.panchang-date-result:where(:not(.smv-css-island,.smv-css-island *)), .panchang-event-range .event-date:not(.smv-calendar-neutral-date-time):where(:not(.smv-css-island,.smv-css-island *)){color:rgb(8, 124, 255)!important;-webkit-text-fill-color:rgb(8, 124, 255)!important;font-weight:900!important}
+.panchang-time-result:not(.smv-calendar-neutral-time):not(.smv-calendar-bright-red-time):where(:not(.smv-css-island,.smv-css-island *)), .panchang-event-range .event-time:not(.smv-calendar-neutral-date-time):where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 168, 255)!important;-webkit-text-fill-color:rgb(0, 168, 255)!important}
 .panchang-card:where(:not(.smv-css-island,.smv-css-island *)), .panchang-card .panchang-compact-grid > div:where(:not(.smv-css-island,.smv-css-island *)){background:none rgb(255, 255, 255)!important}
 .transit-card .transit-chart .lagna:where(:not(.smv-css-island,.smv-css-island *)){font-size:13px!important;line-height:1.15!important}
 .transit-table-card:where(:not(.smv-css-island,.smv-css-island *)){margin:14px 0px 0px!important;background:rgb(255, 255, 255)!important;box-shadow:none!important}
@@ -2597,7 +2597,7 @@ html body.smv-v12-theme #home .smv33-trust{color:rgb(23, 23, 23);font-weight:700
 .transit-position-table:where(:not(.smv-css-island,.smv-css-island *)){min-width:620px!important;border-collapse:collapse!important;background:rgb(255, 255, 255)!important}
 .transit-position-table th:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(192, 0, 0)!important;color:rgb(255, 255, 0)!important;-webkit-text-fill-color:rgb(255, 255, 0)!important;font-weight:900!important}
 .transit-position-table th:where(:not(.smv-css-island,.smv-css-island *)), .transit-position-table td:where(:not(.smv-css-island,.smv-css-island *)){padding:8px!important;border:1px solid rgb(222, 205, 168)!important;text-align:center!important;white-space:nowrap!important}
-.transit-position-table .transit-table-degree:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(8, 124, 255)!important;-webkit-text-fill-color:rgb(8, 124, 255)!important;font-weight:900!important}
+.transit-position-table .transit-table-degree:not(.smv-calendar-degree-normal):where(:not(.smv-css-island,.smv-css-island *)){color:rgb(8, 124, 255)!important;-webkit-text-fill-color:rgb(8, 124, 255)!important;font-weight:900!important}
 @media (min-width: 901px){
 .hora-vertical-block:where(:not(.smv-css-island,.smv-css-island *)){max-width:680px!important}
 .transit-card .transit-chart .lagna:where(:not(.smv-css-island,.smv-css-island *)){font-size:12px!important}}
@@ -2605,7 +2605,7 @@ html body.smv-v12-theme #home .smv33-trust{color:rgb(23, 23, 23);font-weight:700
 .hora-vertical-block:where(:not(.smv-css-island,.smv-css-island *)){max-width:100%!important}
 .hora-vertical th:where(:not(.smv-css-island,.smv-css-island *)), .hora-vertical td:where(:not(.smv-css-island,.smv-css-island *)){font-size:13px!important;padding:8px 6px!important}
 .transit-card .transit-chart .lagna:where(:not(.smv-css-island,.smv-css-island *)){font-size:13px!important}}
-.panchang-time-result:where(:not(.smv-css-island,.smv-css-island *)), .panchang-event-range .event-time:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 20, 147)!important;-webkit-text-fill-color:rgb(255, 20, 147)!important;font-weight:900!important}
+.panchang-time-result:not(.smv-calendar-neutral-time):not(.smv-calendar-bright-red-time):where(:not(.smv-css-island,.smv-css-island *)), .panchang-event-range .event-time:not(.smv-calendar-neutral-date-time):where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 20, 147)!important;-webkit-text-fill-color:rgb(255, 20, 147)!important;font-weight:900!important}
 .nalla-neram-time:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(21, 148, 71)!important;-webkit-text-fill-color:rgb(21, 148, 71)!important;font-weight:900!important}
 .transit-card .transit-chart .south-chart-center:where(:not(.smv-css-island,.smv-css-island *)){background:none rgb(255, 255, 255)!important;color:rgb(233, 30, 99)!important;-webkit-text-fill-color:rgb(233, 30, 99)!important}
 .transit-card .transit-chart .lagna:where(:not(.smv-css-island,.smv-css-island *)){font-size:inherit!important;line-height:inherit!important}
@@ -2698,9 +2698,9 @@ html body.smv-v12-theme #smv-content-hub .feature-shell.card, html body.smv-v12-
 .smv-workspace-bar > a{text-decoration:none}
 .panchang-data-table tbody td:where(:not(.smv-css-island,.smv-css-island *)), .panchang-data-table tbody td b:where(:not(.smv-css-island,.smv-css-island *)), .panchang-data-table tbody td span:where(:not(.smv-css-island,.smv-css-island *)), .panchang-data-table tbody td small:where(:not(.smv-css-island,.smv-css-island *)), .panchang-data-table tbody td strong:where(:not(.smv-css-island,.smv-css-island *)){font-size:inherit!important}
 .panchang-data-table tbody td:where(:not(.smv-css-island,.smv-css-island *)){font-size:1em!important}
-.panchang-data-table .panchang-event-range .event-date:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 191, 255)!important;-webkit-text-fill-color:rgb(0, 191, 255)!important}
-.panchang-data-table .panchang-event-range .event-time:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 20, 147)!important;-webkit-text-fill-color:rgb(255, 20, 147)!important}
-.panchang-data-table .panchang-event-range .event-to:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(17, 17, 17)!important;-webkit-text-fill-color:rgb(17, 17, 17)!important}
+.panchang-data-table .panchang-event-range .event-date:not(.smv-calendar-neutral-date-time):where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 191, 255)!important;-webkit-text-fill-color:rgb(0, 191, 255)!important}
+.panchang-data-table .panchang-event-range .event-time:not(.smv-calendar-neutral-date-time):where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 20, 147)!important;-webkit-text-fill-color:rgb(255, 20, 147)!important}
+.panchang-data-table .panchang-event-range .event-to:not(.smv-calendar-normal-connector):where(:not(.smv-css-island,.smv-css-island *)){color:rgb(17, 17, 17)!important;-webkit-text-fill-color:rgb(17, 17, 17)!important}
 #smvPublicQuestionWindow{position:fixed;inset:0px;z-index:2147483000;background:rgb(255, 255, 255);overflow-y:auto;overscroll-behavior:contain;padding:16px 12px 32px;box-sizing:border-box}
 #smvPublicQuestionWindow.hidden{display:none!important}
 #smvPublicQuestionWindow .smv-public-question-window-shell{width:min(920px, 100%);margin:0px auto}
