@@ -651,10 +651,10 @@ try {
   await page.waitForFunction(() => (document.querySelector('#calStatus')?.textContent || '').includes('2026-07-27'), { timeout: 90000 });
   const vastuCardText = await page.$eval('#calDateDetailsExtra .cal-details-summary', el => {
     const card = [...el.querySelectorAll('article')].find(item => /Vastu Day|வாஸ்து நாள்/.test(item.textContent || ''));
-    return card?.textContent.replace(/\\s+/g, ' ').trim() || '';
+    return card?.textContent.replace(/\s+/g, ' ').trim() || '';
   });
   assert.match(vastuCardText, /Vastu day|வாஸ்து நாள்/, 'Aadi 11 must be identified as a Vastu day');
-  const vastuTimes = [...vastuCardText.matchAll(/(\\d{2}:\\d{2})\\s*[–-]\\s*(\\d{2}:\\d{2})/g)];
+  const vastuTimes = [...vastuCardText.matchAll(/(\d{2}:\d{2})\s*[–-]\s*(\d{2}:\d{2})/g)];
   assert.equal(vastuTimes.length, 2, 'Vastu card must show separate waking and puja intervals');
   const toMinutes = value => Number(value.slice(0, 2)) * 60 + Number(value.slice(3, 5));
   assert.equal(toMinutes(vastuTimes[0][2]) - toMinutes(vastuTimes[0][1]), 90, 'Vastu waking interval must be 90 minutes');
