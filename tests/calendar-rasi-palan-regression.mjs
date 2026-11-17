@@ -16,7 +16,7 @@ import { currentWeek, periodReference } from '../public/horoscope/calendar/rasi-
 import { calculateSwiss, calculateSunMoonSync } from '../public/horoscope/offline/swiss_vedic.browser.mjs';
 import { panchang, solarNoaa, nakshatraIntervalsForLocalDay, thyajyamIntervalsForLocalDay, calculateAhasNazhigai, calculateRatriNazhigai, calculateAhasRatriPramana, calculateDinantham, NAKSHATRA_THYAJYAM_START_GHATIS } from '../public/horoscope/offline/transit_panchang.browser.mjs';
 import { calculateRasiManaForLocation, calculateSolarSignRasiMana, calculateRemainingRasiMana, calculateRemainingSolarSignRasiMana, meanObliquityAtJulianDay } from '../public/horoscope/offline/rasi-mana.browser.mjs';
-import { TAMIL_DAY_YOGA_TABLE, getTamilDayYoga, getTamilCalendarDayFlags, getNakshatraDirection, getNethiramJeevan } from '../public/horoscope/tamil-day-classifications.mjs';
+import { TAMIL_DAY_YOGA_TABLE, getTamilDayYoga, getTamilCalendarDayFlags, getThaniyaNaalDates, getNakshatraDirection, getNethiramJeevan } from '../public/horoscope/tamil-day-classifications.mjs';
 
 const dailyCalendarSource = await readFile(new URL('../public/horoscope/daily-calendar.mjs', import.meta.url), 'utf8');
 const horoscopeRendererSource = await readFile(new URL('../public/horoscope/horoscope.js', import.meta.url), 'utf8');
@@ -389,7 +389,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261117-calendar-namah-yoga-label-v4' : '20261117-calendar-namah-yoga-label-v4'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261117-calendar-sri-thanigai-kari-thaniya-v5' : '20261117-calendar-sri-thanigai-kari-thaniya-v5'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
@@ -674,6 +674,8 @@ test('Nakshatra Thyajyam uses the 27-star table, four ghatis, and carries Mula b
   }
   assert.match(dailyCalendarSource,/thyajyamIntervals/);
   assert.match(dailyCalendarSource,/ahasNazhigai/);
+  assert.match(transitPanchangSource,/monthDays,/);
+  assert.match(dailyCalendarSource,/dayFlags\.thaniyaAvailable/);
 });
 
 test('16 November 2026 sunrise weekday and Thiruvonam produce Amirtha, not the Siddha fallback', async () => {
@@ -687,14 +689,63 @@ test('16 November 2026 sunrise weekday and Thiruvonam produce Amirtha, not the S
   assert.equal(getTamilDayYoga(new Date(date + 'T12:00:00Z').getUTCDay(), p.nakshatra.number).key, 'amirtha');
 });
 
-test('Kari Naal and Thaniya Naal are separate fixed Tamil-month date flags', () => {
-  const bothAippasi20 = getTamilCalendarDayFlags({ index: 6, day: 20 });
-  assert.deepEqual(bothAippasi20, { available: true, kari: true, thaniya: true });
-  const bothKarthigai1 = getTamilCalendarDayFlags({ index: 7, day: 1 });
-  assert.deepEqual(bothKarthigai1, { available: true, kari: true, thaniya: true });
-  const thaniyaOnlyChithirai10 = getTamilCalendarDayFlags({ index: 0, day: 10 });
-  assert.deepEqual(thaniyaOnlyChithirai10, { available: true, kari: false, thaniya: true });
-  assert.deepEqual(getTamilCalendarDayFlags(null), { available: false, kari: false, thaniya: false });
+test('Sri Thanigai 2026-27 Thaniya dates use Dhruva, weekday and Kollam-year remainders', () => {
+  // Month starts and month lengths below are taken from the published
+  // Parabhava 2026-27 Sri Thanigai Tirukanitha Panchangam.
+  const officialMonths = [
+    [0, '2026-04-14', 31, [8, 25]],
+    [1, '2026-05-15', 31, [11, 24]],
+    [2, '2026-06-15', 32, [14, 28]],
+    [3, '2026-07-17', 32, [9, 22]],
+    [4, '2026-08-18', 31, [12, 23]],
+    [5, '2026-09-18', 30, [11, 28]],
+    [6, '2026-10-18', 30, [6, 23]],
+    [7, '2026-11-17', 29, [16, 22]],
+    [8, '2026-12-16', 30, [8, 26]],
+    [9, '2027-01-15', 29, [8, 20]],
+    [10, '2027-02-13', 30, [19, 28]],
+    [11, '2027-03-15', 30, [20, 26]]
+  ];
+  for (const [index, monthStartDate, monthDays, expected] of officialMonths) {
+    const result = getThaniyaNaalDates({ index, monthStartDate, monthDays });
+    assert.equal(result.available, true, 'Month '+index+' must have a computable Thaniya result');
+    assert.deepEqual(result.dates, expected, 'Sri Thanigai Thaniya dates for month '+index);
+  }
+  const margazhi = getThaniyaNaalDates({ index: 8, monthStartDate: '2026-12-16', monthDays: 30 });
+  assert.equal(margazhi.kollamYear, 1202);
+  assert.equal(margazhi.yearRemainder, 3);
+});
+
+test('Sri Thanigai 2025-26 Margazhi example applies the special seven-day adjustment to both dates', () => {
+  // The source PDF's worked example: Dhruva 8/26 + weekday remainder 5
+  // + Kollam-year remainder 2 => 15/33; after the month-overflow rule => 8/26.
+  const result = getThaniyaNaalDates({ index: 8, monthStartDate: '2025-12-16', monthDays: 30 });
+  assert.equal(result.available, true);
+  assert.equal(result.kollamYear, 1201);
+  assert.equal(result.yearRemainder, 2);
+  assert.deepEqual(result.dates, [8, 26]);
+});
+
+test('Sri Thanigai Kari Naal remains a separate monthly Tyajyam list with a six-ghati sunrise window', () => {
+  const aippasiKariOnly = getTamilCalendarDayFlags({
+    index: 6, day: 20, monthStartDate: '2026-10-18', monthDays: 30
+  });
+  assert.deepEqual(aippasiKariOnly, {
+    available: true, kari: true, thaniya: false, thaniyaAvailable: true
+  });
+  const thaniyaOnlyChithirai = getTamilCalendarDayFlags({
+    index: 0, day: 8, monthStartDate: '2026-04-14', monthDays: 31
+  });
+  assert.deepEqual(thaniyaOnlyChithirai, {
+    available: true, kari: false, thaniya: true, thaniyaAvailable: true
+  });
+  const unavailable = getTamilCalendarDayFlags({ index: 0, day: 10 });
+  assert.deepEqual(unavailable, {
+    available: true, kari: false, thaniya: false, thaniyaAvailable: false
+  });
+  assert.deepEqual(getTamilCalendarDayFlags(null), {
+    available: false, kari: false, thaniya: false, thaniyaAvailable: false
+  });
 });
 
 test('Monthly Tamil solar labels safely handle more than one boundary inside a Gregorian month', () => {
@@ -802,13 +853,13 @@ test('SMV CALENDAR daily Panchang and Hora use scoped black/red result typograph
   assert.match(sharedHoroscopeCssSource, /event-time:not\(\.smv-calendar-neutral-date-time\)/);
   assert.match(sharedHoroscopeCssSource, /hora-time:not\(\.smv-calendar-neutral-time\)/);
   assert.match(sharedHoroscopeCssSource, /transit-table-degree:not\(\.smv-calendar-degree-normal\)/);
-  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261117-calendar-namah-yoga-label-v4/);
+  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261117-calendar-sri-thanigai-kari-thaniya-v5/);
   assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261117-calendar-namah-yoga-label-v3/);
   const releases = [astroServiceWorkerSource, horoscopeServiceWorkerSource, calendarWorkerSource]
     .map(source => source.match(/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '([^']+)' : '([^']+)';/));
   assert.ok(releases.every(Boolean), 'All three service workers must define the synchronized release marker.');
   assert.equal(new Set(releases.map(match => match[1])).size, 1, 'Pages.dev cache release must match across all apps.');
   assert.equal(new Set(releases.map(match => match[2])).size, 1, 'Production cache release must match across all apps.');
-  assert.equal(releases[0][1], '20261117-calendar-namah-yoga-label-v4');
-  assert.equal(releases[0][2], '20261117-calendar-namah-yoga-label-v4');
+  assert.equal(releases[0][1], '20261117-calendar-sri-thanigai-kari-thaniya-v5');
+  assert.equal(releases[0][2], '20261117-calendar-sri-thanigai-kari-thaniya-v5');
 });

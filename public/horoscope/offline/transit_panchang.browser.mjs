@@ -201,6 +201,30 @@ function tamilSolarDate(input){
    return null;
  }
 
+ // Only needed when the selected sunrise falls on the ingress civil date and
+ // that ingress became this month's start; find the following month boundary.
+ function findNextIngressAfter(startTs,startSign){
+   const nextSign=(startSign+1)%12;
+   let lo=startTs+60000;
+   let loLon=norm360(sunLongitudeAtTs(input,lo,offset));
+   for(let step=1;step<=20;step++){
+     const hi=lo+3*86400000;
+     const hiLon=norm360(sunLongitudeAtTs(input,hi,offset));
+     if(Number.isFinite(loLon) && Number.isFinite(hiLon) &&
+        Math.floor(loLon/30)===startSign && Math.floor(hiLon/30)===nextSign){
+       let a=lo,b=hi;
+       for(let j=0;j<24;j++){
+         const mid=(a+b)/2;
+         const lm=norm360(sunLongitudeAtTs(input,mid,offset));
+         if(Math.floor(lm/30)===nextSign) b=mid; else a=mid;
+       }
+       return b;
+     }
+     lo=hi; loLon=hiLon;
+   }
+   return null;
+ }
+
  // Normally the most recent ingress before the reference sunrise defines the
  // month. If the next ingress occurs later on the SAME reference civil date,
  // it is the relevant boundary and must not be rolled to the following date
@@ -283,6 +307,23 @@ if(ingressMinutes>=sunsetMinutes){
 }
 
 const monthStartSunrise=solarNoaa(monthStartDate,lat,lon,offset,true);
+let nextMonthIngressTs=nextIngressTs;
+if(nextMonthIngressTs!==null && Math.abs(nextMonthIngressTs-monthStartTs)<60000){
+  nextMonthIngressTs=findNextIngressAfter(monthStartTs,monthSign);
+}
+let monthDays=null;
+if(nextMonthIngressTs!==null){
+  const nextIngressDate=localDateStringFromTs(nextMonthIngressTs,offset);
+  const nextIngressTime=localTimeStringFromTs(nextMonthIngressTs,offset);
+  const nextSunset=solarNoaa(nextIngressDate,lat,lon,offset,false);
+  if(nextSunset){
+    const nextIngressMinutes=Number(nextIngressTime.slice(0,2))*60+Number(nextIngressTime.slice(3,5));
+    const nextSunsetMinutes=Number(nextSunset.slice(0,2))*60+Number(nextSunset.slice(3,5));
+    const nextMonthStartDate=nextIngressMinutes>=nextSunsetMinutes?addDaysLocal(nextIngressDate,1):nextIngressDate;
+    const measuredDays=dateDiffDays(nextMonthStartDate,monthStartDate);
+    if(Number.isInteger(measuredDays)&&measuredDays>=28&&measuredDays<=33)monthDays=measuredDays;
+  }
+}
 let day=dateDiffDays(referenceDate,monthStartDate)+1;
 
 /*
@@ -307,6 +348,7 @@ if (
    ingressTime,
    sunrise:monthStartSunrise,
    monthStartDate,
+   monthDays,
    referenceDate
  };
 }
