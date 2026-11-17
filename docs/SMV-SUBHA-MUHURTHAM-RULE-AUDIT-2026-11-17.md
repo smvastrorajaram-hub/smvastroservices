@@ -303,3 +303,42 @@ References:
 The primary marriage rule remains the user's approved **Suddha Thirukanitha Sarva Muhurtha Panchangam** article, not the no-Dhruva online calculator. Until the eight missing source cells, the exact division wording, and the special day/night cases are confirmed, the Panchaka engine must return “source rule incomplete for this Lagna” rather than fabricate a value. The competing Dinamani / Maalaimalar tables can be kept as documented alternate traditions only.
 
 No Panchaka calculation has yet been presented as a final result in the Calendar UI. The month-filter and Vastu / Pushkara Phase 1 code are separate from this unresolved five-factor Panchaka rule.
+
+
+## 11. Sri Thanigai primary 2026–27 source comparison (checked against the PDFs)
+
+The current publisher / compiler's pages are on **prohithar.com**, attributed to Balu Saravana Sarma, Sri Thanigai Panchangam.
+
+### A. Sri Thanigai Parabhava Thirukanitha Panchangam 2026–27
+
+[Original 15-page PDF](https://www.prohithar.com/panchangasadas/thanigai/parabhava-srithanigai-panchangam2026-2027.pdf)
+
+The cover identifies it as **Sri Thanigai Thirukanitha Tamil Panchangam**, Parabhava 2026–27, based on Lahiri ayanamsa / astronomical reckoning and the Indian astronomical ephemeris. The visually inspected second page includes:
+
+- a Chennai Lagna-Manam table for all 12 signs (Rasi-specific rising-duration values);
+- the table is expressly for Chennai and a stated surrounding radius; it is not a Dhruva-number table;
+- the Vastu-days table, with nine entries: Chithirai 10, Vaikasi 21, Aadi 11, Avani 6, Aippasi 11, Karthigai 8, Thai 12, Masi 22 and Panguni 22, each accompanied by a Chennai clock-time interval.
+
+A text search of the full 15-page edition for “பஞ்சகம்”, “துருவம்” and “நவாம்ச” returns no matches. Thus this edition provides the astronomical calendar, local sunrise-related / Vastu schedule and Lagna-Manam, but **does not publish the missing eight marriage Dhruva numbers or a Panchaka-remainder table** in its searchable text.
+
+### B. Sri Thanigai Parabhava 2026–27 Subha Muhurtha Dates
+
+[Original five-page PDF](https://www.prohithar.com/subam/parabava/parabava-drik-vakya-muhurtham-2026-2027.pdf)
+
+The first page explicitly cautions that the dates are general; the family's actual choice must be matched to the couple's Nakshatra and Rasi with astrologer guidance. It lists month-wise Thirukanitha and Vakya muhurtha dates, including Tithi, Nakshatra, Yoga, time window and Lagna. The PDF's metadata/description mentions “நவாம்ஸ புஷ்கர லக்னம்” (Navamsa Pushkara Lagna), but the inspected five pages do not contain a dedicated Pushkara Navamsa interval or a Dhruva/Panchaka rule table. It therefore evidences that Sri Thanigai publishes/uses this feature in its muhurtha material, but it does not reveal the exact calculation needed to reproduce each Thali-tying interval.
+
+The original PDF's page 5 (visually inspected) gives a clear caution: families should consult their family astrologer in person and finalise a muhurtha before booking the hall. It also describes the published dates as general and says that in most cases the listed muhurtha time cannot be changed.
+
+### C. Reconciled Panchaka position
+
+The two source documents answer different questions:
+
+| Source | What is actually supplied | What is not supplied |
+|---|---|---|
+| Sri Thanigai 2026–27 Panchangam | Lahiri/Thirukanitha astronomical data, Tamil solar dates, Chennai Lagna-Manam for 12 signs, Vastu schedule | Marriage Lagna-Dhruva table, Panchaka remainder rules, Pushkara Navamsa calculation table |
+| Sri Thanigai 2026–27 Subha Muhurtha list | General date/time windows with Tithi, Nakshatra, Yoga and Rasi/Lagna; metadata states Navamsa Pushkara Lagna feature | Full calculation algorithm, per-second Navamsa Pushkara intervals, full Dhruva table |
+| Suddha Thirukanitha Sarva Muhurtha article, Sep 2015 p.25 | Five Panchaka inputs and four explicit Dhruva values: Mesha 5, Simha 7, Kumbha 4, Meena 6; categories 1–8 and its marriage note that values 6 or 7 are accepted | The other eight Dhruva cells are not stated in the passage; the divisor / exact remainder wording and day/night sentence need a clear original-page scan / author confirmation |
+
+**Implementation decision:** use Sri Thanigai's 2026–27 ephemeris / Lagna-Manam as the calculation-time reference for the calendar, and the September 2015 Sarva Muhurtha article as the primary Panchaka marriage-rule source, exactly as the user approved. Do not import the Rishabha 7 / Makara 2 values from the alternate 2012/2017 articles into that source's table. Do not infer 0 for the eight missing cells. Do not implement a final Panchaka verdict until the source explicitly resolves those cells and the divisor / remainder convention. The general five-factor structure and the four published Dhruva values can be unit-tested independently.
+
+**Pushkara decision:** the branch may continue displaying the selected-time Lahiri Lagna's Pushkara Navamsa status as a standalone computed attribute. The Sri Thanigai list confirms a named “Navamsa Pushkara Lagna” feature but does not provide the actual algorithm; source confirmation is still required before using that feature to select a final Thali moment. Per the user's explicit UI instruction, no disclaimer stating that it is not the final Thali time is to be displayed.
