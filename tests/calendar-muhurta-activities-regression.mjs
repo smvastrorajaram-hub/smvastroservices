@@ -35,7 +35,7 @@ test('the eight Vastu solar dates and sunrise offsets are explicit',()=>{
   assert.deepEqual(Object.keys(VASTU_DAY_RULES).map(Number).sort((a,b)=>a-b),[0,1,3,4,6,7,9,10]);
   assert.deepEqual(
     Object.entries(VASTU_DAY_RULES).map(([month,rule])=>[Number(month),rule.day,rule.sunriseOffsetNazhigai]),
-    [[0,10,5],[1,21,8],[3,11,2],[4,6,21],[6,11,2],[7,8,10],[9,12,8],[10,22,8]]
+    [[0,10,5],[1,21,8],[3,11,2],[4,6,21],[6,11,2],[7,8,10],[9,12,8],[10,22,8],[11,22,8]]
   );
   assert.equal(NAZHIGAI_MINUTES,24);
   assert.equal(VASTU_WAKE_MINUTES,90);
@@ -66,6 +66,7 @@ test('non-Vastu months and wrong Tamil dates are not marked as Vastu days',()=>{
   assert.equal(getVastuMuhurtham({tamilSolar:solar(2,10),sunrise:'06:00'}).isVastuDay,false);
   assert.equal(getVastuMuhurtham({tamilSolar:solar(0,11),sunrise:'06:00'}).isVastuDay,false);
   assert.equal(getVastuMuhurtham({tamilSolar:solar(8,11),sunrise:'06:00'}).isVastuDay,false);
+  assert.equal(getVastuMuhurtham({tamilSolar:solar(11,22),sunrise:'06:00'}).isVastuDay,true, 'Panguni 22 is included in the 2026–27 Sri Thanigai annual table');
 });
 
 test('Vastu date can be known while its local time remains unavailable without sunrise',()=>{
