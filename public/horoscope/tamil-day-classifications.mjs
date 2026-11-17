@@ -2,31 +2,93 @@
 // The solar-month index follows TAMIL_SOLAR_TA in transit_panchang.browser.mjs:
 // 0 Chithirai ... 11 Panguni.
 //
-// Kari Naal and Thaniya Naal are distinct fixed Tamil month/day lists.
-// They are presentation flags only; they do not alter Panchang calculations.
+// Sri Thanigai Kari Naal source:
+// https://www.prohithar.com/karinaal.html
+// The published month/day table is the monthly Tyajyam date list. Its dosha
+// period is only six ghatis (2 h 24 min) from the local sunrise, not all day.
+//
+// Sri Thanigai Thaniya Naal arithmetic source:
+// https://www.prohithar.com/almanac/தனியநாள்%20கணிதம்%20விளக்கம்_daniyanal-calculation.pdf
+// Verified against the Parabhava 2026-27 annual Panchangam:
+// https://prohithar.com/panchangasadas/thanigai/parabhava-srithanigai-panchangam2026-2027.pdf
+//
+// Kari dates are the publisher's recurring Tamil solar-month date list.
+// Thaniya dates are calculated from monthly Dhruva + weekday remainder,
+// adding the Kollam-year remainder for Aippasi through Panguni.
 export const KARI_DAY_DATES = Object.freeze([
   [6, 15], [7, 16, 17], [1, 6], [2, 10, 20],
   [2, 9, 28], [16, 29], [6, 20], [1, 10, 17],
   [6, 9, 11], [1, 2, 3, 11, 17], [15, 16, 17], [6, 15, 19]
 ].map(days => Object.freeze(days)));
 
-export const THANIYA_DAY_DATES = Object.freeze([
-  [10, 26], [4, 14], [9, 27], [10, 26],
-  [2, 27], [16, 29], [6, 20], [1, 10, 11],
-  [6, 9, 11], [1, 2, 3, 11, 17], [15, 16, 17], [6, 15, 19]
+// Sri Thanigai Dhruva dates (A = first half, B = second half).
+export const THANIGAI_THANIYA_DHRUVA_DATES = Object.freeze([
+  [3, 20], [9, 22], [8, 22], [7, 20], [7, 18], [9, 26],
+  [3, 20], [8, 14], [8, 26], [3, 15], [15, 24], [18, 24]
 ].map(days => Object.freeze(days)));
+
+// Sunday=0, Monday=6, Tuesday=5, Wednesday=4, Thursday=3, Friday=2, Saturday=1.
+const THANIGAI_WEEKDAY_REMAINDERS = Object.freeze([0, 6, 5, 4, 3, 2, 1]);
+const positiveModulo = (value, divisor) => ((value % divisor) + divisor) % divisor;
+
+export function getThaniyaNaalDates(tamilSolar) {
+  const monthIndex = Number(tamilSolar?.index);
+  const monthStartDate = String(tamilSolar?.monthStartDate || '');
+  const monthDays = Number(tamilSolar?.monthDays);
+  if (!Number.isInteger(monthIndex) || monthIndex < 0 || monthIndex > 11 ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(monthStartDate) ||
+      !Number.isInteger(monthDays) || monthDays < 28 || monthDays > 33) {
+    return { available: false, dates: [], weekdayRemainder: null, yearRemainder: null, kollamYear: null };
+  }
+
+  const monthStart = new Date(monthStartDate + 'T12:00:00Z');
+  if (!Number.isFinite(monthStart.getTime())) {
+    return { available: false, dates: [], weekdayRemainder: null, yearRemainder: null, kollamYear: null };
+  }
+  const weekdayRemainder = THANIGAI_WEEKDAY_REMAINDERS[monthStart.getUTCDay()];
+  const civilYear = Number(monthStartDate.slice(0, 4));
+  // Tamil solar year starts in Chithirai; Thai, Maasi and Panguni fall in
+  // January-March and therefore belong to the previous Gregorian start year.
+  const tamilYearStart = civilYear - (monthIndex >= 9 ? 1 : 0);
+  const kollamYear = tamilYearStart - 824;
+  const yearRemainder = monthIndex >= 6 ? positiveModulo(kollamYear - 2, 7) : 0;
+
+  const [dhruvaA, dhruvaB] = THANIGAI_THANIYA_DHRUVA_DATES[monthIndex];
+  let first = dhruvaA + weekdayRemainder + yearRemainder;
+  let second = dhruvaB + weekdayRemainder + yearRemainder;
+
+  // Sri Thanigai special rule: when the second date exceeds the month's
+  // actual Tamil-date count, subtract seven from BOTH Dhruva results.
+  while (second > monthDays) {
+    first -= 7;
+    second -= 7;
+  }
+  if (first < 1 || second < 1 || first > monthDays || second > monthDays) {
+    return { available: false, dates: [], weekdayRemainder, yearRemainder, kollamYear };
+  }
+  return {
+    available: true,
+    dates: [first, second],
+    weekdayRemainder,
+    yearRemainder,
+    kollamYear,
+    monthDays
+  };
+}
 
 export function getTamilCalendarDayFlags(tamilSolar) {
   const monthIndex = Number(tamilSolar?.index);
   const day = Number(tamilSolar?.day);
   if (!Number.isInteger(monthIndex) || monthIndex < 0 || monthIndex > 11 ||
       !Number.isInteger(day) || day < 1 || day > 32) {
-    return { available: false, kari: false, thaniya: false };
+    return { available: false, kari: false, thaniya: false, thaniyaAvailable: false };
   }
+  const thaniya = getThaniyaNaalDates(tamilSolar);
   return {
     available: true,
     kari: KARI_DAY_DATES[monthIndex].includes(day),
-    thaniya: THANIYA_DAY_DATES[monthIndex].includes(day)
+    thaniya: thaniya.available && thaniya.dates.includes(day),
+    thaniyaAvailable: thaniya.available
   };
 }
 
