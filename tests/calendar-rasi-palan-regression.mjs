@@ -389,7 +389,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261117-calendar-namah-yoga-label-v3' : '20261117-calendar-namah-yoga-label-v3'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261117-calendar-namah-yoga-label-v4' : '20261117-calendar-namah-yoga-label-v4'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
@@ -534,7 +534,7 @@ test('Calendar dual-date grid, direct navigation and Date Details are UI-only ex
   assert.match(dailyCalendarSource, /class="cal-day-flags"/);
   assert.match(dailyCalendarSource, /Kari Naal/);
   assert.match(dailyCalendarSource, /Thaniya Naal/);
-  assert.match(dailyCalendarSource, /textContent='Namah Yoga'/);
+  assert.match(dailyCalendarSource, /textContent=L\('Namah Yoga','நாம யோகம்'\)/);
   assert.match(dailyCalendarSource, /cal-name-yoga-label/);
   assert.match(dailyCalendarSource, /nityaYogaResults/);
   assert.match(calendarCalculationWorkerSource, /attachTamilSolarDates/);
@@ -802,13 +802,13 @@ test('SMV CALENDAR daily Panchang and Hora use scoped black/red result typograph
   assert.match(sharedHoroscopeCssSource, /event-time:not\(\.smv-calendar-neutral-date-time\)/);
   assert.match(sharedHoroscopeCssSource, /hora-time:not\(\.smv-calendar-neutral-time\)/);
   assert.match(sharedHoroscopeCssSource, /transit-table-degree:not\(\.smv-calendar-degree-normal\)/);
-  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261117-calendar-namah-yoga-label-v2/);
-  assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261117-calendar-namah-yoga-label-v3/);
+  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261117-calendar-namah-yoga-label-v4/);
+  assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261117-calendar-namah-yoga-label-v4/);
   const releases = [astroServiceWorkerSource, horoscopeServiceWorkerSource, calendarWorkerSource]
     .map(source => source.match(/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '([^']+)' : '([^']+)';/));
   assert.ok(releases.every(Boolean), 'All three service workers must define the synchronized release marker.');
   assert.equal(new Set(releases.map(match => match[1])).size, 1, 'Pages.dev cache release must match across all apps.');
   assert.equal(new Set(releases.map(match => match[2])).size, 1, 'Production cache release must match across all apps.');
-  assert.equal(releases[0][1], '20261117-calendar-namah-yoga-label-v3');
-  assert.equal(releases[0][2], '20261117-calendar-namah-yoga-label-v3');
+  assert.equal(releases[0][1], '20261117-calendar-namah-yoga-label-v4');
+  assert.equal(releases[0][2], '20261117-calendar-namah-yoga-label-v4');
 });
