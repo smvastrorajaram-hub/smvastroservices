@@ -500,8 +500,8 @@ html body.calendar-only>header.calendar-topbar{
  color:#f00;-webkit-text-fill-color:#f00;font-weight:700;
 }
 #smvDailyCalendar #calDaily .hora-vertical .hora-time.smv-calendar-neutral-time:not(.smv-hora-current-green):not(.smv-hora-bright-green):not(.smv-hora-current-red):not(.smv-hora-bright-red){
- color:#000;-webkit-text-fill-color:#000;font-weight:400;
+ color:#000!important;-webkit-text-fill-color:#000!important;font-weight:400!important;
 }
 #smvDailyCalendar .transit-position-table .transit-table-degree.smv-calendar-degree-normal{
- color:#000;-webkit-text-fill-color:#000;font-weight:400;
+ color:#000!important;-webkit-text-fill-color:#000!important;font-weight:400!important;
 }
