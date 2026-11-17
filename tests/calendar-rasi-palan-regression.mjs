@@ -745,6 +745,7 @@ test('Calendar Date Details restores centred cards and positions day flags besid
   assert.match(calendarThemeCssSource, /\.cal-date-details \.cal-details-summary \.cal-shoolam-card\{\s*grid-column:1\/-1;display:flex;align-items:center;justify-content:center/);
   assert.match(calendarThemeCssSource, /\.cal-month-grid button\{align-items:center;justify-content:flex-start/);
   assert.match(calendarThemeCssSource, /#calDateDetailsExtra \.cal-day-yoga-card\.is-inauspicious\{border-left:0!important/);
+  assert.match(calendarThemeCssSource, /#calDateDetailsExtra \.cal-day-yoga-card\.is-inauspicious \.cal-yoga-segment\.is-inauspicious\{border-left:0!important/);
   assert.match(dailyCalendarSource, /class="cal-day-flags-card"[\s\S]*?Abhijit Muhurtham/);
   const shoolamMarkup = dailyCalendarSource.match(/cal-shoolam-card"><div class="cal-shoolam-main"[\s\S]*?<\/article>/)?.[0] || '';
   assert.ok(shoolamMarkup, 'Travel Shoolam must render in its own full-width card.');
