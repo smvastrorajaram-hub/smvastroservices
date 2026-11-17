@@ -147,8 +147,8 @@ Reference: [Thirukanitha Panchangam — Vastu Naatkal 2026](https://thirukanitha
 
 **Implementation constraints:**
 
-1. Determine the selected place's correct local solar month/date and sunrise using the existing SMV Lahiri / Thirukanitham calculation boundary; do not use Chennai's published clock times for every user.
-2. Compute the Vastu 90-minute interval from the canonical source's exact month-specific offset / nazhigai table. The secondary web page's prose confirms the sunrise dependency, but its full month-offset table must be checked against the selected primary Panchangam edition before production use.
+1. Determine the selected place's correct local solar month/date and sunrise using the existing SMV Lahiri / Thirukanitham calculation boundary; do not use Chennai's published clock times for every user. The Calendar source already computes Tamil solar month/day from the local-sunrise civil boundary and supplies local sunrise.
+2. Phase 1 now uses the selected 2026 Thirukanitha Vastu table's month offsets: Chithirai 5, Vaikasi 8, Aadi 2, Avani 21, Aippasi 2, Karthigai 10, Thai 8 and Masi 8 Nazhigai (1 Nazhigai = 24 minutes). These published offsets remain source-specific and must be reconciled against the user's exact Sarva Muhurtha Panchangam edition before treating them as the definitive canonical table for all years.
 3. Present both the 90-minute waking span and the last 36-minute ritual span. Do not label all 90 minutes as the best puja time.
 4. Keep this result under the Vastu / Bhoomi Pooja activity type. Do not override the general Aadi or Margazhi restriction for other activities.
 5. Cross-check Gregorian dates, weekday, local sunrise and the computed 36-minute window against a published Thirukanitham Vastu table for Perambalur and at least one second Tamil Nadu location.
@@ -217,3 +217,34 @@ Every result must show its activity type, rule-source edition, location, time zo
 ## 8. Current implementation decision
 
 This addendum records the user's approved scope and the additional rule evidence. **No runtime calculation, published date, service-worker cache, PWA, Android, Horoscope, or production file has been changed.** The current 2026/2027 annual-list lookup remains untouched as a clearly identified legacy reference while the full activity-specific calculator is built and validated in a separate implementation change. The Draft PR must remain unmerged until the source contradictions and missing primary tables above are resolved.
+
+
+---
+
+## 9. Phase 1 code now present on the research branch
+
+**Research branch:** `research/subha-muhurtham-rule-audit-20261117`  
+**This section describes branch Preview code only. Main / production remain unchanged.**
+
+The user approved the *Suddha Thirukanitha Sarva Muhurtha Panchangam* tradition as the primary marriage-rule source and asked for separate Vastu and Pushkara support. The following limited, independently testable Phase 1 work has now been added on this branch:
+
+- `public/horoscope/calendar-muhurta-activities.mjs` contains activity-specific month screening; marriage month blocks (Aadi, Purattasi, Margazhi, Masi); the user's ordinary-work Aadi/Margazhi block; Vastu Tamil month/day and sunrise-offset lookup; and the 24 Pushkara Navamsa intervals.
+- The Vastu helper takes the already-calculated local Thirukanitham Tamil solar date and local sunrise. It returns the 90-minute Vastu waking span and only the final 36 minutes as the Bhoomi Pooja interval. It does not use fixed Chennai clock times or hard-coded Gregorian dates.
+- The Pushkara helper accepts the already-calculated selected-time sidereal Lahiri Lagna longitude and reports whether that instant is inside one of the source's Pushkara Navamsa intervals. It also returns Rasi degree and D9 sign.
+- `daily-calendar.mjs` now labels the previous annual-list answer as a **published-list result**, displays the marriage month-only screening and selected-time Lagna Pushkara check, and adds a Vastu Day / Bhoomi Pooja card to Date Details.
+- The UI explicitly says that selected-time Pushkara status is **not** the final Thali-tying time. It does not infer a Thali moment outside a validated marriage muhurta interval.
+- Calendar service-worker CORE and REQUIRED_CORE both precache the new helper; Calendar cache revision and the daily module asset URL were bumped to `20261117-calendar-muhurta-activities-v1`. No user storage is cleared.
+
+### New regression coverage
+
+`tests/calendar-muhurta-activities-regression.mjs` covers the activity-specific month filters, the eight Vastu month/day anchors and offsets, Aadi 11 as a Vastu-only exception, local-sunrise interval lengths, all 24 Pushkara Navamsa ranges, and inclusive-start / exclusive-end boundaries.
+
+The browser preview smoke test additionally checks Aadi 11 (27 July 2026) and verifies that the rendered Vastu waking span is 90 minutes and the Bhoomi Pooja span is 36 minutes.
+
+### Still deliberately not calculated
+
+1. A complete marriage-day / time verdict cannot yet be emitted: the source weekday exception conflict and the complete Panchaka remainder / all-sign Lagna-Dhruva / planetary tables remain open.
+2. A Thali-timing window cannot yet be emitted: the named Sarva Muhurtha Naadi chapter is identified, but its full procedure and any extra Moon / Navamsa-lord conditions have not been verified from an accessible primary passage.
+3. Other ceremony types remain unavailable until their own source tables are verified.
+
+**This phase is not a production-ready full Muhurtham engine.** The branch shows the separate, source-attributed pieces that can safely be computed now, and leaves all unverified marriage rules as pending rather than presenting a misleading final date/time.
