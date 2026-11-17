@@ -14,9 +14,9 @@ import {
 } from '../public/horoscope/calendar-rasi-palan-rules.mjs';
 import { currentWeek, periodReference } from '../public/horoscope/calendar/rasi-palan-periods.mjs';
 import { calculateSwiss, calculateSunMoonSync } from '../public/horoscope/offline/swiss_vedic.browser.mjs';
-import { panchang, solarNoaa, nakshatraIntervalsForLocalDay, thyajyamIntervalsForLocalDay, calculateAhasNazhigai, NAKSHATRA_THYAJYAM_START_GHATIS } from '../public/horoscope/offline/transit_panchang.browser.mjs';
+import { panchang, solarNoaa, nakshatraIntervalsForLocalDay, thyajyamIntervalsForLocalDay, calculateAhasNazhigai, calculateRatriNazhigai, calculateDinantham, NAKSHATRA_THYAJYAM_START_GHATIS } from '../public/horoscope/offline/transit_panchang.browser.mjs';
 import { calculateRasiManaForLocation, calculateSolarSignRasiMana, calculateRemainingRasiMana, calculateRemainingSolarSignRasiMana, meanObliquityAtJulianDay } from '../public/horoscope/offline/rasi-mana.browser.mjs';
-import { TAMIL_DAY_YOGA_TABLE, getTamilDayYoga, getTamilCalendarDayFlags } from '../public/horoscope/tamil-day-classifications.mjs';
+import { TAMIL_DAY_YOGA_TABLE, getTamilDayYoga, getTamilCalendarDayFlags, getNakshatraDirection, getNethiramJeevan } from '../public/horoscope/tamil-day-classifications.mjs';
 
 const dailyCalendarSource = await readFile(new URL('../public/horoscope/daily-calendar.mjs', import.meta.url), 'utf8');
 const dailyCalendarCssSource = await readFile(new URL('../public/horoscope/daily-calendar.css', import.meta.url), 'utf8');
@@ -385,7 +385,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261117-calendar-offline-rasi-location-v1' : '20261117-calendar-offline-rasi-location-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261117-calendar-date-details-nethiram-ratri-v1' : '20261117-calendar-date-details-nethiram-ratri-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
@@ -395,10 +395,10 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261117-calendar-offline-rasi-location-v1'));
-   assert.ok(calendarIndexSource.includes('20261117-calendar-offline-rasi-location-v1'));
+   assert.ok(calendarIndexSource.includes('20261117-calendar-date-details-nethiram-ratri-v1'));
+   assert.ok(calendarIndexSource.includes('20261117-calendar-date-details-nethiram-ratri-v1'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
-   assert.ok(calendarIndexSource.includes('20261117-calendar-offline-rasi-location-v1'));
+   assert.ok(calendarIndexSource.includes('20261117-calendar-date-details-nethiram-ratri-v1'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'runPeriodForecast\')'));
    assert.ok(calendarIndexSource.includes('The deployed forecast assets could not be loaded from this Calendar host.'));
@@ -671,4 +671,67 @@ test('Monthly Tamil solar labels safely handle more than one boundary inside a G
   assert.match(calendarCalculationWorkerSource, /while\(lo<hi\)/);
   assert.match(calendarCalculationWorkerSource, /boundaries\.push\(\{index:lo,state\}\)/);
   assert.match(calendarCalculationWorkerSource, /day:state\.offset\+dateDistance\(entries\[i\]\.date,firstDate\)/);
+});
+
+
+test('Night Ahas and Dinantham use the sunset-to-next-sunrise interval', () => {
+  const ratri = calculateRatriNazhigai('18:00', '06:00');
+  assert.equal(ratri.available, true);
+  assert.equal(ratri.nightMinutes, 720);
+  assert.equal(ratri.nazhigai, 30);
+  assert.equal(ratri.vinazhigai, 0);
+
+  const dinantham = calculateDinantham('18:00', '06:00');
+  assert.equal(dinantham.available, true);
+  assert.equal(dinantham.time, '01:30');
+  assert.equal(dinantham.thirdYamaFraction, 5 / 8);
+
+  const shortNight = calculateRatriNazhigai('18:30', '06:15');
+  assert.equal(shortNight.available, true);
+  assert.equal(shortNight.nightMinutes, 705);
+  assert.equal(shortNight.nazhigai, 29);
+  assert.equal(shortNight.vinazhigai, 23);
+  assert.equal(calculateRatriNazhigai('18:00', '18:00').available, false);
+});
+
+test('Nethiram and Jeevan are derived from the Sun and sunrise Nakshatras', () => {
+  const sameStar = getNethiramJeevan(27, 27);
+  assert.deepEqual(
+    { available: sameStar.available, nethiram: sameStar.nethiram, jeevan: sameStar.jeevan },
+    { available: true, nethiram: 0, jeevan: 0 }
+  );
+  assert.equal(getNethiramJeevan(27, 24).nethiram, 0);
+  assert.equal(getNethiramJeevan(27, 20).nethiram, 1);
+  assert.equal(getNethiramJeevan(27, 18).nethiram, 2);
+  assert.equal(getNethiramJeevan(27, 18).jeevan, 0);
+  assert.equal(getNethiramJeevan(27, 9).jeevan, 0);
+  assert.equal(getNethiramJeevan(27, 2).jeevan, 0.5);
+  assert.equal(getNethiramJeevan(27, 10).jeevan, 1);
+  assert.equal(getNethiramJeevan(0, 10).available, false);
+});
+
+test('All 27 Nakshatras map exactly once to upward, downward or equal-facing days', () => {
+  const counts = { upper: 0, lower: 0, equal: 0 };
+  for (let nakshatra = 1; nakshatra <= 27; nakshatra++) {
+    const direction = getNakshatraDirection(nakshatra);
+    assert.equal(direction.available, true, 'Nakshatra '+nakshatra+' must have a direction');
+    counts[direction.key]++;
+  }
+  assert.deepEqual(counts, { upper: 9, lower: 9, equal: 9 });
+  assert.equal(getNakshatraDirection(4).symbol, '↑');
+  assert.equal(getNakshatraDirection(2).symbol, '↓');
+  assert.equal(getNakshatraDirection(1).symbol, '↔');
+  assert.equal(getNakshatraDirection(28).available, false);
+});
+
+test('Calendar Date Details render sunrise Nethiram/Jeevan, direction, Dinantham and Ratri Pramana', () => {
+  assert.ok(dailyCalendarSource.includes('getNethiramJeevan(sunStar,dayStar)'));
+  assert.ok(dailyCalendarSource.includes('ராத்திரி மானம்'));
+  assert.ok(dailyCalendarSource.includes('தினாந்தம் (இரவு)'));
+  assert.ok(dailyCalendarSource.includes('நேத்திரம்'));
+  assert.ok(dailyCalendarSource.includes('ஜீவன்'));
+  assert.ok(dailyCalendarSource.includes('நட்சத்திர நோக்கு நாள்'));
+  assert.ok(calendarCalculationWorkerSource.includes('sunStar:r.sunStar'));
+  assert.ok(calendarCalculationWorkerSource.includes('calculateRatriNazhigai(p.sunset,nextSunrise,actualNightMinutes)'));
+  assert.ok(calendarCalculationWorkerSource.includes("offsetMinutesAt(input.timezone,nextDate,'12:00')"));
 });
