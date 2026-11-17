@@ -759,7 +759,7 @@ test('Calendar Date Details render sunrise Nethiram/Jeevan, direction, Dinantham
   assert.ok(dailyCalendarSource.includes('ஜீவன்'));
   assert.ok(dailyCalendarSource.includes('நட்சத்திர நோக்கு நாள்'));
   assert.ok(calendarCalculationWorkerSource.includes('sunStar:r.sunStar'));
-  assert.ok(calendarCalculationWorkerSource.includes('calculateRatriNazhigai(p.sunset,nextSunrise,actualNightMinutes)'));
+  assert.ok(calendarCalculationWorkerSource.includes('calculateAhasRatriPramana(p.sunrise,p.sunset,nextSunrise,actualDaySeconds,actualNightSeconds)'));
   assert.ok(calendarCalculationWorkerSource.includes("offsetMinutesAt(input.timezone,nextDate,'12:00')"));
 });
 
