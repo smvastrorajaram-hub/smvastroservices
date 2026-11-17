@@ -166,7 +166,7 @@ html body.calendar-only>header.calendar-topbar{
 }
 #smvDailyCalendar .cal-month-current strong{font-size:clamp(15px,3.8vw,20px);line-height:1.2;color:#15564e}
 #smvDailyCalendar .cal-month-current small{font-size:11px;line-height:1.2;color:#8b682a;font-weight:700}
-#smvDailyCalendar .cal-month-grid button{align-items:center;justify-content:center;text-align:center;gap:3px;min-height:82px;padding:6px 2px}
+#smvDailyCalendar .cal-month-grid button{align-items:center;justify-content:flex-start;text-align:center;gap:3px;min-height:82px;padding:6px 2px}
 #smvDailyCalendar .cal-month-grid button>strong{font-size:clamp(18px,4vw,22px);line-height:1.1}
 #smvDailyCalendar .cal-month-grid button>.cal-day-tamil{display:block;margin:0;color:#55766a;font-size:12px;font-weight:800;line-height:1.2}
 #smvDailyCalendar .cal-month-grid button[aria-current="date"]>.cal-day-tamil{color:#15564e}
@@ -189,7 +189,7 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-date-details{margin:18px 0 24px;padding:14px;background:#fbf7ee;border:1px solid #e5dac5;border-radius:16px}
 #smvDailyCalendar .cal-date-details-head h3{margin:0;color:#15564e}
 #smvDailyCalendar .cal-date-details-head p{margin:4px 0 12px;color:#68796f;font-size:12px}
-#smvDailyCalendar .cal-details-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-flow:row;align-content:start;align-items:stretch;gap:9px;margin-bottom:14px}
+#smvDailyCalendar .cal-details-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:14px}
 #smvDailyCalendar .cal-details-summary article{min-width:0;display:flex;flex-direction:column;gap:5px;padding:12px;background:#fff;border:1px solid #e2d9c8;border-radius:11px}
 #smvDailyCalendar .cal-details-summary article>small{font-size:11px;color:#68796f}
 #smvDailyCalendar .cal-details-summary article>strong{font-size:15px;line-height:1.4;color:#174f47;overflow-wrap:anywhere}
@@ -262,7 +262,7 @@ html body.calendar-only>header.calendar-topbar{
  font-size:13px;font-weight:600;line-height:1.55;text-align:center;
 }
 #smvDailyCalendar .cal-details-summary article{
- align-items:center;justify-content:flex-start;text-align:center;
+ align-items:center;justify-content:center;text-align:center;
 }
 #smvDailyCalendar .cal-details-summary article>small,
 #smvDailyCalendar .cal-details-summary article>strong,
@@ -319,16 +319,18 @@ html body.calendar-only>header.calendar-topbar{
  #smvDailyCalendar #calDateDetails #calDaily .panchang-data-table td{padding-left:6px;padding-right:6px}
 }
 
-/* Keep the Shoolam direction and the two day-classification flags in one balanced card. */
-#smvDailyCalendar .cal-date-details .cal-details-summary .cal-shoolam-card{
- grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(120px,.95fr);
- align-items:center;gap:12px;text-align:center;padding:13px;
+/* Keep Kari/Thaniya flags left of Abhijit; center Travel Shoolam on its own full-width row. */
+#smvDailyCalendar .cal-date-details .cal-details-summary .cal-day-flags-card{
+ grid-column:auto;display:flex;align-items:center;justify-content:center;padding:13px 8px;
 }
-#smvDailyCalendar .cal-shoolam-main{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0;text-align:center}
+#smvDailyCalendar .cal-date-details .cal-details-summary .cal-shoolam-card{
+ grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:12px;text-align:center;padding:13px;
+}
+#smvDailyCalendar .cal-shoolam-main{display:flex;width:100%;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0;text-align:center}
 #smvDailyCalendar .cal-shoolam-main>small{font-size:11px;color:#68796f}
 #smvDailyCalendar .cal-shoolam-main>strong{font-size:16px;color:#174f47}
 #smvDailyCalendar .cal-shoolam-main>span{font-size:12px;line-height:1.45;color:#576a60}
-#smvDailyCalendar .cal-day-flags{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;min-width:0;padding-left:12px;border-left:1px solid #e6ddcf}
+#smvDailyCalendar .cal-day-flags{display:grid;width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;min-width:0;padding:0;border:0}
 #smvDailyCalendar .cal-day-flag{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;padding:9px 5px;border:1px solid #dce5dd;border-radius:9px;background:#f4f8f3;text-align:center}
 #smvDailyCalendar .cal-day-flag>small{font-size:11px;line-height:1.25;color:#596e62}
 #smvDailyCalendar .cal-day-flag>strong{font-size:13px;font-weight:850;line-height:1.25;color:#246e48}
@@ -339,15 +341,17 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-day-yoga-card.is-unknown{border-left:4px solid #a9a394;background:#f5f3ee}
 #smvDailyCalendar .cal-day-yoga-card.is-unknown>strong{color:#716d61}
 @media(max-width:420px){
- #smvDailyCalendar .cal-date-details .cal-details-summary .cal-shoolam-card{grid-template-columns:minmax(0,1fr) minmax(112px,.9fr);gap:8px;padding:10px}
- #smvDailyCalendar .cal-day-flags{gap:5px;padding-left:8px}
+ #smvDailyCalendar .cal-date-details .cal-details-summary .cal-day-flags-card{padding:9px 2px}
+ #smvDailyCalendar .cal-date-details .cal-details-summary .cal-shoolam-card{padding:10px}
+ #smvDailyCalendar .cal-day-flags{gap:5px}
  #smvDailyCalendar .cal-day-flag{padding:8px 3px}
  #smvDailyCalendar .cal-day-flag>small{font-size:10px}
  #smvDailyCalendar .cal-day-flag>strong{font-size:12px}
 }
 @media(max-width:340px){
- #smvDailyCalendar .cal-date-details .cal-details-summary .cal-shoolam-card{grid-template-columns:minmax(0,1fr)}
- #smvDailyCalendar .cal-day-flags{padding:8px 0 0;border-left:0;border-top:1px solid #e6ddcf}
+ #smvDailyCalendar .cal-date-details .cal-details-summary .cal-day-flags-card{padding:10px 4px}
+ #smvDailyCalendar .cal-date-details .cal-details-summary .cal-shoolam-card{padding:10px 4px}
+ #smvDailyCalendar .cal-day-flags{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 
 
@@ -379,7 +383,8 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar #calDateDetailsExtra .cal-details-summary article{padding:11px 4px!important;border-bottom:1px solid var(--cal-line,#d9e5df)!important}
 #smvDailyCalendar #calDateDetailsExtra .cal-details-summary article.cal-shoolam-card{border-bottom:0!important}
 #smvDailyCalendar #calDateDetailsExtra .cal-day-yoga-card.is-auspicious{border-left:3px solid #27804c!important;background:transparent!important}
-#smvDailyCalendar #calDateDetailsExtra .cal-day-yoga-card.is-inauspicious{border-left:3px solid #b52f2b!important;background:transparent!important}
+#smvDailyCalendar #calDateDetailsExtra .cal-day-yoga-card.is-inauspicious{border-left:0!important;background:transparent!important}
+#smvDailyCalendar #calDateDetailsExtra .cal-day-yoga-card.is-inauspicious .cal-yoga-segment.is-inauspicious{border-left:0!important}
 #smvDailyCalendar #calDateDetailsExtra .cal-day-yoga-card.is-unknown{border-left:3px solid #a9a394!important;background:transparent!important}
 #smvDailyCalendar #calDateDetailsExtra .cal-shoolam-card{padding:10px 4px!important}
 #smvDailyCalendar #calDateDetailsExtra .cal-day-flag{padding:7px 3px!important;border:0!important;border-radius:0!important;background:transparent!important}

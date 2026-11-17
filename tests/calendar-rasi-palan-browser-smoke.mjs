@@ -109,21 +109,23 @@ try {
   const resultPlacement = await page.$eval('#calMuhurtaLagna', el => {
     const dateDetails = document.querySelector('#calDateDetails');
     const summary = document.querySelector('#calDateDetailsExtra');
+    const flagsCard = summary?.querySelector('.cal-day-flags-card');
+    const flags = flagsCard?.querySelectorAll('.cal-day-flag') || [];
     const shoolam = summary?.querySelector('.cal-shoolam-card');
-    const flags = shoolam?.querySelectorAll('.cal-day-flag') || [];
     return {
       insideDateDetails: Boolean(dateDetails && el.parentElement === dateDetails),
-      immediatelyAfterShoolamAndDayFlags: Boolean(summary && summary.nextElementSibling === el && shoolam && flags.length === 2),
+      dayFlagsSeparated: Boolean(flagsCard && flags.length === 2),
+      shoolamSeparate: Boolean(shoolam && !shoolam.querySelector('.cal-day-flag')),
       immediatelyBeforePanchang: el.nextElementSibling?.id === 'calDaily'
     };
   });
   assert.equal(resultPlacement.insideDateDetails, true, 'The three result sections must remain inside Date Details.');
-  assert.equal(resultPlacement.immediatelyAfterShoolamAndDayFlags, true, 'The three result sections must immediately follow Travel Shoolam and Kari/Thaniya day flags.');
+  assert.equal(resultPlacement.dayFlagsSeparated, true, 'Kari/Thaniya flags must use their own card.');
+  assert.equal(resultPlacement.shoolamSeparate, true, 'Travel Shoolam must be separate from the day flags.');
   assert.equal(resultPlacement.immediatelyBeforePanchang, true, 'The three result sections must appear before the Panchang details.');
 
-  // Capture and assert the Date Details grid itself, using the same mobile
-  // viewport as the user's screenshots. Short cards must start at the same
-  // top edge as their longer partner, not be vertically centered in its row.
+  // Verify the requested Date Details layout and the month-number alignment at
+  // a narrow phone viewport matching the submitted mobile screenshot.
   const detailsOriginalDate = await page.$eval('#calDate', el => el.value);
   const detailsOriginalLanguage = await page.evaluate(() => document.documentElement.lang || 'en');
   const detailsOriginalViewport = page.viewport();
@@ -140,40 +142,80 @@ try {
     const cards = document.querySelectorAll('#calDateDetailsExtra .cal-details-summary > article');
     return status.includes('2026-11-17') && cards.length >= 2;
   }, { timeout: 90000 });
-  await page.setViewport({ width: 480, height: 900, deviceScaleFactor: 1 });
-  const dateDetailsAlignment = await page.evaluate(() => {
+  await page.setViewport({ width: 360, height: 800, deviceScaleFactor: 1 });
+
+  const requestedLayout = await page.evaluate(() => {
     const grid = document.querySelector('#calDateDetailsExtra .cal-details-summary');
-    const cards = [...(grid?.querySelectorAll(':scope > article') || [])];
-    const left = cards[0], right = cards[1];
-    if (!grid || !left || !right) return { available: false };
-    const leftRect = left.getBoundingClientRect(), rightRect = right.getBoundingClientRect();
-    const leftLabel = left.querySelector('small')?.getBoundingClientRect();
-    const rightLabel = right.querySelector('small')?.getBoundingClientRect();
+    const flags = grid?.querySelector('.cal-day-flags-card');
+    const abhijit = [...(grid?.querySelectorAll('.cal-muhurta-card') || [])]
+      .find(card => /Abhijit Muhurtham|அபிஜித் முகூர்த்தம்/.test(card.textContent || ''));
+    const shoolam = grid?.querySelector('.cal-shoolam-card');
+    const shoolamMain = shoolam?.querySelector('.cal-shoolam-main');
+    const thyajyam = grid?.querySelector('.cal-day-yoga-card.is-inauspicious');
+    if (!grid || !flags || !abhijit || !shoolam || !shoolamMain || !thyajyam) return { available: false };
+    const flagsRect = flags.getBoundingClientRect();
+    const abhijitRect = abhijit.getBoundingClientRect();
+    const shoolamRect = shoolam.getBoundingClientRect();
+    const mainRect = shoolamMain.getBoundingClientRect();
+    const gridRect = grid.getBoundingClientRect();
     return {
       available: true,
-      windowWidth: window.innerWidth,
-      gridWidth: grid.getBoundingClientRect().width,
-      computedGridTemplateColumns: getComputedStyle(grid).gridTemplateColumns,
-      windowWidth: window.innerWidth,
-      gridWidth: grid.getBoundingClientRect().width,
-      computedGridTemplateColumns: getComputedStyle(grid).gridTemplateColumns,
-      columns: cards.filter(card => Math.abs(card.getBoundingClientRect().top - leftRect.top) < 1).length,
-      leftTop: leftRect.top,
-      rightTop: rightRect.top,
-      leftLabelTop: leftLabel?.top ?? null,
-      rightLabelTop: rightLabel?.top ?? null,
-      firstPairLabels: [left.querySelector('small')?.textContent.trim(), right.querySelector('small')?.textContent.trim()]
+      width: window.innerWidth,
+      flagsLeftOfAbhijit: flagsRect.left < abhijitRect.left,
+      flagsAndAbhijitShareRow: Math.abs(flagsRect.top - abhijitRect.top) < 1,
+      shoolamFullWidth: Math.abs(shoolamRect.width - gridRect.width) < 1,
+      shoolamContentCentered: Math.abs((mainRect.left + mainRect.width / 2) - (shoolamRect.left + shoolamRect.width / 2)) < 1,
+      thyajyamBorderLeftWidth: getComputedStyle(thyajyam).borderLeftWidth,
+      thyajyamSegmentBorderLeftWidth: getComputedStyle(thyajyam.querySelector('.cal-yoga-segment.is-inauspicious')).borderLeftWidth,
+      cardJustifyContent: getComputedStyle(grid.querySelector('article')).justifyContent
     };
   });
-  assert.equal(dateDetailsAlignment.available, true, 'Date Details must render the first two cards.');
-  assert.equal(dateDetailsAlignment.columns, 2, 'Date Details must place its first two cards in one row at the mobile preview width: ' + JSON.stringify(dateDetailsAlignment));
-  assert.ok(Math.abs(dateDetailsAlignment.leftTop - dateDetailsAlignment.rightTop) < 1,
-    'The first left/right Date Details cards must start on the same row: ' + JSON.stringify(dateDetailsAlignment));
-  assert.ok(Math.abs(dateDetailsAlignment.leftLabelTop - dateDetailsAlignment.rightLabelTop) < 1,
-    'The first left/right Date Details labels must be top-aligned: ' + JSON.stringify(dateDetailsAlignment));
+  assert.equal(requestedLayout.available, true, 'Requested Date Details cards must render.');
+  assert.equal(requestedLayout.flagsLeftOfAbhijit, true, 'Kari/Thaniya must be on the left of Abhijit Muhurtham.');
+  assert.equal(requestedLayout.flagsAndAbhijitShareRow, true, 'Kari/Thaniya and Abhijit must share one row.');
+  assert.equal(requestedLayout.shoolamFullWidth, true, 'Travel Shoolam must occupy its own full-width row.');
+  assert.equal(requestedLayout.shoolamContentCentered, true, 'Travel Shoolam content must be centered.');
+  assert.equal(requestedLayout.thyajyamBorderLeftWidth, '0px', 'The long red left line on the Nakshatra Thyajyam card must be removed.');
+  assert.equal(requestedLayout.thyajyamSegmentBorderLeftWidth, '0px', 'The inner red Thyajyam interval stripe must also be removed.');
+  assert.equal(requestedLayout.cardJustifyContent, 'center', 'PR #524 vertical card alignment must be reverted.');
+
+  const monthNumberAlignment = await page.evaluate(() => {
+    const grid = document.querySelector('#calMonth .cal-month-grid');
+    const special = grid?.querySelector('button.cal-special');
+    const ordinary = grid?.querySelector('button[data-date]:not(.cal-special)');
+    if (!grid || !special || !ordinary) return { available: false };
+    const specialCell = special.getBoundingClientRect();
+    const ordinaryCell = ordinary.getBoundingClientRect();
+    const specialNumber = special.querySelector('strong')?.getBoundingClientRect();
+    const ordinaryNumber = ordinary.querySelector('strong')?.getBoundingClientRect();
+    return {
+      available: Boolean(specialNumber && ordinaryNumber),
+      specialDate: special.dataset.date,
+      ordinaryDate: ordinary.dataset.date,
+      numberOffsetDifference: Math.abs((specialNumber.top - specialCell.top) - (ordinaryNumber.top - ordinaryCell.top)),
+      justifyContent: getComputedStyle(special).justifyContent
+    };
+  });
+  assert.equal(monthNumberAlignment.available, true, 'The selected month must contain both festival and regular date boxes.');
+  assert.ok(monthNumberAlignment.numberOffsetDifference < 1,
+    'English date numbers must begin at the same vertical offset in festival and regular boxes: ' + JSON.stringify(monthNumberAlignment));
+  assert.equal(monthNumberAlignment.justifyContent, 'flex-start', 'Calendar day-cell contents must be top-aligned consistently.');
+
+  await page.$eval('#calMonth', el => el.scrollIntoView({ block: 'start' }));
+  await page.screenshot({
+    path: new URL('calendar-month-holiday-date-alignment-mobile.png', outputDir).pathname,
+    fullPage: false,
+    captureBeyondViewport: false
+  });
   await page.$eval('#calDateDetails', el => el.scrollIntoView({ block: 'start' }));
   await page.screenshot({
     path: new URL('calendar-date-details-mobile.png', outputDir).pathname,
+    fullPage: false,
+    captureBeyondViewport: false
+  });
+  await page.$eval('.cal-day-flags-card', el => el.scrollIntoView({ block: 'center' }));
+  await page.screenshot({
+    path: new URL('calendar-date-details-flags-shoolam-mobile.png', outputDir).pathname,
     fullPage: false,
     captureBeyondViewport: false
   });
