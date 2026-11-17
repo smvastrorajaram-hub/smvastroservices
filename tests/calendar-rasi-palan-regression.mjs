@@ -385,7 +385,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261117-calendar-date-details-alignment-v1' : '20261117-calendar-date-details-alignment-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261117-calendar-date-details-layout-v2' : '20261117-calendar-date-details-layout-v2'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
@@ -395,10 +395,10 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261117-calendar-date-details-alignment-v1'));
-   assert.ok(calendarIndexSource.includes('20261117-calendar-date-details-alignment-v1'));
+   assert.ok(calendarIndexSource.includes('20261117-calendar-date-details-layout-v2'));
+   assert.ok(calendarIndexSource.includes('20261117-calendar-date-details-layout-v2'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
-   assert.ok(calendarIndexSource.includes('20261117-calendar-date-details-alignment-v1'));
+   assert.ok(calendarIndexSource.includes('20261117-calendar-date-details-layout-v2'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'runPeriodForecast\')'));
    assert.ok(calendarIndexSource.includes('The deployed forecast assets could not be loaded from this Calendar host.'));
@@ -737,8 +737,17 @@ test('Calendar Date Details render sunrise Nethiram/Jeevan, direction, Dinantham
 });
 
 
-test('Calendar Date Details cards keep a stable row order and top-aligned paired content', () => {
-  assert.match(calendarThemeCssSource, /\.cal-details-summary\{[^}]*grid-auto-flow:row;[^}]*align-content:start;[^}]*align-items:stretch/);
-  assert.match(calendarThemeCssSource, /\.cal-details-summary article\{\s*align-items:center;justify-content:flex-start;text-align:center;/);
+test('Calendar Date Details restores centred cards and positions day flags beside Abhijit with centred Travel Shoolam', () => {
+  assert.match(calendarThemeCssSource, /\.cal-details-summary\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:9px/);
+  assert.doesNotMatch(calendarThemeCssSource, /\.cal-details-summary\{[^}]*grid-auto-flow:row;[^}]*align-content:start;[^}]*align-items:stretch/);
+  assert.match(calendarThemeCssSource, /\.cal-details-summary article\{\s*align-items:center;justify-content:center;text-align:center;/);
+  assert.match(calendarThemeCssSource, /\.cal-date-details \.cal-details-summary \.cal-day-flags-card\{[\s\S]*?justify-content:center/);
+  assert.match(calendarThemeCssSource, /\.cal-date-details \.cal-details-summary \.cal-shoolam-card\{\s*grid-column:1\/-1;display:flex;align-items:center;justify-content:center/);
+  assert.match(calendarThemeCssSource, /\.cal-month-grid button\{align-items:center;justify-content:flex-start/);
+  assert.match(calendarThemeCssSource, /#calDateDetailsExtra \.cal-day-yoga-card\.is-inauspicious\{border-left:0!important/);
+  assert.match(dailyCalendarSource, /class="cal-day-flags-card"[\s\S]*?Abhijit Muhurtham/);
+  const shoolamMarkup = dailyCalendarSource.match(/cal-shoolam-card"><div class="cal-shoolam-main"[\s\S]*?<\/article>/)?.[0] || '';
+  assert.ok(shoolamMarkup, 'Travel Shoolam must render in its own full-width card.');
+  assert.doesNotMatch(shoolamMarkup, /cal-day-flag/, 'Kari and Thaniya flags must be separate from Travel Shoolam.');
   assert.match(calendarThemeCssSource, /@media\(max-width:340px\)[\s\S]*?\.cal-details-summary\{grid-template-columns:minmax\(0,1fr\)\}/);
 });
