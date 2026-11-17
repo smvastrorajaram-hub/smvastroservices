@@ -284,7 +284,7 @@ html body.calendar-only>header.calendar-topbar{
  text-align:center;vertical-align:middle;
 }
 #smvDailyCalendar #calDateDetails #calDaily .panchang-data-table tr.cal-name-yoga-row td.cal-name-yoga-label{
- color:#174f47;font-weight:850;
+ color:#000;font-weight:400;
 }
 #smvDailyCalendar #calDateDetails #calDaily .panchang-data-table .cal-name-yoga-result{
  display:inline-block;font-weight:750;text-align:center;
@@ -481,4 +481,27 @@ html body.calendar-only>header.calendar-topbar{
  #smvDailyCalendar .cal-muhurta-lagna-grid{grid-template-columns:1fr;gap:0}
  #smvDailyCalendar .cal-muhurta-lagna-item{padding:10px 3px}
  #smvDailyCalendar .cal-muhurta-lagna-item+ .cal-muhurta-lagna-item{border-left:0!important;border-top:1px solid var(--cal-line,#d9e5df)!important}
+}
+
+/* SMV CALENDAR-only Panchang/Hora result typography. */
+#smvDailyCalendar #calDaily .panchang-data-table tr.smv-calendar-primary-result-row>td:nth-child(2){
+ color:#000;-webkit-text-fill-color:#000;font-weight:700;
+}
+#smvDailyCalendar #calDaily .panchang-data-table .panchang-event-range .smv-calendar-neutral-date-time{
+ color:#000;-webkit-text-fill-color:#000;
+}
+#smvDailyCalendar #calDaily .panchang-data-table .panchang-event-range .smv-calendar-normal-connector{
+ color:#000;-webkit-text-fill-color:#000;font-weight:400;margin:0 4px;
+}
+#smvDailyCalendar #calDaily .panchang-data-table .panchang-time-result.smv-calendar-neutral-time{
+ color:#000;-webkit-text-fill-color:#000;font-weight:400;
+}
+#smvDailyCalendar #calDaily .panchang-data-table .panchang-time-result.smv-calendar-bright-red-time{
+ color:#f00;-webkit-text-fill-color:#f00;font-weight:700;
+}
+#smvDailyCalendar #calDaily .hora-vertical .hora-time.smv-calendar-neutral-time:not(.smv-hora-current-green):not(.smv-hora-bright-green):not(.smv-hora-current-red):not(.smv-hora-bright-red){
+ color:#000;-webkit-text-fill-color:#000;font-weight:400;
+}
+#smvDailyCalendar .transit-position-table .transit-table-degree.smv-calendar-degree-normal{
+ color:#000;-webkit-text-fill-color:#000;font-weight:400;
 }
