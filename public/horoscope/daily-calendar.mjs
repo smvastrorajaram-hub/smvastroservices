@@ -1,6 +1,6 @@
 import {offsetMinutesAt} from './offline/places/timezone.mjs';
 import {signs,stars,planets,holidays2026,holidaySource,favorable} from './calendar-data.mjs';
-import {getTamilCalendarDayFlags} from './tamil-day-classifications.mjs';
+import {getTamilCalendarDayFlags,getNakshatraDirection,getNethiramJeevan} from './tamil-day-classifications.mjs';
 import {classifySubhaMuhurtham} from './calendar-muhurta-classification.mjs';
 
 const host=document.getElementById('smvDailyCalendar');
@@ -24,7 +24,7 @@ if(host){
   }
   if(updateOffset)cfg.offset=offset;
   const now=localNowAt(offset);
-  return {date,time:date===now.slice(0,10)?now.slice(11,16):'12:00',lat:+cfg.lat,lon:+cfg.lon,utcOffsetMinutes:offset,language:'en'};
+  return {date,time:date===now.slice(0,10)?now.slice(11,16):'12:00',lat:+cfg.lat,lon:+cfg.lon,utcOffsetMinutes:offset,timezone:cfg.timezone||'',language:'en'};
  }
  function settings(){cfg.rasi=+$('#calRasi').value;cfg.star=+$('#calStar').value;storage.set(cfg);renderExtra()}
  function viewportAnchor(selector){const el=selector?$(selector):null;return el?{selector,top:el.getBoundingClientRect().top}:null}
@@ -303,7 +303,11 @@ if(host){
   const solarDay=Number(solar?.day),monthTa=solar?.monthTa||'—',monthEn=solar?.monthEn||'—';
   const tamilDate=Number.isFinite(solarDay)?String(solarDay)+' · '+(ta()?monthTa:monthEn)+' · '+yearName:'—';
   const dayStar=Number(daily.dayStar);
+  const sunStar=Number(daily.sunStar);
   const dayStarName=Number.isInteger(dayStar)&&dayStar>=1&&dayStar<=27?(stars[dayStar-1]?.[ta()?1:0]||'—'):'—';
+  const sunStarName=Number.isInteger(sunStar)&&sunStar>=1&&sunStar<=27?(stars[sunStar-1]?.[ta()?1:0]||'—'):'—';
+  const nethiramJeevan=getNethiramJeevan(sunStar,dayStar);
+  const nakshatraDirection=getNakshatraDirection(dayStar);
   const weekdayName=(ta()?['ஞாயிறு','திங்கள்','செவ்வாய்','புதன்','வியாழன்','வெள்ளி','சனி']:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'])[weekday];
   const yogaSegments=Array.isArray(daily.amirthadiYogaSegments)?daily.amirthadiYogaSegments:[];
   const dayFlags=getTamilCalendarDayFlags(solar);
@@ -342,6 +346,10 @@ if(host){
   }).join(''):'<small>'+L('No Thyajyam period overlaps this local sunrise day.','இந்த உள்ளூர் சூரிய உதய நாளில் தியாஜ்ய நேரம் இல்லை.')+'</small>':'<small>'+L('Thyajyam timing unavailable.','தியாஜ்ய நேரத்தைக் கணக்கிட முடியவில்லை.')+'</small>';
   const ahas=daily.ahasNazhigai;
   const ahasText=ahas?.available?String(ahas.nazhigai)+' '+L('Nazhigai','நாழி')+' '+String(ahas.vinazhigai)+' '+L('Vinazhigai','விநாழிகை'):'—';
+  const ratri=daily.ratriNazhigai;
+  const ratriText=ratri?.available?String(ratri.nazhigai)+' '+L('Nazhigai','நாழி')+' '+String(ratri.vinazhigai)+' '+L('Vinazhigai','விநாழிகை'):'—';
+  const dinantham=daily.dinantham;
+  const dinanthamText=dinantham?.available?String(dinantham.time||'—'):'—';
   const yogaSegmentsHtml=yogaSegments.length?yogaSegments.map(segment=>{
    const yogaName=ta()?segment.ta:segment.en;
    const starName=stars[Number(segment.nakshatraNumber)-1]?.[ta()?1:0]||'—';
@@ -356,6 +364,11 @@ if(host){
     '<article class="cal-day-yoga-card"><small>'+L('Amirthadi Yogam · Tamil day yoga','அமிர்தாதி யோகம் · தமிழ் நாள் யோகம்')+'</small><div class="cal-yoga-segments">'+yogaSegmentsHtml+'</div><small>'+L('Sunrise reference: ','சூரிய உதய அடிப்படை: ')+(weekdayName||'—')+' · '+dayStarName+(Number.isInteger(dayStar)?' ('+dayStar+')':'')+'</small></article>'+
     '<article class="cal-day-yoga-card is-inauspicious"><small>'+L('Nakshatra Thyajyam / Varjyam','நட்சத்திர தியாஜ்யம்')+'</small><div class="cal-yoga-segments">'+thyajyamHtml+'</div><small>'+L('Based on the star’s 60-ghati division; each Thyajyam lasts 4 ghatis.','நட்சத்திரத்தின் 60 நாழிகைப் பிரிவில், தியாஜ்யம் 4 நாழிகை நீடிக்கும்.')+'</small></article>'+
     '<article class="cal-muhurta-card"><small>'+L('Ahas Pramana / Day length','அகஸ் நாழிகை / பகல்மானம்')+'</small><strong>'+esc(ahasText)+'</strong><span>'+L('Sunrise: ','சூரிய உதயம்: ')+(ahas?.sunrise||'—')+' · '+L('Sunset: ','சூரிய அஸ்தமனம்: ')+(ahas?.sunset||'—')+'</span></article>'+
+    '<article class="cal-muhurta-card"><small>'+L('Ratri Pramana / Night length','ராத்திரி மானம் / இரவு மானம்')+'</small><strong>'+esc(ratriText)+'</strong><span>'+L('Sunset: ','சூரிய அஸ்தமனம்: ')+(p?.sunset||'—')+' · '+L('Next sunrise: ','மறுநாள் சூரிய உதயம்: ')+(daily.nextSunrise||'—')+'</span></article>'+
+    '<article class="cal-muhurta-card"><small>'+L('Dinantham / Night reference','தினாந்தம் (இரவு)')+'</small><strong>'+esc(dinanthamText)+'</strong><span>'+L('Midpoint of the third night yama','இரவு மூன்றாம் யாமத்தின் நடுப்புள்ளி')+'</span></article>'+
+    '<article class="cal-muhurta-card"><small>'+L('Nethiram','நேத்திரம்')+'</small><strong>'+esc(nethiramJeevan.available?String(nethiramJeevan.nethiram):'—')+'</strong><span>'+L('Sun star: ','சூரிய நட்சத்திரம்: ')+esc(sunStarName)+' · '+L('Day star at sunrise: ','உதய நட்சத்திரம்: ')+esc(dayStarName)+'</span></article>'+
+    '<article class="cal-muhurta-card"><small>'+L('Jeevan','ஜீவன்')+'</small><strong>'+esc(nethiramJeevan.available?String(nethiramJeevan.jeevan):'—')+'</strong><span>'+L('Calculated from the Sun and sunrise Nakshatras','சூரிய மற்றும் உதய நட்சத்திர அடிப்படையில்')+'</span></article>'+
+    '<article class="cal-muhurta-card"><small>'+L('Nakshatra day direction','நட்சத்திர நோக்கு நாள்')+'</small><strong>'+esc(nakshatraDirection.available?(nakshatraDirection.symbol+' '+(ta()?nakshatraDirection.ta:nakshatraDirection.en)):'—')+'</strong><span>'+esc(dayStarName)+'</span></article>'+
     '<article class="cal-muhurta-card"><small>'+L('Brahma Muhurtham','பிரம்ம முகூர்த்தம்')+'</small><strong>'+(brahma?brahma.join(' – '):'—')+'</strong><span>'+L('14th of 15 equal parts of the preceding night','முந்தைய இரவின் 15 சம முகூர்த்தங்களில் 14-வது')+'</span></article>'+
     '<article class="cal-muhurta-card"><small>'+L('Abhijit Muhurtham','அபிஜித் முகூர்த்தம்')+'</small><strong>'+(abhijit?abhijit.join(' – '):'—')+'</strong><span>'+L('The 8th of 15 equal daytime Muhurtas','பகல் நேரத்தின் 15 சம முகூர்த்தங்களில் 8-வது')+'</span></article>'+
     '<article class="cal-shoolam-card"><div class="cal-shoolam-main"><small>'+L('Travel Shoolam','பயண சூலம்')+'</small><strong>'+(ta()?shool.directionTa:shool.directionEn)+'</strong><span>'+L('Pariharam','பரிகாரம்')+': '+(ta()?shool.remedyTa:shool.remedyEn)+'</span></div><div class="cal-day-flags"><div class="cal-day-flag '+(!dayFlags.available?'is-unknown':dayFlags.kari?'is-marked':'is-clear')+'"><small>'+L('Kari Naal','கரி நாள்')+'</small><strong>'+(!dayFlags.available?'—':dayFlags.kari?L('Yes','உள்ளது'):L('No','இல்லை'))+'</strong></div><div class="cal-day-flag '+(!dayFlags.available?'is-unknown':dayFlags.thaniya?'is-marked':'is-clear')+'"><small>'+L('Thaniya Naal','தனிய நாள்')+'</small><strong>'+(!dayFlags.available?'—':dayFlags.thaniya?L('Yes','உள்ளது'):L('No','இல்லை'))+'</strong></div></div></article>'+
