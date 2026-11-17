@@ -2,6 +2,7 @@ import {offsetMinutesAt} from './offline/places/timezone.mjs';
 import {signs,stars,planets,holidays2026,holidaySource,favorable} from './calendar-data.mjs';
 import {getTamilCalendarDayFlags,getNakshatraDirection,getNethiramJeevan} from './tamil-day-classifications.mjs';
 import {classifySubhaMuhurtham} from './calendar-muhurta-classification.mjs';
+import {getMuhurthamMonthEligibility,getVastuMuhurtham,getPushkaraNavamsa} from './calendar-muhurta-activities.mjs';
 
 const host=document.getElementById('smvDailyCalendar');
 if(host){
@@ -250,6 +251,24 @@ if(host){
   const lagnaIndex=signs.findIndex(s=>s[0]===lagnaRaw||s[1]===lagnaRaw);
   const lagnaName=lagnaIndex>=0?signs[lagnaIndex][ta()?1:0]:'—';
   const calculationTime=String(daily.en?.t?.requested?.time||daily.en?.p?.requested?.time||'—');
+  const tamilSolar=daily.en?.p?.tamilSolar||null;
+  const marriageMonth=getMuhurthamMonthEligibility({tamilSolar,activity:'marriage'});
+  const selectedLagnaLongitude=Number(daily.en?.t?.lagna?.longitude);
+  const selectedPushkara=getPushkaraNavamsa(selectedLagnaLongitude);
+  const marriageMonthText=!marriageMonth.available
+   ? L('Marriage month rule unavailable','திருமண மாத விதி கிடைக்கவில்லை')
+   : marriageMonth.eligible
+    ? L('Marriage month filter passed only; other rules pending','திருமண மாதத் தடை இல்லை; மற்ற விதிகள் சரிபார்க்கப்பட வேண்டும்')
+    : L('Marriage is avoided in '+marriageMonth.monthEn,'இந்த மாதத்தில் திருமணம் தவிர்க்கப்படுகிறது: '+marriageMonth.monthTa);
+  const pushkaraText=!selectedPushkara.available
+   ? L('Selected-time Pushkara Navamsa unavailable','தேர்ந்தெடுத்த நேரப் புஷ்கர நவாம்சம் கிடைக்கவில்லை')
+   : selectedPushkara.isPushkaraNavamsa
+    ? L('Selected-time Lagna is in Pushkara Navamsa','தேர்ந்தெடுத்த நேர லக்னம் புஷ்கர நவாம்சத்தில் உள்ளது')
+    : L('Selected-time Lagna is not in Pushkara Navamsa','தேர்ந்தெடுத்த நேர லக்னம் புஷ்கர நவாம்சத்தில் இல்லை');
+  const pushkaraMeta=selectedPushkara.available
+   ? L(selectedPushkara.signEn+' '+selectedPushkara.degreeText+' · D9 '+selectedPushkara.navamsaSignEn,
+       selectedPushkara.signTa+' '+selectedPushkara.degreeText+' · நவாம்சம் '+selectedPushkara.navamsaSignTa)
+   : '';
   const isToday=selected===localNow().slice(0,10);
   const lagnaHeading=isToday?L('Current Lagna','நடப்பு லக்னம்'):L('Lagna at selected time','தேர்ந்தெடுத்த நேர லக்னம்');
   const balance=daily.solarSignRasiMana;
@@ -289,11 +308,14 @@ if(host){
    : L('The published list is currently available for 2026 and 2027 only.','தற்போது 2026, 2027 ஆண்டுகளுக்கான வெளியிடப்பட்ட பட்டியல் மட்டுமே இணைக்கப்பட்டுள்ளது.');
   target.innerHTML=
    '<div class="cal-muhurta-lagna-grid">'+
-    '<div class="cal-muhurta-lagna-item"><small>'+L('Subha Muhurtham day','சுபமுகூர்த்த நாள்')+'</small><strong class="cal-subha-verdict '+(classification.available?(classification.isSubhaMuhurtham?'is-subha':'is-not-subha'):'is-unknown')+'">'+esc(verdict)+'</strong><span>'+esc(phaseLabel)+'</span></div>'+
+    '<div class="cal-muhurta-lagna-item"><small>'+L('Published Subha Muhurtham list','வெளியிடப்பட்ட சுபமுகூர்த்தப் பட்டியல்')+'</small><strong class="cal-subha-verdict '+(classification.available?(classification.isSubhaMuhurtham?'is-subha':'is-not-subha'):'is-unknown')+'">'+esc(verdict)+'</strong><span>'+esc(phaseLabel)+'</span></div>'+
     '<div class="cal-muhurta-lagna-item"><small>'+esc(lagnaHeading)+'</small><strong>'+esc(lagnaName)+'</strong><span>'+L('Calculated at','கணக்கீட்டு நேரம்')+' '+esc(calculationTime)+'</span></div>'+
     '<div class="cal-muhurta-lagna-item"><small>'+L('Rasi Mana Lagna Balance','ராசி மான லக்ன இருப்பு')+'</small><strong class="cal-rasi-balance-line">'+esc(balanceLine)+'</strong><span class="cal-rasi-balance-meta">'+esc(balanceMeta)+'</span></div>'+
    '</div>'+
-   '<p class="cal-muhurta-explanation">'+esc(sourceSummary)+' · <a href="'+esc(classification.source||'https://tamilcalendarapp.com/subha-muhurtham-dates/')+'" target="_blank" rel="noopener">'+L('Source list','ஆதாரப் பட்டியல்')+'</a></p>';
+   '<p class="cal-muhurta-explanation">'+esc(sourceSummary)+' · <a href="'+esc(classification.source||'https://tamilcalendarapp.com/subha-muhurtham-dates/')+'" target="_blank" rel="noopener">'+L('Source list','ஆதாரப் பட்டியல்')+'</a></p>'+
+   '<p class="cal-muhurta-explanation">'+esc(L('Marriage month filter: ','திருமண மாதச் சரிபார்ப்பு: ')+marriageMonthText)+'</p>'+
+   '<p class="cal-muhurta-explanation">'+esc(L('Selected-time Lagna Pushkara check: ','தேர்ந்தெடுத்த நேர லக்ன புஷ்கரச் சரிபார்ப்பு: ')+pushkaraText+(pushkaraMeta?' · '+pushkaraMeta:''))+'</p>'+
+   '<p class="cal-muhurta-explanation">'+L('The Pushkara result is for the selected-time Lagna only; it is not yet a calculated Thali-tying time.','இந்த புஷ்கர முடிவு தேர்ந்தெடுத்த நேர லக்னத்திற்கானது மட்டுமே; இது இன்னும் தாலி கட்டும் நேரக் கணக்கீடு அல்ல.')+'</p>';
  }
 
  function renderDateDetails(){
@@ -311,6 +333,7 @@ if(host){
   const weekdayName=(ta()?['ஞாயிறு','திங்கள்','செவ்வாய்','புதன்','வியாழன்','வெள்ளி','சனி']:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'])[weekday];
   const yogaSegments=Array.isArray(daily.amirthadiYogaSegments)?daily.amirthadiYogaSegments:[];
   const dayFlags=getTamilCalendarDayFlags(solar);
+  const vastu=getVastuMuhurtham({tamilSolar:solar,sunrise:p?.sunrise});
   const sunrise=clockMinutes(p?.sunrise),sunset=clockMinutes(p?.sunset);
   const kariEndTime=dayFlags.kari&&sunrise!=null?clockText(sunrise+144):null;
   const priorSunset=clockMinutes(daily.previousSunset);
@@ -374,6 +397,7 @@ if(host){
     '<article class="cal-day-flags-card"><div class="cal-day-flags"><div class="cal-day-flag '+(!dayFlags.available?'is-unknown':dayFlags.kari?'is-marked':'is-clear')+'"><small>'+L('Kari Naal','கரி நாள்')+'</small><strong>'+(!dayFlags.available?'—':dayFlags.kari?L('Yes','உள்ளது'):L('No','இல்லை'))+'</strong>'+(dayFlags.kari?'<small>'+L('Monthly Tyajyam ends ','மாதத் தியாஜ்ய முடிவு ')+esc(kariEndTime||'—')+'</small>':'')+'</div><div class="cal-day-flag '+(!dayFlags.thaniyaAvailable?'is-unknown':dayFlags.thaniya?'is-marked':'is-clear')+'"><small>'+L('Thaniya Naal','தனிய நாள்')+'</small><strong>'+(!dayFlags.thaniyaAvailable?'—':dayFlags.thaniya?L('Yes','உள்ளது'):L('No','இல்லை'))+'</strong><small>'+L('Sri Thanigai calculation','ஸ்ரீ தணிகை கணிதம்')+'</small></div></div></article>' +
     '<article class="cal-muhurta-card"><small>'+L('Abhijit Muhurtham','அபிஜித் முகூர்த்தம்')+'</small><strong>'+(abhijit?abhijit.join(' – '):'—')+'</strong><span>'+L('The 8th of 15 equal daytime Muhurtas','பகல் நேரத்தின் 15 சம முகூர்த்தங்களில் 8-வது')+'</span></article>' +
     '<article class="cal-shoolam-card"><div class="cal-shoolam-main"><small>'+L('Travel Shoolam','பயண சூலம்')+'</small><strong>'+(ta()?shool.directionTa:shool.directionEn)+'</strong><span>'+L('Pariharam','பரிகாரம்')+': '+(ta()?shool.remedyTa:shool.remedyEn)+'</span></div></article>' +
+    '<article class="cal-muhurta-card"><small>'+L('Vastu Day · Bhoomi Pooja','வாஸ்து நாள் · பூமி பூஜை')+'</small><strong>'+(vastu.available?(vastu.isVastuDay?L('Vastu day','வாஸ்து நாள்'):L('Not a Vastu day','வாஸ்து நாள் இல்லை')):(vastu.isVastuDay?L('Vastu day · sunrise unavailable','வாஸ்து நாள் · சூரிய உதயம் கிடைக்கவில்லை'):L('Vastu date unavailable','வாஸ்து தேதி கிடைக்கவில்லை')))+'</strong>'+(vastu.isVastuDay&&vastu.available?'<span>'+L('Local sunrise','உள்ளூர் சூரிய உதயம்')+': '+esc(vastu.sunrise)+' · '+String(vastu.sunriseOffsetNazhigai)+' '+L('Nazhigai','நாழிகை')+' ('+String(vastu.sunriseOffsetMinutes)+' '+L('minutes','நிமிடங்கள்')+')</span><strong>'+esc(vastu.wakeStart)+' – '+esc(vastu.wakeEnd)+'</strong><span>'+L('90-minute Vastu waking window','90 நிமிட வாஸ்து விழிப்பு நேரம்')+'</span><strong>'+esc(vastu.pujaStart)+' – '+esc(vastu.pujaEnd)+'</strong><span>'+L('Last 36 minutes · Bhoomi Pooja interval','கடைசி 36 நிமிடங்கள் · பூமி பூஜை நேரம்')+'</span>':'<span>'+L('Vastu is a separate activity-specific date rule; Aadi 11 is only a Vastu exception.','வாஸ்து தனிக் காரிய விதி; ஆடி 11 வாஸ்துவுக்கான விதிவிலக்கு மட்டுமே.')+'</span>')+'</article>' +
    '</div>';
 
   const yogaRow=[...($('#calDaily')?.querySelectorAll('.panchang-data-table tbody tr')||[])].find(row=>/^(Yoga|யோகம்)$/i.test(row.cells?.[0]?.textContent?.trim()||''));
