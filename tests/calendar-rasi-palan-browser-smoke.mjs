@@ -152,12 +152,16 @@ try {
     const shoolam = grid?.querySelector('.cal-shoolam-card');
     const shoolamMain = shoolam?.querySelector('.cal-shoolam-main');
     const thyajyam = grid?.querySelector('.cal-day-yoga-card.is-inauspicious');
-    if (!grid || !flags || !abhijit || !shoolam || !shoolamMain || !thyajyam) return { available: false };
+    const thyajyamSegment = thyajyam?.querySelector('.cal-yoga-segment.is-inauspicious');
+    const thyajyamTime = thyajyamSegment?.querySelector('.cal-yoga-segment-time');
+    if (!grid || !flags || !abhijit || !shoolam || !shoolamMain || !thyajyam || !thyajyamSegment || !thyajyamTime) return { available: false };
     const flagsRect = flags.getBoundingClientRect();
     const abhijitRect = abhijit.getBoundingClientRect();
     const shoolamRect = shoolam.getBoundingClientRect();
     const mainRect = shoolamMain.getBoundingClientRect();
     const gridRect = grid.getBoundingClientRect();
+    const thyajyamSegmentRect = thyajyamSegment.getBoundingClientRect();
+    const thyajyamTimeRect = thyajyamTime.getBoundingClientRect();
     return {
       available: true,
       width: window.innerWidth,
@@ -166,7 +170,9 @@ try {
       shoolamFullWidth: Math.abs(shoolamRect.width - gridRect.width) < 1,
       shoolamContentCentered: Math.abs((mainRect.left + mainRect.width / 2) - (shoolamRect.left + shoolamRect.width / 2)) < 1,
       thyajyamBorderLeftWidth: getComputedStyle(thyajyam).borderLeftWidth,
-      thyajyamSegmentBorderLeftWidth: getComputedStyle(thyajyam.querySelector('.cal-yoga-segment.is-inauspicious')).borderLeftWidth,
+      thyajyamSegmentBorderLeftWidth: getComputedStyle(thyajyamSegment).borderLeftWidth,
+      thyajyamTimeAlignSelf: getComputedStyle(thyajyamTime).alignSelf,
+      thyajyamTimeCentered: Math.abs((thyajyamTimeRect.left + thyajyamTimeRect.width / 2) - (thyajyamSegmentRect.left + thyajyamSegmentRect.width / 2)) < 1,
       cardJustifyContent: getComputedStyle(grid.querySelector('article')).justifyContent
     };
   });
@@ -177,6 +183,8 @@ try {
   assert.equal(requestedLayout.shoolamContentCentered, true, 'Travel Shoolam content must be centered.');
   assert.equal(requestedLayout.thyajyamBorderLeftWidth, '0px', 'The long red left line on the Nakshatra Thyajyam card must be removed.');
   assert.equal(requestedLayout.thyajyamSegmentBorderLeftWidth, '0px', 'The inner red Thyajyam interval stripe must also be removed.');
+  assert.equal(requestedLayout.thyajyamTimeAlignSelf, 'center', 'The Nakshatra Thyajyam time must be centered on narrow mobile screens.');
+  assert.equal(requestedLayout.thyajyamTimeCentered, true, 'The Nakshatra Thyajyam time result must be geometrically centered within its interval row.');
   assert.equal(requestedLayout.cardJustifyContent, 'center', 'PR #524 vertical card alignment must be reverted.');
 
   const monthNumberAlignment = await page.evaluate(() => {
