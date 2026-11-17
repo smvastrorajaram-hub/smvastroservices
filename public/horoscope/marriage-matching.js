@@ -26,7 +26,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const validLongitude=v=>v!==null&&v!==undefined&&String(v).trim()!==''&&Number.isFinite(Number(v));
 const norm=n=>((Number(n)%360)+360)%360, si=lon=>Math.floor(norm(lon)/30), house=(lon,ref)=>((si(lon)-si(ref)+12)%12)+1;
 const planet=(c,n)=>(c?.planets||[]).find(x=>x.name===n);
-function lang(){return document.documentElement.lang==='ta'||document.body.classList.contains('lang-ta')?'ta':'en'}
+function lang(){return document.documentElement.lang==='ta'?'ta':'en'}
 function T(en,ta){return lang()==='ta'?ta:en} function sign(i){return (lang()==='ta'?SIGNS_TA:SIGNS_EN)[(i+12)%12]}
 function dignity(name,lon){const s=si(lon); if(EXALT[name]===s)return T('Exalted','உச்சம்'); if(DEBIL[name]===s)return T('Debilitated','நீசம்'); if((OWN[name]||[]).includes(s))return T('Own sign','சொந்த ராசி'); return T('Ordinary sign','சாதாரண ராசி');}
 function getD9Sign(v){
@@ -136,6 +136,35 @@ function mmCanonPlanet(v){const x=String(v||'').trim().toLowerCase();const rows=
 function mmPlanetEn(n){return ({[P.Sun]:'Sun',[P.Moon]:'Moon',[P.Mars]:'Mars',[P.Mercury]:'Mercury',[P.Jupiter]:'Jupiter',[P.Venus]:'Venus',[P.Saturn]:'Saturn',[P.Rahu]:'Rahu',[P.Ketu]:'Ketu'})[n]||String(n||'');}
 function mmPlanetTa(n){return ({[P.Sun]:'சூரியன்',[P.Moon]:'சந்திரன்',[P.Mars]:'செவ்வாய்',[P.Mercury]:'புதன்',[P.Jupiter]:'குரு',[P.Venus]:'சுக்கிரன்',[P.Saturn]:'சனி',[P.Rahu]:'ராகு',[P.Ketu]:'கேது'})[n]||String(n||'');}
 function mmPlanetText(n){return T(mmPlanetEn(n),mmPlanetTa(n));}
+const MM_ENGLISH_ASTRO_VALUES=Object.freeze({
+ 'சூரியன்':'Sun','சந்திரன்':'Moon','செவ்வாய்':'Mars','புதன்':'Mercury','குரு':'Jupiter',
+ 'சுக்கிரன்':'Venus','சனி':'Saturn','ராகு':'Rahu','கேது':'Ketu','லக்னம்':'Ascendant',
+ 'அசுவினி':'Ashwini','அஸ்வினி':'Ashwini','அஷ்வினி':'Ashwini',
+ 'பரணி':'Bharani','கார்த்திகை':'Krittika','ரோகிணி':'Rohini','மிருகசீரிடம்':'Mrigashira',
+ 'திருவாதிரை':'Ardra','புனர்பூசம்':'Punarvasu','பூசம்':'Pushya','ஆயில்யம்':'Ashlesha','மகம்':'Magha',
+ 'பூரம்':'Purva Phalguni','உத்திரம்':'Uttara Phalguni','ஹஸ்தம்':'Hasta','சித்திரை':'Chitra',
+ 'சுவாதி':'Swati','விசாகம்':'Vishakha','அனுஷம்':'Anuradha','கேட்டை':'Jyeshtha','மூலம்':'Mula',
+ 'பூராடம்':'Purva Ashadha','உத்திராடம்':'Uttara Ashadha','திருவோணம்':'Shravana','அவிட்டம்':'Dhanishta',
+ 'சதயம்':'Shatabhisha','பூரட்டாதி':'Purva Bhadrapada','உத்திரட்டாதி':'Uttara Bhadrapada','ரேவதி':'Revati',
+ 'விவாஹ':'Vivaha','விவாஹம்':'Vivaha','பரதார':'Paradara','ப்ரீதி':'Preeti',
+ 'ஆதி':'Adi','மத்திய':'Madhya','அந்த்ய':'Antya','சஹம்':'Saham'
+});
+function mmEnglishReportText(value){
+ let out=String(value??'').trim();if(!out)return '—';
+ for(let i=0;i<SIGNS_TA.length;i++)out=out.split(SIGNS_TA[i]).join(SIGNS_EN[i]);
+ for(const [tamil,english] of Object.entries(MM_ENGLISH_ASTRO_VALUES).sort((a,b)=>b[0].length-a[0].length))out=out.split(tamil).join(english);
+ out=out.replace(/(\d+)-ஆம்/gu,(_match,digits)=>{
+  const n=Number(digits),lastTwo=n%100,last=n%10;
+  const suffix=lastTwo>=11&&lastTwo<=13?'th':last===1?'st':last===2?'nd':last===3?'rd':'th';
+  return digits+suffix;
+ });
+ out=out.replace(/அதிபதி/gu,'lord').replace(/பாவத்தில்/gu,'in the house').replace(/பாவம்/gu,'house')
+  .replace(/நட்சத்திரம்/gu,'Nakshatra').replace(/ராசி/gu,'Rasi').replace(/தசா/gu,'Dasha')
+  .replace(/புக்தி/gu,'Bhukti').replace(/கோச்சாரம்/gu,'Gochara').replace(/விலக்கு/gu,'cancellation');
+ if(typeof window.__smvEnglishTextNode==='function')out=window.__smvEnglishTextNode(out);
+ return out;
+}
+function mmReportValue(value){return lang()==='en'?mmEnglishReportText(value):String(value??'—');}
 function mmSep(a,b){const d=Math.abs(norm(a)-norm(b));return Math.min(d,360-d);}
 function kalaSarpaAssessment(c){
  const rah=planet(c,P.Rahu),ket=planet(c,P.Ketu),lag=Number(c?.lagna?.longitude),seven=MM_CLASSICAL_SEVEN.map(n=>[n,planet(c,n)]);
@@ -590,6 +619,7 @@ function renderPublicPorutham(b,g,out){
  out.innerHTML=`<section class="mm-person-result mm-public-porutham-only"><h3>${T('Nakshatra Porutham','நட்சத்திரப் பொருத்தம்')} · ${pr.score}/10</h3>${mmNakshatraHumanReading(pr)}${mmV253PublicFactors(pr)}${mmPoruthamEvidence(pr)}</section>`;
  if(lang()==='en')window.__smvApplyEnglishToHoroscope?.(out);
  window.__smvLocalizeTamilResult?.(out,lang());
+  if(lang()==='en')window.__smvApplyEnglishToHoroscope?.(out);
  // The shared auth/config startup can clear and hide #mmResult asynchronously.
  // A successful Basic Nakshatra render must explicitly release that container.
  out.hidden=false;
@@ -623,12 +653,12 @@ function mmTimingConfirmation(b,g,tr){
   if(tr?.planets) rows.push(`${label}: ${T('selected-date Gochara','தேர்ந்தெடுத்த தேதிக்கான கோச்சாரம்')} — ${good.length?T('support from','ஆதரவு')+' '+good.join(', '):T('no strong Jupiter/Venus/Moon favourable-house confirmation','குரு/சுக்கிரன்/சந்திரன் சாதக பாவ உறுதிப்பாடு வலுவாக இல்லை')}${nodeGood.length?' · '+T('node timing support','ராகு/கேது கால ஆதரவு')+' '+nodeGood.join(', '):''}.`);
   const a=c?.advanced||c?.advancedData||{};
   const tj=a?.tajaka||c?.tajaka;
-  if(tj){const bits=[];if(tj.yearLord)bits.push(`${T('Year lord','வருட அதிபதி')}: ${tj.yearLord}`);if(tj.muntha?.house)bits.push(`${T('Muntha house','முன்தா பாவம்')}: ${tj.muntha.house}`);if(bits.length)rows.push(`${label}: Tajaka — ${bits.join(' · ')}.`);}
+  if(tj){const bits=[];if(tj.yearLord)bits.push(`${T('Year lord','வருட அதிபதி')}: ${mmReportValue(tj.yearLord)}`);if(tj.muntha?.house)bits.push(`${T('Muntha house','முன்தா பாவம்')}: ${tj.muntha.house}`);if(bits.length)rows.push(`${label}: Tajaka — ${bits.join(' · ')}.`);}
   const sh=a?.v5?.sahams||a?.sahams||c?.sahams; const items=sh?.items||[];
   const rel=items.filter(x=>/Vivaha|Paradara|Preeti|விவாஹ|பரதார|ப்ரீதி/i.test(String(x?.name||''))).slice(0,3);
-  if(rel.length)rows.push(`${label}: ${T('relationship Sahams','உறவு சஹம்கள்')} — ${rel.map(x=>`${x.name}: ${x.rasi||'—'} ${x.degreeDms||x.degree||''}`.trim()).join(' · ')}.`);
+  if(rel.length)rows.push(`${label}: ${T('relationship Sahams','உறவு சஹம்கள்')} — ${rel.map(x=>`${mmReportValue(x.name)}: ${mmReportValue(x.rasi||'—')} ${x.degreeDms||x.degree||''}`.trim()).join(' · ')}.`);
   const sb=a?.sarvatobhadra||c?.sarvatobhadra;
-  if(sb?.centerNakshatra)rows.push(`${label}: Sarvatobhadra — ${T('reference Nakshatra','குறிப்பு நட்சத்திரம்')}: ${sb.centerNakshatra}; ${T('used only as a timing/vedha confirmation layer','timing/வேதை உறுதிப்பாட்டு அடுக்காக மட்டும் பயன்படுத்தப்படுகிறது')}.`);
+  if(sb?.centerNakshatra)rows.push(`${label}: Sarvatobhadra — ${T('reference Nakshatra','குறிப்பு நட்சத்திரம்')}: ${mmReportValue(sb.centerNakshatra)}; ${T('used only as a timing/vedha confirmation layer','timing/வேதை உறுதிப்பாட்டு அடுக்காக மட்டும் பயன்படுத்தப்படுகிறது')}.`);
   const su=a?.sudarshana||c?.sudarshana;
   if(Array.isArray(su?.rings)&&su.rings.length)rows.push(`${label}: Sudarshana — ${T('Lagna/Moon/Sun three-reference layer available for timing cross-check','லக்னம்/சந்திரன்/சூரியன் மூன்று-reference timing cross-check கிடைக்கிறது')}.`);
  };
@@ -1307,7 +1337,7 @@ function mmV279DoshaMap(b,g,ks,sync){
 }
 function mmV279DoshaExplanation(b,g,ks,sync){
  const rows=mmV279DoshaMap(b,g,ks,sync),start=mmAnalysisDate(),end=mmYearsAfter(start,3);
- const describe=(x,side)=>{const arr=v=>Array.isArray(v)?v:[];const vals=[...arr(x?.hits),...arr(x?.reasons),...arr(x?.pressure),...arr(x?.modifiers),...arr(x?.aggravators)].slice(0,4).map(v=>typeof v==='string'?v:typeof v?.text==='string'?v.text:JSON.stringify(v));return `${side}: ${x?.label||x?.text||'—'}${vals.length?' · '+vals.join('; '):''}`;};
+ const describe=(x,side)=>{const arr=v=>Array.isArray(v)?v:[];const vals=[...arr(x?.hits),...arr(x?.reasons),...arr(x?.pressure),...arr(x?.modifiers),...arr(x?.aggravators)].slice(0,4).map(v=>typeof v==='string'?v:typeof v?.text==='string'?v.text:JSON.stringify(v)).map(mmReportValue);return `${side}: ${mmReportValue(x?.label||x?.text||'—')}${vals.length?' · '+vals.join('; '):''}`;};
  const remedy=name=>name===P.Mars?T('Pause before disputes, establish a cooling-off rule and written decisions on property or spending.','சண்டையின் போது இடைவெளி எடுப்பது, உடனடி முடிவுகளைத் தவிர்ப்பது, சொத்து/செலவுத் தீர்மானங்களை எழுதிப் பகிர்வது.'):
  name===P.Rahu||name===P.Ketu?T('Confirm facts directly, avoid secrecy and involve a trusted mediator for prolonged mistrust.','வதந்திகளை விட நேரடியாக உண்மையை உறுதிசெய்தல்; ரகசியங்களைத் தவிர்த்தல்; நம்பிக்கைப் பிரச்சினை நீடித்தால் நடுவரின் உதவி.'):
  name===P.Jupiter?T('Agree on education, children and financial readiness; consult qualified medical advisers for health questions.','கல்வி, குழந்தைகள், நிதி ஆயத்தம் குறித்து இருவரும் முடிவெடுத்தல்; மருத்துவக் கேள்விக்கு மருத்துவ நிபுணரை அணுகுதல்.'):
@@ -1654,7 +1684,7 @@ function mm281CausePlanets(x,chart,fallback){
  if(!out.length)add(fallback);
  return out.slice(0,2);
 }
-function mm281TranslateHit(v){const x=String(v??'');if(lang()!=='ta')return x;
+function mm281TranslateHit(v){const x=String(v??'');if(lang()!=='ta')return mmEnglishReportText(x);
  let m=x.match(/^(\d+)(?:st|nd|rd|th) lord H(\d+)$/i);if(m)return `${m[1]}-ஆம் பாவ அதிபதி ${m[2]}-ஆம் பாவத்தில்`;
  m=x.match(/^(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu) H(\d+)$/i);if(m)return `${mmPlanetText(mmCanonPlanet(m[1]))} ${m[2]}-ஆம் பாவத்தில்`;
  return x;
@@ -1679,7 +1709,7 @@ function mm281PlanetPractice(planetName,ctx){const generic=MM281_DOSHA_PRACTICES
 function mm281FuturePeriods(c,planetName){const start=mmAnalysisDate(),end=mmYearsAfter(start,3),w=mmDashaTimeline(c,start,end).filter(x=>x.lord===planetName||x.parent===planetName),out=[],seen=new Set();for(const x of w){const key=[x.level,x.start,x.end].join('|');if(seen.has(key))continue;seen.add(key);const dates=mmWindowDates(x);const effStart=new Date(Math.max(+start,+dates[0])),effEnd=new Date(Math.min(+end,+dates[1]));out.push(`${x.label}: ${mmIsoDate(effStart)} → ${mmIsoDate(effEnd)}${(+effStart>+dates[0]||+effEnd<+dates[1])?' · '+T('(only the portion inside the next three years; not the full dasha duration)','(அடுத்த 3 வருடத்திற்குள் வரும் பகுதி மட்டும்; முழு தசைக் காலம் அல்ல)'):''}`);if(out.length>=5)break;}return out;}
 function mm281DoshaChapter(b,g,ks,sync,pr){const rows=mmV279DoshaMap(b,g,ks,sync);const nadi=nadiVilakku(pr,b,g),rj=rajjuVilakku(pr),sh=mmShashtashtaka(pr),bk=mmKendraAdhipatya(b),gk=mmKendraAdhipatya(g);
  const parts=[],practiceSeen=new Set(),periodSeen=new Set(),evidenceSeen=new Set();
- for(const r of rows){const sb=r.bs,sg=r.gs,readState=x=>String(x||'').replace(/மீதத் தாக்கம்/g,'தோஷத் தாக்க நிலை').replace(/residual indication/gi,'indication after exception review'),has=(sb.v>0||sg.v>0||r.B?.state==='mitigated'||r.G?.state==='mitigated');
+ for(const r of rows){const sb=r.bs,sg=r.gs,readState=x=>lang()==='en'?mmEnglishReportText(String(x||'')).replace(/residual indication/gi,'indication after exception review'):String(x||'').replace(/மீதத் தாக்கம்/g,'தோஷத் தாக்க நிலை').replace(/residual indication/gi,'indication after exception review'),has=(sb.v>0||sg.v>0||r.B?.state==='mitigated'||r.G?.state==='mitigated');
  const details=(x,chart,who)=>{const arr=(field)=>Array.isArray(x?.[field])?x[field]:[],clean=v=>String(typeof v==='string'?v:typeof v?.text==='string'?v.text:JSON.stringify(v)).replace(/\s+/g,' ').trim(),unique=xs=>{const seen=new Set();return xs.filter(v=>{const key=clean(v);if(!key||seen.has(key))return false;seen.add(key);return true;});},hits=unique([...arr('hits'),...arr('aggravators')]).slice(0,5),ex=unique([...arr('reasons'),...arr('partialReasons'),...arr('context')]).slice(0,4);const pl=planet(chart,r.planetName),lag=Number(chart?.lagna?.longitude),place=pl&&Number.isFinite(lag)?`${mmPlanetText(r.planetName)} ${sign(si(pl.longitude))}, ${house(pl.longitude,lag)}${T('th house','-ஆம் பாவம்')} (${dignity(r.planetName,pl.longitude)})`:T('Position not available','இருப்பிடத் தரவு இல்லை');
  const reason=v=>mm281TranslateHit(typeof v==='string'?v:typeof v?.text==='string'?v.text:JSON.stringify(v));
  const actualCauses=mm281CausePlanets(x,chart,r.planetName);const causeLine=`${T('Inferred directly involved planet(s)','கணக்கில் நேரடியாகச் சம்பந்தப்பட்ட கிரகம்')}: ${actualCauses.map(mmPlanetText).join(', ')}`;const srcKey=`${who}|${place}|${hits.map(reason).join('; ')}`,exKey=`${who}|${ex.map(reason).join('; ')}`;
@@ -1985,14 +2015,17 @@ async function renderMatching(b,g,out,quiet=false){
  // Prepare the additive technical appendix first; then render the full report in its final reading order.
  // Keep the complete established full matching verdict and human-readable
  // prediction report. The new factual chart/table appendix is additive only.
- const basicMod=await import('./marriage-basic-report.mjs?v=20261019-ayurdaya-rules-duration-v253');
+ const basicMod=await import('./marriage-basic-report.mjs?v=20261117-english-report-language-consistency-v1');
  const reviewDate=document.getElementById('mmGocharDate')?.value||new Date().toISOString().slice(0,10);
  const basicHtml=await basicMod.renderBasicMatching(b,g,{
   language:lang(),brideStyle:b.birthChartStyle||'south',groomStyle:g.birthChartStyle||'south',
   reviewDate,poruthamRows:[],transitFn:input=>window.SMVOffline.transit(input)
  });
  out.innerHTML=mm281Report(b,g,pr,ks,sync,gochar,bf,gf,ds,timing,v,basicHtml);
- if(lang()==='en')window.__smvApplyEnglishToHoroscope?.(out);window.__smvLocalizeTamilResult?.(out,lang());localizeMatchingResult(out);out.dataset.resultLanguage=lang();if(!quiet)window.dispatchEvent(new CustomEvent('smv:report-ready',{detail:{feature:'marriage_matching',root:out,prepareViews:()=>matchingViews(b,g,out),birthIdentity:window.__smvGetReportContext('marriage_matching'),name:(b.birthName||b.nativeName||'')+' / '+(g.birthName||g.nativeName||''),calculation:{bride:b,groom:g,transit:matchingTransit}}}));
+ if(lang()==='en')window.__smvApplyEnglishToHoroscope?.(out);window.__smvLocalizeTamilResult?.(out,lang());
+  if(lang()==='en')window.__smvApplyEnglishToHoroscope?.(out);localizeMatchingResult(out);
+  if(lang()==='en')window.__smvApplyEnglishToHoroscope?.(out);
+  out.dataset.resultLanguage=lang();if(!quiet)window.dispatchEvent(new CustomEvent('smv:report-ready',{detail:{feature:'marriage_matching',root:out,prepareViews:()=>matchingViews(b,g,out),birthIdentity:window.__smvGetReportContext('marriage_matching'),name:(b.birthName||b.nativeName||'')+' / '+(g.birthName||g.nativeName||''),calculation:{bride:b,groom:g,transit:matchingTransit}}}));
 }
 function mount(){
  const host=document.getElementById('smvMarriageMatching');if(!host)return;
