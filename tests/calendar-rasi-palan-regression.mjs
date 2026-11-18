@@ -315,6 +315,7 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   assert.match(dailyCalendarSource, /return windowsHtml\?'<div class="cal-chandra-windows">'\+upcomingHeading\+windowsHtml/);
   assert.match(calendarThemeCssSource, /cal-chandra-upcoming-heading\{margin:0;color:#2c704d;font-size:13px;font-weight:750;line-height:1\.4\}/);
   assert.match(calendarThemeCssSource, /cal-chandrashtama-result\{margin:0;color:#28734d;font-size:16px;font-weight:800;line-height:1\.35\}/);
+  assert.ok(dailyCalendarCssSource.includes('.cal-summary h4:not(.cal-chandrashtama-result),.cal-planets h4{font-size:14px!important;'), 'The compact summary-card heading rule must exclude the prominent Chandrashtama result.');
   assert.match(calendarThemeCssSource, /cal-chandrashtama-result\.is-present\{color:#b42318\}/);
   assert.match(calendarThemeCssSource, /cal-chandrashtama-result\.is-absent\{color:#28734d\}/);
   assert.match(calendarThemeCssSource, /cal-chandrashtama\{display:grid;gap:8px;min-width:0;margin:0;padding:0;border:0;border-radius:0;background:transparent/);
