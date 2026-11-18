@@ -235,3 +235,187 @@ export function getPushkaraNavamsa(siderealLongitude) {
     source: MUHURTHAM_ACTIVITY_SOURCES.pushkara
   };
 }
+
+
+// Document 50 — source-specific marriage date list and five-factor Panchaka.
+// Transcribed from Read-only/Document 50_1.jpg through Document 50_5.jpg.
+// This is deliberately separate from the September 2015 Apsara rule table above:
+// the two editions publish different Lagna-Dhruva cells and must not be blended.
+export const DOCUMENT50_MARRIAGE_SOURCES = Object.freeze({
+  rules: 'https://github.com/smvastrorajaram-hub/smvastroservices/blob/main/Read-only/Document%2050_1.jpg',
+  parabhavaDates: 'https://github.com/smvastrorajaram-hub/smvastroservices/blob/main/Read-only/Document%2050_3.jpg',
+  thaliPushkara: 'https://github.com/smvastrorajaram-hub/smvastroservices/blob/main/Read-only/Document%2050_4.jpg',
+  pilavangaDates: 'https://github.com/smvastrorajaram-hub/smvastroservices/blob/main/Read-only/Document%2050_5.jpg'
+});
+
+const DOCUMENT50_PARABHAVA_DATES = Object.freeze([
+  '2026-04-20','2026-04-23','2026-04-30',
+  '2026-05-08','2026-05-13','2026-05-14','2026-05-18','2026-05-20','2026-05-25','2026-05-27','2026-05-28','2026-05-29',
+  '2026-06-04','2026-06-07','2026-06-11','2026-06-17','2026-06-18','2026-06-24','2026-06-25',
+  '2026-07-01','2026-07-02','2026-07-05','2026-07-12',
+  '2026-08-23','2026-08-30','2026-08-31',
+  '2026-09-07','2026-09-13','2026-09-19',
+  '2026-11-01','2026-11-11','2026-11-13','2026-11-15','2026-11-16','2026-11-20','2026-11-22','2026-11-29',
+  '2026-12-04','2026-12-06','2026-12-18',
+  '2027-01-20','2027-01-28',
+  '2027-02-08','2027-02-10','2027-02-11','2027-02-18','2027-02-25','2027-02-26',
+  '2027-03-04','2027-03-11','2027-03-17','2027-03-18','2027-03-24','2027-03-25',
+  '2027-04-04','2027-04-08','2027-04-11'
+]);
+
+const DOCUMENT50_PILAVANGA_DATES = Object.freeze([
+  '2027-04-18','2027-04-23','2027-04-26',
+  '2027-05-09','2027-05-12','2027-05-16','2027-05-17','2027-05-19','2027-05-26','2027-05-27',
+  '2027-06-07','2027-06-10','2027-06-13','2027-06-17','2027-06-24','2027-06-25',
+  '2027-07-09','2027-07-14','2027-07-16',
+  '2027-08-22','2027-08-23','2027-08-27','2027-08-29',
+  '2027-09-03','2027-09-05','2027-09-12','2027-09-13',
+  '2027-10-20','2027-10-22','2027-10-27',
+  '2027-11-08','2027-11-10','2027-11-11','2027-11-12','2027-11-18','2027-11-25',
+  '2027-12-02','2027-12-05','2027-12-08','2027-12-09','2027-12-10'
+]);
+
+export const DOCUMENT50_MARRIAGE_DATE_SUMMARIES = Object.freeze({
+  parabhava2026To2027: Object.freeze({
+    year: 'Parabhava 2026–2027',
+    start: '2026-04-20',
+    end: '2027-04-11',
+    count: DOCUMENT50_PARABHAVA_DATES.length
+  }),
+  pilavanga2027To2028: Object.freeze({
+    year: 'Pilavanga 2027–2028',
+    start: '2027-04-18',
+    end: '2027-12-10',
+    count: DOCUMENT50_PILAVANGA_DATES.length
+  })
+});
+
+const DOCUMENT50_DATE_SETS = Object.freeze([
+  Object.freeze({
+    ...DOCUMENT50_MARRIAGE_DATE_SUMMARIES.parabhava2026To2027,
+    dates: new Set(DOCUMENT50_PARABHAVA_DATES)
+  }),
+  Object.freeze({
+    ...DOCUMENT50_MARRIAGE_DATE_SUMMARIES.pilavanga2027To2028,
+    dates: new Set(DOCUMENT50_PILAVANGA_DATES)
+  })
+]);
+
+function validDocument50CivilDate(value) {
+  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(value || ''))) return false;
+  const date = new Date(value + 'T12:00:00Z');
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+/**
+ * Looks up only the annual date rows actually printed in Document 50.
+ * "Not listed" is not a complete Muhurtham rejection: time-specific
+ * Panchanga/Lagna and family-specific Tara Bala rules are separate checks.
+ * Dates outside the printed table ranges deliberately remain unavailable.
+ */
+export function classifyDocument50MarriageMuhurtham({ date } = {}) {
+  if (!validDocument50CivilDate(date)) {
+    return { available: false, listed: null, date: date ?? null, reason: 'Invalid civil date', source: DOCUMENT50_MARRIAGE_SOURCES.parabhavaDates };
+  }
+  const period = DOCUMENT50_DATE_SETS.find(item => date >= item.start && date <= item.end);
+  if (!period) {
+    return { available: false, listed: null, date, year: null, count: null, reason: 'Date is outside the scanned annual table coverage', source: DOCUMENT50_MARRIAGE_SOURCES.parabhavaDates };
+  }
+  const listed = period.dates.has(date);
+  return {
+    available: true,
+    listed,
+    date,
+    year: period.year,
+    count: period.count,
+    reason: listed ? 'Date is printed in the Document 50 marriage Muhurtham table' : 'Date is not listed in the scanned Document 50 annual table; this is not a complete time-specific rejection',
+    source: period.year.startsWith('Parabhava') ? DOCUMENT50_MARRIAGE_SOURCES.parabhavaDates : DOCUMENT50_MARRIAGE_SOURCES.pilavangaDates
+  };
+}
+
+// Document 50's p.1 / p.5 Panchaka paragraph gives only these five
+// Lagna-Dhruva values. The seven unstated signs are intentionally absent;
+// they must never be silently treated as Dhruva 0 or imported from another book.
+export const DOCUMENT50_LAGNA_DHRUVA = Object.freeze({
+  0: 5,  // Mesha
+  1: 7,  // Rishabha
+  9: 2,  // Makara
+  10: 4, // Kumbha
+  11: 6  // Meena
+});
+
+const DOCUMENT50_PANCHAKA_NAMES = Object.freeze({
+  1: Object.freeze({ en: 'Mrityu Panchakam', ta: 'மிருத்யு பஞ்சகம்' }),
+  2: Object.freeze({ en: 'Agni Panchakam', ta: 'அக்னி பஞ்சகம்' }),
+  4: Object.freeze({ en: 'Raja Panchakam', ta: 'ராஜ பஞ்சகம்' }),
+  6: Object.freeze({ en: 'Chora Panchakam', ta: 'சோர பஞ்சகம்' }),
+  8: Object.freeze({ en: 'Roga Panchakam', ta: 'ரோக பஞ்சகம்' })
+});
+
+/**
+ * Document 50 five-factor Panchaka screening.
+ * Counts are 1-based: Sunday=1, Pratipada=1 within each Paksha,
+ * Ashwini=1, Mesha=1. Only source-stated Dhruva values are computable.
+ * Remainders 3/5/7 are stated as Uttamam; 1/2/4/6/8 as Dosham.
+ * The scan does not specify remainder 0, so it remains unclassified.
+ * This calculation does not apply the separately printed day/night or
+ * ceremony exceptions, which require clearer source verification.
+ */
+export function getDocument50Panchaka({
+  weekdayIndex,
+  tithiNumber,
+  nakshatraNumber,
+  lagnaSignIndex
+} = {}) {
+  const weekday = Number(weekdayIndex);
+  const tithi = Number(tithiNumber);
+  const nakshatra = Number(nakshatraNumber);
+  const lagna = Number(lagnaSignIndex);
+  if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6 ||
+      !Number.isInteger(tithi) || tithi < 1 || tithi > 30 ||
+      !Number.isInteger(nakshatra) || nakshatra < 1 || nakshatra > 27 ||
+      !Number.isInteger(lagna) || lagna < 0 || lagna > 11) {
+    return { available: false, eligible: null, reason: 'Panchanga weekday, Tithi, Nakshatra or Lagna is unavailable or invalid', source: DOCUMENT50_MARRIAGE_SOURCES.rules };
+  }
+  const dhruva = DOCUMENT50_LAGNA_DHRUVA[lagna];
+  if (!Number.isInteger(dhruva)) {
+    return {
+      available: false,
+      eligible: null,
+      weekdayCount: weekday + 1,
+      tithiCount: ((tithi - 1) % 15) + 1,
+      nakshatraCount: nakshatra,
+      lagnaCount: lagna + 1,
+      lagnaSignIndex: lagna,
+      dhruva: null,
+      reason: 'Document 50 does not state a Lagna-Dhruva value for this sign',
+      source: DOCUMENT50_MARRIAGE_SOURCES.rules
+    };
+  }
+  const components = {
+    weekdayCount: weekday + 1,
+    tithiCount: ((tithi - 1) % 15) + 1,
+    nakshatraCount: nakshatra,
+    lagnaCount: lagna + 1,
+    dhruva
+  };
+  const total = Object.values(components).reduce((sum, value) => sum + value, 0);
+  const remainder = total % 9;
+  const name = DOCUMENT50_PANCHAKA_NAMES[remainder] || null;
+  const eligible = [3, 5, 7].includes(remainder) ? true :
+    [1, 2, 4, 6, 8].includes(remainder) ? false : null;
+  return {
+    available: true,
+    eligible,
+    ...components,
+    lagnaSignIndex: lagna,
+    total,
+    remainder,
+    category: name?.en || (eligible === true ? 'Uttamam' : eligible === false ? 'Panchaka Dosham' : 'Not stated by Document 50'),
+    categoryTa: name?.ta || (eligible === true ? 'உத்தமம்' : eligible === false ? 'பஞ்சக தோஷம்' : 'ஆவணத்தில் குறிப்பிடப்படவில்லை'),
+    reason: eligible === true ? 'Remainder 3, 5 or 7 is Uttamam in Document 50' :
+      eligible === false ? 'Remainder 1, 2, 4, 6 or 8 is Panchaka Dosham in Document 50' :
+      'Document 50 does not classify remainder 0',
+    source: DOCUMENT50_MARRIAGE_SOURCES.rules
+  };
+}
