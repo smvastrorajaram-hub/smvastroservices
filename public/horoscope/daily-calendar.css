@@ -228,4 +228,4 @@
 #smvDailyCalendar .cal-chandrashtama-section{margin:20px 0 24px}
 #smvDailyCalendar .cal-chandrashtama-section>h3{margin:0 0 14px}
 #smvDailyCalendar .cal-chandrashtama-section .cal-summary,#smvDailyCalendar #calReadings .cal-summary{grid-template-columns:minmax(0,1fr)}
-#smvDailyCalendar .cal-chandrashtama.is-selected-date{border-color:#c69d45;box-shadow:inset 0 0 0 1px #c69d45;background:#fffaf0}
+#smvDailyCalendar .cal-chandra-window.is-selected-date{border:2px solid #a96d00;background:#fffaf0}
