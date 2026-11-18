@@ -544,7 +544,7 @@ try {
   assert.equal(resultPlacement.insideDateDetails, true, 'The three result sections must remain inside Date Details.');
   assert.equal(resultPlacement.dayFlagsSeparated, true, 'Kari/Thaniya flags must use their own card.');
   assert.equal(resultPlacement.shoolamSeparate, true, 'Travel Shoolam must be separate from the day flags.');
-  assert.equal(resultPlacement.lagnaBeforeChandrashtama, true, 'Chandrashtama must appear immediately after the scoped Pushkara result section.');
+  assert.equal(resultPlacement.pushkaraBeforeChandrashtama, true, 'Chandrashtama must appear immediately after the scoped Pushkara result section.');
   assert.equal(resultPlacement.chandrashtamaSectionInsideDateDetails, true, 'Chandrashtama must remain inside Date Details.');
   assert.equal(resultPlacement.immediatelyBeforePanchang, true, 'Chandrashtama must appear immediately above the daily Panchang.');
 
