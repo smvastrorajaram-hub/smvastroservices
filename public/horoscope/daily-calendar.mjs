@@ -16,6 +16,8 @@ if(host){
  const rememberMonth=(key,value)=>{monthCache.set(key,value);while(monthCache.size>6)monthCache.delete(monthCache.keys().next().value);};
  const localNowAt=offset=>new Date(Date.now()+Number(offset)*60000).toISOString();
  const localNow=()=>localNowAt(cfg.offset);let selected=localNow().slice(0,10),monthKey=selected.slice(0,7),selectedMuhurtaTime='';
+ let document50PushkaraWindowKey='',document50PushkaraWindowPending=null,document50PushkaraWindowRequest=0;
+ const document50PushkaraWindowCache=new Map();
  const workerCall=(kind,input)=>new Promise((resolve,reject)=>{if(!worker){worker=new Worker(new URL('./calendar-worker.mjs',import.meta.url),{type:'module'});worker.onmessage=({data})=>{const p=pending.get(data.id);if(p){pending.delete(data.id);data.error?p.reject(new Error(data.error)):p.resolve(data.result)}};worker.onerror=()=>{for(const p of pending.values())p.reject(new Error('Calendar engine unavailable'));pending.clear();worker.terminate();worker=null;}}const id=++seq;pending.set(id,{resolve,reject});worker.postMessage({id,kind,input});});
  function input(date,updateOffset=true,includeMuhurtaTime=true){
   let offset=Number(cfg.offset);
@@ -230,6 +232,58 @@ if(host){
   return String(Math.floor(minute/60)).padStart(2,'0')+':'+String(minute%60).padStart(2,'0');
  }
 
+
+ function document50PushkaraWindowHtml(result){
+  if(!result||result.available!==true){
+   return '<p>'+esc(L('Unable to calculate the local Pushkara windows. Check the selected place, coordinates and timezone.','உள்ளூர் புஷ்கர நேரங்களைக் கணக்கிட முடியவில்லை. தேர்ந்தெடுத்த இடம், அட்சரேகை, தீர்க்கரேகை மற்றும் நேர மண்டலத்தைச் சரிபார்க்கவும்.'))+'</p>';
+  }
+  const intervals=Array.isArray(result.intervals)?result.intervals:[];
+  const utc=Number(result.utcOffsetMinutes);
+  const offsetText='UTC '+(utc>=0?'+':'')+(utc/60);
+  const selectedMatch=String(selectedMuhurtaTime||'').match(/^(\\d{2}):(\\d{2})$/);
+  const selectedSeconds=selectedMatch?Number(selectedMatch[1])*3600+Number(selectedMatch[2])*60:null;
+  const rows=intervals.map((item,index)=>{
+   const active=selectedSeconds!==null&&selectedSeconds>=Number(item.startSeconds)&&selectedSeconds<Number(item.endSeconds);
+   const sign=ta()?item.lagnaSignTa:item.lagnaSignEn;
+   const navamsa=ta()?item.navamsaSignTa:item.navamsaSignEn;
+   return '<li class="cal-pushkara-window-row"><span>'+esc(sign+' · '+L('Navamsa','நவாம்சம்')+' '+navamsa)+'</span><strong'+(active?' aria-current="time"':'')+'>'+esc(item.startTime+' – '+item.endTime)+'</strong></li>';
+  }).join('');
+  return '<p>'+esc(L('Computed for ','கணக்கிட்ட இடம்: ')+offsetText+' · '+Number(result.latitude).toFixed(5)+', '+Number(result.longitude).toFixed(5)+(result.timezone?' · '+result.timezone:''))+'</p>'+
+   '<p>'+esc(L('Local morning Pushkara-Lagna windows · '+intervals.length+' interval(s) · Swiss Ephemeris / Lahiri / Sripati','உள்ளூர் காலை புஷ்கர லக்ன நேரங்கள் · '+intervals.length+' இடைவெளிகள் · Swiss Ephemeris / லாகிரி / ஸ்ரீபதி'))+'</p>'+
+   (rows?'<ul class="cal-pushkara-window-list">'+rows+'</ul>':'<p>'+esc(L('No Pushkara Navamsa Lagna interval was found between 03:00 and 12:00 local time.','உள்ளூர் நேரம் 03:00 முதல் 12:00 வரை புஷ்கர நவாம்ச லக்ன இடைவெளி கிடைக்கவில்லை.'))+'</p>')+
+   '<p>'+esc(L('The interval boundaries are refined to one second. This is the astronomical Pushkara-Lagna window only; confirm the Document 50 date, Panchaka, Tithi, Yoga, Rahu/Yamagandam and the couple-specific rules separately.','நேர எல்லைகள் ஒரு விநாடி துல்லியத்திற்கு நுணுக்கப்படுத்தப்படுகின்றன. இது வானியல் புஷ்கர லக்ன நேரம் மட்டுமே; ஆவணம் 50 நாள், பஞ்சகம், திதி, யோகம், ராகு/எமகண்டம் மற்றும் மணமக்கள் சார்ந்த விதிகளைத் தனியாக உறுதிப்படுத்த வேண்டும்.'))+'</p>';
+ }
+ function requestDocument50PushkaraWindows(){
+  const target=$('#calDocument50PushkaraWindows');
+  if(!target||!daily)return;
+  const requestInput=input(selected,false,false);
+  const key=[requestInput.date,requestInput.lat,requestInput.lon,requestInput.timezone,requestInput.utcOffsetMinutes].join('|');
+  if(key!==document50PushkaraWindowKey){
+   document50PushkaraWindowKey=key;
+   document50PushkaraWindowPending=null;
+   document50PushkaraWindowRequest++;
+  }
+  const cached=document50PushkaraWindowCache.get(key);
+  if(cached){target.innerHTML=document50PushkaraWindowHtml(cached);return;}
+  if(document50PushkaraWindowPending?.key===key)return;
+  target.innerHTML='<p>'+esc(L('Calculating local morning Pushkara-Lagna windows from the selected coordinates…','தேர்ந்தெடுத்த இடத்தின் அட்சரேகை, தீர்க்கரேகை அடிப்படையில் காலை புஷ்கர லக்ன நேரங்கள் கணக்கிடப்படுகின்றன…'))+'</p>';
+  const ticket=++document50PushkaraWindowRequest;
+  const pending=workerCall('thali-pushkara-windows',requestInput);
+  document50PushkaraWindowPending={key,promise:pending};
+  pending.then(result=>{
+   if(ticket!==document50PushkaraWindowRequest||key!==document50PushkaraWindowKey)return;
+   document50PushkaraWindowPending=null;
+   document50PushkaraWindowCache.set(key,result);
+   while(document50PushkaraWindowCache.size>8)document50PushkaraWindowCache.delete(document50PushkaraWindowCache.keys().next().value);
+   const current=$('#calDocument50PushkaraWindows');
+   if(current)current.innerHTML=document50PushkaraWindowHtml(result);
+  }).catch(error=>{
+   if(ticket!==document50PushkaraWindowRequest||key!==document50PushkaraWindowKey)return;
+   document50PushkaraWindowPending=null;
+   const current=$('#calDocument50PushkaraWindows');
+   if(current)current.innerHTML='<p>'+esc(L('Pushkara interval calculation unavailable: ','புஷ்கர நேரக் கணக்கீடு கிடைக்கவில்லை: ')+String(error?.message||error))+'</p>';
+  });
+ }
  function renderMuhurtaLagna(){
   const target=$('#calMuhurtaLagna');
   if(!target||!daily)return;
@@ -371,7 +425,9 @@ if(host){
    '<p class="cal-muhurta-explanation"><strong>'+L('Document 50 marriage date: ','ஆவணம் 50 திருமண நாள்: ')+'</strong>'+esc(document50DateText)+' · <a href="'+esc(document50Date.source||DOCUMENT50_MARRIAGE_SOURCES.parabhavaDates)+'" target="_blank" rel="noopener">'+L('Scanned source','அசல் ஆவணம்')+'</a></p>'+
    '<p class="cal-muhurta-explanation"><strong>'+L('Document 50 Panchaka at selected time: ','தேர்ந்தெடுத்த நேர ஆவணம் 50 பஞ்சகம்: ')+'</strong>'+esc(panchakaText)+(panchakaMeta?' · '+esc(panchakaMeta):'')+'</p>'+
    '<p class="cal-muhurta-explanation"><strong>'+L('Document 50 time screening: ','ஆவணம் 50 நேரச் சரிபார்ப்பு: ')+'</strong>'+esc(restrictionsText)+(restrictionsWarnings?' · '+esc(restrictionsWarnings):'')+'</p>'+
-   '<p class="cal-muhurta-explanation">'+L('Partial source-based screening only; missing bride/groom-star, Yoga, planetary and full Thali-window checks are not treated as approved.','ஆதாரத்தில் உறுதிப்படுத்திய பகுதிகளுக்கான முதற்கட்டச் சரிபார்ப்பு மட்டுமே; மணமக்கள் நட்சத்திரம், யோகம், கிரக நிலை, முழு தாலி புஷ்கர நேரச் சாளரம் ஆகியவை இன்னும் முழுமையாகச் சரிபார்க்கப்படவில்லை.')+'</p>';
+   '<p class="cal-muhurta-explanation">'+L('The calculated morning Pushkara-Lagna window is not a complete wedding approval; bride/groom-star, full Yoga, planetary and remaining source-specific restrictions must still be checked.','கணக்கிட்ட காலை புஷ்கர லக்ன நேரம் மட்டும் திருமணத்திற்கான முழு ஒப்புதல் அல்ல; மணமக்கள் நட்சத்திரம், முழு யோகம், கிரக நிலை மற்றும் மீதமுள்ள நூல் சார்ந்த தடைகள் இன்னும் சரிபார்க்கப்பட வேண்டும்.')+'</p>'+
+   '<section id="calDocument50PushkaraWindows" class="cal-muhurta-explanation" aria-live="polite"><strong>'+L('Document 50 · local Thali Pushkara timing','ஆவணம் 50 · உள்ளூர் தாலி புஷ்கர நேரம்')+'</strong></section>';
+  requestDocument50PushkaraWindows();
  }
 
  function renderDateDetails(){
