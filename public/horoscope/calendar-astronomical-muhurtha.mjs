@@ -170,7 +170,7 @@ function moudhyaState(positions, planet) {
 export async function calculateSelectedTamilMonthMoudhya(input) {
   const selectedDate = String(input?.date || '');
   const lat = Number(input?.lat), lon = Number(input?.lon);
-  if (!datePattern.test(selectedDate) || selectedDate < '2026-04-14' || selectedDate > '2028-04-13' ||
+  if (!datePattern.test(selectedDate) || selectedDate < '2026-04-14' || selectedDate > '2028-04-14' ||
       !Number.isFinite(lat) || !Number.isFinite(lon)) {
     return { available: false, windows: [], tamilMonth: null };
   }
