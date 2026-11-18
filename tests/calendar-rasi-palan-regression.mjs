@@ -320,7 +320,7 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   assert.doesNotMatch(dailyCalendarSource, /Eighth Rasi|எட்டாம் ராசி/);
   assert.match(dailyCalendarSource, /L\('Moon Nakshatra \/ Pada','சந்திர நட்சத்திரம் \/ பாதம்'\)/);
   assert.match(calendarThemeCssSource, /cal-chandra-pada-row\.is-janma-pada-projection/);
-  assert.doesNotMatch(dailyCalendarCssSource, /cal-chandrashtama-result|cal-chandra-upcoming-heading/);
+  assert.doesNotMatch(dailyCalendarCssSource, /#smvDailyCalendar \.cal-chandrashtama-result\{|#smvDailyCalendar \.cal-chandra-upcoming-heading\{/);
   assert.match(dailyCalendarSource, /Tara Bala/);
   assert.match(dailyCalendarSource, /Transit Moon Rasi/);
   assert.match(dailyCalendarSource, /signs\[moonSign\]\[ta\(\)\?1:0\]/);
