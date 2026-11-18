@@ -758,6 +758,60 @@ try {
     }))
   ));
 
+  // Document 50 Pushkara is rendered only on dates in the two transcribed annual lists.
+  // Its Worker request must reuse the Calendar form's currently selected place.
+  const selectedPushkaraLocation = await page.evaluate(() => ({
+    lat: Number(document.querySelector('#calLat')?.value),
+    lon: Number(document.querySelector('#calLon')?.value),
+    utcOffsetMinutes: Math.round(Number(document.querySelector('#calOffset')?.value) * 60),
+    timezone: (() => { try { return JSON.parse(localStorage.getItem('smv-calendar-settings') || '{}').timezone || ''; } catch { return ''; } })()
+  }));
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, '2026-06-07');
+  await page.waitForFunction(() => {
+    const status = document.querySelector('#calStatus')?.textContent || '';
+    const section = document.querySelector('#calDocument50PushkaraWindows');
+    const text = section?.textContent || '';
+    return status.includes('2026-06-07') && section &&
+      !/Calculating local morning Pushkara-Lagna windows|காலை புஷ்கர லக்ன நேரங்கள் கணக்கிடப்படுகின்றன/.test(text) &&
+      (/Computed for|கணக்கிட்ட இடம்|Pushkara interval calculation unavailable|புஷ்கர நேரக் கணக்கீடு கிடைக்கவில்லை/.test(text));
+  }, { timeout: 180000 });
+  const pushkaraListedDay = await page.$eval('#calDocument50PushkaraWindows', root => ({
+    text: root.textContent || '',
+    rows: [...root.querySelectorAll('.cal-pushkara-window-row')].map(row => row.textContent || '')
+  }));
+  assert.match(pushkaraListedDay.text,/Computed for|கணக்கிட்ட இடம்/,
+    'A Document 50 listed date must calculate its Pushkara windows for the selected Calendar location.');
+  const selectedLatText = selectedPushkaraLocation.lat.toFixed(5);
+  const selectedLonText = selectedPushkaraLocation.lon.toFixed(5);
+  assert.ok(pushkaraListedDay.text.includes(selectedLatText) && pushkaraListedDay.text.includes(selectedLonText),
+    'Thali Pushkara must use the latitude and longitude currently selected in Calendar.');
+  if (pushkaraListedDay.rows.length) {
+    assert.ok(pushkaraListedDay.rows.every(row => /Chandrashtama|சந்திராஷ்டமம்/.test(row)),
+      'Every Thali Pushkara interval must include a Chandrashtama check from the selected Janma Rasi.');
+  } else {
+    assert.match(pushkaraListedDay.text,/No Pushkara Navamsa Lagna interval|புஷ்கர நவாம்ச லக்ன இடைவெளி கிடைக்கவில்லை/);
+  }
+
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, '2026-06-08');
+  await page.waitForFunction(() =>
+    (document.querySelector('#calStatus')?.textContent || '').includes('2026-06-08') &&
+    !document.querySelector('#calDocument50PushkaraWindows'),
+    { timeout: 90000 }
+  );
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, originalCalendarDate);
+  await page.waitForFunction(date =>
+    (document.querySelector('#calStatus')?.textContent || '').includes(date),
+    { timeout: 90000 }, originalCalendarDate);
+
   assert.ok(!/Unable to calculate|கணக்கிட முடியவில்லை/.test(calendarCalculationStatus), 'Daily Calendar must calculate successfully after the Sun/Moon validation fix: ' + calendarCalculationStatus);
 
   const publicUi = await page.evaluate(() => ({
