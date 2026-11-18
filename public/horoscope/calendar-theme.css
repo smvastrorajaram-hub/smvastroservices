@@ -539,3 +539,119 @@ html body.calendar-only>header.calendar-topbar{
     font-size:17px!important;
   }
 }
+
+/* SMV MUHURTA V1 — distinct traditional engines and source-audit result panel. */
+.cal-muhurta-engine{
+  margin:18px 0 0;
+  padding:16px;
+  border:1px solid var(--cal-border, #ded9d0);
+  border-radius:14px;
+  background:var(--cal-card, #fffdfa);
+}
+.cal-muhurta-engine-head,
+.cal-muhurta-engine-status{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+.cal-muhurta-engine-head small,
+.cal-muhurta-rule small,
+.cal-muhurta-engine-status small,
+.cal-muhurta-restricted small{
+  display:block;
+  color:var(--cal-muted, #69645d);
+  font-size:.78rem;
+}
+.cal-muhurta-engine-head h4{
+  margin:3px 0 0;
+  font-size:1.05rem;
+}
+.cal-muhurta-engine-tag{
+  border:1px solid var(--cal-border, #ded9d0);
+  border-radius:999px;
+  padding:4px 9px;
+  font-size:.78rem;
+  white-space:nowrap;
+}
+.cal-muhurta-engine-controls{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  margin:14px 0;
+}
+.cal-muhurta-engine-controls label{
+  display:grid;
+  gap:6px;
+  font-size:.84rem;
+  font-weight:600;
+}
+.cal-muhurta-engine-controls select{
+  width:100%;
+  min-width:0;
+  min-height:42px;
+  padding:8px 10px;
+  border:1px solid var(--cal-border, #ded9d0);
+  border-radius:9px;
+  background:var(--cal-input, #fff);
+  color:inherit;
+}
+.cal-muhurta-engine-result{
+  display:grid;
+  gap:12px;
+}
+.cal-muhurta-engine-status{
+  display:grid;
+  justify-content:stretch;
+  gap:5px;
+  padding:12px;
+  border-radius:10px;
+  background:var(--cal-soft, #f6f2eb);
+}
+.cal-muhurta-engine-status strong{
+  font-size:.94rem;
+}
+.cal-muhurta-engine-status p,
+.cal-muhurta-rule p,
+.cal-muhurta-engine-disclaimer{
+  margin:0;
+  font-size:.86rem;
+  line-height:1.55;
+}
+.cal-muhurta-engine-status.is-rejected{
+  border:1px solid #c77b70;
+}
+.cal-muhurta-restricted,
+.cal-muhurta-rules{
+  display:grid;
+  gap:8px;
+}
+.cal-muhurta-restricted ul{
+  margin:0;
+  padding:0 0 0 20px;
+}
+.cal-muhurta-restricted li{
+  margin:5px 0;
+  line-height:1.45;
+}
+.cal-muhurta-rule{
+  padding:10px 0;
+  border-top:1px solid var(--cal-border, #ded9d0);
+}
+.cal-muhurta-rule>div{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.cal-muhurta-rule p{
+  margin:6px 0;
+}
+.cal-muhurta-engine-disclaimer{
+  color:var(--cal-muted, #69645d);
+}
+@media(max-width:560px){
+  .cal-muhurta-engine{padding:12px}
+  .cal-muhurta-engine-controls{grid-template-columns:1fr}
+}
