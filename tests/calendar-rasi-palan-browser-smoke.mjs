@@ -284,7 +284,8 @@ try {
   assert.equal(futureDateStatus.color, 'rgb(192, 0, 0)', 'Future Chandrashtama Yes must be red.');
   assert.equal(futureDateStatus.fillColor, 'rgb(192, 0, 0)', 'Future Chandrashtama Yes must also render red in WebKit.');
 
-  // A selected date outside a transit must not list a later upcoming transit from the 30-day scan.
+  // When the selected date has no Chandrashtama, keep the status as No and show
+  // only the nearest later transit for the selected Janma Rasi / Nakshatra / Pada.
   await page.$eval('#calDate', (el, date) => {
     el.value = date;
     el.dispatchEvent(new Event('change', { bubbles: true }));
@@ -293,10 +294,30 @@ try {
     const status = document.querySelector('#calStatus')?.textContent || '';
     const root = document.querySelector('#calChandrashtamaPeriods');
     const result = document.querySelector('#calChandrashtamaResult');
+    const windows = [...(root?.querySelectorAll('.cal-chandra-window') || [])];
     return status.includes('2026-11-19') && result?.dataset.resolved === 'true' &&
-      result.dataset.result === 'absent' && root &&
-      !root.querySelector('.cal-chandra-window') && (root.textContent || '') === '';
+      result.dataset.result === 'absent' && windows.length === 1 &&
+      windows[0].classList.contains('is-upcoming') &&
+      windows[0].dataset.periodType === 'upcoming' &&
+      windows[0].dataset.startDate > '2026-11-19';
   }, { timeout: 120000 });
+  const upcomingWindow = await page.$eval('#calChandrashtamaPeriods .cal-chandra-window', el => ({
+    startDate: el.dataset.startDate,
+    endDate: el.dataset.endDate,
+    periodType: el.dataset.periodType,
+    padaRows: [...el.querySelectorAll('.cal-chandra-pada-row')].map(row => Number(row.dataset.birthPada))
+  }));
+  assert.equal(upcomingWindow.periodType, 'upcoming');
+  assert.ok(upcomingWindow.startDate > '2026-11-19', 'The future transit must begin after the date with no Chandrashtama.');
+  assert.equal(upcomingWindow.padaRows.length, 4, 'All valid birth Padas are shown when the Pada selector is All Padas.');
+  const noPeriodStatus = await page.$eval('#calChandrashtamaResult', el => ({
+    result: el.dataset.result,
+    color: getComputedStyle(el).color,
+    fillColor: getComputedStyle(el).webkitTextFillColor
+  }));
+  assert.equal(noPeriodStatus.result, 'absent', 'An upcoming period must not change the selected-date Chandrashtama status.');
+  assert.equal(noPeriodStatus.color, 'rgb(17, 17, 17)', 'The No status stays normal black while the future period is shown.');
+  assert.equal(noPeriodStatus.fillColor, 'rgb(17, 17, 17)', 'The No status keeps black WebKit text fill.');
 
   // Return to the historical transit date for the exact Pada projection checks.
   await page.$eval('#calDate', (el, date) => {
@@ -304,6 +325,9 @@ try {
     el.dispatchEvent(new Event('change', { bubbles: true }));
   }, '2026-11-10');
   await page.waitForFunction(() => document.querySelector('#calChandrashtamaPeriods .cal-chandra-window.is-selected-date'), { timeout: 120000 });
+  assert.equal(document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-window').length, 1,
+    'When the selected date already has Chandrashtama, do not append a future transit.');
+  assert.equal(document.querySelector('#calChandrashtamaPeriods .cal-chandra-window')?.dataset.periodType, 'selected');
   assert.equal(chandrashtamaSmoke.windows.length <= 1, true);
   assert.equal(independentChandrashtamaCheck.padas.length, 4);
   await page.select('#calStarPada', '1');
