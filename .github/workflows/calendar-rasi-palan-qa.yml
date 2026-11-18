@@ -14,8 +14,6 @@ on:
       - 'public/horoscope/calendar-muhurta-classification.mjs'
       - 'public/horoscope/calendar-chandrashtama.mjs'
       - 'tests/calendar-chandrashtama-regression.mjs'
-      - 'public/horoscope/calendar-chandrashtama.mjs'
-      - 'tests/calendar-chandrashtama-regression.mjs'
       - 'tests/calendar-muhurta-lagna-regression.mjs'
       - 'public/horoscope/daily-calendar.css'
       - 'public/horoscope/calendar-theme.css'
@@ -32,6 +30,8 @@ on:
     branches: [main]
     paths:
       - 'public/horoscope/calendar/**'
+      - 'public/horoscope/calendar-chandrashtama.mjs'
+      - 'tests/calendar-chandrashtama-regression.mjs'
       - 'public/_headers'
       - 'public/horoscope/calendar-rasi-palan.*'
       - 'public/horoscope/horoscope-language.js'
