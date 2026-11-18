@@ -68,6 +68,7 @@ test('Panchaka outcomes are activity-specific and expose no calculation operands
   const activities = getPanchakaActivityResults(raja);
   assert.equal(activities.find(item => item.key === 'business').suitableByPanchaka, false);
   assert.equal(activities.find(item => item.key === 'house').suitableByPanchaka, false);
+  assert.equal(activities.find(item => item.key === 'griha-pravesh').suitableByPanchaka, false);
   assert.equal(activities.find(item => item.key === 'travel').suitableByPanchaka, true);
   assert.equal(activities.find(item => item.key === 'marriage').suitableByPanchaka, true);
 
