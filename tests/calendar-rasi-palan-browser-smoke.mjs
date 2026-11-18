@@ -223,13 +223,21 @@ try {
       mainBorder: getComputedStyle(main).borderTopWidth,
       intervalBorder: interval ? getComputedStyle(interval).borderTopWidth : 'missing',
       intervalBackground: interval ? getComputedStyle(interval).backgroundColor : 'missing',
-      intervalPadding: interval ? getComputedStyle(interval).paddingTop : 'missing'
+      intervalPadding: interval ? getComputedStyle(interval).paddingTop : 'missing',
+      detailLayers: [...section.querySelectorAll('.cal-chandra-rasi-period,.cal-chandra-star-period,.cal-chandra-pada-row')].map(node => ({
+        border: getComputedStyle(node).borderTopWidth,
+        background: getComputedStyle(node).backgroundColor,
+        padding: getComputedStyle(node).paddingTop
+      }))
     };
   });
   assert.notEqual(oneLayer.mainBorder, '0px', 'The outer Chandrashtama article must remain the single main box.');
   assert.equal(oneLayer.intervalBorder, '0px', 'The nested interval must not draw a second box border.');
   assert.equal(oneLayer.intervalBackground, 'rgba(0, 0, 0, 0)', 'The nested interval must be transparent inside the main box.');
   assert.equal(oneLayer.intervalPadding, '0px', 'The nested interval must not create a second padded layer.');
+  assert.ok(oneLayer.detailLayers.length >= 3, 'Rasi, Nakshatra and Pada detail rows must remain inside the main layer.');
+  assert.ok(oneLayer.detailLayers.every(layer => layer.border === '0px' && layer.background === 'rgba(0, 0, 0, 0)' && layer.padding === '0px'),
+    'Rasi, Nakshatra and Pada details must not render additional nested box layers.');
   const [startDate, startHour, startMinute, startSecond, endDate, endHour, endMinute, endSecond] = independentChandrashtamaCheck.bounds;
   const localDateTimeMinutes = (date, hour, minute, second) => {
     const [day, month, year] = date.split('/').map(Number);
