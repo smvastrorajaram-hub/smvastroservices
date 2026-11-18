@@ -137,7 +137,7 @@ try {
     })),
     body: root?.textContent || ''
   })});
-  assert.ok(/Chandrashtama: (Yes|No)|சந்திராஷ்டமம் : (உண்டு|இல்லை)/.test(chandrashtamaSmoke.statusText),
+  assert.ok(/Chandrashtama: (Yes|No)|சந்திராஷ்டமம் : (- உண்டு|இல்லை)/.test(chandrashtamaSmoke.statusText),
     'The Chandrashtama subheading must directly show the Yes/No result.');
   assert.equal(chandrashtamaSmoke.headingAlignment, 'center',
     'The main Chandrashtama heading must be centered on desktop.');
@@ -1054,7 +1054,7 @@ try {
   const birthStarState = await page.$eval('#calReadings', el => el.textContent || '');
   assert.ok(/Transit Moon Rasi|கோச்சார சந்திர ராசி/.test(birthStarState), 'Existing Tara Bala card must display the transit Moon Rasi');
   const chandrashtamaState = await page.$eval('#calChandrashtamaSection', el => el.textContent || '');
-  assert.ok(/Chandrashtama: Yes|சந்திராஷ்டமம் : உண்டு/.test(chandrashtamaState) || /Chandrashtama: No|சந்திராஷ்டமம் : இல்லை/.test(chandrashtamaState),
+  assert.ok(/Chandrashtama: Yes|சந்திராஷ்டமம் : - உண்டு/.test(chandrashtamaState) || /Chandrashtama: No|சந்திராஷ்டமம் : இல்லை/.test(chandrashtamaState),
     'The separate Chandrashtama section must show only the direct Yes/No result.');
   assert.ok(/Your Janma Rasi|உங்கள் ஜன்ம ராசி/.test(chandrashtamaState), 'The separate Chandrashtama section must display the selected Janma Rasi');
   assert.ok(/Eighth Rasi · Chandrashtama Rasi|எட்டாம் ராசி · சந்திராஷ்டம ராசி/.test(chandrashtamaState), 'The separate Chandrashtama section must display its corresponding eighth Rasi');
