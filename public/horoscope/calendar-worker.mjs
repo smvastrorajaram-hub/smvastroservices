@@ -51,7 +51,7 @@ function chandrashtamaLocalParts(timestamp,input){
    .filter(part=>part.type!=='literal').map(part=>[part.type,part.value]));
   const date=parts.year+'-'+parts.month+'-'+parts.day;
   const time=parts.hour+':'+parts.minute+':'+parts.second;
-  const utcOffsetMinutes=offsetMinutesAt(input.timezone,date,time);
+  const utcOffsetMinutes=offsetMinutesAt(input.timezone,date,time.slice(0,5));
   return {date,time,utcOffsetMinutes};
  }
  return {...localPartsFromTs(ts,input.utcOffsetMinutes),utcOffsetMinutes:Number(input.utcOffsetMinutes??330)};
@@ -62,7 +62,7 @@ function chandrashtamaStartTimestamp(input){
  const match=time.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!match)throw new Error('சந்திராஷ்டமக் கணக்கிற்கு தேதி / நேரம் சரியாக இல்லை.');
  const offset= input.timezone
-  ? offsetMinutesAt(input.timezone,date,match[1]+':'+match[2]+':'+(match[3]||'00'))
+  ? offsetMinutesAt(input.timezone,date,match[1].padStart(2,'0')+':'+match[2])
   : Number(input.utcOffsetMinutes??330);
  return Date.UTC(
   Number(date.slice(0,4)),Number(date.slice(5,7))-1,Number(date.slice(8,10)),
