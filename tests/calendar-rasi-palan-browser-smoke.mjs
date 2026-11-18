@@ -1061,6 +1061,8 @@ try {
     const eventTime = eventRange?.querySelector('.smv-calendar-event-time');
     const eventDate = eventRange?.querySelector('.smv-calendar-event-date');
     const eventSeparator = eventRange?.querySelector('.smv-calendar-range-separator');
+    const nallaNeramItem=items.find(item=>/^(?:Nalla Neram|நல்ல நேரம்)$/i.test(item.querySelector('small')?.textContent?.trim()||''));
+    const nallaNeramTime=nallaNeramItem?.querySelector('.nalla-neram-time');
     const style = element => element ? getComputedStyle(element) : null;
     return {
       panchangItemCount: items.length,
@@ -1085,6 +1087,8 @@ try {
       panchangRangeDateColor:style(eventDate)?.color||'',
       panchangRangeDateWeight:style(eventDate)?.fontWeight||'',
       panchangRangeSeparatorWeight:style(eventSeparator)?.fontWeight||'',
+      nallaNeramTimeColor:style(nallaNeramTime)?.color||'',
+      nallaNeramTimeWeight:style(nallaNeramTime)?.fontWeight||'',
       namahYogaValue,
       redTimeColors: redTimes.map(element => style(element)?.color || ''),
       normalHoraCount: normalHora.length,
@@ -1108,11 +1112,13 @@ try {
   assert.equal(dailyTypography.panchangRangeWhiteSpace, 'nowrap', 'Each Panchang time range must remain on one line.');
   assert.equal(dailyTypography.panchangRangeRectCount, 1, 'Each Panchang time range must occupy a single line box.');
   assert.equal(dailyTypography.panchangRangeSeparator, '-', 'The two time boundaries must be joined by a hyphen without spaces.');
-  assert.equal(dailyTypography.panchangRangeTimeColor, 'rgb(40, 115, 77)', 'Only the time values use the Calendar theme green.');
+  assert.equal(dailyTypography.panchangRangeTimeColor, 'rgb(75, 0, 130)', 'Tithi, Nakshatra, Namah Yoga and Karana time values must use dark purple.');
   assert.equal(dailyTypography.panchangRangeTimeWeight, '400', 'Panchang time values must not be bold.');
   assert.equal(dailyTypography.panchangRangeDateColor, 'rgb(82, 100, 90)', 'The date text remains neutral rather than green.');
   assert.equal(dailyTypography.panchangRangeDateWeight, '400', 'The date text is not bold.');
   assert.equal(dailyTypography.panchangRangeSeparatorWeight, '400', 'The hyphen is not bold.');
+  assert.equal(dailyTypography.nallaNeramTimeColor, 'rgb(0, 200, 83)', 'Only Nalla Neram time values must use bright green.');
+  assert.equal(dailyTypography.nallaNeramTimeWeight, '400', 'Nalla Neram time values must not be bold.');
   assert.doesNotMatch(dailyTypography.namahYogaValue, /impact|obstruction|தாக்கம்|இடையூறு|தடை/i, 'Namah Yoga must not display explanatory impact/obstruction wording.');
   assert.equal(dailyTypography.redTimeColors.length, 2, 'Rahu Kalam and Yamagandam must both be present.');
   assert.ok(dailyTypography.redTimeColors.every(color => color === 'rgb(180, 35, 24)'), 'Rahu Kalam and Yamagandam must use the restrained red accent.');
