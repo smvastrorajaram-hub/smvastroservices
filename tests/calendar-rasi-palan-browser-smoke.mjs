@@ -108,6 +108,15 @@ try {
   const calendarCalculationStatus = await page.$eval('#calStatus', el => el.textContent || '');
   await page.waitForSelector('#calMuhurtaLagna .cal-muhurta-lagna-grid .cal-muhurta-lagna-item', { timeout: 30000 });
   await page.waitForFunction(() => document.querySelector('#calChandrashtamaResult')?.dataset.resolved === 'true', { timeout: 180000 });
+  await page.waitForFunction(() =>
+    Boolean(document.querySelector('#calReadings > h3') && document.querySelector('#calEvents > h3')),
+    { timeout: 30000 });
+  const dailyDetailsOrder = await page.$eval('#calDateDetails', root =>
+    [...root.children].map(child => child.id).filter(id =>
+      ['calChandrashtamaSection', 'calReadings', 'calEvents', 'calDaily'].includes(id)));
+  assert.deepEqual(dailyDetailsOrder,
+    ['calChandrashtamaSection', 'calReadings', 'calEvents', 'calDaily'],
+    'Chandrashtama must be followed by Tara Bala and observances, with daily Panchang beneath them.');
   const chandrashtamaSmoke = await page.$eval('#calChandrashtamaSection', section => {
     const root = section.querySelector('#calChandrashtamaPeriods');
     const status = section.querySelector('#calChandrashtamaResult');
