@@ -149,7 +149,7 @@ try {
     const root = document.querySelector('#calChandrashtamaPeriods');
     return status.includes('2026-11-10') &&
       [...(root?.querySelectorAll('.cal-chandra-window') || [])].some(window =>
-        (window.querySelector('.cal-chandra-window-heading strong')?.textContent || '').includes('10/11/2026'));
+        (window.querySelector('.cal-chandra-rasi-period span')?.textContent || '').includes('10/11/2026'));
   }, { timeout: 120000 });
   const independentChandrashtamaCheck = await page.$eval('#calChandrashtamaPeriods', root => {
     const item = [...root.querySelectorAll('.cal-chandra-window')].find(window =>
