@@ -756,71 +756,66 @@ try {
       deviceScaleFactor: detailsOriginalViewport.deviceScaleFactor || 1
     });
   }
-  const muhurtaLagnaUi = await page.$eval('#calMuhurtaLagna', el => ({
-    labels: [...el.querySelectorAll('.cal-muhurta-lagna-item > small')].map(node => node.textContent.trim()),
-    verdict: el.querySelector('.cal-subha-verdict')?.textContent.trim() || '',
-    balanceLine: el.querySelector('.cal-rasi-balance-line')?.textContent.trim() || '',
-    phaseLabel: el.querySelector('.cal-subha-verdict')?.nextElementSibling?.textContent.trim() || ''
-  }));
-  assert.equal(muhurtaLagnaUi.labels.length, 3, 'Date Details must show Subha Muhurtham, current Lagna, and Rasi Mana Lagna balance separately.');
-  assert.ok(/Subha Muhurtham|சுபமுகூர்த்தம்/.test(muhurtaLagnaUi.labels[0]), 'Left item must identify the Subha Muhurtham day.');
-  assert.ok(/Lagna|லக்னம்/.test(muhurtaLagnaUi.labels[1]), 'Middle item must identify the current or selected-time Lagna.');
-  assert.ok(/Rasi Mana|ராசி மான/.test(muhurtaLagnaUi.labels[2]), 'Third item must identify the solar-sign Rasi Mana balance.');
-  assert.ok(muhurtaLagnaUi.verdict.length > 0, 'The Panchanga day assessment must render a result.');
-  assert.ok(muhurtaLagnaUi.balanceLine.length > 0, 'The solar-ingress Lagna-balance line must render a status.');
-
-  await page.waitForFunction(() => {
-    const line = document.querySelector('#calMuhurtaLagna .cal-rasi-balance-line')?.textContent || '';
-    return line && !/being calculated|கணக்கிடப்படுகிறது/i.test(line);
-  }, { timeout: 90000 });
-  const completedLagnaBalance = await page.$eval('#calMuhurtaLagna .cal-rasi-balance-line', el => el.textContent.trim());
-  assert.ok(!/unavailable|கணக்கிட முடியவில்லை/i.test(completedLagnaBalance), 'Solar-ingress Lagna balance must calculate successfully: ' + completedLagnaBalance);
-  assert.ok(/Lagna balance|லக்ன இருப்பு/.test(completedLagnaBalance), 'The completed result must contain the Lagna balance value.');
-  const currentBalanceMeta = await page.$eval('#calMuhurtaLagna .cal-rasi-balance-meta', el => el.textContent.trim());
-  assert.match(currentBalanceMeta, /Sun at sunrise|உதயத்தில் சூரியன்/,
-    'The current date must show the Sun longitude used at local sunrise.');
-  assert.match(currentBalanceMeta, /Fixed until next sunrise|அடுத்த சூ\.உதயம் வரை மாறாது/,
-    'The selected sunrise remainder must remain constant until the following sunrise.');
-  assert.match(currentBalanceMeta, /Full 30° Rasi Mana|முழு 30° ராசி மானம்/,
-    'The full month-start value must be shown separately from the remaining balance.');
-
-  // Every selected date is a sunrise snapshot; wall-clock minutes do not decrement it.
   const originalCalendarDate = await page.$eval('#calDate', el => el.value);
-  const originalBalanceText = await page.$eval('#calMuhurtaLagna .cal-rasi-balance-line', el => el.textContent.trim());
-  const selectedTestDate = '2027-02-10';
+  const publishedSubhaDate = '2026-11-11';
   await page.$eval('#calDate', (el, date) => {
     el.value = date;
     el.dispatchEvent(new Event('change', { bubbles: true }));
-  }, selectedTestDate);
-  await page.waitForFunction(({date,oldBalance}) => {
-    const status = document.querySelector('#calStatus')?.textContent || '';
-    const line = document.querySelector('#calMuhurtaLagna .cal-rasi-balance-line')?.textContent || '';
-    return status.includes(date) && line && line !== oldBalance &&
-      !/being calculated|கணக்கிடப்படுகிறது/i.test(line);
-  }, { timeout: 90000 }, {date:selectedTestDate,oldBalance:originalBalanceText});
-  const selectedDateBalance = await page.$eval('#calMuhurtaLagna .cal-rasi-balance-line', el => el.textContent.trim());
-  const selectedDateBalanceMeta = await page.$eval('#calMuhurtaLagna .cal-rasi-balance-meta', el => el.textContent.trim());
-  const selectedDateSunriseMatch = selectedDateBalanceMeta.match(/(?:Sunrise|சூ\.உதயம்):\s*(\d{2}):(\d{2})/);
-  assert.ok(selectedDateSunriseMatch, 'The selected-date balance must disclose that date\'s local sunrise: ' + selectedDateBalanceMeta);
-  assert.match(selectedDateBalanceMeta, /Sun at sunrise|உதயத்தில் சூரியன்/,
-    'The selected date must calculate its Sun longitude at the local sunrise.');
-  assert.match(selectedDateBalanceMeta, /Remaining sign arc|மீத ராசிப் பாகை/,
-    'The selected date must calculate only the untraversed portion of the sign.');
-  assert.match(selectedDateBalanceMeta, /Full 30° Rasi Mana|முழு 30° ராசி மானம்/,
-    'The full solar-month value must be kept separate from the remaining sunrise balance.');
-  const selectedDateLagnaTime = await page.$eval('#calMuhurtaLagna .cal-muhurta-lagna-item:nth-child(2) span', el => el.textContent.trim());
-  assert.match(selectedDateLagnaTime, /12:00/,
-    'The separate selected-time Lagna must remain at the unchanged noon Panchang time.');
+  }, publishedSubhaDate);
+  await page.waitForFunction(date => {
+    const section = document.querySelector('#calMuhurtaLagna');
+    return (document.querySelector('#calStatus')?.textContent || '').includes(date) &&
+      section && !section.hidden && !section.querySelector('.cal-special-loading') &&
+      section.querySelector('.cal-special-muhurtha-row');
+  }, { timeout: 180000 }, publishedSubhaDate);
+  const muhurtaLagnaUi = await page.$eval('#calMuhurtaLagna', el => ({
+    heading: el.querySelector('h3')?.textContent.trim() || '',
+    rows: [...el.querySelectorAll('.cal-special-muhurtha-row')].map(row => ({
+      title: row.querySelector('strong')?.textContent.trim() || '',
+      time: row.querySelector('time')?.textContent.trim() || '',
+      activities: [...row.querySelectorAll('.cal-special-activity-results span')].map(item => item.textContent.trim())
+    })),
+    text: el.textContent || ''
+  }));
+  assert.match(muhurtaLagnaUi.heading, /Pushkara Navamsa|புஷ்கர நவாம்சம்/);
+  assert.ok(muhurtaLagnaUi.rows.length > 0, 'A date in the published Subha Muhurtham list must display Pushkara time windows.');
+  assert.ok(muhurtaLagnaUi.rows.every(row => row.title && row.time && row.activities.length === 5),
+    'Every Pushkara window must show its final Panchaka quality and the five activity outcomes.');
+  assert.doesNotMatch(muhurtaLagnaUi.text, /tithi|weekday|nakshatra|lagna|remainder|sum|திதி|வாரம்|நட்சத்திரம்|லக்னம்|கூட்டுத்தொகை|மீதி/i,
+    'The visible Panchaka result must not expose calculation operands or mechanics.');
+
+  await page.waitForFunction(() => {
+    const section = document.querySelector('#calMoudhya');
+    return section && !section.hidden && /Guru Moudhya|Shukra Moudhya|குரு மூடம்|சுக்கிர மூடம்/.test(section.textContent || '');
+  }, { timeout: 180000 });
+  const selectedMonthMoudhya = await page.$eval('#calMoudhya', el => el.textContent || '');
+  assert.match(selectedMonthMoudhya, /Aippasi|ஐப்பசி/,
+    'Moudhya results must be limited to the currently selected Tamil solar month.');
+
+  const vastuDate = '2026-11-24';
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, vastuDate);
+  await page.waitForFunction(date =>
+    (document.querySelector('#calStatus')?.textContent || '').includes(date) &&
+    document.querySelector('#calVastuDay') && !document.querySelector('#calVastuDay').hidden,
+    { timeout: 90000 }, vastuDate);
+  const vastuDayUi = await page.$eval('#calVastuDay', el => ({
+    heading: el.querySelector('h3')?.textContent.trim() || '',
+    body: el.textContent || ''
+  }));
+  assert.match(vastuDayUi.heading, /Vastu Day|வாஸ்து நாள்/);
+  assert.match(vastuDayUi.body, /Karthigai 8|கார்த்திகை 8/,
+    'Vastu observance must appear independently on the listed date.');
+
   await page.$eval('#calDate', (el, date) => {
     el.value = date;
     el.dispatchEvent(new Event('change', { bubbles: true }));
   }, originalCalendarDate);
-  await page.waitForFunction(({date,oldBalance}) => {
-    const status = document.querySelector('#calStatus')?.textContent || '';
-    const line = document.querySelector('#calMuhurtaLagna .cal-rasi-balance-line')?.textContent || '';
-    return status.includes(date) && line && line !== oldBalance &&
-      !/being calculated|கணக்கிடப்படுகிறது/i.test(line);
-  }, { timeout: 90000 }, {date:originalCalendarDate,oldBalance:selectedDateBalance});
+  await page.waitForFunction(date =>
+    (document.querySelector('#calStatus')?.textContent || '').includes(date),
+    { timeout: 90000 }, originalCalendarDate);
 
 
   // Numerical regression: the ingress Sun sign, not the actual local Ascendant,
