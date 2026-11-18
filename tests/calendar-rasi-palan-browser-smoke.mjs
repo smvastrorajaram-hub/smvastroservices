@@ -111,7 +111,7 @@ try {
     if (!root) return false;
     const text = root.textContent || '';
     return !/Calculating exact Moon sign|சந்திர ராசி \/ நட்சத்திரப் பாத எல்லைகள்/.test(text) &&
-      (root.querySelector('.cal-chandra-window') || /No complete Chandrashtama window|90 நாள் வரம்பில் முழுமையான/.test(text));
+      (root.querySelector('.cal-chandra-window') || /No Chandrashtama is active at the selected time|தேர்ந்தெடுத்த நேரத்தில் சந்திராஷ்டமம் இல்லை/.test(text));
   }, { timeout: 180000 });
   const chandrashtamaSmoke = await page.$eval('#calChandrashtamaPeriods', root => ({
     windows: [...root.querySelectorAll('.cal-chandra-window')].map(window => ({
@@ -119,6 +119,7 @@ try {
       rasiPeriod: window.querySelector('.cal-chandra-rasi-period span')?.textContent || '',
       star: window.querySelector('.cal-chandra-star-period strong')?.textContent || '',
       starPeriod: window.querySelector('.cal-chandra-star-period span')?.textContent || '',
+      active: window.classList.contains('is-active'),
       padaRows: [...window.querySelectorAll('.cal-chandra-pada-row')].map(row => ({
         birthPada: Number(row.dataset.birthPada),
         targetStar: Number(row.dataset.targetStar),
@@ -128,8 +129,14 @@ try {
     })),
     body: root.textContent || ''
   }));
-  assert.ok(chandrashtamaSmoke.windows.length >= 2,
-    'The next 90 local days should contain at least two full Chandrashtama Rasi windows.');
+  assert.ok(chandrashtamaSmoke.windows.length <= 1,
+    'Calendar must never list multiple past or upcoming Chandrashtama Rasi windows.');
+  assert.ok(chandrashtamaSmoke.windows.every(window => window.active),
+    'Any rendered Chandrashtama window must be the one active at the selected local time.');
+  if (chandrashtamaSmoke.windows.length === 0) {
+    assert.match(chandrashtamaSmoke.body,/No Chandrashtama is active at the selected time/,
+      'When no Chandrashtama is active, show only the no-active message.');
+  }
   assert.ok(chandrashtamaSmoke.windows.every(window => window.rasi === 'Scorpio' && window.star === 'Ashwini'),
     'Only the selected Mesha Janma Rasi and its compatible Ashwini birth star should be displayed.');
   assert.ok(chandrashtamaSmoke.windows.every(window => window.padaRows.length === 4),
@@ -147,13 +154,14 @@ try {
   await page.waitForFunction(() => {
     const status = document.querySelector('#calStatus')?.textContent || '';
     const root = document.querySelector('#calChandrashtamaPeriods');
-    return status.includes('2026-11-10') &&
-      [...(root?.querySelectorAll('.cal-chandra-window') || [])].some(window =>
-        (window.querySelector('.cal-chandra-rasi-period span')?.textContent || '').includes('10/11/2026'));
+    const windows = [...(root?.querySelectorAll('.cal-chandra-window') || [])];
+    return status.includes('2026-11-10') && windows.length === 1 &&
+      windows[0].classList.contains('is-active') &&
+      (windows[0].querySelector('.cal-chandra-rasi-period span')?.textContent || '').includes('10/11/2026');
   }, { timeout: 120000 });
   const independentChandrashtamaCheck = await page.$eval('#calChandrashtamaPeriods', root => {
-    const item = [...root.querySelectorAll('.cal-chandra-window')].find(window =>
-      (window.querySelector('.cal-chandra-rasi-period span')?.textContent || '').includes('10/11/2026'));
+    const windows = [...root.querySelectorAll('.cal-chandra-window')];
+    const item = windows.length === 1 && windows[0].classList.contains('is-active') ? windows[0] : null;
     const heading = item?.querySelector('.cal-chandra-rasi-period span')?.textContent || '';
     const match = heading.match(/(\d{2}\/\d{2}\/\d{4})\s+(\d{2}):(\d{2}):(\d{2})\s*[–-]\s*(\d{2}\/\d{2}\/\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
     const starPeriod = item?.querySelector('.cal-chandra-star-period span')?.textContent || '';
@@ -168,7 +176,7 @@ try {
       }))
     };
   });
-  assert.ok(independentChandrashtamaCheck.bounds, 'The independent November 2026 Chandrashtama boundary window must be rendered with second precision.');
+  assert.ok(independentChandrashtamaCheck.bounds, 'The sole active November 2026 Chandrashtama window must be rendered with second precision.');
   const [startDate, startHour, startMinute, startSecond, endDate, endHour, endMinute, endSecond] = independentChandrashtamaCheck.bounds;
   const localDateTimeMinutes = (date, hour, minute, second) => {
     const [day, month, year] = date.split('/').map(Number);
@@ -187,8 +195,9 @@ try {
     { birthPada: 4, targetStar: 16, targetPada: 3 }
   ], 'Mesha + Ashwini must show only Ashwini 1–4 and their Vishakha 4 / Anuradha 1–3 projected intervals.');
 
-    // Default Ashwini selection exposes all four birth-Pada projections.
-  assert.equal(chandrashtamaSmoke.windows[0].star, 'Ashwini');
+  // The deterministic 10-Nov-2026 selected time has only its active transit window.
+  assert.equal(chandrashtamaSmoke.windows.length <= 1, true);
+  assert.equal(independentChandrashtamaCheck.padas.length, 4);
   await page.select('#calStarPada', '1');
   try {
     await page.waitForFunction(() => document.querySelector('#calStarPada')?.value === '1' &&
