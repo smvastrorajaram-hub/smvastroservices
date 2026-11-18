@@ -479,7 +479,7 @@ html body.calendar-only>header.calendar-topbar{
 }
 
 /* SMV CALENDAR-only Panchang/Hora result typography. */
-#smvDailyCalendar .cal-panchang-detail-grid tr.smv-calendar-primary-result-row>td:nth-child(2){
+#smvDailyCalendar .cal-panchang-detail-item.is-primary>strong{
  color:#000;-webkit-text-fill-color:#000;font-weight:700;
 }
 #smvDailyCalendar .cal-panchang-detail-grid .panchang-event-range .smv-calendar-neutral-date-time{
