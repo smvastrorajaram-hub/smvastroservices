@@ -512,3 +512,8 @@ html body.calendar-only>header.calendar-topbar{
   line-height:1.4;
   text-align:right;
 }
+
+
+/* Sunday is identified only by its weekday label and Gregorian date number. */
+#smvDailyCalendar .cal-month-grid>b.cal-weekday-sunday{color:#b42318!important;-webkit-text-fill-color:#b42318!important}
+#smvDailyCalendar .cal-month-grid button.cal-sunday>strong{color:#b42318!important;-webkit-text-fill-color:#b42318!important}
