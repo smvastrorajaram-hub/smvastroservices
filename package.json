@@ -15,7 +15,7 @@
     "test:production-financial-routing": "node --test test/production-financial-routing.test.mjs",
     "test:razorpay-runtime": "node --test test/razorpay-runtime.test.js",
     "postinstall": "node scripts/fix-cloudflare-iconv-lite.mjs",
-    "test:muhurta": "node --test tests/muhurta-engines.test.mjs tests/muhurta-1800-2399-regression.test.mjs"
+    "test:muhurta": "node --test tests/muhurta-engines.test.mjs tests/muhurta-calendar-integration-regression.mjs tests/muhurta-1800-2399-regression.test.mjs"
   },
   "engines": {
     "node": ">=20 <27"
