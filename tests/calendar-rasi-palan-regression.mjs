@@ -379,6 +379,18 @@ test('Calendar distinguishes Gazette government holidays from observances and do
     'Only the Gregorian date number in Sunday cells is red.');
   assert.ok(!calendarThemeCssSource.includes('#smvDailyCalendar .cal-month-grid button.cal-sunday{color:'),
     'The entire Sunday date cell must not be recoloured.');
+  assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar .cal-date-details-head::after{'),
+    'Calendar heading must suppress the inherited right-side Om ornament on its header.');
+  assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .hora-card>h3,'),
+    'Daily Hora heading must be controlled inside the Calendar scope.');
+  assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .transit-card>h3,'),
+    'Transit Chart heading must be controlled inside the Calendar scope.');
+  assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .transit-table-card>h3{'),
+    'Transit Planetary Positions heading must be controlled inside the Calendar scope.');
+  assert.ok(calendarThemeCssSource.includes('text-align:center!important;justify-content:center!important;'),
+    'Daily Hora and both transit headings must be centered.');
+  assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .transit-table-card>h3::after,'),
+    'The inherited trailing decorative line must be removed from the three Calendar headings.');
 });
 
 test('Public Rasi Palan uses the current local date automatically and calculates weekly windows', () => {
@@ -936,6 +948,16 @@ test('SMV CALENDAR daily Panchang and Hora follow the green result hierarchy', (
   assert.match(horoscopeRendererSource, /i<=7/);
   assert.match(horoscopeRendererSource, /smv-calendar-bright-red-time/);
   assert.match(horoscopeRendererSource, /smv-calendar-degree-normal/);
+  assert.ok(dailyCalendarSource.includes("['Asc','லக்']"),
+    'Only the Calendar transit-position table shortens Ascendant to லக்.');
+  assert.ok(publicRasiPalanSource.includes('ராசி பலன்கள் & கிரக கோச்சார பலன்கள்'),
+    'Calendar Rasi Palan heading uses the requested Tamil wording.');
+  assert.ok(calendarIndexSource.includes('ராசி பலன்கள் & கிரக கோச்சார பலன்கள்'),
+    'Calendar module fallback uses the same requested Tamil heading.');
+  assert.ok(rasiPalanCss.includes('#calRasiPalan .rp-heading h2{color:#15564e!important'),
+    'Rasi Palan heading must use the established green theme colour.');
+  assert.ok(calendarIndexSource.includes("const version='20261118-calendar-green-heading-v2'"),
+    'The dynamically loaded Rasi Palan CSS must use the new version marker.');
   assert.match(dailyCalendarSource, /hora-time smv-calendar-neutral-time/);
   assert.match(calendarThemeCssSource, /cal-name-yoga-label\{color:#426957;font-size:12px;font-weight:700\}/);
   assert.match(calendarThemeCssSource, /cal-panchang-detail-item\.is-primary>strong\{color:#15564e;font-size:14px;font-weight:700\}/);
