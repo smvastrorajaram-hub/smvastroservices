@@ -129,6 +129,60 @@ try {
     window.padaRows.every(row => /\d{2}°/.test(row) && /\d{2}\/\d{2}\/\d{4}/.test(row)),
   ), 'Each Pada row must show exact degree and local date/time boundaries.');
 
+  const chandrashtamaOriginalDate = await page.$eval('#calDate', el => el.value);
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, '2026-11-10');
+  await page.waitForFunction(() => {
+    const status = document.querySelector('#calStatus')?.textContent || '';
+    const root = document.querySelector('#calChandrashtamaPeriods');
+    return status.includes('2026-11-10') &&
+      [...(root?.querySelectorAll('.cal-chandra-window') || [])].some(window =>
+        (window.querySelector('.cal-chandra-window-heading strong')?.textContent || '').includes('10/11/2026'));
+  }, { timeout: 120000 });
+  const independentChandrashtamaCheck = await page.$eval('#calChandrashtamaPeriods', root => {
+    const item = [...root.querySelectorAll('.cal-chandra-window')].find(window =>
+      (window.querySelector('.cal-chandra-window-heading strong')?.textContent || '').includes('10/11/2026'));
+    const heading = item?.querySelector('.cal-chandra-window-heading strong')?.textContent || '';
+    const match = heading.match(/(\d{2}\/\d{2}\/\d{4})\s+(\d{2}):(\d{2}):(\d{2})\s*[–-]\s*(\d{2}\/\d{2}\/\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
+    return {
+      heading,
+      bounds: match ? match.slice(1) : null,
+      durationMinutes: item?.querySelector('small')?.textContent || '',
+      padas: [...(item?.querySelectorAll('.cal-chandra-pada-row') || [])].map(row => ({
+        nakshatraIndex: Number(row.dataset.nakshatraIndex),
+        pada: Number(row.dataset.pada)
+      }))
+    };
+  });
+  assert.ok(independentChandrashtamaCheck.bounds, 'The independent November 2026 Chandrashtama boundary window must be rendered with second precision.');
+  const [startDate, startHour, startMinute, startSecond, endDate, endHour, endMinute, endSecond] = independentChandrashtamaCheck.bounds;
+  const localDateTimeMinutes = (date, hour, minute, second) => {
+    const [day, month, year] = date.split('/').map(Number);
+    return Date.UTC(year, month - 1, day, Number(hour), Number(minute), Number(second)) / 60000;
+  };
+  const startDiff = Math.abs(localDateTimeMinutes(startDate, startHour, startMinute, startSecond) - Date.UTC(2026, 10, 10, 2, 48) / 60000);
+  const endDiff = Math.abs(localDateTimeMinutes(endDate, endHour, endMinute, endSecond) - Date.UTC(2026, 10, 12, 14, 18) / 60000);
+  assert.ok(startDiff <= 15, 'Nov 2026 Mesha-to-Vrichigam Chandrashtama entry must match the independent Lahiri reference within 15 minutes.');
+  assert.ok(endDiff <= 15, 'Nov 2026 Vrichigam egress must match the independent Lahiri reference within 15 minutes.');
+  assert.deepEqual(independentChandrashtamaCheck.padas, [
+    { nakshatraIndex: 15, pada: 4 },
+    { nakshatraIndex: 16, pada: 1 }, { nakshatraIndex: 16, pada: 2 },
+    { nakshatraIndex: 16, pada: 3 }, { nakshatraIndex: 16, pada: 4 },
+    { nakshatraIndex: 17, pada: 1 }, { nakshatraIndex: 17, pada: 2 },
+    { nakshatraIndex: 17, pada: 3 }, { nakshatraIndex: 17, pada: 4 }
+  ], 'Mesha Janma Rasi must show Vishakha Pada 4, all Anuradha padas and all Jyeshtha padas during the Vrichigam transit.');
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, chandrashtamaOriginalDate);
+  await page.waitForFunction(date => {
+    const status = document.querySelector('#calStatus')?.textContent || '';
+    const root = document.querySelector('#calChandrashtamaPeriods');
+    return status.includes(date) && root?.querySelector('.cal-chandra-window');
+  }, { timeout: 120000 }, chandrashtamaOriginalDate);
+
   const resultPlacement = await page.$eval('#calMuhurtaLagna', el => {
     const dateDetails = document.querySelector('#calDateDetails');
     const summary = document.querySelector('#calDateDetailsExtra');
