@@ -79,12 +79,17 @@ test('Panchaka outcomes are activity-specific and expose no calculation operands
   }
 });
 
-test('Vastu days are listed separately for the 2026 and 2027 calendar years', () => {
+test('Vastu days are scoped to Parabhava and Plavanga including the confirmed 2028 Thai date', () => {
   assert.deepEqual(getVastuDay('2026-04-23'), {
     date: '2026-04-23', monthTa: 'சித்திரை', tamilDay: 10
   });
   assert.deepEqual(getVastuDay('2027-11-24'), {
     date: '2027-11-24', monthTa: 'கார்த்திகை', tamilDay: 8
+  });
+  assert.equal(getVastuDay('2026-03-06'), null, 'Thai/Masi dates before Parabhava must not be shown.');
+  assert.equal(getVastuDay('2027-03-06'), null, 'Thai/Masi dates before Plavanga must not be shown.');
+  assert.deepEqual(getVastuDay('2028-01-26'), {
+    date: '2028-01-26', monthTa: 'தை', tamilDay: 12
   });
   assert.equal(getVastuDay('2026-04-24'), null);
 });
