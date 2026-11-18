@@ -221,24 +221,39 @@ export async function calculateSelectedTamilMonthMoudhya(input) {
     return Math.round(hi / 60000) * 60000;
   }
 
+  function tamilLabelAt(timestamp) {
+    const local = localPartsAt(timestamp, input);
+    const offset = local.utcOffsetMinutes;
+    const sunrise = solarNoaa(local.date, lat, lon, offset, true);
+    const sunriseDate = sunrise && local.time.slice(0, 5) < sunrise
+      ? addDays(local.date, -1) : local.date;
+    const tamil = tamilSolarDate({ ...input, date: sunriseDate, time: '12:00' });
+    return tamil ? { month: tamil.monthTa, day: tamil.day } : { month: null, day: null };
+  }
+
   const windows = [];
   const step = 12 * 60 * 60000;
   for (const planet of ['guru', 'sukra']) {
     let previousTimestamp = scanStart;
     let previousState = evaluate(scanStart)[planet];
-    let activeStart = null;
+    let activeStart = previousState ? scanStart : null;
     for (let timestamp = Math.min(scanStart + step, scanEnd); ; timestamp = Math.min(timestamp + step, scanEnd)) {
       const currentState = evaluate(timestamp)[planet];
       if (currentState !== previousState) {
         const boundary = refineBoundary(previousTimestamp, timestamp, planet, previousState);
         if (!previousState) activeStart = boundary;
         else if (activeStart !== null) {
-          const start = localPartsAt(activeStart, input), end = localPartsAt(boundary, input);
-          if (activeStart < monthEnd && boundary > monthStart) {
+          const clippedStart = Math.max(activeStart, monthStart);
+          const clippedEnd = Math.min(boundary, monthEnd);
+          if (clippedStart < clippedEnd) {
+            const start = localPartsAt(clippedStart, input), end = localPartsAt(clippedEnd, input);
+            const startTamil = tamilLabelAt(clippedStart), endTamil = tamilLabelAt(clippedEnd);
             windows.push({
               planet,
               startDate: start.date, startTime: start.time.slice(0, 5),
-              endDate: end.date, endTime: end.time.slice(0, 5)
+              endDate: end.date, endTime: end.time.slice(0, 5),
+              startTamilMonth: startTamil.month, startTamilDay: startTamil.day,
+              endTamilMonth: endTamil.month, endTamilDay: endTamil.day
             });
           }
           activeStart = null;
@@ -247,6 +262,20 @@ export async function calculateSelectedTamilMonthMoudhya(input) {
       previousTimestamp = timestamp;
       previousState = currentState;
       if (timestamp >= scanEnd) break;
+    }
+    if (activeStart !== null && activeStart < monthEnd) {
+      const clippedStart = Math.max(activeStart, monthStart), clippedEnd = monthEnd;
+      if (clippedStart < clippedEnd) {
+        const start = localPartsAt(clippedStart, input), end = localPartsAt(clippedEnd, input);
+        const startTamil = tamilLabelAt(clippedStart), endTamil = tamilLabelAt(clippedEnd);
+        windows.push({
+          planet,
+          startDate: start.date, startTime: start.time.slice(0, 5),
+          endDate: end.date, endTime: end.time.slice(0, 5),
+          startTamilMonth: startTamil.month, startTamilDay: startTamil.day,
+          endTamilMonth: endTamil.month, endTamilDay: endTamil.day
+        });
+      }
     }
   }
   const ordered = windows.sort((a, b) => a.startDate.localeCompare(b.startDate) || a.startTime.localeCompare(b.startTime));
