@@ -8,8 +8,8 @@ const RULES = Object.freeze([
     condition:f=>f.tithiNumber===5,
     reasonTa:'விதானமாலை அத்தியாயம் 2-ல் பஞ்சமி திருமணச் செயலுக்குச் சிறப்பாகக் குறிப்பிடப்படுகிறது.',
     reasonEn:'Vidhānamālai chapter 2 names Pañcamī as favourable for a marriage-related undertaking.',
-    reviewStatus:'source-text-captured',enabled:true,
-    exceptions:'A preferred tithi is not an all-purpose pass; chapter 3 yogas and chapter 11 marriage rules remain to be collated.'
+    reviewStatus:'pending-parallel-rule-collation',enabled:false,
+    exceptions:'Chapter 2 also treats Ṣaṣṭhī as pakṣa-chidra in both fortnights with a starting nāḻikai exclusion; other verses give conflicting general tithi schemes. Keep pending until the entire chapter and 3rd chapter are reconciled.'
   },
   {
     id:'TML_VM02_MARRIAGE_TITHI_7',
@@ -18,8 +18,8 @@ const RULES = Object.freeze([
     condition:f=>f.tithiNumber===7,
     reasonTa:'விதானமாலை அத்தியாயம் 2-ல் சப்தமி திருமணத்திற்கும் குறிப்பிடப்படுகிறது.',
     reasonEn:'Vidhānamālai chapter 2 also names Saptamī for marriage.',
-    reviewStatus:'source-text-captured',enabled:true,
-    exceptions:'Preference only; no exclusive eligible-tithi list is inferred.'
+    reviewStatus:'pending-parallel-rule-collation',enabled:false,
+    exceptions:'The same chapter includes a view that Saptamī is not selected for bright work. Keep this activity-specific verse and the differing view side-by-side until reconciled.'
   },
   {
     id:'TML_VM02_MARRIAGE_TITHI_13',
@@ -28,7 +28,7 @@ const RULES = Object.freeze([
     condition:f=>f.tithiNumber===13,
     reasonTa:'விதானமாலை அத்தியாயம் 2-ல் திரயோதசி திருமணத்திற்கும் குறிப்பிடப்படுகிறது.',
     reasonEn:'Vidhānamālai chapter 2 names Trayodaśī among marriage-related auspicious tithis.',
-    reviewStatus:'source-text-captured',enabled:true,
+    reviewStatus:'pending-parallel-rule-collation',enabled:false,
     exceptions:'Preference only; the full chapter 3 yoga and activity exclusions are not yet applied.'
   },
   {
@@ -38,8 +38,8 @@ const RULES = Object.freeze([
     condition:f=>f.tithiNumber===6,
     reasonTa:'விதானமாலை அத்தியாயம் 2-ல் ஷஷ்டி வாஸ்து / பயணச் செயல்களுக்குக் குறிப்பிடப்படுகிறது.',
     reasonEn:'Vidhānamālai chapter 2 names Ṣaṣṭhī for Vāstu and journey-related work.',
-    reviewStatus:'source-text-captured',enabled:true,
-    exceptions:'A preference, not a complete Vāstu or travel election.'
+    reviewStatus:'pending-parallel-rule-collation',enabled:false,
+    exceptions:'Ṣaṣṭhī is also named among pakṣa-chidra tithis; its permitted remainder depends on a start-of-tithi nāḻikai exclusion. Not safe as an all-day preference.'
   },
   {
     id:'TML_VM02_GRIHAPRAVESHA_PURNA_TITHI',
@@ -48,8 +48,8 @@ const RULES = Object.freeze([
     condition:f=>f.tithiNumber===15,
     reasonTa:'விதானமாலை அத்தியாயம் 2-ல் பௌர்ணமி வீடு புகுதல் சார்ந்த நற்செயலுக்குக் குறிப்பிடப்படுகிறது.',
     reasonEn:'Vidhānamālai chapter 2 names Pūrṇimā for house-entry-related auspicious work.',
-    reviewStatus:'source-text-captured',enabled:true,
-    exceptions:'Needs confirmation against the exact 1900 printed page and chapter 25 house-entry shuddhi.'
+    reviewStatus:'pending-parallel-rule-collation',enabled:false,
+    exceptions:'Pūrṇimā is described as suitable for house-entry, but local month, star, lagna and other defects are not yet reconciled.'
   },
   {
     id:'TML_VM02_VEHICLE_TRAYODASHI',
@@ -58,8 +58,8 @@ const RULES = Object.freeze([
     condition:f=>f.tithiNumber===13,
     reasonTa:'விதானமாலை அத்தியாயம் 2-ல் திரயோதசி வாகனச் செயலுக்கும் குறிப்பிடப்படுகிறது.',
     reasonEn:'Vidhānamālai chapter 2 names Trayodaśī for vehicle-related work.',
-    reviewStatus:'source-text-captured',enabled:true,
-    exceptions:'Preference only; vehicle purchase, first use and pūjā need separate comparison.'
+    reviewStatus:'pending-parallel-rule-collation',enabled:false,
+    exceptions:'The chapter has activity-specific and pakṣa-wide constraints. Vehicle purchase, mounting, first use and pūjā must not be treated as one identical act.'
   },
   {
     id:'TML_VM25_VIVaha_LAGNA_SHUDDHI',
@@ -90,6 +90,28 @@ const RULES = Object.freeze([
     reasonEn:'The source records seventh, eighth and twelfth-house purity for house entry.',
     reviewStatus:'pending-edition-collation',enabled:false,
     exceptions:'Not enforced until exact commentary establishes whether all occupants or only malefics are excluded.'
+  },
+  {
+    id:'TML_VM02_PAKSHA_CHIDRA_START_NAZHIGAI',
+    activity:['vivaha','nichayathartham','pumsavana','seemantham','namakaranam','cradle','annaprashana','karnavedha','chaula','vidyarambha','upanayana','vastu','griharambha','grihapravesha','yatra','vehicle','agriculture','business','deity_installation'],
+    kind:'PROHIBITED',factor:'tithi-start-nazhigai',
+    sourceId:'TML_VIDHANAMALAI_1900',reference:'Chapter 2, Pañcāṅkam, “Pakṣa-chidra” verses and tithi-prasangam',
+    condition:()=>null,
+    reasonTa:'பக்ஷச்சித்ர திதிகளின் தொடக்க நாழிகைகளை நீக்கிய பின்னரே சில செயல்களுக்கு தகுதி உண்டு என மூல விளக்கம் கூறுகிறது.',
+    reasonEn:'The source excludes specified opening nāḻikais of pakṣa-chidra tithis before the remainder can be considered.',
+    reviewStatus:'pending-boundary-timing-and-commentary',enabled:false,
+    exceptions:'The verse names Caturthī, Navamī, Ṣaṣṭhī, Aṣṭamī, Dvādaśī and Caturdaśī in both fortnights and gives opening exclusions of 9, 25, 9, 14, 10 and 5 nāḻikais respectively. Exact tithi-start timing and the commentary must be reconciled before enforcement.'
+  },
+  {
+    id:'TML_VM02_GENERAL_PAKSHA_TITHI_VARIANTS',
+    activity:['vivaha','nichayathartham','pumsavana','seemantham','namakaranam','cradle','annaprashana','karnavedha','chaula','vidyarambha','upanayana','vastu','griharambha','grihapravesha','yatra','vehicle','agriculture','business','deity_installation'],
+    kind:'CONDITIONAL',factor:'paksha-tithi-variant',
+    sourceId:'TML_VIDHANAMALAI_1900',reference:'Chapter 2, Pañcāṅkam, general auspicious-tithi verses',
+    condition:()=>null,
+    reasonTa:'வளர்பிறை / தேய்பிறை திதிகளுக்கான பொதுவிதிகளிலும், வேறுபட்ட ஆசிரியர் கருத்துகளிலும் முரண்பாடுகள் உள்ளன.',
+    reasonEn:'The source records differing general schemes for waxing/waning fortnight tithis and divergent opinions.',
+    reviewStatus:'pending-variant-modelling',enabled:false,
+    exceptions:'The text calls waxing fortnight best, waning middling, excludes bright-half first five and dark-half last five in one view (with a footnote exception), and later records other odd/even and bright-work views. Never collapse these into one global list.'
   },
   {
     id:'TML_VM16_ANNAPRASHANA',
