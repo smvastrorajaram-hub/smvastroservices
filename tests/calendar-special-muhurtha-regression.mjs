@@ -15,7 +15,7 @@ test('only Parabhava and Plavanga Tamil-year dates are in scope', () => {
   assert.equal(getSpecialTamilYear('2026-04-14')?.nameTa, 'பராபவ');
   assert.equal(getSpecialTamilYear('2027-04-13')?.nameTa, 'பராபவ');
   assert.equal(getSpecialTamilYear('2027-04-14')?.nameTa, 'பிலவங்க');
-  assert.equal(getSpecialTamilYear('2028-04-13')?.nameTa, 'பிலவங்க'
+  assert.equal(getSpecialTamilYear('2028-04-13')?.nameTa, 'பிலவங்க');
   assert.equal(getSpecialTamilYear('2028-04-14')?.nameTa, 'பிலவங்க');
   assert.equal(getSpecialTamilYear('2028-04-15'), null);
 });
@@ -28,7 +28,8 @@ test('Pushkara and Panchaka cards require a date in the published Subha Muhurtha
   assert.equal(shouldShowSpecialMuhurtha('2026-11-12', notPublished), false);
   assert.equal(shouldShowSpecialMuhurtha('2026-11-11', unavailable), false);
   assert.equal(shouldShowSpecialMuhurtha('2027-04-14', published), true);
-  assert.equal(shouldShowSpecialMuhurtha('2028-04-14', published), false);
+  assert.equal(shouldShowSpecialMuhurtha('2028-04-14', published), true);
+  assert.equal(shouldShowSpecialMuhurtha('2028-04-14', unavailable), false);
 });
 
 test('the 24 Pushkara Navamsa arcs have distinct interval identities and exact endpoints', () => {
