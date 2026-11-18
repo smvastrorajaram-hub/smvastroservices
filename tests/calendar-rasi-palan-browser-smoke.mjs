@@ -1254,8 +1254,8 @@ try {
   assert.match(selectedDateBalanceMeta, /Full 30° Rasi Mana|முழு 30° ராசி மானம்/,
     'The full solar-month value must be kept separate from the remaining sunrise balance.');
   const selectedDateLagnaTime = await page.$eval('#calMuhurtaLagna .cal-muhurta-lagna-item:nth-child(2) span', el => el.textContent.trim());
-  assert.match(selectedDateLagnaTime, /12:00/,
-    'The separate selected-time Lagna must remain at the unchanged noon Panchang time.');
+  assert.ok(selectedDateLagnaTime.includes(selectedDateSunriseMatch[1]+':'+selectedDateSunriseMatch[2]),
+    'The separate selected-time Lagna must use the selected date\'s local sunrise as its default time.');
   await page.$eval('#calDate', (el, date) => {
     el.value = date;
     el.dispatchEvent(new Event('change', { bubbles: true }));
