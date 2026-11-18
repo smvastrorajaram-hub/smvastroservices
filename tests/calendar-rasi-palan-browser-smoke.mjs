@@ -380,8 +380,8 @@ try {
     fillColor: getComputedStyle(el).webkitTextFillColor
   }));
   assert.equal(pastDateStatus.result, 'present', 'A selected historical Chandrashtama date must show Yes.');
-  assert.equal(pastDateStatus.color, 'rgb(192, 0, 0)', 'Historical Chandrashtama Yes must be red.');
-  assert.equal(pastDateStatus.fillColor, 'rgb(192, 0, 0)', 'Historical Chandrashtama Yes must also render red in WebKit.');
+  assert.equal(pastDateStatus.color, 'rgb(180, 35, 24)', 'Historical Chandrashtama Yes must be red.');
+  assert.equal(pastDateStatus.fillColor, 'rgb(180, 35, 24)', 'Historical Chandrashtama Yes must also render red in WebKit.');
   const independentChandrashtamaCheck = await page.$eval('#calChandrashtamaPeriods', root => {
     const windows = [...root.querySelectorAll('.cal-chandra-window')];
     const item = windows.length === 1 && windows[0].classList.contains('is-selected-date') ? windows[0] : null;
@@ -667,8 +667,8 @@ try {
   await page.waitForFunction(() => {
     const status = document.querySelector('#calChandrashtamaResult');
     return status?.dataset.resolved === 'true' && status.dataset.result === 'present' &&
-      getComputedStyle(status).color === 'rgb(192, 0, 0)' &&
-      getComputedStyle(status).webkitTextFillColor === 'rgb(192, 0, 0)';
+      getComputedStyle(status).color === 'rgb(180, 35, 24)' &&
+      getComputedStyle(status).webkitTextFillColor === 'rgb(180, 35, 24)';
   }, { timeout: 120000 });
   const chandrashtamaCard = await page.$('#calChandrashtamaSection');
   assert.ok(chandrashtamaCard, 'The Chandrashtama Rasi card must be rendered for the preview.');
