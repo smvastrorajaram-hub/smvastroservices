@@ -399,10 +399,10 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261117-calendar-namah-yoga-label-v2'));
-   assert.ok(calendarIndexSource.includes('20261117-calendar-namah-yoga-label-v2'));
+   assert.ok(calendarIndexSource.includes('20261118-chandrashtama-padas-v1'));
+   assert.ok(calendarIndexSource.includes('20261118-chandrashtama-padas-v1'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
-   assert.ok(calendarIndexSource.includes('20261117-calendar-namah-yoga-label-v2'));
+   assert.ok(calendarIndexSource.includes('20261118-chandrashtama-padas-v1'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'runPeriodForecast\')'));
    assert.ok(calendarIndexSource.includes('The deployed forecast assets could not be loaded from this Calendar host.'));
