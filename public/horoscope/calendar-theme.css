@@ -519,25 +519,16 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-month-grid button.cal-sunday>strong{color:#b42318!important;-webkit-text-fill-color:#b42318!important}
 
  
-/* Calendar-only heading alignment: remove inherited flex lines and header ornaments. */
+/* Calendar-only heading alignment: no inherited header ornament or flex-line title. */
 #smvDailyCalendar .cal-date-details-head::before,
 #smvDailyCalendar .cal-date-details-head::after{
- content:none!important;display:none!important;width:0!important;max-width:0!important;
- margin:0!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;
+ content:none;display:none;width:0;max-width:0;margin:0;padding:0;border:0;background:none;box-shadow:none;
 }
-#smvDailyCalendar #calDaily .hora-card>h3,
-#smvDailyCalendar #calDaily .transit-card>h3,
-#smvDailyCalendar #calDaily .transit-table-card>h3{
- display:block!important;width:100%!important;max-width:none!important;
- margin:0 auto 12px!important;padding:0!important;
- text-align:center!important;justify-content:center!important;
+#smvDailyCalendar #calDaily .cal-centered-heading{
+ display:block;width:100%;max-width:none;margin:0 auto 12px;padding:0;
+ text-align:center;justify-content:center;
 }
-#smvDailyCalendar #calDaily .hora-card>h3::before,
-#smvDailyCalendar #calDaily .hora-card>h3::after,
-#smvDailyCalendar #calDaily .transit-card>h3::before,
-#smvDailyCalendar #calDaily .transit-card>h3::after,
-#smvDailyCalendar #calDaily .transit-table-card>h3::before,
-#smvDailyCalendar #calDaily .transit-table-card>h3::after{
- content:none!important;display:none!important;width:0!important;max-width:0!important;
- margin:0!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;
+#smvDailyCalendar #calDaily .cal-centered-heading::before,
+#smvDailyCalendar #calDaily .cal-centered-heading::after{
+ content:none;display:none;width:0;max-width:0;margin:0;padding:0;border:0;background:none;box-shadow:none;
 }
