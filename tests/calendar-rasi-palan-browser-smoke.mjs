@@ -339,9 +339,13 @@ try {
     el.dispatchEvent(new Event('change', { bubbles: true }));
   }, '2026-11-10');
   await page.waitForFunction(() => document.querySelector('#calChandrashtamaPeriods .cal-chandra-window.is-selected-date'), { timeout: 120000 });
-  assert.equal(document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-window').length, 1,
+  const historicalSelectedWindow = await page.$eval('#calChandrashtamaPeriods', root => ({
+    count: root.querySelectorAll('.cal-chandra-window').length,
+    periodType: root.querySelector('.cal-chandra-window')?.dataset.periodType || ''
+  }));
+  assert.equal(historicalSelectedWindow.count, 1,
     'When the selected date already has Chandrashtama, do not append a future transit.');
-  assert.equal(document.querySelector('#calChandrashtamaPeriods .cal-chandra-window')?.dataset.periodType, 'selected');
+  assert.equal(historicalSelectedWindow.periodType, 'selected');
   assert.equal(chandrashtamaSmoke.windows.length <= 1, true);
   assert.equal(independentChandrashtamaCheck.padas.length, 4);
   await page.select('#calStarPada', '1');
