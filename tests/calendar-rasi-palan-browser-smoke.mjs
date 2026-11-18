@@ -1255,9 +1255,12 @@ try {
     'The selected date must calculate only the untraversed portion of the sign.');
   assert.match(selectedDateBalanceMeta, /Full 30° Rasi Mana|முழு 30° ராசி மானம்/,
     'The full solar-month value must be kept separate from the remaining sunrise balance.');
+  const selectedDateTimeValue = await page.$eval('#calTime', el => el.value);
+  assert.equal(selectedDateTimeValue, selectedDateSunriseMatch[1]+':'+selectedDateSunriseMatch[2],
+    'The Time control must default to the selected date\'s calculated local sunrise.');
   const selectedDateLagnaTime = await page.$eval('#calMuhurtaLagna .cal-muhurta-lagna-item:nth-child(2) span', el => el.textContent.trim());
-  assert.match(selectedDateLagnaTime, /12:00/,
-    'The separate selected-time Lagna must remain at the unchanged noon Panchang time.');
+  assert.ok(selectedDateLagnaTime.includes(selectedDateTimeValue),
+    'The separate selected-time Lagna must use the selected sunrise/default time, not the old fixed noon time.');
   await page.$eval('#calDate', (el, date) => {
     el.value = date;
     el.dispatchEvent(new Event('change', { bubbles: true }));
