@@ -158,9 +158,7 @@ try {
     const headingBeforeStyle=headingElement?getComputedStyle(headingElement,'::before'):null;
     const headingAfterStyle=headingElement?getComputedStyle(headingElement,'::after'):null;
     const firstEvent=grid?.querySelector('.smv-calendar-event-range');
-    const firstBoundary=firstEvent?.querySelector('.smv-calendar-event-boundary');
-    const firstEventDate=firstBoundary?.querySelector('.smv-calendar-event-date')?.getBoundingClientRect();
-    const firstEventTime=firstBoundary?.querySelector('.smv-calendar-event-time')?.getBoundingClientRect();
+    const firstEventRangeText=firstEvent?.textContent.replace(/\s+/g,' ').trim()||'';
     const thyajyam = summary?.querySelector('.cal-thyajyam-card');
     return {
       title,
@@ -179,9 +177,8 @@ try {
       headingAfterHidden: !headingAfterStyle||headingAfterStyle.content==='none'||headingAfterStyle.display==='none',
       headingHeaderBackground: headingHeaderStyle?.backgroundColor||'',
       headingTitleBackground: headingStyle?.backgroundColor||'',
-      dateMonthAboveTime: Boolean(firstEventDate&&firstEventTime&&firstEventDate.bottom<=firstEventTime.top+2),
-      dateMonthText: firstBoundary?.querySelector('.smv-calendar-event-date')?.textContent?.trim()||'',
-      dateMonthTimeHasNoYear: Boolean(firstBoundary&&!/\b\d{4}\b/.test(firstBoundary.textContent||''))
+      firstEventRangeText,
+      firstEventNoYear: Boolean(firstEvent&&!/\b\d{4}\b/.test(firstEvent.textContent||''))
     };
   });
   assert.ok(['Daily Panchang', 'தினசரி பஞ்சாங்கம்'].includes(integratedPanchang.title),
@@ -260,9 +257,8 @@ try {
     centeredCalendarHeadings.language==='ta' ? 'லக்' : 'Asc',
     'Only the transit positions table Ascendant row must display the shortened Tamil label in Tamil mode.');
 
-  assert.equal(integratedPanchang.dateMonthAboveTime, true, 'Date and month must be shown above time.');
-  assert.equal(integratedPanchang.dateMonthTimeHasNoYear, true, 'Panchang event dates must omit the Gregorian year. Rendered date: '+integratedPanchang.dateMonthText);
-  assert.ok(integratedPanchang.dateMonthText.length>0, 'Date/month must remain visible.');
+  assert.match(integratedPanchang.firstEventRangeText, /^\d{2}:\d{2} \(\d{2}\/\d{2}\) – \d{2}:\d{2} \(\d{2}\/\d{2}\)$/, 'Panchang event timing must use the compact single-line HH:MM (DD/MM) – HH:MM (DD/MM) format.');
+  assert.equal(integratedPanchang.firstEventNoYear, true, 'Panchang event ranges must omit the four-digit Gregorian year.');
 
   const yogaFlow = await page.$eval('#calDateDetailsExtra .cal-details-summary', summary => {
     const wrapper = summary.querySelector('.cal-day-yoga-cards');
