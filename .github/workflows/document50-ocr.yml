@@ -1,0 +1,95 @@
+name: Document 50 Tamil-English OCR (temporary)
+
+on:
+  push:
+    branches:
+      - temp/document50-ocr-20261118
+    paths:
+      - .github/workflows/document50-ocr.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: document50-ocr-temporary
+  cancel-in-progress: false
+
+jobs:
+  ocr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout temporary OCR branch
+        uses: actions/checkout@v4
+        with:
+          ref: temp/document50-ocr-20261118
+          persist-credentials: true
+
+      - name: Install Tamil and English OCR engines
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr tesseract-ocr-tam tesseract-ocr-eng imagemagick
+          tesseract --list-langs
+
+      - name: OCR the five source pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="Read-only/OCR-Document50"
+          mkdir -p "$out" /tmp/document50-ocr
+          printf '%s\n' \
+            '# Document 50 OCR output' \
+            '' \
+            'Source: Read-only/Document 50_1.jpg through Document 50_5.jpg' \
+            'Engine: Tesseract OCR, Tamil + English language data' \
+            'Two page segmentation modes are retained for comparison: PSM 3 and PSM 6.' \
+            'This is raw OCR, not a corrected transcription.' \
+            > "$out/README.md"
+
+          for n in 1 2 3 4 5; do
+            src="Read-only/Document 50_${n}.jpg"
+            if [[ ! -s "$src" ]]; then
+              echo "Missing source image: $src" >&2
+              exit 1
+            fi
+
+            if command -v magick >/dev/null 2>&1; then
+              magick "$src" -auto-orient -colorspace Gray -contrast-stretch 1%x1% -resize 180% "/tmp/document50-ocr/page-${n}.png"
+            else
+              convert "$src" -auto-orient -colorspace Gray -contrast-stretch 1%x1% -resize 180% "/tmp/document50-ocr/page-${n}.png"
+            fi
+
+            tesseract "/tmp/document50-ocr/page-${n}.png" "$out/Document 50_${n}.psm3" -l tam+eng --psm 3
+            tesseract "/tmp/document50-ocr/page-${n}.png" "$out/Document 50_${n}.psm6" -l tam+eng --psm 6
+          done
+
+          {
+            echo
+            echo '## Source image checks'
+            for n in 1 2 3 4 5; do
+              identify -format 'Document 50_%[fx:0].jpg ' "Read-only/Document 50_${n}.jpg" 2>/dev/null || true
+              identify -format '%f: %wx%h pixels\n' "Read-only/Document 50_${n}.jpg"
+            done
+          } >> "$out/README.md"
+
+      - name: Commit OCR text to this temporary branch only
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Read-only/OCR-Document50
+          if git diff --cached --quiet; then
+            echo "No OCR output changes to commit."
+            exit 0
+          fi
+          git commit -m "Add temporary OCR text for Document 50 pages"
+          git push origin HEAD:temp/document50-ocr-20261118
+
+      - name: Upload OCR output as a backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: document50-tamil-english-ocr
+          path: Read-only/OCR-Document50/
+          if-no-files-found: error
+          retention-days: 7
