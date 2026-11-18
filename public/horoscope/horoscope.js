@@ -2367,7 +2367,7 @@ function renderTransitPanchang(t,p,lang,rootId,horaOverride=null){
     const varamap={ஞாயிறு:'Sunday',திங்கள்:'Monday',செவ்வாய்:'Tuesday',புதன்:'Wednesday',வியாழன்:'Thursday',வெள்ளி:'Friday',சனி:'Saturday'};
     const karanamap={கிம்ஸ்துக்னம்:'Kimstughna',பவம்:'Bava',பாலவம்:'Balava',கௌலவம்:'Kaulava',தைத்திலம்:'Taitila',கரசை:'Garaja',வணிஜம்:'Vanija',விஷ்டி:'Vishti',சகுனி:'Shakuni',சதுஷ்பாதம்:'Chatushpada',நாகம்:'Naga'};
     const esc2=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    const splitDateTime=v=>{const raw=String(v??'—').trim();const m=raw.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);if(m)return {date:`${m[3]}/${m[2]}/${m[1]}`,time:`${m[4]}:${m[5]}`};const legacy=raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})[, T]+(\d{1,2}):(\d{2})/);return legacy?{date:`${String(Number(legacy[1])).padStart(2,'0')}/${String(Number(legacy[2])).padStart(2,'0')}/${legacy[3]}`,time:`${legacy[4]}:${legacy[5]}`}:{date:raw,time:''};};
+    const splitDateTime=v=>{const raw=String(v??'—').trim();const m=raw.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);if(m)return {date:`${m[3]}/${m[2]}/${m[1]}`,time:`${m[4]}:${m[5]}`};const legacy=raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})[, T]+(\d{1,2}):(\d{2})/);return legacy?{date:`${String(Number(legacy[1])).padStart(2,'0')}/${String(Number(legacy[2])).padStart(2,'0')}/${legacy[3]}`,time:`${legacy[4]}:${legacy[5]}`}:{date:raw,time:''};};
     const calendarPresentation = rootId === 'calDaily';
     const eventDateClass=calendarPresentation?'event-date smv-calendar-neutral-date-time':'event-date';
     const eventTimeClass=calendarPresentation?'event-time smv-calendar-neutral-date-time':'event-time';
