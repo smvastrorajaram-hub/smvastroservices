@@ -111,7 +111,7 @@ try {
     if (!root) return false;
     const text = root.textContent || '';
     return !/Calculating exact Moon sign|சந்திர ராசி \/ நட்சத்திரப் பாத எல்லைகள்/.test(text) &&
-      (root.querySelector('.cal-chandra-window') || /No Chandrashtama is active at the selected time|தேர்ந்தெடுத்த நேரத்தில் சந்திராஷ்டமம் இல்லை/.test(text));
+      (root.querySelector('.cal-chandra-window') || /No Chandrashtama period overlaps the selected date\/time|தேர்ந்தெடுத்த தேதியில் சந்திராஷ்டமக் காலப்பகுதி இல்லை/.test(text));
   }, { timeout: 180000 });
   const chandrashtamaSmoke = await page.$eval('#calChandrashtamaPeriods', root => ({
     windows: [...root.querySelectorAll('.cal-chandra-window')].map(window => ({
