@@ -265,7 +265,7 @@ try {
     text:row.textContent.trim()
   }));
   assert.deepEqual([pooram3.birthPada,pooram3.targetStar,pooram3.targetPada],[3,26,2]);
-  assert.match(pooram3.text,/Pooram.*Revati.*Pada 2/);
+  assert.match(pooram3.text,/Purva Phalguni.*Revati.*Pada 2/);
 
   // Restore the requested Ashwini 1 example for the final mobile preview.
   await page.select('#calRasi','0');
