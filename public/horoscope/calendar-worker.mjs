@@ -3,6 +3,7 @@ import {offsetMinutesAt} from './offline/places/timezone.mjs';
 import {calculateSwiss,calculateSunMoon,calculateLahiriContextAt} from './offline/swiss_vedic.browser.mjs';
 import {panchang,transit,calendarTamil,solarNoaa,tamilSolarDate,nextSolarIngress,nakshatraIntervalsForLocalDay,thyajyamIntervalsForLocalDay,calculateAhasRatriPramana,calculateDinantham} from './offline/transit_panchang.browser.mjs';
 import {getTamilDayYoga} from './tamil-day-classifications.mjs';
+import {calculatePushkaraPanchakaWindows,calculateSelectedTamilMonthMoudhya} from './calendar-astronomical-muhurtha.mjs';
 import {meanObliquityAtJulianDay,calculateSolarSignRasiMana,calculateRemainingSolarSignRasiMana} from './offline/rasi-mana.browser.mjs';
 import {getChandrashtamaRasiIndex,getChandrashtamaPadaSegments,normalizeSiderealLongitude} from './calendar-chandrashtama.mjs';
 const norm=n=>(n%360+360)%360;
@@ -382,7 +383,9 @@ async function attachTamilSolarDates(input,entries){
 }
 
 self.onmessage=async({data})=>{const {id,kind,input}=data;try{const key=JSON.stringify([kind,input]);if(cache.has(key)){self.postMessage({id,result:cache.get(key)});return}let result;
- if(kind==='solar-sign-rasi-mana'){result=await calculateSolarSignRasiManaForIngress(input);}
+ if(kind==='pushkara-panchaka'){result=await calculatePushkaraPanchakaWindows(input);}
+ else if(kind==='selected-tamil-month-moudhya'){result=await calculateSelectedTamilMonthMoudhya(input);}
+ else if(kind==='solar-sign-rasi-mana'){result=await calculateSolarSignRasiManaForIngress(input);}
  else if(kind==='chandrashtama-windows'){result=await calculateChandrashtamaWindows(input);}
  else if(kind==='month'){const [y,m]=input.date.split('-').map(Number),days=new Date(Date.UTC(y,m,0)).getUTCDate();result=[];for(let d=1;d<=days;d++){result.push(await events({...input,date:`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`}));}result=await attachTamilSolarDates(input,result);}
  else {const chart=await calculateSwiss(input);const p=panchang(input,chart),t=transit(input,chart);const ev=await events(input);const beforeSunrise=minute(input.time)<minute(p.sunrise);let previousNight=null;if(beforeSunrise){const yesterday=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);previousNight=panchang({...input,date:yesterday,time:'12:00'});}const previousDate=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);const previousSunset=solarNoaa(previousDate,input.lat,input.lon,input.utcOffsetMinutes,false);const weekday=new Date(input.date+'T12:00:00Z').getUTCDay();const nakshatraTimeline=nakshatraIntervalsForLocalDay(input);const amirthadiYogaSegments=nakshatraTimeline.available?nakshatraTimeline.intervals.map(interval=>({...interval,...getTamilDayYoga(weekday,interval.nakshatraNumber)})):[];const thyajyam=thyajyamIntervalsForLocalDay(input,nakshatraTimeline);const nextDate=new Date(Date.parse(input.date+'T12:00:00Z')+86400000).toISOString().slice(0,10);
