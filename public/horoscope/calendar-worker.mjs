@@ -52,7 +52,7 @@ function clockWithSeconds(seconds){
 }
 async function calculateDocument50PushkaraWindows(input){
  const date=String(input?.date||'');
- if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date))throw new Error('Pushkara calculation needs a valid local date.');
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date))throw new Error('Pushkara calculation needs a valid local date.');
  const parsed=new Date(date+'T12:00:00Z');
  if(Number.isNaN(parsed.getTime())||parsed.toISOString().slice(0,10)!==date)throw new Error('Pushkara calculation date is invalid.');
  const lat=Number(input.lat),lon=Number(input.lon),defaultOffset=Number(input.utcOffsetMinutes);
