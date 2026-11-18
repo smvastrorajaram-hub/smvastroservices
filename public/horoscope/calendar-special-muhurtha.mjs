@@ -29,7 +29,7 @@ const PUSHKARA_ARCS = Object.freeze([
 export function getPushkaraArcIndex(longitude) {
   const value = Number(longitude);
   if (!Number.isFinite(value)) return null;
-  const normalized = ((value % 360) + 360) % 360;
+  const normalized = value >= 0 && value < 360 ? value : ((value % 360) + 360) % 360;
   const sign = Math.floor(normalized / 30);
   const degree = normalized - sign * 30;
   const group = PUSHKARA_ARCS.find(entry => entry.signs.includes(sign));
