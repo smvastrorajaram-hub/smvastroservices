@@ -1564,11 +1564,24 @@ try {
   }
   const birthStarState = await page.$eval('#calReadings', el => el.textContent || '');
   assert.ok(/Transit Moon Rasi|கோச்சார சந்திர ராசி/.test(birthStarState), 'Existing Tara Bala card must display the transit Moon Rasi');
-  const chandrashtamaState = await page.$eval('#calChandrashtamaSection', el => el.textContent || '');
-  assert.ok(/Chandrashtama: Yes|சந்திராஷ்டமம் : - உண்டு/.test(chandrashtamaState) || /Chandrashtama: No|சந்திராஷ்டமம் : இல்லை/.test(chandrashtamaState),
+  const chandrashtamaState = await page.$eval('#calChandrashtamaSection', section => {
+    const rasiSelect=document.querySelector('#calRasi');
+    const options=[...(rasiSelect?.options||[])].map(option=>({index:Number(option.value),label:option.textContent.trim()}));
+    const janmaRasiIndex=Number(rasiSelect?.value);
+    const eighthRasiIndex=(janmaRasiIndex+7)%12;
+    return {
+      text:section.textContent||'',
+      janmaRasi:options.find(option=>option.index===janmaRasiIndex)?.label||'',
+      eighthRasi:options.find(option=>option.index===eighthRasiIndex)?.label||''
+    };
+  });
+  assert.ok(/Chandrashtama: Yes|சந்திராஷ்டமம் : - உண்டு/.test(chandrashtamaState.text) || /Chandrashtama: No|சந்திராஷ்டமம் : இல்லை/.test(chandrashtamaState.text),
     'The separate Chandrashtama section must show only the direct Yes/No result.');
-  assert.ok(/Your Janma Rasi|உங்கள் ஜன்ம ராசி/.test(chandrashtamaState), 'The separate Chandrashtama section must display the selected Janma Rasi');
-  assert.ok(/Eighth Rasi · Chandrashtama Rasi|எட்டாம் ராசி · சந்திராஷ்டம ராசி/.test(chandrashtamaState), 'The separate Chandrashtama section must display its corresponding eighth Rasi');
+  assert.ok(/Your Janma Rasi|ஜன்ம ராசி/.test(chandrashtamaState.text) && chandrashtamaState.text.includes(chandrashtamaState.janmaRasi),
+    'The separate Chandrashtama section must display the selected Janma Rasi.');
+  assert.ok(/Chandrashtama Rasi|சந்திராஷ்டம ராசி/.test(chandrashtamaState.text) && chandrashtamaState.eighthRasi &&
+    chandrashtamaState.text.includes(chandrashtamaState.eighthRasi),
+    'The separate Chandrashtama section must display the correct eighth Rasi calculated from the selected Janma Rasi.');
 
   await page.select('#calRasiPalan #rpPeriod', 'weekly');
   await page.click('#calRasiPalan #rpRun');
