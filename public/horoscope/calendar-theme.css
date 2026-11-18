@@ -279,15 +279,11 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar #calDateDetails #calEvents h3::after{
  display:none;content:none;
 }
-#smvDailyCalendar #calDateDetails #calDaily .panchang-data-table th,
-#smvDailyCalendar #calDateDetails #calDaily .panchang-data-table td{
- text-align:center;vertical-align:middle;
-}
-#smvDailyCalendar #calDateDetails #calDaily .panchang-data-table tr.cal-name-yoga-row td.cal-name-yoga-label{
+#smvDailyCalendar #calDateDetails .cal-panchang-detail-grid .cal-name-yoga-label{
  color:#000!important;-webkit-text-fill-color:#000!important;font-weight:700!important;font-size:inherit!important;line-height:inherit!important;
 }
-#smvDailyCalendar #calDateDetails #calDaily .panchang-data-table .cal-name-yoga-result{
- display:inline-block;font-weight:750;text-align:center;
+#smvDailyCalendar #calDateDetails .cal-panchang-detail-grid .cal-name-yoga-result{
+ display:inline-block;font-weight:750;text-align:right;
 }
 #smvDailyCalendar #calDateDetails #calReadings .cal-summary article{
  text-align:center;
@@ -315,8 +311,7 @@ html body.calendar-only>header.calendar-topbar{
  #smvDailyCalendar .cal-date-details-head h3.cal-date-details-title{gap:8px}
  #smvDailyCalendar .cal-date-details-head h3.cal-date-details-title::before,
  #smvDailyCalendar .cal-date-details-head h3.cal-date-details-title::after{max-width:54px}
- #smvDailyCalendar #calDateDetails #calDaily .panchang-data-table th,
- #smvDailyCalendar #calDateDetails #calDaily .panchang-data-table td{padding-left:6px;padding-right:6px}
+ 
 }
 
 /* Keep Kari/Thaniya flags left of Abhijit; center Travel Shoolam on its own full-width row. */
@@ -484,19 +479,19 @@ html body.calendar-only>header.calendar-topbar{
 }
 
 /* SMV CALENDAR-only Panchang/Hora result typography. */
-#smvDailyCalendar #calDaily .panchang-data-table tr.smv-calendar-primary-result-row>td:nth-child(2){
+#smvDailyCalendar .cal-panchang-detail-grid tr.smv-calendar-primary-result-row>td:nth-child(2){
  color:#000;-webkit-text-fill-color:#000;font-weight:700;
 }
-#smvDailyCalendar #calDaily .panchang-data-table .panchang-event-range .smv-calendar-neutral-date-time{
+#smvDailyCalendar .cal-panchang-detail-grid .panchang-event-range .smv-calendar-neutral-date-time{
  color:#000;-webkit-text-fill-color:#000;
 }
-#smvDailyCalendar #calDaily .panchang-data-table .panchang-event-range .smv-calendar-normal-connector{
+#smvDailyCalendar .cal-panchang-detail-grid .panchang-event-range .smv-calendar-normal-connector{
  color:#000;-webkit-text-fill-color:#000;font-weight:400;margin:0 4px;
 }
-#smvDailyCalendar #calDaily .panchang-data-table .panchang-time-result.smv-calendar-neutral-time{
+#smvDailyCalendar .cal-panchang-detail-grid .panchang-time-result.smv-calendar-neutral-time{
  color:#000;-webkit-text-fill-color:#000;font-weight:400;
 }
-#smvDailyCalendar #calDaily .panchang-data-table .panchang-time-result.smv-calendar-bright-red-time{
+#smvDailyCalendar .cal-panchang-detail-grid .panchang-time-result.smv-calendar-bright-red-time{
  color:#f00;-webkit-text-fill-color:#f00;font-weight:700;
 }
 #smvDailyCalendar #calDaily .hora-vertical .hora-time.smv-calendar-neutral-time:not(.smv-hora-current-green):not(.smv-hora-bright-green):not(.smv-hora-current-red):not(.smv-hora-bright-red){
@@ -504,4 +499,41 @@ html body.calendar-only>header.calendar-topbar{
 }
 #smvDailyCalendar .transit-position-table .transit-table-degree.smv-calendar-degree-normal{
  color:#000!important;-webkit-text-fill-color:#000!important;font-weight:400!important;
+}
+
+
+/* Daily Panchang values now sit inside the main Daily Panchang details card. */
+#smvDailyCalendar .cal-panchang-detail-grid{
+ grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0;margin:2px 0 4px;
+}
+#smvDailyCalendar .cal-details-summary .cal-panchang-detail-item{
+ min-width:0;display:flex;flex-direction:row;align-items:flex-start;justify-content:space-between;gap:8px;
+ padding:9px 10px;border:1px solid #e2d9c8;border-radius:9px;background:#fff;box-shadow:none;
+}
+#smvDailyCalendar .cal-panchang-detail-item>small{
+ flex:0 1 44%;min-width:0;margin:0;font-size:11px;line-height:1.45;color:#68796f;
+}
+#smvDailyCalendar .cal-panchang-detail-item>strong{
+ flex:1 1 56%;min-width:0;font-size:13px;line-height:1.45;text-align:right;color:#174f47;font-weight:400;overflow-wrap:anywhere;
+}
+#smvDailyCalendar .cal-panchang-detail-item.is-primary>strong{
+ color:#000!important;-webkit-text-fill-color:#000!important;font-weight:700!important;
+}
+#smvDailyCalendar .cal-panchang-detail-grid .cal-name-yoga-label{
+ color:#000!important;-webkit-text-fill-color:#000!important;font-weight:700!important;
+}
+#smvDailyCalendar .cal-panchang-detail-grid .panchang-event-range .smv-calendar-neutral-date-time{
+ color:#000!important;-webkit-text-fill-color:#000!important;
+}
+#smvDailyCalendar .cal-panchang-detail-grid .panchang-event-range .smv-calendar-normal-connector{
+ color:#000!important;-webkit-text-fill-color:#000!important;font-weight:400!important;margin:0 4px;
+}
+#smvDailyCalendar .cal-panchang-detail-grid .panchang-time-result.smv-calendar-neutral-time{
+ color:#000!important;-webkit-text-fill-color:#000!important;font-weight:400!important;
+}
+#smvDailyCalendar .cal-panchang-detail-grid .panchang-time-result.smv-calendar-bright-red-time{
+ color:#f00!important;-webkit-text-fill-color:#f00!important;font-weight:700!important;
+}
+#smvDailyCalendar .cal-panchang-detail-grid .cal-name-yoga-result{
+ display:inline-block;margin-top:4px;font-size:12px;line-height:1.45;font-weight:700;text-align:right;
 }
