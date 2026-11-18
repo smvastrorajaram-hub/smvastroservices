@@ -68,3 +68,23 @@ Some published explainers also describe a 17th-Nakshatra-from-birth-star calcula
 - Calendar Service Worker precaches the new module for offline use.
 - The same cache release marker is synchronised across SMV ASTRO, SMV HOROSCOPE and SMV CALENDAR. No origin-wide storage clear or user-data deletion is used.
 - Main/production remain untouched until the user explicitly approves a merge/deploy.
+
+
+## 8. User-directed display contract — selected Janma Rasi and its birth star only
+
+The previous preview displayed all nine transit Padas in the eighth Rasi. The requested Calendar behavior is narrower: show only the selected Janma Rasi and a birth Nakshatra that actually belongs to that Rasi.
+
+- The birth-star selector is populated dynamically from the selected Janma Rasi. A Nakshatra that does not fall in that Rasi is not offered.
+- The birth-Pada selector offers only Padas of that Nakshatra that fall in the selected Janma Rasi. “All Padas” is the default; choosing a single Pada filters the Pada rows to that one birth Pada.
+- For each future eighth-Rasi transit, the card shows:
+  1. the full 30° Chandrashtama Rasi ingress-to-egress interval;
+  2. the complete interval corresponding to the selected birth Nakshatra as it is projected into the eighth Rasi;
+  3. the selected birth Nakshatra's own 1–4 Pada intervals (or only the chosen Pada when the Pada selector is set).
+- A birth Pada is projected by adding exactly 210° (seven 30° signs) to its sidereal longitude interval. Its 3°20′ interval therefore maps to one specific Nakshatra/Pada in the eighth Rasi. The UI renders the transit star/Pada mapping and only the start/end local timestamps; it does not display unrelated transit Padas or explanatory caveats in the result card.
+- For a birth Nakshatra crossing a Rasi boundary, only the Padas that belong to the selected Janma Rasi are used to build the selected-star interval. The dynamic selector prevents a random/incompatible birth star from being paired with the Rasi.
+- Examples verified in Chromium:
+  - Mesha + Ashwini: full Scorpio Rasi transit; full Ashwini projection is Vishakha 4 through Anuradha 3; Ashwini 1 → Vishakha 4. On 10-Nov-2026, Ashwini 1 is 02:48:28–09:19:30 IST.
+  - Mesha + Bharani: full Bharani projection spans Anuradha 4 through Jyeshtha 3; Bharani 1 → Anuradha 4, Bharani 2 → Jyeshtha 1, Bharani 3 → Jyeshtha 2, Bharani 4 → Jyeshtha 3.
+  - Simha + Pooram: full Pooram projection spans Uttara Bhadrapada 4 through Revati 3; Pooram 1 → Uttara Bhadrapada 4, Pooram 2 → Revati 1, Pooram 3 → Revati 2, Pooram 4 → Revati 3.
+
+This 210° rule is explicitly a longitude-derived implementation refinement. It is not attributed to a verbatim clause on the supplied Document 51 or 1345.zip page 1. The source-described full eighth-Rasi interval remains visible separately.
