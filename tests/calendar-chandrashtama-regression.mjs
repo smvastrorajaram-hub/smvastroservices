@@ -103,3 +103,47 @@ test('each birth Pada projection remains exactly one 3-degree-20-minute interval
     }
   }
 });
+
+
+test('Ashwini and Bharani birth Padas map only to their corresponding Vrischika transit Padas',()=>{
+  const expected=[
+    [0,1,15,4], // Ashwini 1 -> Vishakha 4
+    [0,2,16,1], // Ashwini 2 -> Anuradha 1
+    [0,3,16,2], // Ashwini 3 -> Anuradha 2
+    [0,4,16,3], // Ashwini 4 -> Anuradha 3
+    [1,1,16,4], // Bharani 1 -> Anuradha 4
+    [1,2,17,1], // Bharani 2 -> Jyeshtha 1
+    [1,3,17,2], // Bharani 3 -> Jyeshtha 2
+    [1,4,17,3]  // Bharani 4 -> Jyeshtha 3
+  ];
+  for(const [star,birthPada,targetStar,targetPada] of expected){
+    const result=getChandrashtamaPadaProjection(star,birthPada);
+    assert.equal(result.targetNakshatraIndex,targetStar);
+    assert.equal(result.targetPada,targetPada);
+    assert.equal(result.targetRasiIndex,7); // Vrischika
+  }
+});
+
+test('Mesha selector permits Ashwini/Bharani and only Krittika Pada 1; Simha permits Magha/Pooram/Uttara Pada 1',()=>{
+  assert.deepEqual(getBirthStarPadasInRasi(0,0),[1,2,3,4]);
+  assert.deepEqual(getBirthStarPadasInRasi(1,0),[1,2,3,4]);
+  assert.deepEqual(getBirthStarPadasInRasi(2,0),[1]);
+  assert.deepEqual(getBirthStarPadasInRasi(9,4),[1,2,3,4]);
+  assert.deepEqual(getBirthStarPadasInRasi(10,4),[1,2,3,4]);
+  assert.deepEqual(getBirthStarPadasInRasi(11,4),[1]);
+});
+
+test('Pooram birth Padas project to Uttara Bhadrapada 4 through Revati 3 in Pisces',()=>{
+  const expected=[
+    [25,4], // Pooram 1 -> Uttara Bhadrapada 4
+    [26,1], // Pooram 2 -> Revati 1
+    [26,2], // Pooram 3 -> Revati 2
+    [26,3]  // Pooram 4 -> Revati 3
+  ];
+  for(let birthPada=1;birthPada<=4;birthPada++){
+    const result=getChandrashtamaPadaProjection(10,birthPada);
+    assert.equal(result.janmaRasiIndex,4); // Simha
+    assert.equal(result.targetRasiIndex,11); // Meena
+    assert.deepEqual([result.targetNakshatraIndex,result.targetPada],expected[birthPada-1]);
+  }
+});
