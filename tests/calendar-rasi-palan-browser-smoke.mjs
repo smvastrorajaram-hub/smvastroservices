@@ -103,7 +103,7 @@ try {
 
   await page.waitForFunction(() => {
     const status = document.querySelector('#calStatus')?.textContent || '';
-    return status && (/Unable to calculate|கணக்கிட முடியவில்லை/.test(status) || (!/Calculating Panchang|பஞ்சாங்கம், ஹோரை/.test(status) && !/Loading monthly calendar|மாத நாட்காட்டி தயாராகிறது/.test(document.querySelector('#calMonth')?.textContent||'')));
+    return status && (/Unable to calculate|கணக்கிட முடியவில்லை/.test(status) || (!/Calculating Panchang|Calculating local sunrise|பஞ்சாங்கம், ஹோரை|உள்ளூர் சூரிய உதயம்/.test(status) && !/Loading monthly calendar|மாத நாட்காட்டி தயாராகிறது/.test(document.querySelector('#calMonth')?.textContent||'')));
   }, { timeout: 90000 });
   await page.waitForFunction(() => {
     const field = document.querySelector('#calTime');
