@@ -199,7 +199,7 @@ if(host){
    const durationMinutes=Number(item.durationMinutes||0)%60;
    const rows=(item.segments||[]).map(segment=>{
     const starName=stars[Number(segment.nakshatraIndex)]?.[lang]||'—';
-    return '<div class="cal-chandra-pada-row">'+
+    return '<div class="cal-chandra-pada-row" data-nakshatra-index="'+Number(segment.nakshatraIndex)+'" data-pada="'+Number(segment.pada)+'">'+
      '<strong>'+esc(starName)+' · '+L('Pada ','பாதம் ')+esc(segment.pada)+'</strong>'+
      '<span>'+esc(formatRasiDegree(segment.fromDegree))+' – '+esc(formatRasiDegree(segment.toDegree))+'</span>'+
      '<small>'+esc(localDateLabel(segment.startDate)+' '+segment.startTime)+' – '+esc(localDateLabel(segment.endDate)+' '+segment.endTime)+'</small>'+
