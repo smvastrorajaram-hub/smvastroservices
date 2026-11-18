@@ -106,6 +106,43 @@ try {
     return status && (/Unable to calculate|கணக்கிட முடியவில்லை/.test(status) || (!/Calculating Panchang|பஞ்சாங்கம், ஹோரை/.test(status) && !/Loading monthly calendar|மாத நாட்காட்டி தயாராகிறது/.test(document.querySelector('#calMonth')?.textContent||'')));
   }, { timeout: 90000 });
   const calendarCalculationStatus = await page.$eval('#calStatus', el => el.textContent || '');
+  const dateTimeControlLayout = await page.$eval('.cal-date-time-fields', wrapper => {
+    const date=wrapper.querySelector('#calDate');
+    const time=wrapper.querySelector('#calTime');
+    const dateRect=date?.getBoundingClientRect();
+    const timeRect=time?.getBoundingClientRect();
+    return {
+      hasDate:Boolean(date),
+      hasTime:Boolean(time),
+      timeBelowDate:Boolean(dateRect&&timeRect&&timeRect.top>=dateRect.bottom-1),
+      timeEnabled:Boolean(time&&!time.disabled),
+      selectedTime:time?.value||''
+    };
+  });
+  assert.equal(dateTimeControlLayout.hasDate,true,'The Calendar must retain its date selector.');
+  assert.equal(dateTimeControlLayout.hasTime,true,'A time selector must appear directly below the date selector.');
+  assert.equal(dateTimeControlLayout.timeBelowDate,true,'The Time control must be physically below Date.');
+  assert.equal(dateTimeControlLayout.timeEnabled,true,'The time selector becomes available after sunrise is resolved.');
+  const displayedSunrise = await page.$eval('#calDateDetailsExtra', root => {
+    const card=[...root.querySelectorAll('.cal-muhurta-card')].find(item=>/Sunrise:|சூரிய உதயம்/.test(item.querySelector('span')?.textContent||''));
+    return card?.querySelector('span')?.textContent?.match(/\\d{2}:\\d{2}/)?.[0]||'';
+  });
+  assert.match(displayedSunrise,/^\\d{2}:\\d{2}$/,'The selected date must display its calculated local sunrise.');
+  assert.equal(dateTimeControlLayout.selectedTime,displayedSunrise,"The initial Time value must be fixed to that date and location's sunrise.");
+  const chosenPanchangTime='10:27';
+  await page.$eval('#calTime',(element,value)=>{
+    element.value=value;
+    element.dispatchEvent(new Event('change',{bubbles:true}));
+  },chosenPanchangTime);
+  await page.waitForFunction(time=>{
+    const status=document.querySelector('#calStatus')?.textContent||'';
+    const lagna=[...document.querySelectorAll('#calMuhurtaLagna .cal-muhurta-lagna-item')][1]?.querySelector('span')?.textContent||'';
+    return status.includes(' · '+time+' · UTC ')&&lagna.includes(time);
+  },{timeout:120000},chosenPanchangTime);
+  assert.equal(await page.$eval('#calTime',element=>element.value),chosenPanchangTime,
+    'Selecting a new time must keep that time in the input and recalculate the daily Panchang.');
+
+
   await page.waitForSelector('#calMonth .cal-month-grid button.cal-sunday > strong', { timeout: 30000 });
   const sundayCalendarStyle = await page.$eval('#calMonth .cal-month-grid', grid => {
     const heading=grid.querySelector('b.cal-weekday-sunday');
