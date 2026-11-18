@@ -302,7 +302,7 @@ const DOCUMENT50_DATE_SETS = Object.freeze([
 ]);
 
 function validDocument50CivilDate(value) {
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(value || ''))) return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) return false;
   const date = new Date(value + 'T12:00:00Z');
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
@@ -425,7 +425,7 @@ const DOCUMENT50_FORBIDDEN_TITHI_NUMBERS = Object.freeze([4, 6, 8, 9, 12, 14]);
 
 function document50PeriodContains(timeValue, periodValue) {
   const time = parseClock(timeValue);
-  const match = String(periodValue ?? '').match(/(\\d{1,2}:\\d{2})\\s*[-–]\\s*(\\d{1,2}:\\d{2})/);
+  const match = String(periodValue ?? '').match(/(\d{1,2}:\d{2})\\s*[-–]\\s*(\d{1,2}:\d{2})/);
   if (time === null || !match) return null;
   const start = parseClock(match[1]), end = parseClock(match[2]);
   if (start === null || end === null) return null;
