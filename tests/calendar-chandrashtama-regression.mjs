@@ -5,6 +5,7 @@ import {
   getNakshatraPadaAtLongitude,
   getChandrashtamaPadaSegments,
   getBirthStarPadasInRasi,
+  getChandrashtamaPadaProjection,
   PADA_DEGREES
 } from '../public/horoscope/calendar-chandrashtama.mjs';
 
@@ -70,5 +71,35 @@ test('the other eighteen Nakshatras keep all four padas in one Rasi',()=>{
     if(split.has(star)) continue;
     const firstRasi=Math.floor((star*13+star*1/3)/30);
     assert.deepEqual(getBirthStarPadasInRasi(star,firstRasi),[1,2,3,4]);
+  }
+});
+
+
+test('birth Nakshatra Pada projects 210 degrees forward into its corresponding eighth-Rasi Pada',()=>{
+  const ashwini1=getChandrashtamaPadaProjection(0,1);
+  assert.equal(ashwini1.janmaRasiIndex,0);       // Mesha
+  assert.equal(ashwini1.targetRasiIndex,7);     // Vrischika
+  assert.equal(ashwini1.targetNakshatraIndex,15); // Vishakha
+  assert.equal(ashwini1.targetPada,4);
+  assert.ok(Math.abs(ashwini1.startLongitude-210)<1e-8);
+
+  const magha4=getChandrashtamaPadaProjection(9,4);
+  assert.equal(magha4.janmaRasiIndex,4);         // Simha
+  assert.equal(magha4.targetRasiIndex,11);       // Meena
+  assert.equal(magha4.targetNakshatraIndex,25);  // Uttara Bhadrapada
+  assert.equal(magha4.targetPada,3);
+  assert.ok(Math.abs(magha4.startLongitude-340)<1e-8);
+});
+
+test('each birth Pada projection remains exactly one 3-degree-20-minute interval inside the eighth Rasi',()=>{
+  for(let star=0;star<27;star++){
+    for(let pada=1;pada<=4;pada++){
+      const projection=getChandrashtamaPadaProjection(star,pada);
+      assert.ok(projection);
+      assert.equal(projection.targetRasiIndex,getChandrashtamaRasiIndex(projection.janmaRasiIndex));
+      assert.ok(Math.abs((projection.endLongitude-projection.startLongitude+360)%360-PADA_DEGREES)<1e-8);
+      assert.ok(projection.targetDegreeStart>=0&&projection.targetDegreeStart<30);
+      assert.ok(Math.abs(projection.targetDegreeEnd-projection.targetDegreeStart-PADA_DEGREES)<1e-8);
+    }
   }
 });
