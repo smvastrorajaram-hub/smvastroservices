@@ -310,7 +310,7 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   assert.ok(dailyCalendarSource.includes("esc(signs[janmaRasiIndex]?.[lang]||'—')"),
     'The next-Chandrashtama label uses the currently selected Janma Rasi name.');
   assert.match(dailyCalendarSource, /return windowsHtml\?'<div class="cal-chandra-windows">'\+upcomingHeading\+windowsHtml/);
-  assert.match(dailyCalendarCssSource, /cal-chandra-upcoming-heading\{margin:12px 0 8px;color:inherit;font-size:inherit;font-weight:400;line-height:inherit\}/);
+  assert.match(dailyCalendarCssSource, /cal-chandra-upcoming-heading\{margin:12px 0 8px;color:#444;font-size:inherit;font-weight:400;line-height:inherit\}/);
   assert.match(dailyCalendarCssSource, /cal-chandrashtama-section>h3\{display:block!important;width:100%!important;text-align:center!important\}/);
   assert.match(dailyCalendarCssSource, /cal-chandrashtama-section>h3::after\{display:none!important;content:none!important\}/);
   assert.match(dailyCalendarCssSource, /cal-chandrashtama-result\.is-present\{color:#c00000!important;-webkit-text-fill-color:#c00000!important;font-weight:400!important\}/);
@@ -318,7 +318,7 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   assert.doesNotMatch(dailyCalendarSource, /Eighth Rasi|எட்டாம் ராசி/);
   assert.match(dailyCalendarCssSource, /cal-chandrashtama-result\{[^}]*font-size:1rem!important;font-weight:400!important/);
   assert.match(dailyCalendarCssSource, /cal-chandrashtama-result\.is-present\{color:#c00000!important;-webkit-text-fill-color:#c00000!important;font-weight:400!important\}/);
-  assert.match(dailyCalendarCssSource, /cal-chandrashtama-result\.is-absent\{color:inherit!important;-webkit-text-fill-color:currentColor!important;font-weight:400!important\}/);
+  assert.match(dailyCalendarCssSource, /cal-chandrashtama-result\.is-absent\{color:#444!important;-webkit-text-fill-color:#444!important;font-weight:400!important\}/);
   assert.match(dailyCalendarCssSource, /cal-chandra-window\.is-selected-date\{display:block;border:0!important/);
   assert.ok(dailyCalendarCssSource.includes('Flatten all period detail tiles into the single outer Chandrashtama main card.'));
   assert.ok(dailyCalendarCssSource.includes('.cal-chandra-pada-row.is-janma-pada-projection'));
