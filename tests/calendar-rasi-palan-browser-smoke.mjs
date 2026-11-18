@@ -179,7 +179,7 @@ try {
   const endDiff = Math.abs(localDateTimeMinutes(endDate, endHour, endMinute, endSecond) - Date.UTC(2026, 10, 12, 14, 18) / 60000);
   assert.ok(startDiff <= 15, 'Nov 2026 Mesha-to-Vrichigam Chandrashtama entry must match the independent Lahiri reference within 15 minutes.');
   assert.ok(endDiff <= 15, 'Nov 2026 Vrichigam egress must match the independent Lahiri reference within 15 minutes.');
-  assert.match(independentChandrashtamaCheck.starPeriod, /10\/11\/2026 02:48:28.*10\/11\/2026 15:/,
+  assert.match(independentChandrashtamaCheck.starPeriod, /10\/11\/2026 02:48:28.*11\/11\/2026 05:/,
     'The complete Ashwini star projection must span the four corresponding transit Padas.');
   assert.deepEqual(independentChandrashtamaCheck.padas, [
     { birthPada: 1, targetStar: 15, targetPada: 4 },
