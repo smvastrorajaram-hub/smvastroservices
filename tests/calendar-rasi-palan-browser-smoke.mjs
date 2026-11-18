@@ -190,13 +190,40 @@ try {
       clone.remove();
       return result;
     };
-    const firstYogaRect = rect(actualYogaCards[0]);
+    const firstYogaCard = actualYogaCards[0];
+    const firstYogaSegment = firstYogaCard?.querySelector('.cal-yoga-segment');
+    const firstYogaTime = firstYogaSegment?.querySelector('.cal-yoga-segment-time');
+    const yogaReference = firstYogaCard?.querySelector('.cal-yoga-reference');
+    const thyajyamCard = summary.querySelector('.cal-thyajyam-card');
+    const thyajyamTitle = thyajyamCard?.querySelector(':scope > small');
+    const thyajyamSegments = thyajyamCard?.querySelector('.cal-yoga-segments');
+    const thyajyamSegment = thyajyamSegments?.querySelector('.cal-yoga-segment');
+    const thyajyamNote = thyajyamCard?.querySelector(':scope > small:last-child');
+    const style = element => element ? getComputedStyle(element) : null;
+    const firstYogaRect = rect(firstYogaCard);
     const dateRect = rect(dateCard);
+    const yogaTimeRect = rect(firstYogaTime);
+    const referenceRect = rect(yogaReference);
+    const thyajyamTitleRect = rect(thyajyamTitle);
+    const thyajyamPeriodRect = rect(thyajyamSegment);
+    const thyajyamNoteRect = rect(thyajyamNote);
     return {
       declaredYogaCount:Number(wrapper?.dataset.yogaCount ?? -1),
       actualYogaCardCount:actualYogaCards.length,
       wrapperDisplay:wrapper ? getComputedStyle(wrapper).display : '',
       dateAndFirstYogaShareRow:Boolean(dateRect && firstYogaRect && Math.abs(dateRect.top-firstYogaRect.top)<1 && dateRect.left<firstYogaRect.left),
+      yogaCardGap:parseFloat(style(firstYogaCard)?.rowGap || '0'),
+      yogaCardPaddingTop:parseFloat(style(firstYogaCard)?.paddingTop || '0'),
+      yogaSegmentGap:parseFloat(style(firstYogaSegment)?.rowGap || '0'),
+      yogaSegmentPaddingTop:parseFloat(style(firstYogaSegment)?.paddingTop || '0'),
+      yogaReferenceMarginTop:parseFloat(style(yogaReference)?.marginTop || '0'),
+      yogaTimeToReferenceGap:yogaTimeRect&&referenceRect?referenceRect.top-yogaTimeRect.bottom:null,
+      thyajyamCardGap:parseFloat(style(thyajyamCard)?.rowGap || '0'),
+      thyajyamCardPaddingTop:parseFloat(style(thyajyamCard)?.paddingTop || '0'),
+      thyajyamSegmentsGap:parseFloat(style(thyajyamSegments)?.rowGap || '0'),
+      thyajyamSegmentsMarginTop:parseFloat(style(thyajyamSegments)?.marginTop || '0'),
+      thyajyamTitleToPeriodGap:thyajyamTitleRect&&thyajyamPeriodRect?thyajyamPeriodRect.top-thyajyamTitleRect.bottom:null,
+      thyajyamPeriodToNoteGap:thyajyamPeriodRect&&thyajyamNoteRect?thyajyamNoteRect.top-thyajyamPeriodRect.bottom:null,
       threeYogaLayout:probe(3),
       oneYogaLayout:probe(1)
     };
@@ -218,6 +245,18 @@ try {
   assert.equal(yogaFlow.oneYogaLayout.panchangFullWidth, true, 'With one Yoga, Panchang details must fill the next row rather than leave an empty Yoga cell.');
   assert.equal(yogaFlow.oneYogaLayout.lowerCardsShareRow, true, 'Thyajyam and the next lower card must fill left/right positions without an empty Yoga placeholder.');
   assert.equal(yogaFlow.oneYogaLayout.emptyYogaCards, 0, 'No empty Yoga card or reserved empty Yoga slot may be created.');
+  assert.ok(yogaFlow.yogaCardGap <= 2, 'Yoga heading and result card must use a compact gap.');
+  assert.ok(yogaFlow.yogaCardPaddingTop <= 8, 'Yoga card top padding must remain compact.');
+  assert.ok(yogaFlow.yogaSegmentGap <= 2, 'Yoga result name, description and timing must remain close together.');
+  assert.ok(yogaFlow.yogaSegmentPaddingTop <= 2, 'Yoga result segment must not add excess top padding.');
+  assert.ok(yogaFlow.yogaReferenceMarginTop <= 2, 'Sunrise reference must sit close below the Yoga time.');
+  assert.ok(yogaFlow.yogaTimeToReferenceGap <= 8, 'Yoga time and sunrise reference must not be separated by excess vertical space.');
+  assert.ok(yogaFlow.thyajyamCardGap <= 2, 'Thyajyam heading, result and explanation must use a compact card gap.');
+  assert.ok(yogaFlow.thyajyamCardPaddingTop <= 8, 'Thyajyam card top padding must remain compact.');
+  assert.ok(yogaFlow.thyajyamSegmentsGap <= 2, 'Thyajyam interval rows must remain close together.');
+  assert.ok(yogaFlow.thyajyamSegmentsMarginTop <= 2, 'Thyajyam heading must sit close to its period details.');
+  assert.ok(yogaFlow.thyajyamTitleToPeriodGap <= 8, 'Thyajyam title and first result must not have excess space.');
+  assert.ok(yogaFlow.thyajyamPeriodToNoteGap <= 10, 'Thyajyam result and explanatory note must remain close together.');
   const dailyDetailsOrder = await page.$eval('#calDateDetails', root =>
     [...root.children].map(child => child.id).filter(id =>
       ['calChandrashtamaSection', 'calReadings', 'calEvents', 'calDaily'].includes(id)));
