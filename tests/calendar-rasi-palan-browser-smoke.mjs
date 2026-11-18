@@ -249,6 +249,14 @@ try {
     rows.map(row => [Number(row.dataset.birthPada),Number(row.dataset.targetStar),Number(row.dataset.targetPada)]));
   assert.deepEqual(pooramRows, [[1,25,4],[2,26,1],[3,26,2],[4,26,3]]);
   await page.select('#calStarPada','3');
+  await page.waitForFunction(() => {
+    const row = document.querySelector('#calChandrashtamaPeriods .cal-chandra-window:first-child .cal-chandra-pada-row');
+    return document.querySelector('#calStarPada')?.value === '3' &&
+      document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-window:first-child .cal-chandra-pada-row').length === 1 &&
+      Number(row?.dataset.birthPada) === 3 &&
+      Number(row?.dataset.targetStar) === 26 &&
+      Number(row?.dataset.targetPada) === 2;
+  }, { timeout: 30000 });
   const pooram3 = await page.$eval('#calChandrashtamaPeriods .cal-chandra-window:first-child .cal-chandra-pada-row', row => ({
     birthPada:Number(row.dataset.birthPada),
     targetStar:Number(row.dataset.targetStar),
@@ -262,7 +270,15 @@ try {
   await page.select('#calRasi','0');
   await page.select('#calStar','0');
   await page.select('#calStarPada','1');
-  await page.waitForFunction(() => document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-window:first-child .cal-chandra-pada-row').length === 1);
+  await page.waitForFunction(() => {
+    const row = document.querySelector('#calChandrashtamaPeriods .cal-chandra-window:first-child .cal-chandra-pada-row');
+    return document.querySelector('#calStar')?.value === '0' &&
+      document.querySelector('#calStarPada')?.value === '1' &&
+      document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-window:first-child .cal-chandra-pada-row').length === 1 &&
+      Number(row?.dataset.birthPada) === 1 &&
+      Number(row?.dataset.targetStar) === 15 &&
+      Number(row?.dataset.targetPada) === 4;
+  }, { timeout: 30000 });
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
   const chandrashtamaCard = await page.$('#calReadings .cal-chandrashtama');
   assert.ok(chandrashtamaCard, 'The Chandrashtama Rasi card must be rendered for the mobile preview.');
