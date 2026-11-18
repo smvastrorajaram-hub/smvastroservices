@@ -6,8 +6,6 @@ on:
       - 'public/horoscope/calendar/**'
       - 'public/horoscope/muhurta/**'
       - 'tests/muhurta-*.mjs'
-      - 'public/horoscope/muhurta/**'
-      - 'tests/muhurta-*.mjs'
       - 'public/_headers'
       - 'public/horoscope/calendar-rasi-palan.*'
       - 'public/horoscope/horoscope-language.js'
@@ -34,6 +32,8 @@ on:
     branches: [main]
     paths:
       - 'public/horoscope/calendar/**'
+      - 'public/horoscope/muhurta/**'
+      - 'tests/muhurta-*.mjs'
       - 'public/horoscope/calendar-chandrashtama.mjs'
       - 'tests/calendar-chandrashtama-regression.mjs'
       - 'public/_headers'
