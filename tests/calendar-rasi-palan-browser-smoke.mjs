@@ -106,8 +106,348 @@ try {
     return status && (/Unable to calculate|கணக்கிட முடியவில்லை/.test(status) || (!/Calculating Panchang|பஞ்சாங்கம், ஹோரை/.test(status) && !/Loading monthly calendar|மாத நாட்காட்டி தயாராகிறது/.test(document.querySelector('#calMonth')?.textContent||'')));
   }, { timeout: 90000 });
   const calendarCalculationStatus = await page.$eval('#calStatus', el => el.textContent || '');
+  await page.waitForSelector('#calMonth .cal-month-grid button.cal-sunday > strong', { timeout: 30000 });
+  const sundayCalendarStyle = await page.$eval('#calMonth .cal-month-grid', grid => {
+    const heading=grid.querySelector('b.cal-weekday-sunday');
+    const sunday=grid.querySelector('button.cal-sunday');
+    const ordinary=grid.querySelector('button:not(.cal-sunday) > strong');
+    return {
+      heading:heading?.textContent?.trim()||'',
+      headingColor:heading?getComputedStyle(heading).color:'',
+      dateColor:sunday?.querySelector('strong')?getComputedStyle(sunday.querySelector('strong')).color:'',
+      tamilDateColor:sunday?.querySelector('.cal-day-tamil')?getComputedStyle(sunday.querySelector('.cal-day-tamil')).color:'',
+      ordinaryDateColor:ordinary?getComputedStyle(ordinary).color:''
+    };
+  });
+  assert.ok(['ஞா','Su'].includes(sundayCalendarStyle.heading),
+    'The first Calendar weekday heading must be Sunday in the active language.');
+  assert.equal(sundayCalendarStyle.headingColor,'rgb(180, 35, 24)',
+    'Only the Sunday weekday abbreviation must be red.');
+  assert.equal(sundayCalendarStyle.dateColor,'rgb(180, 35, 24)',
+    'The Gregorian date number in Sunday cells must be red.');
+  assert.notEqual(sundayCalendarStyle.tamilDateColor,'rgb(180, 35, 24)',
+    'The Tamil date beneath the Gregorian number must retain its normal colour.');
+  assert.notEqual(sundayCalendarStyle.ordinaryDateColor,'rgb(180, 35, 24)',
+    'Dates in all non-Sunday columns must retain their normal colour.');
   await page.waitForSelector('#calMuhurtaLagna .cal-muhurta-lagna-grid .cal-muhurta-lagna-item', { timeout: 30000 });
   await page.waitForFunction(() => document.querySelector('#calChandrashtamaResult')?.dataset.resolved === 'true', { timeout: 180000 });
+  await page.waitForFunction(() =>
+    Boolean(document.querySelector('#calReadings .cal-summary>article') && document.querySelector('#calEvents > h3')) &&
+    document.querySelectorAll('#calDateDetailsExtra .cal-panchang-detail-grid .cal-panchang-detail-item').length === 14,
+    { timeout: 30000 });
+  const integratedPanchang = await page.$eval('#calDateDetails', root => {
+    const title = root.querySelector('.cal-date-details-title')?.textContent?.trim() || '';
+    const source = root.querySelector('#calPanchangSource');
+    const summary = root.querySelector('#calDateDetailsExtra .cal-details-summary');
+    const grid = summary?.querySelector('.cal-panchang-detail-grid');
+    const items = [...(grid?.querySelectorAll('.cal-panchang-detail-item') || [])];
+    const first = items[0], second = items[1];
+    const firstRect = first?.getBoundingClientRect();
+    const secondRect = second?.getBoundingClientRect();
+    const firstLabel = first?.querySelector('small')?.getBoundingClientRect();
+    const firstValue = first?.querySelector('strong')?.getBoundingClientRect();
+    const allLabelsAboveResults = items.length===14 && items.every(item=>{
+      const label=item.querySelector(':scope > small')?.getBoundingClientRect();
+      const result=item.querySelector(':scope > strong')?.getBoundingClientRect();
+      return Boolean(label&&result&&label.bottom<=result.top+2&&Math.abs(label.left-result.left)<4);
+    });
+    const headingHeader=root.querySelector('.cal-date-details-head');
+    const headingElement=root.querySelector('.cal-date-details-title');
+    const headingStyle=headingElement?getComputedStyle(headingElement):null;
+    const headingHeaderStyle=headingHeader?getComputedStyle(headingHeader):null;
+    const headingBeforeStyle=headingElement?getComputedStyle(headingElement,'::before'):null;
+    const headingAfterStyle=headingElement?getComputedStyle(headingElement,'::after'):null;
+    const firstEvent=grid?.querySelector('.smv-calendar-event-range');
+    const firstEventRangeText=firstEvent?.textContent.replace(/\s+/g,' ').trim()||'';
+    const thyajyam = summary?.querySelector('.cal-thyajyam-card');
+    return {
+      title,
+      sourceHidden: source?.hidden === true,
+      sourceRowCount: source?.querySelectorAll('.panchang-data-table tbody tr').length || 0,
+      itemCount: items.length,
+      visibleDateRow: items.some(item => /^(Date|தேதி)$/.test(item.querySelector('small')?.textContent?.trim() || '')),
+      tamilDateTile: Boolean(summary?.querySelector('.cal-tamil-date-card')),
+      standalonePanchangCard: Boolean(root.querySelector('#calDaily .panchang-card')),
+      dailyHoraKept: Boolean(root.querySelector('#calDaily .hora-card')),
+      gridBeforeThyajyam: Boolean(grid && thyajyam && (grid.compareDocumentPosition(thyajyam) & Node.DOCUMENT_POSITION_FOLLOWING)),
+      firstTwoShareRow: Boolean(firstRect && secondRect && Math.abs(firstRect.top - secondRect.top) < 1 && firstRect.left < secondRect.left),
+      labelsAboveResults: allLabelsAboveResults,
+      headingCentered: headingStyle?.textAlign==='center',
+      headingBeforeHidden: !headingBeforeStyle||headingBeforeStyle.content==='none'||headingBeforeStyle.display==='none',
+      headingAfterHidden: !headingAfterStyle||headingAfterStyle.content==='none'||headingAfterStyle.display==='none',
+      headingHeaderBackground: headingHeaderStyle?.backgroundColor||'',
+      headingTitleBackground: headingStyle?.backgroundColor||'',
+      firstEventRangeText,
+      firstEventNoYear: Boolean(firstEvent&&!/\b\d{4}\b/.test(firstEvent.textContent||''))
+    };
+  });
+  assert.ok(['Daily Panchang', 'தினசரி பஞ்சாங்கம்'].includes(integratedPanchang.title),
+    'The Date Details heading must be renamed to Daily Panchang in both languages.');
+  assert.equal(integratedPanchang.sourceHidden, true, 'The old Panchang table is retained only as a hidden data source.');
+  assert.equal(integratedPanchang.sourceRowCount, 15, 'The source contains the original date and fourteen Panchang results.');
+  assert.equal(integratedPanchang.itemCount, 14, 'All fourteen non-date Panchang results must appear in the new detail grid.');
+  assert.equal(integratedPanchang.visibleDateRow, false, 'There must not be a separate date-only Panchang item.');
+  assert.equal(integratedPanchang.tamilDateTile, true, 'The Tamil date remains in the existing date tile.');
+  assert.equal(integratedPanchang.standalonePanchangCard, false, 'The separate Daily Panchang table card must be removed.');
+  assert.equal(integratedPanchang.dailyHoraKept, true, 'Daily Hora remains in its existing area.');
+  assert.equal(integratedPanchang.gridBeforeThyajyam, true, 'All Panchang results must appear above Nakshatra Thyajyam.');
+  assert.equal(integratedPanchang.firstTwoShareRow, true, 'Panchang result cards must be arranged left and right.');
+  assert.equal(integratedPanchang.labelsAboveResults, true, 'All fourteen Panchang cards must show the label above the result.');
+  assert.equal(integratedPanchang.headingCentered, true, 'Daily Panchang title must be centered.');
+  assert.equal(integratedPanchang.headingBeforeHidden, true, 'Daily Panchang title must not show a leading decorative symbol.');
+  assert.equal(integratedPanchang.headingAfterHidden, true, 'Daily Panchang title must not show trailing decorative symbols.');
+  assert.equal(integratedPanchang.headingHeaderBackground, 'rgba(0, 0, 0, 0)', 'Daily Panchang heading must have no red background.');
+  assert.equal(integratedPanchang.headingTitleBackground, 'rgba(0, 0, 0, 0)', 'Daily Panchang title must remain transparent.');
+  assert.match(integratedPanchang.firstEventRangeText, /^\d{2}:\d{2}\(\d{2}\/\d{2}\)-\d{2}:\d{2}\(\d{2}\/\d{2}\)$/, 'Panchang time ranges must stay on one line with no spaces around the hyphen.');
+  const centeredCalendarHeadings = await page.evaluate(() => {
+    const inspect = selector => {
+      const element=document.querySelector(selector);
+      if(!element)return null;
+      const style=getComputedStyle(element);
+      const after=getComputedStyle(element,'::after');
+      return {text:element.textContent.trim(),alignment:style.textAlign,display:style.display,fontSize:style.fontSize,className:element.className,afterContent:after.content,afterDisplay:after.display};
+    };
+    const dailyHora=inspect('#calDaily .hora-card>h3');
+    const transitChart=inspect('#calDaily .transit-card>h3');
+    const transitPositions=inspect('#calDaily .transit-table-card>h3');
+    const panchangHeader=document.querySelector('.cal-date-details-head');
+    const headerAfter=panchangHeader?getComputedStyle(panchangHeader,'::after'):null;
+    const panchangTitle=document.querySelector('#calDateDetails .cal-date-details-title');
+     const rasiHeading=document.querySelector('#calRasiPalan .rp-heading h2');
+    const lagnaCell=document.querySelector('#calDaily .transit-position-table tbody tr:first-child td:first-child');
+    return {
+      language:document.documentElement.lang||'en',
+      dailyHora,transitChart,transitPositions,
+      panchangHeaderAfter:headerAfter?{content:headerAfter.content,display:headerAfter.display}:null,
+       panchangHeading:panchangTitle?{fontSize:getComputedStyle(panchangTitle).fontSize}:null,
+      rasiHeading:rasiHeading?{text:rasiHeading.textContent.trim(),fontSize:getComputedStyle(rasiHeading).fontSize,color:getComputedStyle(rasiHeading).color,fill:getComputedStyle(rasiHeading).webkitTextFillColor}:null,
+      lagnaLabel:lagnaCell?.textContent.trim()||''
+    };
+  });
+  for(const [name,heading] of Object.entries({
+    'Daily Hora':centeredCalendarHeadings.dailyHora,
+    'Transit Chart':centeredCalendarHeadings.transitChart,
+    'Transit Planetary Positions':centeredCalendarHeadings.transitPositions
+  })){
+    assert.ok(heading, name+' heading must render.');
+    assert.equal(heading.alignment,'center',name+' heading must be centered.');
+    assert.equal(heading.display,'block',name+' heading must use a full-width block.');
+     assert.equal(heading.fontSize,'19px',name+' heading must use the compact desktop font size.');
+    assert.ok(heading.afterContent==='none'||heading.afterDisplay==='none',name+' heading must not retain the trailing flex ornament.');
+  }
+  assert.equal(centeredCalendarHeadings.panchangHeading?.fontSize,'19px', 'Daily Panchang heading must use the compact desktop font size.');
+   assert.ok(centeredCalendarHeadings.panchangHeaderAfter &&
+    (centeredCalendarHeadings.panchangHeaderAfter.content==='none'||centeredCalendarHeadings.panchangHeaderAfter.display==='none'),
+    'Daily Panchang header must not display the inherited right-side Om-like ornament.');
+  assert.equal(centeredCalendarHeadings.rasiHeading?.text,
+    centeredCalendarHeadings.language==='ta' ? 'ராசி பலன்கள் & கிரக கோச்சார பலன்கள்' : 'Rasi Palan & Planetary Transits',
+    'Rasi and planetary transit heading must use the corrected wording in the active language.');
+  assert.equal(centeredCalendarHeadings.rasiHeading?.fontSize,'19px', 'Rasi Palan heading must use the compact desktop font size.');
+   assert.equal(centeredCalendarHeadings.rasiHeading?.color,'rgb(21, 86, 78)',
+    'Rasi and planetary transit heading must use the green Calendar theme.');
+  assert.equal(centeredCalendarHeadings.rasiHeading?.fill,'rgb(21, 86, 78)',
+    'Rasi and planetary transit heading WebKit text fill must also use the green theme.');
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+   const mobileHeadingSizes = await page.evaluate(() => {
+     const selectors={dailyPanchang:'#calDateDetails .cal-date-details-title',dailyHora:'#calDaily .hora-card>h3',transitChart:'#calDaily .transit-card>h3',transitPositions:'#calDaily .transit-table-card>h3',rasiPalan:'#calRasiPalan .rp-heading h2'};
+     return Object.fromEntries(Object.entries(selectors).map(([name,selector])=>[name,document.querySelector(selector)?getComputedStyle(document.querySelector(selector)).fontSize:null]));
+   });
+   assert.deepEqual(mobileHeadingSizes,{dailyPanchang:'17px',dailyHora:'17px',transitChart:'17px',transitPositions:'17px',rasiPalan:'17px'},'All Calendar section headings must use the same compact mobile font size.');
+   await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
+   assert.equal(centeredCalendarHeadings.lagnaLabel,
+    centeredCalendarHeadings.language==='ta' ? 'லக்' : 'Asc',
+    'Only the transit positions table Ascendant row must display the shortened Tamil label in Tamil mode.');
+
+  assert.match(integratedPanchang.firstEventRangeText, /^\d{2}:\d{2} \(\d{2}\/\d{2}\) – \d{2}:\d{2} \(\d{2}\/\d{2}\)$/, 'Panchang event timing must use the compact single-line HH:MM (DD/MM) – HH:MM (DD/MM) format.');
+  assert.equal(integratedPanchang.firstEventNoYear, true, 'Panchang event ranges must omit the four-digit Gregorian year.');
+
+  const yogaFlow = await page.$eval('#calDateDetailsExtra .cal-details-summary', summary => {
+    const wrapper = summary.querySelector('.cal-day-yoga-cards');
+    const actualYogaCards = [...(wrapper?.querySelectorAll(':scope > .cal-amirthadi-yoga-card') || [])];
+    const dateCard = summary.querySelector('.cal-tamil-date-card');
+    const rect = element => {
+      const r = element?.getBoundingClientRect();
+      return r ? { left:r.left, top:r.top, right:r.right, bottom:r.bottom, width:r.width } : null;
+    };
+    const probe = yogaCount => {
+      const clone = summary.cloneNode(true);
+      clone.setAttribute('aria-hidden', 'true');
+      clone.style.cssText = 'position:absolute;left:-10000px;top:0;visibility:hidden;width:'+summary.getBoundingClientRect().width+'px;margin:0;';
+      const yogaWrapper = clone.querySelector('.cal-day-yoga-cards');
+      const template = yogaWrapper?.querySelector('.cal-amirthadi-yoga-card');
+      if (!yogaWrapper || !template) return { available:false };
+      yogaWrapper.replaceChildren(...Array.from({length:yogaCount}, () => template.cloneNode(true)));
+      yogaWrapper.dataset.yogaCount = String(yogaCount);
+      summary.parentElement.append(clone);
+      const date = clone.querySelector('.cal-tamil-date-card');
+      const cards = [...yogaWrapper.querySelectorAll(':scope > .cal-amirthadi-yoga-card')];
+      const panchang = clone.querySelector('.cal-panchang-detail-grid');
+      const thyajyam = clone.querySelector('.cal-thyajyam-card');
+      const dayLength = [...clone.querySelectorAll('.cal-muhurta-card')]
+        .find(card => /Ahas : Day length|அகஸ் :- பகல் மானம்/.test(card.textContent || ''));
+      const dateRect = rect(date), yogaRects = cards.map(rect);
+      const panchangRect = rect(panchang), thyajyamRect = rect(thyajyam), dayLengthRect = rect(dayLength);
+      const result = {
+        available:true,
+        yogaCount:cards.length,
+        dateAndFirstYogaShareRow:Boolean(dateRect && yogaRects[0] && Math.abs(dateRect.top-yogaRects[0].top)<1 && dateRect.left<yogaRects[0].left),
+        secondAndThirdYogaShareRow:Boolean(yogaRects[1] && yogaRects[2] && Math.abs(yogaRects[1].top-yogaRects[2].top)<1 && yogaRects[1].left<yogaRects[2].left),
+        panchangBelowYoga:Boolean(panchangRect && yogaRects.length && panchangRect.top>=Math.max(dateRect.bottom,yogaRects[yogaRects.length-1].bottom)-1),
+        panchangFullWidth:Boolean(panchangRect && Math.abs(panchangRect.width-clone.getBoundingClientRect().width)<2),
+        lowerCardsShareRow:Boolean(thyajyamRect && dayLengthRect && Math.abs(thyajyamRect.top-dayLengthRect.top)<1 && thyajyamRect.left<dayLengthRect.left),
+        emptyYogaCards:clone.querySelectorAll('.cal-empty-yoga-card,.cal-empty-yoga-slot').length
+      };
+      clone.remove();
+      return result;
+    };
+    const firstYogaCard = actualYogaCards[0];
+    const firstYogaSegment = firstYogaCard?.querySelector('.cal-yoga-segment');
+    const firstYogaTime = firstYogaSegment?.querySelector('.cal-yoga-segment-time');
+    const yogaReference = firstYogaCard?.querySelector('.cal-yoga-reference');
+    const thyajyamCard = summary.querySelector('.cal-thyajyam-card');
+    const thyajyamTitle = thyajyamCard?.querySelector(':scope > small');
+    const thyajyamSegments = thyajyamCard?.querySelector('.cal-yoga-segments');
+    const thyajyamSegment = thyajyamSegments?.querySelector('.cal-yoga-segment');
+    const style = element => element ? getComputedStyle(element) : null;
+    const firstYogaRect = rect(firstYogaCard);
+    const dateRect = rect(dateCard);
+    const yogaTimeRect = rect(firstYogaTime);
+    const referenceRect = rect(yogaReference);
+    const thyajyamTitleRect = rect(thyajyamTitle);
+    const thyajyamPeriodRect = rect(thyajyamSegment);
+    return {
+      declaredYogaCount:Number(wrapper?.dataset.yogaCount ?? -1),
+      actualYogaCardCount:actualYogaCards.length,
+      wrapperDisplay:wrapper ? getComputedStyle(wrapper).display : '',
+      dateAndFirstYogaShareRow:Boolean(dateRect && firstYogaRect && Math.abs(dateRect.top-firstYogaRect.top)<1 && dateRect.left<firstYogaRect.left),
+      yogaCardGap:parseFloat(style(firstYogaCard)?.rowGap || '0'),
+      yogaCardPaddingTop:parseFloat(style(firstYogaCard)?.paddingTop || '0'),
+      yogaSegmentGap:parseFloat(style(firstYogaSegment)?.rowGap || '0'),
+      yogaSegmentPaddingTop:parseFloat(style(firstYogaSegment)?.paddingTop || '0'),
+      yogaReferenceMarginTop:parseFloat(style(yogaReference)?.marginTop || '0'),
+      yogaTimeToReferenceGap:yogaTimeRect&&referenceRect?referenceRect.top-yogaTimeRect.bottom:null,
+      thyajyamCardGap:parseFloat(style(thyajyamCard)?.rowGap || '0'),
+      thyajyamCardPaddingTop:parseFloat(style(thyajyamCard)?.paddingTop || '0'),
+      thyajyamSegmentsGap:parseFloat(style(thyajyamSegments)?.rowGap || '0'),
+      thyajyamSegmentsMarginTop:parseFloat(style(thyajyamSegments)?.marginTop || '0'),
+      thyajyamTitleToPeriodGap:thyajyamTitleRect&&thyajyamPeriodRect?thyajyamPeriodRect.top-thyajyamTitleRect.bottom:null,
+      thyajyamHasVerboseNote:thyajyamCard ? thyajyamCard.querySelectorAll(':scope > small').length > 1 : true,
+      threeYogaLayout:probe(3),
+      oneYogaLayout:probe(1)
+    };
+  });
+  assert.ok(yogaFlow.declaredYogaCount >= 0, 'The calculated Amirthadi Yoga count must be exposed for layout validation.');
+  assert.equal(yogaFlow.actualYogaCardCount, Math.max(1,yogaFlow.declaredYogaCount),
+    'Each available Yoga must become one card; only one unavailable-result card appears when none is available.');
+  assert.equal(yogaFlow.wrapperDisplay, 'contents', 'The Yoga wrapper must not consume an extra grid cell.');
+  assert.equal(yogaFlow.dateAndFirstYogaShareRow, true, 'Tamil date stays on the left and the first Yoga occupies its right side.');
+  assert.equal(yogaFlow.threeYogaLayout.available, true, 'Three-Yoga layout probe must render.');
+  assert.equal(yogaFlow.threeYogaLayout.dateAndFirstYogaShareRow, true, 'With three Yogas, the first row must be Tamil date | Yoga 1.');
+  assert.equal(yogaFlow.threeYogaLayout.secondAndThirdYogaShareRow, true, 'With three Yogas, Yoga 2 and Yoga 3 must fill the next left/right row.');
+  assert.equal(yogaFlow.threeYogaLayout.panchangBelowYoga, true, 'Daily Panchang details must follow all Yoga cards.');
+  assert.equal(yogaFlow.threeYogaLayout.panchangFullWidth, true, 'The Panchang detail grid must keep its full-width layout.');
+  assert.equal(yogaFlow.oneYogaLayout.available, true, 'Single-Yoga layout probe must render.');
+  assert.equal(yogaFlow.oneYogaLayout.yogaCount, 1, 'Single-Yoga layout must render only one Yoga card.');
+  assert.equal(yogaFlow.oneYogaLayout.dateAndFirstYogaShareRow, true, 'With one Yoga, Tamil date and that Yoga must share the top row.');
+  assert.equal(yogaFlow.oneYogaLayout.panchangBelowYoga, true, 'With one Yoga, the next Panchang content must flow immediately below.');
+  assert.equal(yogaFlow.oneYogaLayout.panchangFullWidth, true, 'With one Yoga, Panchang details must fill the next row rather than leave an empty Yoga cell.');
+  assert.equal(yogaFlow.oneYogaLayout.lowerCardsShareRow, true, 'Thyajyam and the next lower card must fill left/right positions without an empty Yoga placeholder.');
+  assert.equal(yogaFlow.oneYogaLayout.emptyYogaCards, 0, 'No empty Yoga card or reserved empty Yoga slot may be created.');
+  assert.ok(yogaFlow.yogaCardGap <= 2, 'Yoga heading and result card must use a compact gap.');
+  if (yogaFlow.yogaCardPaddingTop > 8) {
+    console.log('CALENDAR_YOGA_LAYOUT_DIAGNOSTIC='+JSON.stringify({
+      paddingTop:yogaFlow.yogaCardPaddingTop,
+      wrapperDisplay:yogaFlow.wrapperDisplay,
+      cardGap:yogaFlow.yogaCardGap,
+      selectorMatches:await page.$eval('#calDateDetailsExtra .cal-details-summary .cal-amirthadi-yoga-card', card => ({
+        id:card.closest('#calDateDetailsExtra')?.id||'',
+        parent:card.parentElement?.className||'',
+        summary:card.parentElement?.parentElement?.className||'',
+        exactSelector:card.matches('#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card'),
+        stylesheets:[...document.styleSheets].map(sheet=>sheet.href).filter(Boolean)
+      }))
+    }));
+  }
+  assert.ok(yogaFlow.yogaCardPaddingTop <= 8,
+    'Yoga card top padding must remain compact. Actual computed layout: '+JSON.stringify({paddingTop:yogaFlow.yogaCardPaddingTop,cardGap:yogaFlow.yogaCardGap}));
+  assert.ok(yogaFlow.yogaSegmentGap <= 2, 'Yoga result name, description and timing must remain close together.');
+  assert.ok(yogaFlow.yogaSegmentPaddingTop <= 2, 'Yoga result segment must not add excess top padding.');
+  assert.ok(yogaFlow.yogaReferenceMarginTop <= 2, 'Sunrise reference must sit close below the Yoga time.');
+  assert.ok(yogaFlow.yogaTimeToReferenceGap <= 8, 'Yoga time and sunrise reference gap must be compact. Actual metrics: '+JSON.stringify({gap:yogaFlow.yogaTimeToReferenceGap,segmentGap:yogaFlow.yogaSegmentGap,referenceMarginTop:yogaFlow.yogaReferenceMarginTop,cardGap:yogaFlow.yogaCardGap,cardPaddingTop:yogaFlow.yogaCardPaddingTop}));
+  assert.ok(yogaFlow.thyajyamCardGap <= 2, 'Thyajyam card gap must be compact. Actual metrics: '+JSON.stringify({gap:yogaFlow.thyajyamCardGap,padding:yogaFlow.thyajyamCardPaddingTop,segmentsGap:yogaFlow.thyajyamSegmentsGap,segmentsMarginTop:yogaFlow.thyajyamSegmentsMarginTop,titleToPeriodGap:yogaFlow.thyajyamTitleToPeriodGap}));
+  assert.ok(yogaFlow.thyajyamCardPaddingTop <= 8, 'Thyajyam card top padding must remain compact.');
+  assert.ok(yogaFlow.thyajyamSegmentsGap <= 2, 'Thyajyam interval rows must remain close together.');
+  assert.ok(yogaFlow.thyajyamSegmentsMarginTop <= 2, 'Thyajyam heading must sit close to its period details.');
+  assert.ok(yogaFlow.thyajyamTitleToPeriodGap <= 8, 'Thyajyam title and first result must not have excess space.');
+  assert.equal(yogaFlow.thyajyamHasVerboseNote, false, 'Thyajyam must not reserve space for a redundant explanatory note.');
+  const dailyDetailsOrder = await page.$eval('#calDateDetails', root =>
+    [...root.children].map(child => child.id).filter(id =>
+      ['calChandrashtamaSection', 'calEvents', 'calDaily'].includes(id)));
+  assert.deepEqual(dailyDetailsOrder,
+    ['calChandrashtamaSection', 'calEvents', 'calDaily'],
+    'Chandrashtama and Tara Bala share one result section before observances and daily Panchang.');
+  const taraBalaContinuity = await page.$eval('#calReadings', section => {
+    const card=section.querySelector('.cal-summary>article');
+    return {
+      sameSection:section.parentElement?.id==='calChandrashtamaSection',
+      headingRemoved:!section.querySelector('h3'),
+      sectionSeparator:getComputedStyle(section).borderTopWidth,
+      cardBorder:getComputedStyle(card).borderTopWidth,
+      cardBackground:getComputedStyle(card).backgroundColor
+    };
+  });
+  assert.equal(taraBalaContinuity.sameSection,true,'Tara Bala must be nested directly in the Chandrashtama result layer.');
+  assert.equal(taraBalaContinuity.headingRemoved,true,'The separate Birth Star and Tara Bala heading must not be rendered.');
+  assert.equal(taraBalaContinuity.sectionSeparator,'1px','Tara Bala may use a subtle divider but not a separate outer card.');
+  assert.equal(taraBalaContinuity.cardBorder,'0px','Tara Bala must not introduce a second bordered card.');
+  assert.equal(taraBalaContinuity.cardBackground,'rgba(0, 0, 0, 0)','Tara Bala must remain on the same transparent layer.');
+  const holidayOriginalDate = await page.$eval('#calDate', el => el.value);
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, '2026-11-08');
+  await page.waitForFunction(() =>
+    document.querySelector('#calDate')?.value === '2026-11-08' &&
+    Boolean(document.querySelector('#calEvents .cal-government-holiday')),
+    { timeout: 120000 });
+  const officialHolidaySmoke = await page.$eval('#calEvents', section => ({
+    governmentTags:[...section.querySelectorAll('.cal-government-holiday')].map(el=>el.textContent.trim()),
+    allTags:[...section.querySelectorAll('.cal-tags span')].map(el=>el.textContent.trim()),
+    sourceText:section.querySelector('.cal-holiday-source a')?.textContent.trim()||'',
+    noteText:section.querySelector('.cal-note')?.textContent.trim()||'',
+    sourceHref:section.querySelector('.cal-holiday-source a')?.getAttribute('href')||''
+  }));
+  assert.ok(officialHolidaySmoke.governmentTags.some(text=>/Deepavali.*Government holiday/i.test(text)||/தீபாவளி.*அரசு விடுமுறை/.test(text)),
+    'The 8 November 2026 Deepavali date must be explicitly marked as a Government Holiday.');
+  assert.equal(officialHolidaySmoke.allTags.some(text=>/^(Sunday|ஞாயிறு)$/.test(text)),false,
+    'Sunday must not be added as a separate holiday tag.');
+  assert.equal(officialHolidaySmoke.sourceText.match(/^(Holiday source|விடுமுறை ஆதாரம்)$/)?.[0],officialHolidaySmoke.sourceText,
+    'Keep only the original Holiday source link text.');
+  assert.equal(officialHolidaySmoke.noteText,'','Remove the explanatory vrats / holiday note entirely.');
+  assert.match(officialHolidaySmoke.sourceHref,/stationeryprinting\.tn\.gov\.in\/extraordinary\/2025\/721_Ex_II_1_2025\.pdf/,
+    'Keep the existing Tamil Nadu Gazette holiday source URL unchanged.');
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, '2026-11-09');
+  await page.waitForFunction(() =>
+    document.querySelector('#calDate')?.value === '2026-11-09' &&
+    [...document.querySelectorAll('#calEvents .cal-government-holiday')].some(el=>
+      /Additional local holiday after Deepavali|தீபாவளிக்கு அடுத்த நாள்/.test(el.textContent||'')),
+    { timeout: 120000 });
+  const additionalLocalHoliday = await page.$eval('#calEvents .cal-government-holiday', el => el.textContent.trim());
+  assert.ok(/Additional local holiday after Deepavali.*Government local holiday/i.test(additionalLocalHoliday) ||
+    /தீபாவளிக்கு அடுத்த நாள்.*அரசு உள்ளூர் விடுமுறை/.test(additionalLocalHoliday),
+    'The 9 November 2026 all-state local holiday under G.O.(1D) No.547 must be shown distinctly.');
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, holidayOriginalDate);
+  await page.waitForFunction(date =>
+    document.querySelector('#calDate')?.value===date &&
+    document.querySelector('#calChandrashtamaResult')?.dataset.resolved==='true',
+    { timeout: 120000 }, holidayOriginalDate);
+
   const chandrashtamaSmoke = await page.$eval('#calChandrashtamaSection', section => {
     const root = section.querySelector('#calChandrashtamaPeriods');
     const status = section.querySelector('#calChandrashtamaResult');
@@ -116,6 +456,8 @@ try {
     result: status?.dataset.result || '',
     statusColor: status ? getComputedStyle(status).color : '',
     statusFillColor: status ? getComputedStyle(status).webkitTextFillColor : '',
+    referenceColor: getComputedStyle(section.querySelector('.cal-chandrashtama > p')).color,
+    referenceFillColor: getComputedStyle(section.querySelector('.cal-chandrashtama > p')).webkitTextFillColor,
     headingAlignment: getComputedStyle(section.querySelector(':scope > h3')).textAlign,
     headingDisplay: getComputedStyle(section.querySelector(':scope > h3')).display,
     headingAfterDisplay: getComputedStyle(section.querySelector(':scope > h3'), '::after').display,
@@ -126,6 +468,8 @@ try {
       starPeriod: window.querySelector('.cal-chandra-star-period span')?.textContent || '',
       active: window.classList.contains('is-active'),
       selectedDateMatch: window.classList.contains('is-selected-date'),
+      isUpcoming: window.classList.contains('is-upcoming'),
+      periodType: window.dataset.periodType || '',
       startDate: window.dataset.startDate || '',
       endDate: window.dataset.endDate || '',
       padaRows: [...window.querySelectorAll('.cal-chandra-pada-row')].map(row => ({
@@ -147,24 +491,36 @@ try {
     'The old trailing flex rule must not push the Chandrashtama heading back to the left.');
   assert.ok(chandrashtamaSmoke.windows.length <= 1,
     'Calendar must never list multiple past or upcoming Chandrashtama Rasi windows.');
-  assert.ok(chandrashtamaSmoke.windows.every(window => window.active && !window.selectedDateMatch),
-    'For today, only the Chandrashtama window active at the current local instant may be displayed.');
-  if (chandrashtamaSmoke.windows.length === 0) {
-    assert.equal(chandrashtamaSmoke.result, 'absent',
-      'No matching window must produce the direct Chandrashtama: No result.');
-    assert.equal(chandrashtamaSmoke.statusColor, 'rgb(17, 17, 17)',
-      'Chandrashtama: No must remain normal black text.');
-    assert.equal(chandrashtamaSmoke.statusFillColor, 'rgb(17, 17, 17)',
-      'Chandrashtama: No must not inherit the old green WebKit text fill.');
-    assert.equal(chandrashtamaSmoke.body, '',
-      'When no Chandrashtama applies, show no additional notification or empty-period message.');
-  } else {
+  const todayWindow = chandrashtamaSmoke.windows[0] || null;
+  if (todayWindow?.active) {
+    assert.equal(todayWindow.selectedDateMatch, false,
+      'For today, an active Chandrashtama interval is the selected-date result, not a future fallback.');
+    assert.equal(todayWindow.periodType, 'selected',
+      'An active Chandrashtama interval must be marked as the selected period.');
     assert.equal(chandrashtamaSmoke.result, 'present',
-      'A matching active window must produce the direct Chandrashtama: Yes result.');
-    assert.equal(chandrashtamaSmoke.statusColor, 'rgb(192, 0, 0)',
-      'Chandrashtama: Yes must be red.');
-    assert.equal(chandrashtamaSmoke.statusFillColor, 'rgb(192, 0, 0)',
-      'Chandrashtama: Yes must override the old green WebKit text fill.');
+      'A Chandrashtama window active now must produce the direct Chandrashtama: Yes result.');
+    assert.equal(chandrashtamaSmoke.statusColor, 'rgb(180, 35, 24)',
+      'Chandrashtama: Yes must use the green-theme red accent.');
+    assert.equal(chandrashtamaSmoke.statusFillColor, 'rgb(180, 35, 24)',
+      'Chandrashtama: Yes WebKit text fill must match the red accent.');
+  } else {
+    assert.equal(chandrashtamaSmoke.result, 'absent',
+      'When no Chandrashtama is active now, preserve the direct Chandrashtama: No result.');
+    assert.equal(chandrashtamaSmoke.statusColor, 'rgb(40, 115, 77)',
+      'Chandrashtama: No must use the green-theme success color.');
+    assert.equal(chandrashtamaSmoke.statusFillColor, 'rgb(40, 115, 77)',
+      'Chandrashtama: No WebKit text fill must match the green success color.');
+    if (todayWindow) {
+      assert.equal(todayWindow.isUpcoming, true,
+        'When today has no active Chandrashtama, only the nearest upcoming interval may be shown.');
+      assert.equal(todayWindow.periodType, 'upcoming',
+        'A future interval shown while today is clear must be marked upcoming.');
+      assert.equal(todayWindow.active, false,
+        'A future interval must not be styled as active.');
+    } else {
+      assert.equal(chandrashtamaSmoke.body, '',
+        'When no Chandrashtama exists in the calculation horizon, show no extra notification or empty-period message.');
+    }
   }
   assert.ok(chandrashtamaSmoke.windows.every(window => window.rasi === 'Scorpio' && window.star === 'Ashwini'),
     'Only the selected Mesha Janma Rasi and its compatible Ashwini birth star should be displayed.');
@@ -196,8 +552,8 @@ try {
     fillColor: getComputedStyle(el).webkitTextFillColor
   }));
   assert.equal(pastDateStatus.result, 'present', 'A selected historical Chandrashtama date must show Yes.');
-  assert.equal(pastDateStatus.color, 'rgb(192, 0, 0)', 'Historical Chandrashtama Yes must be red.');
-  assert.equal(pastDateStatus.fillColor, 'rgb(192, 0, 0)', 'Historical Chandrashtama Yes must also render red in WebKit.');
+  assert.equal(pastDateStatus.color, 'rgb(180, 35, 24)', 'Historical Chandrashtama Yes must be red.');
+  assert.equal(pastDateStatus.fillColor, 'rgb(180, 35, 24)', 'Historical Chandrashtama Yes must also render red in WebKit.');
   const independentChandrashtamaCheck = await page.$eval('#calChandrashtamaPeriods', root => {
     const windows = [...root.querySelectorAll('.cal-chandra-window')];
     const item = windows.length === 1 && windows[0].classList.contains('is-selected-date') ? windows[0] : null;
@@ -221,6 +577,8 @@ try {
     const interval = section.querySelector('.cal-chandra-window');
     return {
       mainBorder: getComputedStyle(main).borderTopWidth,
+      mainBackground: getComputedStyle(main).backgroundColor,
+      mainPadding: getComputedStyle(main).paddingTop,
       intervalBorder: interval ? getComputedStyle(interval).borderTopWidth : 'missing',
       intervalBackground: interval ? getComputedStyle(interval).backgroundColor : 'missing',
       intervalPadding: interval ? getComputedStyle(interval).paddingTop : 'missing',
@@ -231,7 +589,9 @@ try {
       }))
     };
   });
-  assert.notEqual(oneLayer.mainBorder, '0px', 'The outer Chandrashtama article must remain the single main box.');
+  assert.equal(oneLayer.mainBorder, '0px', 'Chandrashtama must have no outer box border.');
+  assert.equal(oneLayer.mainBackground, 'rgba(0, 0, 0, 0)', 'Chandrashtama must have no filled layer.');
+  assert.equal(oneLayer.mainPadding, '0px', 'Chandrashtama must not reserve card padding.');
   assert.equal(oneLayer.intervalBorder, '0px', 'The nested interval must not draw a second box border.');
   assert.equal(oneLayer.intervalBackground, 'rgba(0, 0, 0, 0)', 'The nested interval must be transparent inside the main box.');
   assert.equal(oneLayer.intervalPadding, '0px', 'The nested interval must not create a second padded layer.');
@@ -278,13 +638,25 @@ try {
     'A future selected day must show the single Chandrashtama interval that overlaps that day.');
   const futureDateStatus = await page.$eval('#calChandrashtamaResult', el => ({
     result: el.dataset.result, color: getComputedStyle(el).color,
-    fillColor: getComputedStyle(el).webkitTextFillColor
+    fillColor: getComputedStyle(el).webkitTextFillColor,
+    fontSize: getComputedStyle(el).fontSize,
+    fontWeight: getComputedStyle(el).fontWeight,
+    color: getComputedStyle(el).color,
+    referenceFontSize: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).fontSize,
+    referenceFontWeight: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).fontWeight,
+    referenceColor: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).color,
+    referenceFillColor: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).webkitTextFillColor
   }));
   assert.equal(futureDateStatus.result, 'present', 'A future date in Chandrashtama must show Yes.');
-  assert.equal(futureDateStatus.color, 'rgb(192, 0, 0)', 'Future Chandrashtama Yes must be red.');
-  assert.equal(futureDateStatus.fillColor, 'rgb(192, 0, 0)', 'Future Chandrashtama Yes must also render red in WebKit.');
+  assert.equal(futureDateStatus.fontSize, '16px', 'Chandrashtama Yes must be the prominent result tier.');
+  assert.equal(futureDateStatus.fontWeight, '800', 'Chandrashtama Yes must use the prominent result weight.');
+  assert.equal(futureDateStatus.color, 'rgb(180, 35, 24)', 'Future Chandrashtama Yes must use the green-theme red accent.');
+  assert.equal(futureDateStatus.fillColor, 'rgb(180, 35, 24)', 'Future Chandrashtama Yes must also render with the same WebKit color.');
+  assert.equal(await page.$eval('#calChandrashtamaPeriods', root => Boolean(root.querySelector('.cal-chandra-upcoming-heading'))), false,
+    'Do not show the next-Chandrashtama heading when a future selected date is already within Chandrashtama.');
 
-  // A selected date outside a transit must not list a later upcoming transit from the 30-day scan.
+  // When the selected date has no Chandrashtama, keep the status as No and show
+  // only the nearest later transit for the selected Janma Rasi / Nakshatra / Pada.
   await page.$eval('#calDate', (el, date) => {
     el.value = date;
     el.dispatchEvent(new Event('change', { bubbles: true }));
@@ -293,10 +665,57 @@ try {
     const status = document.querySelector('#calStatus')?.textContent || '';
     const root = document.querySelector('#calChandrashtamaPeriods');
     const result = document.querySelector('#calChandrashtamaResult');
+    const windows = [...(root?.querySelectorAll('.cal-chandra-window') || [])];
     return status.includes('2026-11-19') && result?.dataset.resolved === 'true' &&
-      result.dataset.result === 'absent' && root &&
-      !root.querySelector('.cal-chandra-window') && (root.textContent || '') === '';
+      result.dataset.result === 'absent' && windows.length === 1 &&
+      windows[0].classList.contains('is-upcoming') &&
+      windows[0].dataset.periodType === 'upcoming' &&
+      windows[0].dataset.startDate > '2026-11-19';
   }, { timeout: 120000 });
+  const upcomingHeading = await page.$eval('#calChandrashtamaPeriods .cal-chandra-upcoming-heading', el => ({
+    text: el.textContent.trim(),
+    language: document.documentElement.lang,
+    janmaRasi: document.querySelector('#calRasi')?.selectedOptions[0]?.textContent?.trim() || '',
+    fontSize: getComputedStyle(el).fontSize,
+    fontWeight: getComputedStyle(el).fontWeight,
+    color: getComputedStyle(el).color,
+    referenceFontSize: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).fontSize,
+    referenceFontWeight: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).fontWeight,
+    referenceColor: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).color
+  }));
+  const expectedUpcomingHeading = upcomingHeading.language === 'ta' ? 'அடுத்த சந்திராஷ்டமம்' : 'Next Chandrashtama';
+  assert.equal(upcomingHeading.text, expectedUpcomingHeading, 'The upcoming heading must use concise wording without repeating the selected Rasi.');
+  assert.equal(upcomingHeading.fontSize, '13px', 'The upcoming heading must use the supporting-label size.');
+  assert.equal(upcomingHeading.fontWeight, '750', 'The upcoming heading must be emphasized above ordinary supporting text.');
+  assert.equal(upcomingHeading.color, 'rgb(44, 112, 77)', 'The upcoming heading must use the green theme accent.');
+  const rasiLabel = await page.$eval('#calChandrashtamaSection .cal-chandrashtama > p:nth-of-type(2)', el => el.textContent.trim());
+  assert.match(rasiLabel, /சந்திராஷ்டம ராசி|Chandrashtama Rasi/);
+  assert.doesNotMatch(rasiLabel, /எட்டாம் ராசி|Eighth Rasi/);
+  const upcomingWindow = await page.$eval('#calChandrashtamaPeriods .cal-chandra-window', el => ({
+    startDate: el.dataset.startDate,
+    endDate: el.dataset.endDate,
+    periodType: el.dataset.periodType,
+    padaRows: [...el.querySelectorAll('.cal-chandra-pada-row')].map(row => Number(row.dataset.birthPada))
+  }));
+  assert.equal(upcomingWindow.periodType, 'upcoming');
+  assert.ok(upcomingWindow.startDate > '2026-11-19', 'The future transit must begin after the date with no Chandrashtama.');
+  assert.equal(upcomingWindow.padaRows.length, 4, 'All valid birth Padas are shown when the Pada selector is All Padas.');
+  const noPeriodStatus = await page.$eval('#calChandrashtamaResult', el => ({
+    result: el.dataset.result,
+    color: getComputedStyle(el).color,
+    fillColor: getComputedStyle(el).webkitTextFillColor,
+    fontSize: getComputedStyle(el).fontSize,
+    fontWeight: getComputedStyle(el).fontWeight,
+    referenceFontSize: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).fontSize,
+    referenceFontWeight: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).fontWeight,
+    referenceColor: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).color,
+    referenceFillColor: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).webkitTextFillColor
+  }));
+  assert.equal(noPeriodStatus.result, 'absent', 'An upcoming period must not change the selected-date Chandrashtama status.');
+  assert.equal(noPeriodStatus.fontSize, '16px', 'Chandrashtama No must occupy the same prominent result tier as Yes.');
+  assert.equal(noPeriodStatus.fontWeight, '800', 'Chandrashtama No must use the prominent result weight.');
+  assert.equal(noPeriodStatus.color, 'rgb(40, 115, 77)', 'Chandrashtama No must use the affirmative green status color.');
+  assert.equal(noPeriodStatus.fillColor, 'rgb(40, 115, 77)', 'Chandrashtama No WebKit text fill must match its green status color.');
 
   // Return to the historical transit date for the exact Pada projection checks.
   await page.$eval('#calDate', (el, date) => {
@@ -304,6 +723,15 @@ try {
     el.dispatchEvent(new Event('change', { bubbles: true }));
   }, '2026-11-10');
   await page.waitForFunction(() => document.querySelector('#calChandrashtamaPeriods .cal-chandra-window.is-selected-date'), { timeout: 120000 });
+  const historicalSelectedWindow = await page.$eval('#calChandrashtamaPeriods', root => ({
+    count: root.querySelectorAll('.cal-chandra-window').length,
+    periodType: root.querySelector('.cal-chandra-window')?.dataset.periodType || ''
+  }));
+  assert.equal(historicalSelectedWindow.count, 1,
+    'When the selected date already has Chandrashtama, do not append a future transit.');
+  assert.equal(historicalSelectedWindow.periodType, 'selected');
+  assert.equal(await page.$eval('#calChandrashtamaPeriods', root => Boolean(root.querySelector('.cal-chandra-upcoming-heading'))), false,
+    'Do not show the next-Chandrashtama heading when the selected date already has Chandrashtama.');
   assert.equal(chandrashtamaSmoke.windows.length <= 1, true);
   assert.equal(independentChandrashtamaCheck.padas.length, 4);
   await page.select('#calStarPada', '1');
@@ -415,8 +843,8 @@ try {
   await page.waitForFunction(() => {
     const status = document.querySelector('#calChandrashtamaResult');
     return status?.dataset.resolved === 'true' && status.dataset.result === 'present' &&
-      getComputedStyle(status).color === 'rgb(192, 0, 0)' &&
-      getComputedStyle(status).webkitTextFillColor === 'rgb(192, 0, 0)';
+      getComputedStyle(status).color === 'rgb(180, 35, 24)' &&
+      getComputedStyle(status).webkitTextFillColor === 'rgb(180, 35, 24)';
   }, { timeout: 120000 });
   const chandrashtamaCard = await page.$('#calChandrashtamaSection');
   assert.ok(chandrashtamaCard, 'The Chandrashtama Rasi card must be rendered for the preview.');
@@ -475,7 +903,7 @@ try {
       insideDateDetails: Boolean(dateDetails && el.parentElement === dateDetails),
       dayFlagsSeparated: Boolean(flagsCard && flags.length === 2),
       shoolamSeparate: Boolean(shoolam && !shoolam.querySelector('.cal-day-flag')),
-      immediatelyBeforePanchang: document.querySelector('#calChandrashtamaSection')?.nextElementSibling?.id === 'calDaily',
+      dailyContentAfterObservances: document.querySelector('#calEvents')?.nextElementSibling?.id === 'calDaily',
       lagnaBeforeChandrashtama: el.nextElementSibling?.id === 'calChandrashtamaSection',
       chandrashtamaSectionInsideDateDetails: Boolean(document.querySelector('#calChandrashtamaSection')?.parentElement === dateDetails)
     };
@@ -485,7 +913,7 @@ try {
   assert.equal(resultPlacement.shoolamSeparate, true, 'Travel Shoolam must be separate from the day flags.');
   assert.equal(resultPlacement.lagnaBeforeChandrashtama, true, 'Chandrashtama must appear immediately below the Rasi-Mana Lagna balance section.');
   assert.equal(resultPlacement.chandrashtamaSectionInsideDateDetails, true, 'Chandrashtama must remain inside Date Details.');
-  assert.equal(resultPlacement.immediatelyBeforePanchang, true, 'Chandrashtama must appear immediately above the daily Panchang.');
+  assert.equal(resultPlacement.dailyContentAfterObservances, true, 'Daily Hora and transit content must remain below Tara Bala and observances.');
 
   // Verify the requested Date Details layout and the month-number alignment at
   // a narrow phone viewport matching the submitted mobile screenshot.
@@ -514,7 +942,7 @@ try {
       .find(card => /Abhijit Muhurtham|அபிஜித் முகூர்த்தம்/.test(card.textContent || ''));
     const shoolam = grid?.querySelector('.cal-shoolam-card');
     const shoolamMain = shoolam?.querySelector('.cal-shoolam-main');
-    const thyajyam = grid?.querySelector('.cal-day-yoga-card.is-inauspicious');
+    const thyajyam = grid?.querySelector('.cal-thyajyam-card');
     const thyajyamSegment = thyajyam?.querySelector('.cal-yoga-segment.is-inauspicious');
     const thyajyamTime = thyajyamSegment?.querySelector('.cal-yoga-segment-time');
     if (!grid || !flags || !abhijit || !shoolam || !shoolamMain || !thyajyam || !thyajyamSegment || !thyajyamTime) return { available: false };
@@ -533,6 +961,9 @@ try {
       shoolamFullWidth: Math.abs(shoolamRect.width - gridRect.width) < 1,
       shoolamContentCentered: Math.abs((mainRect.left + mainRect.width / 2) - (shoolamRect.left + shoolamRect.width / 2)) < 1,
       thyajyamBorderLeftWidth: getComputedStyle(thyajyam).borderLeftWidth,
+      thyajyamBorderLeftColor: getComputedStyle(thyajyam).borderLeftColor,
+      thyajyamBorderTopWidth: getComputedStyle(thyajyam).borderTopWidth,
+      thyajyamBorderTopColor: getComputedStyle(thyajyam).borderTopColor,
       thyajyamSegmentBorderLeftWidth: getComputedStyle(thyajyamSegment).borderLeftWidth,
       thyajyamTimeAlignSelf: getComputedStyle(thyajyamTime).alignSelf,
       thyajyamTimeCentered: Math.abs((thyajyamTimeRect.left + thyajyamTimeRect.width / 2) - (thyajyamSegmentRect.left + thyajyamSegmentRect.width / 2)) < 1,
@@ -544,7 +975,9 @@ try {
   assert.equal(requestedLayout.flagsAndAbhijitShareRow, true, 'Kari/Thaniya and Abhijit must share one row.');
   assert.equal(requestedLayout.shoolamFullWidth, true, 'Travel Shoolam must occupy its own full-width row.');
   assert.equal(requestedLayout.shoolamContentCentered, true, 'Travel Shoolam content must be centered.');
-  assert.equal(requestedLayout.thyajyamBorderLeftWidth, '0px', 'The long red left line on the Nakshatra Thyajyam card must be removed.');
+  assert.notEqual(requestedLayout.thyajyamBorderLeftColor, 'rgb(182, 91, 80)', 'The old red left stripe on the Nakshatra Thyajyam card must be removed; the neutral card outline may remain.');
+  assert.equal(requestedLayout.thyajyamBorderTopWidth, '2px', 'The intentional red top accent on the Nakshatra Thyajyam card must remain.');
+  assert.equal(requestedLayout.thyajyamBorderTopColor, 'rgb(182, 91, 80)', 'The intentional red top accent must retain its theme color.');
   assert.equal(requestedLayout.thyajyamSegmentBorderLeftWidth, '0px', 'The inner red Thyajyam interval stripe must also be removed.');
   assert.equal(requestedLayout.thyajyamTimeAlignSelf, 'center', 'The Nakshatra Thyajyam time must be centered on narrow mobile screens.');
   assert.equal(requestedLayout.thyajyamTimeCentered, true, 'The Nakshatra Thyajyam time result must be geometrically centered within its interval row.');
@@ -590,46 +1023,69 @@ try {
     fullPage: false,
     captureBeyondViewport: false
   });
-  // Verify PR #529 daily Panchang/Hora/transit typography on the real mobile DOM.
+  // Verify the integrated Daily Panchang/Hora/transit typography on the real mobile DOM.
   await page.waitForFunction(() => {
-    const rows = document.querySelectorAll('#calDaily .panchang-data-table tbody tr');
+    const items = document.querySelectorAll('#calDateDetailsExtra .cal-panchang-detail-grid .cal-panchang-detail-item');
     const hora = document.querySelectorAll('#calDaily .hora-time.smv-calendar-neutral-time');
-    return rows.length >= 8 && hora.length >= 20 &&
-      document.querySelector('#calDaily .cal-name-yoga-label') &&
-      document.querySelector('#calDaily .panchang-time-result.smv-calendar-bright-red-time') &&
+    return items.length === 14 && hora.length >= 20 &&
+      document.querySelector('#calDateDetailsExtra .cal-panchang-detail-grid .cal-name-yoga-label') &&
+      document.querySelector('#calDateDetailsExtra .cal-panchang-detail-grid .panchang-time-result.smv-calendar-bright-red-time') &&
       document.querySelector('#calDaily .transit-position-table .transit-table-degree.smv-calendar-degree-normal');
   }, { timeout: 90000 });
-  const tamilYogaLabel = await page.$eval('#calDaily .cal-name-yoga-label', el => el.textContent.trim());
+  const tamilYogaLabel = await page.$eval('#calDateDetailsExtra .cal-panchang-detail-grid .cal-name-yoga-label', el => el.textContent.trim());
   assert.equal(tamilYogaLabel, 'நாம யோகம்', 'Tamil Calendar must display the complete localized label “நாம யோகம்”.');
   await page.click('#calEnglish');
   await page.waitForFunction(() => document.documentElement.lang === 'en' &&
-    document.querySelector('#calDaily .cal-name-yoga-label')?.textContent.trim() === 'Namah Yoga', { timeout: 15000 });
+    document.querySelector('#calDateDetailsExtra .cal-panchang-detail-grid .cal-name-yoga-label')?.textContent.trim() === 'Namah Yoga', { timeout: 15000 });
   await page.click('#calTamil');
   await page.waitForFunction(() => document.documentElement.lang === 'ta' &&
-    document.querySelector('#calDaily .cal-name-yoga-label')?.textContent.trim() === 'நாம யோகம்', { timeout: 15000 });
+    document.querySelector('#calDateDetailsExtra .cal-panchang-detail-grid .cal-name-yoga-label')?.textContent.trim() === 'நாம யோகம்', { timeout: 15000 });
   const dailyTypography = await page.evaluate(() => {
-    const table = document.querySelector('#calDaily .panchang-data-table');
-    const rows = [...(table?.tBodies?.[0]?.rows || [])];
-    const yoga = table?.querySelector('.cal-name-yoga-label');
-    const eventDate = table?.querySelector('.event-date.smv-calendar-neutral-date-time');
-    const eventTime = table?.querySelector('.event-time.smv-calendar-neutral-date-time');
-    const connector = table?.querySelector('.event-to.smv-calendar-normal-connector');
-    const redTimes = [...(table?.querySelectorAll('.panchang-time-result.smv-calendar-bright-red-time') || [])];
+    const grid = document.querySelector('#calDateDetailsExtra .cal-panchang-detail-grid');
+    const items = [...(grid?.querySelectorAll('.cal-panchang-detail-item') || [])];
+    const primaryResults = items.filter(item => item.classList.contains('is-primary')).map(item => item.querySelector('strong'));
+    const yoga = grid?.querySelector('.cal-name-yoga-label');
+    const redTimes = [...(grid?.querySelectorAll('.panchang-time-result.smv-calendar-bright-red-time') || [])];
+    const labelFor = pattern => items.find(item => pattern.test(item.querySelector('small')?.textContent?.trim() || ''))?.querySelector('small');
+    const panchangRangeFor = pattern => {
+      const item=items.find(item=>pattern.test(item.querySelector('small')?.textContent?.trim()||''));
+      return item?.querySelector('.smv-calendar-event-range')?.textContent.replace(/\s+/g,' ').trim()||'';
+    };
+    const namahYogaItem=items.find(item=>/^(?:Namah Yoga|நாம யோகம்)$/i.test(item.querySelector('small')?.textContent?.trim()||''));
+    const namahYogaValue=namahYogaItem?.querySelector('strong')?.textContent.replace(/\s+/g,' ').trim()||'';
+    const varaLabel = labelFor(/^(?:Vara|வாரம்)$/);
+    const tithiLabel = labelFor(/^(?:Tithi|திதி)$/);
     const normalHora = [...document.querySelectorAll('#calDaily .hora-time.smv-calendar-neutral-time:not(.smv-hora-current-green):not(.smv-hora-bright-green):not(.smv-hora-current-red):not(.smv-hora-bright-red)')];
     const degree = document.querySelector('#calDaily .transit-position-table .transit-table-degree.smv-calendar-degree-normal');
+    const eventRange = grid?.querySelector('.smv-calendar-event-range');
+    const eventTime = eventRange?.querySelector('.smv-calendar-event-time');
+    const eventDate = eventRange?.querySelector('.smv-calendar-event-date');
+    const eventSeparator = eventRange?.querySelector('.smv-calendar-range-separator');
     const style = element => element ? getComputedStyle(element) : null;
     return {
-      primaryResultWeights: rows.slice(0, 8).map(row => style(row.cells[1])?.fontWeight || ''),
+      panchangItemCount: items.length,
+      primaryResultWeights: primaryResults.map(element => style(element)?.fontWeight || ''),
       yogaLabel: yoga?.textContent?.trim() || '',
       yogaLabelColor: style(yoga)?.color || '',
       yogaLabelWeight: style(yoga)?.fontWeight || '',
       yogaLabelFontSize: style(yoga)?.fontSize || '',
-      varaLabelFontSize: style(rows[3]?.cells?.[0])?.fontSize || '',
-      tithiLabelFontSize: style(rows[4]?.cells?.[0])?.fontSize || '',
-      eventDateColor: style(eventDate)?.color || '',
-      eventTimeColor: style(eventTime)?.color || '',
-      connectorColor: style(connector)?.color || '',
-      connectorWeight: style(connector)?.fontWeight || '',
+      varaLabelFontSize: style(varaLabel)?.fontSize || '',
+      tithiLabelFontSize: style(tithiLabel)?.fontSize || '',
+      panchangRanges: {
+        tithi:panchangRangeFor(/^(?:Tithi|திதி)$/),
+        nakshatra:panchangRangeFor(/^(?:Nakshatra|நட்சத்திரம்)$/),
+        namahYoga:panchangRangeFor(/^(?:Namah Yoga|நாம யோகம்)$/),
+        karana:panchangRangeFor(/^(?:Karana|கரணம்)$/)
+      },
+      panchangRangeWhiteSpace:style(eventRange)?.whiteSpace||'',
+      panchangRangeRectCount:eventRange?.getClientRects().length||0,
+      panchangRangeSeparator:eventSeparator?.textContent||'',
+      panchangRangeTimeColor:style(eventTime)?.color||'',
+      panchangRangeTimeWeight:style(eventTime)?.fontWeight||'',
+      panchangRangeDateColor:style(eventDate)?.color||'',
+      panchangRangeDateWeight:style(eventDate)?.fontWeight||'',
+      panchangRangeSeparatorWeight:style(eventSeparator)?.fontWeight||'',
+      namahYogaValue,
       redTimeColors: redTimes.map(element => style(element)?.color || ''),
       normalHoraCount: normalHora.length,
       normalHoraColor: style(normalHora[0])?.color || '',
@@ -638,28 +1094,37 @@ try {
       degreeWeight: style(degree)?.fontWeight || ''
     };
   });
-  assert.equal(dailyTypography.primaryResultWeights.length, 8, 'Date through Karana must all be present in the Panchang results.');
-  assert.ok(dailyTypography.primaryResultWeights.every(weight => weight === '700'), 'Date through Karana results must be bold.');
-  assert.equal(dailyTypography.yogaLabel, 'நாம யோகம்', 'The Tamil Calendar yoga row must display the complete label நாம யோகம்.');
-  assert.equal(dailyTypography.yogaLabelColor, 'rgb(0, 0, 0)', 'Namah Yoga must be black.');
+  assert.equal(dailyTypography.panchangItemCount, 14, 'All fourteen non-date Panchang values must be present.');
+  assert.equal(dailyTypography.primaryResultWeights.length, 7, 'Sun Sign through Karana must all be present in the main Panchang results.');
+  assert.ok(dailyTypography.primaryResultWeights.every(weight => weight === '700'), 'Sun Sign through Karana results must be bold.');
+  assert.equal(dailyTypography.yogaLabel, 'நாம யோகம்', 'The Tamil Calendar yoga label must display the complete wording நாம யோகம்.');
+  assert.equal(dailyTypography.yogaLabelColor, 'rgb(66, 105, 87)', 'Namah Yoga must use the green theme label color.');
   assert.equal(dailyTypography.yogaLabelWeight, '700', 'Namah Yoga must be bold.');
   assert.equal(dailyTypography.yogaLabelFontSize, dailyTypography.varaLabelFontSize, 'Namah Yoga must use the same font size as the Vara label.');
   assert.equal(dailyTypography.yogaLabelFontSize, dailyTypography.tithiLabelFontSize, 'Namah Yoga must use the same font size as the Tithi label.');
-  assert.equal(dailyTypography.eventDateColor, 'rgb(0, 0, 0)', 'Panchang event dates must be black.');
-  assert.equal(dailyTypography.eventTimeColor, 'rgb(0, 0, 0)', 'Panchang event times must be black.');
-  assert.equal(dailyTypography.connectorColor, 'rgb(0, 0, 0)', 'The “முதல்” connector must be black.');
-  assert.equal(dailyTypography.connectorWeight, '400', 'The “முதல்” connector must use normal weight.');
+  for (const [kind, range] of Object.entries(dailyTypography.panchangRanges)) {
+    assert.match(range, /^\d{2}:\d{2}\(\d{2}\/\d{2}\)-\d{2}:\d{2}\(\d{2}\/\d{2}\)$/, kind+' must use HH:MM(DD/MM)-HH:MM(DD/MM) format without spaces.');
+  }
+  assert.equal(dailyTypography.panchangRangeWhiteSpace, 'nowrap', 'Each Panchang time range must remain on one line.');
+  assert.equal(dailyTypography.panchangRangeRectCount, 1, 'Each Panchang time range must occupy a single line box.');
+  assert.equal(dailyTypography.panchangRangeSeparator, '-', 'The two time boundaries must be joined by a hyphen without spaces.');
+  assert.equal(dailyTypography.panchangRangeTimeColor, 'rgb(40, 115, 77)', 'Only the time values use the Calendar theme green.');
+  assert.equal(dailyTypography.panchangRangeTimeWeight, '400', 'Panchang time values must not be bold.');
+  assert.equal(dailyTypography.panchangRangeDateColor, 'rgb(82, 100, 90)', 'The date text remains neutral rather than green.');
+  assert.equal(dailyTypography.panchangRangeDateWeight, '400', 'The date text is not bold.');
+  assert.equal(dailyTypography.panchangRangeSeparatorWeight, '400', 'The hyphen is not bold.');
+  assert.doesNotMatch(dailyTypography.namahYogaValue, /impact|obstruction|தாக்கம்|இடையூறு|தடை/i, 'Namah Yoga must not display explanatory impact/obstruction wording.');
   assert.equal(dailyTypography.redTimeColors.length, 2, 'Rahu Kalam and Yamagandam must both be present.');
-  assert.ok(dailyTypography.redTimeColors.every(color => color === 'rgb(255, 0, 0)'), 'Rahu Kalam and Yamagandam must be bright red.');
+  assert.ok(dailyTypography.redTimeColors.every(color => color === 'rgb(180, 35, 24)'), 'Rahu Kalam and Yamagandam must use the restrained red accent.');
   assert.equal(await page.$$eval('#calDaily .hora-time.smv-calendar-neutral-time', nodes => nodes.length), 24, 'All 24 day/night Hora time cells must carry the Calendar typography marker.');
-  assert.ok(dailyTypography.normalHoraCount >= 12, 'At least twelve ordinary Hora cells must remain in the normal black presentation while preserving weekday/current special colors.')
+  assert.ok(dailyTypography.normalHoraCount >= 12, 'At least twelve ordinary Hora cells must remain in the normal black presentation while preserving weekday/current special colors.');
   assert.equal(dailyTypography.normalHoraColor, 'rgb(0, 0, 0)', 'Normal Hora time values must be black.');
   assert.equal(dailyTypography.normalHoraWeight, '400', 'Normal Hora time values must not be bold.');
   assert.equal(dailyTypography.degreeColor, 'rgb(0, 0, 0)', 'Transit Degree values must be black.');
   assert.equal(dailyTypography.degreeWeight, '400', 'Transit Degree values must use normal weight.');
   process.stdout.write('SMV_CALENDAR_DAILY_TYPOGRAPHY ' + JSON.stringify(dailyTypography) + '\\n');
 
-  await page.$eval('#calDaily .panchang-data-table', el => el.scrollIntoView({ block: 'start' }));
+  await page.$eval('#calDateDetailsExtra .cal-panchang-detail-grid', el => el.scrollIntoView({ block: 'start' }));
   await page.screenshot({
     path: new URL('calendar-daily-panchang-typography-mobile.png', outputDir).pathname,
     fullPage: false,

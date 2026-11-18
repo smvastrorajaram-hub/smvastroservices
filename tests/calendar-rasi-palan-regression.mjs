@@ -19,6 +19,7 @@ import { calculateRasiManaForLocation, calculateSolarSignRasiMana, calculateRema
 import { TAMIL_DAY_YOGA_TABLE, getTamilDayYoga, getTamilCalendarDayFlags, getThaniyaNaalDates, getNakshatraDirection, getNethiramJeevan } from '../public/horoscope/tamil-day-classifications.mjs';
 
 const dailyCalendarSource = await readFile(new URL('../public/horoscope/daily-calendar.mjs', import.meta.url), 'utf8');
+const calendarDataSource = await readFile(new URL('../public/horoscope/calendar-data.mjs', import.meta.url), 'utf8');
 const horoscopeRendererSource = await readFile(new URL('../public/horoscope/horoscope.js', import.meta.url), 'utf8');
 const sharedHoroscopeCssSource = await readFile(new URL('../public/horoscope/horoscope.css', import.meta.url), 'utf8');
 const astroServiceWorkerSource = await readFile(new URL('../public/sw.js', import.meta.url), 'utf8');
@@ -290,27 +291,108 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   assert.match(publicRasiPalanSource, /const selected = modeText\(automatic, moonKey, result\.type\)/);
   assert.match(publicRasiPalanSource, /'daily', 'weekly', 'monthly', 'tamilNewYear', 'englishNewYear'/);
   assert.match(publicRasiPalanSource, /positions\.moonSign == null/);
-  assert.match(dailyCalendarSource, /Birth Star & Tara Bala/);
+  assert.doesNotMatch(dailyCalendarSource, /Birth Star & Tara Bala|பிறந்த நட்சத்திரம் · தாராபலம்/);
   assert.match(dailyCalendarSource, /calChandrashtamaSection/);
-  assert.ok(dailyCalendarSource.includes('சந்திராஷ்டமம் : - உண்டு'));
-  assert.ok(dailyCalendarSource.includes('சந்திராஷ்டமம் : இல்லை'));
+  assert.match(dailyCalendarSource, /status\.textContent=hasChandrashtama\?L\('Chandrashtama: Yes','சந்திராஷ்டமம் : உண்டு'\):L\('Chandrashtama: No','சந்திராஷ்டமம் : இல்லை'\)/);
+  assert.ok(dailyCalendarSource.includes("L('Chandrashtama:','சந்திராஷ்டமம் :')"));
   assert.ok(dailyCalendarSource.includes("status.dataset.result=hasChandrashtama?'present':'absent'"));
   assert.doesNotMatch(dailyCalendarSource, /No Chandrashtama period overlaps the selected date\/time|தேர்ந்தெடுத்த தேதியில் சந்திராஷ்டமக் காலப்பகுதி இல்லை/);
   assert.match(dailyCalendarSource, /selectedIsToday/);
-  assert.match(dailyCalendarCssSource, /cal-chandrashtama-section>h3\{display:block!important;width:100%!important;text-align:center!important\}/);
-  assert.match(dailyCalendarCssSource, /cal-chandrashtama-section>h3::after\{display:none!important;content:none!important\}/);
-  assert.match(dailyCalendarCssSource, /cal-chandrashtama-result\.is-present\{color:#c00000!important;-webkit-text-fill-color:#c00000!important\}/);
-  assert.match(dailyCalendarCssSource, /cal-chandrashtama-result\.is-absent\{color:#111!important;-webkit-text-fill-color:#111!important\}/);
-  assert.match(dailyCalendarCssSource, /cal-chandra-window\.is-selected-date\{display:block;border:0!important/);
-  assert.ok(dailyCalendarCssSource.includes('Flatten all period detail tiles into the single outer Chandrashtama main card.'));
-  assert.ok(dailyCalendarCssSource.includes('.cal-chandra-pada-row.is-janma-pada-projection'));
-  assert.ok(dailyCalendarCssSource.includes('background:transparent!important;box-shadow:none!important;padding:0!important'));
+  assert.ok(dailyCalendarSource.includes('const selectedDateWindow=availableWindows.find'));
+  assert.ok(dailyCalendarSource.includes('const nearestUpcomingWindow=selectedDateWindow?null:availableWindows'));
+  assert.ok(dailyCalendarSource.includes('nearestUpcomingWindow?[{...nearestUpcomingWindow,isUpcoming:true}]:[]'));
+  assert.match(dailyCalendarSource, /const hasChandrashtama=hasSelectedDateChandrashtama/);
+  assert.match(dailyCalendarSource, /return windowsHtml\\?/,
+    'Upcoming window details remain visible even when selected-date status is Chandrashtama No.');
+  assert.match(dailyCalendarSource, /data-period-type=/);
+  assert.match(dailyCalendarSource, /is-upcoming/);
+  assert.ok(dailyCalendarSource.includes('upcomingHeading=nearestUpcomingWindow&&windowsHtml'),
+    'The next-Chandrashtama label appears only with the absent-date upcoming fallback.');
+  assert.ok(dailyCalendarSource.includes("L('Next Chandrashtama','அடுத்த சந்திராஷ்டமம்')"));
+  assert.doesNotMatch(dailyCalendarSource, /Next Chandrashtama for your|ராசிக்கான அடுத்த சந்திராஷ்டம நாள்/);
+  assert.ok(dailyCalendarSource.includes("L('Rasi period','ராசி காலம்')"));
+  assert.ok(dailyCalendarSource.includes("L('Birth star','ஜன்ம நட்சத்திரம்')"));
+  assert.match(dailyCalendarSource, /return windowsHtml\?'<div class="cal-chandra-windows">'\+upcomingHeading\+windowsHtml/);
+  assert.match(calendarThemeCssSource, /cal-chandra-upcoming-heading\{margin:0;color:#2c704d;font-size:13px;font-weight:750;line-height:1\.4\}/);
+  assert.match(calendarThemeCssSource, /cal-chandrashtama-result\{margin:0;color:#28734d;font-size:16px;font-weight:800;line-height:1\.35\}/);
+  assert.ok(dailyCalendarCssSource.includes('.cal-summary h4:not(.cal-chandrashtama-result),.cal-planets h4{font-size:14px!important;'), 'The compact summary-card heading rule must exclude the prominent Chandrashtama result.');
+  assert.match(calendarThemeCssSource, /cal-chandrashtama-result\.is-present\{color:#b42318\}/);
+  assert.match(calendarThemeCssSource, /cal-chandrashtama-result\.is-absent\{color:#28734d\}/);
+  assert.match(calendarThemeCssSource, /cal-chandrashtama\{display:grid;gap:8px;min-width:0;margin:0;padding:0;border:0;border-radius:0;background:transparent/);
+  assert.match(calendarThemeCssSource, /cal-chandrashtama>p\{[^}]*margin:0;padding:0;border:0/);
+  assert.match(calendarThemeCssSource, /cal-chandra-janma-projection\{display:grid;gap:3px;margin:6px 0;padding:0;border:0/);
+  assert.ok(dailyCalendarSource.includes('id="calChandrashtamaSection" class="cal-chandrashtama-section smv-css-island"'), "Chandrashtama is isolated from the shared legacy heading palette.");
+  assert.ok(dailyCalendarSource.includes('id="calReadings" class="cal-tara-bala-section"'), 'Tara Bala is nested inside the Chandrashtama result section.');
+  assert.ok(calendarThemeCssSource.includes('#calChandrashtamaSection > #calReadings.cal-tara-bala-section'), 'Tara Bala shares the Chandrashtama visual layer without a second card.');
+  assert.ok(dailyCalendarSource.includes("L('Chandrashtama Rasi','சந்திராஷ்டம ராசி')"));
+  assert.doesNotMatch(dailyCalendarSource, /Eighth Rasi|எட்டாம் ராசி/);
+  assert.match(dailyCalendarSource, /L\('Moon Nakshatra \/ Pada','சந்திர நட்சத்திரம் \/ பாதம்'\)/);
+  assert.match(calendarThemeCssSource, /cal-chandra-pada-row\.is-janma-pada-projection/);
+  assert.doesNotMatch(dailyCalendarCssSource, /#smvDailyCalendar \.cal-chandrashtama-result\{|#smvDailyCalendar \.cal-chandra-upcoming-heading\{/);
   assert.match(dailyCalendarSource, /Tara Bala/);
   assert.match(dailyCalendarSource, /Transit Moon Rasi/);
   assert.match(dailyCalendarSource, /signs\[moonSign\]\[ta\(\)\?1:0\]/);
+  const detailsShellStart = dailyCalendarSource.indexOf('function shell()');
+  const detailsShell = dailyCalendarSource.slice(detailsShellStart, dailyCalendarSource.indexOf('function dateInMonth', detailsShellStart));
+  const chandrashtamaSectionPosition = detailsShell.indexOf('<section id="calChandrashtamaSection"');
+  const observancesPosition = detailsShell.indexOf('<section id="calEvents"');
+  const dailyPanchangPosition = detailsShell.indexOf('<div id="calDaily"');
+  const chandraRenderStart = dailyCalendarSource.indexOf("$('#calChandrashtamaSection').innerHTML=");
+  const chandraRenderEnd = dailyCalendarSource.indexOf('loadChandrashtamaWindows();', chandraRenderStart);
+  const chandraRender = dailyCalendarSource.slice(chandraRenderStart, chandraRenderEnd);
+  const chandraPeriodsPosition = chandraRender.indexOf('id="calChandrashtamaPeriods"');
+  const taraBalaPosition = chandraRender.indexOf('${taraBalaHtml}');
+  assert.ok(dailyCalendarSource.includes('const taraBalaHtml=`<section id="calReadings" class="cal-tara-bala-section">'),
+    'Tara Bala must be defined as a section within the single combined result layer.');
+  assert.ok(chandrashtamaSectionPosition >= 0 && chandrashtamaSectionPosition < observancesPosition &&
+    observancesPosition < dailyPanchangPosition,
+    'The combined Chandrashtama/Tara Bala layer and observances must sit above the daily Panchang.');
+  assert.ok(chandraPeriodsPosition >= 0 && taraBalaPosition > chandraPeriodsPosition,
+    'Tara Bala must render inside the Chandrashtama section, after its Chandrashtama details.');
   assert.match(dailyCalendarSource, /Chandrashtama/);
   assert.doesNotMatch(dailyCalendarSource, /Daily Rasi Palan/);
   assert.doesNotMatch(dailyCalendarSource, /All eight transit planets/);
+});
+
+test('Calendar distinguishes Gazette government holidays from observances and does not add Sundays', () => {
+  assert.ok(dailyCalendarSource.includes("L('Government holiday','அரசு விடுமுறை')"),
+    'Official Tamil Nadu holidays must be explicitly identified as Government Holidays.');
+  assert.ok(dailyCalendarSource.includes("kind:'government'") && dailyCalendarSource.includes('cal-government-holiday'),
+    'Government holiday tags must use their own visual marker.');
+  assert.ok(calendarDataSource.includes("G.O.(1D) No.547") && calendarDataSource.includes("'11-09':[['Additional local holiday after Deepavali','தீபாவளிக்கு அடுத்த நாள்']]"),
+    'The 9 November 2026 state government local holiday must be backed by G.O.(1D) No.547.');
+  assert.ok(dailyCalendarSource.includes("const officialHolidays=holidays(selected)"),
+    'Only the existing Gazette-backed holiday list may receive the Government Holiday label.');
+  assert.ok(dailyCalendarSource.includes('class="cal-holiday-source"'),
+    'The Holiday source link remains visible.');
+  assert.doesNotMatch(dailyCalendarSource, /getUTCDay\(\)===0\)names\.push\(\['Sunday','ஞாயிறு'\]\)/,
+    'Do not add Sunday as a separate holiday.');
+  assert.doesNotMatch(dailyCalendarSource, /Vrats use local sunrise|விரதங்கள் உள்ளூர் உதயம்|Official holidays for this year have not been loaded/,
+    'Remove the explanatory note and the extra year warning.');
+  assert.match(calendarThemeCssSource, /cal-government-holiday\{[^}]*font-weight:850/);
+  assert.match(dailyCalendarSource, /i===0\?'cal-weekday-sunday':/,
+    'Only the Sunday/Su first weekday heading receives the Sunday marker.');
+  assert.match(dailyCalendarSource, /isSunday\?'cal-sunday':/,
+    'Calendar dates in the Sunday column receive the Sunday marker.');
+  assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar .cal-month-grid>b.cal-weekday-sunday{color:#b42318!important'),
+    'The Sunday weekday abbreviation is red.');
+  assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar .cal-month-grid button.cal-sunday>strong{color:#b42318!important'),
+    'Only the Gregorian date number in Sunday cells is red.');
+  assert.ok(!calendarThemeCssSource.includes('#smvDailyCalendar .cal-month-grid button.cal-sunday{color:'),
+    'The entire Sunday date cell must not be recoloured.');
+  assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar .cal-date-details-head::after{'),
+    'Calendar heading must suppress the inherited right-side Om ornament on its header.');
+  assert.equal((horoscopeRendererSource.match(/class="cal-centered-heading"/g)||[]).length,4,
+    'Transit/Panchang, Daily Hora, Transit Chart and Transit Planetary Positions use the dedicated centered-heading class.');
+  assert.match(dailyCalendarCssSource, /h3:not\(\.cal-date-details-title\):not\(\.cal-section-title\):not\(\.cal-centered-heading\)/,
+    'Generic left-aligned flex decoration must not target Calendar centered headings.');
+  assert.ok(horoscopeRendererSource.includes('class="card transit-card"><h3 class="cal-centered-heading">'), 'Transit Chart heading receives the centered-heading class.');
+   assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .cal-centered-heading{'),
+    'The Calendar-specific centered-heading class must be centered within the Calendar scope.');
+  assert.match(calendarThemeCssSource, /#smvDailyCalendar #calDaily \.cal-centered-heading,\s*#smvDailyCalendar \.cal-date-details-head h3\.cal-date-details-title\{\s*font-size:19px!important;\s*line-height:1\.35!important;\s*\}/, 'Calendar primary headings use the compact desktop size.');
+   assert.match(calendarThemeCssSource, /@media\(max-width:680px\)\{\s*#smvDailyCalendar #calDaily \.cal-centered-heading,\s*#smvDailyCalendar \.cal-date-details-head h3\.cal-date-details-title\{\s*font-size:17px!important;/, 'Calendar primary headings use the compact mobile size.');
+   assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .cal-centered-heading::after{'),
+    'Centered Calendar headings must not display inherited trailing ornaments.');
 });
 
 test('Public Rasi Palan uses the current local date automatically and calculates weekly windows', () => {
@@ -403,7 +485,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261118-chandrashtama-result-status-v1' : '20261118-chandrashtama-result-status-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261118-calendar-centered-headings-v15' : '20261118-calendar-centered-headings-v15'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
@@ -413,10 +495,10 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261118-chandrashtama-result-status-v1'));
-   assert.ok(calendarIndexSource.includes('20261118-chandrashtama-result-status-v1'));
+   assert.ok(calendarIndexSource.includes('20261118-calendar-centered-headings-v15'));
+   assert.ok(calendarIndexSource.includes('20261118-calendar-centered-headings-v15'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
-   assert.ok(calendarIndexSource.includes('20261118-chandrashtama-result-status-v1'));
+   assert.ok(calendarIndexSource.includes('20261118-calendar-centered-headings-v15'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'runPeriodForecast\')'));
    assert.ok(calendarIndexSource.includes('The deployed forecast assets could not be loaded from this Calendar host.'));
@@ -550,7 +632,8 @@ test('Calendar dual-date grid, direct navigation and Date Details are UI-only ex
   assert.match(dailyCalendarSource, /Thaniya Naal/);
   assert.match(dailyCalendarSource, /textContent=L\('Namah Yoga','நாம யோகம்'\)/);
   assert.match(dailyCalendarSource, /cal-name-yoga-label/);
-  assert.match(dailyCalendarSource, /nityaYogaResults/);
+  assert.doesNotMatch(dailyCalendarSource, /nityaYogaResults|cal-name-yoga-result|Impact and obstruction|Obstruction and complications|தாக்கமும் இடையூறும்|தடை மற்றும் சிக்கல்கள்/,
+    'Namah Yoga must show its calculated name and timing without explanatory impact/obstruction notes.');
   assert.match(calendarCalculationWorkerSource, /attachTamilSolarDates/);
   assert.match(calendarCalculationWorkerSource, /dayStar:ev\.star,sunStar:ev\.sunStar,nextSunrise,ratriNazhigai,dinantham,amirthadiYogaAvailable:nakshatraTimeline\.available,amirthadiYogaSegments,thyajyamAvailable:thyajyam\.available,thyajyamIntervals:thyajyam\.intervals,ahasNazhigai,previousSunset/);
   assert.match(calendarWorkerSource, /tamil-day-classifications\.mjs/);
@@ -561,8 +644,8 @@ test('Calendar dual-date grid, direct navigation and Date Details are UI-only ex
   assert.match(calendarThemeCssSource, /height:58px;min-height:58px/);
   assert.match(calendarThemeCssSource, /aria-current="date"\]\.cal-date-past/);
   assert.match(calendarThemeCssSource, /aria-current="date"\]\.cal-date-future/);
-  assert.match(calendarThemeCssSource, /\.cal-day-yoga-card\.is-unknown/);
-  assert.ok(calendarThemeCssSource.includes('font-weight:950!important'), 'Date Details title is bright and bold');
+  assert.match(calendarThemeCssSource, /\.cal-amirthadi-yoga-card\.is-unknown/);
+  assert.match(calendarThemeCssSource, /\.cal-date-details-title\{display:block;width:100%;margin:0;padding:0;border:0;border-radius:0;background:transparent;background-image:none;box-shadow:none;color:#15564e;font-size:22px;font-weight:850;line-height:1\.3;text-align:center\}/, 'Daily Panchang title is centered and has no filled box');
   assert.ok(calendarThemeCssSource.includes('.cal-month-jump') && calendarThemeCssSource.includes('grid-template-columns:minmax(0,1fr)'), 'Month/year/date selector panel is full-width and flat');
   assert.ok(calendarThemeCssSource.includes('background:transparent!important'), 'Panchang and sibling sections use a flat visual layer');
   assert.ok(dailyCalendarSource.includes('function ensureMonth(key)'), 'Month calculation has an independent request path');
@@ -597,8 +680,8 @@ test('TTD Tirukanitha Amirthadi matrix covers 7 weekdays x 27 Nakshatras and the
   assert.equal(getTamilDayYoga(1, 0).key, 'unknown');
   assert.equal(getTamilDayYoga(7, 22).key, 'unknown');
   assert.match(tamilDayClassificationsSource, /prabalarishta[\s\S]*?bad: true/);
-  assert.match(calendarThemeCssSource, /cal-yoga-segment\.is-auspicious\{border-left-color:#27804c\}/);
-  assert.match(calendarThemeCssSource, /cal-yoga-segment\.is-inauspicious\{border-left-color:#b52f2b\}/);
+  assert.match(calendarThemeCssSource, /cal-amirthadi-yoga-card\{gap:2px;padding:8px 10px;border-top:2px solid #2c875c\}/);
+  assert.match(calendarThemeCssSource, /cal-amirthadi-yoga-card\.is-inauspicious\{border-top-color:#b42318\}/);
   assert.match(dailyCalendarSource, /daily\.amirthadiYogaSegments/);
   assert.doesNotMatch(dailyCalendarSource, /getTamilDayYoga\\(weekday,dayStar\\)/);
 });
@@ -833,47 +916,111 @@ test('Calendar Date Details render sunrise Nethiram/Jeevan, direction, Dinantham
 });
 
 
-test('Calendar Date Details restores centred cards and positions day flags beside Abhijit with centred Travel Shoolam', () => {
-  assert.match(calendarThemeCssSource, /\.cal-details-summary\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:9px/);
-  assert.doesNotMatch(calendarThemeCssSource, /\.cal-details-summary\{[^}]*grid-auto-flow:row;[^}]*align-content:start;[^}]*align-items:stretch/);
-  assert.match(calendarThemeCssSource, /\.cal-details-summary article\{\s*align-items:center;justify-content:center;text-align:center;/);
-  assert.match(calendarThemeCssSource, /\.cal-date-details \.cal-details-summary \.cal-day-flags-card\{[\s\S]*?justify-content:center/);
-  assert.match(calendarThemeCssSource, /\.cal-date-details \.cal-details-summary \.cal-shoolam-card\{\s*grid-column:1\/-1;display:flex;align-items:center;justify-content:center/);
+test('Calendar Date Details uses one green hierarchy with paired Panchang values and balanced lower cards', () => {
+  assert.match(calendarThemeCssSource, /\.cal-details-summary\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:10px/);
+  assert.match(calendarThemeCssSource, /\.cal-details-summary>article\{[^}]*justify-content:center;[^}]*text-align:left/);
+  assert.match(calendarThemeCssSource, /\.cal-panchang-detail-grid\{grid-column:1\/-1;display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(calendarThemeCssSource, /\.cal-panchang-detail-item\{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:4px/);
+  assert.match(calendarThemeCssSource, /\.cal-panchang-detail-item>small\{display:block;width:100%/);
+  assert.match(calendarThemeCssSource, /\.cal-panchang-detail-item>strong\{display:block;width:100%/);
+  assert.match(calendarThemeCssSource, /\.cal-day-flags-card\{grid-column:auto;display:flex;align-items:center;justify-content:center/);
+  assert.match(calendarThemeCssSource, /\.cal-shoolam-card\{grid-column:1\/-1;display:flex;align-items:center;justify-content:center/);
   assert.match(calendarThemeCssSource, /\.cal-month-grid button\{align-items:center;justify-content:flex-start/);
-  assert.match(calendarThemeCssSource, /#calDateDetailsExtra \.cal-day-yoga-card\.is-inauspicious\{border-left:0!important/);
-  assert.match(calendarThemeCssSource, /#calDateDetailsExtra \.cal-day-yoga-card\.is-inauspicious \.cal-yoga-segment\.is-inauspicious\{border-left:0!important/);
-  assert.match(calendarThemeCssSource, /\.cal-day-yoga-card\.is-inauspicious \.cal-yoga-segment-time\{align-self:center;text-align:center/);
+  assert.match(calendarThemeCssSource, /\.cal-thyajyam-card \.cal-yoga-segment-time\{align-self:center/);
   assert.match(dailyCalendarSource, /class="cal-day-flags-card"[\s\S]*?Abhijit Muhurtham/);
   const shoolamMarkup = dailyCalendarSource.match(/cal-shoolam-card"><div class="cal-shoolam-main"[\s\S]*?<\/article>/)?.[0] || '';
-  assert.ok(shoolamMarkup, 'Travel Shoolam must render in its own full-width card.');
-  assert.doesNotMatch(shoolamMarkup, /cal-day-flag/, 'Kari and Thaniya flags must be separate from Travel Shoolam.');
-  assert.match(calendarThemeCssSource, /@media\(max-width:340px\)[\s\S]*?\.cal-details-summary\{grid-template-columns:minmax\(0,1fr\)\}/);
+  assert.ok(shoolamMarkup, 'Travel Shoolam must render in its own full-width row.');
+  assert.doesNotMatch(shoolamMarkup, /cal-day-flag/, 'Kari and Thaniya flags must remain separate from Travel Shoolam.');
+  assert.match(calendarThemeCssSource, /@media\(max-width:340px\)[\s\S]*?\.cal-details-summary,#smvDailyCalendar \.cal-panchang-detail-grid\{grid-template-columns:minmax\(0,1fr\)\}/);
+  const sourceOwnedStyles = calendarThemeCssSource.slice(calendarThemeCssSource.indexOf('/* Daily Panchang + Chandrashtama — canonical green theme hierarchy. */')).split('/* Name-yoga result')[0];
+  assert.doesNotMatch(sourceOwnedStyles, /!important/);
+  assert.ok(dailyCalendarSource.includes('class="cal-date-details-head smv-css-island"'));
+  assert.match(calendarThemeCssSource, /\.cal-date-details-head\{[^}]*background:transparent;[^}]*box-shadow:none/);
+  assert.match(calendarThemeCssSource, /\.cal-date-details-title\{display:block;width:100%;[^}]*text-align:center/);
+  assert.match(calendarThemeCssSource, /smv-calendar-event-range\{display:block;width:100%;font-size:11\.5px;font-weight:750;line-height:1\.35;white-space:nowrap/);
+  assert.ok(calendarThemeCssSource.includes('smv-calendar-range-separator{padding:0;color:#708477;font-weight:400}'), 'The range separator is a normal-weight hyphen with no spaces.');
+  assert.ok(horoscopeRendererSource.includes('class="smv-calendar-event-time"') && horoscopeRendererSource.includes('class="smv-calendar-event-date"'), 'Compact Panchang boundaries separate time and date for independent styling.');
+  assert.ok(horoscopeRendererSource.includes('class="smv-calendar-range-separator">-</strong>'), 'The Panchang range uses a hyphen without surrounding spaces.');
+  assert.ok(calendarThemeCssSource.includes('smv-calendar-event-time{color:#28734d;font-weight:400}'), 'Time values alone use regular-weight theme green.');
+  assert.ok(calendarThemeCssSource.includes('smv-calendar-event-date{color:#52645a;font-weight:400}'), 'Date values remain regular-weight neutral text.');
 });
 
-test('SMV CALENDAR daily Panchang and Hora use scoped black/red result typography', () => {
+test('SMV CALENDAR daily Panchang and Hora follow the green result hierarchy', () => {
   assert.match(horoscopeRendererSource, /const calendarPresentation = rootId === 'calDaily';/);
+  assert.ok(horoscopeRendererSource.includes("const raw=String(v??'—').trim();const m=raw.match(/^(\\d{4})-(\\d{2})-(\\d{2})[ T](\\d{2}):(\\d{2})/);"), 'Daily Panchang event ranges accept ISO 8601 T separators as well as date-space-time values.');
   assert.match(horoscopeRendererSource, /smv-calendar-neutral-date-time/);
   assert.match(horoscopeRendererSource, /smv-calendar-normal-connector/);
   assert.match(horoscopeRendererSource, /smv-calendar-primary-result-row/);
   assert.match(horoscopeRendererSource, /i<=7/);
   assert.match(horoscopeRendererSource, /smv-calendar-bright-red-time/);
   assert.match(horoscopeRendererSource, /smv-calendar-degree-normal/);
+  assert.ok(dailyCalendarSource.includes("['Asc','லக்']"),
+    'Only the Calendar transit-position table shortens Ascendant to லக்.');
+  assert.ok(publicRasiPalanSource.includes('ராசி பலன்கள் & கிரக கோச்சார பலன்கள்'),
+    'Calendar Rasi Palan heading uses the requested Tamil wording.');
+  assert.ok(calendarIndexSource.includes('ராசி பலன்கள் & கிரக கோச்சார பலன்கள்'),
+    'Calendar module fallback uses the same requested Tamil heading.');
+  assert.match(rasiPalanCss, /#calRasiPalan \.rp-heading h2\{font-size:19px!important;line-height:1\.35!important;margin:5px 0\}/, 'Rasi Palan heading uses the compact desktop size.');
+   assert.match(rasiPalanCss, /@media\(max-width:680px\)\{\s*#calRasiPalan \.rp-heading h2\{font-size:17px!important\}/, 'Rasi Palan heading uses the compact mobile size.');
+   assert.ok(rasiPalanCss.includes('#calRasiPalan .rp-heading h2{color:#15564e!important'),
+    'Rasi Palan heading must use the established green theme colour.');
+  assert.ok(calendarIndexSource.includes("const version='20261118-calendar-green-heading-v4'"),
+    'The dynamically loaded Rasi Palan CSS must use the new version marker.');
   assert.match(dailyCalendarSource, /hora-time smv-calendar-neutral-time/);
-  assert.match(calendarThemeCssSource, /cal-name-yoga-label\{\s*color:#000!important;[\s\S]*?font-weight:700!important;[\s\S]*?font-size:inherit!important;/);
-  assert.match(calendarThemeCssSource, /smv-calendar-primary-result-row>td:nth-child\(2\)\{\s*color:#000;[^}]*font-weight:700/);
-  assert.match(calendarThemeCssSource, /smv-calendar-bright-red-time\{\s*color:#f00/);
-  assert.match(calendarThemeCssSource, /smv-calendar-normal-connector\{\s*color:#000;[^}]*font-weight:400/);
+  assert.match(calendarThemeCssSource, /cal-name-yoga-label\{color:#426957;font-size:11px;font-weight:700\}/);
+  assert.match(calendarThemeCssSource, /cal-panchang-detail-item\.is-primary>strong\{color:#15564e;font-size:14px;font-weight:700\}/);
+  assert.match(calendarThemeCssSource, /smv-calendar-bright-red-time\{color:#b42318;font-weight:800\}/);
+  assert.match(calendarThemeCssSource, /smv-calendar-normal-connector\{margin:0 3px;color:#708477;font-weight:400\}/);
   assert.match(sharedHoroscopeCssSource, /event-date:not\(\.smv-calendar-neutral-date-time\)/);
   assert.match(sharedHoroscopeCssSource, /event-time:not\(\.smv-calendar-neutral-date-time\)/);
   assert.match(sharedHoroscopeCssSource, /hora-time:not\(\.smv-calendar-neutral-time\)/);
   assert.match(sharedHoroscopeCssSource, /transit-table-degree:not\(\.smv-calendar-degree-normal\)/);
-  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261118-chandrashtama-result-status-v1/);
-  assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261117-calendar-namah-yoga-label-v3/);
+  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261118-calendar-centered-headings-v15/);
+  assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261118-calendar-centered-headings-v15/);
   const releases = [astroServiceWorkerSource, horoscopeServiceWorkerSource, calendarWorkerSource]
     .map(source => source.match(/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '([^']+)' : '([^']+)';/));
   assert.ok(releases.every(Boolean), 'All three service workers must define the synchronized release marker.');
-  assert.equal(new Set(releases.map(match => match[1])).size, 1, 'Pages.dev cache release must match across all apps.');
-  assert.equal(new Set(releases.map(match => match[2])).size, 1, 'Production cache release must match across all apps.');
-  assert.equal(releases[0][1], '20261118-chandrashtama-result-status-v1');
-  assert.equal(releases[0][2], '20261118-chandrashtama-result-status-v1');
+  assert.equal(new Set(releases.map(match => match[1])).size, 1);
+  assert.equal(new Set(releases.map(match => match[2])).size, 1);
+  assert.equal(releases[0][1], '20261118-calendar-centered-headings-v15');
+  assert.equal(releases[0][2], '20261118-calendar-centered-headings-v15');
+});
+
+
+test('Amirthadi Yoga results each occupy a natural left/right card beside the Tamil date', () => {
+  assert.match(dailyCalendarSource, /const yogaCardsHtml=yogaSegments\.length\?yogaSegments\.map/);
+  assert.ok(dailyCalendarSource.includes("class=\"cal-day-yoga-cards\" data-yoga-count=\"'+yogaSegments.length+'\">'+yogaCardsHtml+'</div>'"), 'The Yoga count container renders only real Yoga cards.');
+  assert.match(dailyCalendarSource, /segment===yogaSegments\[0\]\?yogaReferenceHtml/);
+  assert.match(calendarThemeCssSource, /\.cal-details-summary>\.cal-day-yoga-cards\{display:contents\}/);
+  assert.match(calendarThemeCssSource, /\.cal-amirthadi-yoga-card/);
+  assert.doesNotMatch(dailyCalendarSource, /cal-empty-yoga-card|cal-empty-yoga-slot/);
+  assert.match(dailyCalendarSource, /class="cal-day-yoga-card cal-thyajyam-card is-inauspicious"/);
+});
+
+test('Amirthadi Yoga and Thyajyam keep a compact visual rhythm without verbose notes', () => {
+  assert.match(calendarThemeCssSource, /cal-amirthadi-yoga-card\{gap:2px;padding:8px 10px;border-top/);
+  assert.match(calendarThemeCssSource, /cal-yoga-segment\{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:2px/);
+  assert.match(calendarThemeCssSource, /cal-yoga-reference\{display:block;align-self:flex-start;margin:0/);
+  assert.match(calendarThemeCssSource, /cal-thyajyam-card\{gap:2px;padding:8px 10px;border-top/);
+  assert.match(calendarThemeCssSource, /cal-thyajyam-card \.cal-yoga-segments\{display:grid;gap:2px/);
+  assert.match(dailyCalendarSource, /L\('Nakshatra Thyajyam','நட்சத்திர தியாஜ்யம்'\)/);
+  assert.doesNotMatch(dailyCalendarSource, /Based on the star’s 60-ghati division|நட்சத்திரத்தின் 60 நாழிகைப் பிரிவில்/);
+  assert.match(calendarThemeCssSource, /cal-chandrashtama-result\{margin:0;color:#28734d;font-size:16px;font-weight:800/);
+  assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar .cal-chandrashtama{'), 'The main Chandrashtama layer has a flat, borderless presentation rule.');
+  assert.equal(dailyCalendarCssSource.split('.cal-summary article:not(.cal-chandrashtama):not(.cal-chandra-window),.cal-planets article').length - 1,3, 'Chandrashtama is excluded from every generic summary-card border/padding rule.');
+});
+
+test('Calendar Daily Panchang values are integrated before Nakshatra Thyajyam without a date-only card', () => {
+  assert.match(dailyCalendarSource, /L\('Daily Panchang','தினசரி பஞ்சாங்கம்'\)/);
+  assert.match(dailyCalendarSource, /id="calPanchangSource" hidden aria-hidden="true"/);
+  assert.match(dailyCalendarSource, /cal-panchang-detail-grid/);
+  assert.ok(dailyCalendarSource.includes('cal-panchang-detail-item smv-css-island'), 'Integrated Panchang cards must be isolated from the shared Horoscope small-label override.');
+  assert.match(dailyCalendarSource, /row\.cells\?\.\[0\]\?\.textContent\?\.trim\(\)!==L\('Date','தேதி'\)/);
+  assert.match(horoscopeRendererSource, /const calendarPanchangSlot=calendarPresentation\?document\.getElementById\('calPanchangSource'\):null/);
+  assert.match(horoscopeRendererSource, /if\(calendarPanchangSlot\)calendarPanchangSlot\.innerHTML=dailyTable/);
+  assert.match(horoscopeRendererSource, /let h=calendarPanchangSlot\?'':/);
+  assert.match(calendarThemeCssSource, /\.cal-panchang-detail-grid/);
+  assert.match(calendarThemeCssSource, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(calendarThemeCssSource, /\.cal-panchang-detail-item>small/);
+  assert.match(calendarThemeCssSource, /\.cal-panchang-detail-item>strong/);
 });

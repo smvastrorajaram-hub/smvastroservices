@@ -1,5 +1,5 @@
 import {offsetMinutesAt} from './offline/places/timezone.mjs';
-import {signs,stars,planets,holidays2026,holidaySource,favorable} from './calendar-data.mjs';
+import {signs,stars,planets,holidays2026,additionalGovernmentHolidays2026,holidaySource,favorable} from './calendar-data.mjs';
 import {getTamilCalendarDayFlags,getNakshatraDirection,getNethiramJeevan} from './tamil-day-classifications.mjs';
 import {classifySubhaMuhurtham} from './calendar-muhurta-classification.mjs';
 import {getChandrashtamaRasiIndex,getBirthStarPadasInRasi,getNakshatraPadaAtLongitude,getChandrashtamaPadaProjection,formatRasiDegree} from './calendar-chandrashtama.mjs';
@@ -99,7 +99,7 @@ if(host){
   if(host.dataset.placeOutsideBound!=='1'){host.dataset.placeOutsideBound='1';document.addEventListener('pointerdown',e=>{const b=document.getElementById('calPlaceResults'),i=document.getElementById('calPlace');if(b&&i&&e.target!==i&&!b.contains(e.target)){b.replaceChildren();b.classList.remove('is-open')}},{passive:true});}
  }
  // Keep the three-result summary immediately after Travel Shoolam and the Kari/Thaniya day flags.
- function shell(){const pagesDevHost=location.hostname==='smvastroservices.pages.dev'||location.hostname.endsWith('.smvastroservices.pages.dev');const calendarAppPage=location.hostname==='calendar.smvastroservices.in'||location.pathname.startsWith('/horoscope/calendar/');host.innerHTML=`<header class="cal-header"><div><p>SMV CALENDAR</p><h2>${L('Your day, guided by the sky','உங்கள் நாளுக்கான ஜோதிட வழிகாட்டி')}</h2><span>${L('Panchang · Hora · Transits · Tamil calendar','பஞ்சாங்கம் · ஹோரை · கோச்சாரம் · தமிழ் நாட்காட்டி')}</span></div><a class="cal-download-app-link"${calendarAppPage&&pagesDevHost?' hidden aria-hidden="true"':''} href="${calendarAppPage?'#smvCalendarAndroidApkSection':(location.hostname==='smvastroservices.pages.dev'?'/horoscope/calendar/?lang=':'https://calendar.smvastroservices.in/?lang=')+(ta()?'ta':'en')}"${calendarAppPage?'':' target="_blank" rel="noopener"'}><span class="cal-app-badge" aria-hidden="true">APK</span>${calendarAppPage?L('Download Android App','Android App பதிவிறக்கம்'):L('Open Calendar','காலண்டரைத் திறக்க')}</a></header><section class="cal-input-zone" aria-label="${L('Daily reading inputs','தினசரி பலன் உள்ளீடுகள்')}"><div class="cal-controls"><label>${L('Date','தேதி')}<input id="calDate" type="date" min="1800-01-01" max="2399-12-31" value="${selected}"></label><label>${L('Your Moon sign','உங்கள் சந்திர ராசி')}<select id="calRasi">${signs.map((s,i)=>`<option value="${i}" ${i===+cfg.rasi?'selected':''}>${s[ta()?1:0]}</option>`).join('')}</select></label><label>${L('Birth star','பிறந்த நட்சத்திரம்')}<select id="calStar"></select></label><label>${L('Birth Pada','பிறந்த பாதம்')}<select id="calStarPada"></select></label><button type="button" id="calToday">${L('Today','இன்று')}</button></div><details class="cal-location"><summary>${L('Location','இடம்')}: ${esc(cfg.place)} · UTC ${(+cfg.offset/60>=0?'+':'')+ +cfg.offset/60}</summary><form id="calLocation"><label class="cal-place-label">${L('Place','இடம்')}<span class="cal-place-search"><input id="calPlace" name="place" value="${esc(cfg.place)}" required maxlength="80"><span id="calPlaceResults" class="cal-place-results" role="listbox"></span></span></label><label>${L('Latitude','அட்சரேகை')}<input id="calLat" name="lat" type="number" min="-89" max="89" step="any" value="${cfg.lat}" required></label><label>${L('Longitude','தீர்க்கரேகை')}<input id="calLon" name="lon" type="number" min="-180" max="180" step="any" value="${cfg.lon}" required></label><label>UTC ${L('hours','மணி')}<input id="calOffset" name="offset" type="number" min="-12" max="14" step=".25" value="${+cfg.offset/60}" required></label><button>${L('Apply location','இடத்தைப் பயன்படுத்து')}</button><button type="button" id="calGeo">${L('Use my location','என் இருப்பிடம்')}</button></form></details><p id="calStatus" role="status"></p></section><div id="calMonth"></div><section id="calDateDetails" class="cal-date-details" aria-label="${L('Date Details','தேதி விவரங்கள்')}"><header class="cal-date-details-head"><div><h3 class="cal-date-details-title">${L('Date Details','தேதி விவரங்கள்')}</h3><p>${L('Panchangam, Tamil date and daily muhurthas','பஞ்சாங்கம், தமிழ் தேதி மற்றும் தினசரி முகூர்த்தங்கள்')}</p></div></header><div id="calDateDetailsExtra"></div><div id="calMuhurtaLagna" class="cal-muhurta-lagna-section" aria-live="polite"></div><section id="calChandrashtamaSection" class="cal-chandrashtama-section"></section><div id="calDaily"></div><section id="calReadings"></section><section id="calEvents"></section></section>`;
+ function shell(){const pagesDevHost=location.hostname==='smvastroservices.pages.dev'||location.hostname.endsWith('.smvastroservices.pages.dev');const calendarAppPage=location.hostname==='calendar.smvastroservices.in'||location.pathname.startsWith('/horoscope/calendar/');host.innerHTML=`<header class="cal-header"><div><p>SMV CALENDAR</p><h2>${L('Your day, guided by the sky','உங்கள் நாளுக்கான ஜோதிட வழிகாட்டி')}</h2><span>${L('Panchang · Hora · Transits · Tamil calendar','பஞ்சாங்கம் · ஹோரை · கோச்சாரம் · தமிழ் நாட்காட்டி')}</span></div><a class="cal-download-app-link"${calendarAppPage&&pagesDevHost?' hidden aria-hidden="true"':''} href="${calendarAppPage?'#smvCalendarAndroidApkSection':(location.hostname==='smvastroservices.pages.dev'?'/horoscope/calendar/?lang=':'https://calendar.smvastroservices.in/?lang=')+(ta()?'ta':'en')}"${calendarAppPage?'':' target="_blank" rel="noopener"'}><span class="cal-app-badge" aria-hidden="true">APK</span>${calendarAppPage?L('Download Android App','Android App பதிவிறக்கம்'):L('Open Calendar','காலண்டரைத் திறக்க')}</a></header><section class="cal-input-zone" aria-label="${L('Daily reading inputs','தினசரி பலன் உள்ளீடுகள்')}"><div class="cal-controls"><label>${L('Date','தேதி')}<input id="calDate" type="date" min="1800-01-01" max="2399-12-31" value="${selected}"></label><label>${L('Your Moon sign','உங்கள் சந்திர ராசி')}<select id="calRasi">${signs.map((s,i)=>`<option value="${i}" ${i===+cfg.rasi?'selected':''}>${s[ta()?1:0]}</option>`).join('')}</select></label><label>${L('Birth star','பிறந்த நட்சத்திரம்')}<select id="calStar"></select></label><label>${L('Birth Pada','பிறந்த பாதம்')}<select id="calStarPada"></select></label><button type="button" id="calToday">${L('Today','இன்று')}</button></div><details class="cal-location"><summary>${L('Location','இடம்')}: ${esc(cfg.place)} · UTC ${(+cfg.offset/60>=0?'+':'')+ +cfg.offset/60}</summary><form id="calLocation"><label class="cal-place-label">${L('Place','இடம்')}<span class="cal-place-search"><input id="calPlace" name="place" value="${esc(cfg.place)}" required maxlength="80"><span id="calPlaceResults" class="cal-place-results" role="listbox"></span></span></label><label>${L('Latitude','அட்சரேகை')}<input id="calLat" name="lat" type="number" min="-89" max="89" step="any" value="${cfg.lat}" required></label><label>${L('Longitude','தீர்க்கரேகை')}<input id="calLon" name="lon" type="number" min="-180" max="180" step="any" value="${cfg.lon}" required></label><label>UTC ${L('hours','மணி')}<input id="calOffset" name="offset" type="number" min="-12" max="14" step=".25" value="${+cfg.offset/60}" required></label><button>${L('Apply location','இடத்தைப் பயன்படுத்து')}</button><button type="button" id="calGeo">${L('Use my location','என் இருப்பிடம்')}</button></form></details><p id="calStatus" role="status"></p></section><div id="calMonth"></div><section id="calDateDetails" class="cal-date-details" aria-label="${L('Daily Panchang','தினசரி பஞ்சாங்கம்')}"><header class="cal-date-details-head smv-css-island"><div><h3 class="cal-date-details-title">${L('Daily Panchang','தினசரி பஞ்சாங்கம்')}</h3></div></header><div id="calPanchangSource" hidden aria-hidden="true"></div><div id="calDateDetailsExtra"></div><div id="calMuhurtaLagna" class="cal-muhurta-lagna-section" aria-live="polite"></div><section id="calChandrashtamaSection" class="cal-chandrashtama-section smv-css-island"></section><section id="calEvents"></section><div id="calDaily"></div></section>`;
   if(calendarAppPage&&!pagesDevHost){const appLink=$('.cal-download-app-link');if(appLink)appLink.hidden=false;}
  syncBirthSelectors();
  bindPlaceSearch();
@@ -117,6 +117,7 @@ if(host){
  $('#calGeo').onclick=()=>{if(!navigator.geolocation)return;$('#calStatus').textContent=L('Finding your location…','உங்கள் இருப்பிடம் தேடப்படுகிறது…');navigator.geolocation.getCurrentPosition(pos=>{cfg={...cfg,lat:+pos.coords.latitude.toFixed(5),lon:+pos.coords.longitude.toFixed(5),offset:-new Date().getTimezoneOffset(),place:L('Current location','தற்போதைய இடம்')};storage.set(cfg);month=null;monthCache.clear();shell();load()},()=>{$('#calStatus').textContent=L('Location permission unavailable. Enter coordinates above.','இருப்பிடம் கிடைக்கவில்லை. மேலே விவரங்களை உள்ளிடவும்.')},{timeout:10000});};
  }
  const holidays=date=>date.startsWith('2026-')?(holidays2026[date.slice(5)]||[]):[];
+ const additionalGovernmentLocalHolidays=date=>date.startsWith('2026-')?(additionalGovernmentHolidays2026[date.slice(5)]||[]):[];
 
  function dateInMonth(year,month,day){
   const last=new Date(Date.UTC(year,month,0)).getUTCDate();
@@ -147,13 +148,14 @@ if(host){
   const cells=month.map(d=>{
    const names=[...holidays(d.date),...d.events.map(e=>e.name)];
    const labels=names.map(n=>n[ta()?1:0]),tamilDay=d.tamilSolar?.day??'—';
-   const classes=[names.length?'cal-special':'',d.date===today?'cal-today':(d.date<today?'cal-date-past':'cal-date-future')].filter(Boolean).join(' ');
+   const isSunday=new Date(d.date+'T12:00:00Z').getUTCDay()===0;
+   const classes=[names.length?'cal-special':'',d.date===today?'cal-today':(d.date<today?'cal-date-past':'cal-date-future'),isSunday?'cal-sunday':''].filter(Boolean).join(' ');
    const aria=[d.date,L('Tamil date','தமிழ் தேதி')+' '+tamilDay,...labels].join(' · ');
    const eventHtml=labels.length?'<small class="cal-event-name">'+esc(labels[0])+'</small>':'';
    const moreHtml=labels.length>1?'<small class="cal-event-more">+'+(labels.length-1)+'</small>':'';
    return '<button type="button" data-date="'+d.date+'" data-tamil-date="'+tamilDay+'" '+(d.date===selected?'aria-current="date" ':'')+'class="'+classes+'" aria-label="'+esc(aria)+'"><strong>'+Number(d.date.slice(8))+'</strong><small class="cal-day-tamil">'+tamilDay+'</small>'+eventHtml+moreHtml+'</button>';
   }).join('');
-  $('#calMonth').innerHTML=titleHtml+jumpHtml+'<div class="cal-month-grid">'+weekdays.map(x=>'<b>'+x+'</b>').join('')+'<span></span>'.repeat(first)+cells+'</div>';
+  $('#calMonth').innerHTML=titleHtml+jumpHtml+'<div class="cal-month-grid">'+weekdays.map((x,i)=>'<b class="'+(i===0?'cal-weekday-sunday':'')+'">'+x+'</b>').join('')+'<span></span>'.repeat(first)+cells+'</div>';
   const applyDate=(date,anchor)=>{
    if(!supportedDate(date)){
     const status=$('#calStatus');
@@ -227,8 +229,8 @@ if(host){
   const birthStarPadas=getBirthStarPadasInRasi(starIndex,janmaRasiIndex);
   const chosenPada=Number(birthPada);
   const selectedPadas=chosenPada===0?birthStarPadas:birthStarPadas.filter(pada=>pada===chosenPada);
-  // For today, show only the transit active at the current local instant. For another selected date,
-  // show only the single transit interval that overlaps that local calendar day.
+  // Keep the selected-date transit when it exists. Only when that date has no
+  // Chandrashtama, show the single nearest upcoming transit from the 30-day scan.
   const overlapsSelectedDate=item=>{
    const endTime=String(item?.endTime||'00:00:00');
    return String(item?.startDate||'')<=selected&&(
@@ -236,7 +238,16 @@ if(host){
     (String(item?.endDate||'')===selected&&endTime>'00:00:00')
    );
   };
-  const windows=Array.isArray(result.windows)?result.windows.filter(item=>selectedIsToday?item?.active===true:overlapsSelectedDate(item)).map(item=>({...item,selectedDateMatch:!selectedIsToday})):[];
+  const availableWindows=Array.isArray(result.windows)?result.windows:[];
+  const selectedDateWindow=availableWindows.find(item=>selectedIsToday?item?.active===true:overlapsSelectedDate(item));
+  const requestedStart=Number(result.requestedStartTimestamp);
+  const nearestUpcomingWindow=selectedDateWindow?null:availableWindows
+   .filter(item=>Number.isFinite(Number(item?.startTimestamp))&&Number(item.startTimestamp)>=requestedStart)
+   .sort((a,b)=>Number(a.startTimestamp)-Number(b.startTimestamp))[0];
+  const windows=selectedDateWindow
+   ?[{...selectedDateWindow,selectedDateMatch:!selectedIsToday}]
+   :(nearestUpcomingWindow?[{...nearestUpcomingWindow,isUpcoming:true}]:[]);
+  const hasSelectedDateChandrashtama=Boolean(selectedDateWindow);
   const windowsHtml=windows.map(item=>{
    const segments=Array.isArray(item.segments)?item.segments:[];
    const projections=selectedPadas.map(pada=>{
@@ -264,22 +275,25 @@ if(host){
      '<span>'+esc(localDateLabel(entry.segment.startDate)+' '+entry.segment.startTime)+' – '+esc(localDateLabel(entry.segment.endDate)+' '+entry.segment.endTime)+'</span>'+
     '</div>';
    }).join('');
-   return '<article class="cal-chandra-window'+(item.selectedDateMatch?' is-selected-date':(item.active?' is-active':''))+'" data-start-date="'+esc(item.startDate)+'" data-end-date="'+esc(item.endDate)+'">'+
-    '<div class="cal-chandra-rasi-period"><strong>'+esc(targetName)+'</strong><span>'+esc(fullRasiPeriod)+'</span></div>'+
-    '<div class="cal-chandra-star-period"><strong>'+esc(birthStarName)+'</strong><span>'+esc(starPeriod)+'</span></div>'+
+   return '<article class="cal-chandra-window'+(item.selectedDateMatch?' is-selected-date':(item.isUpcoming?' is-upcoming':(item.active?' is-active':'')))+'" data-period-type="'+(item.isUpcoming?'upcoming':'selected')+'" data-start-date="'+esc(item.startDate)+'" data-end-date="'+esc(item.endDate)+'">'+
+    '<div class="cal-chandra-rasi-period"><small>'+L('Rasi period','ராசி காலம்')+'</small><strong>'+esc(targetName)+'</strong><span>'+esc(fullRasiPeriod)+'</span></div>'+
+    '<div class="cal-chandra-star-period"><small>'+L('Birth star','ஜன்ம நட்சத்திரம்')+'</small><strong>'+esc(birthStarName)+'</strong><span>'+esc(starPeriod)+'</span></div>'+
     '<div class="cal-chandra-pada-list">'+padaRows+'</div>'+
    '</article>';
   }).join('');
-  const hasChandrashtama=Boolean(windowsHtml);
+  const hasChandrashtama=hasSelectedDateChandrashtama;
   const status=$('#calChandrashtamaResult');
   if(status){
-   status.textContent=hasChandrashtama?L('Chandrashtama: Yes','சந்திராஷ்டமம் : - உண்டு'):L('Chandrashtama: No','சந்திராஷ்டமம் : இல்லை');
+   status.textContent=hasChandrashtama?L('Chandrashtama: Yes','சந்திராஷ்டமம் : உண்டு'):L('Chandrashtama: No','சந்திராஷ்டமம் : இல்லை');
    status.dataset.result=hasChandrashtama?'present':'absent';
    status.dataset.resolved='true';
    status.classList.toggle('is-present',hasChandrashtama);
    status.classList.toggle('is-absent',!hasChandrashtama);
   }
-  return hasChandrashtama?'<div class="cal-chandra-windows">'+windowsHtml+'</div>':'';
+  const upcomingHeading=nearestUpcomingWindow&&windowsHtml
+   ?'<p class="cal-chandra-upcoming-heading">'+L('Next Chandrashtama','அடுத்த சந்திராஷ்டமம்')+'</p>'
+   :'';
+  return windowsHtml?'<div class="cal-chandra-windows">'+upcomingHeading+windowsHtml+'</div>':'';
  }
 
  function loadChandrashtamaWindows(){
@@ -337,10 +351,22 @@ if(host){
  }
 
  function renderExtra(){if(!daily)return;const r=+cfg.rasi,n=+cfg.star,p=daily.en.p,ps=daily.en.t.planets,mo=ps.find(x=>x.name==='Moon');if(!mo)return;const moonPosition=getNakshatraPadaAtLongitude(mo.longitude);if(!moonPosition)return;const moonSign=moonPosition.signIndex,tara=((p.nakshatra.number-1-n+27)%27)%9;const taraNames=[['Janma · birth','ஜன்மம்'],['Sampat · prosperity','சம்பத்து'],['Vipat · caution','விபத்து'],['Kshema · wellbeing','க்ஷேமம்'],['Pratyak · obstacles','பிரத்தியக்கு'],['Sadhana · achievement','சாதனம்'],['Naidhana · caution','நைதனம்'],['Mitra · friendship','மித்திரம்'],['Parama Mitra · support','பரம மித்திரம்']];
- const names=[...holidays(selected),...daily.events.map(x=>x.name)];if(selected==='2026-04-01')names.push(['Bank annual closing · banks only','வங்கிக் கணக்கு ஆண்டு முடிவு · வங்கிகளுக்கு மட்டும்']);if(new Date(selected+'T12:00:00Z').getUTCDay()===0)names.push(['Sunday','ஞாயிறு']);
- $('#calEvents').innerHTML=`<h3>${L('Festivals, vrats & holidays','பண்டிகைகள், விரதங்கள் & விடுமுறைகள்')}</h3><div class="cal-tags">${names.length?names.map(x=>`<span>${esc(x[ta()?1:0])}</span>`).join(''):L('No listed observance for this date.','இத்தேதியில் பட்டியலிட்ட சிறப்பு நாள் இல்லை.')}</div><p class="cal-note">${L('Vrats use local sunrise, sunset or the relevant tithi window. Holiday list: Tamil Nadu annual schedule, 2026; local and later government orders may differ.','விரதங்கள் உள்ளூர் உதயம், அஸ்தமனம் அல்லது உரிய திதி நேரத்தைச் சார்ந்தவை. விடுமுறைப் பட்டியல்: தமிழ்நாடு 2026 ஆண்டுப் பட்டியல்; உள்ளூர் மற்றும் பிந்தைய அரசு அறிவிப்புகள் மாறுபடலாம்.')} <a href="${holidaySource}" target="_blank" rel="noopener">${L('Holiday source','விடுமுறை ஆதாரம்')}</a>${selected.startsWith('2026')?'':` <b>${L('Official holidays for this year have not been loaded.','இந்த ஆண்டிற்கான அரசு விடுமுறைகள் இணைக்கப்படவில்லை.')}</b>`}</p>`;
- $('#calReadings').innerHTML=`<h3>${L('Birth Star & Tara Bala','பிறந்த நட்சத்திரம் · தாராபலம்')}</h3><div class="cal-summary"><article><h4>${L('Tara Bala','தாராபலம்')}</h4><p>${taraNames[tara][ta()?1:0]}</p><p><b>${L('Transit Moon Rasi','கோச்சார சந்திர ராசி')}:</b> ${signs[moonSign][ta()?1:0]}</p><p>${[1,3,5,7,8].includes(tara)?L('Supportive star relationship for planned efforts.','திட்டமிட்ட முயற்சிகளுக்கு ஆதரவான நட்சத்திர உறவு.'):L('Give important work extra preparation and review.','முக்கிய பணிகளில் கூடுதல் தயாரிப்பும் சரிபார்ப்பும் தேவை.')}</p></article></div>`;
-  $('#calChandrashtamaSection').innerHTML=`<h3>${L('Chandrashtama','சந்திராஷ்டமம்')}</h3><div class="cal-summary"><article class="cal-chandrashtama"><h4 id="calChandrashtamaResult" class="cal-chandrashtama-result">${L('Chandrashtama:','சந்திராஷ்டமம் :')}</h4><p><b>${L('Your Janma Rasi','உங்கள் ஜன்ம ராசி')}:</b> ${signs[r][ta()?1:0]}</p><p><b>${L('Eighth Rasi · Chandrashtama Rasi','எட்டாம் ராசி · சந்திராஷ்டம ராசி')}:</b> ${signs[getChandrashtamaRasiIndex(r)][ta()?1:0]}</p><p><b>${L('Moon at the selected date reference time · Nakshatra / Pada','தேர்ந்தெடுத்த தேதிக்கான குறிப்புநேரச் சந்திர நட்சத்திரம் / பாதம்')}:</b> ${esc(stars[moonPosition.nakshatraIndex]?.[ta()?1:0]||'—')} · ${L('Pada ','பாதம் ')}${esc(moonPosition.pada)} · ${esc(formatRasiDegree(moonPosition.degreeInSign))}</p><div id="calChandrashtamaPeriods"></div></article></div>`;
+ const officialHolidays=holidays(selected);
+ const additionalLocalHolidays=additionalGovernmentLocalHolidays(selected);
+ const normaliseObservance=value=>String(value??'').toLowerCase().replace(/[^\p{L}\p{N}]/gu,'').replace(/^diwali$/,'deepavali');
+ const nameValues=value=>Array.isArray(value)?value:[value];
+ const governmentHolidayKeys=new Set([...officialHolidays,...additionalLocalHolidays].flatMap(nameValues).map(normaliseObservance));
+ const dailyObservances=daily.events.map(event=>event.name).filter(name=>
+  !nameValues(name).some(value=>governmentHolidayKeys.has(normaliseObservance(value))));
+ const observanceTags=[
+  ...officialHolidays.map(name=>({label:name[ta()?1:0]+' · '+L('Government holiday','அரசு விடுமுறை'),kind:'government'})),
+  ...additionalLocalHolidays.map(name=>({label:name[ta()?1:0]+' · '+L('Government local holiday','அரசு உள்ளூர் விடுமுறை'),kind:'government'})),
+  ...dailyObservances.map(name=>({label:name[ta()?1:0],kind:'observance'}))
+ ];
+ if(selected==='2026-04-01')observanceTags.push({label:ta()?'வங்கிக் கணக்கு ஆண்டு முடிவு · வங்கிகளுக்கு மட்டும்':'Bank annual closing · banks only',kind:'observance'});
+ $('#calEvents').innerHTML=`<h3>${L('Festivals, vrats & holidays','பண்டிகைகள், விரதங்கள் & விடுமுறைகள்')}</h3><div class="cal-tags">${observanceTags.length?observanceTags.map(item=>`<span class="${item.kind==='government'?'cal-government-holiday':'cal-observance'}">${esc(item.label)}</span>`).join(''):L('No listed observance for this date.','இத்தேதியில் பட்டியலிட்ட சிறப்பு நாள் இல்லை.')}</div><p class="cal-holiday-source"><a href="${holidaySource}" target="_blank" rel="noopener">${L('Holiday source','விடுமுறை ஆதாரம்')}</a></p>`;
+ const taraBalaHtml=`<section id="calReadings" class="cal-tara-bala-section"><div class="cal-summary"><article><h4>${L('Tara Bala','தாராபலம்')}</h4><p>${taraNames[tara][ta()?1:0]}</p><p><b>${L('Transit Moon Rasi','கோச்சார சந்திர ராசி')}:</b> ${signs[moonSign][ta()?1:0]}</p><p>${[1,3,5,7,8].includes(tara)?L('Supportive star relationship for planned efforts.','திட்டமிட்ட முயற்சிகளுக்கு ஆதரவான நட்சத்திர உறவு.'):L('Give important work extra preparation and review.','முக்கிய பணிகளில் கூடுதல் தயாரிப்பும் சரிபார்ப்பும் தேவை.')}</p></article></div></section>`;
+  $('#calChandrashtamaSection').innerHTML=`<h3 class="cal-section-title">${L('Chandrashtama','சந்திராஷ்டமம்')}</h3><div class="cal-summary"><article class="cal-chandrashtama"><h4 id="calChandrashtamaResult" class="cal-chandrashtama-result">${L('Chandrashtama:','சந்திராஷ்டமம் :')}</h4><p><b>${L('Your Janma Rasi','ஜன்ம ராசி')}:</b> ${signs[r][ta()?1:0]}</p><p><b>${L('Chandrashtama Rasi','சந்திராஷ்டம ராசி')}:</b> ${signs[getChandrashtamaRasiIndex(r)][ta()?1:0]}</p><p><b>${L('Moon Nakshatra / Pada','சந்திர நட்சத்திரம் / பாதம்')}:</b> ${esc(stars[moonPosition.nakshatraIndex]?.[ta()?1:0]||'—')} · ${L('Pada ','பாதம் ')}${esc(moonPosition.pada)}</p><div id="calChandrashtamaPeriods"></div></article></div>${taraBalaHtml}`;
   loadChandrashtamaWindows();
   renderDateDetails();
  }
@@ -357,35 +383,6 @@ if(host){
   const index=((traditionalStart-1987)%60+60)%60;
   return (tamil?tamilCycleTa:tamilCycleEn)[index]||'—';
  }
- const nityaYogaResults={
-  Vishkumbha:['Support · opening portion calls for care','தாங்குதல் · தொடக்கப் பகுதியில் கவனம் தேவை',true],
-  Priti:['Affection and harmony','அன்பும் ஒற்றுமையும்',false],
-  Ayushman:['Vitality and longevity','ஆயுள் மற்றும் உறுதி',false],
-  Saubhagya:['Good fortune','நற்பேறு',false],
-  Shobhana:['Splendour and grace','அழகும் மங்களமும்',false],
-  Atiganda:['Major obstacles · traditionally avoided','பெரிய இடையூறு · பாரம்பரியமாகத் தவிர்க்கப்படும்',true],
-  Sukarma:['Good deeds and constructive work','நற்செயலும் பயனுள்ள முயற்சியும்',false],
-  Dhriti:['Steadiness and determination','உறுதியும் நிலைத்தன்மையும்',false],
-  Shula:['Sharpness and difficulty · use care','கூர்மை மற்றும் சிரமம் · கவனம் தேவை',true],
-  Ganda:['Obstruction and complications','தடை மற்றும் சிக்கல்கள்',true],
-  Vriddhi:['Growth and increase','வளர்ச்சியும் பெருக்கமும்',false],
-  Dhruva:['Stability and firmness','நிலைத்தன்மையும் உறுதியும்',false],
-  Vyaghata:['Impact and obstruction','தாக்கமும் இடையூறும்',true],
-  Harshana:['Joy and happiness','மகிழ்ச்சியும் சந்தோஷமும்',false],
-  Vajra:['Forceful or difficult conditions','கடினமான சூழ்நிலை',true],
-  Siddhi:['Achievement and success','சாதனையும் வெற்றியும்',false],
-  Vyatipata:['Disruption · traditionally avoided','சீர்குலைவு · பாரம்பரியமாகத் தவிர்க்கப்படும்',true],
-  Variyana:['Comfort and excellence','சௌகரியமும் மேன்மையும்',false],
-  Parigha:['Obstruction · first half traditionally avoided','தடை · முதல் பாதி பாரம்பரியமாகத் தவிர்க்கப்படும்',true],
-  Shiva:['Auspiciousness and calm','மங்களமும் அமைதியும்',false],
-  Siddha:['Accomplishment','காரிய நிறைவேற்றம்',false],
-  Sadhya:['Attainable goals and effort','அடையக்கூடிய இலக்கும் முயற்சியும்',false],
-  Shubha:['Auspiciousness and goodness','சுபமும் நன்மையும்',false],
-  Shukla:['Clarity and brightness','தெளிவும் ஒளியும்',false],
-  Brahma:['Sacred learning and knowledge','புனிதக் கல்வியும் அறிவும்',false],
-  Indra:['Leadership and strength','தலைமையும் வலிமையும்',false],
-  Vaidhriti:['Separation or obstruction · traditionally avoided','பிரிவும் தடையும் · பாரம்பரியமாகத் தவிர்க்கப்படும்',true]
- };
  function clockMinutes(value){
   const match=String(value??'').match(/(\d{1,2}):(\d{2})/);
   return match?Number(match[1])*60+Number(match[2]):null;
@@ -518,19 +515,35 @@ if(host){
   const ratriText=ratri?.available?String(ratri.nazhigai)+' '+L('Nazhigai','நாழி')+' '+String(ratri.vinazhigai)+' '+L('Vinazhigai','விநாழிகை')+' '+String(ratri.tharparai??0)+' '+L('Tharparai','தற்பரை'):'—';
   const dinantham=daily.dinantham;
   const dinanthamText=dinantham?.available?String(dinantham.time||'—'):'—';
-  const yogaSegmentsHtml=yogaSegments.length?yogaSegments.map(segment=>{
+  const panchangRows=[...($('#calPanchangSource')?.querySelectorAll('.panchang-data-table tbody tr')||[])];
+  const panchangYogaRow=panchangRows.find(row=>/^(Yoga|யோகம்|Namah Yoga|நாம யோகம்)$/i.test(row.cells?.[0]?.textContent?.trim()||''));
+  if(panchangYogaRow){
+   panchangYogaRow.cells[0].textContent=L('Namah Yoga','நாம யோகம்');
+  }
+  const panchangDetailsHtml=panchangRows
+   .filter(row=>row.cells?.[0]?.textContent?.trim()!==L('Date','தேதி'))
+   .map(row=>{
+    const label=row.cells?.[0]?.textContent?.trim()||'';
+    if(!label)return '';
+    const primary=row.classList.contains('smv-calendar-primary-result-row')?' is-primary':'';
+    const yogaLabel=/^(Namah Yoga|நாம யோகம்)$/i.test(label)?' cal-name-yoga-label':'';
+    return '<article class="cal-panchang-detail-item smv-css-island'+primary+'"><small class="cal-panchang-detail-label'+yogaLabel+'">'+esc(label)+'</small><strong>'+(row.cells?.[1]?.innerHTML||'—')+'</strong></article>';
+   }).join('');
+  const yogaReferenceHtml='<small class="cal-yoga-reference">'+L('Sunrise star: ','உதய நட்சத்திரம்: ')+dayStarName+(Number.isInteger(dayStar)?' ('+dayStar+')':'')+'</small>';
+  const yogaCardsHtml=yogaSegments.length?yogaSegments.map(segment=>{
    const yogaName=ta()?segment.ta:segment.en;
    const starName=stars[Number(segment.nakshatraNumber)-1]?.[ta()?1:0]||'—';
    const result=ta()?segment.resultTa:segment.resultEn;
    const tone=segment.bad?'is-inauspicious':segment.key==='unknown'?'is-unknown':'is-auspicious';
    const range=yogaBoundaryLabel(segment.start)+' – '+yogaBoundaryLabel(segment.end);
-   return '<div class="cal-yoga-segment '+tone+'"><div class="cal-yoga-segment-info"><strong>'+esc(yogaName)+'</strong><small>'+esc(starName)+' · '+esc(result)+'</small></div><span class="cal-yoga-segment-time">'+esc(range)+'</span></div>';
-  }).join(''):'<div class="cal-yoga-segment is-unknown"><div class="cal-yoga-segment-info"><strong>'+L('Unavailable','கிடைக்கவில்லை')+'</strong><small>'+L('Nakshatra interval data is unavailable.','நட்சத்திர நேரத் தரவு கிடைக்கவில்லை.')+'</small></div></div>';
+   return '<article class="cal-day-yoga-card cal-amirthadi-yoga-card '+tone+'"><div class="cal-yoga-segment '+tone+'"><div class="cal-yoga-segment-info"><strong>'+esc(yogaName)+'</strong><small>'+esc(starName)+' · '+esc(result)+'</small></div><span class="cal-yoga-segment-time">'+esc(range)+'</span>'+(segment===yogaSegments[0]?yogaReferenceHtml:'')+'</div></article>';
+  }).join(''):'<article class="cal-day-yoga-card cal-amirthadi-yoga-card is-unknown"><div class="cal-yoga-segment is-unknown"><div class="cal-yoga-segment-info"><strong>'+L('Unavailable','கிடைக்கவில்லை')+'</strong><small>'+L('Nakshatra interval data is unavailable.','நட்சத்திர நேரத் தரவு கிடைக்கவில்லை.')+'</small></div>'+yogaReferenceHtml+'</div></article>';
   $('#calDateDetailsExtra').innerHTML=
    '<div class="cal-details-summary">'+
     '<article class="cal-tamil-date-card"><small>'+L('Tamil date · month · year','தமிழ் தேதி · மாதம் · ஆண்டு')+'</small><strong>'+esc(tamilDate)+'</strong><span>'+esc((ta()?monthTa:monthEn)+' · '+yearName)+'</span></article>'+
-    '<article class="cal-day-yoga-card"><small>'+L('Amirthadi Yogam · Tamil day yoga','அமிர்தாதி யோகம் · தமிழ் நாள் யோகம்')+'</small><div class="cal-yoga-segments">'+yogaSegmentsHtml+'</div><small>'+L('Sunrise reference: ','சூரிய உதய அடிப்படை: ')+(weekdayName||'—')+' · '+dayStarName+(Number.isInteger(dayStar)?' ('+dayStar+')':'')+'</small></article>'+
-    '<article class="cal-day-yoga-card is-inauspicious"><small>'+L('Nakshatra Thyajyam / Varjyam','நட்சத்திர தியாஜ்யம்')+'</small><div class="cal-yoga-segments">'+thyajyamHtml+'</div><small>'+L('Based on the star’s 60-ghati division; each Thyajyam lasts 4 ghatis.','நட்சத்திரத்தின் 60 நாழிகைப் பிரிவில், தியாஜ்யம் 4 நாழிகை நீடிக்கும்.')+'</small></article>'+
+    '<div class="cal-day-yoga-cards" data-yoga-count="'+yogaSegments.length+'">'+yogaCardsHtml+'</div>'+
+    '<div class="cal-panchang-detail-grid" role="group" aria-label="'+L('Daily Panchang details','தினசரி பஞ்சாங்க விவரங்கள்')+'">'+panchangDetailsHtml+'</div>'+
+    '<article class="cal-day-yoga-card cal-thyajyam-card is-inauspicious"><small>'+L('Nakshatra Thyajyam','நட்சத்திர தியாஜ்யம்')+'</small><div class="cal-yoga-segments">'+thyajyamHtml+'</div></article>'+
     '<article class="cal-muhurta-card"><small>'+L('Ahas : Day length','அகஸ் :- பகல் மானம்')+'</small><strong>'+esc(ahasText)+'</strong><span>'+L('Sunrise: ','சூரிய உதயம்: ')+(ahas?.sunrise||'—')+' · '+L('Sunset: ','சூரிய அஸ்தமனம்: ')+(ahas?.sunset||'—')+'</span></article>'+
     '<article class="cal-muhurta-card"><small>'+L('Ahas : Night length','அகஸ் :- இரவு மானம்')+'</small><strong>'+esc(ratriText)+'</strong><span>'+L('Sunset: ','சூரிய அஸ்தமனம்: ')+(p?.sunset||'—')+' · '+L('Next sunrise: ','மறுநாள் சூரிய உதயம்: ')+(daily.nextSunrise||'—')+'</span></article>'+
     '<article class="cal-muhurta-card"><small>'+L('Dinantham / Night reference','தினாந்தம் (இரவு)')+'</small><strong>'+esc(dinanthamText)+'</strong><span>'+L('Midpoint of the third night yama','இரவு மூன்றாம் யாமத்தின் நடுப்புள்ளி')+'</span></article>'+
@@ -543,27 +556,13 @@ if(host){
     '<article class="cal-shoolam-card"><div class="cal-shoolam-main"><small>'+L('Travel Shoolam','பயண சூலம்')+'</small><strong>'+(ta()?shool.directionTa:shool.directionEn)+'</strong><span>'+L('Pariharam','பரிகாரம்')+': '+(ta()?shool.remedyTa:shool.remedyEn)+'</span></div></article>' +
    '</div>';
 
-  const yogaRow=[...($('#calDaily')?.querySelectorAll('.panchang-data-table tbody tr')||[])].find(row=>/^(Yoga|யோகம்)$/i.test(row.cells?.[0]?.textContent?.trim()||''));
-  if(yogaRow){
-   yogaRow.classList.add('cal-name-yoga-row');
-   yogaRow.cells[0].classList.add('cal-name-yoga-label');
-   yogaRow.cells[0].textContent=L('Namah Yoga','நாம யோகம்');
-   const yogaName=String(p?.yoga?.name||'').trim();
-   const yogaResult=nityaYogaResults[yogaName];
-   if(yogaResult&&yogaRow.cells[1]){
-    const result=document.createElement('small');
-    result.className='cal-name-yoga-result';
-    result.textContent=ta()?yogaResult[1]:yogaResult[0];
-    yogaRow.cells[1].append(document.createElement('br'),result);
-   }
-  }
   renderMuhurtaLagna();
  }
 
  function renderDaily(){if(!daily)return;const lang=ta()?'ta':'en';const now=localNow(),minute=+now.slice(11,13)*60+ +now.slice(14,16),sunrise=Number(String(daily.en.p.sunrise||'').slice(0,2))*60+Number(String(daily.en.p.sunrise||'').slice(3,5)),beforeSunrise=selected===now.slice(0,10)&&Number.isFinite(sunrise)&&minute<sunrise,horaOverride=beforeSunrise?daily.en.previousNight:null;window.SMVRenderDaily(daily[lang].t,daily[lang].p,lang,'calDaily',horaOverride);
  // Calendar localisation is isolated from the stored horoscope and never recalculates it.
- const dict=new Map([...signs,...stars,...planets,...[['Transit Chart','கோச்சாரச் சக்கரம்'],['Transit Planetary Positions','கோச்சார கிரக நிலைகள்'],['Planet','கிரகம்'],['Rasi','ராசி'],['Degree','பாகை'],['Nakshatra','நட்சத்திரம்'],['Pada','பாதம்'],['Status','நிலை'],['Retrograde','வக்கிரம்'],['Direct','நேர்கதி'],['Asc','லக்னம்'],['Su','சூ'],['Mo','சந்'],['Ma','செ'],['Me','பு'],['Ju','கு'],['Ve','சு'],['Sa','சனி'],['Ra(R)','ரா(R)'],['Ke(R)','கே(R)']]]);
- if(ta()){for(const [a,b] of [['Su','சூ'],['Mo','சந்'],['Ma','செ'],['Me','பு'],['Ju','கு'],['Ve','சு'],['Sa','சனி']])dict.set(a+'(R)',b+'(R)');const walker=document.createTreeWalker($('#calDaily'),NodeFilter.SHOW_TEXT);while(walker.nextNode()){const node=walker.currentNode;node.textContent=node.textContent.replace('Transit தேதி/நேரம்:','கோச்சார தேதி/நேரம்:').replace(/\bto\b/g,'முதல்');for(const [en,tamil]of dict)if(node.textContent.trim()===en||node.textContent.trim()==='🪐 '+en){node.textContent=node.textContent.replace(en,tamil);break}}}
+ const dict=new Map([...signs,...stars,...planets,...[['Transit Chart','கோச்சாரச் சக்கரம்'],['Transit Planetary Positions','கோச்சார கிரக நிலைகள்'],['Planet','கிரகம்'],['Rasi','ராசி'],['Degree','பாகை'],['Nakshatra','நட்சத்திரம்'],['Pada','பாதம்'],['Status','நிலை'],['Retrograde','வக்கிரம்'],['Direct','நேர்கதி'],['Asc','லக்'],['Su','சூ'],['Mo','சந்'],['Ma','செ'],['Me','பு'],['Ju','கு'],['Ve','சு'],['Sa','சனி'],['Ra(R)','ரா(R)'],['Ke(R)','கே(R)']]]);
+ if(ta()){for(const [a,b] of [['Su','சூ'],['Mo','சந்'],['Ma','செ'],['Me','பு'],['Ju','கு'],['Ve','சு'],['Sa','சனி']])dict.set(a+'(R)',b+'(R)');for(const root of [$('#calDaily'),$('#calPanchangSource')]){if(!root)continue;const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);while(walker.nextNode()){const node=walker.currentNode;node.textContent=node.textContent.replace('Transit தேதி/நேரம்:','கோச்சார தேதி/நேரம்:').replace(/\bto\b/g,'முதல்');for(const [en,tamil]of dict)if(node.textContent.trim()===en||node.textContent.trim()==='🪐 '+en){node.textContent=node.textContent.replace(en,tamil);break}}}}
  updateHora();renderExtra();if(month&&monthKey===selected.slice(0,7))renderMonth();
  }
  function updateHora(){

@@ -61,8 +61,8 @@
 
 
 <link rel="stylesheet" href="../horoscope.css?v=20261111-pages-horoscope-header-css-v1">
-<link rel="stylesheet" href="../daily-calendar.css?v=20261118-chandrashtama-result-status-v1">
-<link rel="stylesheet" href="../calendar-theme.css?v=20261117-calendar-namah-yoga-label-v3">
+<link rel="stylesheet" href="../daily-calendar.css?v=20261118-calendar-centered-headings-v15">
+<link rel="stylesheet" href="../calendar-theme.css?v=20261118-calendar-centered-headings-v15">
 <script id="smv-apk-release-api-config">window.SMV_APK_RELEASE_API_URL = window.SMV_APK_RELEASE_API_URL || "https://smv-astro-apk-release-api.astroservices.workers.dev";</script>
 <link rel="stylesheet" href="../android-apk-icons.css?v=20261110-icon-png-v3">
 <script id="smv-pages-dev-host-isolation-loader">
@@ -119,14 +119,14 @@ if(location.hostname==='smvastroservices.pages.dev'){
   </div>
 </section>
 <script src="../location-search-online-offline.js"></script>
-<script src="../horoscope.js"></script>
+<script src="../horoscope.js?v=20261118-calendar-centered-headings-v15"></script>
 <script type="module" src="../android-apk-download.mjs?v=20261110-icon-png-v3"></script>
 <script type="module" src="calendar-pwa.mjs?v=20261024-admin-cache-v7"></script>
-<script type="module" src="../daily-calendar.mjs?v=20261118-chandrashtama-result-status-v1"></script>
+<script type="module" src="../daily-calendar.mjs?v=20261118-calendar-centered-headings-v15"></script>
 <script type="module" id="smv-calendar-rasi-palan-loader">
 (async()=>{
   const host=location.hostname.toLowerCase();
-  const version='20261117-calendar-date-details-alignment-v1';
+  const version='20261118-calendar-green-heading-v4';
   const candidates=host==='calendar.smvastroservices.in'
     ? [
         // Prefer same-origin Calendar assets so this host's own Service Worker can
@@ -187,7 +187,7 @@ if(location.hostname==='smvastroservices.pages.dev'){
       target.className='cal-rasi-palan';
       document.getElementById('smvDailyCalendar')?.insertAdjacentElement('afterend',target);
     }
-    target.innerHTML='<h2>ராசி பலன்கள் & கிரக கோச்சாரம் / Rasi Palan & Planetary Transits</h2><p role="alert">இந்தப் பகுதியின் source files தற்போதைய Calendar host-ல் ஏற்றப்படவில்லை. பக்கத்தை மீண்டும் திறக்கவும்; சிக்கல் தொடர்ந்தால் நிர்வாகத்திடம் தெரிவிக்கவும்.</p><p role="alert">The deployed forecast assets could not be loaded from this Calendar host.</p><details><summary>Asset diagnostics</summary><pre></pre></details>';
+    target.innerHTML='<h2>ராசி பலன்கள் & கிரக கோச்சார பலன்கள் / Rasi Palan & Planetary Transits</h2><p role="alert">இந்தப் பகுதியின் source files தற்போதைய Calendar host-ல் ஏற்றப்படவில்லை. பக்கத்தை மீண்டும் திறக்கவும்; சிக்கல் தொடர்ந்தால் நிர்வாகத்திடம் தெரிவிக்கவும்.</p><p role="alert">The deployed forecast assets could not be loaded from this Calendar host.</p><details><summary>Asset diagnostics</summary><pre></pre></details>';
     const detail=target.querySelector('pre');
     if(detail)detail.textContent=diagnostics.join('\n')||'No compatible candidate was found.';
     console.error('SMV Calendar Rasi Palan and Planetary Transits could not load.',diagnostics);
