@@ -904,3 +904,17 @@ test('SMV CALENDAR daily Panchang and Hora use scoped black/red result typograph
   assert.equal(releases[0][1], '20261118-chandrashtama-layout-v1');
   assert.equal(releases[0][2], '20261118-chandrashtama-layout-v1');
 });
+
+test('Calendar Daily Panchang values are integrated before Nakshatra Thyajyam without a date-only card', () => {
+  assert.match(dailyCalendarSource, /L\('Daily Panchang','தினசரி பஞ்சாங்கம்'\)/);
+  assert.match(dailyCalendarSource, /id="calPanchangSource" hidden aria-hidden="true"/);
+  assert.match(dailyCalendarSource, /cal-panchang-detail-grid/);
+  assert.match(dailyCalendarSource, /row\.cells\?\.\[0\]\?\.textContent\?\.trim\(\)!==L\('Date','தேதி'\)/);
+  assert.match(horoscopeRendererSource, /const calendarPanchangSlot=calendarPresentation\?document\.getElementById\('calPanchangSource'\):null/);
+  assert.match(horoscopeRendererSource, /if\(calendarPanchangSlot\)calendarPanchangSlot\.innerHTML=dailyTable/);
+  assert.match(horoscopeRendererSource, /let h=calendarPanchangSlot\?'':/);
+  assert.match(calendarThemeCssSource, /\.cal-panchang-detail-grid/);
+  assert.match(calendarThemeCssSource, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(calendarThemeCssSource, /\.cal-panchang-detail-item>small/);
+  assert.match(calendarThemeCssSource, /\.cal-panchang-detail-item>strong/);
+});
