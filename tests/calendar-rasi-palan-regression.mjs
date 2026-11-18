@@ -484,11 +484,11 @@ test('Calendar Time defaults to local sunrise and recalculates Panchang for the 
     'The daily calculation must receive the user-selected time.');
   assert.ok(dailyCalendarSource.includes("selectedTime=''"),
     'A date/location change must reset to the new local sunrise.');
-  assert.ok(calendarWorkerSource.includes("if(kind==='sunrise')"),
+  assert.ok(calendarCalculationWorkerSource.includes("if(kind==='sunrise')"),
     'The calculation worker must expose local sunrise resolution.');
-  assert.ok(calendarWorkerSource.includes('solarNoaa(input.date,input.lat,input.lon,utcOffsetMinutes,true)'),
+  assert.ok(calendarCalculationWorkerSource.includes('solarNoaa(input.date,input.lat,input.lon,utcOffsetMinutes,true)'),
     'Sunrise must be calculated for the selected date and coordinates.');
-  assert.ok(calendarWorkerSource.includes('panchang(input,chart)'),
+  assert.ok(calendarCalculationWorkerSource.includes('panchang(input,chart)'),
     'The existing Panchang engine must process the selected date/time.');
   assert.ok(dailyCalendarCssSource.includes('.cal-date-time-control'),
     'Date and Time must be stacked in the first control column.');
