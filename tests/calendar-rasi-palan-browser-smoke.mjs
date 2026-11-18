@@ -105,6 +105,41 @@ try {
     const status = document.querySelector('#calStatus')?.textContent || '';
     return status && (/Unable to calculate|கணக்கிட முடியவில்லை/.test(status) || (!/Calculating Panchang|பஞ்சாங்கம், ஹோரை/.test(status) && !/Loading monthly calendar|மாத நாட்காட்டி தயாராகிறது/.test(document.querySelector('#calMonth')?.textContent||'')));
   }, { timeout: 90000 });
+  await page.waitForFunction(() => {
+    const field = document.querySelector('#calTime');
+    const status = document.querySelector('#calStatus')?.textContent || '';
+    return Boolean(field && !field.disabled && /^\d{2}:\d{2}$/.test(field.value) && status.includes(field.value));
+  }, { timeout: 90000 });
+  const sunriseTimeCheck = await page.evaluate(() => {
+    const field = document.querySelector('#calTime');
+    const labels = [...document.querySelectorAll('.cal-date-time-control label')].map(label => label.textContent.trim());
+    const sunriseText = [...document.querySelectorAll('#calDateDetailsExtra .cal-muhurta-card span')]
+      .map(element => element.textContent || '')
+      .map(value => value.match(/(?:Sunrise:|சூரிய உதயம்:)\s*(\d{2}:\d{2})/))
+      .find(Boolean);
+    return { value: field?.value || '', labels, sunrise: sunriseText?.[1] || '' };
+  });
+  assert.match(sunriseTimeCheck.value, /^\d{2}:\d{2}$/, 'Calendar Time must contain a valid local sunrise time.');
+  assert.equal(sunriseTimeCheck.value, sunriseTimeCheck.sunrise, 'Default Time must equal the selected date/location sunrise.');
+  assert.ok(sunriseTimeCheck.labels[0]?.includes('Date') || sunriseTimeCheck.labels[0]?.includes('தேதி'), 'Date must remain the first control.');
+  assert.ok(sunriseTimeCheck.labels[1]?.includes('Time') || sunriseTimeCheck.labels[1]?.includes('நேரம்'), 'Time must appear directly below Date.');
+  const alternatePanchangTime = sunriseTimeCheck.value === '11:23' ? '11:24' : '11:23';
+  await page.$eval('#calTime', (field, value) => {
+    field.value = value;
+    field.dispatchEvent(new Event('change', { bubbles: true }));
+  }, alternatePanchangTime);
+  await page.waitForFunction(value =>
+    document.querySelector('#calTime')?.value === value &&
+    (document.querySelector('#calStatus')?.textContent || '').includes(value),
+    { timeout: 90000 }, alternatePanchangTime);
+  await page.$eval('#calTime', (field, value) => {
+    field.value = value;
+    field.dispatchEvent(new Event('change', { bubbles: true }));
+  }, sunriseTimeCheck.value);
+  await page.waitForFunction(value =>
+    document.querySelector('#calTime')?.value === value &&
+    (document.querySelector('#calStatus')?.textContent || '').includes(value),
+    { timeout: 90000 }, sunriseTimeCheck.value);
   const calendarCalculationStatus = await page.$eval('#calStatus', el => el.textContent || '');
   await page.waitForSelector('#calMonth .cal-month-grid button.cal-sunday > strong', { timeout: 30000 });
   const sundayCalendarStyle = await page.$eval('#calMonth .cal-month-grid', grid => {
