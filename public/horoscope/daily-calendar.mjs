@@ -25,7 +25,8 @@ if(host){
   }
   if(updateOffset)cfg.offset=offset;
   const now=localNowAt(offset);
-  const time=includeMuhurtaTime&&/^([01]\\d|2[0-3]):[0-5]\\d$/.test(selectedMuhurtaTime)?selectedMuhurtaTime:(date===now.slice(0,10)?now.slice(11,16):'12:00');\n  return {date,time,lat:+cfg.lat,lon:+cfg.lon,utcOffsetMinutes:offset,timezone:cfg.timezone||'',language:'en'};
+  const time=includeMuhurtaTime&&/^([01]\d|2[0-3]):[0-5]\d$/.test(selectedMuhurtaTime)?selectedMuhurtaTime:(date===now.slice(0,10)?now.slice(11,16):'12:00');
+  return {date,time,lat:+cfg.lat,lon:+cfg.lon,utcOffsetMinutes:offset,timezone:cfg.timezone||'',language:'en'};
  }
  function settings(){cfg.rasi=+$('#calRasi').value;cfg.star=+$('#calStar').value;storage.set(cfg);renderExtra()}
  function viewportAnchor(selector){const el=selector?$(selector):null;return el?{selector,top:el.getBoundingClientRect().top}:null}
