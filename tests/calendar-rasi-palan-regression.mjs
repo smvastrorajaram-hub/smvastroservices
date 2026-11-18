@@ -290,7 +290,7 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   assert.match(publicRasiPalanSource, /const selected = modeText\(automatic, moonKey, result\.type\)/);
   assert.match(publicRasiPalanSource, /'daily', 'weekly', 'monthly', 'tamilNewYear', 'englishNewYear'/);
   assert.match(publicRasiPalanSource, /positions\.moonSign == null/);
-  assert.match(dailyCalendarSource, /Birth Star & Tara Bala/);
+  assert.doesNotMatch(dailyCalendarSource, /Birth Star & Tara Bala|பிறந்த நட்சத்திரம் · தாராபலம்/);
   assert.match(dailyCalendarSource, /calChandrashtamaSection/);
   assert.match(dailyCalendarSource, /status\.textContent=hasChandrashtama\?L\('Chandrashtama: Yes','சந்திராஷ்டமம் : உண்டு'\):L\('Chandrashtama: No','சந்திராஷ்டமம் : இல்லை'\)/);
   assert.ok(dailyCalendarSource.includes("L('Chandrashtama:','சந்திராஷ்டமம் :')"));
@@ -320,6 +320,8 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   assert.match(calendarThemeCssSource, /cal-chandrashtama>p\{[^}]*margin:0;padding:0;border:0/);
   assert.match(calendarThemeCssSource, /cal-chandra-janma-projection\{display:grid;gap:3px;margin:6px 0;padding:0;border:0/);
   assert.ok(dailyCalendarSource.includes('id="calChandrashtamaSection" class="cal-chandrashtama-section smv-css-island"'), "Chandrashtama is isolated from the shared legacy heading palette.");
+  assert.ok(dailyCalendarSource.includes('id="calReadings" class="cal-tara-bala-section"'), 'Tara Bala is nested inside the Chandrashtama result section.');
+  assert.ok(calendarThemeCssSource.includes('#calChandrashtamaSection > #calReadings.cal-tara-bala-section'), 'Tara Bala shares the Chandrashtama visual layer without a second card.');
   assert.ok(dailyCalendarSource.includes("L('Chandrashtama Rasi','சந்திராஷ்டம ராசி')"));
   assert.doesNotMatch(dailyCalendarSource, /Eighth Rasi|எட்டாம் ராசி/);
   assert.match(dailyCalendarSource, /L\('Moon Nakshatra \/ Pada','சந்திர நட்சத்திரம் \/ பாதம்'\)/);
@@ -331,15 +333,37 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   const detailsShellStart = dailyCalendarSource.indexOf('function shell()');
   const detailsShell = dailyCalendarSource.slice(detailsShellStart, dailyCalendarSource.indexOf('function dateInMonth', detailsShellStart));
   const chandrashtamaSectionPosition = detailsShell.indexOf('<section id="calChandrashtamaSection"');
-  const taraBalaPosition = detailsShell.indexOf('<section id="calReadings"');
   const observancesPosition = detailsShell.indexOf('<section id="calEvents"');
   const dailyPanchangPosition = detailsShell.indexOf('<div id="calDaily"');
-  assert.ok(chandrashtamaSectionPosition >= 0 && chandrashtamaSectionPosition < taraBalaPosition &&
-    taraBalaPosition < observancesPosition && observancesPosition < dailyPanchangPosition,
-    'Tara Bala and festivals/vrats/holidays must sit below Chandrashtama and above the daily Panchang.');
+  const chandraRenderStart = dailyCalendarSource.indexOf("$('#calChandrashtamaSection').innerHTML=");
+  const chandraRenderEnd = dailyCalendarSource.indexOf('loadChandrashtamaWindows();', chandraRenderStart);
+  const chandraRender = dailyCalendarSource.slice(chandraRenderStart, chandraRenderEnd);
+  const chandraPeriodsPosition = chandraRender.indexOf('id="calChandrashtamaPeriods"');
+  const taraBalaPosition = chandraRender.indexOf('<section id="calReadings" class="cal-tara-bala-section">');
+  assert.ok(chandrashtamaSectionPosition >= 0 && chandrashtamaSectionPosition < observancesPosition &&
+    observancesPosition < dailyPanchangPosition,
+    'The combined Chandrashtama/Tara Bala layer and observances must sit above the daily Panchang.');
+  assert.ok(chandraPeriodsPosition >= 0 && taraBalaPosition > chandraPeriodsPosition,
+    'Tara Bala must render inside the Chandrashtama section, after its Chandrashtama details.');
   assert.match(dailyCalendarSource, /Chandrashtama/);
   assert.doesNotMatch(dailyCalendarSource, /Daily Rasi Palan/);
   assert.doesNotMatch(dailyCalendarSource, /All eight transit planets/);
+});
+
+test('Calendar distinguishes Gazette government holidays from observances and does not add Sundays', () => {
+  assert.ok(dailyCalendarSource.includes("L('Government holiday','அரசு விடுமுறை')"),
+    'Official Tamil Nadu holidays must be explicitly identified as Government Holidays.');
+  assert.ok(dailyCalendarSource.includes("kind:'government'") && dailyCalendarSource.includes('cal-government-holiday'),
+    'Government holiday tags must use their own visual marker.');
+  assert.ok(dailyCalendarSource.includes("const officialHolidays=holidays(selected)"),
+    'Only the existing Gazette-backed holiday list may receive the Government Holiday label.');
+  assert.ok(dailyCalendarSource.includes('class="cal-holiday-source"'),
+    'The Holiday source link remains visible.');
+  assert.doesNotMatch(dailyCalendarSource, /getUTCDay\(\)===0\)names\.push\(\['Sunday','ஞாயிறு'\]\)/,
+    'Do not add Sunday as a separate holiday.');
+  assert.doesNotMatch(dailyCalendarSource, /Vrats use local sunrise|விரதங்கள் உள்ளூர் உதயம்|Official holidays for this year have not been loaded/,
+    'Remove the explanatory note and the extra year warning.');
+  assert.match(calendarThemeCssSource, /cal-government-holiday\{[^}]*font-weight:850/);
 });
 
 test('Public Rasi Palan uses the current local date automatically and calculates weekly windows', () => {
@@ -890,6 +914,7 @@ test('Calendar Date Details uses one green hierarchy with paired Panchang values
 
 test('SMV CALENDAR daily Panchang and Hora follow the green result hierarchy', () => {
   assert.match(horoscopeRendererSource, /const calendarPresentation = rootId === 'calDaily';/);
+  assert.ok(horoscopeRendererSource.includes("const raw=String(v??'—').trim();const m=raw.match(/^(\\d{4})-(\\d{2})-(\\d{2})[ T](\\d{2}):(\\d{2})/);"), 'Daily Panchang event ranges accept ISO 8601 T separators as well as date-space-time values.');
   assert.match(horoscopeRendererSource, /smv-calendar-neutral-date-time/);
   assert.match(horoscopeRendererSource, /smv-calendar-normal-connector/);
   assert.match(horoscopeRendererSource, /smv-calendar-primary-result-row/);
