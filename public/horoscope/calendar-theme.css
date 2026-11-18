@@ -190,9 +190,9 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar #calReadings{margin-top:12px}
 #smvDailyCalendar #calEvents{margin-top:12px}/* Daily Panchang + Chandrashtama — canonical green theme hierarchy. */
 #smvDailyCalendar .cal-date-details{margin:18px 0 24px;padding:16px;border:1px solid #dce8df;border-radius:16px;background:#fffdf8}
-#smvDailyCalendar .cal-date-details-head{display:flex;align-items:center;justify-content:center;margin:0 0 13px;padding:0 0 11px;border-bottom:1px solid #dce8df;text-align:center}
+#smvDailyCalendar .cal-date-details-head{display:flex;align-items:center;justify-content:center;margin:0 0 13px;padding:0 0 11px;border:0;border-bottom:1px solid #dce8df;border-radius:0;background:transparent;background-image:none;box-shadow:none;text-align:center}
 #smvDailyCalendar .cal-date-details-head>div{width:100%;min-width:0}
-#smvDailyCalendar .cal-date-details-title{margin:0;color:#15564e;font-size:22px;font-weight:850;line-height:1.3;text-align:center}
+#smvDailyCalendar .cal-date-details-title{display:block;width:100%;margin:0;padding:0;border:0;border-radius:0;background:transparent;background-image:none;box-shadow:none;color:#15564e;font-size:22px;font-weight:850;line-height:1.3;text-align:center}
 #smvDailyCalendar .cal-details-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:stretch;min-width:0;margin:0 0 12px}
 #smvDailyCalendar .cal-details-summary>.cal-day-yoga-cards{display:contents}
 #smvDailyCalendar .cal-details-summary>article{display:flex;min-width:0;flex-direction:column;align-items:flex-start;justify-content:center;gap:5px;padding:12px;border:1px solid #dce8df;border-radius:12px;background:#fff;text-align:left}
@@ -212,16 +212,22 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-yoga-segment.is-unknown .cal-yoga-segment-info>strong{color:#69746d}
 #smvDailyCalendar .cal-yoga-segment-time{align-self:start;color:#365d4a;font-size:12px;font-weight:750;line-height:1.4;font-variant-numeric:tabular-nums;text-align:right;overflow-wrap:anywhere}
 #smvDailyCalendar .cal-yoga-reference{display:block;align-self:flex-start;margin:0;color:#667b70;font-size:10.5px;font-weight:500;line-height:1.3}
-#smvDailyCalendar .cal-panchang-detail-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0;margin:0}
-#smvDailyCalendar .cal-panchang-detail-item{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);align-items:center;gap:6px 10px;min-width:0;padding:9px 11px;border:1px solid #e1ebe3;border-radius:9px;background:#f1f7f2}
-#smvDailyCalendar .cal-panchang-detail-item>small{min-width:0;margin:0;color:#5e7568;font-size:12px;font-weight:650;line-height:1.4;overflow-wrap:anywhere}
-#smvDailyCalendar .cal-panchang-detail-item>strong{min-width:0;color:#174f47;font-size:13.5px;font-weight:650;line-height:1.45;text-align:right;overflow-wrap:anywhere}
+#smvDailyCalendar .cal-panchang-detail-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:min-content;align-items:start;gap:8px;min-width:0;margin:0}
+#smvDailyCalendar .cal-panchang-detail-item{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:4px;min-width:0;min-height:0;padding:9px 10px;border:1px solid #e1ebe3;border-radius:9px;background:#f1f7f2}
+#smvDailyCalendar .cal-panchang-detail-item>small{display:block;width:100%;min-width:0;margin:0;color:#5e7568;font-size:12px;font-weight:700;line-height:1.4;text-align:left;word-break:normal;overflow-wrap:normal;hyphens:none}
+#smvDailyCalendar .cal-panchang-detail-item>strong{display:block;width:100%;min-width:0;color:#174f47;font-size:13.5px;font-weight:700;line-height:1.45;text-align:left;word-break:normal;overflow-wrap:normal;hyphens:none}
 #smvDailyCalendar .cal-panchang-detail-item.is-primary>strong{color:#15564e;font-size:14px;font-weight:700}
 #smvDailyCalendar .cal-panchang-detail-item .cal-name-yoga-label{color:#426957;font-size:12px;font-weight:700}
-#smvDailyCalendar .cal-panchang-detail-item .cal-name-yoga-result{display:inline-block;margin-top:2px;color:#36724f;font-size:11.5px;font-weight:650;line-height:1.35;text-align:right}
+#smvDailyCalendar .cal-panchang-detail-item .cal-name-yoga-result{display:block;margin-top:3px;color:#36724f;font-size:12px;font-weight:700;line-height:1.4;text-align:left}
 #smvDailyCalendar .cal-panchang-detail-item .smv-calendar-neutral-date-time,#smvDailyCalendar .cal-panchang-detail-item .smv-calendar-neutral-time{color:inherit;font-weight:inherit}
 #smvDailyCalendar .cal-panchang-detail-item .smv-calendar-normal-connector{margin:0 3px;color:#708477;font-weight:400}
-#smvDailyCalendar .cal-panchang-detail-item .smv-calendar-bright-red-time{color:#b42318;font-weight:750}
+#smvDailyCalendar .cal-panchang-detail-item .smv-calendar-bright-red-time{color:#b42318;font-weight:800}
+/* Calendar Panchang time periods: date/month above time, year omitted. */
+#smvDailyCalendar .cal-panchang-detail-item>strong .smv-calendar-event-range{display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%;font-size:inherit;line-height:1.35}
+#smvDailyCalendar .smv-calendar-event-boundary{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-width:0}
+#smvDailyCalendar .smv-calendar-event-date{display:block;font-size:12px;font-weight:650;line-height:1.35;color:#536f60}
+#smvDailyCalendar .smv-calendar-event-time{display:block;font-size:14px;font-weight:800;line-height:1.3;color:#174f47;white-space:nowrap}
+#smvDailyCalendar .smv-calendar-event-separator{display:block;color:#708477;font-size:11px;font-weight:600;line-height:1.2}
 #smvDailyCalendar .cal-details-summary>article.cal-thyajyam-card{gap:2px;padding:8px 10px;border-top:2px solid #b65b50}
 #smvDailyCalendar .cal-thyajyam-card .cal-yoga-segments{display:grid;gap:2px;width:100%;margin:1px 0 0}
 #smvDailyCalendar .cal-thyajyam-card .cal-yoga-segment{grid-template-columns:minmax(0,1fr) auto;padding:5px 0;border-bottom:1px solid #f0e4e1}
@@ -248,11 +254,11 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-chandrashtama-section>.cal-section-title{display:block;margin:0 0 12px;color:#15564e;font-size:22px;font-weight:850;line-height:1.3;text-align:center}
 #smvDailyCalendar .cal-chandrashtama-section>.cal-section-title::after{display:none;content:none}
 #smvDailyCalendar .cal-chandrashtama-section .cal-summary{grid-template-columns:minmax(0,1fr);gap:0}
-#smvDailyCalendar .cal-chandrashtama{display:grid;gap:8px;min-width:0;padding:14px;border:1px solid #dce8df;border-radius:14px;background:#fff;box-shadow:none}
+#smvDailyCalendar .cal-chandrashtama{display:grid;gap:8px;min-width:0;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
 #smvDailyCalendar .cal-chandrashtama-result{margin:0;color:#28734d;font-size:16px;font-weight:800;line-height:1.35}
 #smvDailyCalendar .cal-chandrashtama-result.is-present{color:#b42318}
 #smvDailyCalendar .cal-chandrashtama-result.is-absent{color:#28734d}
-#smvDailyCalendar .cal-chandrashtama>p{display:flex;flex-wrap:wrap;align-items:baseline;gap:3px 8px;min-width:0;margin:0;padding:0 0 7px;border-bottom:1px solid #e9f0ea;color:#294b3c;font-size:13px;font-weight:650;line-height:1.45}
+#smvDailyCalendar .cal-chandrashtama>p{display:flex;flex-wrap:wrap;align-items:baseline;gap:3px 8px;min-width:0;margin:0;padding:0;border:0;color:#294b3c;font-size:13px;font-weight:650;line-height:1.45}
 #smvDailyCalendar .cal-chandrashtama>p>b{color:#607569;font-size:12px;font-weight:650}
 #smvDailyCalendar #calChandrashtamaPeriods{min-width:0}
 #smvDailyCalendar .cal-chandra-windows{display:grid;gap:8px;margin-top:1px}
@@ -267,18 +273,19 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-chandra-pada-row{display:grid;gap:3px;min-width:0;margin:0;padding:0;border:0;border-radius:0;background:transparent}
 #smvDailyCalendar .cal-chandra-pada-row>strong{color:#286749;font-size:12px;font-weight:700;line-height:1.4;overflow-wrap:anywhere}
 #smvDailyCalendar .cal-chandra-pada-row>span{color:#536d5f;font-size:12px;font-weight:600;line-height:1.4;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-#smvDailyCalendar .cal-chandra-janma-projection{display:grid;gap:4px;margin:8px 0;padding:8px 10px;border:1px solid #8fb69b;border-radius:9px;background:#f0f7f1}
+#smvDailyCalendar .cal-chandra-janma-projection{display:grid;gap:3px;margin:6px 0;padding:0;border:0;border-radius:0;background:transparent}
 #smvDailyCalendar .cal-chandra-janma-projection>b{color:#61786b;font-size:11px;font-weight:650}
 #smvDailyCalendar .cal-chandra-janma-projection>strong{color:#1b6047;font-size:14px;font-weight:800}
 #smvDailyCalendar .cal-chandra-janma-projection>span{color:#286749;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
-#smvDailyCalendar .cal-chandra-pada-row.is-janma-pada-projection{border:0;background:transparent}
+#smvDailyCalendar .cal-chandra-pada-row.is-janma-pada-projection{margin:0;padding:0;border:0;border-radius:0;background:transparent}
 #smvDailyCalendar .cal-chandra-pada-row.is-janma-pada-projection>strong{color:#1b6047}
 @media(max-width:680px){
  #smvDailyCalendar .cal-details-summary{gap:8px}
  #smvDailyCalendar .cal-details-summary>article{padding:10px}
- #smvDailyCalendar .cal-panchang-detail-grid{gap:7px}
- #smvDailyCalendar .cal-panchang-detail-item{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);align-content:center;gap:3px 6px;padding:8px 9px}
- #smvDailyCalendar .cal-panchang-detail-item>strong{text-align:left}
+ #smvDailyCalendar .cal-panchang-detail-grid{align-items:start;gap:7px}
+ #smvDailyCalendar .cal-panchang-detail-item{gap:4px;padding:8px 9px}
+ #smvDailyCalendar .cal-panchang-detail-item>small{font-size:12px}
+ #smvDailyCalendar .cal-panchang-detail-item>strong{font-size:13px;text-align:left}
  #smvDailyCalendar .cal-day-flags-card{padding:9px 3px}
  #smvDailyCalendar .cal-shoolam-card{padding:9px 4px}
  #smvDailyCalendar .cal-day-flag{padding:7px 3px}
@@ -299,7 +306,7 @@ html body.calendar-only>header.calendar-topbar{
 @media(max-width:340px){
  #smvDailyCalendar .cal-details-summary,#smvDailyCalendar .cal-panchang-detail-grid{grid-template-columns:minmax(0,1fr)}
  #smvDailyCalendar .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card{grid-column:1/-1}
- #smvDailyCalendar .cal-panchang-detail-item{grid-template-columns:minmax(0,1fr)}
+ #smvDailyCalendar .cal-panchang-detail-item{gap:4px;padding:8px}
 }
 
 @media(max-width:420px){
