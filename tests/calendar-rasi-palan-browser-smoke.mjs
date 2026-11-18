@@ -106,7 +106,45 @@ try {
     return status && (/Unable to calculate|கணக்கிட முடியவில்லை/.test(status) || (!/Calculating Panchang|பஞ்சாங்கம், ஹோரை/.test(status) && !/Loading monthly calendar|மாத நாட்காட்டி தயாராகிறது/.test(document.querySelector('#calMonth')?.textContent||'')));
   }, { timeout: 90000 });
   const calendarCalculationStatus = await page.$eval('#calStatus', el => el.textContent || '');
-  await page.waitForSelector('#calMuhurtaLagna .cal-muhurta-lagna-grid .cal-muhurta-lagna-item', { timeout: 30000 });
+  const defaultSpecialSection = await page.$eval('#calMuhurtaLagna', section => ({
+    hidden: section.hidden,
+    text: section.textContent || ''
+  }));
+  assert.equal(defaultSpecialSection.hidden, true,
+    'A date outside the published Subha Muhurtham list must not show the special-year Pushkara section.');
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, '2026-11-11');
+  await page.waitForFunction(() =>
+    (document.querySelector('#calStatus')?.textContent || '').includes('2026-11-11') &&
+    document.querySelector('#calMuhurtaLagna') &&
+    !document.querySelector('#calMuhurtaLagna').hidden,
+    { timeout: 120000 });
+  await page.waitForFunction(() => {
+    const section = document.querySelector('#calMuhurtaLagna');
+    return section && !section.querySelector('.cal-special-loading') &&
+      section.querySelector('.cal-special-muhurtha-row');
+  }, { timeout: 180000 });
+  const specialMuhurthaSmoke = await page.$eval('#calMuhurtaLagna', section => ({
+    heading: section.querySelector('h3')?.textContent?.trim() || '',
+    rows: [...section.querySelectorAll('.cal-special-muhurtha-row')].map(row => ({
+      title: row.querySelector('strong')?.textContent?.trim() || '',
+      time: row.querySelector('time')?.textContent?.trim() || '',
+      activityResults: [...row.querySelectorAll('.cal-special-activity-results span')].map(item => item.textContent.trim()),
+      detail: row.querySelector('small')?.textContent?.trim() || ''
+    })),
+    text: section.textContent || ''
+  }));
+  assert.match(specialMuhurthaSmoke.heading, /Pushkara Navamsa|புஷ்கர நவாம்சம்/);
+  assert.ok(specialMuhurthaSmoke.rows.length > 0, 'A published Subha date must show the computed Pushkara time intervals.');
+  assert.ok(specialMuhurthaSmoke.rows.every(row => row.time && row.activityResults.length === 4),
+    'Each Pushkara interval must show its local time and four activity-specific Panchaka outcomes.');
+  assert.ok(specialMuhurthaSmoke.rows.every(row => row.title &&
+    (/Excellent|உத்தமம்|Panchaka|பஞ்சகம்/.test(row.title))),
+    'Each interval must show only its final quality/Panchaka result.');
+  assert.doesNotMatch(specialMuhurthaSmoke.text, /tithi|weekday|nakshatra|lagna|remainder|sum|திதி|வாரம்|நட்சத்திரம்|லக்னம்|கூட்டுத்தொகை|மீதி/i,
+    'The visible result must not expose any Panchaka operands or calculation mechanics.');
   await page.waitForFunction(() => document.querySelector('#calChandrashtamaResult')?.dataset.resolved === 'true', { timeout: 180000 });
   const chandrashtamaSmoke = await page.$eval('#calChandrashtamaSection', section => {
     const root = section.querySelector('#calChandrashtamaPeriods');
