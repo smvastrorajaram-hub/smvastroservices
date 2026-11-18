@@ -373,11 +373,11 @@ test('Calendar distinguishes Gazette government holidays from observances and do
     'Only the Sunday/Su first weekday heading receives the Sunday marker.');
   assert.match(dailyCalendarSource, /isSunday\?'cal-sunday':/,
     'Calendar dates in the Sunday column receive the Sunday marker.');
-  assert.match(calendarThemeCssSource, /#smvDailyCalendar \\.cal-month-grid>b\\.cal-weekday-sunday\\{color:#b42318!important/,
+  assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar .cal-month-grid>b.cal-weekday-sunday{color:#b42318!important'),
     'The Sunday weekday abbreviation is red.');
-  assert.match(calendarThemeCssSource, /#smvDailyCalendar \\.cal-month-grid button\\.cal-sunday>strong\\{color:#b42318!important/,
+  assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar .cal-month-grid button.cal-sunday>strong{color:#b42318!important'),
     'Only the Gregorian date number in Sunday cells is red.');
-  assert.doesNotMatch(calendarThemeCssSource, /#smvDailyCalendar \\.cal-month-grid button\\.cal-sunday\\{color:/,
+  assert.ok(!calendarThemeCssSource.includes('#smvDailyCalendar .cal-month-grid button.cal-sunday{color:'),
     'The entire Sunday date cell must not be recoloured.');
 });
 
