@@ -31,7 +31,7 @@ const REQUIRED_CORE = new Set([
  '../android-apk-download.mjs','../android-apk-icons.css',
  '../assets/favicon-calendar.png','../assets/favicon-calendar.ico',
  '../assets/smv-calendar-website.webp',
- RASI_PALAN_PERIODS_ASSET,'../daily-calendar.mjs','../calendar-muhurta-classification.mjs','../tamil-day-classifications.mjs','../calendar-rasi-palan.mjs',
+ RASI_PALAN_PERIODS_ASSET,'../daily-calendar.mjs','../calendar-chandrashtama.mjs','../calendar-muhurta-classification.mjs','../tamil-day-classifications.mjs','../calendar-rasi-palan.mjs',
  '../calendar-rasi-palan.css','../calendar-rasi-palan-rules.mjs','../daily-calendar.css',
  '../calendar-data.mjs','../calendar-worker.mjs','../calendar-rasi-palan-manual.json',
  '../offline/rasi-mana.browser.mjs','../offline/wasm-provider.mjs','../offline/swiss_vedic.browser.mjs',
