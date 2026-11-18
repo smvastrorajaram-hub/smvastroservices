@@ -227,7 +227,10 @@ if(host){
   const birthStarPadas=getBirthStarPadasInRasi(starIndex,janmaRasiIndex);
   const chosenPada=Number(birthPada);
   const selectedPadas=chosenPada===0?birthStarPadas:birthStarPadas.filter(pada=>pada===chosenPada);
-  const windows=Array.isArray(result.windows)?result.windows:[];
+  // Display only the Chandrashtama Rasi window active at the selected local time.
+  // Upcoming and past transits are deliberately omitted from the public Calendar.
+  const windows=Array.isArray(result.windows)?result.windows.filter(item=>item?.active===true):[];
+  if(!windows.length)return '<p class="cal-note">'+L('No Chandrashtama is active at the selected time.','தேர்ந்தெடுத்த நேரத்தில் சந்திராஷ்டமம் இல்லை.')+'</p>';
   const windowsHtml=windows.map(item=>{
    const segments=Array.isArray(item.segments)?item.segments:[];
    const projections=selectedPadas.map(pada=>{
@@ -273,7 +276,7 @@ if(host){
   const cacheKey=[
    calcInput.date,calcInput.time,janmaRasiIndex,
    Number(calcInput.lat).toFixed(5),Number(calcInput.lon).toFixed(5),
-   Number(calcInput.utcOffsetMinutes),calcInput.timezone||'',90
+   Number(calcInput.utcOffsetMinutes),calcInput.timezone||'',30
   ].join('|');
   const renderResult=result=>{
    if(request!==chandrashtamaRequest||!$('#calChandrashtamaPeriods'))return;
@@ -291,7 +294,7 @@ if(host){
    pending=workerCall('chandrashtama-windows',{
     ...calcInput,
     janmaRasiIndex,
-    horizonDays:90
+    horizonDays:30
    }).then(result=>{
     chandrashtamaCache.set(cacheKey,result);
     while(chandrashtamaCache.size>12)chandrashtamaCache.delete(chandrashtamaCache.keys().next().value);
