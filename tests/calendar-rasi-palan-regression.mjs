@@ -389,7 +389,7 @@ test('Calendar distinguishes Gazette government holidays from observances and do
     'Transit Planetary Positions heading must be controlled inside the Calendar scope.');
   assert.ok(calendarThemeCssSource.includes('text-align:center!important;justify-content:center!important;'),
     'Daily Hora and both transit headings must be centered.');
-  assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .transit-table-card>h3::after,'),
+  assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .transit-table-card>h3::after{'),
     'The inherited trailing decorative line must be removed from the three Calendar headings.');
 });
 
