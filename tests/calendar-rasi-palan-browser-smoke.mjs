@@ -290,7 +290,7 @@ try {
     return status.includes('2026-11-20') &&
       window?.querySelector('.cal-chandra-rasi-period strong')?.textContent === 'Pisces';
   }, { timeout: 120000 });
-  const simhaStarOptions = await page.$eval('#calStar option', options => options.map(option => option.value));
+  const simhaStarOptions = await page.$$eval('#calStar option', options => options.map(option => option.value));
   assert.deepEqual(simhaStarOptions,['9','10','11']);
   await page.select('#calStar','10');
   // Star selection starts an asynchronous Swiss Ephemeris-backed render. Wait
