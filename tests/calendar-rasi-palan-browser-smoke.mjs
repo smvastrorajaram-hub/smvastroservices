@@ -109,7 +109,7 @@ try {
   await page.waitForSelector('#calMuhurtaLagna .cal-muhurta-lagna-grid .cal-muhurta-lagna-item', { timeout: 30000 });
   await page.waitForFunction(() => document.querySelector('#calChandrashtamaResult')?.dataset.resolved === 'true', { timeout: 180000 });
   await page.waitForFunction(() =>
-    Boolean(document.querySelector('#calReadings > h3') && document.querySelector('#calEvents > h3')) &&
+    Boolean(document.querySelector('#calReadings .cal-summary>article') && document.querySelector('#calEvents > h3')) &&
     document.querySelectorAll('#calDateDetailsExtra .cal-panchang-detail-grid .cal-panchang-detail-item').length === 14,
     { timeout: 30000 });
   const integratedPanchang = await page.$eval('#calDateDetails', root => {
@@ -132,6 +132,8 @@ try {
     const headingElement=root.querySelector('.cal-date-details-title');
     const headingStyle=headingElement?getComputedStyle(headingElement):null;
     const headingHeaderStyle=headingHeader?getComputedStyle(headingHeader):null;
+    const headingBeforeStyle=headingElement?getComputedStyle(headingElement,'::before'):null;
+    const headingAfterStyle=headingElement?getComputedStyle(headingElement,'::after'):null;
     const firstEvent=grid?.querySelector('.smv-calendar-event-range');
     const firstBoundary=firstEvent?.querySelector('.smv-calendar-event-boundary');
     const firstEventDate=firstBoundary?.querySelector('.smv-calendar-event-date')?.getBoundingClientRect();
@@ -150,6 +152,8 @@ try {
       firstTwoShareRow: Boolean(firstRect && secondRect && Math.abs(firstRect.top - secondRect.top) < 1 && firstRect.left < secondRect.left),
       labelsAboveResults: allLabelsAboveResults,
       headingCentered: headingStyle?.textAlign==='center',
+      headingBeforeHidden: !headingBeforeStyle||headingBeforeStyle.content==='none'||headingBeforeStyle.display==='none',
+      headingAfterHidden: !headingAfterStyle||headingAfterStyle.content==='none'||headingAfterStyle.display==='none',
       headingHeaderBackground: headingHeaderStyle?.backgroundColor||'',
       headingTitleBackground: headingStyle?.backgroundColor||'',
       dateMonthAboveTime: Boolean(firstEventDate&&firstEventTime&&firstEventDate.bottom<=firstEventTime.top+2),
@@ -170,10 +174,12 @@ try {
   assert.equal(integratedPanchang.firstTwoShareRow, true, 'Panchang result cards must be arranged left and right.');
   assert.equal(integratedPanchang.labelsAboveResults, true, 'All fourteen Panchang cards must show the label above the result.');
   assert.equal(integratedPanchang.headingCentered, true, 'Daily Panchang title must be centered.');
+  assert.equal(integratedPanchang.headingBeforeHidden, true, 'Daily Panchang title must not show a leading decorative symbol.');
+  assert.equal(integratedPanchang.headingAfterHidden, true, 'Daily Panchang title must not show trailing decorative symbols.');
   assert.equal(integratedPanchang.headingHeaderBackground, 'rgba(0, 0, 0, 0)', 'Daily Panchang heading must have no red background.');
   assert.equal(integratedPanchang.headingTitleBackground, 'rgba(0, 0, 0, 0)', 'Daily Panchang title must remain transparent.');
   assert.equal(integratedPanchang.dateMonthAboveTime, true, 'Date and month must be shown above time.');
-  assert.equal(integratedPanchang.dateMonthTimeHasNoYear, true, 'Panchang event dates must omit the Gregorian year.');
+  assert.equal(integratedPanchang.dateMonthTimeHasNoYear, true, 'Panchang event dates must omit the Gregorian year. Rendered date: '+integratedPanchang.dateMonthText);
   assert.ok(integratedPanchang.dateMonthText.length>0, 'Date/month must remain visible.');
 
   const yogaFlow = await page.$eval('#calDateDetailsExtra .cal-details-summary', summary => {
@@ -297,10 +303,59 @@ try {
   assert.equal(yogaFlow.thyajyamHasVerboseNote, false, 'Thyajyam must not reserve space for a redundant explanatory note.');
   const dailyDetailsOrder = await page.$eval('#calDateDetails', root =>
     [...root.children].map(child => child.id).filter(id =>
-      ['calChandrashtamaSection', 'calReadings', 'calEvents', 'calDaily'].includes(id)));
+      ['calChandrashtamaSection', 'calEvents', 'calDaily'].includes(id)));
   assert.deepEqual(dailyDetailsOrder,
-    ['calChandrashtamaSection', 'calReadings', 'calEvents', 'calDaily'],
-    'Chandrashtama must be followed by Tara Bala and observances, with daily Panchang beneath them.');
+    ['calChandrashtamaSection', 'calEvents', 'calDaily'],
+    'Chandrashtama and Tara Bala share one result section before observances and daily Panchang.');
+  const taraBalaContinuity = await page.$eval('#calReadings', section => {
+    const card=section.querySelector('.cal-summary>article');
+    return {
+      sameSection:section.parentElement?.id==='calChandrashtamaSection',
+      headingRemoved:!section.querySelector('h3'),
+      sectionSeparator:getComputedStyle(section).borderTopWidth,
+      cardBorder:getComputedStyle(card).borderTopWidth,
+      cardBackground:getComputedStyle(card).backgroundColor
+    };
+  });
+  assert.equal(taraBalaContinuity.sameSection,true,'Tara Bala must be nested directly in the Chandrashtama result layer.');
+  assert.equal(taraBalaContinuity.headingRemoved,true,'The separate Birth Star and Tara Bala heading must not be rendered.');
+  assert.equal(taraBalaContinuity.sectionSeparator,'1px','Tara Bala may use a subtle divider but not a separate outer card.');
+  assert.equal(taraBalaContinuity.cardBorder,'0px','Tara Bala must not introduce a second bordered card.');
+  assert.equal(taraBalaContinuity.cardBackground,'rgba(0, 0, 0, 0)','Tara Bala must remain on the same transparent layer.');
+  const holidayOriginalDate = await page.$eval('#calDate', el => el.value);
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, '2026-11-08');
+  await page.waitForFunction(() =>
+    document.querySelector('#calDate')?.value === '2026-11-08' &&
+    Boolean(document.querySelector('#calEvents .cal-government-holiday')),
+    { timeout: 120000 });
+  const officialHolidaySmoke = await page.$eval('#calEvents', section => ({
+    governmentTags:[...section.querySelectorAll('.cal-government-holiday')].map(el=>el.textContent.trim()),
+    allTags:[...section.querySelectorAll('.cal-tags span')].map(el=>el.textContent.trim()),
+    sourceText:section.querySelector('.cal-holiday-source a')?.textContent.trim()||'',
+    noteText:section.querySelector('.cal-note')?.textContent.trim()||'',
+    sourceHref:section.querySelector('.cal-holiday-source a')?.getAttribute('href')||''
+  }));
+  assert.ok(officialHolidaySmoke.governmentTags.some(text=>/Deepavali.*Government holiday/i.test(text)||/தீபாவளி.*அரசு விடுமுறை/.test(text)),
+    'The 8 November 2026 Deepavali date must be explicitly marked as a Government Holiday.');
+  assert.equal(officialHolidaySmoke.allTags.some(text=>/^(Sunday|ஞாயிறு)$/.test(text)),false,
+    'Sunday must not be added as a separate holiday tag.');
+  assert.equal(officialHolidaySmoke.sourceText.match(/^(Holiday source|விடுமுறை ஆதாரம்)$/)?.[0],officialHolidaySmoke.sourceText,
+    'Keep only the original Holiday source link text.');
+  assert.equal(officialHolidaySmoke.noteText,'','Remove the explanatory vrats / holiday note entirely.');
+  assert.match(officialHolidaySmoke.sourceHref,/stationeryprinting\.tn\.gov\.in\/extraordinary\/2025\/721_Ex_II_1_2025\.pdf/,
+    'Keep the existing Tamil Nadu Gazette holiday source URL unchanged.');
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, holidayOriginalDate);
+  await page.waitForFunction(date =>
+    document.querySelector('#calDate')?.value===date &&
+    document.querySelector('#calChandrashtamaResult')?.dataset.resolved==='true',
+    { timeout: 120000 }, holidayOriginalDate);
+
   const chandrashtamaSmoke = await page.$eval('#calChandrashtamaSection', section => {
     const root = section.querySelector('#calChandrashtamaPeriods');
     const status = section.querySelector('#calChandrashtamaResult');
