@@ -816,7 +816,7 @@ try {
   }
   const birthStarState = await page.$eval('#calReadings', el => el.textContent || '');
   assert.ok(/Transit Moon Rasi|கோச்சார சந்திர ராசி/.test(birthStarState), 'Existing Tara Bala card must display the transit Moon Rasi');
-  assert.ok(/Chandrashtama Rasi|சந்திராஷ்டம ராசி/.test(birthStarState), 'Existing Chandrashtama card must display its Rasi');
+  assert.ok(/Janma Rasi currently under Chandrashtama|தற்போது சந்திராஷ்டமம் பெறும் ஜன்ம ராசி/.test(birthStarState), 'Existing Chandrashtama card must display the Janma Rasi currently affected by the transit Moon');
 
   await page.select('#calRasiPalan #rpPeriod', 'weekly');
   await page.click('#calRasiPalan #rpRun');
