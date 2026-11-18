@@ -31,10 +31,14 @@ export function getPushkaraArcIndex(longitude) {
   if (!Number.isFinite(value)) return null;
   const normalized = value >= 0 && value < 360 ? value : ((value % 360) + 360) % 360;
   const sign = Math.floor(normalized / 30);
-  const degree = Number((normalized - sign * 30).toFixed(10));
+  const degree = normalized - sign * 30;
   const group = PUSHKARA_ARCS.find(entry => entry.signs.includes(sign));
   if (!group) return null;
-  const arcIndex = group.arcs.findIndex(([start, end]) => degree >= start && degree < end);
+  const scale = 1e10;
+  const position = Math.round(degree * scale);
+  const arcIndex = group.arcs.findIndex(([start, end]) =>
+    position >= Math.round(start * scale) && position < Math.round(end * scale)
+  );
   return arcIndex < 0 ? null : sign * 2 + arcIndex;
 }
 
