@@ -961,7 +961,9 @@ try {
   }
   const birthStarState = await page.$eval('#calReadings', el => el.textContent || '');
   assert.ok(/Transit Moon Rasi|கோச்சார சந்திர ராசி/.test(birthStarState), 'Existing Tara Bala card must display the transit Moon Rasi');
-  assert.ok(/Janma Rasi currently under Chandrashtama|தற்போது சந்திராஷ்டமம் பெறும் ஜன்ம ராசி/.test(birthStarState), 'Existing Chandrashtama card must display the Janma Rasi currently affected by the transit Moon');
+  const chandrashtamaState = await page.$eval('#calChandrashtamaSection', el => el.textContent || '');
+  assert.ok(/Your Janma Rasi|உங்கள் ஜன்ம ராசி/.test(chandrashtamaState), 'The separate Chandrashtama section must display the selected Janma Rasi');
+  assert.ok(/Eighth Rasi · Chandrashtama Rasi|எட்டாம் ராசி · சந்திராஷ்டம ராசி/.test(chandrashtamaState), 'The separate Chandrashtama section must display its corresponding eighth Rasi');
 
   await page.select('#calRasiPalan #rpPeriod', 'weekly');
   await page.click('#calRasiPalan #rpRun');
