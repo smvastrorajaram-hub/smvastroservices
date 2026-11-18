@@ -288,7 +288,7 @@ if(host){
    status.classList.toggle('is-present',hasChandrashtama);
    status.classList.toggle('is-absent',!hasChandrashtama);
   }
-  return hasChandrashtama?'<div class="cal-chandra-windows">'+windowsHtml+'</div>':'';
+  return windowsHtml?'<div class="cal-chandra-windows">'+windowsHtml+'</div>':'';
  }
 
  function loadChandrashtamaWindows(){
