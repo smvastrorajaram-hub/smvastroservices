@@ -73,3 +73,20 @@ The activity catalogue is intentionally wider than the set of currently executab
 The new engines accept a normalized, neutral astronomical snapshot produced from existing SMV Swiss Ephemeris + Thirukanitha Panchanga calculations. They do not recalculate ephemerides, and they do not share tradition-specific rules, scoring, exceptions or evaluator logic. Current global online GeoNames/timezone resolution remains untouched; no global offline location/timezone dataset is added.
 
 The current annual list (2026/2027) is retained as a legacy publication-specific feature until a separate UI migration is verified. It is not used as a 1800–2399 computational rule engine.
+
+## Tamil source collation notes — Vidhānamālai, Chapter 2
+
+The accessible 1900 Ripon Press Tamil transcript gives more detail than a simple auspicious-tithi list. Its own chapter notes several overlapping views which must not be flattened:
+
+- The general pakṣa statement calls Śukla fortnight best and Kṛṣṇa fortnight middling; one explanatory note excludes the first five Śukla tithis and last five Kṛṣṇa tithis, but its footnote records a differing view for Śukla Pañcamī and Kṛṣṇa Ekādaśī.
+- A pakṣa-chidra verse names Caturthī, Navamī, Ṣaṣṭhī, Aṣṭamī, Dvādaśī and Caturdaśī in both fortnights. It specifies opening nāḻikai exclusions (9, 25, 9, 14, 10 and 5 respectively); the text's commentary says the remaining part can become good. This is not equivalent to rejecting the entire tithi.
+- A separate verse gives another odd/even tithi scheme and explicitly reports a view that Saptamī and Trayodaśī are not for bright works.
+- The tithi-prasaṅga lists activity-specific uses: Tṛtīyā for marriage/house raising/learning; Pañcamī for marriage/grain/tank works; Ṣaṣṭhī for Vāstu and journey (but it is also pakṣa-chidra, so its opening exclusion must be handled); Saptamī for ornaments and marriage (with a conflicting general view); Daśamī for marriage/town entry/storing wealth and grain; Ekādaśī for upanayana (with the dark-fortnight general restriction); Dvādaśī for gardens/gifts/agricultural work (but also pakṣa-chidra); Trayodaśī for vehicle mounting and marriage; Pūrṇimā for auspicious rites and entering a house.
+- The weekday passage prefers Monday, Wednesday, Thursday and Friday generally, with Sunday, Tuesday and Saturday treated as adverse in that verse; subsequent verses qualify the weekdays by the type of work. Do not use one global weekday filter.
+- Chapter 3 adds activity/weekday-specific Siddha, Amṛta, Nāśa and other yogas, plus exceptions and star-quarter defects. They need a separate transcription and rule table.
+
+Accordingly, the Tamil engine currently stores these Chapter 2 items as pending or preference candidates but enables none of the simple tithi shortcuts. Exact opening-nāḻikai handling, pakṣa variants, weekday-specific acts and Chapter 3 exceptions must be modelled before a Tamil result can be called eligible or rejected. This conservative state is deliberate and prevents a contradictory passage from becoming a false all-day rule.
+
+## Pan-Indian rule activation boundary
+
+The Pan-Indian engine currently activates only the three activity-specific weekday/nakshatra combinations transcribed from Muhūrta Cintāmaṇi 1.22. Chapter 1.42's cancellation/exception language and the larger Saṃskāra, Vivāha, Yātrā, Vāstu and Gṛhapraveśa chapters remain pending full edition/translation collation. A pending exception is not an automatic override of a specific prohibition.
