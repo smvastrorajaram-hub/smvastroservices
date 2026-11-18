@@ -12,6 +12,9 @@ on:
       - 'public/horoscope/prediction-admin-workbench.mjs'
       - 'public/horoscope/daily-calendar.mjs'
       - 'public/horoscope/calendar-muhurta-classification.mjs'
+      - 'public/horoscope/calendar-special-muhurtha.mjs'
+      - 'public/horoscope/calendar-astronomical-muhurtha.mjs'
+      - 'tests/calendar-special-muhurtha-regression.mjs'
       - 'public/horoscope/calendar-chandrashtama.mjs'
       - 'tests/calendar-chandrashtama-regression.mjs'
       - 'tests/calendar-muhurta-lagna-regression.mjs'
@@ -76,9 +79,12 @@ jobs:
           node --check public/horoscope/calendar-worker.mjs
           node --check public/horoscope/daily-calendar.mjs
           node --check public/horoscope/calendar-muhurta-classification.mjs
+          node --check public/horoscope/calendar-special-muhurtha.mjs
+          node --check public/horoscope/calendar-astronomical-muhurtha.mjs
           node --check public/horoscope/calendar-chandrashtama.mjs
           node --check tests/calendar-chandrashtama-regression.mjs
           node --check tests/calendar-muhurta-lagna-regression.mjs
+          node --check tests/calendar-special-muhurtha-regression.mjs
           node --check public/horoscope/offline/swiss_vedic.browser.mjs
           node --check public/horoscope/offline/rasi-mana.browser.mjs
           node --check public/horoscope/offline/transit_panchang.browser.mjs
@@ -94,6 +100,8 @@ jobs:
         run: node tests/calendar-rasi-palan-regression.mjs
       - name: Run Subha Muhurtham and Lagna balance regression
         run: node tests/calendar-muhurta-lagna-regression.mjs
+      - name: Run special-year Pushkara and Panchaka result regression
+        run: node --test tests/calendar-special-muhurtha-regression.mjs
       - name: Run exact Chandrashtama Rasi and Nakshatra Pada regression
         run: node --test tests/calendar-chandrashtama-regression.mjs
   browser-preview:
