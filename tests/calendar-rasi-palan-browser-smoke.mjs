@@ -1109,7 +1109,7 @@ try {
   assert.equal(dailyTypography.panchangRangeRectCount, 1, 'Each Panchang time range must occupy a single line box.');
   assert.equal(dailyTypography.panchangRangeSeparator, '-', 'The two time boundaries must be joined by a hyphen without spaces.');
   assert.equal(dailyTypography.panchangRangeTimeColor, 'rgb(40, 115, 77)', 'Only the time values use the Calendar theme green.');
-  assert.equal(dailyTypography.panchangRangeTimeWeight, '800', 'Only the time values are bold.');
+  assert.equal(dailyTypography.panchangRangeTimeWeight, '400', 'Panchang time values must not be bold.');
   assert.equal(dailyTypography.panchangRangeDateColor, 'rgb(82, 100, 90)', 'The date text remains neutral rather than green.');
   assert.equal(dailyTypography.panchangRangeDateWeight, '400', 'The date text is not bold.');
   assert.equal(dailyTypography.panchangRangeSeparatorWeight, '400', 'The hyphen is not bold.');
