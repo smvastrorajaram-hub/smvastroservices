@@ -301,7 +301,7 @@ if(host){
   const document50DateText=!document50Date.available
    ? L('Document 50 marriage table coverage unavailable for this date','இந்தத் தேதிக்கான ஆவணம் 50 திருமண அட்டவணைத் தரவு கிடைக்கவில்லை')
    : document50Date.listed
-    ? L('Listed in Document 50 '+document50Date.year+' marriage table ('+document50Date.count+' dates)','ஆவணம் 50 '+document50Date.year+' திருமணப் பட்டியலில் உள்ளது ('+document50Date.count+' நாட்கள்)')
+    ? L('Listed in Document 50 '+document50Date.year+' table ('+document50Date.transcribedCount+' transcribed dates'+(document50Date.unresolvedDateRows?' + '+document50Date.unresolvedDateRows+' unresolved date row':'')+')','ஆவணம் 50 '+document50Date.year+' அட்டவணையில் உள்ளது ('+document50Date.transcribedCount+' படித்த தேதிகள்'+(document50Date.unresolvedDateRows?' + '+document50Date.unresolvedDateRows+' தெளிவில்லாத தேதி வரி':'')+')')
     : L('Not listed in the scanned Document 50 table; not a full time-specific rejection','ஆவணம் 50 அட்டவணையில் இந்தத் தேதி இல்லை; இது முழுமையான நேரத் தடை முடிவு அல்ல');
   const panchakaText=!panchaka.available
    ? L('Panchaka unavailable: '+panchaka.reason,'பஞ்சகம் கணக்கிட இயலவில்லை: '+panchaka.reason)
