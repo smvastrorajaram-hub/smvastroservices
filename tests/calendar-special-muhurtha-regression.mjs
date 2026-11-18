@@ -9,6 +9,7 @@ import {
   getVastuDay,
   isMoudhyaScopeDate
 } from '../public/horoscope/calendar-special-muhurtha.mjs';
+import { classifySubhaMuhurtham } from '../public/horoscope/calendar-muhurta-classification.mjs';
 
 test('only Parabhava and Plavanga Tamil-year dates are in scope', () => {
   assert.equal(getSpecialTamilYear('2026-04-13'), null);
@@ -20,16 +21,18 @@ test('only Parabhava and Plavanga Tamil-year dates are in scope', () => {
   assert.equal(getSpecialTamilYear('2028-04-15'), null);
 });
 
-test('Pushkara and Panchaka cards require a date in the published Subha Muhurtham list', () => {
-  const published = { available: true, isSubhaMuhurtham: true };
-  const notPublished = { available: true, isSubhaMuhurtham: false };
-  const unavailable = { available: false, isSubhaMuhurtham: null };
-  assert.equal(shouldShowSpecialMuhurtha('2026-11-11', published), true);
-  assert.equal(shouldShowSpecialMuhurtha('2026-11-12', notPublished), false);
-  assert.equal(shouldShowSpecialMuhurtha('2026-11-11', unavailable), false);
-  assert.equal(shouldShowSpecialMuhurtha('2027-04-14', published), true);
-  assert.equal(shouldShowSpecialMuhurtha('2028-04-14', published), true);
-  assert.equal(shouldShowSpecialMuhurtha('2028-04-14', unavailable), false);
+test('Pushkara and Panchaka cards use the real published annual-list classifier', () => {
+  const published2026 = classifySubhaMuhurtham({ date: '2026-11-11' });
+  const unlisted2026 = classifySubhaMuhurtham({ date: '2026-11-12' });
+  const published2027 = classifySubhaMuhurtham({ date: '2027-04-18' });
+  const unavailable2028 = classifySubhaMuhurtham({ date: '2028-01-26' });
+  assert.equal(shouldShowSpecialMuhurtha('2026-11-11', published2026), true);
+  assert.equal(shouldShowSpecialMuhurtha('2026-11-12', unlisted2026), false);
+  assert.equal(shouldShowSpecialMuhurtha('2027-04-18', published2027), true);
+  assert.equal(getSpecialTamilYear('2028-01-26')?.key, 'plavanga');
+  assert.equal(unavailable2028.available, false,
+    'No new 2028 auspicious dates may be inferred without a published annual list.');
+  assert.equal(shouldShowSpecialMuhurtha('2028-01-26', unavailable2028), false);
 });
 
 test('the 24 Pushkara Navamsa arcs have distinct interval identities and exact endpoints', () => {
@@ -46,14 +49,18 @@ test('the 24 Pushkara Navamsa arcs have distinct interval identities and exact e
 });
 
 function panchakaForRemainder(remainder) {
-  const base = { tithi: 1, weekday: 1, nakshatra: 1, lagna: 1 };
-  const total = 3 + base.lagna;
-  base.lagna += ((remainder - total) % 9 + 9) % 9;
-  if (base.lagna > 12) {
-    base.tithi = 2;
-    base.lagna = 12;
+  for (let tithi = 1; tithi <= 30; tithi++) {
+    for (let weekday = 1; weekday <= 7; weekday++) {
+      for (let nakshatra = 1; nakshatra <= 27; nakshatra++) {
+        for (let lagna = 1; lagna <= 12; lagna++) {
+          if ((tithi + weekday + nakshatra + lagna) % 9 === remainder) {
+            return classifyPanchaka({ tithi, weekday, nakshatra, lagna });
+          }
+        }
+      }
+    }
   }
-  return classifyPanchaka(base);
+  throw new Error('No Panchaka test vector exists for remainder ' + remainder);
 }
 
 test('Panchaka outcomes are activity-specific and expose no calculation operands', () => {
