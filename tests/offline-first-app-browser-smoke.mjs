@@ -58,6 +58,12 @@ const apps = [
       '/horoscope/offline/places/tz-boundary-lookup.mjs'
     ],
     requiredAssets: [
+      '/horoscope/muhurta/index.mjs',
+      '/horoscope/muhurta/activities.mjs',
+      '/horoscope/muhurta/source-registry.mjs',
+      '/horoscope/muhurta/core/astronomy-facts.mjs',
+      '/horoscope/muhurta/engines/tamil.mjs',
+      '/horoscope/muhurta/engines/pan-indian.mjs',
       '/horoscope/calendar-rasi-palan.mjs',
       '/horoscope/calendar/rasi-palan-periods.mjs',
       '/horoscope/assets/pwa-calendar-192.svg',
