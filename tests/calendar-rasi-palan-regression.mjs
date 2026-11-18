@@ -19,6 +19,7 @@ import { calculateRasiManaForLocation, calculateSolarSignRasiMana, calculateRema
 import { TAMIL_DAY_YOGA_TABLE, getTamilDayYoga, getTamilCalendarDayFlags, getThaniyaNaalDates, getNakshatraDirection, getNethiramJeevan } from '../public/horoscope/tamil-day-classifications.mjs';
 
 const dailyCalendarSource = await readFile(new URL('../public/horoscope/daily-calendar.mjs', import.meta.url), 'utf8');
+const calendarDataSource = await readFile(new URL('../public/horoscope/calendar-data.mjs', import.meta.url), 'utf8');
 const horoscopeRendererSource = await readFile(new URL('../public/horoscope/horoscope.js', import.meta.url), 'utf8');
 const sharedHoroscopeCssSource = await readFile(new URL('../public/horoscope/horoscope.css', import.meta.url), 'utf8');
 const astroServiceWorkerSource = await readFile(new URL('../public/sw.js', import.meta.url), 'utf8');
@@ -355,6 +356,8 @@ test('Calendar distinguishes Gazette government holidays from observances and do
     'Official Tamil Nadu holidays must be explicitly identified as Government Holidays.');
   assert.ok(dailyCalendarSource.includes("kind:'government'") && dailyCalendarSource.includes('cal-government-holiday'),
     'Government holiday tags must use their own visual marker.');
+  assert.ok(calendarDataSource.includes("G.O.(1D) No.547") && calendarDataSource.includes("'11-09':[['Additional local holiday after Deepavali','தீபாவளிக்கு அடுத்த நாள்']]"),
+    'The 9 November 2026 state government local holiday must be backed by G.O.(1D) No.547.');
   assert.ok(dailyCalendarSource.includes("const officialHolidays=holidays(selected)"),
     'Only the existing Gazette-backed holiday list may receive the Government Holiday label.');
   assert.ok(dailyCalendarSource.includes('class="cal-holiday-source"'),
