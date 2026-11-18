@@ -120,6 +120,9 @@ try {
       star: window.querySelector('.cal-chandra-star-period strong')?.textContent || '',
       starPeriod: window.querySelector('.cal-chandra-star-period span')?.textContent || '',
       active: window.classList.contains('is-active'),
+      selectedDateMatch: window.classList.contains('is-selected-date'),
+      startDate: window.dataset.startDate || '',
+      endDate: window.dataset.endDate || '',
       padaRows: [...window.querySelectorAll('.cal-chandra-pada-row')].map(row => ({
         birthPada: Number(row.dataset.birthPada),
         targetStar: Number(row.dataset.targetStar),
@@ -131,11 +134,11 @@ try {
   }));
   assert.ok(chandrashtamaSmoke.windows.length <= 1,
     'Calendar must never list multiple past or upcoming Chandrashtama Rasi windows.');
-  assert.ok(chandrashtamaSmoke.windows.every(window => window.active),
-    'Any rendered Chandrashtama window must be the one active at the selected local time.');
+  assert.ok(chandrashtamaSmoke.windows.every(window => window.active && !window.selectedDateMatch),
+    'For today, only the Chandrashtama window active at the current local instant may be displayed.');
   if (chandrashtamaSmoke.windows.length === 0) {
-    assert.match(chandrashtamaSmoke.body,/No Chandrashtama is active at the selected time/,
-      'When no Chandrashtama is active, show only the no-active message.');
+    assert.match(chandrashtamaSmoke.body,/No Chandrashtama period overlaps the selected date\/time/,
+      'When no Chandrashtama applies to today, show only the no-active message.');
   }
   assert.ok(chandrashtamaSmoke.windows.every(window => window.rasi === 'Scorpio' && window.star === 'Ashwini'),
     'Only the selected Mesha Janma Rasi and its compatible Ashwini birth star should be displayed.');
@@ -156,12 +159,12 @@ try {
     const root = document.querySelector('#calChandrashtamaPeriods');
     const windows = [...(root?.querySelectorAll('.cal-chandra-window') || [])];
     return status.includes('2026-11-10') && windows.length === 1 &&
-      windows[0].classList.contains('is-active') &&
+      windows[0].classList.contains('is-selected-date') &&
       (windows[0].querySelector('.cal-chandra-rasi-period span')?.textContent || '').includes('10/11/2026');
   }, { timeout: 120000 });
   const independentChandrashtamaCheck = await page.$eval('#calChandrashtamaPeriods', root => {
     const windows = [...root.querySelectorAll('.cal-chandra-window')];
-    const item = windows.length === 1 && windows[0].classList.contains('is-active') ? windows[0] : null;
+    const item = windows.length === 1 && windows[0].classList.contains('is-selected-date') ? windows[0] : null;
     const heading = item?.querySelector('.cal-chandra-rasi-period span')?.textContent || '';
     const match = heading.match(/(\d{2}\/\d{2}\/\d{4})\s+(\d{2}):(\d{2}):(\d{2})\s*[–-]\s*(\d{2}\/\d{2}\/\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
     const starPeriod = item?.querySelector('.cal-chandra-star-period span')?.textContent || '';
@@ -176,7 +179,7 @@ try {
       }))
     };
   });
-  assert.ok(independentChandrashtamaCheck.bounds, 'The sole active November 2026 Chandrashtama window must be rendered with second precision.');
+  assert.ok(independentChandrashtamaCheck.bounds, 'The sole Chandrashtama period overlapping the selected past date must be rendered with second precision.');
   const [startDate, startHour, startMinute, startSecond, endDate, endHour, endMinute, endSecond] = independentChandrashtamaCheck.bounds;
   const localDateTimeMinutes = (date, hour, minute, second) => {
     const [day, month, year] = date.split('/').map(Number);
@@ -195,7 +198,44 @@ try {
     { birthPada: 4, targetStar: 16, targetPada: 3 }
   ], 'Mesha + Ashwini must show only Ashwini 1–4 and their Vishakha 4 / Anuradha 1–3 projected intervals.');
 
-  // The deterministic 10-Nov-2026 selected time has only its active transit window.
+  // A future selected date must show only the transit overlapping that date.
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, '2026-12-08');
+  await page.waitForFunction(() => {
+    const status = document.querySelector('#calStatus')?.textContent || '';
+    const windows = [...document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-window')];
+    return status.includes('2026-12-08') && windows.length === 1 &&
+      windows[0].classList.contains('is-selected-date') &&
+      windows[0].dataset.startDate <= '2026-12-08' && windows[0].dataset.endDate >= '2026-12-08';
+  }, { timeout: 120000 });
+  const futureDateWindow = await page.$eval('#calChandrashtamaPeriods .cal-chandra-window', el => ({
+    startDate: el.dataset.startDate, endDate: el.dataset.endDate,
+    selectedDateMatch: el.classList.contains('is-selected-date')
+  }));
+  assert.ok(futureDateWindow.startDate <= '2026-12-08' && futureDateWindow.endDate >= '2026-12-08' && futureDateWindow.selectedDateMatch,
+    'A future selected day must show the single Chandrashtama interval that overlaps that day.');
+
+  // A selected date outside a transit must not list a later upcoming transit from the 30-day scan.
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, '2026-11-18');
+  await page.waitForFunction(() => {
+    const status = document.querySelector('#calStatus')?.textContent || '';
+    const root = document.querySelector('#calChandrashtamaPeriods');
+    return status.includes('2026-11-18') && root &&
+      !/Calculating exact Moon sign|சந்திர ராசி \/ நட்சத்திரப் பாத எல்லைகள்/.test(root.textContent || '') &&
+      !root.querySelector('.cal-chandra-window') && /No Chandrashtama period overlaps the selected date\/time/.test(root.textContent || '');
+  }, { timeout: 120000 });
+
+  // Return to the historical transit date for the exact Pada projection checks.
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, '2026-11-10');
+  await page.waitForFunction(() => document.querySelector('#calChandrashtamaPeriods .cal-chandra-window.is-selected-date'), { timeout: 120000 });
   assert.equal(chandrashtamaSmoke.windows.length <= 1, true);
   assert.equal(independentChandrashtamaCheck.padas.length, 4);
   await page.select('#calStarPada', '1');
@@ -290,7 +330,7 @@ try {
       Number(row?.dataset.targetPada) === 4;
   }, { timeout: 30000 });
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
-  const chandrashtamaCard = await page.$('#calReadings .cal-chandrashtama');
+  const chandrashtamaCard = await page.$('#calChandrashtamaSection');
   assert.ok(chandrashtamaCard, 'The Chandrashtama Rasi card must be rendered for the mobile preview.');
   await chandrashtamaCard.evaluate(el => el.scrollIntoView({ block: 'center' }));
   await chandrashtamaCard.screenshot({
@@ -312,7 +352,10 @@ try {
   await page.waitForFunction(date => {
     const status = document.querySelector('#calStatus')?.textContent || '';
     const root = document.querySelector('#calChandrashtamaPeriods');
-    return status.includes(date) && root?.querySelector('.cal-chandra-window');
+    const body = root?.textContent || '';
+    return status.includes(date) && root &&
+      !/Calculating exact Moon sign|சந்திர ராசி \/ நட்சத்திரப் பாத எல்லைகள்/.test(body) &&
+      (root.querySelector('.cal-chandra-window') || /No Chandrashtama period overlaps the selected date\/time/.test(body));
   }, { timeout: 120000 }, chandrashtamaOriginalDate);
 
   const resultPlacement = await page.$eval('#calMuhurtaLagna', el => {
@@ -325,13 +368,17 @@ try {
       insideDateDetails: Boolean(dateDetails && el.parentElement === dateDetails),
       dayFlagsSeparated: Boolean(flagsCard && flags.length === 2),
       shoolamSeparate: Boolean(shoolam && !shoolam.querySelector('.cal-day-flag')),
-      immediatelyBeforePanchang: el.nextElementSibling?.id === 'calDaily'
+      immediatelyBeforePanchang: document.querySelector('#calChandrashtamaSection')?.nextElementSibling?.id === 'calDaily',
+      lagnaBeforeChandrashtama: el.nextElementSibling?.id === 'calChandrashtamaSection',
+      chandrashtamaSectionInsideDateDetails: Boolean(document.querySelector('#calChandrashtamaSection')?.parentElement === dateDetails)
     };
   });
   assert.equal(resultPlacement.insideDateDetails, true, 'The three result sections must remain inside Date Details.');
   assert.equal(resultPlacement.dayFlagsSeparated, true, 'Kari/Thaniya flags must use their own card.');
   assert.equal(resultPlacement.shoolamSeparate, true, 'Travel Shoolam must be separate from the day flags.');
-  assert.equal(resultPlacement.immediatelyBeforePanchang, true, 'The three result sections must appear before the Panchang details.');
+  assert.equal(resultPlacement.lagnaBeforeChandrashtama, true, 'Chandrashtama must appear immediately below the Rasi-Mana Lagna balance section.');
+  assert.equal(resultPlacement.chandrashtamaSectionInsideDateDetails, true, 'Chandrashtama must remain inside Date Details.');
+  assert.equal(resultPlacement.immediatelyBeforePanchang, true, 'Chandrashtama must appear immediately above the daily Panchang.');
 
   // Verify the requested Date Details layout and the month-number alignment at
   // a narrow phone viewport matching the submitted mobile screenshot.
