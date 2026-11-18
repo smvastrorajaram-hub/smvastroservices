@@ -2,7 +2,7 @@ import {offsetMinutesAt} from './offline/places/timezone.mjs';
 import {signs,stars,planets,holidays2026,holidaySource,favorable} from './calendar-data.mjs';
 import {getTamilCalendarDayFlags,getNakshatraDirection,getNethiramJeevan} from './tamil-day-classifications.mjs';
 import {classifySubhaMuhurtham} from './calendar-muhurta-classification.mjs';
-import {getMuhurthamMonthEligibility,getVastuMuhurtham,getPushkaraNavamsa} from './calendar-muhurta-activities.mjs';
+import {getMuhurthamMonthEligibility,getVastuMuhurtham,getPushkaraNavamsa,classifyDocument50MarriageMuhurtham,getDocument50Panchaka,getDocument50TimeRestrictions,DOCUMENT50_MARRIAGE_SOURCES} from './calendar-muhurta-activities.mjs';
 
 const host=document.getElementById('smvDailyCalendar');
 if(host){
@@ -15,9 +15,9 @@ if(host){
  const monthCacheKey=(key,offset=cfg.offset)=>[Number(cfg.lat).toFixed(5),Number(cfg.lon).toFixed(5),Number(offset),key].join('|');
  const rememberMonth=(key,value)=>{monthCache.set(key,value);while(monthCache.size>6)monthCache.delete(monthCache.keys().next().value);};
  const localNowAt=offset=>new Date(Date.now()+Number(offset)*60000).toISOString();
- const localNow=()=>localNowAt(cfg.offset);let selected=localNow().slice(0,10),monthKey=selected.slice(0,7);
+ const localNow=()=>localNowAt(cfg.offset);let selected=localNow().slice(0,10),monthKey=selected.slice(0,7),selectedMuhurtaTime='';
  const workerCall=(kind,input)=>new Promise((resolve,reject)=>{if(!worker){worker=new Worker(new URL('./calendar-worker.mjs',import.meta.url),{type:'module'});worker.onmessage=({data})=>{const p=pending.get(data.id);if(p){pending.delete(data.id);data.error?p.reject(new Error(data.error)):p.resolve(data.result)}};worker.onerror=()=>{for(const p of pending.values())p.reject(new Error('Calendar engine unavailable'));pending.clear();worker.terminate();worker=null;}}const id=++seq;pending.set(id,{resolve,reject});worker.postMessage({id,kind,input});});
- function input(date,updateOffset=true){
+ function input(date,updateOffset=true,includeMuhurtaTime=true){
   let offset=Number(cfg.offset);
   if(cfg.timezone){
    try{offset=offsetMinutesAt(cfg.timezone,date,'12:00')}
@@ -25,7 +25,7 @@ if(host){
   }
   if(updateOffset)cfg.offset=offset;
   const now=localNowAt(offset);
-  return {date,time:date===now.slice(0,10)?now.slice(11,16):'12:00',lat:+cfg.lat,lon:+cfg.lon,utcOffsetMinutes:offset,timezone:cfg.timezone||'',language:'en'};
+  const time=includeMuhurtaTime&&/^([01]\\d|2[0-3]):[0-5]\\d$/.test(selectedMuhurtaTime)?selectedMuhurtaTime:(date===now.slice(0,10)?now.slice(11,16):'12:00');\n  return {date,time,lat:+cfg.lat,lon:+cfg.lon,utcOffsetMinutes:offset,timezone:cfg.timezone||'',language:'en'};
  }
  function settings(){cfg.rasi=+$('#calRasi').value;cfg.star=+$('#calStar').value;storage.set(cfg);renderExtra()}
  function viewportAnchor(selector){const el=selector?$(selector):null;return el?{selector,top:el.getBoundingClientRect().top}:null}
@@ -58,10 +58,10 @@ if(host){
   if(host.dataset.placeOutsideBound!=='1'){host.dataset.placeOutsideBound='1';document.addEventListener('pointerdown',e=>{const b=document.getElementById('calPlaceResults'),i=document.getElementById('calPlace');if(b&&i&&e.target!==i&&!b.contains(e.target)){b.replaceChildren();b.classList.remove('is-open')}},{passive:true});}
  }
  // Keep the three-result summary immediately after Travel Shoolam and the Kari/Thaniya day flags.
- function shell(){const pagesDevHost=location.hostname==='smvastroservices.pages.dev'||location.hostname.endsWith('.smvastroservices.pages.dev');const calendarAppPage=location.hostname==='calendar.smvastroservices.in'||location.pathname.startsWith('/horoscope/calendar/');host.innerHTML=`<header class="cal-header"><div><p>SMV CALENDAR</p><h2>${L('Your day, guided by the sky','உங்கள் நாளுக்கான ஜோதிட வழிகாட்டி')}</h2><span>${L('Panchang · Hora · Transits · Tamil calendar','பஞ்சாங்கம் · ஹோரை · கோச்சாரம் · தமிழ் நாட்காட்டி')}</span></div><a class="cal-download-app-link"${calendarAppPage&&pagesDevHost?' hidden aria-hidden="true"':''} href="${calendarAppPage?'#smvCalendarAndroidApkSection':(location.hostname==='smvastroservices.pages.dev'?'/horoscope/calendar/?lang=':'https://calendar.smvastroservices.in/?lang=')+(ta()?'ta':'en')}"${calendarAppPage?'':' target="_blank" rel="noopener"'}><span class="cal-app-badge" aria-hidden="true">APK</span>${calendarAppPage?L('Download Android App','Android App பதிவிறக்கம்'):L('Open Calendar','காலண்டரைத் திறக்க')}</a></header><section class="cal-input-zone" aria-label="${L('Daily reading inputs','தினசரி பலன் உள்ளீடுகள்')}"><div class="cal-controls"><label>${L('Date','தேதி')}<input id="calDate" type="date" min="1800-01-01" max="2399-12-31" value="${selected}"></label><label>${L('Your Moon sign','உங்கள் சந்திர ராசி')}<select id="calRasi">${signs.map((s,i)=>`<option value="${i}" ${i===+cfg.rasi?'selected':''}>${s[ta()?1:0]}</option>`).join('')}</select></label><label>${L('Birth star · Tara','பிறந்த நட்சத்திரம் · தாராபலம்')}<select id="calStar">${stars.map((s,i)=>`<option value="${i}" ${i===+cfg.star?'selected':''}>${s[ta()?1:0]}</option>`).join('')}</select></label><button type="button" id="calToday">${L('Today','இன்று')}</button></div><details class="cal-location"><summary>${L('Location','இடம்')}: ${esc(cfg.place)} · UTC ${(+cfg.offset/60>=0?'+':'')+ +cfg.offset/60}</summary><form id="calLocation"><label class="cal-place-label">${L('Place','இடம்')}<span class="cal-place-search"><input id="calPlace" name="place" value="${esc(cfg.place)}" required maxlength="80"><span id="calPlaceResults" class="cal-place-results" role="listbox"></span></span></label><label>${L('Latitude','அட்சரேகை')}<input id="calLat" name="lat" type="number" min="-89" max="89" step="any" value="${cfg.lat}" required></label><label>${L('Longitude','தீர்க்கரேகை')}<input id="calLon" name="lon" type="number" min="-180" max="180" step="any" value="${cfg.lon}" required></label><label>UTC ${L('hours','மணி')}<input id="calOffset" name="offset" type="number" min="-12" max="14" step=".25" value="${+cfg.offset/60}" required></label><button>${L('Apply location','இடத்தைப் பயன்படுத்து')}</button><button type="button" id="calGeo">${L('Use my location','என் இருப்பிடம்')}</button></form></details><p id="calStatus" role="status"></p></section><div id="calMonth"></div><section id="calDateDetails" class="cal-date-details" aria-label="${L('Date Details','தேதி விவரங்கள்')}"><header class="cal-date-details-head"><div><h3 class="cal-date-details-title">${L('Date Details','தேதி விவரங்கள்')}</h3><p>${L('Panchangam, Tamil date and daily muhurthas','பஞ்சாங்கம், தமிழ் தேதி மற்றும் தினசரி முகூர்த்தங்கள்')}</p></div></header><div id="calDateDetailsExtra"></div><div id="calMuhurtaLagna" class="cal-muhurta-lagna-section" aria-live="polite"></div><div id="calDaily"></div><section id="calReadings"></section><section id="calEvents"></section></section>`;
+ function shell(){const pagesDevHost=location.hostname==='smvastroservices.pages.dev'||location.hostname.endsWith('.smvastroservices.pages.dev');const calendarAppPage=location.hostname==='calendar.smvastroservices.in'||location.pathname.startsWith('/horoscope/calendar/');host.innerHTML=`<header class="cal-header"><div><p>SMV CALENDAR</p><h2>${L('Your day, guided by the sky','உங்கள் நாளுக்கான ஜோதிட வழிகாட்டி')}</h2><span>${L('Panchang · Hora · Transits · Tamil calendar','பஞ்சாங்கம் · ஹோரை · கோச்சாரம் · தமிழ் நாட்காட்டி')}</span></div><a class="cal-download-app-link"${calendarAppPage&&pagesDevHost?' hidden aria-hidden="true"':''} href="${calendarAppPage?'#smvCalendarAndroidApkSection':(location.hostname==='smvastroservices.pages.dev'?'/horoscope/calendar/?lang=':'https://calendar.smvastroservices.in/?lang=')+(ta()?'ta':'en')}"${calendarAppPage?'':' target="_blank" rel="noopener"'}><span class="cal-app-badge" aria-hidden="true">APK</span>${calendarAppPage?L('Download Android App','Android App பதிவிறக்கம்'):L('Open Calendar','காலண்டரைத் திறக்க')}</a></header><section class="cal-input-zone" aria-label="${L('Daily reading inputs','தினசரி பலன் உள்ளீடுகள்')}"><div class="cal-controls"><label>${L('Date','தேதி')}<input id="calDate" type="date" min="1800-01-01" max="2399-12-31" value="${selected}"></label><label>${L('Muhurtham time (optional)','முகூர்த்த நேரம் (விருப்பம்)')}<input id="calMuhurtaTime" type="time" value="${selectedMuhurtaTime}"></label><label>${L('Your Moon sign','உங்கள் சந்திர ராசி')}<select id="calRasi">${signs.map((s,i)=>`<option value="${i}" ${i===+cfg.rasi?'selected':''}>${s[ta()?1:0]}</option>`).join('')}</select></label><label>${L('Birth star · Tara','பிறந்த நட்சத்திரம் · தாராபலம்')}<select id="calStar">${stars.map((s,i)=>`<option value="${i}" ${i===+cfg.star?'selected':''}>${s[ta()?1:0]}</option>`).join('')}</select></label><button type="button" id="calToday">${L('Today','இன்று')}</button></div><details class="cal-location"><summary>${L('Location','இடம்')}: ${esc(cfg.place)} · UTC ${(+cfg.offset/60>=0?'+':'')+ +cfg.offset/60}</summary><form id="calLocation"><label class="cal-place-label">${L('Place','இடம்')}<span class="cal-place-search"><input id="calPlace" name="place" value="${esc(cfg.place)}" required maxlength="80"><span id="calPlaceResults" class="cal-place-results" role="listbox"></span></span></label><label>${L('Latitude','அட்சரேகை')}<input id="calLat" name="lat" type="number" min="-89" max="89" step="any" value="${cfg.lat}" required></label><label>${L('Longitude','தீர்க்கரேகை')}<input id="calLon" name="lon" type="number" min="-180" max="180" step="any" value="${cfg.lon}" required></label><label>UTC ${L('hours','மணி')}<input id="calOffset" name="offset" type="number" min="-12" max="14" step=".25" value="${+cfg.offset/60}" required></label><button>${L('Apply location','இடத்தைப் பயன்படுத்து')}</button><button type="button" id="calGeo">${L('Use my location','என் இருப்பிடம்')}</button></form></details><p id="calStatus" role="status"></p></section><div id="calMonth"></div><section id="calDateDetails" class="cal-date-details" aria-label="${L('Date Details','தேதி விவரங்கள்')}"><header class="cal-date-details-head"><div><h3 class="cal-date-details-title">${L('Date Details','தேதி விவரங்கள்')}</h3><p>${L('Panchangam, Tamil date and daily muhurthas','பஞ்சாங்கம், தமிழ் தேதி மற்றும் தினசரி முகூர்த்தங்கள்')}</p></div></header><div id="calDateDetailsExtra"></div><div id="calMuhurtaLagna" class="cal-muhurta-lagna-section" aria-live="polite"></div><div id="calDaily"></div><section id="calReadings"></section><section id="calEvents"></section></section>`;
   if(calendarAppPage&&!pagesDevHost){const appLink=$('.cal-download-app-link');if(appLink)appLink.hidden=false;}
  bindPlaceSearch();
- $('#calDate').onchange=()=>{if(!$('#calDate').checkValidity()||!$('#calDate').value)return;selected=$('#calDate').value;loadFrom('#calDate')};$('#calToday').onclick=()=>{selected=localNow().slice(0,10);$('#calDate').value=selected;loadFrom('.cal-controls')};$('#calRasi').onchange=settings;$('#calStar').onchange=settings;
+ $('#calDate').onchange=()=>{if(!$('#calDate').checkValidity()||!$('#calDate').value)return;selected=$('#calDate').value;loadFrom('#calDate')};$('#calMuhurtaTime').onchange=()=>{selectedMuhurtaTime=$('#calMuhurtaTime').value;loadFrom('#calMuhurtaTime')};$('#calToday').onclick=()=>{selected=localNow().slice(0,10);selectedMuhurtaTime='';$('#calDate').value=selected;$('#calMuhurtaTime').value='';loadFrom('.cal-controls')};$('#calRasi').onchange=settings;$('#calStar').onchange=settings;
  $('#calLocation').onsubmit=e=>{
   e.preventDefault();const f=new FormData(e.target);
   const raw=String(f.get('offset')??'').trim(),latitude=String(f.get('lat')??'').trim(),longitude=String(f.get('lon')??'').trim();
@@ -253,6 +253,25 @@ if(host){
   const calculationTime=String(daily.en?.t?.requested?.time||daily.en?.p?.requested?.time||'—');
   const tamilSolar=daily.en?.p?.tamilSolar||null;
   const marriageMonth=getMuhurthamMonthEligibility({tamilSolar,activity:'marriage'});
+  const document50Date=classifyDocument50MarriageMuhurtham({date:selected});
+  const weekdayIndex=new Date(selected+'T12:00:00Z').getUTCDay();
+  const panchanga=daily.en?.p||{};
+  const panchaka=getDocument50Panchaka({
+   weekdayIndex,
+   tithiNumber:Number(panchanga.tithi?.number),
+   nakshatraNumber:Number(panchanga.nakshatra?.number),
+   lagnaSignIndex:lagnaIndex
+  });
+  const dayFlags=getTamilCalendarDayFlags(tamilSolar);
+  const timeRestrictions=getDocument50TimeRestrictions({
+   weekdayIndex,
+   tithiNumber:Number(panchanga.tithi?.number),
+   time:calculationTime,
+   rahuKalam:panchanga.rahuKalam,
+   yamagandam:panchanga.yamagandam,
+   kariDay:dayFlags.kari,
+   thaniyaDay:dayFlags.thaniya
+  });
   const selectedLagnaLongitude=Number(daily.en?.t?.lagna?.longitude);
   const selectedPushkara=getPushkaraNavamsa(selectedLagnaLongitude);
   const marriageMonthText=!marriageMonth.available
@@ -268,6 +287,30 @@ if(host){
   const pushkaraMeta=selectedPushkara.available
    ? L(selectedPushkara.signEn+' '+selectedPushkara.degreeText+' · D9 '+selectedPushkara.navamsaSignEn,
        selectedPushkara.signTa+' '+selectedPushkara.degreeText+' · நவாம்சம் '+selectedPushkara.navamsaSignTa)
+   : '';
+  const document50DateText=!document50Date.available
+   ? L('Document 50 marriage table coverage unavailable for this date','இந்தத் தேதிக்கான ஆவணம் 50 திருமண அட்டவணைத் தரவு கிடைக்கவில்லை')
+   : document50Date.listed
+    ? L('Listed in Document 50 '+document50Date.year+' marriage table ('+document50Date.count+' dates)','ஆவணம் 50 '+document50Date.year+' திருமணப் பட்டியலில் உள்ளது ('+document50Date.count+' நாட்கள்)')
+    : L('Not listed in the scanned Document 50 table; not a full time-specific rejection','ஆவணம் 50 அட்டவணையில் இந்தத் தேதி இல்லை; இது முழுமையான நேரத் தடை முடிவு அல்ல');
+  const panchakaText=!panchaka.available
+   ? L('Panchaka unavailable: '+panchaka.reason,'பஞ்சகம் கணக்கிட இயலவில்லை: '+panchaka.reason)
+   : panchaka.eligible===true
+    ? L('Uttamam · remainder '+panchaka.remainder,'உத்தமம் · மீதி '+panchaka.remainder)
+    : panchaka.eligible===false
+     ? L(panchaka.category+' · remainder '+panchaka.remainder,panchaka.categoryTa+' · மீதி '+panchaka.remainder)
+     : L('Remainder '+panchaka.remainder+' is not classified in Document 50','மீதி '+panchaka.remainder+' ஆவணம் 50-ல் வகைப்படுத்தப்படவில்லை');
+  const panchakaMeta=panchaka.available
+   ? L('Week '+panchaka.weekdayCount+' + Tithi '+panchaka.tithiCount+' + Star '+panchaka.nakshatraCount+' + Lagna '+panchaka.lagnaCount+' + Dhruva '+panchaka.dhruva+' = '+panchaka.total,
+       'வாரம் '+panchaka.weekdayCount+' + திதி '+panchaka.tithiCount+' + நட்சத்திரம் '+panchaka.nakshatraCount+' + லக்னம் '+panchaka.lagnaCount+' + துருவம் '+panchaka.dhruva+' = '+panchaka.total)
+   : '';
+  const restrictionsText=!timeRestrictions.available
+   ? L('Time restrictions unavailable','நேரத் தடைகளைச் சரிபார்க்க முடியவில்லை')
+   : timeRestrictions.blocked
+    ? L('Avoid this selected time: '+timeRestrictions.reasons.join('; '),'இந்த நேரத்தைத் தவிர்க்கவும்: '+timeRestrictions.reasons.join(' · '))
+    : L('No Document 50 Tithi / weekday / Kari / Thaniya / Rahu / Yamagandam block found for this time','இந்த நேரத்திற்கு ஆவணம் 50-ல் உள்ள திதி / வாரம் / கரி / தனிய / ராகு / எமகண்டத் தடை எதுவும் கண்டறியப்படவில்லை');
+  const restrictionsWarnings=timeRestrictions.warnings?.length
+   ? timeRestrictions.warnings.join('; ')
    : '';
   const isToday=selected===localNow().slice(0,10);
   const lagnaHeading=isToday?L('Current Lagna','நடப்பு லக்னம்'):L('Lagna at selected time','தேர்ந்தெடுத்த நேர லக்னம்');
@@ -314,7 +357,11 @@ if(host){
    '</div>'+
    '<p class="cal-muhurta-explanation">'+esc(sourceSummary)+' · <a href="'+esc(classification.source||'https://tamilcalendarapp.com/subha-muhurtham-dates/')+'" target="_blank" rel="noopener">'+L('Source list','ஆதாரப் பட்டியல்')+'</a></p>'+
    '<p class="cal-muhurta-explanation">'+esc(L('Marriage month filter: ','திருமண மாதச் சரிபார்ப்பு: ')+marriageMonthText)+'</p>'+
-   '<p class="cal-muhurta-explanation">'+esc(L('Pushkara Navamsa Lagna: ','புஷ்கர நவாம்ச லக்னம்: ')+pushkaraText+(pushkaraMeta?' · '+pushkaraMeta:''))+'</p>';
+   '<p class="cal-muhurta-explanation">'+esc(L('Pushkara Navamsa Lagna: ','புஷ்கர நவாம்ச லக்னம்: ')+pushkaraText+(pushkaraMeta?' · '+pushkaraMeta:''))+'</p>'+
+   '<p class="cal-muhurta-explanation"><strong>'+L('Document 50 marriage date: ','ஆவணம் 50 திருமண நாள்: ')+'</strong>'+esc(document50DateText)+' · <a href="'+esc(document50Date.source||DOCUMENT50_MARRIAGE_SOURCES.parabhavaDates)+'" target="_blank" rel="noopener">'+L('Scanned source','அசல் ஆவணம்')+'</a></p>'+
+   '<p class="cal-muhurta-explanation"><strong>'+L('Document 50 Panchaka at selected time: ','தேர்ந்தெடுத்த நேர ஆவணம் 50 பஞ்சகம்: ')+'</strong>'+esc(panchakaText)+(panchakaMeta?' · '+esc(panchakaMeta):'')+'</p>'+
+   '<p class="cal-muhurta-explanation"><strong>'+L('Document 50 time screening: ','ஆவணம் 50 நேரச் சரிபார்ப்பு: ')+'</strong>'+esc(restrictionsText)+(restrictionsWarnings?' · '+esc(restrictionsWarnings):'')+'</p>'+
+   '<p class="cal-muhurta-explanation">'+L('Partial source-based screening only; missing bride/groom-star, Yoga, planetary and full Thali-window checks are not treated as approved.','ஆதாரத்தில் உறுதிப்படுத்திய பகுதிகளுக்கான முதற்கட்டச் சரிபார்ப்பு மட்டுமே; மணமக்கள் நட்சத்திரம், யோகம், கிரக நிலை, முழு தாலி புஷ்கர நேரச் சாளரம் ஆகியவை இன்னும் முழுமையாகச் சரிபார்க்கப்படவில்லை.')+'</p>';
  }
 
  function renderDateDetails(){
@@ -444,7 +491,7 @@ if(host){
   });
  }
  function ensureMonth(key){
-  const monthInput=input(key+'-01',false);
+  const monthInput=input(key+'-01',false,false);
   const cacheKey=monthCacheKey(key,monthInput.utcOffsetMinutes);
   if(month&&monthKey===key){
    if(pendingMonthCacheKey&&pendingMonthCacheKey!==cacheKey){
