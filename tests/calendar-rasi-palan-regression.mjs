@@ -643,7 +643,7 @@ test('Calendar dual-date grid, direct navigation and Date Details are UI-only ex
   assert.match(calendarThemeCssSource, /aria-current="date"\]\.cal-date-past/);
   assert.match(calendarThemeCssSource, /aria-current="date"\]\.cal-date-future/);
   assert.match(calendarThemeCssSource, /\.cal-amirthadi-yoga-card\.is-unknown/);
-  assert.match(calendarThemeCssSource, /\.cal-date-details-title\{display:block;width:100%;margin:0;padding:0;border:0;border-radius:0;background:transparent;background-image:none;box-shadow:none;color:#15564e;font-size:19px;font-weight:850;line-height:1\.3;text-align:center\}/, 'Daily Panchang title is centered and has no filled box');
+  assert.match(calendarThemeCssSource, /\.cal-date-details-title\{display:block;width:100%;margin:0;padding:0;border:0;border-radius:0;background:transparent;background-image:none;box-shadow:none;color:#15564e;font-size:22px;font-weight:850;line-height:1\.3;text-align:center\}/, 'Daily Panchang title is centered and has no filled box');
   assert.ok(calendarThemeCssSource.includes('.cal-month-jump') && calendarThemeCssSource.includes('grid-template-columns:minmax(0,1fr)'), 'Month/year/date selector panel is full-width and flat');
   assert.ok(calendarThemeCssSource.includes('background:transparent!important'), 'Panchang and sibling sections use a flat visual layer');
   assert.ok(dailyCalendarSource.includes('function ensureMonth(key)'), 'Month calculation has an independent request path');
