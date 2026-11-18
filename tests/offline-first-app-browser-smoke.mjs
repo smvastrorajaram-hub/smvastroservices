@@ -303,6 +303,14 @@ for (const app of apps) {
       // Calendar's Rasi Palan module mounts after its asynchronous offline import.
       // DOMContentLoaded alone is too early for querying its section tabs.
       await page.waitForSelector('#calRasiPalan [data-section="period"]', { timeout: 45000 });
+
+      await page.waitForSelector('#calDocument50PushkaraWindows .cal-pushkara-window-list', { timeout: 120000 });
+      const pushkaraWindows = await page.$eval('#calDocument50PushkaraWindows .cal-pushkara-window-list', list =>
+        [...list.querySelectorAll('.cal-pushkara-window-row')].map(row => row.textContent.trim())
+      );
+      assert.ok(pushkaraWindows.length > 0, 'Calendar must calculate local morning Pushkara intervals while offline.');
+      assert.ok(pushkaraWindows.every(row => /\\d{2}:\\d{2}:\\d{2} – \\d{2}:\\d{2}:\\d{2}/.test(row)),
+        'Offline Pushkara intervals must include start/end times refined to seconds.');
     }
 
     if (app.name === 'SMV CALENDAR') {
