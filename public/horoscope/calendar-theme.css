@@ -280,7 +280,7 @@ html body.calendar-only>header.calendar-topbar{
  display:none;content:none;
 }
 #smvDailyCalendar #calDateDetails .cal-panchang-detail-grid .cal-name-yoga-label{
- color:#000!important;-webkit-text-fill-color:#000!important;font-weight:700!important;font-size:inherit!important;line-height:inherit!important;
+ color:#000!important;-webkit-text-fill-color:#000!important;font-weight:700!important;font-size:11px!important;line-height:1.45!important;
 }
 #smvDailyCalendar #calDateDetails .cal-panchang-detail-grid .cal-name-yoga-result{
  display:inline-block;font-weight:750;text-align:right;
