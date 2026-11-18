@@ -174,6 +174,41 @@ try {
     { nakshatraIndex: 17, pada: 3 }, { nakshatraIndex: 17, pada: 4 }
   ], 'Mesha Janma Rasi must show Vishakha Pada 4, all Anuradha padas and all Jyeshtha padas during the Vrichigam transit.');
 
+  // Birth-Pada-specific window: Ashwini Pada 1 projects to Vishakha Pada 4.
+  await page.select('#calRasi', '0');
+  await page.select('#calStar', '0');
+  await page.select('#calStarPada', '1');
+  await page.waitForFunction(() => {
+    const cards = [...document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-janma-projection')];
+    return cards.some(card => /Ashwini 1/.test(card.textContent) && /Vishakha 4/.test(card.textContent));
+  }, { timeout: 120000 });
+  const ashwiniProjection = await page.$eval('#calChandrashtamaPeriods .cal-chandra-janma-projection', card => ({
+    text: card.textContent.trim(),
+    time: card.querySelector('span')?.textContent.trim() || ''
+  }));
+  assert.match(ashwiniProjection.text, /Ashwini 1.*Vishakha 4/);
+  assert.match(ashwiniProjection.time, /10\/11\/2026 02:48:28/);
+  assert.ok(/09:/.test(ashwiniProjection.time), 'Ashwini Pada 1 projection must end at the Vishakha Pada 4 boundary, not at full Rasi egress.');
+
+  // Second independent birth Pada example: Magha Pada 4 projects to Uttara Bhadrapada Pada 3 in Meena.
+  await page.select('#calRasi', '4');
+  await page.select('#calStar', '9');
+  await page.select('#calStarPada', '4');
+  await page.waitForFunction(() =>
+    [...document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-janma-projection')]
+      .some(card => /Magha 4/.test(card.textContent) && /Uttara Bhadrapada 3/.test(card.textContent)),
+    { timeout: 120000 });
+  const maghaProjection = await page.$eval('#calChandrashtamaPeriods .cal-chandra-janma-projection', card => card.textContent.trim());
+  assert.match(maghaProjection, /Magha 4.*Uttara Bhadrapada 3/);
+
+  // Restore Ashwini Pada 1 so the final mobile screenshot demonstrates the user's example.
+  await page.select('#calRasi', '0');
+  await page.select('#calStar', '0');
+  await page.select('#calStarPada', '1');
+  await page.waitForFunction(() =>
+    [...document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-janma-projection')]
+      .some(card => /Ashwini 1/.test(card.textContent) && /Vishakha 4/.test(card.textContent)),
+    { timeout: 120000 });
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
   await page.$eval('#calChandrashtamaPeriods .cal-chandra-window details', details => { details.open = true; });
   const chandrashtamaCard = await page.$('#calReadings .cal-chandrashtama');
@@ -182,7 +217,11 @@ try {
   await chandrashtamaCard.screenshot({
     path: new URL('calendar-chandrashtama-exact-padas-mobile.png', outputDir).pathname
   });
-  console.log('EXACT_CHANDRASHTAMA_INDEPENDENT_CHECK ' + JSON.stringify(independentChandrashtamaCheck));
+  console.log('EXACT_CHANDRASHTAMA_INDEPENDENT_CHECK ' + JSON.stringify({
+    fullRasi: independentChandrashtamaCheck,
+    ashwiniPada1: ashwiniProjection,
+    maghaPada4: maghaProjection
+  }));
   await page.$eval('#calDate', (el, date) => {
     el.value = date;
     el.dispatchEvent(new Event('change', { bubbles: true }));
