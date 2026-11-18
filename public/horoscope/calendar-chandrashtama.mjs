@@ -36,6 +36,39 @@ export function getNakshatraPadaAtLongitude(longitude) {
   };
 }
 
+// Project the selected Janma Nakshatra-Pada 210 degrees forward into the
+// eighth sidereal Rasi, preserving the exact 3°20' pada interval.
+// This is a pada-specific refinement requested for SMV CALENDAR; it is kept
+// distinct from the full eighth-Rasi Chandrashtama and the separate 17th-star
+// counting convention.
+export function getChandrashtamaPadaProjection(nakshatraIndex, birthPada) {
+  const star = Number(nakshatraIndex);
+  const pada = Number(birthPada);
+  if (!Number.isInteger(star) || star < 0 || star >= NAKSHATRA_COUNT ||
+      !Number.isInteger(pada) || pada < 1 || pada > 4) return null;
+  const natalStart = star * NAKSHATRA_DEGREES + (pada - 1) * PADA_DEGREES;
+  const natalEnd = natalStart + PADA_DEGREES;
+  const projectedStart = normalizeSiderealLongitude(natalStart + 210);
+  const projectedEnd = normalizeSiderealLongitude(natalEnd + 210);
+  const position = getNakshatraPadaAtLongitude(projectedStart + 1e-8);
+  const natalPosition = getNakshatraPadaAtLongitude(natalStart + 1e-8);
+  return {
+    janmaNakshatraIndex: star,
+    janmaPada: pada,
+    janmaRasiIndex: natalPosition.signIndex,
+    janmaDegreeStart: natalPosition.degreeInSign,
+    targetNakshatraIndex: position.nakshatraIndex,
+    targetPada: position.pada,
+    targetRasiIndex: position.signIndex,
+    targetDegreeStart: position.degreeInSign,
+    targetDegreeEnd: (position.degreeInSign + PADA_DEGREES),
+    startLongitude: projectedStart,
+    endLongitude: projectedEnd,
+    offsetDegrees: 210,
+    method: 'Janma Nakshatra-Pada longitude + 210 degrees (eighth-Rasi degree projection)'
+  };
+}
+
 export function getChandrashtamaPadaSegments(chandrashtamaRasiIndex) {
   const rasi = Number(chandrashtamaRasiIndex);
   if (!Number.isInteger(rasi) || rasi < 0 || rasi >= RASI_COUNT) return [];
