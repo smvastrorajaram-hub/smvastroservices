@@ -168,3 +168,8 @@
 .smv-android-apk-card p{margin:0}
 .smv-android-apk-card [data-apk-download]{align-self:flex-start;text-decoration:none}
 @media(max-width:680px){.cal-download-app-link{margin-top:14px;max-width:none;width:100%;min-width:0;justify-content:center}.smv-android-apk-card{margin:16px 8px;padding:14px}}
+
+
+/* Keep the user-selectable time directly below the selected Calendar date. */
+#smvDailyCalendar .cal-date-time-fields{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;min-width:0}
+#smvDailyCalendar .cal-date-time-fields label{min-width:0!important}
