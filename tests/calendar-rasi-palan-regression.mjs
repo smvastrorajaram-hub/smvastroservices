@@ -290,7 +290,10 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   assert.match(publicRasiPalanSource, /const selected = modeText\(automatic, moonKey, result\.type\)/);
   assert.match(publicRasiPalanSource, /'daily', 'weekly', 'monthly', 'tamilNewYear', 'englishNewYear'/);
   assert.match(publicRasiPalanSource, /positions\.moonSign == null/);
-  assert.match(dailyCalendarSource, /Birth Star, Tara Bala & Chandrashtama/);
+  assert.match(dailyCalendarSource, /Birth Star & Tara Bala/);
+  assert.match(dailyCalendarSource, /calChandrashtamaSection/);
+  assert.match(dailyCalendarSource, /No Chandrashtama period overlaps the selected date\\/time/);
+  assert.match(dailyCalendarSource, /selectedIsToday/);
   assert.match(dailyCalendarSource, /Tara Bala/);
   assert.match(dailyCalendarSource, /Transit Moon Rasi/);
   assert.match(dailyCalendarSource, /signs\[moonSign\]\[ta\(\)\?1:0\]/);
