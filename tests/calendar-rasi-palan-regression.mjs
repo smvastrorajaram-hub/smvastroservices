@@ -943,7 +943,7 @@ test('Calendar Date Details uses one green hierarchy with paired Panchang values
   assert.ok(horoscopeRendererSource.includes('class="smv-calendar-range-separator">-</strong>'), 'The Panchang range uses a hyphen without surrounding spaces.');
   assert.ok(calendarThemeCssSource.includes('smv-calendar-event-time{color:#4b0082;font-weight:700}'), 'Tithi, Nakshatra, Namah Yoga and Karana times use dark purple in bold.');
   assert.ok(calendarThemeCssSource.includes('smv-calendar-event-date{color:#52645a;font-weight:400}'), 'Date values remain regular-weight neutral text.');
-  assert.ok(calendarThemeCssSource.includes('nalla-neram-time{color:#00c853;font-weight:700}'), 'Nalla Neram time alone uses bright green without bold weight.');
+  assert.ok(calendarThemeCssSource.includes('nalla-neram-time{color:#00c853;font-weight:700}'), 'Nalla Neram time alone uses bright green in bold.');
 });
 
 test('SMV CALENDAR daily Panchang and Hora follow the green result hierarchy', () => {
