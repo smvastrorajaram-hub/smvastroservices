@@ -301,6 +301,8 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   assert.ok(dailyCalendarSource.includes('const nearestUpcomingWindow=selectedDateWindow?null:availableWindows'));
   assert.ok(dailyCalendarSource.includes('nearestUpcomingWindow?[{...nearestUpcomingWindow,isUpcoming:true}]:[]'));
   assert.match(dailyCalendarSource, /const hasChandrashtama=hasSelectedDateChandrashtama/);
+  assert.match(dailyCalendarSource, /return windowsHtml\\?/,
+    'Upcoming window details remain visible even when selected-date status is Chandrashtama No.');
   assert.match(dailyCalendarSource, /data-period-type=/);
   assert.match(dailyCalendarSource, /is-upcoming/);
   assert.match(dailyCalendarCssSource, /cal-chandrashtama-section>h3\{display:block!important;width:100%!important;text-align:center!important\}/);
