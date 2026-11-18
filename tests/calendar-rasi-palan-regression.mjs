@@ -297,9 +297,9 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   assert.ok(dailyCalendarSource.includes("status.dataset.result=hasChandrashtama?'present':'absent'"));
   assert.doesNotMatch(dailyCalendarSource, /No Chandrashtama period overlaps the selected date\/time|தேர்ந்தெடுத்த தேதியில் சந்திராஷ்டமக் காலப்பகுதி இல்லை/);
   assert.match(dailyCalendarSource, /selectedIsToday/);
-  assert.match(dailyCalendarSource, /const selectedDateWindow=availableWindows\\.find/);
-  assert.match(dailyCalendarSource, /const nearestUpcomingWindow=selectedDateWindow\\?null:availableWindows/);
-  assert.match(dailyCalendarSource, /nearestUpcomingWindow\\?\\[\\{\\.\\.\\.nearestUpcomingWindow,isUpcoming:true\\}\\]:\\[\\]/);
+  assert.ok(dailyCalendarSource.includes('const selectedDateWindow=availableWindows.find'));
+  assert.ok(dailyCalendarSource.includes('const nearestUpcomingWindow=selectedDateWindow?null:availableWindows'));
+  assert.ok(dailyCalendarSource.includes('nearestUpcomingWindow?[{...nearestUpcomingWindow,isUpcoming:true}]:[]'));
   assert.match(dailyCalendarSource, /const hasChandrashtama=hasSelectedDateChandrashtama/);
   assert.match(dailyCalendarSource, /data-period-type=/);
   assert.match(dailyCalendarSource, /is-upcoming/);
