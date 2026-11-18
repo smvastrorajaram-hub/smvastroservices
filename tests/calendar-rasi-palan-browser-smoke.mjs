@@ -263,7 +263,7 @@ try {
   assert.ok(yogaFlow.yogaSegmentGap <= 2, 'Yoga result name, description and timing must remain close together.');
   assert.ok(yogaFlow.yogaSegmentPaddingTop <= 2, 'Yoga result segment must not add excess top padding.');
   assert.ok(yogaFlow.yogaReferenceMarginTop <= 2, 'Sunrise reference must sit close below the Yoga time.');
-  assert.ok(yogaFlow.yogaTimeToReferenceGap <= 8, 'Yoga time and sunrise reference must not be separated by excess vertical space.');
+  assert.ok(yogaFlow.yogaTimeToReferenceGap <= 8, 'Yoga time and sunrise reference gap must be compact. Actual metrics: '+JSON.stringify({gap:yogaFlow.yogaTimeToReferenceGap,segmentGap:yogaFlow.yogaSegmentGap,referenceMarginTop:yogaFlow.yogaReferenceMarginTop,cardGap:yogaFlow.yogaCardGap,cardPaddingTop:yogaFlow.yogaCardPaddingTop}));
   assert.ok(yogaFlow.thyajyamCardGap <= 2, 'Thyajyam heading, result and explanation must use a compact card gap.');
   assert.ok(yogaFlow.thyajyamCardPaddingTop <= 8, 'Thyajyam card top padding must remain compact.');
   assert.ok(yogaFlow.thyajyamSegmentsGap <= 2, 'Thyajyam interval rows must remain close together.');
