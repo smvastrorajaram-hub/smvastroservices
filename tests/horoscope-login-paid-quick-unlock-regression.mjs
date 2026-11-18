@@ -137,14 +137,14 @@ test("All three apps use one synchronized cache release; Horoscope runtime revis
   const versions = workers.map(source => /const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(source));
   assert.ok(versions.every(Boolean));
   assert.deepEqual(versions.map(match => match[1]), [
-    "20261118-calendar-centered-headings-v5",
-    "20261118-calendar-centered-headings-v5",
-    "20261118-calendar-centered-headings-v5"
+    "20261118-calendar-centered-headings-v6",
+    "20261118-calendar-centered-headings-v6",
+    "20261118-calendar-centered-headings-v6"
   ]);
   assert.deepEqual(versions.map(match => match[2]), [
-    "20261118-calendar-centered-headings-v5",
-    "20261118-calendar-centered-headings-v5",
-    "20261118-calendar-centered-headings-v5"
+    "20261118-calendar-centered-headings-v6",
+    "20261118-calendar-centered-headings-v6",
+    "20261118-calendar-centered-headings-v6"
   ]);
   const runtime = /const RUNTIME_REVISION\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(workers[1]);
   assert.ok(runtime);
