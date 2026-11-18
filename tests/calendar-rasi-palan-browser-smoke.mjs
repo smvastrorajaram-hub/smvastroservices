@@ -297,6 +297,8 @@ try {
   assert.equal(futureDateStatus.result, 'present', 'A future date in Chandrashtama must show Yes.');
   assert.equal(futureDateStatus.color, 'rgb(192, 0, 0)', 'Future Chandrashtama Yes must be red.');
   assert.equal(futureDateStatus.fillColor, 'rgb(192, 0, 0)', 'Future Chandrashtama Yes must also render red in WebKit.');
+  assert.equal(await page.$eval('#calChandrashtamaPeriods', root => Boolean(root.querySelector('.cal-chandra-upcoming-heading'))), false,
+    'Do not show the next-Chandrashtama heading when a future selected date is already within Chandrashtama.');
 
   // When the selected date has no Chandrashtama, keep the status as No and show
   // only the nearest later transit for the selected Janma Rasi / Nakshatra / Pada.
@@ -315,6 +317,16 @@ try {
       windows[0].dataset.periodType === 'upcoming' &&
       windows[0].dataset.startDate > '2026-11-19';
   }, { timeout: 120000 });
+  const upcomingHeading = await page.$eval('#calChandrashtamaPeriods .cal-chandra-upcoming-heading', el => ({
+    text: el.textContent.trim(),
+    language: document.documentElement.lang,
+    janmaRasi: document.querySelector('#calRasi')?.selectedOptions[0]?.textContent?.trim() || ''
+  }));
+  const expectedUpcomingHeading = upcomingHeading.language === 'ta'
+    ? 'உங்கள் '+upcomingHeading.janmaRasi+' ராசிக்கான அடுத்த சந்திராஷ்டம நாள் :'
+    : 'Next Chandrashtama for your '+upcomingHeading.janmaRasi+' Rasi:';
+  assert.equal(upcomingHeading.text, expectedUpcomingHeading,
+    'The upcoming-only heading must include the currently selected Janma Rasi name.');
   const upcomingWindow = await page.$eval('#calChandrashtamaPeriods .cal-chandra-window', el => ({
     startDate: el.dataset.startDate,
     endDate: el.dataset.endDate,
@@ -346,6 +358,8 @@ try {
   assert.equal(historicalSelectedWindow.count, 1,
     'When the selected date already has Chandrashtama, do not append a future transit.');
   assert.equal(historicalSelectedWindow.periodType, 'selected');
+  assert.equal(await page.$eval('#calChandrashtamaPeriods', root => Boolean(root.querySelector('.cal-chandra-upcoming-heading'))), false,
+    'Do not show the next-Chandrashtama heading when the selected date already has Chandrashtama.');
   assert.equal(chandrashtamaSmoke.windows.length <= 1, true);
   assert.equal(independentChandrashtamaCheck.padas.length, 4);
   await page.select('#calStarPada', '1');
