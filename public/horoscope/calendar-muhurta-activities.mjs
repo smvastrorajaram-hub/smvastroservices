@@ -419,3 +419,69 @@ export function getDocument50Panchaka({
     source: DOCUMENT50_MARRIAGE_SOURCES.rules
   };
 }
+
+
+const DOCUMENT50_FORBIDDEN_TITHI_NUMBERS = Object.freeze([4, 6, 8, 9, 12, 14]);
+
+function document50PeriodContains(timeValue, periodValue) {
+  const time = parseClock(timeValue);
+  const match = String(periodValue ?? '').match(/(\\d{1,2}:\\d{2})\\s*[-–]\\s*(\\d{1,2}:\\d{2})/);
+  if (time === null || !match) return null;
+  const start = parseClock(match[1]), end = parseClock(match[2]);
+  if (start === null || end === null) return null;
+  return end >= start ? time >= start && time < end : time >= start || time < end;
+}
+
+/**
+ * Applies only the independently readable Document 50 date/time exclusions.
+ * Sunday is returned as a caution, not a hard rejection, because the scanned
+ * paragraph says it is scripturally avoided but accepted in practice.
+ * Nakshatra relationship, Marana/Utpata/Prabalarishta Yoga, and personal
+ * bride/groom-star rules are intentionally not guessed here.
+ */
+export function getDocument50TimeRestrictions({
+  weekdayIndex,
+  tithiNumber,
+  time,
+  rahuKalam,
+  yamagandam,
+  kariDay,
+  thaniyaDay
+} = {}) {
+  const weekday = Number(weekdayIndex), tithi = Number(tithiNumber);
+  if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6 ||
+      !Number.isInteger(tithi) || tithi < 1 || tithi > 30) {
+    return { available: false, blocked: null, reasons: [], warnings: ['Weekday or Tithi is unavailable'], source: DOCUMENT50_MARRIAGE_SOURCES.rules };
+  }
+  const tithiCount = ((tithi - 1) % 15) + 1;
+  const reasons = [], warnings = [];
+  if (DOCUMENT50_FORBIDDEN_TITHI_NUMBERS.includes(tithiCount)) {
+    reasons.push('Document 50 excludes this Tithi (' + tithiCount + ' within its Paksha)');
+  }
+  if (weekday === 2) reasons.push('Tuesday is excluded by Document 50');
+  if (weekday === 6) reasons.push('Saturday is excluded by Document 50');
+  if (weekday === 0) warnings.push('Sunday is stated as scripturally avoided, but the same paragraph says it is accepted in practice');
+
+  if (kariDay === true) reasons.push('Kari Naal is marked for this Tamil date');
+  if (thaniyaDay === true) reasons.push('Thaniya Naal is marked for this Tamil date');
+
+  const rahu = document50PeriodContains(time, rahuKalam);
+  const yama = document50PeriodContains(time, yamagandam);
+  if (rahu === true) reasons.push('Selected time falls within Rahu Kalam');
+  if (yama === true) reasons.push('Selected time falls within Yamagandam');
+  if (time && rahu === null) warnings.push('Rahu Kalam interval is unavailable or could not be parsed');
+  if (time && yama === null) warnings.push('Yamagandam interval is unavailable or could not be parsed');
+  if (kariDay === undefined || thaniyaDay === undefined) warnings.push('Kari Naal / Thaniya Naal classification is unavailable');
+
+  return {
+    available: true,
+    blocked: reasons.length > 0,
+    weekdayIndex: weekday,
+    tithiNumber: tithi,
+    tithiCount,
+    time: time || null,
+    reasons,
+    warnings,
+    source: DOCUMENT50_MARRIAGE_SOURCES.rules
+  };
+}
