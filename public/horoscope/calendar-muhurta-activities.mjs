@@ -428,7 +428,7 @@ const DOCUMENT50_FORBIDDEN_TITHI_NUMBERS = Object.freeze([4, 6, 8, 9, 12, 14]);
 
 function document50PeriodContains(timeValue, periodValue) {
   const time = parseClock(timeValue);
-  const match = String(periodValue ?? '').match(/(\d{1,2}:\d{2})\\s*[-–]\\s*(\d{1,2}:\d{2})/);
+  const match = String(periodValue ?? '').match(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/);
   if (time === null || !match) return null;
   const start = parseClock(match[1]), end = parseClock(match[2]);
   if (start === null || end === null) return null;
