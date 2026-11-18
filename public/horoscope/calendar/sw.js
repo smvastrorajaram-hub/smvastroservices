@@ -1,5 +1,5 @@
 const IS_PAGES_DEV_HOST = self.location.hostname === 'smvastroservices.pages.dev' || self.location.hostname.endsWith('.smvastroservices.pages.dev') || self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
-const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261118-chandrashtama-result-status-v1' : '20261118-chandrashtama-result-status-v1';
+const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261118-special-muhurtha-v1' : '20261118-special-muhurtha-v1';
 const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE;
 const OFFLINE_CACHE='smv-horoscope-offline';
 const LOCATION_CACHE='smv-shared-india-places';
@@ -9,7 +9,7 @@ const CORE=[
  './','./index.html','./admin.html',...PAGES_DEV_HELPER_FILES,RASI_PALAN_PERIODS_ASSET,'../calendar-rasi-palan-manual.json','./calendar-pwa.mjs','./manifest-en.webmanifest','./manifest-ta.webmanifest',
  '../assets/favicon-calendar.png','../assets/favicon-calendar.ico',
  '../assets/smv-calendar-website.webp',
- '../daily-calendar.mjs','../calendar-chandrashtama.mjs','../calendar-muhurta-classification.mjs','../tamil-day-classifications.mjs','../daily-calendar.css','../calendar-rasi-palan.mjs','../calendar-rasi-palan.css','../calendar-rasi-palan-rules.mjs','../calendar-theme.css','../calendar-data.mjs','../calendar-worker.mjs','../horoscope.js','../horoscope.css','../location-search-online-offline.js',
+ '../daily-calendar.mjs','../calendar-chandrashtama.mjs','../calendar-muhurta-classification.mjs','../calendar-special-muhurtha.mjs','../calendar-astronomical-muhurtha.mjs','../tamil-day-classifications.mjs','../daily-calendar.css','../calendar-rasi-palan.mjs','../calendar-rasi-palan.css','../calendar-rasi-palan-rules.mjs','../calendar-theme.css','../calendar-data.mjs','../calendar-worker.mjs','../horoscope.js','../horoscope.css','../location-search-online-offline.js',
  '../assets/pwa-calendar-192.svg','../assets/pwa-calendar-512.png','../assets/pwa-calendar-maskable-192.svg','../assets/pwa-calendar-maskable.svg',
  '../assets/android-app-icon-calendar.svg','../assets/android-app-icon-calendar-source.png',
  '../android-apk-download.mjs','../android-apk-icons.css',
