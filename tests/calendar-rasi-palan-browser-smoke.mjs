@@ -207,20 +207,22 @@ try {
       if(!element)return null;
       const style=getComputedStyle(element);
       const after=getComputedStyle(element,'::after');
-      return {text:element.textContent.trim(),alignment:style.textAlign,display:style.display,afterContent:after.content,afterDisplay:after.display};
+      return {text:element.textContent.trim(),alignment:style.textAlign,display:style.display,fontSize:style.fontSize,className:element.className,afterContent:after.content,afterDisplay:after.display};
     };
     const dailyHora=inspect('#calDaily .hora-card>h3');
     const transitChart=inspect('#calDaily .transit-card>h3');
     const transitPositions=inspect('#calDaily .transit-table-card>h3');
     const panchangHeader=document.querySelector('.cal-date-details-head');
     const headerAfter=panchangHeader?getComputedStyle(panchangHeader,'::after'):null;
-    const rasiHeading=document.querySelector('#calRasiPalan .rp-heading h2');
+    const panchangTitle=document.querySelector('#calDateDetails .cal-date-details-title');
+     const rasiHeading=document.querySelector('#calRasiPalan .rp-heading h2');
     const lagnaCell=document.querySelector('#calDaily .transit-position-table tbody tr:first-child td:first-child');
     return {
       language:document.documentElement.lang||'en',
       dailyHora,transitChart,transitPositions,
       panchangHeaderAfter:headerAfter?{content:headerAfter.content,display:headerAfter.display}:null,
-      rasiHeading:rasiHeading?{text:rasiHeading.textContent.trim(),color:getComputedStyle(rasiHeading).color,fill:getComputedStyle(rasiHeading).webkitTextFillColor}:null,
+       panchangHeading:panchangTitle?{fontSize:getComputedStyle(panchangTitle).fontSize}:null,
+      rasiHeading:rasiHeading?{text:rasiHeading.textContent.trim(),fontSize:getComputedStyle(rasiHeading).fontSize,color:getComputedStyle(rasiHeading).color,fill:getComputedStyle(rasiHeading).webkitTextFillColor}:null,
       lagnaLabel:lagnaCell?.textContent.trim()||''
     };
   });
@@ -232,19 +234,29 @@ try {
     assert.ok(heading, name+' heading must render.');
     assert.equal(heading.alignment,'center',name+' heading must be centered.');
     assert.equal(heading.display,'block',name+' heading must use a full-width block.');
+     assert.equal(heading.fontSize,'19px',name+' heading must use the compact desktop font size.');
     assert.ok(heading.afterContent==='none'||heading.afterDisplay==='none',name+' heading must not retain the trailing flex ornament.');
   }
-  assert.ok(centeredCalendarHeadings.panchangHeaderAfter &&
+  assert.equal(centeredCalendarHeadings.panchangHeading?.fontSize,'19px', 'Daily Panchang heading must use the compact desktop font size.');
+   assert.ok(centeredCalendarHeadings.panchangHeaderAfter &&
     (centeredCalendarHeadings.panchangHeaderAfter.content==='none'||centeredCalendarHeadings.panchangHeaderAfter.display==='none'),
     'Daily Panchang header must not display the inherited right-side Om-like ornament.');
   assert.equal(centeredCalendarHeadings.rasiHeading?.text,
     centeredCalendarHeadings.language==='ta' ? 'ராசி பலன்கள் & கிரக கோச்சார பலன்கள்' : 'Rasi Palan & Planetary Transits',
     'Rasi and planetary transit heading must use the corrected wording in the active language.');
-  assert.equal(centeredCalendarHeadings.rasiHeading?.color,'rgb(21, 86, 78)',
+  assert.equal(centeredCalendarHeadings.rasiHeading?.fontSize,'19px', 'Rasi Palan heading must use the compact desktop font size.');
+   assert.equal(centeredCalendarHeadings.rasiHeading?.color,'rgb(21, 86, 78)',
     'Rasi and planetary transit heading must use the green Calendar theme.');
   assert.equal(centeredCalendarHeadings.rasiHeading?.fill,'rgb(21, 86, 78)',
     'Rasi and planetary transit heading WebKit text fill must also use the green theme.');
-  assert.equal(centeredCalendarHeadings.lagnaLabel,
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+   const mobileHeadingSizes = await page.evaluate(() => {
+     const selectors={dailyPanchang:'#calDateDetails .cal-date-details-title',dailyHora:'#calDaily .hora-card>h3',transitChart:'#calDaily .transit-card>h3',transitPositions:'#calDaily .transit-table-card>h3',rasiPalan:'#calRasiPalan .rp-heading h2'};
+     return Object.fromEntries(Object.entries(selectors).map(([name,selector])=>[name,document.querySelector(selector)?getComputedStyle(document.querySelector(selector)).fontSize:null]));
+   });
+   assert.deepEqual(mobileHeadingSizes,{dailyPanchang:'17px',dailyHora:'17px',transitChart:'17px',transitPositions:'17px',rasiPalan:'17px'},'All Calendar section headings must use the same compact mobile font size.');
+   await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
+   assert.equal(centeredCalendarHeadings.lagnaLabel,
     centeredCalendarHeadings.language==='ta' ? 'லக்' : 'Asc',
     'Only the transit positions table Ascendant row must display the shortened Tamil label in Tamil mode.');
 

@@ -3,7 +3,7 @@
 #calRasiPalan h2,#calRasiPalan h3,#calRasiPalan h4,#calRasiPalan h5{color:#155a52;line-height:1.5}
 #calRasiPalan .rp-heading{padding:8px 2px 18px;border-bottom:2px solid #d8bd75}
 #calRasiPalan .rp-eyebrow{margin:0;color:#a5681c;letter-spacing:2px;font-weight:800;font-size:12px}
-#calRasiPalan .rp-heading h2{font-size:clamp(22px,3vw,32px);margin:5px 0}
+#calRasiPalan .rp-heading h2{font-size:19px!important;line-height:1.35!important;margin:5px 0}
 #calRasiPalan .rp-heading h2{color:#15564e!important;-webkit-text-fill-color:#15564e!important}
 #calRasiPalan .rp-heading p,.rp-method-note{font-size:13px;line-height:1.7;color:#587069}
 #calRasiPalan .rp-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0 16px}
@@ -38,6 +38,7 @@
 #calRasiPalan .rp-rasi-grid{display:grid;grid-template-columns:1fr;gap:6px}
 #calRasiPalan .rp-rasi-grid .rp-rasi-card{margin:8px 0}
 @media(max-width:680px){
+ #calRasiPalan .rp-heading h2{font-size:17px!important}
  #calRasiPalan{width:100%;margin:18px 0;padding:12px 10px;border-radius:12px}
  #calRasiPalan .rp-tabs{display:grid;grid-template-columns:1fr 1fr}
  #calRasiPalan .rp-tabs button{padding:8px 6px;font-size:12px}

@@ -381,13 +381,16 @@ test('Calendar distinguishes Gazette government holidays from observances and do
     'The entire Sunday date cell must not be recoloured.');
   assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar .cal-date-details-head::after{'),
     'Calendar heading must suppress the inherited right-side Om ornament on its header.');
-  assert.equal((horoscopeRendererSource.match(/class="cal-centered-heading"/g)||[]).length,3,
-    'Daily Hora, Transit Chart and Transit Planetary Positions each use the dedicated centered-heading class.');
+  assert.equal((horoscopeRendererSource.match(/class="cal-centered-heading"/g)||[]).length,4,
+    'Transit/Panchang, Daily Hora, Transit Chart and Transit Planetary Positions use the dedicated centered-heading class.');
   assert.match(dailyCalendarCssSource, /h3:not\(\.cal-date-details-title\):not\(\.cal-section-title\):not\(\.cal-centered-heading\)/,
     'Generic left-aligned flex decoration must not target Calendar centered headings.');
-  assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .cal-centered-heading{'),
+  assert.ok(horoscopeRendererSource.includes('class="card transit-card"><h3 class="cal-centered-heading">'), 'Transit Chart heading receives the centered-heading class.');
+   assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .cal-centered-heading{'),
     'The Calendar-specific centered-heading class must be centered within the Calendar scope.');
-  assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .cal-centered-heading::after{'),
+  assert.match(calendarThemeCssSource, /#smvDailyCalendar #calDaily \.cal-centered-heading,\s*#smvDailyCalendar \.cal-date-details-head h3\.cal-date-details-title\{\s*font-size:19px!important;\s*line-height:1\.35!important;\s*\}/, 'Calendar primary headings use the compact desktop size.');
+   assert.match(calendarThemeCssSource, /@media\(max-width:680px\)\{\s*#smvDailyCalendar #calDaily \.cal-centered-heading,\s*#smvDailyCalendar \.cal-date-details-head h3\.cal-date-details-title\{\s*font-size:17px!important;/, 'Calendar primary headings use the compact mobile size.');
+   assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .cal-centered-heading::after{'),
     'Centered Calendar headings must not display inherited trailing ornaments.');
 });
 
@@ -481,7 +484,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261118-calendar-centered-headings-v5' : '20261118-calendar-centered-headings-v5'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261118-calendar-centered-headings-v6' : '20261118-calendar-centered-headings-v6'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
@@ -491,10 +494,10 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261118-calendar-centered-headings-v5'));
-   assert.ok(calendarIndexSource.includes('20261118-calendar-centered-headings-v5'));
+   assert.ok(calendarIndexSource.includes('20261118-calendar-centered-headings-v6'));
+   assert.ok(calendarIndexSource.includes('20261118-calendar-centered-headings-v6'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
-   assert.ok(calendarIndexSource.includes('20261118-calendar-centered-headings-v5'));
+   assert.ok(calendarIndexSource.includes('20261118-calendar-centered-headings-v6'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'runPeriodForecast\')'));
    assert.ok(calendarIndexSource.includes('The deployed forecast assets could not be loaded from this Calendar host.'));
@@ -640,7 +643,7 @@ test('Calendar dual-date grid, direct navigation and Date Details are UI-only ex
   assert.match(calendarThemeCssSource, /aria-current="date"\]\.cal-date-past/);
   assert.match(calendarThemeCssSource, /aria-current="date"\]\.cal-date-future/);
   assert.match(calendarThemeCssSource, /\.cal-amirthadi-yoga-card\.is-unknown/);
-  assert.match(calendarThemeCssSource, /\.cal-date-details-title\{display:block;width:100%;margin:0;padding:0;border:0;border-radius:0;background:transparent;background-image:none;box-shadow:none;color:#15564e;font-size:22px;font-weight:850;line-height:1\.3;text-align:center\}/, 'Daily Panchang title is centered and has no filled box');
+  assert.match(calendarThemeCssSource, /\.cal-date-details-title\{display:block;width:100%;margin:0;padding:0;border:0;border-radius:0;background:transparent;background-image:none;box-shadow:none;color:#15564e;font-size:19px;font-weight:850;line-height:1\.3;text-align:center\}/, 'Daily Panchang title is centered and has no filled box');
   assert.ok(calendarThemeCssSource.includes('.cal-month-jump') && calendarThemeCssSource.includes('grid-template-columns:minmax(0,1fr)'), 'Month/year/date selector panel is full-width and flat');
   assert.ok(calendarThemeCssSource.includes('background:transparent!important'), 'Panchang and sibling sections use a flat visual layer');
   assert.ok(dailyCalendarSource.includes('function ensureMonth(key)'), 'Month calculation has an independent request path');
@@ -952,9 +955,11 @@ test('SMV CALENDAR daily Panchang and Hora follow the green result hierarchy', (
     'Calendar Rasi Palan heading uses the requested Tamil wording.');
   assert.ok(calendarIndexSource.includes('ராசி பலன்கள் & கிரக கோச்சார பலன்கள்'),
     'Calendar module fallback uses the same requested Tamil heading.');
-  assert.ok(rasiPalanCss.includes('#calRasiPalan .rp-heading h2{color:#15564e!important'),
+  assert.match(rasiPalanCss, /#calRasiPalan \.rp-heading h2\{font-size:19px!important;line-height:1\.35!important;margin:5px 0\}/, 'Rasi Palan heading uses the compact desktop size.');
+   assert.match(rasiPalanCss, /@media\(max-width:680px\)\{\s*#calRasiPalan \.rp-heading h2\{font-size:17px!important\}/, 'Rasi Palan heading uses the compact mobile size.');
+   assert.ok(rasiPalanCss.includes('#calRasiPalan .rp-heading h2{color:#15564e!important'),
     'Rasi Palan heading must use the established green theme colour.');
-  assert.ok(calendarIndexSource.includes("const version='20261118-calendar-green-heading-v3'"),
+  assert.ok(calendarIndexSource.includes("const version='20261118-calendar-green-heading-v4'"),
     'The dynamically loaded Rasi Palan CSS must use the new version marker.');
   assert.match(dailyCalendarSource, /hora-time smv-calendar-neutral-time/);
   assert.match(calendarThemeCssSource, /cal-name-yoga-label\{color:#426957;font-size:12px;font-weight:700\}/);
@@ -965,15 +970,15 @@ test('SMV CALENDAR daily Panchang and Hora follow the green result hierarchy', (
   assert.match(sharedHoroscopeCssSource, /event-time:not\(\.smv-calendar-neutral-date-time\)/);
   assert.match(sharedHoroscopeCssSource, /hora-time:not\(\.smv-calendar-neutral-time\)/);
   assert.match(sharedHoroscopeCssSource, /transit-table-degree:not\(\.smv-calendar-degree-normal\)/);
-  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261118-calendar-centered-headings-v5/);
-  assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261118-calendar-centered-headings-v5/);
+  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261118-calendar-centered-headings-v6/);
+  assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261118-calendar-centered-headings-v6/);
   const releases = [astroServiceWorkerSource, horoscopeServiceWorkerSource, calendarWorkerSource]
     .map(source => source.match(/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '([^']+)' : '([^']+)';/));
   assert.ok(releases.every(Boolean), 'All three service workers must define the synchronized release marker.');
   assert.equal(new Set(releases.map(match => match[1])).size, 1);
   assert.equal(new Set(releases.map(match => match[2])).size, 1);
-  assert.equal(releases[0][1], '20261118-calendar-centered-headings-v5');
-  assert.equal(releases[0][2], '20261118-calendar-centered-headings-v5');
+  assert.equal(releases[0][1], '20261118-calendar-centered-headings-v6');
+  assert.equal(releases[0][2], '20261118-calendar-centered-headings-v6');
 });
 
 

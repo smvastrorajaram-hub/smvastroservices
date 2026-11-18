@@ -532,3 +532,16 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar #calDaily .cal-centered-heading::after{
  content:none;display:none;width:0;max-width:0;margin:0;padding:0;border:0;background:none;box-shadow:none;
 }
+
+/* Shared compact heading scale: match the existing Calendar section headings. */
+#smvDailyCalendar #calDaily .cal-centered-heading,
+#smvDailyCalendar .cal-date-details-head h3.cal-date-details-title{
+  font-size:19px!important;
+  line-height:1.35!important;
+}
+@media(max-width:680px){
+  #smvDailyCalendar #calDaily .cal-centered-heading,
+  #smvDailyCalendar .cal-date-details-head h3.cal-date-details-title{
+    font-size:17px!important;
+  }
+}
