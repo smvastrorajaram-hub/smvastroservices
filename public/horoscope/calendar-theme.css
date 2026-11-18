@@ -186,31 +186,6 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-jump-date-row button,#smvDailyCalendar .cal-jump-month-row button{grid-column:1/-1}
 #smvDailyCalendar .cal-month-jump button{min-height:40px;padding:8px 10px;border:1px solid #d9c9a9;border-radius:8px;background:#f2e8d4;color:#24594e;font-weight:700}
 #smvDailyCalendar .cal-month-jump .cal-jump-close{background:transparent;border-color:transparent}
-#smvDailyCalendar .cal-date-details{margin:18px 0 24px;padding:14px;background:#fbf7ee;border:1px solid #e5dac5;border-radius:16px}
-#smvDailyCalendar .cal-date-details-head h3{margin:0;color:#15564e}
-#smvDailyCalendar .cal-date-details-head p{margin:4px 0 12px;color:#68796f;font-size:12px}
-#smvDailyCalendar .cal-details-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:14px}
-#smvDailyCalendar .cal-details-summary article{min-width:0;display:flex;flex-direction:column;gap:5px;padding:12px;background:#fff;border:1px solid #e2d9c8;border-radius:11px}
-#smvDailyCalendar .cal-details-summary article>small{font-size:11px;color:#68796f}
-#smvDailyCalendar .cal-details-summary article>strong{font-size:15px;line-height:1.4;color:#174f47;overflow-wrap:anywhere}
-#smvDailyCalendar .cal-details-summary article>span{font-size:12px;color:#576a60;line-height:1.45}
-#smvDailyCalendar .cal-day-yoga-card.is-auspicious{border-left:4px solid #27804c;background:#f2faf2}
-#smvDailyCalendar .cal-day-yoga-card.is-inauspicious{border-left:4px solid #b52f2b;background:#fff0ed}
-#smvDailyCalendar .cal-day-yoga-card.is-inauspicious>strong{color:#a32220}
-#smvDailyCalendar .cal-day-yoga-card.is-auspicious>strong{color:#207444}
-#smvDailyCalendar .cal-yoga-segments{display:grid;gap:7px;margin:9px 0}
-#smvDailyCalendar .cal-yoga-segment{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-left:4px solid #a9a394;border-radius:8px;background:transparent;min-width:0}
-#smvDailyCalendar .cal-yoga-segment.is-auspicious{border-left-color:#27804c}
-#smvDailyCalendar .cal-yoga-segment.is-inauspicious{border-left-color:#b52f2b}
-#smvDailyCalendar .cal-yoga-segment.is-unknown{border-left-color:#a9a394}
-#smvDailyCalendar .cal-yoga-segment-info{display:grid;gap:3px;min-width:0}
-#smvDailyCalendar .cal-yoga-segment-info strong{font-weight:850}
-#smvDailyCalendar .cal-yoga-segment.is-auspicious .cal-yoga-segment-info strong{color:#207444}
-#smvDailyCalendar .cal-yoga-segment.is-inauspicious .cal-yoga-segment-info strong{color:#a32220}
-#smvDailyCalendar .cal-yoga-segment.is-unknown .cal-yoga-segment-info strong{color:#716d61}
-#smvDailyCalendar .cal-yoga-segment-info small{display:block;line-height:1.35}
-#smvDailyCalendar .cal-yoga-segment-time{flex:0 0 auto;font-variant-numeric:tabular-nums;font-weight:750;white-space:nowrap}
-@media(max-width:600px){#smvDailyCalendar .cal-yoga-segment{align-items:flex-start;flex-direction:column;gap:4px}#smvDailyCalendar .cal-yoga-segment-time{white-space:normal}#smvDailyCalendar .cal-thyajyam-card .cal-yoga-segment-time{align-self:center;text-align:center}}
 #smvDailyCalendar #calDaily .card{margin:12px 0;padding:14px}
 #smvDailyCalendar #calReadings{margin-top:12px}
 #smvDailyCalendar #calEvents{margin-top:12px}
@@ -220,12 +195,8 @@ html body.calendar-only>header.calendar-topbar{
  #smvDailyCalendar .cal-month-grid button{min-height:65px;padding:5px 1px}
  #smvDailyCalendar .cal-month-grid button>strong{font-size:18px}
  #smvDailyCalendar .cal-month-grid button>.cal-day-tamil{font-size:11px}
- #smvDailyCalendar .cal-date-details{padding:10px}
- #smvDailyCalendar .cal-details-summary{gap:7px}
- #smvDailyCalendar .cal-details-summary article{padding:9px}
 }
 @media(max-width:340px){
- #smvDailyCalendar .cal-details-summary{grid-template-columns:minmax(0,1fr)}
  #smvDailyCalendar .cal-jump-year-actions,#smvDailyCalendar .cal-jump-date-row,#smvDailyCalendar .cal-jump-month-row{grid-template-columns:minmax(0,1fr)}
 }
 
@@ -236,55 +207,6 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-name-yoga-result.is-caution{color:#a12b27}
 
 /* 2026-11 Calendar visual corrections: balanced Date Details, selected-day border and equal year actions. */
-#smvDailyCalendar .cal-date-details-head{
- display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
- width:100%;margin:0 auto 14px;padding:17px 14px 16px;border-radius:10px;
- background:#76131f;color:#f7ead0;
-}
-#smvDailyCalendar .cal-date-details-head>div{
- display:flex;flex:1 1 auto;flex-direction:column;align-items:center;justify-content:center;
- width:100%;max-width:100%;text-align:center;
-}
-#smvDailyCalendar .cal-date-details-head h3.cal-date-details-title{
- display:flex;align-items:center;justify-content:center;gap:12px;
- width:100%;margin:0 auto 8px;padding:0;
- color:#f6e6c3;-webkit-text-fill-color:#f6e6c3;
- font-size:clamp(18px,4.5vw,22px);font-weight:850;line-height:1.35;text-align:center;
-}
-#smvDailyCalendar .cal-date-details-head h3.cal-date-details-title::before,
-#smvDailyCalendar .cal-date-details-head h3.cal-date-details-title::after{
- content:"";display:block;flex:1 1 0;min-width:18px;max-width:110px;height:1px;
- background:#d9b65f;
-}
-#smvDailyCalendar .cal-date-details-head p{
- width:100%;max-width:40rem;margin:0 auto 7px;padding:0;
- color:#f5ead8;-webkit-text-fill-color:#f5ead8;
- font-size:13px;font-weight:600;line-height:1.55;text-align:center;
-}
-#smvDailyCalendar .cal-details-summary article{
- align-items:center;justify-content:center;text-align:center;
-}
-#smvDailyCalendar .cal-details-summary article>small,
-#smvDailyCalendar .cal-details-summary article>strong,
-#smvDailyCalendar .cal-details-summary article>span{
- width:100%;text-align:center;
-}
-#smvDailyCalendar #calDateDetails #calDaily h3,
-#smvDailyCalendar #calDateDetails #calReadings h3,
-#smvDailyCalendar #calDateDetails #calEvents h3{
- justify-content:center;text-align:center;
-}
-#smvDailyCalendar #calDateDetails #calDaily h3::after,
-#smvDailyCalendar #calDateDetails #calReadings h3::after,
-#smvDailyCalendar #calDateDetails #calEvents h3::after{
- display:none;content:none;
-}
-#smvDailyCalendar #calDateDetails .cal-panchang-detail-grid .cal-name-yoga-label{
- color:#000!important;-webkit-text-fill-color:#000!important;font-weight:700!important;font-size:11px!important;line-height:1.45!important;
-}
-#smvDailyCalendar #calDateDetails .cal-panchang-detail-grid .cal-name-yoga-result{
- display:inline-block;font-weight:750;text-align:right;
-}
 #smvDailyCalendar #calDateDetails #calReadings .cal-summary article{
  text-align:center;
 }
@@ -307,82 +229,11 @@ html body.calendar-only>header.calendar-topbar{
  border:2px solid #327d68;outline:2px solid #d5e9df;outline-offset:-5px;
 }
 @media(max-width:420px){
- #smvDailyCalendar .cal-date-details-head{padding:14px 9px}
- #smvDailyCalendar .cal-date-details-head h3.cal-date-details-title{gap:8px}
  #smvDailyCalendar .cal-date-details-head h3.cal-date-details-title::before,
  #smvDailyCalendar .cal-date-details-head h3.cal-date-details-title::after{max-width:54px}
  
 }
 
-/* Keep Kari/Thaniya flags left of Abhijit; center Travel Shoolam on its own full-width row. */
-#smvDailyCalendar .cal-date-details .cal-details-summary .cal-day-flags-card{
- grid-column:auto;display:flex;align-items:center;justify-content:center;padding:13px 8px;
-}
-#smvDailyCalendar .cal-date-details .cal-details-summary .cal-shoolam-card{
- grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:12px;text-align:center;padding:13px;
-}
-#smvDailyCalendar .cal-shoolam-main{display:flex;width:100%;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0;text-align:center}
-#smvDailyCalendar .cal-shoolam-main>small{font-size:11px;color:#68796f}
-#smvDailyCalendar .cal-shoolam-main>strong{font-size:16px;color:#174f47}
-#smvDailyCalendar .cal-shoolam-main>span{font-size:12px;line-height:1.45;color:#576a60}
-#smvDailyCalendar .cal-day-flags{display:grid;width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;min-width:0;padding:0;border:0}
-#smvDailyCalendar .cal-day-flag{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;padding:9px 5px;border:1px solid #dce5dd;border-radius:9px;background:#f4f8f3;text-align:center}
-#smvDailyCalendar .cal-day-flag>small{font-size:11px;line-height:1.25;color:#596e62}
-#smvDailyCalendar .cal-day-flag>strong{font-size:13px;font-weight:850;line-height:1.25;color:#246e48}
-#smvDailyCalendar .cal-day-flag.is-marked{background:#fff1ed;border-color:#e8c1ba}
-#smvDailyCalendar .cal-day-flag.is-marked>strong{color:#a52a27}
-#smvDailyCalendar .cal-day-flag.is-unknown{background:#f5f3ee;border-color:#e4dfd3}
-#smvDailyCalendar .cal-day-flag.is-unknown>strong{color:#716d61}
-#smvDailyCalendar .cal-day-yoga-card.is-unknown{border-left:4px solid #a9a394;background:#f5f3ee}
-#smvDailyCalendar .cal-day-yoga-card.is-unknown>strong{color:#716d61}
-@media(max-width:420px){
- #smvDailyCalendar .cal-date-details .cal-details-summary .cal-day-flags-card{padding:9px 2px}
- #smvDailyCalendar .cal-date-details .cal-details-summary .cal-shoolam-card{padding:10px}
- #smvDailyCalendar .cal-day-flags{gap:5px}
- #smvDailyCalendar .cal-day-flag{padding:8px 3px}
- #smvDailyCalendar .cal-day-flag>small{font-size:10px}
- #smvDailyCalendar .cal-day-flag>strong{font-size:12px}
-}
-@media(max-width:340px){
- #smvDailyCalendar .cal-date-details .cal-details-summary .cal-day-flags-card{padding:10px 4px}
- #smvDailyCalendar .cal-date-details .cal-details-summary .cal-shoolam-card{padding:10px 4px}
- #smvDailyCalendar .cal-day-flags{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
-
-
-/* 2026-11-16 — one calm Date Details layer, bright title-only emphasis and full-width month jump controls. */
-#smvDailyCalendar .cal-date-details{
- background:var(--cal-paper,#fffdf8)!important;border:1px solid var(--cal-line,#d9e5df)!important;border-radius:14px!important;box-shadow:none!important;
-}
-#smvDailyCalendar .cal-date-details-head{
- display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;
- margin:0 0 12px!important;padding:5px 0 12px!important;background:transparent!important;
- border:0!important;border-bottom:1px solid var(--cal-line,#d9e5df)!important;border-radius:0!important;
- box-shadow:none!important;color:inherit!important;text-align:center!important;
-}
-#smvDailyCalendar .cal-date-details-head>div{width:100%!important;max-width:none!important}
-#smvDailyCalendar .cal-date-details-head h3.cal-date-details-title{
- display:block!important;width:100%!important;margin:0!important;padding:0!important;
- color:#087f46!important;-webkit-text-fill-color:#087f46!important;
- font-size:clamp(20px,4.6vw,24px)!important;font-weight:950!important;line-height:1.3!important;
- text-align:center!important;text-shadow:none!important;
-}
-#smvDailyCalendar .cal-date-details-head h3.cal-date-details-title::before,
-#smvDailyCalendar .cal-date-details-head h3.cal-date-details-title::after{display:none!important;content:none!important}
-#smvDailyCalendar .cal-date-details-head p{display:none!important}
-#calDateDetailsExtra .cal-details-summary article,
-#smvDailyCalendar #calDateDetails #calDaily .card,
-#smvDailyCalendar #calDateDetails #calReadings .cal-summary article{
- background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;
-}
-#calDateDetailsExtra .cal-details-summary article{padding:11px 4px!important;border-bottom:1px solid var(--cal-line,#d9e5df)!important}
-#calDateDetailsExtra .cal-details-summary article.cal-shoolam-card{border-bottom:0!important}
-#calDateDetailsExtra .cal-day-yoga-card.is-auspicious{border-left:3px solid #27804c!important;background:transparent!important}
-#calDateDetailsExtra .cal-thyajyam-card{border-left:0!important;background:transparent!important}
-#calDateDetailsExtra .cal-thyajyam-card .cal-yoga-segment.is-inauspicious{border-left:0!important}
-#calDateDetailsExtra .cal-day-yoga-card.is-unknown{border-left:3px solid #a9a394!important;background:transparent!important}
-#calDateDetailsExtra .cal-shoolam-card{padding:10px 4px!important}
-#calDateDetailsExtra .cal-day-flag{padding:7px 3px!important;border:0!important;border-radius:0!important;background:transparent!important}
 #smvDailyCalendar #calDateDetails #calDaily .card{margin:10px 0!important;padding:12px 0!important;border-bottom:1px solid var(--cal-line,#d9e5df)!important}
 #smvDailyCalendar #calDateDetails #calDaily .card:last-child{border-bottom:0!important}
 #smvDailyCalendar #calDateDetails #calReadings .cal-summary article{padding:10px 4px!important}
@@ -422,9 +273,6 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-month-jump button{min-width:0!important;white-space:normal!important}
 @media(max-width:680px){
  #smvDailyCalendar .cal-date-details{padding:10px!important}
- #calDateDetailsExtra .cal-details-summary{gap:5px!important}
- #calDateDetailsExtra .cal-details-summary article{padding:9px 2px!important}
- #calDateDetailsExtra .cal-shoolam-card{padding:8px 2px!important}
  #smvDailyCalendar .cal-month-title{grid-template-columns:40px minmax(0,1fr) 40px!important;gap:5px!important;padding:6px 2px!important}
  #smvDailyCalendar .cal-month-title>[data-month]{width:38px!important;min-width:38px!important;height:38px!important;min-height:38px!important}
  #smvDailyCalendar .cal-month-title .cal-month-current{min-height:44px!important;padding:3px!important}
@@ -478,22 +326,6 @@ html body.calendar-only>header.calendar-topbar{
  #smvDailyCalendar .cal-muhurta-lagna-item+ .cal-muhurta-lagna-item{border-left:0!important;border-top:1px solid var(--cal-line,#d9e5df)!important}
 }
 
-/* SMV CALENDAR-only Panchang/Hora result typography. */
-#smvDailyCalendar .cal-panchang-detail-item.is-primary>strong{
- color:#000;-webkit-text-fill-color:#000;font-weight:700;
-}
-#smvDailyCalendar .cal-panchang-detail-grid .panchang-event-range .smv-calendar-neutral-date-time{
- color:#000;-webkit-text-fill-color:#000;
-}
-#smvDailyCalendar .cal-panchang-detail-grid .panchang-event-range .smv-calendar-normal-connector{
- color:#000;-webkit-text-fill-color:#000;font-weight:400;margin:0 4px;
-}
-#smvDailyCalendar .cal-panchang-detail-grid .panchang-time-result.smv-calendar-neutral-time{
- color:#000;-webkit-text-fill-color:#000;font-weight:400;
-}
-#smvDailyCalendar .cal-panchang-detail-grid .panchang-time-result.smv-calendar-bright-red-time{
- color:#f00;-webkit-text-fill-color:#f00;font-weight:700;
-}
 #smvDailyCalendar #calDaily .hora-vertical .hora-time.smv-calendar-neutral-time:not(.smv-hora-current-green):not(.smv-hora-bright-green):not(.smv-hora-current-red):not(.smv-hora-bright-red){
  color:#000!important;-webkit-text-fill-color:#000!important;font-weight:400!important;
 }
@@ -503,110 +335,3 @@ html body.calendar-only>header.calendar-topbar{
 
 
 /* Daily Panchang values now sit inside the main Daily Panchang details card. */
-#smvDailyCalendar .cal-panchang-detail-grid{
- grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0;margin:2px 0 4px;
-}
-#smvDailyCalendar .cal-details-summary .cal-panchang-detail-item{
- min-width:0;display:flex;flex-direction:row;align-items:flex-start;justify-content:space-between;gap:8px;
- padding:9px 10px;border:1px solid #e2d9c8;border-radius:9px;background:#fff;box-shadow:none;
-}
-#smvDailyCalendar .cal-panchang-detail-item>small{
- flex:0 1 44%;min-width:0;margin:0;font-size:11px;line-height:1.45;color:#68796f;
-}
-#smvDailyCalendar .cal-panchang-detail-item>strong{
- flex:1 1 56%;min-width:0;font-size:13px;line-height:1.45;text-align:right;color:#174f47;font-weight:400;overflow-wrap:anywhere;
-}
-#smvDailyCalendar .cal-panchang-detail-item.is-primary>strong{
- color:#000!important;-webkit-text-fill-color:#000!important;font-weight:700!important;
-}
-#smvDailyCalendar .cal-panchang-detail-grid .cal-name-yoga-label{
- color:#000!important;-webkit-text-fill-color:#000!important;font-weight:700!important;
-}
-#smvDailyCalendar .cal-panchang-detail-grid .panchang-event-range .smv-calendar-neutral-date-time{
- color:#000!important;-webkit-text-fill-color:#000!important;
-}
-#smvDailyCalendar .cal-panchang-detail-grid .panchang-event-range .smv-calendar-normal-connector{
- color:#000!important;-webkit-text-fill-color:#000!important;font-weight:400!important;margin:0 4px;
-}
-#smvDailyCalendar .cal-panchang-detail-grid .panchang-time-result.smv-calendar-neutral-time{
- color:#000!important;-webkit-text-fill-color:#000!important;font-weight:400!important;
-}
-#smvDailyCalendar .cal-panchang-detail-grid .panchang-time-result.smv-calendar-bright-red-time{
- color:#f00!important;-webkit-text-fill-color:#f00!important;font-weight:700!important;
-}
-#smvDailyCalendar .cal-panchang-detail-grid .cal-name-yoga-result{
- display:inline-block;margin-top:4px;font-size:12px;line-height:1.45;font-weight:700;text-align:right;
-}
-
-/* Each Amirthadi result is its own grid item. display:contents lets the
-   Tamil date share the first row with Yoga 1; any additional Yogas flow into
-   the next left/right positions without reserving empty placeholders. */
-#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards{display:contents}
-#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card{
- min-width:0;align-self:stretch;
-}
-#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment{
- flex:1 1 auto;min-width:0;align-items:flex-start;
-}
-#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment-time{
- white-space:normal;overflow-wrap:anywhere;
-}
-@media(max-width:340px){
- #calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card{grid-column:1/-1}
-}
-
-
-/* Tight, consistent vertical rhythm for the Amirthadi Yoga and Thyajyam cards. */
-#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card{
- gap:2px!important;padding:8px 8px!important;
-}
-#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card>small{
- display:block;margin:0!important;font-size:10px!important;line-height:1.25!important;
-}
-#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment{
- display:flex;flex-direction:column;align-items:flex-start;gap:2px!important;
- margin:1px 0 0!important;padding:2px 0!important;border:0!important;border-radius:0!important;background:transparent!important;
-}
-#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment-info{
- display:grid;gap:1px!important;min-width:0;
-}
-#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment-info>strong{
- margin:0!important;font-size:13px!important;line-height:1.25!important;
-}
-#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment-info>small{
- margin:0!important;font-size:11px!important;line-height:1.25!important;
-}
-#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment-time{
- align-self:flex-start;margin:0!important;font-size:11px!important;line-height:1.25!important;white-space:normal!important;
-}
-#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-reference{
- display:block;margin:2px 0 0!important;font-size:10px!important;line-height:1.25!important;color:#576a60;
-}
-#calDateDetailsExtra .cal-details-summary>.cal-thyajyam-card{
- gap:2px!important;padding:8px 8px!important;
-}
-#calDateDetailsExtra .cal-details-summary>.cal-thyajyam-card>small{
- display:block;margin:0!important;font-size:10px!important;line-height:1.25!important;
-}
-#calDateDetailsExtra .cal-details-summary>.cal-thyajyam-card .cal-yoga-segments{
- display:grid;gap:2px!important;margin:2px 0!important;
-}
-#calDateDetailsExtra .cal-details-summary>.cal-thyajyam-card .cal-yoga-segment{
- display:flex;flex-direction:column;align-items:flex-start;gap:2px!important;
- margin:0!important;padding:2px 0!important;border:0!important;border-radius:0!important;background:transparent!important;
-}
-#calDateDetailsExtra .cal-details-summary>.cal-thyajyam-card .cal-yoga-segment-info{
- display:grid;gap:1px!important;min-width:0;
-}
-#calDateDetailsExtra .cal-details-summary>.cal-thyajyam-card .cal-yoga-segment-info>strong{
- margin:0!important;font-size:13px!important;line-height:1.25!important;
-}
-#calDateDetailsExtra .cal-details-summary>.cal-thyajyam-card .cal-yoga-segment-info>small{
- margin:0!important;font-size:11px!important;line-height:1.25!important;
-}
-#calDateDetailsExtra .cal-details-summary>.cal-thyajyam-card .cal-yoga-segment-time{
- align-self:flex-start!important;margin:1px 0 0!important;font-size:11px!important;line-height:1.25!important;white-space:normal!important;
-}
-#calDateDetailsExtra .cal-details-summary>.cal-thyajyam-card>small:last-child{
- margin:2px 0 0!important;font-size:10px!important;line-height:1.25!important;
-}
