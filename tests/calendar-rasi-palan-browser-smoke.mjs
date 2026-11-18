@@ -192,7 +192,7 @@ try {
   await page.select('#calStarPada', '1');
   try {
     await page.waitForFunction(() => document.querySelector('#calStarPada')?.value === '1' &&
-      document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-pada-row').length === 1,
+      document.querySelector('#calChandrashtamaPeriods .cal-chandra-window:first-child')?.querySelectorAll('.cal-chandra-pada-row').length === 1,
       { timeout: 20000 });
   } catch (error) {
     const diagnostic = await page.evaluate(() => ({
@@ -200,7 +200,7 @@ try {
       star: document.querySelector('#calStar')?.value,
       pada: document.querySelector('#calStarPada')?.value,
       padaOptions: [...(document.querySelectorAll('#calStarPada option'))].map(option => option.value),
-      rows: [...document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-pada-row')].map(row => ({
+      rows: [...(document.querySelector('#calChandrashtamaPeriods .cal-chandra-window:first-child')?.querySelectorAll('.cal-chandra-pada-row') || [])].map(row => ({
         birthPada: row.dataset.birthPada, targetStar: row.dataset.targetStar, targetPada: row.dataset.targetPada
       })),
       cardText: document.querySelector('#calChandrashtamaPeriods')?.textContent || '',
@@ -208,7 +208,7 @@ try {
     }));
     throw new Error('Selected Ashwini Pada 1 did not filter to one row: '+JSON.stringify(diagnostic)+'; '+error.message);
   }
-  const ashwiniPada1 = await page.$eval('#calChandrashtamaPeriods .cal-chandra-pada-row', row => ({
+  const ashwiniPada1 = await page.$eval('#calChandrashtamaPeriods .cal-chandra-window:first-child .cal-chandra-pada-row', row => ({
     birthPada: Number(row.dataset.birthPada),
     targetStar: Number(row.dataset.targetStar),
     targetPada: Number(row.dataset.targetPada),
@@ -219,8 +219,8 @@ try {
 
   // Bharani: full 13°20' period and its four separate Pada intervals.
   await page.select('#calStar', '1');
-  await page.waitForFunction(() => document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-pada-row').length === 4);
-  const bharaniRows = await page.$$eval('#calChandrashtamaPeriods .cal-chandra-pada-row', rows =>
+  await page.waitForFunction(() => document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-window:first-child .cal-chandra-pada-row').length === 4);
+  const bharaniRows = await page.$eval('#calChandrashtamaPeriods .cal-chandra-window:first-child .cal-chandra-pada-row', rows =>
     rows.map(row => [Number(row.dataset.birthPada),Number(row.dataset.targetStar),Number(row.dataset.targetPada)]));
   assert.deepEqual(bharaniRows, [[1,16,4],[2,17,1],[3,17,2],[4,17,3]]);
 
@@ -234,11 +234,11 @@ try {
   const simhaStarOptions = await page.$$eval('#calStar option', options => options.map(option => option.value));
   assert.deepEqual(simhaStarOptions,['9','10','11']);
   await page.select('#calStar','10');
-  const pooramRows = await page.$$eval('#calChandrashtamaPeriods .cal-chandra-pada-row', rows =>
+  const pooramRows = await page.$eval('#calChandrashtamaPeriods .cal-chandra-window:first-child .cal-chandra-pada-row', rows =>
     rows.map(row => [Number(row.dataset.birthPada),Number(row.dataset.targetStar),Number(row.dataset.targetPada)]));
   assert.deepEqual(pooramRows, [[1,25,4],[2,26,1],[3,26,2],[4,26,3]]);
   await page.select('#calStarPada','3');
-  const pooram3 = await page.$eval('#calChandrashtamaPeriods .cal-chandra-pada-row', row => ({
+  const pooram3 = await page.$eval('#calChandrashtamaPeriods .cal-chandra-window:first-child .cal-chandra-pada-row', row => ({
     birthPada:Number(row.dataset.birthPada),
     targetStar:Number(row.dataset.targetStar),
     targetPada:Number(row.dataset.targetPada),
@@ -251,7 +251,7 @@ try {
   await page.select('#calRasi','0');
   await page.select('#calStar','0');
   await page.select('#calStarPada','1');
-  await page.waitForFunction(() => document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-pada-row').length === 1);
+  await page.waitForFunction(() => document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-window:first-child .cal-chandra-pada-row').length === 1);
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
   const chandrashtamaCard = await page.$('#calReadings .cal-chandrashtama');
   assert.ok(chandrashtamaCard, 'The Chandrashtama Rasi card must be rendered for the mobile preview.');
