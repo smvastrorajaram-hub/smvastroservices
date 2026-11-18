@@ -313,7 +313,7 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   assert.match(dailyCalendarCssSource, /cal-chandra-upcoming-heading\{margin:12px 0 8px;color:inherit;font-size:inherit;font-weight:400;line-height:inherit\}/);
   assert.match(dailyCalendarCssSource, /cal-chandrashtama-section>h3\{display:block!important;width:100%!important;text-align:center!important\}/);
   assert.match(dailyCalendarCssSource, /cal-chandrashtama-section>h3::after\{display:none!important;content:none!important\}/);
-  assert.match(dailyCalendarCssSource, /cal-chandrashtama-result\.is-present\{color:#c00000!important;-webkit-text-fill-color:#c00000!important\}/);
+  assert.match(dailyCalendarCssSource, /cal-chandrashtama-result\.is-present\{color:#c00000!important;-webkit-text-fill-color:#c00000!important;font-weight:400!important\}/);
   assert.ok(dailyCalendarSource.includes("L('Chandrashtama Rasi','சந்திராஷ்டம ராசி')"));
   assert.doesNotMatch(dailyCalendarSource, /Eighth Rasi|எட்டாம் ராசி/);
   assert.match(dailyCalendarCssSource, /cal-chandrashtama-result\{[^}]*font-size:inherit!important;font-weight:400!important/);
@@ -886,7 +886,7 @@ test('SMV CALENDAR daily Panchang and Hora use scoped black/red result typograph
   assert.match(horoscopeRendererSource, /smv-calendar-bright-red-time/);
   assert.match(horoscopeRendererSource, /smv-calendar-degree-normal/);
   assert.match(dailyCalendarSource, /hora-time smv-calendar-neutral-time/);
-  assert.match(calendarThemeCssSource, /cal-name-yoga-label\{\s*color:#000!important;[\s\S]*?font-weight:700!important;[\s\S]*?font-size:inherit!important;/);
+  assert.match(calendarThemeCssSource, /cal-name-yoga-label\{\s*color:#000!important;[\s\S]*?font-weight:700!important;[\s\S]*?font-size:11px!important;/);
   assert.match(calendarThemeCssSource, /smv-calendar-primary-result-row>td:nth-child\(2\)\{\s*color:#000;[^}]*font-weight:700/);
   assert.match(calendarThemeCssSource, /smv-calendar-bright-red-time\{\s*color:#f00/);
   assert.match(calendarThemeCssSource, /smv-calendar-normal-connector\{\s*color:#000;[^}]*font-weight:400/);
@@ -908,7 +908,7 @@ test('SMV CALENDAR daily Panchang and Hora use scoped black/red result typograph
 
 test('Amirthadi Yoga results each occupy a natural left/right card beside the Tamil date', () => {
   assert.match(dailyCalendarSource, /const yogaCardsHtml=yogaSegments\.length\?yogaSegments\.map/);
-  assert.match(dailyCalendarSource, /class="cal-day-yoga-cards" data-yoga-count="\'+yogaSegments\.length\+'/);
+  assert.ok(dailyCalendarSource.includes("class=\"cal-day-yoga-cards\" data-yoga-count=\"'+yogaSegments.length+'\">'+yogaCardsHtml+'</div>'"), 'The Yoga count container renders only real Yoga cards.');
   assert.match(dailyCalendarSource, /segment===yogaSegments\[0\]\?yogaReferenceHtml/);
   assert.match(calendarThemeCssSource, /\.cal-details-summary>\.cal-day-yoga-cards\{display:contents\}/);
   assert.match(calendarThemeCssSource, /\.cal-amirthadi-yoga-card/);
