@@ -292,7 +292,7 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   assert.match(publicRasiPalanSource, /positions\.moonSign == null/);
   assert.match(dailyCalendarSource, /Birth Star & Tara Bala/);
   assert.match(dailyCalendarSource, /calChandrashtamaSection/);
-  assert.ok(dailyCalendarSource.includes('சந்திராஷ்டமம் : உண்டு'));
+  assert.ok(dailyCalendarSource.includes('சந்திராஷ்டமம் : - உண்டு'));
   assert.ok(dailyCalendarSource.includes('சந்திராஷ்டமம் : இல்லை'));
   assert.ok(dailyCalendarSource.includes("status.dataset.result=hasChandrashtama?'present':'absent'"));
   assert.doesNotMatch(dailyCalendarSource, /No Chandrashtama period overlaps the selected date\/time|தேர்ந்தெடுத்த தேதியில் சந்திராஷ்டமக் காலப்பகுதி இல்லை/);
