@@ -863,3 +863,19 @@ test('SMV CALENDAR daily Panchang and Hora use scoped black/red result typograph
   assert.equal(releases[0][1], '20261118-document50-marriage-panchaka-v1');
   assert.equal(releases[0][2], '20261118-document50-marriage-panchaka-v1');
 });
+
+
+test('Document 50 marriage dates, Panchaka and selected-time checks are wired into the Calendar UI',()=>{
+  assert.match(dailyCalendarSource,/classifyDocument50MarriageMuhurtham/);
+  assert.match(dailyCalendarSource,/getDocument50Panchaka/);
+  assert.match(dailyCalendarSource,/getDocument50TimeRestrictions/);
+  assert.match(dailyCalendarSource,/id="calMuhurtaTime"/);
+  assert.match(dailyCalendarSource,/selectedYogaSegment/);
+  assert.match(dailyCalendarSource,/Utpata Yoga is not separately classified/);
+});
+
+test('Document 50 UI remains explicit about its partial source coverage',()=>{
+  assert.match(dailyCalendarSource,/Not listed in the scanned Document 50 table; not a full time-specific rejection/);
+  assert.match(dailyCalendarSource,/full Thali-window checks are not treated as approved/);
+  assert.match(dailyCalendarSource,/DOCUMENT50_MARRIAGE_SOURCES/);
+});
