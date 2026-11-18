@@ -381,16 +381,14 @@ test('Calendar distinguishes Gazette government holidays from observances and do
     'The entire Sunday date cell must not be recoloured.');
   assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar .cal-date-details-head::after{'),
     'Calendar heading must suppress the inherited right-side Om ornament on its header.');
-  assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .hora-card>h3,'),
-    'Daily Hora heading must be controlled inside the Calendar scope.');
-  assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .transit-card>h3,'),
-    'Transit Chart heading must be controlled inside the Calendar scope.');
-  assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .transit-table-card>h3{'),
-    'Transit Planetary Positions heading must be controlled inside the Calendar scope.');
-  assert.ok(calendarThemeCssSource.includes('text-align:center!important;justify-content:center!important;'),
-    'Daily Hora and both transit headings must be centered.');
-  assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .transit-table-card>h3::after{'),
-    'The inherited trailing decorative line must be removed from the three Calendar headings.');
+  assert.equal((horoscopeRendererSource.match(/class="cal-centered-heading"/g)||[]).length,3,
+    'Daily Hora, Transit Chart and Transit Planetary Positions each use the dedicated centered-heading class.');
+  assert.match(dailyCalendarCssSource, /h3:not\(\.cal-date-details-title\):not\(\.cal-section-title\):not\(\.cal-centered-heading\)/,
+    'Generic left-aligned flex decoration must not target Calendar centered headings.');
+  assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .cal-centered-heading{'),
+    'The Calendar-specific centered-heading class must be centered within the Calendar scope.');
+  assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .cal-centered-heading::after{'),
+    'Centered Calendar headings must not display inherited trailing ornaments.');
 });
 
 test('Public Rasi Palan uses the current local date automatically and calculates weekly windows', () => {
