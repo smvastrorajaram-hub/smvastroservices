@@ -302,6 +302,9 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   assert.match(dailyCalendarCssSource, /cal-chandrashtama-result\.is-present\{color:#c00000!important;-webkit-text-fill-color:#c00000!important\}/);
   assert.match(dailyCalendarCssSource, /cal-chandrashtama-result\.is-absent\{color:#111!important;-webkit-text-fill-color:#111!important\}/);
   assert.match(dailyCalendarCssSource, /cal-chandra-window\.is-selected-date\{display:block;border:0!important/);
+  assert.ok(dailyCalendarCssSource.includes('Flatten all period detail tiles into the single outer Chandrashtama main card.'));
+  assert.ok(dailyCalendarCssSource.includes('.cal-chandra-pada-row.is-janma-pada-projection'));
+  assert.ok(dailyCalendarCssSource.includes('background:transparent!important;box-shadow:none!important;padding:0!important'));
   assert.match(dailyCalendarSource, /Tara Bala/);
   assert.match(dailyCalendarSource, /Transit Moon Rasi/);
   assert.match(dailyCalendarSource, /signs\[moonSign\]\[ta\(\)\?1:0\]/);
