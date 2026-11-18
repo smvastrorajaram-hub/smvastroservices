@@ -221,11 +221,11 @@ try {
   await page.$eval('#calDate', (el, date) => {
     el.value = date;
     el.dispatchEvent(new Event('change', { bubbles: true }));
-  }, '2026-11-18');
+  }, '2026-11-19');
   await page.waitForFunction(() => {
     const status = document.querySelector('#calStatus')?.textContent || '';
     const root = document.querySelector('#calChandrashtamaPeriods');
-    return status.includes('2026-11-18') && root &&
+    return status.includes('2026-11-19') && root &&
       !/Calculating exact Moon sign|சந்திர ராசி \/ நட்சத்திரப் பாத எல்லைகள்/.test(root.textContent || '') &&
       !root.querySelector('.cal-chandra-window') && /No Chandrashtama period overlaps the selected date\/time/.test(root.textContent || '');
   }, { timeout: 120000 });
