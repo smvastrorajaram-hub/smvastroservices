@@ -541,72 +541,72 @@ html body.calendar-only>header.calendar-topbar{
 /* Each Amirthadi result is its own grid item. display:contents lets the
    Tamil date share the first row with Yoga 1; any additional Yogas flow into
    the next left/right positions without reserving empty placeholders. */
-#smvDailyCalendar .cal-details-summary>.cal-day-yoga-cards{display:contents}
-#smvDailyCalendar .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card{
+#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards{display:contents}
+#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card{
  min-width:0;align-self:stretch;
 }
-#smvDailyCalendar .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment{
+#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment{
  flex:1 1 auto;min-width:0;align-items:flex-start;
 }
-#smvDailyCalendar .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment-time{
+#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment-time{
  white-space:normal;overflow-wrap:anywhere;
 }
 @media(max-width:340px){
- #smvDailyCalendar .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card{grid-column:1/-1}
+ #calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card{grid-column:1/-1}
 }
 
 
 /* Tight, consistent vertical rhythm for the Amirthadi Yoga and Thyajyam cards. */
-#smvDailyCalendar .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card{
+#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card{
  gap:2px!important;padding:8px 8px!important;
 }
-#smvDailyCalendar .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card>small{
+#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card>small{
  display:block;margin:0!important;font-size:10px!important;line-height:1.25!important;
 }
-#smvDailyCalendar .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment{
+#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment{
  display:flex;flex-direction:column;align-items:flex-start;gap:2px!important;
  margin:1px 0 0!important;padding:2px 0!important;border:0!important;border-radius:0!important;background:transparent!important;
 }
-#smvDailyCalendar .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment-info{
+#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment-info{
  display:grid;gap:1px!important;min-width:0;
 }
-#smvDailyCalendar .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment-info>strong{
+#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment-info>strong{
  margin:0!important;font-size:13px!important;line-height:1.25!important;
 }
-#smvDailyCalendar .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment-info>small{
+#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment-info>small{
  margin:0!important;font-size:11px!important;line-height:1.25!important;
 }
-#smvDailyCalendar .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment-time{
+#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment-time{
  align-self:flex-start;margin:0!important;font-size:11px!important;line-height:1.25!important;white-space:normal!important;
 }
-#smvDailyCalendar .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-reference{
+#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-reference{
  display:block;margin:2px 0 0!important;font-size:10px!important;line-height:1.25!important;color:#576a60;
 }
-#smvDailyCalendar .cal-details-summary>.cal-thyajyam-card{
+#calDateDetailsExtra .cal-details-summary>.cal-thyajyam-card{
  gap:2px!important;padding:8px 8px!important;
 }
-#smvDailyCalendar .cal-details-summary>.cal-thyajyam-card>small{
+#calDateDetailsExtra .cal-details-summary>.cal-thyajyam-card>small{
  display:block;margin:0!important;font-size:10px!important;line-height:1.25!important;
 }
-#smvDailyCalendar .cal-details-summary>.cal-thyajyam-card .cal-yoga-segments{
+#calDateDetailsExtra .cal-details-summary>.cal-thyajyam-card .cal-yoga-segments{
  display:grid;gap:2px!important;margin:2px 0!important;
 }
-#smvDailyCalendar .cal-details-summary>.cal-thyajyam-card .cal-yoga-segment{
+#calDateDetailsExtra .cal-details-summary>.cal-thyajyam-card .cal-yoga-segment{
  display:flex;flex-direction:column;align-items:flex-start;gap:2px!important;
  margin:0!important;padding:2px 0!important;border:0!important;border-radius:0!important;background:transparent!important;
 }
-#smvDailyCalendar .cal-details-summary>.cal-thyajyam-card .cal-yoga-segment-info{
+#calDateDetailsExtra .cal-details-summary>.cal-thyajyam-card .cal-yoga-segment-info{
  display:grid;gap:1px!important;min-width:0;
 }
-#smvDailyCalendar .cal-details-summary>.cal-thyajyam-card .cal-yoga-segment-info>strong{
+#calDateDetailsExtra .cal-details-summary>.cal-thyajyam-card .cal-yoga-segment-info>strong{
  margin:0!important;font-size:13px!important;line-height:1.25!important;
 }
-#smvDailyCalendar .cal-details-summary>.cal-thyajyam-card .cal-yoga-segment-info>small{
+#calDateDetailsExtra .cal-details-summary>.cal-thyajyam-card .cal-yoga-segment-info>small{
  margin:0!important;font-size:11px!important;line-height:1.25!important;
 }
-#smvDailyCalendar .cal-details-summary>.cal-thyajyam-card .cal-yoga-segment-time{
+#calDateDetailsExtra .cal-details-summary>.cal-thyajyam-card .cal-yoga-segment-time{
  align-self:flex-start!important;margin:1px 0 0!important;font-size:11px!important;line-height:1.25!important;white-space:normal!important;
 }
-#smvDailyCalendar .cal-details-summary>.cal-thyajyam-card>small:last-child{
+#calDateDetailsExtra .cal-details-summary>.cal-thyajyam-card>small:last-child{
  margin:2px 0 0!important;font-size:10px!important;line-height:1.25!important;
 }
