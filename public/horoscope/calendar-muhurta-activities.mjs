@@ -280,13 +280,15 @@ export const DOCUMENT50_MARRIAGE_DATE_SUMMARIES = Object.freeze({
     year: 'Parabhava 2026–2027',
     start: '2026-04-20',
     end: '2027-04-11',
-    count: DOCUMENT50_PARABHAVA_DATES.length
+    transcribedCount: DOCUMENT50_PARABHAVA_DATES.length,
+    unresolvedDateRows: 1
   }),
   pilavanga2027To2028: Object.freeze({
     year: 'Pilavanga 2027–2028',
     start: '2027-04-18',
     end: '2027-12-10',
-    count: DOCUMENT50_PILAVANGA_DATES.length
+    transcribedCount: DOCUMENT50_PILAVANGA_DATES.length,
+    unresolvedDateRows: 0
   })
 });
 
@@ -319,7 +321,7 @@ export function classifyDocument50MarriageMuhurtham({ date } = {}) {
   }
   const period = DOCUMENT50_DATE_SETS.find(item => date >= item.start && date <= item.end);
   if (!period) {
-    return { available: false, listed: null, date, year: null, count: null, reason: 'Date is outside the scanned annual table coverage', source: DOCUMENT50_MARRIAGE_SOURCES.parabhavaDates };
+    return { available: false, listed: null, date, year: null, transcribedCount: null, unresolvedDateRows: null, reason: 'Date is outside the scanned annual table coverage', source: DOCUMENT50_MARRIAGE_SOURCES.parabhavaDates };
   }
   const listed = period.dates.has(date);
   return {
@@ -327,7 +329,8 @@ export function classifyDocument50MarriageMuhurtham({ date } = {}) {
     listed,
     date,
     year: period.year,
-    count: period.count,
+    transcribedCount: period.transcribedCount,
+    unresolvedDateRows: period.unresolvedDateRows,
     reason: listed ? 'Date is printed in the Document 50 marriage Muhurtham table' : 'Date is not listed in the scanned Document 50 annual table; this is not a complete time-specific rejection',
     source: period.year.startsWith('Parabhava') ? DOCUMENT50_MARRIAGE_SOURCES.parabhavaDates : DOCUMENT50_MARRIAGE_SOURCES.pilavangaDates
   };
