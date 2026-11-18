@@ -2,7 +2,7 @@ import {offsetMinutesAt} from './offline/places/timezone.mjs';
 import {signs,stars,planets,holidays2026,holidaySource,favorable} from './calendar-data.mjs';
 import {getTamilCalendarDayFlags,getNakshatraDirection,getNethiramJeevan} from './tamil-day-classifications.mjs';
 import {classifySubhaMuhurtham} from './calendar-muhurta-classification.mjs';
-import {shouldShowSpecialMuhurtha,getVastuDay,isMoudhyaScopeDate} from './calendar-special-muhurtha.mjs';
+import {shouldShowSpecialMuhurtha,getVastuDay,isMoudhyaScopeDate,getPanchakaActivityResults} from './calendar-special-muhurtha.mjs';
 import {getChandrashtamaRasiIndex,getBirthStarPadasInRasi,getNakshatraPadaAtLongitude,getChandrashtamaPadaProjection,formatRasiDegree} from './calendar-chandrashtama.mjs';
 
 const host=document.getElementById('smvDailyCalendar');
@@ -396,9 +396,9 @@ if(host){
   return String(Math.floor(minute/60)).padStart(2,'0')+':'+String(minute%60).padStart(2,'0');
  }
 
- function specialLocationKey(date){
-  const dayInput=input(date,false);
-  return [date,Number(dayInput.lat).toFixed(5),Number(dayInput.lon).toFixed(5),Number(dayInput.utcOffsetMinutes),dayInput.timezone||''].join('|');
+ function specialLocationKey(date,scope='day'){
+  const dayInput=input(selected,false);
+  return [scope,date,Number(dayInput.lat).toFixed(5),Number(dayInput.lon).toFixed(5),Number(dayInput.utcOffsetMinutes),dayInput.timezone||''].join('|');
  }
  function formatSpecialWindow(item){
   const start=item.startDate===selected?'':String(item.startDate||'');
@@ -414,7 +414,7 @@ if(host){
   const request=specialMuhurthaRequest;
   target.hidden=!eligible;
   if(!eligible){target.replaceChildren();return;}
-  const key=specialLocationKey(selected);
+  const key=specialLocationKey(selected,'day');
   target.innerHTML='<h3>'+L('Pushkara Navamsa','புஷ்கர நவாம்சம்')+'</h3><p class="cal-special-loading">'+L('Preparing local auspicious intervals…','உள்ளூர் சுப நேரங்கள் கணக்கிடப்படுகின்றன…')+'</p>';
   try{
    let pending=specialMuhurthaPending.get(key);
@@ -438,10 +438,12 @@ if(host){
     return;
    }
    const rows=result.windows.map(item=>{
-    const title=item.isRahita?L('உத்தமம்','உத்தமம்'):(ta()?item.panchakaLabelTa:item.panchakaLabelEn);
+    const title=item.isRahita?L('உத்தமம்','Excellent'):(ta()?item.panchakaLabelTa:item.panchakaLabelEn);
     const detail=item.isRahita?'':(ta()?item.cautionTa:item.cautionEn);
     const state=item.isRahita?'is-uttamam':'is-panchaka';
-    return '<article class="cal-special-muhurtha-row '+state+'"><strong>'+esc(title)+'</strong><time>'+esc(formatSpecialWindow(item))+'</time>'+(detail?'<small>'+esc(detail)+'</small>':'')+'</article>';
+    const activities=getPanchakaActivityResults({available:true,isRahita:item.isRahita,key:item.panchakaKey});
+    const activityHtml=activities.map(activity=>'<span class="'+(activity.suitableByPanchaka?'is-clear':'is-blocked')+'">'+esc(ta()?activity.labelTa:activity.labelEn)+' · '+(activity.suitableByPanchaka?L('பஞ்சகத் தடையில்லை','No Panchaka restriction'):L('தவிர்க்கவும்','Avoid'))+'</span>').join('');
+    return '<article class="cal-special-muhurtha-row '+state+'"><strong>'+esc(title)+'</strong><time>'+esc(formatSpecialWindow(item))+'</time>'+(detail?'<small>'+esc(detail)+'</small>':'')+'<div class="cal-special-activity-results">'+activityHtml+'</div></article>';
    }).join('');
    target.innerHTML='<h3>'+L('Pushkara Navamsa','புஷ்கர நவாம்சம்')+'</h3><div class="cal-special-muhurtha-list">'+rows+'</div>';
   }catch(error){
@@ -465,7 +467,8 @@ if(host){
   const inScope=isMoudhyaScopeDate(selected);
   target.hidden=true;target.replaceChildren();
   if(!inScope)return;
-  const key=specialLocationKey(selected);
+  const tamilMonthStart=daily?.en?.p?.tamilSolar?.monthStartDate||selected;
+  const key=specialLocationKey(tamilMonthStart,'month');
   try{
    let pending=moudhyaPending.get(key);
    if(!moudhyaCache.has(key)&&!pending){
