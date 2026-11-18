@@ -53,7 +53,7 @@ Some published explainers also describe a 17th-Nakshatra-from-birth-star calcula
 
 ## 6. Reference cross-checks
 
-- [Document 51 supplied by the user](../) — titled “சந்திரன் ராசிகளில் பிரவேசிக்கும் காலங்களும் சந்திராஷ்டமம் அடையும் ராசிகளும்”; the monthly table pairs Moon's Rasi ingress timing with the Chandrashtama Rasi.
+- **User-supplied Document 51, page 42** — titled “சந்திரன் ராசிகளில் பிரவேசிக்கும் காலங்களும் சந்திராஷ்டமம் அடையும் ராசிகளும்”; the monthly table pairs Moon's Rasi ingress timing with the Chandrashtama Rasi.
 - [Chandrashtama.in — What is Chandrashtama?](https://chandrashtama.in/what-is-chandrashtama/) — explains the eighth-Rasi definition, Rasi entry/exit and the Nakshatra/Pada content inside each affected Rasi.
 - [Chandrashtama.in calculator](https://chandrashtama.in/) — demonstrates location/time-aware Moon-sign entry and exit output.
 - [Jyotishya.date — Chandrashtama](https://jyotishya.date/chandrashtama) — independently describes the eighth sidereal sign from the natal Moon sign and the entry/exit interval.
