@@ -875,8 +875,8 @@ test('Document 50 marriage dates, Panchaka and selected-time checks are wired in
 });
 
 test('Document 50 UI remains explicit about its partial source coverage',()=>{
-  assert.match(calendarWorkerSource,/calculateDocument50PushkaraWindows/);
-  assert.match(calendarWorkerSource,/houses\(Number\(jd\.ut\),lat,lon,'S'\)/);
+  assert.match(calendarCalculationWorkerSource,/calculateDocument50PushkaraWindows/);
+  assert.match(calendarCalculationWorkerSource,/houses\(Number\(jd\.ut\),lat,lon,'S'\)/);
   assert.match(dailyCalendarSource,/thali-pushkara-windows/);
   assert.match(dailyCalendarSource,/calDocument50PushkaraWindows/);
   assert.match(dailyCalendarSource,/Not listed in the scanned Document 50 table; not a full time-specific rejection/);
