@@ -922,8 +922,8 @@ export async function calculateSunMoon(input){
  export function calculateAstaPositionsSync({date,time,utcOffsetMinutes=330}){
    if(!swe)throw new Error('Swiss Ephemeris WASM is not initialized.');
    const ds=String(date||''),ts=String(time||'');
-   const m=ts.match(/^(\\d{1,2}):(\\d{2})(?::(\\d{2})(?:\\.(\\d+))?)?$/);
-   if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(ds)||!m)throw new Error('தேதி / நேரம் சரியாக இல்லை.');
+   const m=ts.match(/^(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?$/);
+   if(!/^\d{4}-\d{2}-\d{2}$/.test(ds)||!m)throw new Error('தேதி / நேரம் சரியாக இல்லை.');
    const hh=Number(m[1]),mm=Number(m[2]),ss=Number(m[3]||0)+(m[4]?Number('0.'+m[4]):0);
    if(hh>23||mm>59||ss>=60)throw new Error('நேரம் சரியாக இல்லை.');
    const offset=Number(utcOffsetMinutes);
