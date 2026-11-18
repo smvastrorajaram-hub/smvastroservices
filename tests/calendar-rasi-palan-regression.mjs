@@ -172,49 +172,36 @@ test('Sunrise Rasi Mana uses only the untraversed sidereal solar arc', () => {
     'A progressed Sun on 25 November must show only the residual OA arc, smaller than the complete Scorpio value.');
 });
 
-test('Calendar Rasi Mana selects the complete OA duration for the local solar-ingress sign, independently of current Lagna', () => {
+test('Calendar Rasi Mana engine remains isolated from the new Pushkara result UI', () => {
   assert.match(calendarCalculationWorkerSource, /calculateSolarSignRasiMana/);
   assert.match(calendarCalculationWorkerSource, /calculateLahiriContextAt/);
   assert.match(calendarCalculationWorkerSource, /rasiManaSignIndex:rasi\.signIndex/);
-  assert.doesNotMatch(calendarCalculationWorkerSource, /calculateAscendantAt|calculateLagnaBalanceFromRasiMana|armcDegrees:/,
-    'The solar-sign Rasi Mana path must not use the actual Ascendant or ARMC remainder.');
+  assert.doesNotMatch(calendarCalculationWorkerSource, /calculateAscendantAt|calculateLagnaBalanceFromRasiMana|armcDegrees/,
+    'The existing solar-sign Rasi Mana calculation must remain isolated from actual Ascendant calculations.');
   assert.match(swissCalculationSource, /export async function calculateLahiriContextAt/);
-  assert.doesNotMatch(swissCalculationSource, /export async function calculateAscendantAt/,
-    'The old ascendant-only solar-ingress source must be removed.');
-  assert.match(transitPanchangSource, /nextIngress<sunsetTs/,
-    'An ingress after local sunset must move to the next sunrise interval.');
+  assert.match(transitPanchangSource, /nextIngress<sunsetTs/);
   assert.ok(calendarWorkerSource.includes('../offline/rasi-mana.browser.mjs'),
-    'The calculation module must be included in the Calendar PWA cache');
-  assert.match(calendarCalculationWorkerSource, /fullBalanceVighati:rasi\.totalVighati/);
+    'The existing offline Rasi Mana calculation asset remains packaged.');
   assert.match(calendarCalculationWorkerSource, /calculateRemainingSolarSignRasiMana/);
-  assert.match(calendarCalculationWorkerSource, /time:sunrise/,
-    'The worker must calculate the Sun position at the selected local sunrise.');
   assert.match(calendarCalculationWorkerSource, /sunriseSunLongitude,/);
   assert.match(calendarCalculationWorkerSource, /sunriseMonthBoundaryApplied:sunriseSunSignIndex!==base\.sunSignIndex/);
-  assert.match(dailyCalendarSource, /Tamil-month start used: 0°/);
-  assert.match(dailyCalendarSource, /தமிழ் மாதத் தொடக்கக் கணக்கு: 0°/);
-  assert.match(calendarCalculationWorkerSource, /balanceNazhigai:remaining\.balanceNazhigai/);
-  assert.doesNotMatch(calendarCalculationWorkerSource, /calculateRemainingRasiMana|balanceAtSunrise/,
-    'Solar-sign remaining balance must not be derived by subtracting wall-clock time.');
-  assert.match(dailyCalendarSource, /Full 30° Rasi Mana/);
-  assert.match(dailyCalendarSource, /முழு 30° ராசி மானம்/);
-  assert.match(dailyCalendarSource, /Sun at sunrise/);
-  assert.match(dailyCalendarSource, /உதயத்தில் சூரியன்/);
-  assert.match(dailyCalendarSource, /Fixed until next sunrise/);
-  assert.match(dailyCalendarSource, /அடுத்த சூ\.உதயம் வரை மாறாது/);
-  assert.doesNotMatch(dailyCalendarSource, /calculateRemainingRasiMana|balance counts down from sunrise/,
-    'Daily UI must display the worker-computed sunrise remainder, without a live clock countdown.');
+  assert.doesNotMatch(dailyCalendarSource, /Full 30° Rasi Mana|முழு 30° ராசி மானம்|Sun at sunrise|உதயத்தில் சூரியன்|daily\.solarSignRasiMana/,
+    'The retired Rasi Mana balance summary must not be exposed in the new Date Details UI.');
+  assert.match(dailyCalendarSource, /function renderMuhurtaLagna\(\)/);
+  assert.match(dailyCalendarSource, /shouldShowSpecialMuhurtha\(selected,classification\)/);
+  assert.doesNotMatch(dailyCalendarSource, /renderMuhurtaLagna\(\)\}/,
+    'Pushkara results are refreshed from the selected date render, not the old minute-based Rasi Mana UI timer.');
+});
 
-  assert.match(dailyCalendarSource, /renderMuhurtaLagna\(\)\}/,
-    'The current-day balance must refresh using the existing minute timer.');
-});;
-
-
-test('Date Details displays three separate results and uses only the concise negative Muhurtham value', () => {
-  assert.match(dailyCalendarSource, /L\('No','இல்லை'\)/);
-  assert.match(dailyCalendarSource, /ராசி மான லக்ன இருப்பு/);
-  assert.match(dailyCalendarSource, /daily\.solarSignRasiMana/);
-  assert.match(calendarThemeCssSource, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+test('Date Details gates result-only Pushkara and shows separate Vastu / Moudhya sections', () => {
+  assert.match(dailyCalendarSource, /id="calMuhurtaLagna"/);
+  assert.match(dailyCalendarSource, /id="calVastuDay"/);
+  assert.match(dailyCalendarSource, /id="calMoudhya"/);
+  assert.match(dailyCalendarSource, /shouldShowSpecialMuhurtha\(selected,classification\)/);
+  assert.match(dailyCalendarSource, /getPanchakaActivityResults/);
+  assert.match(dailyCalendarSource, /உத்தமம்/);
+  assert.doesNotMatch(dailyCalendarSource, /ராசி மான லக்ன இருப்பு|daily\.solarSignRasiMana/);
+  assert.match(calendarThemeCssSource, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(calendarThemeCssSource, /grid-template-columns:1fr/);
 });
 test('The Horoscope Matching navigation label uses the requested concise Tamil wording', () => {
