@@ -383,35 +383,6 @@ if(host){
   const index=((traditionalStart-1987)%60+60)%60;
   return (tamil?tamilCycleTa:tamilCycleEn)[index]||'—';
  }
- const nityaYogaResults={
-  Vishkumbha:['Support · opening portion calls for care','தாங்குதல் · தொடக்கப் பகுதியில் கவனம் தேவை',true],
-  Priti:['Affection and harmony','அன்பும் ஒற்றுமையும்',false],
-  Ayushman:['Vitality and longevity','ஆயுள் மற்றும் உறுதி',false],
-  Saubhagya:['Good fortune','நற்பேறு',false],
-  Shobhana:['Splendour and grace','அழகும் மங்களமும்',false],
-  Atiganda:['Major obstacles · traditionally avoided','பெரிய இடையூறு · பாரம்பரியமாகத் தவிர்க்கப்படும்',true],
-  Sukarma:['Good deeds and constructive work','நற்செயலும் பயனுள்ள முயற்சியும்',false],
-  Dhriti:['Steadiness and determination','உறுதியும் நிலைத்தன்மையும்',false],
-  Shula:['Sharpness and difficulty · use care','கூர்மை மற்றும் சிரமம் · கவனம் தேவை',true],
-  Ganda:['Obstruction and complications','தடை மற்றும் சிக்கல்கள்',true],
-  Vriddhi:['Growth and increase','வளர்ச்சியும் பெருக்கமும்',false],
-  Dhruva:['Stability and firmness','நிலைத்தன்மையும் உறுதியும்',false],
-  Vyaghata:['Impact and obstruction','தாக்கமும் இடையூறும்',true],
-  Harshana:['Joy and happiness','மகிழ்ச்சியும் சந்தோஷமும்',false],
-  Vajra:['Forceful or difficult conditions','கடினமான சூழ்நிலை',true],
-  Siddhi:['Achievement and success','சாதனையும் வெற்றியும்',false],
-  Vyatipata:['Disruption · traditionally avoided','சீர்குலைவு · பாரம்பரியமாகத் தவிர்க்கப்படும்',true],
-  Variyana:['Comfort and excellence','சௌகரியமும் மேன்மையும்',false],
-  Parigha:['Obstruction · first half traditionally avoided','தடை · முதல் பாதி பாரம்பரியமாகத் தவிர்க்கப்படும்',true],
-  Shiva:['Auspiciousness and calm','மங்களமும் அமைதியும்',false],
-  Siddha:['Accomplishment','காரிய நிறைவேற்றம்',false],
-  Sadhya:['Attainable goals and effort','அடையக்கூடிய இலக்கும் முயற்சியும்',false],
-  Shubha:['Auspiciousness and goodness','சுபமும் நன்மையும்',false],
-  Shukla:['Clarity and brightness','தெளிவும் ஒளியும்',false],
-  Brahma:['Sacred learning and knowledge','புனிதக் கல்வியும் அறிவும்',false],
-  Indra:['Leadership and strength','தலைமையும் வலிமையும்',false],
-  Vaidhriti:['Separation or obstruction · traditionally avoided','பிரிவும் தடையும் · பாரம்பரியமாகத் தவிர்க்கப்படும்',true]
- };
  function clockMinutes(value){
   const match=String(value??'').match(/(\d{1,2}):(\d{2})/);
   return match?Number(match[1])*60+Number(match[2]):null;
@@ -548,14 +519,6 @@ if(host){
   const panchangYogaRow=panchangRows.find(row=>/^(Yoga|யோகம்|Namah Yoga|நாம யோகம்)$/i.test(row.cells?.[0]?.textContent?.trim()||''));
   if(panchangYogaRow){
    panchangYogaRow.cells[0].textContent=L('Namah Yoga','நாம யோகம்');
-   const yogaName=String(p?.yoga?.name||'').trim();
-   const yogaResult=nityaYogaResults[yogaName];
-   if(yogaResult&&panchangYogaRow.cells[1]&&!panchangYogaRow.cells[1].querySelector('.cal-name-yoga-result')){
-    const result=document.createElement('small');
-    result.className='cal-name-yoga-result';
-    result.textContent=ta()?yogaResult[1]:yogaResult[0];
-    panchangYogaRow.cells[1].append(document.createElement('br'),result);
-   }
   }
   const panchangDetailsHtml=panchangRows
    .filter(row=>row.cells?.[0]?.textContent?.trim()!==L('Date','தேதி'))
