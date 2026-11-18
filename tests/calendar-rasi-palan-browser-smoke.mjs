@@ -115,19 +115,29 @@ try {
   }, { timeout: 180000 });
   const chandrashtamaSmoke = await page.$eval('#calChandrashtamaPeriods', root => ({
     windows: [...root.querySelectorAll('.cal-chandra-window')].map(window => ({
-      headings: window.querySelector('.cal-chandra-window-heading')?.textContent || '',
-      padaRows: [...window.querySelectorAll('.cal-chandra-pada-row')].map(row => row.textContent.trim()),
-      hasNinePadas: window.querySelectorAll('.cal-chandra-pada-row').length === 9
+      rasi: window.querySelector('.cal-chandra-rasi-period strong')?.textContent || '',
+      rasiPeriod: window.querySelector('.cal-chandra-rasi-period span')?.textContent || '',
+      star: window.querySelector('.cal-chandra-star-period strong')?.textContent || '',
+      starPeriod: window.querySelector('.cal-chandra-star-period span')?.textContent || '',
+      padaRows: [...window.querySelectorAll('.cal-chandra-pada-row')].map(row => ({
+        birthPada: Number(row.dataset.birthPada),
+        targetStar: Number(row.dataset.targetStar),
+        targetPada: Number(row.dataset.targetPada),
+        text: row.textContent.trim()
+      }))
     })),
     body: root.textContent || ''
   }));
   assert.ok(chandrashtamaSmoke.windows.length >= 2,
     'The next 90 local days should contain at least two full Chandrashtama Rasi windows.');
-  assert.ok(chandrashtamaSmoke.windows.every(window => window.hasNinePadas),
-    'Every 30-degree Chandrashtama Rasi interval must be divided into all nine Nakshatra Padas.');
+  assert.ok(chandrashtamaSmoke.windows.every(window => window.rasi === 'Scorpio' && window.star === 'Ashwini'),
+    'Only the selected Mesha Janma Rasi and its compatible Ashwini birth star should be displayed.');
+  assert.ok(chandrashtamaSmoke.windows.every(window => window.padaRows.length === 4),
+    'Only the selected birth Nakshatra’s four Pada projections should be shown, not all nine Rasi Padas.');
   assert.ok(chandrashtamaSmoke.windows.every(window =>
-    window.padaRows.every(row => /\d{2}°/.test(row) && /\d{2}\/\d{2}\/\d{4}/.test(row)),
-  ), 'Each Pada row must show exact degree and local date/time boundaries.');
+    window.rasiPeriod.includes(' – ') && window.starPeriod.includes(' – ') &&
+    window.padaRows.every(row => row.text.includes(' – '))),
+  'Rasi, full birth-star and selected birth-Pada intervals must each have start and end times.');
 
   const chandrashtamaOriginalDate = await page.$eval('#calDate', el => el.value);
   await page.$eval('#calDate', (el, date) => {
@@ -143,16 +153,19 @@ try {
   }, { timeout: 120000 });
   const independentChandrashtamaCheck = await page.$eval('#calChandrashtamaPeriods', root => {
     const item = [...root.querySelectorAll('.cal-chandra-window')].find(window =>
-      (window.querySelector('.cal-chandra-window-heading strong')?.textContent || '').includes('10/11/2026'));
-    const heading = item?.querySelector('.cal-chandra-window-heading strong')?.textContent || '';
+      (window.querySelector('.cal-chandra-rasi-period span')?.textContent || '').includes('10/11/2026'));
+    const heading = item?.querySelector('.cal-chandra-rasi-period span')?.textContent || '';
     const match = heading.match(/(\d{2}\/\d{2}\/\d{4})\s+(\d{2}):(\d{2}):(\d{2})\s*[–-]\s*(\d{2}\/\d{2}\/\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
+    const starPeriod = item?.querySelector('.cal-chandra-star-period span')?.textContent || '';
     return {
       heading,
+      starPeriod,
       bounds: match ? match.slice(1) : null,
-      durationMinutes: item?.querySelector('small')?.textContent || '',
       padas: [...(item?.querySelectorAll('.cal-chandra-pada-row') || [])].map(row => ({
-        nakshatraIndex: Number(row.dataset.nakshatraIndex),
-        pada: Number(row.dataset.pada)
+        birthPada: Number(row.dataset.birthPada),
+        targetStar: Number(row.dataset.targetStar),
+        targetPada: Number(row.dataset.targetPada),
+        text: row.textContent.trim()
       }))
     };
   });
@@ -166,61 +179,78 @@ try {
   const endDiff = Math.abs(localDateTimeMinutes(endDate, endHour, endMinute, endSecond) - Date.UTC(2026, 10, 12, 14, 18) / 60000);
   assert.ok(startDiff <= 15, 'Nov 2026 Mesha-to-Vrichigam Chandrashtama entry must match the independent Lahiri reference within 15 minutes.');
   assert.ok(endDiff <= 15, 'Nov 2026 Vrichigam egress must match the independent Lahiri reference within 15 minutes.');
+  assert.match(independentChandrashtamaCheck.starPeriod, /10\/11\/2026 02:48:28.*10\/11\/2026 15:/,
+    'The complete Ashwini star projection must span the four corresponding transit Padas.');
   assert.deepEqual(independentChandrashtamaCheck.padas, [
-    { nakshatraIndex: 15, pada: 4 },
-    { nakshatraIndex: 16, pada: 1 }, { nakshatraIndex: 16, pada: 2 },
-    { nakshatraIndex: 16, pada: 3 }, { nakshatraIndex: 16, pada: 4 },
-    { nakshatraIndex: 17, pada: 1 }, { nakshatraIndex: 17, pada: 2 },
-    { nakshatraIndex: 17, pada: 3 }, { nakshatraIndex: 17, pada: 4 }
-  ], 'Mesha Janma Rasi must show Vishakha Pada 4, all Anuradha padas and all Jyeshtha padas during the Vrichigam transit.');
+    { birthPada: 1, targetStar: 15, targetPada: 4 },
+    { birthPada: 2, targetStar: 16, targetPada: 1 },
+    { birthPada: 3, targetStar: 16, targetPada: 2 },
+    { birthPada: 4, targetStar: 16, targetPada: 3 }
+  ], 'Mesha + Ashwini must show only Ashwini 1–4 and their Vishakha 4 / Anuradha 1–3 projected intervals.');
 
-  // Birth-Pada-specific window: Ashwini Pada 1 projects to Vishakha Pada 4.
-  await page.select('#calRasi', '0');
-  await page.select('#calStar', '0');
+    // Default Ashwini selection exposes all four birth-Pada projections.
+  assert.equal(chandrashtamaSmoke.windows[0].star, 'Ashwini');
   await page.select('#calStarPada', '1');
-  await page.waitForFunction(() => {
-    const cards = [...document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-janma-projection')];
-    return cards.some(card => /Ashwini 1/.test(card.textContent) && /Vishakha 4/.test(card.textContent));
-  }, { timeout: 120000 });
-  const ashwiniProjection = await page.$eval('#calChandrashtamaPeriods .cal-chandra-janma-projection', card => ({
-    text: card.textContent.trim(),
-    time: card.querySelector('span')?.textContent.trim() || ''
+  await page.waitForFunction(() => document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-pada-row').length === 1);
+  const ashwiniPada1 = await page.$eval('#calChandrashtamaPeriods .cal-chandra-pada-row', row => ({
+    birthPada: Number(row.dataset.birthPada),
+    targetStar: Number(row.dataset.targetStar),
+    targetPada: Number(row.dataset.targetPada),
+    time: row.querySelector('span')?.textContent || ''
   }));
-  assert.match(ashwiniProjection.text, /Ashwini 1.*Vishakha 4/);
-  assert.match(ashwiniProjection.time, /10\/11\/2026 02:48:28/);
-  assert.ok(/09:/.test(ashwiniProjection.time), 'Ashwini Pada 1 projection must end at the Vishakha Pada 4 boundary, not at full Rasi egress.');
+  assert.deepEqual([ashwiniPada1.birthPada, ashwiniPada1.targetStar, ashwiniPada1.targetPada], [1,15,4]);
+  assert.match(ashwiniPada1.time, /10\/11\/2026 02:48:28 – 10\/11\/2026 09:19:30/);
 
-  // Second independent birth Pada example: Magha Pada 4 projects to Uttara Bhadrapada Pada 3 in Meena.
-  await page.select('#calRasi', '4');
-  await page.select('#calStar', '9');
-  await page.select('#calStarPada', '4');
-  await page.waitForFunction(() =>
-    [...document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-janma-projection')]
-      .some(card => /Magha 4/.test(card.textContent) && /Uttara Bhadrapada 3/.test(card.textContent)),
-    { timeout: 120000 });
-  const maghaProjection = await page.$eval('#calChandrashtamaPeriods .cal-chandra-janma-projection', card => card.textContent.trim());
-  assert.match(maghaProjection, /Magha 4.*Uttara Bhadrapada 3/);
+  // Bharani: full 13°20' period and its four separate Pada intervals.
+  await page.select('#calStar', '1');
+  await page.waitForFunction(() => document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-pada-row').length === 4);
+  const bharaniRows = await page.$$eval('#calChandrashtamaPeriods .cal-chandra-pada-row', rows =>
+    rows.map(row => [Number(row.dataset.birthPada),Number(row.dataset.targetStar),Number(row.dataset.targetPada)]));
+  assert.deepEqual(bharaniRows, [[1,16,4],[2,17,1],[3,17,2],[4,17,3]]);
 
-  // Restore Ashwini Pada 1 so the final mobile screenshot demonstrates the user's example.
-  await page.select('#calRasi', '0');
-  await page.select('#calStar', '0');
-  await page.select('#calStarPada', '1');
-  await page.waitForFunction(() =>
-    [...document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-janma-projection')]
-      .some(card => /Ashwini 1/.test(card.textContent) && /Vishakha 4/.test(card.textContent)),
-    { timeout: 120000 });
+  // Krittika in Mesha has only Pada 1 in that Rasi; its Pada selector must not offer 2–4.
+  await page.select('#calStar','2');
+  const krittikaOptions = await page.$$eval('#calStarPada option', options => options.map(option => option.value));
+  assert.deepEqual(krittikaOptions,['0','1']);
+
+  // Simha star options must be only Magha, Pooram and Uttara Phalguni.
+  await page.select('#calRasi','4');
+  const simhaStarOptions = await page.$$eval('#calStar option', options => options.map(option => option.value));
+  assert.deepEqual(simhaStarOptions,['9','10','11']);
+  await page.select('#calStar','10');
+  const pooramRows = await page.$$eval('#calChandrashtamaPeriods .cal-chandra-pada-row', rows =>
+    rows.map(row => [Number(row.dataset.birthPada),Number(row.dataset.targetStar),Number(row.dataset.targetPada)]));
+  assert.deepEqual(pooramRows, [[1,25,4],[2,26,1],[3,26,2],[4,26,3]]);
+  await page.select('#calStarPada','3');
+  const pooram3 = await page.$eval('#calChandrashtamaPeriods .cal-chandra-pada-row', row => ({
+    birthPada:Number(row.dataset.birthPada),
+    targetStar:Number(row.dataset.targetStar),
+    targetPada:Number(row.dataset.targetPada),
+    text:row.textContent.trim()
+  }));
+  assert.deepEqual([pooram3.birthPada,pooram3.targetStar,pooram3.targetPada],[3,26,2]);
+  assert.match(pooram3.text,/Pooram.*Revati.*Pada 2/);
+
+  // Restore the requested Ashwini 1 example for the final mobile preview.
+  await page.select('#calRasi','0');
+  await page.select('#calStar','0');
+  await page.select('#calStarPada','1');
+  await page.waitForFunction(() => document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-pada-row').length === 1);
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
-  await page.$eval('#calChandrashtamaPeriods .cal-chandra-window details', details => { details.open = true; });
   const chandrashtamaCard = await page.$('#calReadings .cal-chandrashtama');
   assert.ok(chandrashtamaCard, 'The Chandrashtama Rasi card must be rendered for the mobile preview.');
   await chandrashtamaCard.evaluate(el => el.scrollIntoView({ block: 'center' }));
   await chandrashtamaCard.screenshot({
     path: new URL('calendar-chandrashtama-exact-padas-mobile.png', outputDir).pathname
   });
-  console.log('EXACT_CHANDRASHTAMA_INDEPENDENT_CHECK ' + JSON.stringify({
+  console.log('EXACT_CHANDRASHTAMA_SELECTED_STAR_CHECK ' + JSON.stringify({
     fullRasi: independentChandrashtamaCheck,
-    ashwiniPada1: ashwiniProjection,
-    maghaPada4: maghaProjection
+    ashwiniPada1,
+    bharaniRows,
+    krittikaOptions,
+    simhaStarOptions,
+    pooramRows,
+    pooram3
   }));
   await page.$eval('#calDate', (el, date) => {
     el.value = date;
