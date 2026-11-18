@@ -297,7 +297,8 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   assert.ok(dailyCalendarSource.includes("status.dataset.result=hasChandrashtama?'present':'absent'"));
   assert.doesNotMatch(dailyCalendarSource, /No Chandrashtama period overlaps the selected date\/time|தேர்ந்தெடுத்த தேதியில் சந்திராஷ்டமக் காலப்பகுதி இல்லை/);
   assert.match(dailyCalendarSource, /selectedIsToday/);
-  assert.match(dailyCalendarCssSource, /cal-chandrashtama-section>h3\{text-align:center\}/);
+  assert.match(dailyCalendarCssSource, /cal-chandrashtama-section>h3\{display:block!important;width:100%!important;text-align:center!important\}/);
+  assert.match(dailyCalendarCssSource, /cal-chandrashtama-section>h3::after\{display:none!important;content:none!important\}/);
   assert.match(dailyCalendarCssSource, /cal-chandrashtama-result\.is-present\{color:#c00000!important\}/);
   assert.match(dailyCalendarCssSource, /cal-chandra-window\.is-selected-date\{display:block;border:0!important/);
   assert.match(dailyCalendarSource, /Tara Bala/);
