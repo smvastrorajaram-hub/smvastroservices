@@ -586,7 +586,7 @@ test('Calendar dual-date grid, direct navigation and Date Details are UI-only ex
   assert.match(calendarThemeCssSource, /height:58px;min-height:58px/);
   assert.match(calendarThemeCssSource, /aria-current="date"\]\.cal-date-past/);
   assert.match(calendarThemeCssSource, /aria-current="date"\]\.cal-date-future/);
-  assert.match(calendarThemeCssSource, /\.cal-day-yoga-card\.is-unknown/);
+  assert.match(calendarThemeCssSource, /\.cal-amirthadi-yoga-card\.is-unknown/);
   assert.ok(calendarThemeCssSource.includes('font-weight:950!important'), 'Date Details title is bright and bold');
   assert.ok(calendarThemeCssSource.includes('.cal-month-jump') && calendarThemeCssSource.includes('grid-template-columns:minmax(0,1fr)'), 'Month/year/date selector panel is full-width and flat');
   assert.ok(calendarThemeCssSource.includes('background:transparent!important'), 'Panchang and sibling sections use a flat visual layer');
@@ -622,7 +622,7 @@ test('TTD Tirukanitha Amirthadi matrix covers 7 weekdays x 27 Nakshatras and the
   assert.equal(getTamilDayYoga(1, 0).key, 'unknown');
   assert.equal(getTamilDayYoga(7, 22).key, 'unknown');
   assert.match(tamilDayClassificationsSource, /prabalarishta[\s\S]*?bad: true/);
-  assert.match(calendarThemeCssSource, /cal-yoga-segment\.is-auspicious\{border-left-color:#27804c\}/);
+  assert.match(calendarThemeCssSource, /cal-amirthadi-yoga-card\{gap:2px;padding:8px 10px;border-top:2px solid #2c875c\}/);
   assert.match(calendarThemeCssSource, /cal-yoga-segment\.is-inauspicious\{border-left-color:#b52f2b\}/);
   assert.match(dailyCalendarSource, /daily\.amirthadiYogaSegments/);
   assert.doesNotMatch(dailyCalendarSource, /getTamilDayYoga\\(weekday,dayStar\\)/);
