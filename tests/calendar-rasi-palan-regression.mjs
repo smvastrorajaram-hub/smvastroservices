@@ -916,6 +916,15 @@ test('Amirthadi Yoga results each occupy a natural left/right card beside the Ta
   assert.match(dailyCalendarSource, /class="cal-day-yoga-card cal-thyajyam-card is-inauspicious"/);
 });
 
+test('Amirthadi Yoga and Thyajyam cards keep compact label, result and time spacing', () => {
+  assert.match(calendarThemeCssSource, /cal-amirthadi-yoga-card\{\s*gap:2px!important;padding:8px 8px!important/);
+  assert.match(calendarThemeCssSource, /cal-amirthadi-yoga-card \.cal-yoga-segment\{[\s\S]*?gap:2px!important/);
+  assert.match(calendarThemeCssSource, /cal-yoga-reference\{\s*display:block;margin:2px 0 0!important/);
+  assert.match(calendarThemeCssSource, /cal-thyajyam-card\{\s*gap:2px!important;padding:8px 8px!important/);
+  assert.match(calendarThemeCssSource, /cal-thyajyam-card \.cal-yoga-segments\{\s*display:grid;gap:2px!important;margin:2px 0!important/);
+  assert.match(calendarThemeCssSource, /cal-thyajyam-card>small:last-child\{\s*margin:2px 0 0!important/);
+});
+
 test('Calendar Daily Panchang values are integrated before Nakshatra Thyajyam without a date-only card', () => {
   assert.match(dailyCalendarSource, /L\('Daily Panchang','தினசரி பஞ்சாங்கம்'\)/);
   assert.match(dailyCalendarSource, /id="calPanchangSource" hidden aria-hidden="true"/);
