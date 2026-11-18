@@ -217,6 +217,7 @@ try {
     const rasiHeading=document.querySelector('#calRasiPalan .rp-heading h2');
     const lagnaCell=document.querySelector('#calDaily .transit-position-table tbody tr:first-child td:first-child');
     return {
+      language:document.documentElement.lang||'en',
       dailyHora,transitChart,transitPositions,
       panchangHeaderAfter:headerAfter?{content:headerAfter.content,display:headerAfter.display}:null,
       rasiHeading:rasiHeading?{text:rasiHeading.textContent.trim(),color:getComputedStyle(rasiHeading).color,fill:getComputedStyle(rasiHeading).webkitTextFillColor}:null,
@@ -236,14 +237,16 @@ try {
   assert.ok(centeredCalendarHeadings.panchangHeaderAfter &&
     (centeredCalendarHeadings.panchangHeaderAfter.content==='none'||centeredCalendarHeadings.panchangHeaderAfter.display==='none'),
     'Daily Panchang header must not display the inherited right-side Om-like ornament.');
-  assert.equal(centeredCalendarHeadings.rasiHeading?.text,'ராசி பலன்கள் & கிரக கோச்சார பலன்கள்',
-    'Rasi and planetary transit heading must use the corrected Tamil wording.');
+  assert.equal(centeredCalendarHeadings.rasiHeading?.text,
+    centeredCalendarHeadings.language==='ta' ? 'ராசி பலன்கள் & கிரக கோச்சார பலன்கள்' : 'Rasi Palan & Planetary Transits',
+    'Rasi and planetary transit heading must use the corrected wording in the active language.');
   assert.equal(centeredCalendarHeadings.rasiHeading?.color,'rgb(21, 86, 78)',
     'Rasi and planetary transit heading must use the green Calendar theme.');
   assert.equal(centeredCalendarHeadings.rasiHeading?.fill,'rgb(21, 86, 78)',
     'Rasi and planetary transit heading WebKit text fill must also use the green theme.');
-  assert.equal(centeredCalendarHeadings.lagnaLabel,'லக்',
-    'Only the transit positions table Ascendant row must display the shortened Tamil label.');
+  assert.equal(centeredCalendarHeadings.lagnaLabel,
+    centeredCalendarHeadings.language==='ta' ? 'லக்' : 'Asc',
+    'Only the transit positions table Ascendant row must display the shortened Tamil label in Tamil mode.');
 
   assert.equal(integratedPanchang.dateMonthAboveTime, true, 'Date and month must be shown above time.');
   assert.equal(integratedPanchang.dateMonthTimeHasNoYear, true, 'Panchang event dates must omit the Gregorian year. Rendered date: '+integratedPanchang.dateMonthText);
