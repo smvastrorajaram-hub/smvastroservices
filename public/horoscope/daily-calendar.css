@@ -171,3 +171,26 @@
 .smv-android-apk-card p{margin:0}
 .smv-android-apk-card [data-apk-download]{align-self:flex-start;text-decoration:none}
 @media(max-width:680px){.cal-download-app-link{margin-top:14px;max-width:none;width:100%;min-width:0;justify-content:center}.smv-android-apk-card{margin:16px 8px;padding:14px}}
+
+
+/* Chandrashtama — exact Rasi and Nakshatra-Pada transit windows. */
+#smvDailyCalendar .cal-chandra-result-meta{display:grid;gap:6px;margin:10px 0 14px}
+#smvDailyCalendar .cal-chandra-result-meta p{margin:0;line-height:1.5}
+#smvDailyCalendar .cal-chandra-windows{display:grid;gap:10px;margin-top:10px}
+#smvDailyCalendar .cal-chandra-window{border:1px solid #d8e2dc;border-radius:12px;padding:12px;background:#fff}
+#smvDailyCalendar .cal-chandra-window.is-active{border:2px solid #a96d00;background:#fffaf0}
+#smvDailyCalendar .cal-chandra-window-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap}
+#smvDailyCalendar .cal-chandra-window-heading strong{font-variant-numeric:tabular-nums;line-height:1.5}
+#smvDailyCalendar .cal-chandra-window-heading>span{font-size:11px;font-weight:800;border-radius:999px;padding:3px 8px;background:#f7e6b8;color:#704600}
+#smvDailyCalendar .cal-chandra-window>small{display:block;margin:5px 0 9px;color:#51615a}
+#smvDailyCalendar .cal-chandra-window details>summary{cursor:pointer;font-weight:750;color:#185a50}
+#smvDailyCalendar .cal-chandra-pada-list{display:grid;gap:7px;margin-top:10px}
+#smvDailyCalendar .cal-chandra-pada-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;padding:8px 9px;border-radius:8px;background:#f5f8f5;min-width:0}
+#smvDailyCalendar .cal-chandra-pada-row strong{font-size:13px}
+#smvDailyCalendar .cal-chandra-pada-row>span{font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+#smvDailyCalendar .cal-chandra-pada-row>small{grid-column:1/-1;font-size:11px;color:#52615a;font-variant-numeric:tabular-nums}
+@media(max-width:520px){
+ #smvDailyCalendar .cal-chandra-window{padding:10px}
+ #smvDailyCalendar .cal-chandra-pada-row{grid-template-columns:1fr;gap:3px}
+ #smvDailyCalendar .cal-chandra-pada-row>span{white-space:normal}
+}
