@@ -138,7 +138,7 @@ try {
   }));
   assert.match(specialMuhurthaSmoke.heading, /Pushkara Navamsa|புஷ்கர நவாம்சம்/);
   assert.ok(specialMuhurthaSmoke.rows.length > 0, 'A published Subha date must show the computed Pushkara time intervals.');
-  assert.ok(specialMuhurthaSmoke.rows.every(row => row.time && row.activityResults.length === 4),
+  assert.ok(specialMuhurthaSmoke.rows.every(row => row.time && row.activityResults.length === 5),
     'Each Pushkara interval must show its local time and four activity-specific Panchaka outcomes.');
   assert.ok(specialMuhurthaSmoke.rows.every(row => row.title &&
     (/Excellent|உத்தமம்|Panchaka|பஞ்சகம்/.test(row.title))),
