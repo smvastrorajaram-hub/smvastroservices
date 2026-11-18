@@ -9,7 +9,7 @@ if(host){
  const $=s=>host.querySelector(s),ta=()=>document.documentElement.lang==='ta',L=(en,tamil)=>ta()?tamil:en;
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const storage={get(){try{return JSON.parse(localStorage.getItem('smv-calendar-settings')||'{}')}catch{return {}}},set(v){try{localStorage.setItem('smv-calendar-settings',JSON.stringify(v))}catch{}}};
- let cfg={lat:11.2342,lon:78.8808,offset:330,place:'Perambalur',rasi:0,star:0,starPada:0,...storage.get()},daily=null,month=null,seq=0,pending=new Map(),worker=null,dayRequest=0,monthRequest=0,locationSearchTimer=0,locationSearchAbort=null,chandrashtamaRequest=0;
+ let cfg={lat:11.2342,lon:78.8808,offset:330,place:'Perambalur',rasi:0,star:0,starPada:0,...storage.get()},daily=null,month=null,seq=0,pending=new Map(),worker=null,dayRequest=0,monthRequest=0,locationSearchTimer=0,locationSearchAbort=null,chandrashtamaRequest=0,chandrashtamaCache=new Map(),chandrashtamaPending=new Map();
  // Migrate the old implicit Pada=1 default to the new All-Padas default without clearing other saved Calendar settings.
  if(cfg.birthPadaSelectorVersion!==1){cfg.starPada=0;cfg.birthPadaSelectorVersion=1;storage.set(cfg);}
  const monthCache=new Map();
@@ -269,19 +269,37 @@ if(host){
   if(!target)return;
   const request=++chandrashtamaRequest;
   const janmaRasiIndex=Number(cfg.rasi),starIndex=Number(cfg.star),birthPada=Number(cfg.starPada??0);
-  target.innerHTML='<p class="cal-note">'+L('Calculating exact Moon sign / Nakshatra Pada boundaries…','சந்திர ராசி / நட்சத்திரப் பாத எல்லைகள் துல்லியமாகக் கணக்கிடப்படுகின்றன…')+'</p>';
-  workerCall('chandrashtama-windows',{
-   ...input(selected,false),
-   janmaRasiIndex,
-   horizonDays:90
-  }).then(result=>{
+  const calcInput=input(selected,false);
+  const cacheKey=[
+   calcInput.date,calcInput.time,janmaRasiIndex,
+   Number(calcInput.lat).toFixed(5),Number(calcInput.lon).toFixed(5),
+   Number(calcInput.utcOffsetMinutes),calcInput.timezone||'',90
+  ].join('|');
+  const renderResult=result=>{
    if(request!==chandrashtamaRequest||!$('#calChandrashtamaPeriods'))return;
    if(!result?.available){
     target.innerHTML='<p class="cal-note">'+esc(result?.reason||L('Chandrashtama timing unavailable.','சந்திராஷ்டம நேரம் கிடைக்கவில்லை.'))+'</p>';
     return;
    }
    target.innerHTML=chandrashtamaWindowsHtml(result,janmaRasiIndex,starIndex,birthPada);
-  }).catch(error=>{
+  };
+  const cached=chandrashtamaCache.get(cacheKey);
+  if(cached){renderResult(cached);return;}
+  target.innerHTML='<p class="cal-note">'+L('Calculating exact Moon sign / Nakshatra Pada boundaries…','சந்திர ராசி / நட்சத்திரப் பாத எல்லைகள் துல்லியமாகக் கணக்கிடப்படுகின்றன…')+'</p>';
+  let pending=chandrashtamaPending.get(cacheKey);
+  if(!pending){
+   pending=workerCall('chandrashtama-windows',{
+    ...calcInput,
+    janmaRasiIndex,
+    horizonDays:90
+   }).then(result=>{
+    chandrashtamaCache.set(cacheKey,result);
+    while(chandrashtamaCache.size>12)chandrashtamaCache.delete(chandrashtamaCache.keys().next().value);
+    return result;
+   }).finally(()=>chandrashtamaPending.delete(cacheKey));
+   chandrashtamaPending.set(cacheKey,pending);
+  }
+  pending.then(renderResult).catch(error=>{
    if(request!==chandrashtamaRequest||!$('#calChandrashtamaPeriods'))return;
    target.innerHTML='<p class="cal-note">'+esc(L('Chandrashtama timing unavailable: ','சந்திராஷ்டம நேரம் கிடைக்கவில்லை: ')+String(error?.message||error))+'</p>';
    console.warn('Calendar Chandrashtama window calculation unavailable.',error);
