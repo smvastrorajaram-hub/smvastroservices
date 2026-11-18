@@ -435,18 +435,26 @@ if(host){
     thaniyaAvailable:screeningContext.dayFlags?.thaniyaAvailable,
     yogaKey:yogaSegment?.key
    });
+   const restrictionReasons=Array.isArray(timeRestrictions.reasons)?timeRestrictions.reasons:[];
+   const tithiReasons=restrictionReasons.filter(reason=>/Tithi/i.test(reason));
+   const dayReasons=restrictionReasons.filter(reason=>/Tuesday|Saturday|Kari Naal|Thaniya Naal/i.test(reason));
+   const timingReasons=restrictionReasons.filter(reason=>!tithiReasons.includes(reason)&&!dayReasons.includes(reason));
+   const restrictionParts=[];
+   if(tithiReasons.length)restrictionParts.push(L('Tithi rule: ','திதி விதி: ')+tithiReasons.join('; '));
+   if(dayReasons.length)restrictionParts.push(L('Day-level rule: ','நாள் சார்ந்த விதி: ')+dayReasons.join('; '));
+   if(timingReasons.length)restrictionParts.push(L('Interval-time rule: ','இடைவெளி நேர விதி: ')+timingReasons.join('; '));
    const restrictionText=!timeRestrictions.available
     ? L('Time screening unavailable at interval midpoint','இடைவெளி நடுப்புள்ளியில் நேரத் தடையைச் சரிபார்க்க முடியவில்லை')
-    : timeRestrictions.blocked
-     ? L('Avoid midpoint: '+timeRestrictions.reasons.join('; '),'நடுப்புள்ளியைத் தவிர்க்கவும்: '+timeRestrictions.reasons.join(' · '))
-     : L('No listed time block at interval midpoint','இடைவெளி நடுப்புள்ளியில் ஆவணம் 50 நேரத் தடை இல்லை');
+    : restrictionParts.length
+     ? restrictionParts.join(' · ')
+     : L('No listed restriction at interval midpoint','இடைவெளி நடுப்புள்ளியில் ஆவணம் 50 தடை இல்லை');
    const restrictionWarnings=timeRestrictions.warnings?.length
-    ? ' · '+timeRestrictions.warnings.join('; ')
+    ? ' · '+L('Source caveat: ','ஆவணக் குறிப்பு: ')+timeRestrictions.warnings.join('; ')
     : '';
    const astronomy=L('Tithi '+item.tithiNumber+' · Star '+item.nakshatraNumber,'திதி '+item.tithiNumber+' · நட்சத்திரம் '+item.nakshatraNumber);
    const screening=L('Panchaka: '+panchakaText+(panchakaMeta?' · '+panchakaMeta:'')+' · '+chandra+' · Time screen: '+restrictionText+restrictionWarnings,
     'பஞ்சகம்: '+panchakaText+(panchakaMeta?' · '+panchakaMeta:'')+' · '+chandra+' · நேரத் தடை: '+restrictionText+restrictionWarnings);
-   return '<li class="cal-pushkara-window-row"><span>'+esc(sign+' · '+L('Navamsa','நவாம்சம்')+' '+navamsa)+'<small>'+esc(astronomy)+'</small><small>'+esc(screening)+'</small></span><strong'+(active?' aria-current="time"':'')+'>'+esc(item.startTime+' – '+item.endTime)+'</strong></li>';
+   return '<li class="cal-pushkara-window-row"><span><b>'+esc(sign+' · '+L('Navamsa','நவாம்சம்')+' '+navamsa)+'</b><small>'+esc(astronomy)+'</small><small>'+esc(screening)+'</small></span><strong'+(active?' aria-current="time"':'')+'>'+esc(item.startTime+' – '+item.endTime)+'</strong></li>';
   }).join('');
   return '<p>'+esc(L('Computed for ','கணக்கிட்ட இடம்: ')+offsetText+' · '+Number(result.latitude).toFixed(5)+', '+Number(result.longitude).toFixed(5)+(result.timezone?' · '+result.timezone:''))+'</p>'+
    '<p>'+esc(L('Local morning Pushkara-Lagna windows · '+intervals.length+' interval(s) · Swiss Ephemeris / Lahiri / Sripati','உள்ளூர் காலை புஷ்கர லக்ன நேரங்கள் · '+intervals.length+' இடைவெளிகள் · Swiss Ephemeris / லாகிரி / ஸ்ரீபதி'))+'</p>'+
