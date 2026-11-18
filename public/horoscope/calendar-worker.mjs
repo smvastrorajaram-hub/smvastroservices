@@ -51,7 +51,11 @@ function chandrashtamaLocalParts(timestamp,input){
    .filter(part=>part.type!=='literal').map(part=>[part.type,part.value]));
   const date=parts.year+'-'+parts.month+'-'+parts.day;
   const time=parts.hour+':'+parts.minute+':'+parts.second;
-  const utcOffsetMinutes=offsetMinutesAt(input.timezone,date,time.slice(0,5));
+  // Derive the offset from this absolute instant, so repeated DST clock hours
+  // cannot accidentally resolve to the earlier occurrence of the same wall time.
+  const localWallAsUtc=Date.UTC(Number(parts.year),Number(parts.month)-1,Number(parts.day),
+   Number(parts.hour),Number(parts.minute),Number(parts.second));
+  const utcOffsetMinutes=(localWallAsUtc-ts)/60000;
   return {date,time,utcOffsetMinutes};
  }
  return {...localPartsFromTs(ts,input.utcOffsetMinutes),utcOffsetMinutes:Number(input.utcOffsetMinutes??330)};
