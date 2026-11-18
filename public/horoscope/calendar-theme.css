@@ -210,7 +210,7 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-yoga-segment.is-unknown .cal-yoga-segment-info strong{color:#716d61}
 #smvDailyCalendar .cal-yoga-segment-info small{display:block;line-height:1.35}
 #smvDailyCalendar .cal-yoga-segment-time{flex:0 0 auto;font-variant-numeric:tabular-nums;font-weight:750;white-space:nowrap}
-@media(max-width:600px){#smvDailyCalendar .cal-yoga-segment{align-items:flex-start;flex-direction:column;gap:4px}#smvDailyCalendar .cal-yoga-segment-time{white-space:normal}#smvDailyCalendar .cal-day-yoga-card.is-inauspicious .cal-yoga-segment-time{align-self:center;text-align:center}}
+@media(max-width:600px){#smvDailyCalendar .cal-yoga-segment{align-items:flex-start;flex-direction:column;gap:4px}#smvDailyCalendar .cal-yoga-segment-time{white-space:normal}#smvDailyCalendar .cal-thyajyam-card .cal-yoga-segment-time{align-self:center;text-align:center}}
 #smvDailyCalendar #calDaily .card{margin:12px 0;padding:14px}
 #smvDailyCalendar #calReadings{margin-top:12px}
 #smvDailyCalendar #calEvents{margin-top:12px}
@@ -378,8 +378,8 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar #calDateDetailsExtra .cal-details-summary article{padding:11px 4px!important;border-bottom:1px solid var(--cal-line,#d9e5df)!important}
 #smvDailyCalendar #calDateDetailsExtra .cal-details-summary article.cal-shoolam-card{border-bottom:0!important}
 #smvDailyCalendar #calDateDetailsExtra .cal-day-yoga-card.is-auspicious{border-left:3px solid #27804c!important;background:transparent!important}
-#smvDailyCalendar #calDateDetailsExtra .cal-day-yoga-card.is-inauspicious{border-left:0!important;background:transparent!important}
-#smvDailyCalendar #calDateDetailsExtra .cal-day-yoga-card.is-inauspicious .cal-yoga-segment.is-inauspicious{border-left:0!important}
+#smvDailyCalendar #calDateDetailsExtra .cal-thyajyam-card{border-left:0!important;background:transparent!important}
+#smvDailyCalendar #calDateDetailsExtra .cal-thyajyam-card .cal-yoga-segment.is-inauspicious{border-left:0!important}
 #smvDailyCalendar #calDateDetailsExtra .cal-day-yoga-card.is-unknown{border-left:3px solid #a9a394!important;background:transparent!important}
 #smvDailyCalendar #calDateDetailsExtra .cal-shoolam-card{padding:10px 4px!important}
 #smvDailyCalendar #calDateDetailsExtra .cal-day-flag{padding:7px 3px!important;border:0!important;border-radius:0!important;background:transparent!important}
