@@ -75,6 +75,7 @@ try {
     }
   }
   assert.ok(ready, 'Calendar source did not become ready: ' + (lastError?.message || 'unknown error'));
+  const initialCalendarDate = await page.$eval('#calDate', el => el.value);
 
   const calendarHeader = await page.evaluate(() => {
     const header = document.querySelector('.calendar-topbar');
@@ -156,6 +157,14 @@ try {
   assert.notDeepEqual(chennaiPushkara.rows, salemPushkara.rows,
     'Changing longitude/latitude must recalculate the local time intervals rather than copy a Salem time table.');
 
+  const perambalurDec13Pushkara = await calculateForPlace('Perambalur', 11.2342, 78.8808, '2026-12-13');
+  assert.ok(perambalurDec13Pushkara.text.includes('11.23420, 78.88080') &&
+    perambalurDec13Pushkara.text.includes('Asia/Kolkata'),
+    'Perambalur 13-Dec-2026 Pushkara windows must use the selected local coordinates and timezone.');
+  assert.ok(perambalurDec13Pushkara.rows.length > 0,
+    'The corrected Document 50 date 13-Dec-2026 must produce a local morning Pushkara interval.');
+  console.log('DOCUMENT50_PERAMBALUR_2026_12_13_PUSHKARA ' + JSON.stringify(perambalurDec13Pushkara.rows));
+
   // Restore the product's Perambalur default before the later fixed-value
   // regression (25-Nov-2026). Salem/Chennai coordinate tests must not leak
   // their changed location into an unrelated Perambalur fixture.
@@ -176,6 +185,15 @@ try {
     const balance = document.querySelector('#calMuhurtaLagna .cal-rasi-balance-line')?.textContent || '';
     return balance && !/being calculated|கணக்கிடப்படுகிறது/i.test(balance);
   }, { timeout: 90000 });
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, initialCalendarDate);
+  await page.waitForFunction(date => {
+    const status = document.querySelector('#calStatus')?.textContent || '';
+    const balance = document.querySelector('#calMuhurtaLagna .cal-rasi-balance-line')?.textContent || '';
+    return status.includes(date) && balance && !/being calculated|கணக்கிடப்படுகிறது/i.test(balance);
+  }, { timeout: 90000 }, initialCalendarDate);
   const resultPlacement = await page.$eval('#calMuhurtaLagna', el => {
     const dateDetails = document.querySelector('#calDateDetails');
     const summary = document.querySelector('#calDateDetailsExtra');
