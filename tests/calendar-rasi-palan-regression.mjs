@@ -918,7 +918,7 @@ test('Amirthadi Yoga results each occupy a natural left/right card beside the Ta
 test('Amirthadi Yoga and Thyajyam keep a compact visual rhythm without verbose notes', () => {
   assert.match(calendarThemeCssSource, /cal-amirthadi-yoga-card\{gap:2px;padding:8px 10px;border-top/);
   assert.match(calendarThemeCssSource, /cal-yoga-segment\{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:2px/);
-  assert.match(calendarThemeCssSource, /cal-yoga-reference\{grid-column:1\/-1;display:block;align-self:start;margin:0/);
+  assert.match(calendarThemeCssSource, /cal-yoga-reference\{display:block;align-self:flex-start;margin:0/);
   assert.match(calendarThemeCssSource, /cal-thyajyam-card\{gap:2px;padding:8px 10px;border-top/);
   assert.match(calendarThemeCssSource, /cal-thyajyam-card \.cal-yoga-segments\{display:grid;gap:2px/);
   assert.match(dailyCalendarSource, /L\('Nakshatra Thyajyam','நட்சத்திர தியாஜ்யம்'\)/);

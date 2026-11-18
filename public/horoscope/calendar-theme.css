@@ -222,7 +222,7 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-panchang-detail-item .smv-calendar-neutral-date-time,#smvDailyCalendar .cal-panchang-detail-item .smv-calendar-neutral-time{color:inherit;font-weight:inherit}
 #smvDailyCalendar .cal-panchang-detail-item .smv-calendar-normal-connector{margin:0 3px;color:#708477;font-weight:400}
 #smvDailyCalendar .cal-panchang-detail-item .smv-calendar-bright-red-time{color:#b42318;font-weight:750}
-#smvDailyCalendar .cal-thyajyam-card{gap:2px;padding:8px 10px;border-top:2px solid #b65b50}
+#smvDailyCalendar .cal-details-summary>article.cal-thyajyam-card{gap:2px;padding:8px 10px;border-top:2px solid #b65b50}
 #smvDailyCalendar .cal-thyajyam-card .cal-yoga-segments{display:grid;gap:2px;width:100%;margin:1px 0 0}
 #smvDailyCalendar .cal-thyajyam-card .cal-yoga-segment{grid-template-columns:minmax(0,1fr) auto;padding:5px 0;border-bottom:1px solid #f0e4e1}
 #smvDailyCalendar .cal-thyajyam-card .cal-yoga-segment:last-child{border-bottom:0}
