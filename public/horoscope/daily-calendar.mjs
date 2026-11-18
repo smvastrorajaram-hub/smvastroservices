@@ -273,7 +273,7 @@ if(host){
   const hasChandrashtama=Boolean(windowsHtml);
   const status=$('#calChandrashtamaResult');
   if(status){
-   status.textContent=hasChandrashtama?L('Chandrashtama: Yes','சந்திராஷ்டமம் : உண்டு'):L('Chandrashtama: No','சந்திராஷ்டமம் : இல்லை');
+   status.textContent=hasChandrashtama?L('Chandrashtama: Yes','சந்திராஷ்டமம் : - உண்டு'):L('Chandrashtama: No','சந்திராஷ்டமம் : இல்லை');
    status.dataset.result=hasChandrashtama?'present':'absent';
    status.dataset.resolved='true';
    status.classList.toggle('is-present',hasChandrashtama);
