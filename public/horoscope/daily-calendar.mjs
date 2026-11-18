@@ -552,18 +552,19 @@ if(host){
     const yogaLabel=/^(Namah Yoga|நாம யோகம்)$/i.test(label)?' cal-name-yoga-label':'';
     return '<article class="cal-panchang-detail-item'+primary+'"><small class="cal-panchang-detail-label'+yogaLabel+'">'+esc(label)+'</small><strong>'+(row.cells?.[1]?.innerHTML||'—')+'</strong></article>';
    }).join('');
-  const yogaSegmentsHtml=yogaSegments.length?yogaSegments.map(segment=>{
+  const yogaReferenceHtml='<small class="cal-yoga-reference">'+L('Sunrise reference: ','சூரிய உதய அடிப்படை: ')+(weekdayName||'—')+' · '+dayStarName+(Number.isInteger(dayStar)?' ('+dayStar+')':'')+'</small>';
+  const yogaCardsHtml=yogaSegments.length?yogaSegments.map(segment=>{
    const yogaName=ta()?segment.ta:segment.en;
    const starName=stars[Number(segment.nakshatraNumber)-1]?.[ta()?1:0]||'—';
    const result=ta()?segment.resultTa:segment.resultEn;
    const tone=segment.bad?'is-inauspicious':segment.key==='unknown'?'is-unknown':'is-auspicious';
    const range=yogaBoundaryLabel(segment.start)+' – '+yogaBoundaryLabel(segment.end);
-   return '<div class="cal-yoga-segment '+tone+'"><div class="cal-yoga-segment-info"><strong>'+esc(yogaName)+'</strong><small>'+esc(starName)+' · '+esc(result)+'</small></div><span class="cal-yoga-segment-time">'+esc(range)+'</span></div>';
-  }).join(''):'<div class="cal-yoga-segment is-unknown"><div class="cal-yoga-segment-info"><strong>'+L('Unavailable','கிடைக்கவில்லை')+'</strong><small>'+L('Nakshatra interval data is unavailable.','நட்சத்திர நேரத் தரவு கிடைக்கவில்லை.')+'</small></div></div>';
+   return '<article class="cal-day-yoga-card cal-amirthadi-yoga-card '+tone+'"><small>'+L('Amirthadi Yogam · Tamil day yoga','அமிர்தாதி யோகம் · தமிழ் நாள் யோகம்')+'</small><div class="cal-yoga-segment '+tone+'"><div class="cal-yoga-segment-info"><strong>'+esc(yogaName)+'</strong><small>'+esc(starName)+' · '+esc(result)+'</small></div><span class="cal-yoga-segment-time">'+esc(range)+'</span></div></article>';
+  }).join(''):'<article class="cal-day-yoga-card cal-amirthadi-yoga-card is-unknown"><small>'+L('Amirthadi Yogam · Tamil day yoga','அமிர்தாதி யோகம் · தமிழ் நாள் யோகம்')+'</small><div class="cal-yoga-segment is-unknown"><div class="cal-yoga-segment-info"><strong>'+L('Unavailable','கிடைக்கவில்லை')+'</strong><small>'+L('Nakshatra interval data is unavailable.','நட்சத்திர நேரத் தரவு கிடைக்கவில்லை.')+'</small></div></div></article>';
   $('#calDateDetailsExtra').innerHTML=
    '<div class="cal-details-summary">'+
     '<article class="cal-tamil-date-card"><small>'+L('Tamil date · month · year','தமிழ் தேதி · மாதம் · ஆண்டு')+'</small><strong>'+esc(tamilDate)+'</strong><span>'+esc((ta()?monthTa:monthEn)+' · '+yearName)+'</span></article>'+
-    '<article class="cal-day-yoga-card"><small>'+L('Amirthadi Yogam · Tamil day yoga','அமிர்தாதி யோகம் · தமிழ் நாள் யோகம்')+'</small><div class="cal-yoga-segments">'+yogaSegmentsHtml+'</div><small>'+L('Sunrise reference: ','சூரிய உதய அடிப்படை: ')+(weekdayName||'—')+' · '+dayStarName+(Number.isInteger(dayStar)?' ('+dayStar+')':'')+'</small></article>'+
+    '<div class="cal-day-yoga-cards" data-yoga-count="'+yogaSegments.length+'">'+yogaCardsHtml+'</div>'+
     '<div class="cal-panchang-detail-grid" role="group" aria-label="'+L('Daily Panchang details','தினசரி பஞ்சாங்க விவரங்கள்')+'">'+panchangDetailsHtml+'</div>'+
     '<article class="cal-day-yoga-card is-inauspicious"><small>'+L('Nakshatra Thyajyam / Varjyam','நட்சத்திர தியாஜ்யம்')+'</small><div class="cal-yoga-segments">'+thyajyamHtml+'</div><small>'+L('Based on the star’s 60-ghati division; each Thyajyam lasts 4 ghatis.','நட்சத்திரத்தின் 60 நாழிகைப் பிரிவில், தியாஜ்யம் 4 நாழிகை நீடிக்கும்.')+'</small></article>'+
     '<article class="cal-muhurta-card"><small>'+L('Ahas : Day length','அகஸ் :- பகல் மானம்')+'</small><strong>'+esc(ahasText)+'</strong><span>'+L('Sunrise: ','சூரிய உதயம்: ')+(ahas?.sunrise||'—')+' · '+L('Sunset: ','சூரிய அஸ்தமனம்: ')+(ahas?.sunset||'—')+'</span></article>'+
