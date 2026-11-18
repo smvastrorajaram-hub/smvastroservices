@@ -442,7 +442,7 @@ if(host){
     const detail=item.isRahita?'':(ta()?item.cautionTa:item.cautionEn);
     const state=item.isRahita?'is-uttamam':'is-panchaka';
     const activities=getPanchakaActivityResults({available:true,isRahita:item.isRahita,key:item.panchakaKey});
-    const activityHtml=activities.map(activity=>'<span class="'+(activity.suitableByPanchaka?'is-clear':'is-blocked')+'">'+esc(ta()?activity.labelTa:activity.labelEn)+' · '+(activity.suitableByPanchaka?L('பஞ்சகத் தடையில்லை','No Panchaka restriction'):L('தவிர்க்கவும்','Avoid'))+'</span>').join('');
+    const activityHtml=activities.map(activity=>'<span class="'+(activity.suitableByPanchaka?'is-clear':'is-blocked')+'">'+esc(ta()?activity.labelTa:activity.labelEn)+' · '+(activity.suitableByPanchaka?L('No Panchaka restriction','பஞ்சகத் தடையில்லை'):L('Avoid','தவிர்க்கவும்'))+'</span>').join('');
     return '<article class="cal-special-muhurtha-row '+state+'"><strong>'+esc(title)+'</strong><time>'+esc(formatSpecialWindow(item))+'</time>'+(detail?'<small>'+esc(detail)+'</small>':'')+'<div class="cal-special-activity-results">'+activityHtml+'</div></article>';
    }).join('');
    target.innerHTML='<h3>'+L('Pushkara Navamsa','புஷ்கர நவாம்சம்')+'</h3><div class="cal-special-muhurtha-list">'+rows+'</div>';
@@ -485,7 +485,7 @@ if(host){
    const windows=(result?.windows||[]);
    if(!result?.available||!windows.length)return;
    const rows=windows.map(item=>{
-    const planet=item.planet==='guru'?L('குரு மூடம்','Guru Moudhya'):L('சுக்கிர மூடம்','Shukra Moudhya');
+    const planet=item.planet==='guru'?L('Guru Moudhya','குரு மூடம்'):L('Shukra Moudhya','சுக்கிர மூடம்');
     const tamilStart=item.startTamilMonth&&item.startTamilDay?item.startTamilMonth+' '+item.startTamilDay:'';
     const tamilEnd=item.endTamilMonth&&item.endTamilDay?item.endTamilMonth+' '+item.endTamilDay:'';
     const tamilRange=tamilStart&&tamilEnd?' · '+tamilStart+' – '+tamilEnd:'';
