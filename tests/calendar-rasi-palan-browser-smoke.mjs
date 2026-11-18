@@ -123,7 +123,7 @@ try {
     const secondRect = second?.getBoundingClientRect();
     const firstLabel = first?.querySelector('small')?.getBoundingClientRect();
     const firstValue = first?.querySelector('strong')?.getBoundingClientRect();
-    const thyajyam = summary?.querySelector('.cal-day-yoga-card.is-inauspicious');
+    const thyajyam = summary?.querySelector('.cal-thyajyam-card');
     return {
       title,
       sourceHidden: source?.hidden === true,
@@ -150,6 +150,74 @@ try {
   assert.equal(integratedPanchang.gridBeforeThyajyam, true, 'All Panchang results must appear above Nakshatra Thyajyam.');
   assert.equal(integratedPanchang.firstTwoShareRow, true, 'Panchang result cards must be arranged left and right.');
   assert.equal(integratedPanchang.labelLeftOfValue, true, 'Each Panchang card must place its label on the left and result on the right.');
+
+  const yogaFlow = await page.$eval('#calDateDetailsExtra .cal-details-summary', summary => {
+    const wrapper = summary.querySelector('.cal-day-yoga-cards');
+    const actualYogaCards = [...(wrapper?.querySelectorAll(':scope > .cal-amirthadi-yoga-card') || [])];
+    const dateCard = summary.querySelector('.cal-tamil-date-card');
+    const rect = element => {
+      const r = element?.getBoundingClientRect();
+      return r ? { left:r.left, top:r.top, right:r.right, bottom:r.bottom, width:r.width } : null;
+    };
+    const probe = yogaCount => {
+      const clone = summary.cloneNode(true);
+      clone.setAttribute('aria-hidden', 'true');
+      clone.style.cssText = 'position:absolute;left:-10000px;top:0;visibility:hidden;width:'+summary.getBoundingClientRect().width+'px;margin:0;';
+      const yogaWrapper = clone.querySelector('.cal-day-yoga-cards');
+      const template = yogaWrapper?.querySelector('.cal-amirthadi-yoga-card');
+      if (!yogaWrapper || !template) return { available:false };
+      yogaWrapper.replaceChildren(...Array.from({length:yogaCount}, () => template.cloneNode(true)));
+      yogaWrapper.dataset.yogaCount = String(yogaCount);
+      summary.parentElement.append(clone);
+      const date = clone.querySelector('.cal-tamil-date-card');
+      const cards = [...yogaWrapper.querySelectorAll(':scope > .cal-amirthadi-yoga-card')];
+      const panchang = clone.querySelector('.cal-panchang-detail-grid');
+      const thyajyam = clone.querySelector('.cal-thyajyam-card');
+      const dayLength = [...clone.querySelectorAll('.cal-muhurta-card')]
+        .find(card => /Ahas : Day length|அகஸ் :- பகல் மானம்/.test(card.textContent || ''));
+      const dateRect = rect(date), yogaRects = cards.map(rect);
+      const panchangRect = rect(panchang), thyajyamRect = rect(thyajyam), dayLengthRect = rect(dayLength);
+      const result = {
+        available:true,
+        yogaCount:cards.length,
+        dateAndFirstYogaShareRow:Boolean(dateRect && yogaRects[0] && Math.abs(dateRect.top-yogaRects[0].top)<1 && dateRect.left<yogaRects[0].left),
+        secondAndThirdYogaShareRow:Boolean(yogaRects[1] && yogaRects[2] && Math.abs(yogaRects[1].top-yogaRects[2].top)<1 && yogaRects[1].left<yogaRects[2].left),
+        panchangBelowYoga:Boolean(panchangRect && yogaRects.length && panchangRect.top>=Math.max(dateRect.bottom,yogaRects[yogaRects.length-1].bottom)-1),
+        panchangFullWidth:Boolean(panchangRect && Math.abs(panchangRect.width-clone.getBoundingClientRect().width)<2),
+        lowerCardsShareRow:Boolean(thyajyamRect && dayLengthRect && Math.abs(thyajyamRect.top-dayLengthRect.top)<1 && thyajyamRect.left<dayLengthRect.left),
+        emptyYogaCards:clone.querySelectorAll('.cal-empty-yoga-card,.cal-empty-yoga-slot').length
+      };
+      clone.remove();
+      return result;
+    };
+    const firstYogaRect = rect(actualYogaCards[0]);
+    const dateRect = rect(dateCard);
+    return {
+      declaredYogaCount:Number(wrapper?.dataset.yogaCount ?? -1),
+      actualYogaCardCount:actualYogaCards.length,
+      wrapperDisplay:wrapper ? getComputedStyle(wrapper).display : '',
+      dateAndFirstYogaShareRow:Boolean(dateRect && firstYogaRect && Math.abs(dateRect.top-firstYogaRect.top)<1 && dateRect.left<firstYogaRect.left),
+      threeYogaLayout:probe(3),
+      oneYogaLayout:probe(1)
+    };
+  });
+  assert.ok(yogaFlow.declaredYogaCount >= 0, 'The calculated Amirthadi Yoga count must be exposed for layout validation.');
+  assert.equal(yogaFlow.actualYogaCardCount, Math.max(1,yogaFlow.declaredYogaCount),
+    'Each available Yoga must become one card; only one unavailable-result card appears when none is available.');
+  assert.equal(yogaFlow.wrapperDisplay, 'contents', 'The Yoga wrapper must not consume an extra grid cell.');
+  assert.equal(yogaFlow.dateAndFirstYogaShareRow, true, 'Tamil date stays on the left and the first Yoga occupies its right side.');
+  assert.equal(yogaFlow.threeYogaLayout.available, true, 'Three-Yoga layout probe must render.');
+  assert.equal(yogaFlow.threeYogaLayout.dateAndFirstYogaShareRow, true, 'With three Yogas, the first row must be Tamil date | Yoga 1.');
+  assert.equal(yogaFlow.threeYogaLayout.secondAndThirdYogaShareRow, true, 'With three Yogas, Yoga 2 and Yoga 3 must fill the next left/right row.');
+  assert.equal(yogaFlow.threeYogaLayout.panchangBelowYoga, true, 'Daily Panchang details must follow all Yoga cards.');
+  assert.equal(yogaFlow.threeYogaLayout.panchangFullWidth, true, 'The Panchang detail grid must keep its full-width layout.');
+  assert.equal(yogaFlow.oneYogaLayout.available, true, 'Single-Yoga layout probe must render.');
+  assert.equal(yogaFlow.oneYogaLayout.yogaCount, 1, 'Single-Yoga layout must render only one Yoga card.');
+  assert.equal(yogaFlow.oneYogaLayout.dateAndFirstYogaShareRow, true, 'With one Yoga, Tamil date and that Yoga must share the top row.');
+  assert.equal(yogaFlow.oneYogaLayout.panchangBelowYoga, true, 'With one Yoga, the next Panchang content must flow immediately below.');
+  assert.equal(yogaFlow.oneYogaLayout.panchangFullWidth, true, 'With one Yoga, Panchang details must fill the next row rather than leave an empty Yoga cell.');
+  assert.equal(yogaFlow.oneYogaLayout.lowerCardsShareRow, true, 'Thyajyam and the next lower card must fill left/right positions without an empty Yoga placeholder.');
+  assert.equal(yogaFlow.oneYogaLayout.emptyYogaCards, 0, 'No empty Yoga card or reserved empty Yoga slot may be created.');
   const dailyDetailsOrder = await page.$eval('#calDateDetails', root =>
     [...root.children].map(child => child.id).filter(id =>
       ['calChandrashtamaSection', 'calReadings', 'calEvents', 'calDaily'].includes(id)));
@@ -655,7 +723,7 @@ try {
       .find(card => /Abhijit Muhurtham|அபிஜித் முகூர்த்தம்/.test(card.textContent || ''));
     const shoolam = grid?.querySelector('.cal-shoolam-card');
     const shoolamMain = shoolam?.querySelector('.cal-shoolam-main');
-    const thyajyam = grid?.querySelector('.cal-day-yoga-card.is-inauspicious');
+    const thyajyam = grid?.querySelector('.cal-thyajyam-card');
     const thyajyamSegment = thyajyam?.querySelector('.cal-yoga-segment.is-inauspicious');
     const thyajyamTime = thyajyamSegment?.querySelector('.cal-yoga-segment-time');
     if (!grid || !flags || !abhijit || !shoolam || !shoolamMain || !thyajyam || !thyajyamSegment || !thyajyamTime) return { available: false };
