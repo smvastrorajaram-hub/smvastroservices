@@ -559,8 +559,8 @@ if(host){
    const result=ta()?segment.resultTa:segment.resultEn;
    const tone=segment.bad?'is-inauspicious':segment.key==='unknown'?'is-unknown':'is-auspicious';
    const range=yogaBoundaryLabel(segment.start)+' – '+yogaBoundaryLabel(segment.end);
-   return '<article class="cal-day-yoga-card cal-amirthadi-yoga-card '+tone+'"><div class="cal-yoga-segment '+tone+'"><div class="cal-yoga-segment-info"><strong>'+esc(yogaName)+'</strong><small>'+esc(starName)+' · '+esc(result)+'</small></div><span class="cal-yoga-segment-time">'+esc(range)+'</span></div>'+(segment===yogaSegments[0]?yogaReferenceHtml:'')+'</article>';
-  }).join(''):'<article class="cal-day-yoga-card cal-amirthadi-yoga-card is-unknown"><div class="cal-yoga-segment is-unknown"><div class="cal-yoga-segment-info"><strong>'+L('Unavailable','கிடைக்கவில்லை')+'</strong><small>'+L('Nakshatra interval data is unavailable.','நட்சத்திர நேரத் தரவு கிடைக்கவில்லை.')+'</small></div></div>'+yogaReferenceHtml+'</article>';
+   return '<article class="cal-day-yoga-card cal-amirthadi-yoga-card '+tone+'"><div class="cal-yoga-segment '+tone+'"><div class="cal-yoga-segment-info"><strong>'+esc(yogaName)+'</strong><small>'+esc(starName)+' · '+esc(result)+'</small></div><span class="cal-yoga-segment-time">'+esc(range)+'</span>'+(segment===yogaSegments[0]?yogaReferenceHtml:'')+'</div></article>';
+  }).join(''):'<article class="cal-day-yoga-card cal-amirthadi-yoga-card is-unknown"><div class="cal-yoga-segment is-unknown"><div class="cal-yoga-segment-info"><strong>'+L('Unavailable','கிடைக்கவில்லை')+'</strong><small>'+L('Nakshatra interval data is unavailable.','நட்சத்திர நேரத் தரவு கிடைக்கவில்லை.')+'</small></div>'+yogaReferenceHtml+'</div></article>';
   $('#calDateDetailsExtra').innerHTML=
    '<div class="cal-details-summary">'+
     '<article class="cal-tamil-date-card"><small>'+L('Tamil date · month · year','தமிழ் தேதி · மாதம் · ஆண்டு')+'</small><strong>'+esc(tamilDate)+'</strong><span>'+esc((ta()?monthTa:monthEn)+' · '+yearName)+'</span></article>'+
