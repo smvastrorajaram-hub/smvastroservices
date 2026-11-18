@@ -180,14 +180,33 @@ test('Document 50 Panchaka identifies the printed dosha remainders',()=>{
   }
 });
 
-test('Document 50 Panchaka leaves remainder zero and unstated Dhruva signs unclassified',()=>{
-  const zero=getDocument50Panchaka({
-    weekdayIndex:0,tithiNumber:1,nakshatraNumber:1,lagnaSignIndex:0
-  });
-  assert.equal(zero.remainder,9%9);
-  assert.equal(zero.eligible,null);
-  assert.match(zero.reason,/does not classify remainder 0/);
+test('Document 50 Panchaka classifies remainder 0 (traditional 9) and Uttama remainders',()=>{
+  const cases=[
+    {remainder:0,nakshatraNumber:1},
+    {remainder:3,nakshatraNumber:4},
+    {remainder:5,nakshatraNumber:6},
+    {remainder:7,nakshatraNumber:8}
+  ];
+  for(const item of cases){
+    // Aries total = weekday(1) + tithi(1) + nakshatra + lagna(1) + Dhruva(5).
+    const result=getDocument50Panchaka({
+      weekdayIndex:0,tithiNumber:1,nakshatraNumber:item.nakshatraNumber,lagnaSignIndex:0
+    });
+    assert.equal(result.remainder,item.remainder);
+    assert.equal(result.eligible,true);
+    if(item.remainder===0){
+      assert.equal(result.total,9);
+      assert.equal(result.category,'Nishpanchakam / Amirtham');
+      assert.equal(result.categoryTa,'நிஷ்பஞ்சகம் / அமிர்தம்');
+      assert.match(result.reason,/traditional remainder 9/);
+    }else{
+      assert.equal(result.category,'Uttamam');
+      assert.equal(result.categoryTa,'உத்தமம்');
+    }
+  }
+});
 
+test('Document 50 Panchaka keeps unstated Dhruva signs unavailable',()=>{
   const missingDhruva=getDocument50Panchaka({
     weekdayIndex:0,tithiNumber:1,nakshatraNumber:1,lagnaSignIndex:2
   });
