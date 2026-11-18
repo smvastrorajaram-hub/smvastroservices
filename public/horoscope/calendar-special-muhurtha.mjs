@@ -47,10 +47,10 @@ const PANCHAKA_NAMES = Object.freeze({
 });
 
 const PANCHAKA_ACTIVITIES = Object.freeze([
-  Object.freeze({ key: 'marriage', labelTa: 'திருமணம் / உபநயனம்', blockedBy: ['mrityu', 'roga'] }),
-  Object.freeze({ key: 'house', labelTa: 'வீடு கட்டுதல்', blockedBy: ['agni', 'raja'] }),
-  Object.freeze({ key: 'business', labelTa: 'தொழில் தொடக்கம்', blockedBy: ['raja'] }),
-  Object.freeze({ key: 'travel', labelTa: 'பயணம்', blockedBy: ['chora'] })
+  Object.freeze({ key: 'marriage', labelTa: 'திருமணம் / உபநயனம்', labelEn: 'Marriage / Upanayanam', blockedBy: ['mrityu', 'roga'] }),
+  Object.freeze({ key: 'house', labelTa: 'வீடு கட்டுதல்', labelEn: 'House construction', blockedBy: ['agni', 'raja'] }),
+  Object.freeze({ key: 'business', labelTa: 'தொழில் தொடக்கம்', labelEn: 'Business start', blockedBy: ['raja'] }),
+  Object.freeze({ key: 'travel', labelTa: 'பயணம்', labelEn: 'Travel', blockedBy: ['chora'] })
 ]);
 
 export function getPanchakaActivityResults(result) {
@@ -58,6 +58,7 @@ export function getPanchakaActivityResults(result) {
   return PANCHAKA_ACTIVITIES.map(activity => ({
     key: activity.key,
     labelTa: activity.labelTa,
+    labelEn: activity.labelEn,
     suitableByPanchaka: result.isRahita === true || !activity.blockedBy.includes(result.key)
   }));
 }
