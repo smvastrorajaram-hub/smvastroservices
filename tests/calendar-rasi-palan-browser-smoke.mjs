@@ -960,6 +960,9 @@ try {
       shoolamFullWidth: Math.abs(shoolamRect.width - gridRect.width) < 1,
       shoolamContentCentered: Math.abs((mainRect.left + mainRect.width / 2) - (shoolamRect.left + shoolamRect.width / 2)) < 1,
       thyajyamBorderLeftWidth: getComputedStyle(thyajyam).borderLeftWidth,
+      thyajyamBorderLeftColor: getComputedStyle(thyajyam).borderLeftColor,
+      thyajyamBorderTopWidth: getComputedStyle(thyajyam).borderTopWidth,
+      thyajyamBorderTopColor: getComputedStyle(thyajyam).borderTopColor,
       thyajyamSegmentBorderLeftWidth: getComputedStyle(thyajyamSegment).borderLeftWidth,
       thyajyamTimeAlignSelf: getComputedStyle(thyajyamTime).alignSelf,
       thyajyamTimeCentered: Math.abs((thyajyamTimeRect.left + thyajyamTimeRect.width / 2) - (thyajyamSegmentRect.left + thyajyamSegmentRect.width / 2)) < 1,
@@ -971,7 +974,9 @@ try {
   assert.equal(requestedLayout.flagsAndAbhijitShareRow, true, 'Kari/Thaniya and Abhijit must share one row.');
   assert.equal(requestedLayout.shoolamFullWidth, true, 'Travel Shoolam must occupy its own full-width row.');
   assert.equal(requestedLayout.shoolamContentCentered, true, 'Travel Shoolam content must be centered.');
-  assert.equal(requestedLayout.thyajyamBorderLeftWidth, '0px', 'The long red left line on the Nakshatra Thyajyam card must be removed.');
+  assert.notEqual(requestedLayout.thyajyamBorderLeftColor, 'rgb(182, 91, 80)', 'The old red left stripe on the Nakshatra Thyajyam card must be removed; the neutral card outline may remain.');
+  assert.equal(requestedLayout.thyajyamBorderTopWidth, '2px', 'The intentional red top accent on the Nakshatra Thyajyam card must remain.');
+  assert.equal(requestedLayout.thyajyamBorderTopColor, 'rgb(182, 91, 80)', 'The intentional red top accent must retain its theme color.');
   assert.equal(requestedLayout.thyajyamSegmentBorderLeftWidth, '0px', 'The inner red Thyajyam interval stripe must also be removed.');
   assert.equal(requestedLayout.thyajyamTimeAlignSelf, 'center', 'The Nakshatra Thyajyam time must be centered on narrow mobile screens.');
   assert.equal(requestedLayout.thyajyamTimeCentered, true, 'The Nakshatra Thyajyam time result must be geometrically centered within its interval row.');
