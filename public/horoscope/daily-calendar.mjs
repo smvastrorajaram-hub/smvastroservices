@@ -264,6 +264,12 @@ if(host){
    lagnaSignIndex:lagnaIndex
   });
   const dayFlags=getTamilCalendarDayFlags(tamilSolar);
+  const selectedClock=String(calculationTime).match(/^(\\d{2}):(\\d{2})$/);
+  const selectedInstant=selectedClock
+   ? Date.UTC(Number(selected.slice(0,4)),Number(selected.slice(5,7))-1,Number(selected.slice(8,10)),Number(selectedClock[1]),Number(selectedClock[2]))-Number(cfg.offset)*60000
+   : NaN;
+  const selectedYogaSegment=(Array.isArray(daily.amirthadiYogaSegments)?daily.amirthadiYogaSegments:[])
+   .find(segment=>Number.isFinite(selectedInstant)&&selectedInstant>=Number(segment.startTimestamp)&&selectedInstant<Number(segment.endTimestamp));
   const timeRestrictions=getDocument50TimeRestrictions({
    weekdayIndex,
    tithiNumber:Number(panchanga.tithi?.number),
@@ -271,7 +277,10 @@ if(host){
    rahuKalam:panchanga.rahuKalam,
    yamagandam:panchanga.yamagandam,
    kariDay:dayFlags.kari,
-   thaniyaDay:dayFlags.thaniya
+   thaniyaDay:dayFlags.thaniya,
+   dayFlagsAvailable:dayFlags.available,
+   thaniyaAvailable:dayFlags.thaniyaAvailable,
+   yogaKey:selectedYogaSegment?.key
   });
   const selectedLagnaLongitude=Number(daily.en?.t?.lagna?.longitude);
   const selectedPushkara=getPushkaraNavamsa(selectedLagnaLongitude);
