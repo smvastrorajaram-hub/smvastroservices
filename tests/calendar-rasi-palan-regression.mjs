@@ -483,7 +483,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261118-panchang-sunday-red-v3' : '20261118-panchang-sunday-red-v3'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261118-calendar-heading-alignment-v4' : '20261118-calendar-heading-alignment-v4'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
@@ -493,10 +493,10 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261118-panchang-sunday-red-v3'));
-   assert.ok(calendarIndexSource.includes('20261118-panchang-sunday-red-v3'));
+   assert.ok(calendarIndexSource.includes('20261118-calendar-heading-alignment-v4'));
+   assert.ok(calendarIndexSource.includes('20261118-calendar-heading-alignment-v4'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
-   assert.ok(calendarIndexSource.includes('20261118-panchang-sunday-red-v3'));
+   assert.ok(calendarIndexSource.includes('20261118-calendar-heading-alignment-v4'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'runPeriodForecast\')'));
    assert.ok(calendarIndexSource.includes('The deployed forecast assets could not be loaded from this Calendar host.'));
@@ -956,7 +956,7 @@ test('SMV CALENDAR daily Panchang and Hora follow the green result hierarchy', (
     'Calendar module fallback uses the same requested Tamil heading.');
   assert.ok(rasiPalanCss.includes('#calRasiPalan .rp-heading h2{color:#15564e!important'),
     'Rasi Palan heading must use the established green theme colour.');
-  assert.ok(calendarIndexSource.includes("const version='20261118-calendar-green-heading-v2'"),
+  assert.ok(calendarIndexSource.includes("const version='20261118-calendar-green-heading-v3'"),
     'The dynamically loaded Rasi Palan CSS must use the new version marker.');
   assert.match(dailyCalendarSource, /hora-time smv-calendar-neutral-time/);
   assert.match(calendarThemeCssSource, /cal-name-yoga-label\{color:#426957;font-size:12px;font-weight:700\}/);
@@ -967,15 +967,15 @@ test('SMV CALENDAR daily Panchang and Hora follow the green result hierarchy', (
   assert.match(sharedHoroscopeCssSource, /event-time:not\(\.smv-calendar-neutral-date-time\)/);
   assert.match(sharedHoroscopeCssSource, /hora-time:not\(\.smv-calendar-neutral-time\)/);
   assert.match(sharedHoroscopeCssSource, /transit-table-degree:not\(\.smv-calendar-degree-normal\)/);
-  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261118-panchang-sunday-red-v3/);
-  assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261118-panchang-sunday-red-v3/);
+  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261118-calendar-heading-alignment-v4/);
+  assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261118-calendar-heading-alignment-v4/);
   const releases = [astroServiceWorkerSource, horoscopeServiceWorkerSource, calendarWorkerSource]
     .map(source => source.match(/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '([^']+)' : '([^']+)';/));
   assert.ok(releases.every(Boolean), 'All three service workers must define the synchronized release marker.');
   assert.equal(new Set(releases.map(match => match[1])).size, 1);
   assert.equal(new Set(releases.map(match => match[2])).size, 1);
-  assert.equal(releases[0][1], '20261118-panchang-sunday-red-v3');
-  assert.equal(releases[0][2], '20261118-panchang-sunday-red-v3');
+  assert.equal(releases[0][1], '20261118-calendar-heading-alignment-v4');
+  assert.equal(releases[0][2], '20261118-calendar-heading-alignment-v4');
 });
 
 
