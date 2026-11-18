@@ -116,6 +116,8 @@ try {
     result: status?.dataset.result || '',
     statusColor: status ? getComputedStyle(status).color : '',
     headingAlignment: getComputedStyle(section.querySelector(':scope > h3')).textAlign,
+    headingDisplay: getComputedStyle(section.querySelector(':scope > h3')).display,
+    headingAfterDisplay: getComputedStyle(section.querySelector(':scope > h3'), '::after').display,
     windows: [...(root?.querySelectorAll('.cal-chandra-window') || [])].map(window => ({
       rasi: window.querySelector('.cal-chandra-rasi-period strong')?.textContent || '',
       rasiPeriod: window.querySelector('.cal-chandra-rasi-period span')?.textContent || '',
@@ -138,6 +140,10 @@ try {
     'The Chandrashtama subheading must directly show the Yes/No result.');
   assert.equal(chandrashtamaSmoke.headingAlignment, 'center',
     'The main Chandrashtama heading must be centered on desktop.');
+  assert.equal(chandrashtamaSmoke.headingDisplay, 'block',
+    'The main Chandrashtama heading must use a full-width block so the label itself is centered.');
+  assert.equal(chandrashtamaSmoke.headingAfterDisplay, 'none',
+    'The old trailing flex rule must not push the Chandrashtama heading back to the left.');
   assert.ok(chandrashtamaSmoke.windows.length <= 1,
     'Calendar must never list multiple past or upcoming Chandrashtama Rasi windows.');
   assert.ok(chandrashtamaSmoke.windows.every(window => window.active && !window.selectedDateMatch),
@@ -390,8 +396,13 @@ try {
       Number(row?.dataset.targetPada) === 4;
   }, { timeout: 30000 });
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
-  const mobileHeadingAlignment = await page.$eval('#calChandrashtamaSection > h3', el => getComputedStyle(el).textAlign);
-  assert.equal(mobileHeadingAlignment, 'center', 'The main Chandrashtama heading must be centered on mobile.');
+  const mobileHeadingAlignment = await page.$eval('#calChandrashtamaSection > h3', el => ({
+    textAlign: getComputedStyle(el).textAlign,
+    display: getComputedStyle(el).display,
+    afterDisplay: getComputedStyle(el, '::after').display
+  }));
+  assert.deepEqual(mobileHeadingAlignment, { textAlign:'center', display:'block', afterDisplay:'none' },
+    'The main Chandrashtama heading must be centered on mobile without the trailing flex rule.');
   const chandrashtamaCard = await page.$('#calChandrashtamaSection');
   assert.ok(chandrashtamaCard, 'The Chandrashtama Rasi card must be rendered for the mobile preview.');
   await chandrashtamaCard.evaluate(el => el.scrollIntoView({ block: 'center' }));
