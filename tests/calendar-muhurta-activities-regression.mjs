@@ -267,3 +267,36 @@ test('Document 50 selected-time screening checks Rahu, Yamagandam, Kari and Than
   assert.equal(dayFlag.blocked,true);
   assert.match(dayFlag.reasons.join(' '),/Kari Naal/);
 });
+
+
+test('Document 50 screening blocks source-backed Marana and Prabalarishta Yoga keys',()=>{
+  const marana=getDocument50TimeRestrictions({
+    weekdayIndex:1,tithiNumber:3,time:'11:00',
+    rahuKalam:'16:30 - 18:00',yamagandam:'09:00 - 10:30',
+    kariDay:false,thaniyaDay:false,dayFlagsAvailable:true,thaniyaAvailable:true,
+    yogaKey:'marana'
+  });
+  assert.equal(marana.blocked,true);
+  assert.match(marana.reasons.join(' '),/Amirthadi Yoga is marana/);
+
+  const prabalarishta=getDocument50TimeRestrictions({
+    weekdayIndex:1,tithiNumber:3,time:'11:00',
+    rahuKalam:'16:30 - 18:00',yamagandam:'09:00 - 10:30',
+    kariDay:false,thaniyaDay:false,dayFlagsAvailable:true,thaniyaAvailable:true,
+    yogaKey:'prabalarishta'
+  });
+  assert.equal(prabalarishta.blocked,true);
+});
+
+test('Document 50 screening reports Utpata and unavailable day flags without guessing',()=>{
+  const result=getDocument50TimeRestrictions({
+    weekdayIndex:1,tithiNumber:3,time:'11:00',
+    rahuKalam:'16:30 - 18:00',yamagandam:'09:00 - 10:30',
+    kariDay:false,thaniyaDay:false,dayFlagsAvailable:false,thaniyaAvailable:false,
+    yogaKey:'siddha'
+  });
+  assert.equal(result.blocked,false);
+  assert.match(result.warnings.join(' '),/Kari Naal classification is unavailable/);
+  assert.match(result.warnings.join(' '),/Thaniya Naal source data is unavailable/);
+  assert.match(result.warnings.join(' '),/Utpata Yoga is not separately classified/);
+});
