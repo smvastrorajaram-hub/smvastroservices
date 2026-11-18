@@ -527,7 +527,7 @@ if(host){
     if(!label)return '';
     const primary=row.classList.contains('smv-calendar-primary-result-row')?' is-primary':'';
     const yogaLabel=/^(Namah Yoga|நாம யோகம்)$/i.test(label)?' cal-name-yoga-label':'';
-    return '<article class="cal-panchang-detail-item'+primary+'"><small class="cal-panchang-detail-label'+yogaLabel+'">'+esc(label)+'</small><strong>'+(row.cells?.[1]?.innerHTML||'—')+'</strong></article>';
+    return '<article class="cal-panchang-detail-item smv-css-island'+primary+'"><small class="cal-panchang-detail-label'+yogaLabel+'">'+esc(label)+'</small><strong>'+(row.cells?.[1]?.innerHTML||'—')+'</strong></article>';
    }).join('');
   const yogaReferenceHtml='<small class="cal-yoga-reference">'+L('Sunrise star: ','உதய நட்சத்திரம்: ')+dayStarName+(Number.isInteger(dayStar)?' ('+dayStar+')':'')+'</small>';
   const yogaCardsHtml=yogaSegments.length?yogaSegments.map(segment=>{
