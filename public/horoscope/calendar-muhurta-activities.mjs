@@ -256,7 +256,9 @@ const DOCUMENT50_PARABHAVA_DATES = Object.freeze([
   '2026-08-23','2026-08-30','2026-08-31',
   '2026-09-07','2026-09-13','2026-09-19',
   '2026-11-01','2026-11-11','2026-11-13','2026-11-15','2026-11-16','2026-11-20','2026-11-22','2026-11-29',
-  '2026-12-04','2026-12-06','2026-12-13',
+  '2026-12-04','2026-12-06',
+  // Final Karthigai row: 27 / 13-12-2026 / Sunday / Chaturthi / Thiruvonam.
+  '2026-12-13',
   '2027-01-20','2027-01-28',
   '2027-02-08','2027-02-10','2027-02-11','2027-02-18','2027-02-25','2027-02-26',
   '2027-03-04','2027-03-11','2027-03-17','2027-03-18','2027-03-24','2027-03-25',
@@ -281,7 +283,7 @@ export const DOCUMENT50_MARRIAGE_DATE_SUMMARIES = Object.freeze({
     start: '2026-04-20',
     end: '2027-04-11',
     transcribedCount: DOCUMENT50_PARABHAVA_DATES.length,
-    unresolvedDateRows: 1
+    unresolvedDateRows: 0
   }),
   pilavanga2027To2028: Object.freeze({
     year: 'Pilavanga 2027–2028',
