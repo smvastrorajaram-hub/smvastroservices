@@ -898,3 +898,60 @@ export async function calculateSunMoon(input){
   await ensureSwe();
   return calculateSunMoonSync(input);
 }
+
+ // Lightweight local-ascendant sample for Muhurtha windows. It reuses the
+ // same Lahiri sidereal house calculation as the full Swiss chart.
+ export async function calculateAscendantLongitude({date,time,lat,lon,utcOffsetMinutes=330}){
+   await ensureSwe();
+   const latitude=Number(lat),longitude=Number(lon),offset=Number(utcOffsetMinutes);
+   if(!Number.isFinite(latitude)||latitude<-90||latitude>90||
+      !Number.isFinite(longitude)||longitude<-180||longitude>180||
+      !Number.isFinite(offset)||offset<-720||offset>840){
+     throw new Error('இடம் / நேர மண்டல விவரம் சரியாக இல்லை.');
+   }
+   if(typeof swe.set_sid_mode==='function'&&C.SE_SIDM_LAHIRI!==undefined)swe.set_sid_mode(C.SE_SIDM_LAHIRI,0,0);
+   setEphe();
+   const jd=upgUtcJd(date,String(time||'').length===5?String(time)+':00':time,offset);
+   if(!jd)throw new Error('லக்ன நேரத்தை கணக்கிட முடியவில்லை.');
+   const longitudeValue=upgAscAtJd(jd,latitude,longitude,'S');
+   if(!Number.isFinite(longitudeValue))throw new Error('Swiss Ephemeris லக்னம் கிடைக்கவில்லை.');
+   return Number(norm360(longitudeValue).toFixed(8));
+ }
+
+ // Exact geocentric Lahiri positions needed for Guru/Shukra Asta windows.
+ export function calculateAstaPositionsSync({date,time,utcOffsetMinutes=330}){
+   if(!swe)throw new Error('Swiss Ephemeris WASM is not initialized.');
+   const ds=String(date||''),ts=String(time||'');
+   const m=ts.match(/^(\\d{1,2}):(\\d{2})(?::(\\d{2})(?:\\.(\\d+))?)?$/);
+   if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(ds)||!m)throw new Error('தேதி / நேரம் சரியாக இல்லை.');
+   const hh=Number(m[1]),mm=Number(m[2]),ss=Number(m[3]||0)+(m[4]?Number('0.'+m[4]):0);
+   if(hh>23||mm>59||ss>=60)throw new Error('நேரம் சரியாக இல்லை.');
+   const offset=Number(utcOffsetMinutes);
+   if(!Number.isFinite(offset)||offset<-720||offset>840)throw new Error('UTC offset சரியாக இல்லை.');
+   const [y,mo,d]=ds.split('-').map(Number);
+   const utcSeconds=hh*3600+mm*60+ss-offset*60;
+   const shift=Math.floor(utcSeconds/86400),normalized=((utcSeconds%86400)+86400)%86400;
+   const utcDate=new Date(Date.UTC(y,mo-1,d));utcDate.setUTCDate(utcDate.getUTCDate()+shift);
+   const utc=swe.utc_to_jd(utcDate.getUTCFullYear(),utcDate.getUTCMonth()+1,utcDate.getUTCDate(),
+     Math.floor(normalized/3600),Math.floor(normalized%3600/60),normalized%60,C.SE_GREG_CAL);
+   fail(utc,'Asta UTC/JD');
+   const [jdEt]=utc.data;const ephePath=setEphe();
+   if(typeof swe.set_sid_mode==='function'&&C.SE_SIDM_LAHIRI!==undefined)swe.set_sid_mode(C.SE_SIDM_LAHIRI,0,0);
+   const useSwissFiles=hasSwissEpheFiles(ephePath);
+   const flags=(useSwissFiles?C.SEFLG_SWIEPH:C.SEFLG_MOSEPH)|C.SEFLG_SIDEREAL|C.SEFLG_SPEED;
+   const fallback=C.SEFLG_MOSEPH|C.SEFLG_SIDEREAL|C.SEFLG_SPEED;
+   const sun=calcPlanetSafe(jdEt,C.SE_SUN,flags,fallback,'சூரியன்',useSwissFiles).result.data;
+   const guru=calcPlanetSafe(jdEt,C.SE_JUPITER,flags,fallback,'குரு',useSwissFiles).result.data;
+   const sukra=calcPlanetSafe(jdEt,C.SE_VENUS,flags,fallback,'சுக்கிரன்',useSwissFiles).result.data;
+   return {
+     sunLongitude:Number(norm360(Number(sun[0])).toFixed(8)),
+     guruLongitude:Number(norm360(Number(guru[0])).toFixed(8)),
+     guruSpeed:Number(Number(guru[3]||0).toFixed(8)),
+     sukraLongitude:Number(norm360(Number(sukra[0])).toFixed(8)),
+     sukraSpeed:Number(Number(sukra[3]||0).toFixed(8))
+   };
+ }
+ export async function calculateAstaPositions(input){
+   await ensureSwe();
+   return calculateAstaPositionsSync(input);
+ }
