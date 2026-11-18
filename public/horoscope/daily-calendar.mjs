@@ -264,7 +264,7 @@ if(host){
    lagnaSignIndex:lagnaIndex
   });
   const dayFlags=getTamilCalendarDayFlags(tamilSolar);
-  const selectedClock=String(calculationTime).match(/^(\\d{2}):(\\d{2})$/);
+  const selectedClock=String(calculationTime).match(/^(\d{2}):(\d{2})$/);
   const selectedInstant=selectedClock
    ? Date.UTC(Number(selected.slice(0,4)),Number(selected.slice(5,7))-1,Number(selected.slice(8,10)),Number(selectedClock[1]),Number(selectedClock[2]))-Number(cfg.offset)*60000
    : NaN;
