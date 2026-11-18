@@ -537,14 +537,14 @@ try {
       dayFlagsSeparated: Boolean(flagsCard && flags.length === 2),
       shoolamSeparate: Boolean(shoolam && !shoolam.querySelector('.cal-day-flag')),
       immediatelyBeforePanchang: document.querySelector('#calChandrashtamaSection')?.nextElementSibling?.id === 'calDaily',
-      lagnaBeforeChandrashtama: el.nextElementSibling?.id === 'calChandrashtamaSection',
+      pushkaraBeforeChandrashtama: el.nextElementSibling?.id === 'calChandrashtamaSection',
       chandrashtamaSectionInsideDateDetails: Boolean(document.querySelector('#calChandrashtamaSection')?.parentElement === dateDetails)
     };
   });
   assert.equal(resultPlacement.insideDateDetails, true, 'The three result sections must remain inside Date Details.');
   assert.equal(resultPlacement.dayFlagsSeparated, true, 'Kari/Thaniya flags must use their own card.');
   assert.equal(resultPlacement.shoolamSeparate, true, 'Travel Shoolam must be separate from the day flags.');
-  assert.equal(resultPlacement.lagnaBeforeChandrashtama, true, 'Chandrashtama must appear immediately below the Rasi-Mana Lagna balance section.');
+  assert.equal(resultPlacement.lagnaBeforeChandrashtama, true, 'Chandrashtama must appear immediately after the scoped Pushkara result section.');
   assert.equal(resultPlacement.chandrashtamaSectionInsideDateDetails, true, 'Chandrashtama must remain inside Date Details.');
   assert.equal(resultPlacement.immediatelyBeforePanchang, true, 'Chandrashtama must appear immediately above the daily Panchang.');
 
@@ -951,26 +951,24 @@ try {
       label + ' must preserve the same full solar-month OA value.');
   }
 
-  // Verify the actual public Date Details text for the requested date/value.
+  // An unlisted date must not inherit the old Lagna-balance summary or
+  // expose Pushkara/Panchaka results.
   await page.$eval('#calDate', (el, date) => {
     el.value = date;
     el.dispatchEvent(new Event('change', { bubbles: true }));
-  }, '2026-11-25');
-  await page.waitForFunction(() => {
-    const status = document.querySelector('#calStatus')?.textContent || '';
-    const line = document.querySelector('#calMuhurtaLagna .cal-rasi-balance-line')?.textContent || '';
-    return status.includes('2026-11-25') && /3 na 56 vi|3 நா 56 வி/.test(line);
-  }, { timeout: 90000 });
-  const nov25Rendered = await page.$eval('#calMuhurtaLagna', el => ({
-    balance:el.querySelector('.cal-rasi-balance-line')?.textContent.trim()||'',
-    meta:el.querySelector('.cal-rasi-balance-meta')?.textContent.trim()||''
+  }, '2026-11-12');
+  await page.waitForFunction(() =>
+    (document.querySelector('#calStatus')?.textContent || '').includes('2026-11-12') &&
+    document.querySelector('#calMuhurtaLagna')?.hidden === true,
+    { timeout: 90000 });
+  const unlistedDateUi = await page.$eval('#calMuhurtaLagna', el => ({
+    hidden: el.hidden,
+    text: el.textContent || ''
   }));
-  assert.match(nov25Rendered.balance, /3 na 56 vi|3 நா 56 வி/,
-    'The public Calendar UI must render 25 Nov 2026 as 3 nazhigai 56 vinazhigai, not 5 na 29 vi.');
-  assert.match(nov25Rendered.meta, /8°30′58″/,
-    'The public Calendar UI must expose the progressed Sun degree at the selected sunrise.');
-  assert.match(nov25Rendered.meta, /5 na 29 vi|5 நா 29 வி/,
-    'The public Calendar UI must show the complete Scorpio month-start value separately.');
+  assert.equal(unlistedDateUi.hidden, true,
+    'An unpublished date must not show Pushkara or Panchaka results.');
+  assert.equal(unlistedDateUi.text.trim(), '',
+    'The result section must not retain a stale Panchaka or Lagna calculation summary.');
   await page.$eval('#calDate', (el, date) => {
     el.value = date;
     el.dispatchEvent(new Event('change', { bubbles: true }));
@@ -978,7 +976,6 @@ try {
   await page.waitForFunction(date =>
     (document.querySelector('#calStatus')?.textContent || '').includes(date),
     { timeout: 90000 }, originalCalendarDate);
-
 
   for (const result of solarSignRasiManaFixtures) {
     assert.match(result.ingressTime, /^\d{2}:\d{2}:\d{2}$/, 'Solar ingress time must retain seconds.');
