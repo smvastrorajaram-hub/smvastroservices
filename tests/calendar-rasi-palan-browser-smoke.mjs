@@ -465,6 +465,7 @@ try {
     fillColor: getComputedStyle(el).webkitTextFillColor,
     fontSize: getComputedStyle(el).fontSize,
     fontWeight: getComputedStyle(el).fontWeight,
+    color: getComputedStyle(el).color,
     referenceFontSize: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).fontSize,
     referenceFontWeight: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).fontWeight,
     referenceColor: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).color,
@@ -515,7 +516,6 @@ try {
   assert.equal(upcomingHeading.fontSize, upcomingHeading.referenceFontSize,
     'The upcoming heading must use the same typography size as the Janma Rasi detail line.');
   assert.equal(upcomingHeading.fontWeight, upcomingHeading.referenceFontWeight,
-    'The upcoming heading must follow the normal typography hierarchy of the Rasi detail lines.');  assert.equal(upcomingHeading.fontWeight, upcomingHeading.referenceFontWeight,
     'The upcoming heading must follow the normal typography hierarchy of the Rasi detail lines.');
   assert.equal(upcomingHeading.color, upcomingHeading.referenceColor,
     'The upcoming heading must keep the ordinary text color of the Rasi detail lines.');
