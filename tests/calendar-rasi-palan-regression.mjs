@@ -471,6 +471,32 @@ test('Selected Rasi controls all forecast periods and is preserved across sectio
    assert.ok(publicRasiPalanSource.includes("document.getElementById('calRasi')"));
 });
 
+test('Calendar Time defaults to local sunrise and recalculates Panchang for the selected time', () => {
+  assert.ok(dailyCalendarSource.includes('id="calTime" type="time" step="60"'),
+    'Time must be added directly beneath Date.');
+  assert.ok(dailyCalendarSource.includes("workerCall('sunrise',sunriseInput)"),
+    'A new date/location must resolve its local sunrise first.');
+  assert.ok(dailyCalendarSource.includes("selectedTime=hasSunrise?sunrise.time:'12:00'"),
+    'Local sunrise must be the default; noon is only an unavailable-sunrise fallback.');
+  assert.ok(dailyCalendarSource.includes("selectedTime=$('#calTime').value"),
+    'A manually selected time must become the active Calendar time.');
+  assert.ok(dailyCalendarSource.includes("workerCall('day',dayInput)"),
+    'The daily calculation must receive the user-selected time.');
+  assert.ok(dailyCalendarSource.includes("selectedTime=''"),
+    'A date/location change must reset to the new local sunrise.');
+  assert.ok(calendarWorkerSource.includes("if(kind==='sunrise')"),
+    'The calculation worker must expose local sunrise resolution.');
+  assert.ok(calendarWorkerSource.includes('solarNoaa(input.date,input.lat,input.lon,utcOffsetMinutes,true)'),
+    'Sunrise must be calculated for the selected date and coordinates.');
+  assert.ok(calendarWorkerSource.includes('panchang(input,chart)'),
+    'The existing Panchang engine must process the selected date/time.');
+  assert.ok(dailyCalendarCssSource.includes('.cal-date-time-control'),
+    'Date and Time must be stacked in the first control column.');
+  const sunrise=solarNoaa('2026-11-18',11.2342,78.8808,330,true);
+  assert.match(sunrise,/^\d{2}:\d{2}$/,
+    'Perambalur sunrise calculation must produce HH:MM.');
+});
+
 test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horoscope Admin and remains safely cached', () => {
    assert.ok(calendarIndexSource.includes('<a href="https://smvastroservices.in/" target="_blank" rel="noopener" data-en="Services" data-ta="சேவைகள்">Services</a>'));
    assert.ok(calendarIndexSource.includes('<a href="https://horoscope.smvastroservices.in/" target="_blank" rel="noopener" data-en="Horoscope" data-ta="ஜாதகம்">Horoscope</a>'));
@@ -485,7 +511,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261118-calendar-centered-headings-v17' : '20261118-calendar-centered-headings-v17'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261118-calendar-time-panchang-v18' : '20261118-calendar-time-panchang-v18'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
@@ -495,10 +521,10 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261118-calendar-centered-headings-v17'));
-   assert.ok(calendarIndexSource.includes('20261118-calendar-centered-headings-v17'));
+   assert.ok(calendarIndexSource.includes('20261118-calendar-time-panchang-v18'));
+   assert.ok(calendarIndexSource.includes('20261118-calendar-time-panchang-v18'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
-   assert.ok(calendarIndexSource.includes('20261118-calendar-centered-headings-v17'));
+   assert.ok(calendarIndexSource.includes('20261118-calendar-time-panchang-v18'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'runPeriodForecast\')'));
    assert.ok(calendarIndexSource.includes('The deployed forecast assets could not be loaded from this Calendar host.'));
@@ -976,15 +1002,15 @@ test('SMV CALENDAR daily Panchang and Hora follow the green result hierarchy', (
   assert.match(sharedHoroscopeCssSource, /event-time:not\(\.smv-calendar-neutral-date-time\)/);
   assert.match(sharedHoroscopeCssSource, /hora-time:not\(\.smv-calendar-neutral-time\)/);
   assert.match(sharedHoroscopeCssSource, /transit-table-degree:not\(\.smv-calendar-degree-normal\)/);
-  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261118-calendar-centered-headings-v17/);
-  assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261118-calendar-centered-headings-v17/);
+  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261118-calendar-time-panchang-v18/);
+  assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261118-calendar-time-panchang-v18/);
   const releases = [astroServiceWorkerSource, horoscopeServiceWorkerSource, calendarWorkerSource]
     .map(source => source.match(/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '([^']+)' : '([^']+)';/));
   assert.ok(releases.every(Boolean), 'All three service workers must define the synchronized release marker.');
   assert.equal(new Set(releases.map(match => match[1])).size, 1);
   assert.equal(new Set(releases.map(match => match[2])).size, 1);
-  assert.equal(releases[0][1], '20261118-calendar-centered-headings-v17');
-  assert.equal(releases[0][2], '20261118-calendar-centered-headings-v17');
+  assert.equal(releases[0][1], '20261118-calendar-time-panchang-v18');
+  assert.equal(releases[0][2], '20261118-calendar-time-panchang-v18');
 });
 
 
