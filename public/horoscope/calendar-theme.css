@@ -201,10 +201,10 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-details-summary>article>span{color:#586e62;font-size:12px;font-weight:500;line-height:1.4}
 #smvDailyCalendar .cal-tamil-date-card>strong{color:#15564e;font-size:25px;font-weight:850;line-height:1.2;font-variant-numeric:tabular-nums}
 #smvDailyCalendar .cal-tamil-date-card>span{color:#536f60;font-size:13px;font-weight:650}
-#smvDailyCalendar .cal-amirthadi-yoga-card{border-top:2px solid #2c875c}
+#smvDailyCalendar .cal-amirthadi-yoga-card{gap:2px;padding:8px 10px;border-top:2px solid #2c875c}
 #smvDailyCalendar .cal-amirthadi-yoga-card.is-inauspicious{border-top-color:#b42318}
 #smvDailyCalendar .cal-amirthadi-yoga-card.is-unknown{border-top-color:#8b948b}
-#smvDailyCalendar .cal-yoga-segment{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:8px;width:100%;min-width:0}
+#smvDailyCalendar .cal-yoga-segment{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;row-gap:2px;column-gap:8px;width:100%;min-width:0}
 #smvDailyCalendar .cal-yoga-segment-info{display:grid;gap:3px;min-width:0}
 #smvDailyCalendar .cal-yoga-segment-info>strong{color:#20704d;font-size:16px;font-weight:800;line-height:1.3;overflow-wrap:anywhere}
 #smvDailyCalendar .cal-yoga-segment-info>small{display:block;color:#5e7468;font-size:12px;font-weight:500;line-height:1.4}
@@ -220,10 +220,10 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-panchang-detail-item .cal-name-yoga-label{color:#426957;font-size:12px;font-weight:700}
 #smvDailyCalendar .cal-panchang-detail-item .cal-name-yoga-result{display:inline-block;margin-top:2px;color:#36724f;font-size:11.5px;font-weight:650;line-height:1.35;text-align:right}
 #smvDailyCalendar .cal-panchang-detail-item .smv-calendar-neutral-date-time,#smvDailyCalendar .cal-panchang-detail-item .smv-calendar-neutral-time{color:inherit;font-weight:inherit}
-#smvDailyCalendar .cal-panchang-detail-item .smv-calendar-normal-connector{margin:0 3px;color:#708477;font-weight:450}
+#smvDailyCalendar .cal-panchang-detail-item .smv-calendar-normal-connector{margin:0 3px;color:#708477;font-weight:400}
 #smvDailyCalendar .cal-panchang-detail-item .smv-calendar-bright-red-time{color:#b42318;font-weight:750}
-#smvDailyCalendar .cal-thyajyam-card{border-top:2px solid #b65b50}
-#smvDailyCalendar .cal-thyajyam-card .cal-yoga-segments{display:grid;gap:5px;width:100%;margin:1px 0 0}
+#smvDailyCalendar .cal-thyajyam-card{gap:2px;padding:8px 10px;border-top:2px solid #b65b50}
+#smvDailyCalendar .cal-thyajyam-card .cal-yoga-segments{display:grid;gap:2px;width:100%;margin:1px 0 0}
 #smvDailyCalendar .cal-thyajyam-card .cal-yoga-segment{grid-template-columns:minmax(0,1fr) auto;padding:5px 0;border-bottom:1px solid #f0e4e1}
 #smvDailyCalendar .cal-thyajyam-card .cal-yoga-segment:last-child{border-bottom:0}
 #smvDailyCalendar .cal-thyajyam-card .cal-yoga-segment-info>strong{color:#a33a31;font-size:14px}
@@ -267,11 +267,17 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-chandra-pada-row{display:grid;gap:3px;min-width:0;padding:7px 9px;border:1px solid #e1ebe3;border-radius:8px;background:#fff}
 #smvDailyCalendar .cal-chandra-pada-row>strong{color:#286749;font-size:12px;font-weight:700;line-height:1.4;overflow-wrap:anywhere}
 #smvDailyCalendar .cal-chandra-pada-row>span{color:#536d5f;font-size:12px;font-weight:600;line-height:1.4;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+#smvDailyCalendar .cal-chandra-janma-projection{display:grid;gap:4px;margin:8px 0;padding:8px 10px;border:1px solid #8fb69b;border-radius:9px;background:#f0f7f1}
+#smvDailyCalendar .cal-chandra-janma-projection>b{color:#61786b;font-size:11px;font-weight:650}
+#smvDailyCalendar .cal-chandra-janma-projection>strong{color:#1b6047;font-size:14px;font-weight:800}
+#smvDailyCalendar .cal-chandra-janma-projection>span{color:#286749;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+#smvDailyCalendar .cal-chandra-pada-row.is-janma-pada-projection{border-color:#8fb69b;background:#f0f7f1}
+#smvDailyCalendar .cal-chandra-pada-row.is-janma-pada-projection>strong{color:#1b6047}
 @media(max-width:680px){
  #smvDailyCalendar .cal-details-summary{gap:8px}
  #smvDailyCalendar .cal-details-summary>article{padding:10px}
  #smvDailyCalendar .cal-panchang-detail-grid{gap:7px}
- #smvDailyCalendar .cal-panchang-detail-item{grid-template-columns:minmax(0,1fr);align-content:start;gap:3px;padding:8px 9px}
+ #smvDailyCalendar .cal-panchang-detail-item{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);align-content:center;gap:3px 6px;padding:8px 9px}
  #smvDailyCalendar .cal-panchang-detail-item>strong{text-align:left}
  #smvDailyCalendar .cal-day-flags-card{padding:9px 3px}
  #smvDailyCalendar .cal-shoolam-card{padding:9px 4px}
