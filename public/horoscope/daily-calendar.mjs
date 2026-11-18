@@ -1,5 +1,5 @@
 import {offsetMinutesAt} from './offline/places/timezone.mjs';
-import {signs,stars,planets,holidays2026,holidaySource,favorable} from './calendar-data.mjs';
+import {signs,stars,planets,holidays2026,additionalGovernmentHolidays2026,holidaySource,favorable} from './calendar-data.mjs';
 import {getTamilCalendarDayFlags,getNakshatraDirection,getNethiramJeevan} from './tamil-day-classifications.mjs';
 import {classifySubhaMuhurtham} from './calendar-muhurta-classification.mjs';
 import {getChandrashtamaRasiIndex,getBirthStarPadasInRasi,getNakshatraPadaAtLongitude,getChandrashtamaPadaProjection,formatRasiDegree} from './calendar-chandrashtama.mjs';
@@ -117,6 +117,7 @@ if(host){
  $('#calGeo').onclick=()=>{if(!navigator.geolocation)return;$('#calStatus').textContent=L('Finding your location…','உங்கள் இருப்பிடம் தேடப்படுகிறது…');navigator.geolocation.getCurrentPosition(pos=>{cfg={...cfg,lat:+pos.coords.latitude.toFixed(5),lon:+pos.coords.longitude.toFixed(5),offset:-new Date().getTimezoneOffset(),place:L('Current location','தற்போதைய இடம்')};storage.set(cfg);month=null;monthCache.clear();shell();load()},()=>{$('#calStatus').textContent=L('Location permission unavailable. Enter coordinates above.','இருப்பிடம் கிடைக்கவில்லை. மேலே விவரங்களை உள்ளிடவும்.')},{timeout:10000});};
  }
  const holidays=date=>date.startsWith('2026-')?(holidays2026[date.slice(5)]||[]):[];
+ const additionalGovernmentLocalHolidays=date=>date.startsWith('2026-')?(additionalGovernmentHolidays2026[date.slice(5)]||[]):[];
 
  function dateInMonth(year,month,day){
   const last=new Date(Date.UTC(year,month,0)).getUTCDate();
@@ -350,13 +351,15 @@ if(host){
 
  function renderExtra(){if(!daily)return;const r=+cfg.rasi,n=+cfg.star,p=daily.en.p,ps=daily.en.t.planets,mo=ps.find(x=>x.name==='Moon');if(!mo)return;const moonPosition=getNakshatraPadaAtLongitude(mo.longitude);if(!moonPosition)return;const moonSign=moonPosition.signIndex,tara=((p.nakshatra.number-1-n+27)%27)%9;const taraNames=[['Janma · birth','ஜன்மம்'],['Sampat · prosperity','சம்பத்து'],['Vipat · caution','விபத்து'],['Kshema · wellbeing','க்ஷேமம்'],['Pratyak · obstacles','பிரத்தியக்கு'],['Sadhana · achievement','சாதனம்'],['Naidhana · caution','நைதனம்'],['Mitra · friendship','மித்திரம்'],['Parama Mitra · support','பரம மித்திரம்']];
  const officialHolidays=holidays(selected);
+ const additionalLocalHolidays=additionalGovernmentLocalHolidays(selected);
  const normaliseObservance=value=>String(value??'').toLowerCase().replace(/[^\p{L}\p{N}]/gu,'').replace(/^diwali$/,'deepavali');
  const nameValues=value=>Array.isArray(value)?value:[value];
- const officialHolidayKeys=new Set(officialHolidays.flatMap(nameValues).map(normaliseObservance));
+ const governmentHolidayKeys=new Set([...officialHolidays,...additionalLocalHolidays].flatMap(nameValues).map(normaliseObservance));
  const dailyObservances=daily.events.map(event=>event.name).filter(name=>
-  !nameValues(name).some(value=>officialHolidayKeys.has(normaliseObservance(value))));
+  !nameValues(name).some(value=>governmentHolidayKeys.has(normaliseObservance(value))));
  const observanceTags=[
   ...officialHolidays.map(name=>({label:name[ta()?1:0]+' · '+L('Government holiday','அரசு விடுமுறை'),kind:'government'})),
+  ...additionalLocalHolidays.map(name=>({label:name[ta()?1:0]+' · '+L('Government local holiday','அரசு உள்ளூர் விடுமுறை'),kind:'government'})),
   ...dailyObservances.map(name=>({label:name[ta()?1:0],kind:'observance'}))
  ];
  if(selected==='2026-04-01')observanceTags.push({label:ta()?'வங்கிக் கணக்கு ஆண்டு முடிவு · வங்கிகளுக்கு மட்டும்':'Bank annual closing · banks only',kind:'observance'});
