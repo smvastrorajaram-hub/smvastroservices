@@ -257,21 +257,21 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar #calChandrashtamaPeriods{min-width:0}
 #smvDailyCalendar .cal-chandra-windows{display:grid;gap:8px;margin-top:1px}
 #smvDailyCalendar .cal-chandra-upcoming-heading{margin:0;color:#2c704d;font-size:13px;font-weight:750;line-height:1.4}
-#smvDailyCalendar .cal-chandra-window{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0;padding:10px;border:1px solid #dce8df;border-radius:10px;background:#f5f9f5}
-#smvDailyCalendar .cal-chandra-window.is-active,#smvDailyCalendar .cal-chandra-window.is-selected-date{border-color:#8fb69b;background:#f0f7f1}
+#smvDailyCalendar .cal-chandra-window{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0;margin:0;padding:0;border:0;border-radius:0;background:transparent}
+#smvDailyCalendar .cal-chandra-window.is-active,#smvDailyCalendar .cal-chandra-window.is-selected-date{border:0;background:transparent}
 #smvDailyCalendar .cal-chandra-rasi-period,#smvDailyCalendar .cal-chandra-star-period{display:grid;align-content:start;gap:2px;min-width:0}
 #smvDailyCalendar .cal-chandra-rasi-period>small,#smvDailyCalendar .cal-chandra-star-period>small{color:#61786b;font-size:11px;font-weight:650;line-height:1.3}
 #smvDailyCalendar .cal-chandra-rasi-period>strong,#smvDailyCalendar .cal-chandra-star-period>strong{color:#1b6047;font-size:14px;font-weight:800;line-height:1.35;overflow-wrap:anywhere}
 #smvDailyCalendar .cal-chandra-rasi-period>span,#smvDailyCalendar .cal-chandra-star-period>span{color:#536b5e;font-size:12px;font-weight:600;line-height:1.4;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 #smvDailyCalendar .cal-chandra-pada-list{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;min-width:0;margin-top:1px}
-#smvDailyCalendar .cal-chandra-pada-row{display:grid;gap:3px;min-width:0;padding:7px 9px;border:1px solid #e1ebe3;border-radius:8px;background:#fff}
+#smvDailyCalendar .cal-chandra-pada-row{display:grid;gap:3px;min-width:0;margin:0;padding:0;border:0;border-radius:0;background:transparent}
 #smvDailyCalendar .cal-chandra-pada-row>strong{color:#286749;font-size:12px;font-weight:700;line-height:1.4;overflow-wrap:anywhere}
 #smvDailyCalendar .cal-chandra-pada-row>span{color:#536d5f;font-size:12px;font-weight:600;line-height:1.4;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 #smvDailyCalendar .cal-chandra-janma-projection{display:grid;gap:4px;margin:8px 0;padding:8px 10px;border:1px solid #8fb69b;border-radius:9px;background:#f0f7f1}
 #smvDailyCalendar .cal-chandra-janma-projection>b{color:#61786b;font-size:11px;font-weight:650}
 #smvDailyCalendar .cal-chandra-janma-projection>strong{color:#1b6047;font-size:14px;font-weight:800}
 #smvDailyCalendar .cal-chandra-janma-projection>span{color:#286749;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
-#smvDailyCalendar .cal-chandra-pada-row.is-janma-pada-projection{border-color:#8fb69b;background:#f0f7f1}
+#smvDailyCalendar .cal-chandra-pada-row.is-janma-pada-projection{border:0;background:transparent}
 #smvDailyCalendar .cal-chandra-pada-row.is-janma-pada-projection>strong{color:#1b6047}
 @media(max-width:680px){
  #smvDailyCalendar .cal-details-summary{gap:8px}
