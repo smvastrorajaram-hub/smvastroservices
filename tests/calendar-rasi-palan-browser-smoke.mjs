@@ -1047,10 +1047,10 @@ try {
     const labelFor = pattern => items.find(item => pattern.test(item.querySelector('small')?.textContent?.trim() || ''))?.querySelector('small');
     const panchangRangeFor = pattern => {
       const item=items.find(item=>pattern.test(item.querySelector('small')?.textContent?.trim()||''));
-      return item?.querySelector('.smv-calendar-event-range')?.textContent.replace(/\\s+/g,' ').trim()||'';
+      return item?.querySelector('.smv-calendar-event-range')?.textContent.replace(/\s+/g,' ').trim()||'';
     };
     const namahYogaItem=items.find(item=>/^(?:Namah Yoga|நாம யோகம்)$/i.test(item.querySelector('small')?.textContent?.trim()||''));
-    const namahYogaValue=namahYogaItem?.querySelector('strong')?.textContent.replace(/\\s+/g,' ').trim()||'';
+    const namahYogaValue=namahYogaItem?.querySelector('strong')?.textContent.replace(/\s+/g,' ').trim()||'';
     const varaLabel = labelFor(/^(?:Vara|வாரம்)$/);
     const tithiLabel = labelFor(/^(?:Tithi|திதி)$/);
     const normalHora = [...document.querySelectorAll('#calDaily .hora-time.smv-calendar-neutral-time:not(.smv-hora-current-green):not(.smv-hora-bright-green):not(.smv-hora-current-red):not(.smv-hora-bright-red)')];
@@ -1089,7 +1089,7 @@ try {
   assert.equal(dailyTypography.yogaLabelFontSize, dailyTypography.varaLabelFontSize, 'Namah Yoga must use the same font size as the Vara label.');
   assert.equal(dailyTypography.yogaLabelFontSize, dailyTypography.tithiLabelFontSize, 'Namah Yoga must use the same font size as the Tithi label.');
   for (const [kind, range] of Object.entries(dailyTypography.panchangRanges)) {
-    assert.match(range, /^\\d{2}:\\d{2} \\(\\d{2}\\/\\d{2}\\) – \\d{2}:\\d{2} \\(\\d{2}\\/\\d{2}\\)$/, kind+' must use HH:MM (DD/MM) – HH:MM (DD/MM) format.');
+    assert.match(range, /^\d{2}:\d{2} \(\d{2}\/\d{2}\) – \d{2}:\d{2} \(\d{2}\/\d{2}\)$/, kind+' must use HH:MM (DD/MM) – HH:MM (DD/MM) format.');
   }
   assert.doesNotMatch(dailyTypography.namahYogaValue, /impact|obstruction|தாக்கம்|இடையூறு|தடை/i, 'Namah Yoga must not display explanatory impact/obstruction wording.');
   assert.equal(dailyTypography.redTimeColors.length, 2, 'Rahu Kalam and Yamagandam must both be present.');
