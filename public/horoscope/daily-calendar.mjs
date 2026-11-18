@@ -10,6 +10,8 @@ if(host){
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const storage={get(){try{return JSON.parse(localStorage.getItem('smv-calendar-settings')||'{}')}catch{return {}}},set(v){try{localStorage.setItem('smv-calendar-settings',JSON.stringify(v))}catch{}}};
  let cfg={lat:11.2342,lon:78.8808,offset:330,place:'Perambalur',rasi:0,star:0,starPada:0,...storage.get()},daily=null,month=null,seq=0,pending=new Map(),worker=null,dayRequest=0,monthRequest=0,locationSearchTimer=0,locationSearchAbort=null,chandrashtamaRequest=0;
+ // Migrate the old implicit Pada=1 default to the new All-Padas default without clearing other saved Calendar settings.
+ if(cfg.birthPadaSelectorVersion!==1){cfg.starPada=0;cfg.birthPadaSelectorVersion=1;storage.set(cfg);}
  const monthCache=new Map();
  let pendingMonthCacheKey='',pendingMonthPromise=null;
  const monthCacheKey=(key,offset=cfg.offset)=>[Number(cfg.lat).toFixed(5),Number(cfg.lon).toFixed(5),Number(offset),key].join('|');
