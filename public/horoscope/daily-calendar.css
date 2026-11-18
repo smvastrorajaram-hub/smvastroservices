@@ -82,6 +82,11 @@
 
 
 
+#smvDailyCalendar .cal-controls{align-items:start}
+#smvDailyCalendar .cal-date-time-control{display:grid;gap:7px;min-width:0}
+#smvDailyCalendar .cal-date-time-control>label{display:grid;gap:7px}
+#smvDailyCalendar #calToday{align-self:end}
+
 /* V225 — Calendar mobile table restoration + requested content order/header navigation. */
 .calendar-only>header.calendar-topbar{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important;gap:12px!important}
 .calendar-product-nav{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;gap:7px;min-width:0;width:100%}
