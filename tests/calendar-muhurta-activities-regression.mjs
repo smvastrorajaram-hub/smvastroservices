@@ -7,7 +7,11 @@ import {
   VASTU_DAY_RULES,
   VASTU_WAKE_MINUTES,
   VASTU_PUJA_MINUTES,
-  NAZHIGAI_MINUTES
+  NAZHIGAI_MINUTES,
+  classifyDocument50MarriageMuhurtham,
+  getDocument50Panchaka,
+  DOCUMENT50_LAGNA_DHRUVA,
+  DOCUMENT50_MARRIAGE_DATE_SUMMARIES
 } from '../public/horoscope/calendar-muhurta-activities.mjs';
 
 const solar=(index,day)=>({index,day});
@@ -122,4 +126,80 @@ test('invalid solar dates and unknown activities stay unavailable',()=>{
   assert.equal(getMuhurthamMonthEligibility({tamilSolar:solar(0,10),activity:'namakaranam'}).available,false);
   assert.equal(getVastuMuhurtham({tamilSolar:null,sunrise:'06:00'}).available,false);
   assert.equal(getPushkaraNavamsa(Number.NaN).available,false);
+});
+
+
+test('Document 50 annual marriage date tables preserve their printed coverage and counts',()=>{
+  assert.equal(DOCUMENT50_MARRIAGE_DATE_SUMMARIES.parabhava2026To2027.count,57);
+  assert.equal(DOCUMENT50_MARRIAGE_DATE_SUMMARIES.pilavanga2027To2028.count,41);
+  assert.equal(classifyDocument50MarriageMuhurtham({date:'2026-04-20'}).listed,true);
+  assert.equal(classifyDocument50MarriageMuhurtham({date:'2026-04-22'}).listed,false);
+  assert.equal(classifyDocument50MarriageMuhurtham({date:'2027-04-11'}).listed,true);
+  assert.equal(classifyDocument50MarriageMuhurtham({date:'2027-04-18'}).listed,true);
+  assert.equal(classifyDocument50MarriageMuhurtham({date:'2027-12-10'}).listed,true);
+});
+
+test('Document 50 date lookup does not guess outside the printed annual table ranges',()=>{
+  assert.equal(classifyDocument50MarriageMuhurtham({date:'2026-04-19'}).available,false);
+  assert.equal(classifyDocument50MarriageMuhurtham({date:'2027-04-15'}).available,false);
+  assert.equal(classifyDocument50MarriageMuhurtham({date:'2027-12-11'}).available,false);
+  assert.equal(classifyDocument50MarriageMuhurtham({date:'2027-02-29'}).available,false);
+});
+
+test('Document 50 Panchaka uses its own five source-stated Dhruva values only',()=>{
+  assert.deepEqual(DOCUMENT50_LAGNA_DHRUVA,{0:5,1:7,9:2,10:4,11:6});
+  const result=getDocument50Panchaka({
+    weekdayIndex:0, tithiNumber:3, nakshatraNumber:4, lagnaSignIndex:0
+  });
+  assert.equal(result.available,true);
+  assert.equal(result.weekdayCount,1);
+  assert.equal(result.tithiCount,3);
+  assert.equal(result.nakshatraCount,4);
+  assert.equal(result.lagnaCount,1);
+  assert.equal(result.dhruva,5);
+  assert.equal(result.total,14);
+  assert.equal(result.remainder,5);
+  assert.equal(result.eligible,true);
+});
+
+test('Document 50 Panchaka identifies the printed dosha remainders',()=>{
+  for(const remainder of [1,2,4,6,8]){
+    // Aries total = weekday(1) + tithi(1) + nakshatra + lagna(1) + Dhruva(5).
+    const nakshatraNumber=remainder===1?2:remainder===2?2:remainder===4?4:remainder===6?6:8;
+    const result=getDocument50Panchaka({
+      weekdayIndex:0,tithiNumber:1,nakshatraNumber,lagnaSignIndex:0
+    });
+    assert.equal(result.remainder,(1+1+nakshatraNumber+1+5)%9);
+    assert.equal(result.eligible,false);
+  }
+});
+
+test('Document 50 Panchaka leaves remainder zero and unstated Dhruva signs unclassified',()=>{
+  const zero=getDocument50Panchaka({
+    weekdayIndex:0,tithiNumber:1,nakshatraNumber:1,lagnaSignIndex:0
+  });
+  assert.equal(zero.remainder,9%9);
+  assert.equal(zero.eligible,null);
+  assert.match(zero.reason,/does not classify remainder 0/);
+
+  const missingDhruva=getDocument50Panchaka({
+    weekdayIndex:0,tithiNumber:1,nakshatraNumber:1,lagnaSignIndex:2
+  });
+  assert.equal(missingDhruva.available,false);
+  assert.equal(missingDhruva.dhruva,null);
+  assert.match(missingDhruva.reason,/does not state a Lagna-Dhruva/);
+});
+
+test('Document 50 Panchaka counts Krishna Paksha Tithi from Pratipada again',()=>{
+  const result=getDocument50Panchaka({
+    weekdayIndex:1,tithiNumber:17,nakshatraNumber:4,lagnaSignIndex:1
+  });
+  assert.equal(result.available,true);
+  assert.equal(result.tithiCount,2);
+});
+
+test('Document 50 Panchaka rejects incomplete or invalid input',()=>{
+  assert.equal(getDocument50Panchaka({weekdayIndex:7,tithiNumber:1,nakshatraNumber:1,lagnaSignIndex:0}).available,false);
+  assert.equal(getDocument50Panchaka({weekdayIndex:0,tithiNumber:0,nakshatraNumber:1,lagnaSignIndex:0}).available,false);
+  assert.equal(getDocument50Panchaka({weekdayIndex:0,tithiNumber:1,nakshatraNumber:28,lagnaSignIndex:0}).available,false);
 });
