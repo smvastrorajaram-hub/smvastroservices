@@ -1002,7 +1002,7 @@ test('Amirthadi Yoga and Thyajyam keep a compact visual rhythm without verbose n
   assert.doesNotMatch(dailyCalendarSource, /Based on the star’s 60-ghati division|நட்சத்திரத்தின் 60 நாழிகைப் பிரிவில்/);
   assert.match(calendarThemeCssSource, /cal-chandrashtama-result\{margin:0;color:#28734d;font-size:16px;font-weight:800/);
   assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDateDetails #calChandrashtamaSection .cal-summary>article.cal-chandrashtama{'), 'The exact Chandrashtama article receives the scoped no-border reset.');
-  assert.equal((dailyCalendarCssSource.match(/\\.cal-summary article:not\\(\\.cal-chandrashtama\\),\\.cal-planets article/g)||[]).length,3, 'Chandrashtama is excluded from every generic summary-card border/padding rule.');
+  assert.equal(dailyCalendarCssSource.split('.cal-summary article:not(.cal-chandrashtama),.cal-planets article').length - 1,3, 'Chandrashtama is excluded from every generic summary-card border/padding rule.');
 });
 
 test('Calendar Daily Panchang values are integrated before Nakshatra Thyajyam without a date-only card', () => {
