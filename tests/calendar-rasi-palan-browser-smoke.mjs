@@ -179,6 +179,12 @@ try {
       windows[0].classList.contains('is-selected-date') &&
       (windows[0].querySelector('.cal-chandra-rasi-period span')?.textContent || '').includes('10/11/2026');
   }, { timeout: 120000 });
+  const pastDateStatus = await page.$eval('#calChandrashtamaResult', el => ({
+    text: el.textContent.trim(), result: el.dataset.result,
+    color: getComputedStyle(el).color
+  }));
+  assert.equal(pastDateStatus.result, 'present', 'A selected historical Chandrashtama date must show Yes.');
+  assert.equal(pastDateStatus.color, 'rgb(192, 0, 0)', 'Historical Chandrashtama Yes must be red.');
   const independentChandrashtamaCheck = await page.$eval('#calChandrashtamaPeriods', root => {
     const windows = [...root.querySelectorAll('.cal-chandra-window')];
     const item = windows.length === 1 && windows[0].classList.contains('is-selected-date') ? windows[0] : null;
@@ -249,6 +255,11 @@ try {
   }));
   assert.ok(futureDateWindow.startDate <= '2026-12-08' && futureDateWindow.endDate >= '2026-12-08' && futureDateWindow.selectedDateMatch,
     'A future selected day must show the single Chandrashtama interval that overlaps that day.');
+  const futureDateStatus = await page.$eval('#calChandrashtamaResult', el => ({
+    result: el.dataset.result, color: getComputedStyle(el).color
+  }));
+  assert.equal(futureDateStatus.result, 'present', 'A future date in Chandrashtama must show Yes.');
+  assert.equal(futureDateStatus.color, 'rgb(192, 0, 0)', 'Future Chandrashtama Yes must be red.');
 
   // A selected date outside a transit must not list a later upcoming transit from the 30-day scan.
   await page.$eval('#calDate', (el, date) => {
@@ -405,8 +416,7 @@ try {
     const root = document.querySelector('#calChandrashtamaPeriods');
     const body = root?.textContent || '';
     return status.includes(date) && root &&
-      !/Calculating exact Moon sign|சந்திர ராசி \/ நட்சத்திரப் பாத எல்லைகள்/.test(body) &&
-      (root.querySelector('.cal-chandra-window') || /No Chandrashtama period overlaps the selected date\/time/.test(body));
+      document.querySelector('#calChandrashtamaResult')?.dataset.resolved === 'true';
   }, { timeout: 120000 }, chandrashtamaOriginalDate);
 
   const resultPlacement = await page.$eval('#calMuhurtaLagna', el => {
