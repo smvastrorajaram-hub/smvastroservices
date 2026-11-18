@@ -481,6 +481,14 @@ html body.calendar-only>header.calendar-topbar{
  margin:0;color:#65766d;font-size:12px;font-weight:650;line-height:1.5;text-align:center;
 }
 #smvDailyCalendar .cal-special-muhurtha-row.is-uttamam strong{color:#207444}
+#smvDailyCalendar .cal-special-activity-results{
+ display:flex;flex-wrap:wrap;justify-content:center;gap:5px 10px;max-width:100%;
+}
+#smvDailyCalendar .cal-special-activity-results span{
+ color:#52665c;font-size:10.5px;font-weight:650;line-height:1.4;
+}
+#smvDailyCalendar .cal-special-activity-results span.is-blocked{color:#9b332d}
+#smvDailyCalendar .cal-special-activity-results span.is-clear{color:#286747}
 #smvDailyCalendar .cal-special-muhurtha-row.is-panchaka strong{color:#8a4b18}
 #smvDailyCalendar .cal-vastu-day-section p strong{color:#174f47;font-size:15px}
 @media(max-width:520px){
