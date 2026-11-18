@@ -417,3 +417,19 @@ Document 50_2 contains a table purporting to predict whether a child will be mal
 This work extends the existing Draft PR #532; no duplicate PR is created. The new Document 50 helpers and tests are part of the PR branch only. The UI exposes the source date lookup, selected-time calculation, five-factor Panchaka components, selected-time restrictions, and coordinate-derived local morning Pushkara start/end intervals. It deliberately labels unresolved source rows and incomplete personal/planetary/Yoga checks instead of rendering a complete marriage verdict.
 
 No production merge, production deployment, origin-wide storage deletion or user-data reset is part of this change.
+
+
+### 12.7 Panchaka remainder 0 / traditional 9 — verified correction
+
+The five-factor calculation and the readable Document 50 Lagna-Dhruva entries are unchanged. The new cross-check is limited to the **remainder category**:
+
+- The [TamilMuhurtham Panchaka calculator](https://tamilmuhurtham.in/panchakam-calculator-in-tamil/) explicitly groups **9 (அ) 0** as **நிஷ்பஞ்சகம் / அமிர்தம்** and says remainders 0/3/5/7/9 are auspicious, while 1/2/4/6/8 are inauspicious.
+- [Maalaimalar's “சுபமுகூர்த்தம் அமைப்பது எப்படி?”](https://www.maalaimalar.com/news/sirappukatturaigal/prasanna-jothidar-anandhi-special-article-about-puratasi) independently describes the five inputs (weekday, Tithi, Nakshatra, Lagna and Dhruva) and gives the same 0/3/5/7/9 favourable remainder class.
+- [SRJ Astrology's Panchaka explanation](https://srjastrologycenter.blogspot.com/2018/03/blog-post_27.html) also corroborates the five-factor approach and the 0/3/5/7/9 favourable residues.
+
+JavaScript's `total % 9` returns canonical residues 0–8. Therefore a traditional remainder of 9 is represented as **0** in code; it must not be treated as an unknown ninth outcome. The implementation now maps:
+- **0 (traditional 0/9):** Nishpanchakam / Amirtham — `நிஷ்பஞ்சகம் / அமிர்தம்`
+- **3, 5, 7:** Uttamam
+- **1, 2, 4, 6, 8:** Panchaka Dosham
+
+**Important source boundary:** Maalaimalar and other references are used here only to verify the residue classification. Their different Lagna-Dhruva tables are not imported. The five-factor counts, Paksha Tithi handling, and only the legible Document 50 Dhruva values remain as already implemented. Thus this correction does not invent missing Dhruva values or change the Document 50 input formula.
