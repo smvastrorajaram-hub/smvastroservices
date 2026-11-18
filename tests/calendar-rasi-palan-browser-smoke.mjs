@@ -295,7 +295,8 @@ try {
     fillColor: getComputedStyle(el).webkitTextFillColor,
     fontSize: getComputedStyle(el).fontSize,
     fontWeight: getComputedStyle(el).fontWeight,
-    referenceFontWeight: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).fontWeight
+    referenceFontWeight: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).fontWeight,
+    referenceColor: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).color
   }));
   assert.equal(futureDateStatus.result, 'present', 'A future date in Chandrashtama must show Yes.');
   assert.equal(futureDateStatus.fontWeight, futureDateStatus.referenceFontWeight,
@@ -340,6 +341,8 @@ try {
     'The upcoming heading must use the same typography size as the Janma Rasi detail line.');
   assert.equal(upcomingHeading.fontWeight, upcomingHeading.referenceFontWeight,
     'The upcoming heading must follow the normal typography hierarchy of the Rasi detail lines.');
+  assert.equal(upcomingHeading.fontWeight, upcomingHeading.referenceFontWeight,
+    'The upcoming heading must follow the normal typography hierarchy of the Rasi detail lines.');
   const rasiLabel = await page.$eval('#calChandrashtamaSection .cal-chandrashtama > p:nth-of-type(2)', el => el.textContent.trim());
   assert.match(rasiLabel, /சந்திராஷ்டம ராசி|Chandrashtama Rasi/);
   assert.doesNotMatch(rasiLabel, /எட்டாம் ராசி|Eighth Rasi/);
@@ -360,14 +363,15 @@ try {
     fontWeight: getComputedStyle(el).fontWeight,
     color: getComputedStyle(el).color,
     referenceFontSize: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).fontSize,
-    referenceFontWeight: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).fontWeight
+    referenceFontWeight: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).fontWeight,
+    referenceColor: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).color
   }));
   assert.equal(noPeriodStatus.result, 'absent', 'An upcoming period must not change the selected-date Chandrashtama status.');
   assert.equal(noPeriodStatus.fontSize, noPeriodStatus.referenceFontSize,
     'Chandrashtama No must use the normal detail-line font size.');
   assert.equal(noPeriodStatus.fontWeight, noPeriodStatus.referenceFontWeight,
     'Chandrashtama No must not be bold or heavier than the general detail-line typography.');
-  assert.notEqual(noPeriodStatus.color, 'rgb(17, 17, 17)',
+  assert.equal(noPeriodStatus.color, noPeriodStatus.referenceColor,
     'Chandrashtama No must inherit the ordinary text color rather than forcing bright black.');
   assert.equal(noPeriodStatus.color, 'rgb(17, 17, 17)', 'The No status stays normal black while the future period is shown.');
   assert.equal(noPeriodStatus.fillColor, 'rgb(17, 17, 17)', 'The No status keeps black WebKit text fill.');
