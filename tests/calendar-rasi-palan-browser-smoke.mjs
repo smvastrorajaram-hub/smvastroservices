@@ -190,7 +190,24 @@ try {
     // Default Ashwini selection exposes all four birth-Pada projections.
   assert.equal(chandrashtamaSmoke.windows[0].star, 'Ashwini');
   await page.select('#calStarPada', '1');
-  await page.waitForFunction(() => document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-pada-row').length === 1);
+  try {
+    await page.waitForFunction(() => document.querySelector('#calStarPada')?.value === '1' &&
+      document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-pada-row').length === 1,
+      { timeout: 20000 });
+  } catch (error) {
+    const diagnostic = await page.evaluate(() => ({
+      rasi: document.querySelector('#calRasi')?.value,
+      star: document.querySelector('#calStar')?.value,
+      pada: document.querySelector('#calStarPada')?.value,
+      padaOptions: [...(document.querySelectorAll('#calStarPada option'))].map(option => option.value),
+      rows: [...document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-pada-row')].map(row => ({
+        birthPada: row.dataset.birthPada, targetStar: row.dataset.targetStar, targetPada: row.dataset.targetPada
+      })),
+      cardText: document.querySelector('#calChandrashtamaPeriods')?.textContent || '',
+      savedSettings: localStorage.getItem('smv-calendar-settings')
+    }));
+    throw new Error('Selected Ashwini Pada 1 did not filter to one row: '+JSON.stringify(diagnostic)+'; '+error.message);
+  }
   const ashwiniPada1 = await page.$eval('#calChandrashtamaPeriods .cal-chandra-pada-row', row => ({
     birthPada: Number(row.dataset.birthPada),
     targetStar: Number(row.dataset.targetStar),
