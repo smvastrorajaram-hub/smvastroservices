@@ -75,6 +75,16 @@ jobs:
             done
           } >> "$out/README.md"
 
+      - name: Create reduced visual page previews
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="Read-only/OCR-Document50"
+          for n in 1 2 3 4 5; do
+            convert "Read-only/Document 50_${n}.jpg" -auto-orient -resize 1600x1600\> -strip -quality 66 "/tmp/document50-ocr/preview-${n}.jpg"
+            base64 -w 0 "/tmp/document50-ocr/preview-${n}.jpg" > "$out/preview-${n}.jpg.b64"
+          done
+
       - name: Commit OCR text to this temporary branch only
         run: |
           set -euo pipefail
