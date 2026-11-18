@@ -65,11 +65,12 @@ test('a non-matching Pan-Indian combination remains conditional, never automatic
   assert.equal(result.complete,false);
 });
 
-test('Tamil panchanga preferences are advisory and cannot certify a complete muhurta',()=>{
+test('conflicting Vidhānamālai tithi schemes remain pending and cannot certify a muhurta',()=>{
   const result=evaluateTamilMuhurta('vivaha',facts({tithiNumber:5}));
   assert.equal(result.status,'CONDITIONAL');
   assert.equal(result.complete,false);
-  assert.ok(result.preferredFactors.includes('TML_VM02_MARRIAGE_TITHI_5'));
+  assert.ok(result.rules.some(r=>r.id==='TML_VM02_MARRIAGE_TITHI_5'&&r.state==='pending'));
+  assert.ok(result.rules.some(r=>r.id==='TML_VM02_PAKSHA_CHIDRA_START_NAZHIGAI'&&r.state==='pending'));
 });
 
 test('source-pending rules are exposed but do not silently veto or approve',()=>{
