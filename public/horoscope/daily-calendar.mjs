@@ -148,13 +148,14 @@ if(host){
   const cells=month.map(d=>{
    const names=[...holidays(d.date),...d.events.map(e=>e.name)];
    const labels=names.map(n=>n[ta()?1:0]),tamilDay=d.tamilSolar?.day??'—';
-   const classes=[names.length?'cal-special':'',d.date===today?'cal-today':(d.date<today?'cal-date-past':'cal-date-future')].filter(Boolean).join(' ');
+   const isSunday=new Date(d.date+'T12:00:00Z').getUTCDay()===0;
+   const classes=[names.length?'cal-special':'',d.date===today?'cal-today':(d.date<today?'cal-date-past':'cal-date-future'),isSunday?'cal-sunday':''].filter(Boolean).join(' ');
    const aria=[d.date,L('Tamil date','தமிழ் தேதி')+' '+tamilDay,...labels].join(' · ');
    const eventHtml=labels.length?'<small class="cal-event-name">'+esc(labels[0])+'</small>':'';
    const moreHtml=labels.length>1?'<small class="cal-event-more">+'+(labels.length-1)+'</small>':'';
    return '<button type="button" data-date="'+d.date+'" data-tamil-date="'+tamilDay+'" '+(d.date===selected?'aria-current="date" ':'')+'class="'+classes+'" aria-label="'+esc(aria)+'"><strong>'+Number(d.date.slice(8))+'</strong><small class="cal-day-tamil">'+tamilDay+'</small>'+eventHtml+moreHtml+'</button>';
   }).join('');
-  $('#calMonth').innerHTML=titleHtml+jumpHtml+'<div class="cal-month-grid">'+weekdays.map(x=>'<b>'+x+'</b>').join('')+'<span></span>'.repeat(first)+cells+'</div>';
+  $('#calMonth').innerHTML=titleHtml+jumpHtml+'<div class="cal-month-grid">'+weekdays.map((x,i)=>'<b class="'+(i===0?'cal-weekday-sunday':'')+'">'+x+'</b>').join('')+'<span></span>'.repeat(first)+cells+'</div>';
   const applyDate=(date,anchor)=>{
    if(!supportedDate(date)){
     const status=$('#calStatus');
