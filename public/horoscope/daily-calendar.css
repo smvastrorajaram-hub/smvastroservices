@@ -237,3 +237,12 @@
 #calDocument50PushkaraWindows .cal-pushkara-window-row span{font-weight:600}
 #calDocument50PushkaraWindows .cal-pushkara-window-row strong{white-space:nowrap;font-variant-numeric:tabular-nums}
 @media(max-width:420px){#calDocument50PushkaraWindows .cal-pushkara-window-row{align-items:flex-start;flex-direction:column;gap:4px}}
+
+
+/* Readable Document 50 Thali Pushkara interval rows on mobile and desktop */
+#calDocument50PushkaraWindows .cal-pushkara-window-row{align-items:flex-start;gap:8px 14px}
+#calDocument50PushkaraWindows .cal-pushkara-window-row span{display:block;flex:1 1 65%;min-width:0;text-align:left}
+#calDocument50PushkaraWindows .cal-pushkara-window-row span b{display:block;line-height:1.4}
+#calDocument50PushkaraWindows .cal-pushkara-window-row small{display:block;width:100%;margin-top:5px;font-size:.86em;line-height:1.5;font-weight:400;text-align:left;white-space:normal;overflow-wrap:anywhere}
+#calDocument50PushkaraWindows .cal-pushkara-window-row strong{flex:0 0 auto;align-self:flex-start;text-align:right}
+@media(max-width:420px){#calDocument50PushkaraWindows .cal-pushkara-window-row{flex-direction:column;align-items:stretch;gap:7px}#calDocument50PushkaraWindows .cal-pushkara-window-row span{width:100%}#calDocument50PushkaraWindows .cal-pushkara-window-row strong{align-self:flex-end}}
