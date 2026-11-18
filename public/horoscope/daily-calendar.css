@@ -205,3 +205,21 @@
 #smvDailyCalendar .cal-chandra-janma-projection>small{font-size:11px;line-height:1.5;color:#6c5a38}
 #smvDailyCalendar .cal-chandra-pada-row.is-janma-pada-projection{background:#fff1cc;border:1px solid #c18b28}
 #smvDailyCalendar .cal-chandra-pada-row.is-janma-pada-projection strong{color:#744900}
+
+
+/* Selected Janma-Rasi / birth-star Chandrashtama output: only the chosen
+   birth star's projected Pada intervals are rendered. */
+#smvDailyCalendar .cal-chandra-rasi-period,
+#smvDailyCalendar .cal-chandra-star-period{display:grid;gap:5px;margin:8px 0;padding:10px 12px;border:1px solid #d8e2dc;border-radius:10px;background:#fff}
+#smvDailyCalendar .cal-chandra-rasi-period strong,
+#smvDailyCalendar .cal-chandra-star-period strong{font-size:13px;font-weight:850;color:#214f48}
+#smvDailyCalendar .cal-chandra-rasi-period span,
+#smvDailyCalendar .cal-chandra-star-period span{font-size:13px;font-weight:750;font-variant-numeric:tabular-nums}
+#smvDailyCalendar .cal-chandra-pada-row{display:grid;gap:4px;padding:9px 10px;border:1px solid #e4e9e5;border-radius:8px;background:#f8faf8}
+#smvDailyCalendar .cal-chandra-pada-row strong{font-size:12px;font-weight:800}
+#smvDailyCalendar .cal-chandra-pada-row span{font-size:12px;font-weight:750;font-variant-numeric:tabular-nums}
+#smvDailyCalendar .cal-controls{grid-template-columns:1.05fr .95fr 1.05fr .65fr auto}
+@media(max-width:680px){
+ #smvDailyCalendar .cal-controls{grid-template-columns:1fr!important}
+ #smvDailyCalendar .cal-chandra-pada-row span{white-space:normal}
+}
