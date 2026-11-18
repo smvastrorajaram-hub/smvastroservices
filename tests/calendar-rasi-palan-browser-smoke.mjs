@@ -1032,31 +1032,37 @@ try {
 
   const calendarDate = await page.$eval('#calDate', el => el.value);
 
-  // Confirm the published Tamil annual list controls the two requested 2026
-  // examples; no live Panchanga score may override the published date table.
-  async function checkMuhurthamDate(date, expectedPattern) {
+  // The published annual list is now an eligibility gate only. No
+  // Subha label or Panchaka calculation detail is displayed in this section.
+  async function checkMuhurthamDate(date, expectedVisible) {
     await page.$eval('#calDate', (el, value) => {
       el.value = value;
       el.dispatchEvent(new Event('change', { bubbles: true }));
     }, date);
-    await page.waitForFunction(({ date: value, pattern }) => {
+    await page.waitForFunction(({ date: value, visible }) => {
       const status = document.querySelector('#calStatus')?.textContent || '';
-      const verdict = document.querySelector('#calMuhurtaLagna .cal-subha-verdict')?.textContent || '';
-      return status.includes(value) && new RegExp(pattern).test(verdict);
-    }, { timeout: 90000 }, { date, pattern: expectedPattern.source });
-    const verdict = await page.$eval('#calMuhurtaLagna .cal-subha-verdict', el => el.textContent.trim());
-    assert.match(verdict, expectedPattern, 'Published Muhurtham list classification for ' + date);
+      const section = document.querySelector('#calMuhurtaLagna');
+      return status.includes(value) && section && section.hidden === !visible;
+    }, { timeout: 90000 }, { date, visible: expectedVisible });
+    const state = await page.$eval('#calMuhurtaLagna', el => ({
+      hidden: el.hidden,
+      text: el.textContent || '',
+      rows: el.querySelectorAll('.cal-special-muhurtha-row').length
+    }));
+    if (expectedVisible) {
+      assert.equal(state.hidden, false, 'Published Subha date must display Pushkara: ' + date);
+      await page.waitForFunction(() =>
+        document.querySelector('#calMuhurtaLagna .cal-special-muhurtha-row'),
+        { timeout: 180000 });
+    } else {
+      assert.equal(state.hidden, true, 'Unlisted date must hide Pushkara: ' + date);
+      assert.equal(state.text.trim(), '', 'Unlisted date must not retain an old result: ' + date);
+    }
   }
-  await checkMuhurthamDate('2026-11-11', /Valarpirai Subha Muhurtham day|வளர்பிறை சுபமுகூர்த்த நாள்/);
-  await checkMuhurthamDate('2026-11-13', /Valarpirai Subha Muhurtham day|வளர்பிறை சுபமுகூர்த்த நாள்/);
-  await checkMuhurthamDate('2026-11-12', /^No$|^இல்லை$/);
-  const negativeMuhurtham = await page.$eval('#calMuhurtaLagna', el => ({
-    verdict: el.querySelector('.cal-subha-verdict')?.textContent.trim() || '',
-    phase: el.querySelector('.cal-subha-verdict')?.nextElementSibling?.textContent.trim() || ''
-  }));
-  assert.ok(['No','இல்லை'].includes(negativeMuhurtham.verdict), 'A non-Muhurtham date must show only No / இல்லை.');
-  assert.equal(negativeMuhurtham.phase, '', 'A non-Muhurtham date must not append a paksha label.');
-  await checkMuhurthamDate(calendarDate, /Subha Muhurtham day|சுபமுகூர்த்த நாள்|^No$|^இல்லை$/);
+  await checkMuhurthamDate('2026-11-11', true);
+  await checkMuhurthamDate('2026-11-13', true);
+  await checkMuhurthamDate('2026-11-12', false);
+  await checkMuhurthamDate(calendarDate, false);
   assert.equal(publicUi.separateAdminLink, false, 'Calendar should not link to a separate Admin page');
   assert.equal(publicUi.hasRasiPicker, true, 'Public Rasi Palan must include the selected-Rasi dropdown');
 
