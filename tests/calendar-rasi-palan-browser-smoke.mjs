@@ -114,7 +114,7 @@ try {
   }));
   assert.ok(defaultPushkaraWindows.rows.length > 0, 'The selected default coordinates must produce morning Pushkara intervals.');
   assert.match(defaultPushkaraWindows.text, /Swiss Ephemeris/i, 'The window calculation must identify its local ephemeris engine.');
-  assert.ok(defaultPushkaraWindows.rows.every(row => /\\d{2}:\\d{2}:\\d{2} – \\d{2}:\\d{2}:\\d{2}/.test(row)),
+  assert.ok(defaultPushkaraWindows.rows.every(row => /\d{2}:\d{2}:\d{2} – \d{2}:\d{2}:\d{2}/.test(row)),
     'Every Pushkara interval must display its one-second-refined start and end.');
 
   const calculateForPlace = async (place, latitude, longitude, date) => {
