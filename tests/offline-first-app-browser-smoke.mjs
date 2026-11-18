@@ -309,7 +309,7 @@ for (const app of apps) {
         [...list.querySelectorAll('.cal-pushkara-window-row')].map(row => row.textContent.trim())
       );
       assert.ok(pushkaraWindows.length > 0, 'Calendar must calculate local morning Pushkara intervals while offline.');
-      assert.ok(pushkaraWindows.every(row => /\\d{2}:\\d{2}:\\d{2} – \\d{2}:\\d{2}:\\d{2}/.test(row)),
+      assert.ok(pushkaraWindows.every(row => /\d{2}:\d{2}:\d{2} – \d{2}:\d{2}:\d{2}/.test(row)),
         'Offline Pushkara intervals must include start/end times refined to seconds.');
     }
 
