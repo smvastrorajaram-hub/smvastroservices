@@ -231,7 +231,8 @@
 #smvDailyCalendar .cal-chandra-window.is-selected-date{border:2px solid #a96d00;background:#fffaf0}
 
 /* Chandrashtama: centered section title, direct yes/no result, and one visible main card only. */
-#smvDailyCalendar .cal-chandrashtama-section>h3{text-align:center}
+#smvDailyCalendar .cal-chandrashtama-section>h3{display:block!important;width:100%!important;text-align:center!important}
+#smvDailyCalendar .cal-chandrashtama-section>h3::after{display:none!important;content:none!important}
 #smvDailyCalendar .cal-chandrashtama-result{margin:0 0 12px;color:#111!important;font-size:16px;font-weight:800}
 #smvDailyCalendar .cal-chandrashtama-result.is-present{color:#c00000!important}
 #smvDailyCalendar .cal-chandrashtama-result.is-absent{color:#111!important}
