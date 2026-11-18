@@ -591,7 +591,7 @@ test('Calendar dual-date grid, direct navigation and Date Details are UI-only ex
   assert.match(calendarThemeCssSource, /aria-current="date"\]\.cal-date-past/);
   assert.match(calendarThemeCssSource, /aria-current="date"\]\.cal-date-future/);
   assert.match(calendarThemeCssSource, /\.cal-amirthadi-yoga-card\.is-unknown/);
-  assert.match(calendarThemeCssSource, /\.cal-date-details-title\{margin:0;color:#15564e;font-size:22px;font-weight:850;line-height:1\.3;text-align:center\}/, 'Daily Panchang title follows the green section-title hierarchy');
+  assert.match(calendarThemeCssSource, /\.cal-date-details-title\{display:block;width:100%;margin:0;padding:0;border:0;border-radius:0;background:transparent;background-image:none;box-shadow:none;color:#15564e;font-size:22px;font-weight:850;line-height:1\.3;text-align:center\}/, 'Daily Panchang title is centered and has no filled box');
   assert.ok(calendarThemeCssSource.includes('.cal-month-jump') && calendarThemeCssSource.includes('grid-template-columns:minmax(0,1fr)'), 'Month/year/date selector panel is full-width and flat');
   assert.ok(calendarThemeCssSource.includes('background:transparent!important'), 'Panchang and sibling sections use a flat visual layer');
   assert.ok(dailyCalendarSource.includes('function ensureMonth(key)'), 'Month calculation has an independent request path');
@@ -899,7 +899,7 @@ test('SMV CALENDAR daily Panchang and Hora follow the green result hierarchy', (
   assert.match(dailyCalendarSource, /hora-time smv-calendar-neutral-time/);
   assert.match(calendarThemeCssSource, /cal-name-yoga-label\{color:#426957;font-size:12px;font-weight:700\}/);
   assert.match(calendarThemeCssSource, /cal-panchang-detail-item\.is-primary>strong\{color:#15564e;font-size:14px;font-weight:700\}/);
-  assert.match(calendarThemeCssSource, /smv-calendar-bright-red-time\{color:#b42318;font-weight:750\}/);
+  assert.match(calendarThemeCssSource, /smv-calendar-bright-red-time\{color:#b42318;font-weight:800\}/);
   assert.match(calendarThemeCssSource, /smv-calendar-normal-connector\{margin:0 3px;color:#708477;font-weight:400\}/);
   assert.match(sharedHoroscopeCssSource, /event-date:not\(\.smv-calendar-neutral-date-time\)/);
   assert.match(sharedHoroscopeCssSource, /event-time:not\(\.smv-calendar-neutral-date-time\)/);
