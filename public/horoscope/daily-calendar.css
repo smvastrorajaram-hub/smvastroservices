@@ -240,3 +240,14 @@
 #smvDailyCalendar .cal-chandra-window,
 #smvDailyCalendar .cal-chandra-window.is-active,
 #smvDailyCalendar .cal-chandra-window.is-selected-date{display:block;border:0!important;border-radius:0!important;padding:0!important;background:transparent!important;box-shadow:none!important}
+
+/* Flatten all period detail tiles into the single outer Chandrashtama main card. */
+#smvDailyCalendar .cal-chandra-rasi-period,
+#smvDailyCalendar .cal-chandra-star-period,
+#smvDailyCalendar .cal-chandra-pada-row,
+#smvDailyCalendar .cal-chandra-pada-row.is-janma-pada-projection,
+#smvDailyCalendar .cal-chandra-janma-projection{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;padding:0!important}
+#smvDailyCalendar .cal-chandra-rasi-period,
+#smvDailyCalendar .cal-chandra-star-period{display:grid;gap:5px;margin:12px 0}
+#smvDailyCalendar .cal-chandra-pada-list{display:grid;gap:10px;margin-top:12px}
+#smvDailyCalendar .cal-chandra-pada-row{display:grid;grid-template-columns:1fr;gap:4px;margin:0;min-width:0}
