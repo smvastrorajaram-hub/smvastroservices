@@ -164,8 +164,7 @@ try {
       padas: [...(item?.querySelectorAll('.cal-chandra-pada-row') || [])].map(row => ({
         birthPada: Number(row.dataset.birthPada),
         targetStar: Number(row.dataset.targetStar),
-        targetPada: Number(row.dataset.targetPada),
-        text: row.textContent.trim()
+        targetPada: Number(row.dataset.targetPada)
       }))
     };
   });
