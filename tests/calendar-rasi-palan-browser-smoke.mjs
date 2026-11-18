@@ -327,17 +327,17 @@ try {
       'An active Chandrashtama interval must be marked as the selected period.');
     assert.equal(chandrashtamaSmoke.result, 'present',
       'A Chandrashtama window active now must produce the direct Chandrashtama: Yes result.');
-    assert.equal(chandrashtamaSmoke.statusColor, 'rgb(192, 0, 0)',
-      'Chandrashtama: Yes must be red.');
-    assert.equal(chandrashtamaSmoke.statusFillColor, 'rgb(192, 0, 0)',
-      'Chandrashtama: Yes must override the old green WebKit text fill.');
+    assert.equal(chandrashtamaSmoke.statusColor, 'rgb(180, 35, 24)',
+      'Chandrashtama: Yes must use the green-theme red accent.');
+    assert.equal(chandrashtamaSmoke.statusFillColor, 'rgb(180, 35, 24)',
+      'Chandrashtama: Yes WebKit text fill must match the red accent.');
   } else {
     assert.equal(chandrashtamaSmoke.result, 'absent',
       'When no Chandrashtama is active now, preserve the direct Chandrashtama: No result.');
-    assert.equal(chandrashtamaSmoke.statusColor, chandrashtamaSmoke.referenceColor,
-      'Chandrashtama: No must use the ordinary detail-line text color.');
-    assert.equal(chandrashtamaSmoke.statusFillColor, chandrashtamaSmoke.referenceFillColor,
-      'Chandrashtama: No must not inherit the old green WebKit text fill.');
+    assert.equal(chandrashtamaSmoke.statusColor, 'rgb(40, 115, 77)',
+      'Chandrashtama: No must use the green-theme success color.');
+    assert.equal(chandrashtamaSmoke.statusFillColor, 'rgb(40, 115, 77)',
+      'Chandrashtama: No WebKit text fill must match the green success color.');
     if (todayWindow) {
       assert.equal(todayWindow.isUpcoming, true,
         'When today has no active Chandrashtama, only the nearest upcoming interval may be shown.');
