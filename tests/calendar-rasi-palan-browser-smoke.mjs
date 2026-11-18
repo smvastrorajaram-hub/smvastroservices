@@ -125,9 +125,9 @@ try {
   assert.equal(dateTimeControlLayout.timeEnabled,true,'The time selector becomes available after sunrise is resolved.');
   const displayedSunrise = await page.$eval('#calDateDetailsExtra', root => {
     const card=[...root.querySelectorAll('.cal-muhurta-card')].find(item=>/Sunrise:|சூரிய உதயம்/.test(item.querySelector('span')?.textContent||''));
-    return card?.querySelector('span')?.textContent?.match(/\\d{2}:\\d{2}/)?.[0]||'';
+    return card?.querySelector('span')?.textContent?.match(/\d{2}:\d{2}/)?.[0]||'';
   });
-  assert.match(displayedSunrise,/^\\d{2}:\\d{2}$/,'The selected date must display its calculated local sunrise.');
+  assert.match(displayedSunrise,/^\d{2}:\d{2}$/,'The selected date must display its calculated local sunrise.');
   assert.equal(dateTimeControlLayout.selectedTime,displayedSunrise,"The initial Time value must be fixed to that date and location's sunrise.");
   const chosenPanchangTime='10:27';
   await page.$eval('#calTime',(element,value)=>{
