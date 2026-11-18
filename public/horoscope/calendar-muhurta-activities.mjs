@@ -446,7 +446,10 @@ export function getDocument50TimeRestrictions({
   rahuKalam,
   yamagandam,
   kariDay,
-  thaniyaDay
+  thaniyaDay,
+  dayFlagsAvailable,
+  thaniyaAvailable,
+  yogaKey
 } = {}) {
   const weekday = Number(weekdayIndex), tithi = Number(tithiNumber);
   if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6 ||
@@ -464,6 +467,16 @@ export function getDocument50TimeRestrictions({
 
   if (kariDay === true) reasons.push('Kari Naal is marked for this Tamil date');
   if (thaniyaDay === true) reasons.push('Thaniya Naal is marked for this Tamil date');
+  if (dayFlagsAvailable !== true) warnings.push('Kari Naal classification is unavailable');
+  if (thaniyaAvailable !== true) warnings.push('Thaniya Naal source data is unavailable');
+
+  if (['marana', 'utpata', 'prabalarishta'].includes(String(yogaKey || '').toLowerCase())) {
+    reasons.push('Selected-time Amirthadi Yoga is ' + yogaKey);
+  } else if (!['amirtha', 'siddha'].includes(String(yogaKey || '').toLowerCase())) {
+    warnings.push('Selected-time Marana / Utpata / Prabalarishta Yoga classification is unavailable');
+  } else {
+    warnings.push('Utpata Yoga is not separately classified by the current Calendar Yoga table');
+  }
 
   const rahu = document50PeriodContains(time, rahuKalam);
   const yama = document50PeriodContains(time, yamagandam);
