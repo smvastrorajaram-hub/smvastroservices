@@ -316,6 +316,9 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   assert.match(calendarThemeCssSource, /cal-chandrashtama-result\{margin:0;color:#28734d;font-size:16px;font-weight:800;line-height:1\.35\}/);
   assert.match(calendarThemeCssSource, /cal-chandrashtama-result\.is-present\{color:#b42318\}/);
   assert.match(calendarThemeCssSource, /cal-chandrashtama-result\.is-absent\{color:#28734d\}/);
+  assert.match(calendarThemeCssSource, /cal-chandrashtama\{display:grid;gap:8px;min-width:0;margin:0;padding:0;border:0;border-radius:0;background:transparent/);
+  assert.match(calendarThemeCssSource, /cal-chandrashtama>p\{[^}]*margin:0;padding:0;border:0/);
+  assert.match(calendarThemeCssSource, /cal-chandra-janma-projection\{display:grid;gap:3px;margin:6px 0;padding:0;border:0/);
   assert.ok(dailyCalendarSource.includes('id="calChandrashtamaSection" class="cal-chandrashtama-section smv-css-island"'), "Chandrashtama is isolated from the shared legacy heading palette.");
   assert.ok(dailyCalendarSource.includes("L('Chandrashtama Rasi','சந்திராஷ்டம ராசி')"));
   assert.doesNotMatch(dailyCalendarSource, /Eighth Rasi|எட்டாம் ராசி/);
@@ -429,7 +432,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261118-green-panchang-typography-v1' : '20261118-green-panchang-typography-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261118-panchang-stacked-labels-v1' : '20261118-panchang-stacked-labels-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
@@ -439,10 +442,10 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261118-green-panchang-typography-v1'));
-   assert.ok(calendarIndexSource.includes('20261118-green-panchang-typography-v1'));
+   assert.ok(calendarIndexSource.includes('20261118-panchang-stacked-labels-v1'));
+   assert.ok(calendarIndexSource.includes('20261118-panchang-stacked-labels-v1'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
-   assert.ok(calendarIndexSource.includes('20261118-green-panchang-typography-v1'));
+   assert.ok(calendarIndexSource.includes('20261118-panchang-stacked-labels-v1'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'runPeriodForecast\')'));
    assert.ok(calendarIndexSource.includes('The deployed forecast assets could not be loaded from this Calendar host.'));
@@ -863,7 +866,9 @@ test('Calendar Date Details uses one green hierarchy with paired Panchang values
   assert.match(calendarThemeCssSource, /\.cal-details-summary\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:10px/);
   assert.match(calendarThemeCssSource, /\.cal-details-summary>article\{[^}]*justify-content:center;[^}]*text-align:left/);
   assert.match(calendarThemeCssSource, /\.cal-panchang-detail-grid\{grid-column:1\/-1;display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.match(calendarThemeCssSource, /\.cal-panchang-detail-item\{display:grid;grid-template-columns:minmax\(0,\.9fr\) minmax\(0,1\.1fr\)/);
+  assert.match(calendarThemeCssSource, /\.cal-panchang-detail-item\{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:4px/);
+  assert.match(calendarThemeCssSource, /\.cal-panchang-detail-item>small\{display:block;width:100%/);
+  assert.match(calendarThemeCssSource, /\.cal-panchang-detail-item>strong\{display:block;width:100%/);
   assert.match(calendarThemeCssSource, /\.cal-day-flags-card\{grid-column:auto;display:flex;align-items:center;justify-content:center/);
   assert.match(calendarThemeCssSource, /\.cal-shoolam-card\{grid-column:1\/-1;display:flex;align-items:center;justify-content:center/);
   assert.match(calendarThemeCssSource, /\.cal-month-grid button\{align-items:center;justify-content:flex-start/);
@@ -875,6 +880,12 @@ test('Calendar Date Details uses one green hierarchy with paired Panchang values
   assert.match(calendarThemeCssSource, /@media\(max-width:340px\)[\s\S]*?\.cal-details-summary,#smvDailyCalendar \.cal-panchang-detail-grid\{grid-template-columns:minmax\(0,1fr\)\}/);
   const sourceOwnedStyles = calendarThemeCssSource.slice(calendarThemeCssSource.indexOf('/* Daily Panchang + Chandrashtama — canonical green theme hierarchy. */')).split('/* Name-yoga result')[0];
   assert.doesNotMatch(sourceOwnedStyles, /!important/);
+  assert.ok(dailyCalendarSource.includes('class="cal-date-details-head smv-css-island"'));
+  assert.match(calendarThemeCssSource, /\.cal-date-details-head\{[^}]*background:transparent;[^}]*box-shadow:none/);
+  assert.match(calendarThemeCssSource, /\.cal-date-details-title\{display:block;width:100%;[^}]*text-align:center/);
+  assert.match(calendarThemeCssSource, /smv-calendar-event-boundary\{display:flex;flex-direction:column/);
+  assert.match(calendarThemeCssSource, /smv-calendar-event-date\{display:block;font-size:12px/);
+  assert.match(calendarThemeCssSource, /smv-calendar-event-time\{display:block;font-size:14px/);
 });
 
 test('SMV CALENDAR daily Panchang and Hora follow the green result hierarchy', () => {
@@ -894,15 +905,15 @@ test('SMV CALENDAR daily Panchang and Hora follow the green result hierarchy', (
   assert.match(sharedHoroscopeCssSource, /event-time:not\(\.smv-calendar-neutral-date-time\)/);
   assert.match(sharedHoroscopeCssSource, /hora-time:not\(\.smv-calendar-neutral-time\)/);
   assert.match(sharedHoroscopeCssSource, /transit-table-degree:not\(\.smv-calendar-degree-normal\)/);
-  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261118-green-panchang-typography-v1/);
-  assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261118-green-panchang-typography-v1/);
+  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261118-panchang-stacked-labels-v1/);
+  assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261118-panchang-stacked-labels-v1/);
   const releases = [astroServiceWorkerSource, horoscopeServiceWorkerSource, calendarWorkerSource]
     .map(source => source.match(/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '([^']+)' : '([^']+)';/));
   assert.ok(releases.every(Boolean), 'All three service workers must define the synchronized release marker.');
   assert.equal(new Set(releases.map(match => match[1])).size, 1);
   assert.equal(new Set(releases.map(match => match[2])).size, 1);
-  assert.equal(releases[0][1], '20261118-green-panchang-typography-v1');
-  assert.equal(releases[0][2], '20261118-green-panchang-typography-v1');
+  assert.equal(releases[0][1], '20261118-panchang-stacked-labels-v1');
+  assert.equal(releases[0][2], '20261118-panchang-stacked-labels-v1');
 });
 
 

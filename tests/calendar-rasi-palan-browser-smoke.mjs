@@ -123,6 +123,19 @@ try {
     const secondRect = second?.getBoundingClientRect();
     const firstLabel = first?.querySelector('small')?.getBoundingClientRect();
     const firstValue = first?.querySelector('strong')?.getBoundingClientRect();
+    const allLabelsAboveResults = items.length===14 && items.every(item=>{
+      const label=item.querySelector(':scope > small')?.getBoundingClientRect();
+      const result=item.querySelector(':scope > strong')?.getBoundingClientRect();
+      return Boolean(label&&result&&label.bottom<=result.top+2&&Math.abs(label.left-result.left)<4);
+    });
+    const headingHeader=root.querySelector('.cal-date-details-head');
+    const headingElement=root.querySelector('.cal-date-details-title');
+    const headingStyle=headingElement?getComputedStyle(headingElement):null;
+    const headingHeaderStyle=headingHeader?getComputedStyle(headingHeader):null;
+    const firstEvent=grid?.querySelector('.smv-calendar-event-range');
+    const firstBoundary=firstEvent?.querySelector('.smv-calendar-event-boundary');
+    const firstEventDate=firstBoundary?.querySelector('.smv-calendar-event-date')?.getBoundingClientRect();
+    const firstEventTime=firstBoundary?.querySelector('.smv-calendar-event-time')?.getBoundingClientRect();
     const thyajyam = summary?.querySelector('.cal-thyajyam-card');
     return {
       title,
@@ -135,7 +148,13 @@ try {
       dailyHoraKept: Boolean(root.querySelector('#calDaily .hora-card')),
       gridBeforeThyajyam: Boolean(grid && thyajyam && (grid.compareDocumentPosition(thyajyam) & Node.DOCUMENT_POSITION_FOLLOWING)),
       firstTwoShareRow: Boolean(firstRect && secondRect && Math.abs(firstRect.top - secondRect.top) < 1 && firstRect.left < secondRect.left),
-      labelLeftOfValue: Boolean(firstLabel && firstValue && firstLabel.left < firstValue.left)
+      labelsAboveResults: allLabelsAboveResults,
+      headingCentered: headingStyle?.textAlign==='center',
+      headingHeaderBackground: headingHeaderStyle?.backgroundColor||'',
+      headingTitleBackground: headingStyle?.backgroundColor||'',
+      dateMonthAboveTime: Boolean(firstEventDate&&firstEventTime&&firstEventDate.bottom<=firstEventTime.top+2),
+      dateMonthText: firstBoundary?.querySelector('.smv-calendar-event-date')?.textContent?.trim()||'',
+      dateMonthTimeHasNoYear: Boolean(firstBoundary&&!/\b\d{4}\b/.test(firstBoundary.textContent||''))
     };
   });
   assert.ok(['Daily Panchang', 'தினசரி பஞ்சாங்கம்'].includes(integratedPanchang.title),
@@ -149,7 +168,13 @@ try {
   assert.equal(integratedPanchang.dailyHoraKept, true, 'Daily Hora remains in its existing area.');
   assert.equal(integratedPanchang.gridBeforeThyajyam, true, 'All Panchang results must appear above Nakshatra Thyajyam.');
   assert.equal(integratedPanchang.firstTwoShareRow, true, 'Panchang result cards must be arranged left and right.');
-  assert.equal(integratedPanchang.labelLeftOfValue, true, 'Each Panchang card must place its label on the left and result on the right.');
+  assert.equal(integratedPanchang.labelsAboveResults, true, 'All fourteen Panchang cards must show the label above the result.');
+  assert.equal(integratedPanchang.headingCentered, true, 'Daily Panchang title must be centered.');
+  assert.equal(integratedPanchang.headingHeaderBackground, 'rgba(0, 0, 0, 0)', 'Daily Panchang heading must have no red background.');
+  assert.equal(integratedPanchang.headingTitleBackground, 'rgba(0, 0, 0, 0)', 'Daily Panchang title must remain transparent.');
+  assert.equal(integratedPanchang.dateMonthAboveTime, true, 'Date and month must be shown above time.');
+  assert.equal(integratedPanchang.dateMonthTimeHasNoYear, true, 'Panchang event dates must omit the Gregorian year.');
+  assert.ok(integratedPanchang.dateMonthText.length>0, 'Date/month must remain visible.');
 
   const yogaFlow = await page.$eval('#calDateDetailsExtra .cal-details-summary', summary => {
     const wrapper = summary.querySelector('.cal-day-yoga-cards');
@@ -405,6 +430,8 @@ try {
     const interval = section.querySelector('.cal-chandra-window');
     return {
       mainBorder: getComputedStyle(main).borderTopWidth,
+      mainBackground: getComputedStyle(main).backgroundColor,
+      mainPadding: getComputedStyle(main).paddingTop,
       intervalBorder: interval ? getComputedStyle(interval).borderTopWidth : 'missing',
       intervalBackground: interval ? getComputedStyle(interval).backgroundColor : 'missing',
       intervalPadding: interval ? getComputedStyle(interval).paddingTop : 'missing',
@@ -415,7 +442,9 @@ try {
       }))
     };
   });
-  assert.notEqual(oneLayer.mainBorder, '0px', 'The outer Chandrashtama article must remain the single main box.');
+  assert.equal(oneLayer.mainBorder, '0px', 'Chandrashtama must have no outer box border.');
+  assert.equal(oneLayer.mainBackground, 'rgba(0, 0, 0, 0)', 'Chandrashtama must have no filled layer.');
+  assert.equal(oneLayer.mainPadding, '0px', 'Chandrashtama must not reserve card padding.');
   assert.equal(oneLayer.intervalBorder, '0px', 'The nested interval must not draw a second box border.');
   assert.equal(oneLayer.intervalBackground, 'rgba(0, 0, 0, 0)', 'The nested interval must be transparent inside the main box.');
   assert.equal(oneLayer.intervalPadding, '0px', 'The nested interval must not create a second padded layer.');
