@@ -537,3 +537,20 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-panchang-detail-grid .cal-name-yoga-result{
  display:inline-block;margin-top:4px;font-size:12px;line-height:1.45;font-weight:700;text-align:right;
 }
+
+/* Each Amirthadi result is its own grid item. display:contents lets the
+   Tamil date share the first row with Yoga 1; any additional Yogas flow into
+   the next left/right positions without reserving empty placeholders. */
+#smvDailyCalendar .cal-details-summary>.cal-day-yoga-cards{display:contents}
+#smvDailyCalendar .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card{
+ min-width:0;align-self:stretch;
+}
+#smvDailyCalendar .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment{
+ flex:1 1 auto;min-width:0;align-items:flex-start;
+}
+#smvDailyCalendar .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card .cal-yoga-segment-time{
+ white-space:normal;overflow-wrap:anywhere;
+}
+@media(max-width:340px){
+ #smvDailyCalendar .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card{grid-column:1/-1}
+}
