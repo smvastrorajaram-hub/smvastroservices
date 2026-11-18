@@ -369,7 +369,8 @@ try {
     fontWeight: getComputedStyle(el).fontWeight,
     referenceFontSize: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).fontSize,
     referenceFontWeight: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).fontWeight,
-    referenceColor: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).color
+    referenceColor: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).color,
+    referenceFillColor: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).webkitTextFillColor
   }));
   assert.equal(noPeriodStatus.result, 'absent', 'An upcoming period must not change the selected-date Chandrashtama status.');
   assert.equal(noPeriodStatus.fontSize, noPeriodStatus.referenceFontSize,
