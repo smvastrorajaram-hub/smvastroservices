@@ -802,6 +802,11 @@ try {
   } else {
     assert.match(pushkaraListedDay.text,/No Pushkara Navamsa Lagna interval|புஷ்கர நவாம்ச லக்ன இடைவெளி கிடைக்கவில்லை/);
   }
+  const pushkaraPreviewElement = await page.$('#calDocument50PushkaraWindows');
+  assert.ok(pushkaraPreviewElement, 'The listed-date Pushkara panel must remain available for screenshot capture.');
+  await pushkaraPreviewElement.screenshot({
+    path: new URL('calendar-document50-thali-pushkara-mobile.png', outputDir).pathname
+  });
 
   await page.$eval('#calDate', (el, date) => {
     el.value = date;
