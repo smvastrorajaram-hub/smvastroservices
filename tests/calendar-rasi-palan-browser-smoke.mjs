@@ -791,6 +791,14 @@ try {
   if (pushkaraListedDay.rows.length) {
     assert.ok(pushkaraListedDay.rows.every(row => /Chandrashtama|சந்திராஷ்டமம்/.test(row)),
       'Every Thali Pushkara interval must include a Chandrashtama check from the selected Janma Rasi.');
+    assert.ok(pushkaraListedDay.rows.every(row => /Tithi|திதி/.test(row)),
+      'Every Thali Pushkara interval must show its midpoint Tithi.');
+    assert.ok(pushkaraListedDay.rows.every(row => /Star|நட்சத்திரம்/.test(row)),
+      'Every Thali Pushkara interval must show its midpoint Nakshatra.');
+    assert.ok(pushkaraListedDay.rows.every(row => /Panchaka|பஞ்சகம்/.test(row)),
+      'Every Thali Pushkara interval must show its five-factor Panchaka result.');
+    assert.ok(pushkaraListedDay.rows.every(row => /Time screen|நேரத் தடை/.test(row)),
+      'Every Thali Pushkara interval must show Document 50 midpoint time screening.');
   } else {
     assert.match(pushkaraListedDay.text,/No Pushkara Navamsa Lagna interval|புஷ்கர நவாம்ச லக்ன இடைவெளி கிடைக்கவில்லை/);
   }
