@@ -106,6 +106,29 @@ try {
   }, { timeout: 90000 });
   const calendarCalculationStatus = await page.$eval('#calStatus', el => el.textContent || '');
   await page.waitForSelector('#calMuhurtaLagna .cal-muhurta-lagna-grid .cal-muhurta-lagna-item', { timeout: 30000 });
+  await page.waitForFunction(() => {
+    const root = document.querySelector('#calChandrashtamaPeriods');
+    if (!root) return false;
+    const text = root.textContent || '';
+    return !/Calculating exact Moon sign|சந்திர ராசி \/ நட்சத்திரப் பாத எல்லைகள்/.test(text) &&
+      (root.querySelector('.cal-chandra-window') || /No complete Chandrashtama window|90 நாள் வரம்பில் முழுமையான/.test(text));
+  }, { timeout: 180000 });
+  const chandrashtamaSmoke = await page.$eval('#calChandrashtamaPeriods', root => ({
+    windows: [...root.querySelectorAll('.cal-chandra-window')].map(window => ({
+      headings: window.querySelector('.cal-chandra-window-heading')?.textContent || '',
+      padaRows: [...window.querySelectorAll('.cal-chandra-pada-row')].map(row => row.textContent.trim()),
+      hasNinePadas: window.querySelectorAll('.cal-chandra-pada-row').length === 9
+    })),
+    body: root.textContent || ''
+  }));
+  assert.ok(chandrashtamaSmoke.windows.length >= 2,
+    'The next 90 local days should contain at least two full Chandrashtama Rasi windows.');
+  assert.ok(chandrashtamaSmoke.windows.every(window => window.hasNinePadas),
+    'Every 30-degree Chandrashtama Rasi interval must be divided into all nine Nakshatra Padas.');
+  assert.ok(chandrashtamaSmoke.windows.every(window =>
+    window.padaRows.every(row => /\d{2}°/.test(row) && /\d{2}\/\d{2}\/\d{4}/.test(row)),
+  ), 'Each Pada row must show exact degree and local date/time boundaries.');
+
   const resultPlacement = await page.$eval('#calMuhurtaLagna', el => {
     const dateDetails = document.querySelector('#calDateDetails');
     const summary = document.querySelector('#calDateDetailsExtra');
