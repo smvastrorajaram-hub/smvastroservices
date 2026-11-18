@@ -35,7 +35,7 @@ export function getPushkaraArcIndex(longitude) {
   const group = PUSHKARA_ARCS.find(entry => entry.signs.includes(sign));
   if (!group) return null;
   const arcIndex = group.arcs.findIndex(([start, end]) => degree >= start && degree < end);
-  return arcIndex < 0 ? null : group.signs.indexOf(sign) * 2 + arcIndex;
+  return arcIndex < 0 ? null : sign * 2 + arcIndex;
 }
 
 const PANCHAKA_NAMES = Object.freeze({
