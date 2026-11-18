@@ -2,13 +2,14 @@ import {offsetMinutesAt} from './offline/places/timezone.mjs';
 import {signs,stars,planets,holidays2026,holidaySource,favorable} from './calendar-data.mjs';
 import {getTamilCalendarDayFlags,getNakshatraDirection,getNethiramJeevan} from './tamil-day-classifications.mjs';
 import {classifySubhaMuhurtham} from './calendar-muhurta-classification.mjs';
+import {getChandrashtamaRasiIndex,getBirthStarPadasInRasi,getNakshatraPadaAtLongitude,formatRasiDegree} from './calendar-chandrashtama.mjs';
 
 const host=document.getElementById('smvDailyCalendar');
 if(host){
  const $=s=>host.querySelector(s),ta=()=>document.documentElement.lang==='ta',L=(en,tamil)=>ta()?tamil:en;
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const storage={get(){try{return JSON.parse(localStorage.getItem('smv-calendar-settings')||'{}')}catch{return {}}},set(v){try{localStorage.setItem('smv-calendar-settings',JSON.stringify(v))}catch{}}};
- let cfg={lat:11.2342,lon:78.8808,offset:330,place:'Perambalur',rasi:0,star:0,...storage.get()},daily=null,month=null,seq=0,pending=new Map(),worker=null,dayRequest=0,monthRequest=0,locationSearchTimer=0,locationSearchAbort=null;
+ let cfg={lat:11.2342,lon:78.8808,offset:330,place:'Perambalur',rasi:0,star:0,...storage.get()},daily=null,month=null,seq=0,pending=new Map(),worker=null,dayRequest=0,monthRequest=0,locationSearchTimer=0,locationSearchAbort=null,chandrashtamaRequest=0;
  const monthCache=new Map();
  let pendingMonthCacheKey='',pendingMonthPromise=null;
  const monthCacheKey=(key,offset=cfg.offset)=>[Number(cfg.lat).toFixed(5),Number(cfg.lon).toFixed(5),Number(offset),key].join('|');
@@ -171,10 +172,84 @@ if(host){
    };
   });
  }
+
+ function localDateLabel(date){
+  const match=String(date||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return match?match[3]+'/'+match[2]+'/'+match[1]:String(date||'—');
+ }
+ function chandrashtamaWindowsHtml(result,janmaRasiIndex,starIndex){
+  const lang=ta()?1:0;
+  const targetRasi=Number(result.chandrashtamaRasiIndex);
+  const targetName=signs[targetRasi]?.[lang]||'—';
+  const birthStarPadas=getBirthStarPadasInRasi(starIndex,janmaRasiIndex);
+  const birthStarName=stars[starIndex]?.[lang]||'—';
+  const birthCompatibility=birthStarPadas.length
+   ? L(
+      'Selected birth star '+birthStarName+' falls in '+signs[janmaRasiIndex][0]+' at pada'+(birthStarPadas.length===1?' ':'s ')+birthStarPadas.join(', ')+'.',
+      'தேர்ந்தெடுத்த '+birthStarName+' நட்சத்திரம் '+signs[janmaRasiIndex][1]+' ராசியில் '+birthStarPadas.join(', ')+'-ம் பாதங்களில் அமைகிறது.'
+     )
+   : L(
+      'The selected birth star does not fall in the selected Moon sign. Verify the birth star / Rasi pair; the windows below use the selected Moon sign.',
+      'தேர்ந்தெடுத்த பிறந்த நட்சத்திரம், தேர்ந்தெடுத்த சந்திர ராசியில் அமையவில்லை. பிறந்த நட்சத்திரம் / ராசியைச் சரிபார்க்கவும்; கீழுள்ள நேரங்கள் தேர்ந்தெடுத்த ராசியை அடிப்படையாகக் கொண்டவை.'
+     );
+  const windows=Array.isArray(result.windows)?result.windows:[];
+  const windowsHtml=windows.length?windows.map((item,index)=>{
+   const active=item.active===true;
+   const durationHours=Math.floor(Number(item.durationMinutes||0)/60);
+   const durationMinutes=Number(item.durationMinutes||0)%60;
+   const rows=(item.segments||[]).map(segment=>{
+    const starName=stars[Number(segment.nakshatraIndex)]?.[lang]||'—';
+    return '<div class="cal-chandra-pada-row">'+
+     '<strong>'+esc(starName)+' · '+L('Pada ','பாதம் ')+esc(segment.pada)+'</strong>'+
+     '<span>'+esc(formatRasiDegree(segment.fromDegree))+' – '+esc(formatRasiDegree(segment.toDegree))+'</span>'+
+     '<small>'+esc(localDateLabel(segment.startDate)+' '+segment.startTime)+' – '+esc(localDateLabel(segment.endDate)+' '+segment.endTime)+'</small>'+
+    '</div>';
+   }).join('');
+   return '<article class="cal-chandra-window'+(active?' is-active':'')+'">'+
+    '<div class="cal-chandra-window-heading"><strong>'+esc(localDateLabel(item.startDate)+' '+item.startTime)+' – '+esc(localDateLabel(item.endDate)+' '+item.endTime)+'</strong>'+
+    (active?'<span>'+L('Now','தற்போது')+'</span>':'')+'</div>'+
+    '<small>'+L('Moon in '+targetName+' · duration '+durationHours+'h '+durationMinutes+'m',
+                 targetName+' ராசியில் சந்திரன் · கால அளவு '+durationHours+' மணி '+durationMinutes+' நிமிடம்')+'</small>'+
+    '<details><summary>'+L('Exact Nakshatra / Pada timings (9)','நட்சத்திரம் / பாதம் துல்லிய நேரங்கள் (9)')+'</summary>'+
+    '<div class="cal-chandra-pada-list">'+rows+'</div></details>'+
+   '</article>';
+  }).join(''):'<p class="cal-note">'+L('No complete Chandrashtama window was found inside the selected 90-day range.','தேர்ந்தெடுத்த 90 நாள் வரம்பில் முழுமையான சந்திராஷ்டம காலம் கிடைக்கவில்லை.')+'</p>';
+  return '<div class="cal-chandra-result-meta">'+
+   '<p><b>'+L('8th Rasi from your Janma Rasi','உங்கள் ஜன்ம ராசிக்கு எட்டாம் ராசி')+':</b> '+esc(targetName)+'</p>'+
+   '<p>'+esc(birthCompatibility)+'</p>'+
+   '<p class="cal-note">'+L('Rasi method: the complete 30° transit is shown. Each 3°20′ Nakshatra Pada has its own exact start / end time. Times use the selected location’s local time zone.',
+      'ராசி முறை: முழு 30° கோச்சாரமும் காட்டப்படுகிறது. ஒவ்வொரு 3°20′ நட்சத்திரப் பாதத்திற்கும் தனித்தனி தொடக்கம் / முடிவு நேரம் கணக்கிடப்படுகிறது. தேர்ந்தெடுத்த இடத்தின் உள்ளூர் நேர மண்டலம் பயன்படுத்தப்படுகிறது.')+'</p>'+
+  '</div><div class="cal-chandra-windows">'+windowsHtml+'</div>';
+ }
+ function loadChandrashtamaWindows(){
+  const target=$('#calChandrashtamaPeriods');
+  if(!target)return;
+  const request=++chandrashtamaRequest;
+  const janmaRasiIndex=Number(cfg.rasi),starIndex=Number(cfg.star);
+  target.innerHTML='<p class="cal-note">'+L('Calculating exact Moon sign / Nakshatra Pada boundaries…','சந்திர ராசி / நட்சத்திரப் பாத எல்லைகள் துல்லியமாகக் கணக்கிடப்படுகின்றன…')+'</p>';
+  workerCall('chandrashtama-windows',{
+   ...input(selected,false),
+   janmaRasiIndex,
+   horizonDays:90
+  }).then(result=>{
+   if(request!==chandrashtamaRequest||!$('#calChandrashtamaPeriods'))return;
+   if(!result?.available){
+    target.innerHTML='<p class="cal-note">'+esc(result?.reason||L('Chandrashtama timing unavailable.','சந்திராஷ்டம நேரம் கிடைக்கவில்லை.'))+'</p>';
+    return;
+   }
+   target.innerHTML=chandrashtamaWindowsHtml(result,janmaRasiIndex,starIndex);
+  }).catch(error=>{
+   if(request!==chandrashtamaRequest||!$('#calChandrashtamaPeriods'))return;
+   target.innerHTML='<p class="cal-note">'+esc(L('Chandrashtama timing unavailable: ','சந்திராஷ்டம நேரம் கிடைக்கவில்லை: ')+String(error?.message||error))+'</p>';
+   console.warn('Calendar Chandrashtama window calculation unavailable.',error);
+  });
+ }
+
  function renderExtra(){if(!daily)return;const r=+cfg.rasi,n=+cfg.star,p=daily.en.p,ps=daily.en.t.planets,mo=ps.find(x=>x.name==='Moon');if(!mo)return;const moonSign=((Math.floor(Number(mo.longitude)/30)%12)+12)%12,chandraRasi=(moonSign-7+12)%12,tara=((p.nakshatra.number-1-n+27)%27)%9;const taraNames=[['Janma · birth','ஜன்மம்'],['Sampat · prosperity','சம்பத்து'],['Vipat · caution','விபத்து'],['Kshema · wellbeing','க்ஷேமம்'],['Pratyak · obstacles','பிரத்தியக்கு'],['Sadhana · achievement','சாதனம்'],['Naidhana · caution','நைதனம்'],['Mitra · friendship','மித்திரம்'],['Parama Mitra · support','பரம மித்திரம்']];
  const names=[...holidays(selected),...daily.events.map(x=>x.name)];if(selected==='2026-04-01')names.push(['Bank annual closing · banks only','வங்கிக் கணக்கு ஆண்டு முடிவு · வங்கிகளுக்கு மட்டும்']);if(new Date(selected+'T12:00:00Z').getUTCDay()===0)names.push(['Sunday','ஞாயிறு']);
  $('#calEvents').innerHTML=`<h3>${L('Festivals, vrats & holidays','பண்டிகைகள், விரதங்கள் & விடுமுறைகள்')}</h3><div class="cal-tags">${names.length?names.map(x=>`<span>${esc(x[ta()?1:0])}</span>`).join(''):L('No listed observance for this date.','இத்தேதியில் பட்டியலிட்ட சிறப்பு நாள் இல்லை.')}</div><p class="cal-note">${L('Vrats use local sunrise, sunset or the relevant tithi window. Holiday list: Tamil Nadu annual schedule, 2026; local and later government orders may differ.','விரதங்கள் உள்ளூர் உதயம், அஸ்தமனம் அல்லது உரிய திதி நேரத்தைச் சார்ந்தவை. விடுமுறைப் பட்டியல்: தமிழ்நாடு 2026 ஆண்டுப் பட்டியல்; உள்ளூர் மற்றும் பிந்தைய அரசு அறிவிப்புகள் மாறுபடலாம்.')} <a href="${holidaySource}" target="_blank" rel="noopener">${L('Holiday source','விடுமுறை ஆதாரம்')}</a>${selected.startsWith('2026')?'':` <b>${L('Official holidays for this year have not been loaded.','இந்த ஆண்டிற்கான அரசு விடுமுறைகள் இணைக்கப்படவில்லை.')}</b>`}</p>`;
- $('#calReadings').innerHTML=`<h3>${L('Birth Star, Tara Bala & Chandrashtama','பிறந்த நட்சத்திரம் · தாராபலம் · சந்திராஷ்டமம்')}</h3><div class="cal-summary"><article><h4>${L('Tara Bala','தாராபலம்')}</h4><p>${taraNames[tara][ta()?1:0]}</p><p><b>${L('Transit Moon Rasi','கோச்சார சந்திர ராசி')}:</b> ${signs[moonSign][ta()?1:0]}</p><p>${[1,3,5,7,8].includes(tara)?L('Supportive star relationship for planned efforts.','திட்டமிட்ட முயற்சிகளுக்கு ஆதரவான நட்சத்திர உறவு.'):L('Give important work extra preparation and review.','முக்கிய பணிகளில் கூடுதல் தயாரிப்பும் சரிபார்ப்பும் தேவை.')}</p></article><article class="cal-chandrashtama ${r===chandraRasi?'is-active':''}"><h4>${L('Chandrashtama','சந்திராஷ்டமம்')}</h4><p><b>${L('Chandrashtama Rasi','சந்திராஷ்டம ராசி')}:</b> ${signs[chandraRasi][ta()?1:0]}</p><p>${r===chandraRasi?L(`Yes — transit Moon is in ${signs[moonSign][0]}, the eighth sign from your selected Rasi. Keep plans flexible and respond calmly.`,`ஆம் — கோச்சார சந்திரன் ${signs[moonSign][1]} ராசியில், தேர்ந்தெடுத்த ${signs[r][1]} ராசிக்கு எட்டாம் இடத்தில் உள்ளது. திட்டங்களில் நெகிழ்வும் செயல்களில் நிதானமும் தேவை.`):L(`Your selected Rasi ${signs[r][0]} is not under Chandrashtama at the displayed transit time. Transit Moon is in ${signs[moonSign][0]}.`,`தேர்ந்தெடுத்த ${signs[r][1]} ராசிக்கு காட்டப்பட்ட நேரத்தில் சந்திராஷ்டமம் இல்லை. கோச்சார சந்திரன் ${signs[moonSign][1]} ராசியில் உள்ளது.`)}</p></article></div>`;
+ $('#calReadings').innerHTML=`<h3>${L('Birth Star, Tara Bala & Chandrashtama','பிறந்த நட்சத்திரம் · தாராபலம் · சந்திராஷ்டமம்')}</h3><div class="cal-summary"><article><h4>${L('Tara Bala','தாராபலம்')}</h4><p>${taraNames[tara][ta()?1:0]}</p><p><b>${L('Transit Moon Rasi','கோச்சார சந்திர ராசி')}:</b> ${signs[moonSign][ta()?1:0]}</p><p>${[1,3,5,7,8].includes(tara)?L('Supportive star relationship for planned efforts.','திட்டமிட்ட முயற்சிகளுக்கு ஆதரவான நட்சத்திர உறவு.'):L('Give important work extra preparation and review.','முக்கிய பணிகளில் கூடுதல் தயாரிப்பும் சரிபார்ப்பும் தேவை.')}</p></article><article class="cal-chandrashtama ${r===chandraRasi?'is-active':''}"><h4>${L('Chandrashtama','சந்திராஷ்டமம்')}</h4><p><b>${L('Chandrashtama Rasi','சந்திராஷ்டம ராசி')}:</b> ${signs[chandraRasi][ta()?1:0]}</p><p><b>${L('Moon’s current Nakshatra / Pada','தற்போதைய சந்திர நட்சத்திரம் / பாதம்')}:</b> ${esc(stars[Math.floor(Number(mo.longitude)/(360/27))]?.[ta()?1:0]||'—')} · ${L('Pada ','பாதம் ')}${esc(Math.floor((Number(mo.longitude)%(360/27))/(360/108))+1)} · ${esc(formatRasiDegree(Number(mo.longitude)%30)}</p><p>${r===chandraRasi?L(`Yes — transit Moon is in ${signs[moonSign][0]}, the eighth sign from your selected Rasi. Keep plans flexible and respond calmly.`,`ஆம் — கோச்சார சந்திரன் ${signs[moonSign][1]} ராசியில், தேர்ந்தெடுத்த ${signs[r][1]} ராசிக்கு எட்டாம் இடத்தில் உள்ளது. திட்டங்களில் நெகிழ்வும் செயல்களில் நிதானமும் தேவை.`):L(`Your selected Rasi ${signs[r][0]} is not under Chandrashtama at the displayed transit time. Transit Moon is in ${signs[moonSign][0]}.`,`தேர்ந்தெடுத்த ${signs[r][1]} ராசிக்கு காட்டப்பட்ட நேரத்தில் சந்திராஷ்டமம் இல்லை. கோச்சார சந்திரன் ${signs[moonSign][1]} ராசியில் உள்ளது.`)}</p><div id="calChandrashtamaPeriods" aria-live="polite"></div></article></div>`;
+  loadChandrashtamaWindows();
   renderDateDetails();
  }
 
