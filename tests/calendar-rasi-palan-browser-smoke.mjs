@@ -53,6 +53,23 @@ try {
   });
   await page.setCacheEnabled(false);
   page.setDefaultTimeout(90000);
+  // The APK release list is an unrelated, rate-limited external read API.
+  // Keep this Calendar UI/browser regression deterministic and avoid consuming
+  // production release-list requests while concurrent APK builds are running.
+  await page.setRequestInterception(true);
+  page.on('request', request => {
+    const url = new URL(request.url());
+    if (url.origin === 'https://smv-astro-apk-release-api.astroservices.workers.dev' &&
+        url.pathname === '/public/android-apps/calendar') {
+      void request.respond({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, available: false })
+      }).catch(() => {});
+      return;
+    }
+    void request.continue().catch(() => {});
+  });
   page.on('response', response => { if (response.status() >= 400) runtimeErrors.push('http ' + response.status() + ': ' + response.url()); });
   page.on('pageerror', error => runtimeErrors.push(error.message));
   let ready = false;
