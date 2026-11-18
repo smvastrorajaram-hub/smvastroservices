@@ -83,7 +83,7 @@ export function classifyPanchaka({ tithi, weekday, nakshatra, lagna } = {}) {
   return { available: true, key, isRahita: false, labelTa: name.ta, labelEn: name.en, cautionTa: name.cautionTa, cautionEn: name.cautionEn };
 }
 
-// Vastu day dates cross-checked against TamilDot and TamilCalendar365/Murugan Calendar.
+// 2026 dates cross-checked against Tamil Samayam + TamilCalendar365; 2027 against TamilDot + TamilCalendar365 + DailyCalendarTamil; 2028 Thai 12 against NammaCalendar + Om Muruga. Gregorian dates are clipped by the requested Tamil-year boundaries.
 // The published 36-minute clock windows are intentionally not hard-coded here,
 // because local Panchangam lists can differ slightly for the same Vastu date.
 const VASTU_DAYS = Object.freeze({
@@ -93,6 +93,7 @@ const VASTU_DAYS = Object.freeze({
     ['2026-10-28', 'ஐப்பசி', 11], ['2026-11-24', 'கார்த்திகை', 8]
   ]),
   2027: Object.freeze([
+    ['2027-01-26', 'தை', 12], ['2027-03-06', 'மாசி', 22],
     ['2027-04-23', 'சித்திரை', 10], ['2027-06-04', 'வைகாசி', 21],
     ['2027-07-27', 'ஆடி', 11], ['2027-08-23', 'ஆவணி', 6],
     ['2027-10-28', 'ஐப்பசி', 11], ['2027-11-24', 'கார்த்திகை', 8]
