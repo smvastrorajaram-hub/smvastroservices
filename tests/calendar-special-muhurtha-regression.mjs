@@ -15,8 +15,9 @@ test('only Parabhava and Plavanga Tamil-year dates are in scope', () => {
   assert.equal(getSpecialTamilYear('2026-04-14')?.nameTa, 'பராபவ');
   assert.equal(getSpecialTamilYear('2027-04-13')?.nameTa, 'பராபவ');
   assert.equal(getSpecialTamilYear('2027-04-14')?.nameTa, 'பிலவங்க');
-  assert.equal(getSpecialTamilYear('2028-04-13')?.nameTa, 'பிலவங்க');
-  assert.equal(getSpecialTamilYear('2028-04-14'), null);
+  assert.equal(getSpecialTamilYear('2028-04-13')?.nameTa, 'பிலவங்க'
+  assert.equal(getSpecialTamilYear('2028-04-14')?.nameTa, 'பிலவங்க');
+  assert.equal(getSpecialTamilYear('2028-04-15'), null);
 });
 
 test('Pushkara and Panchaka cards require a date in the published Subha Muhurtham list', () => {
@@ -90,6 +91,6 @@ test('Vastu days are listed separately for the 2026 and 2027 calendar years', ()
 test('Moudhya scope never spills outside the two requested Tamil years', () => {
   assert.equal(isMoudhyaScopeDate('2026-04-14'), true);
   assert.equal(isMoudhyaScopeDate('2027-04-14'), true);
-  assert.equal(isMoudhyaScopeDate('2028-04-13'), true);
-  assert.equal(isMoudhyaScopeDate('2028-04-14'), false);
+  assert.equal(isMoudhyaScopeDate('2028-04-14'), true);
+  assert.equal(isMoudhyaScopeDate('2028-04-15'), false);
 });
