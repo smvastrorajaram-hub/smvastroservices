@@ -631,7 +631,8 @@ test('Calendar dual-date grid, direct navigation and Date Details are UI-only ex
   assert.match(dailyCalendarSource, /Thaniya Naal/);
   assert.match(dailyCalendarSource, /textContent=L\('Namah Yoga','நாம யோகம்'\)/);
   assert.match(dailyCalendarSource, /cal-name-yoga-label/);
-  assert.match(dailyCalendarSource, /nityaYogaResults/);
+  assert.doesNotMatch(dailyCalendarSource, /nityaYogaResults|cal-name-yoga-result|Impact and obstruction|Obstruction and complications|தாக்கமும் இடையூறும்|தடை மற்றும் சிக்கல்கள்/,
+    'Namah Yoga must show its calculated name and timing without explanatory impact/obstruction notes.');
   assert.match(calendarCalculationWorkerSource, /attachTamilSolarDates/);
   assert.match(calendarCalculationWorkerSource, /dayStar:ev\.star,sunStar:ev\.sunStar,nextSunrise,ratriNazhigai,dinantham,amirthadiYogaAvailable:nakshatraTimeline\.available,amirthadiYogaSegments,thyajyamAvailable:thyajyam\.available,thyajyamIntervals:thyajyam\.intervals,ahasNazhigai,previousSunset/);
   assert.match(calendarWorkerSource, /tamil-day-classifications\.mjs/);
@@ -935,9 +936,10 @@ test('Calendar Date Details uses one green hierarchy with paired Panchang values
   assert.ok(dailyCalendarSource.includes('class="cal-date-details-head smv-css-island"'));
   assert.match(calendarThemeCssSource, /\.cal-date-details-head\{[^}]*background:transparent;[^}]*box-shadow:none/);
   assert.match(calendarThemeCssSource, /\.cal-date-details-title\{display:block;width:100%;[^}]*text-align:center/);
-  assert.match(calendarThemeCssSource, /smv-calendar-event-boundary\{display:flex;flex-direction:column/);
-  assert.match(calendarThemeCssSource, /smv-calendar-event-date\{display:block;font-size:12px/);
-  assert.match(calendarThemeCssSource, /smv-calendar-event-time\{display:block;font-size:14px/);
+  assert.match(calendarThemeCssSource, /smv-calendar-event-range\{display:block;width:100%;font-size:11\.5px;font-weight:750;line-height:1\.35;white-space:nowrap/);
+  assert.match(calendarThemeCssSource, /smv-calendar-range-separator\{padding:0 2px;color:#708477;font-weight:400/);
+  assert.match(horoscopeRendererSource, /compactCalendarBoundary=point=>String\(point\.time\|\|'—'\)\+' \('\+compactCalendarDate\(point\.date\)\+'\)'/);
+  assert.doesNotMatch(horoscopeRendererSource, /smv-calendar-event-boundary|smv-calendar-event-date|smv-calendar-event-time/);
 });
 
 test('SMV CALENDAR daily Panchang and Hora follow the green result hierarchy', () => {
