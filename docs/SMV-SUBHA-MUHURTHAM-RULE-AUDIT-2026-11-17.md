@@ -359,7 +359,7 @@ Primary scan references:
 
 The new module `public/horoscope/calendar-muhurta-activities.mjs` adds a Document 50-specific date lookup. It is intentionally separate from the existing external published Subha Muhurtham list and the Apsara September 2015 marriage-month helper.
 
-- Parabhava 2026–27: 57 Gregorian dates were transcribed with cross-checks between OCR layouts. One additional Sunday row is legible in its weekday/Tithi/Nakshatra/time columns but its Gregorian date is not reliable across OCR passes; it is recorded as one unresolved row and is not turned into a guessed date.
+- Parabhava 2026–27: 57 Gregorian dates were transcribed with cross-checks between OCR layouts. One additional row at the end of the list reads Sunday / Chaturthi / Thiruvonam. OCR passes disagree on its date (18-12-2026 versus 19-12-2026 or blank). Because the weekday reads Sunday, 20-12-2026 is the calendar-consistent candidate; it is recorded only as an unverified candidate and is not inserted into the confirmed date list without a clearer original scan.
 - Pilavanga 2027–28: 41 Gregorian dates were transcribed from the pages supplied, covering 18 April 2027 through 10 December 2027. Later dates are outside the supplied table coverage and return unavailable.
 - The date lookup returns “listed” or “not listed in the scanned date rows” within the observed coverage. “Not listed” is not a full time-specific rejection. A date outside the supplied table ranges returns unavailable.
 - A listed annual date is not, by itself, a final marriage approval. The source also requires checking the selected time, couple-specific stars, Panchaka, Yoga and Lagna conditions.
@@ -400,9 +400,11 @@ Utpata Yoga is named in Document 50, but the current Calendar Yoga table does no
 
 ### 12.4 Pushkara Navamsa and place-specific timing
 
-Document 50 explains that the unparenthesized Thali time is the Pushkara Navamsa interval; a parenthesized time is a substitute Subha Graha Navamsa interval where Pushkara is not present in the stated Muhurtha span. Its example table is calculated for Salem Central Station. It says to use the book's page 107 Lagna-specific minute-adjustment table for other places, and that the times may be reused unchanged only for places within 50 km.
+Document 50 explains that the unparenthesized Thali time is the Pushkara Navamsa interval; a parenthesized time is a substitute Subha Graha Navamsa interval where Pushkara is not present in the stated Muhurtha span. Its example table is calculated for Salem Central Station. It points to page 107 for place-specific minute corrections, and says the printed times may be reused unchanged only within 50 km.
 
-The supplied page 107 adjustment table is not among these five scans. Perambalur is not within 50 km of Salem. The Calendar therefore does not copy Salem's displayed times to Perambalur or claim that it has calculated the full Thali-tying interval. Instead, the new optional local time input recalculates the Thirukanitham/Lahiri Panchanga and local Lagna for the selected date, coordinates and clock time; the existing Pushkara helper then reports whether that exact selected-time Lagna is in Pushkara Navamsa. A selected instant is not a reconstructed 10-minute source window.
+The page 107 table is not among the five supplied scans. Rather than applying guessed minute offsets, the Calendar now recalculates the local morning Pushkara intervals directly from the selected place's latitude, longitude and local timezone using the repository's local Swiss Ephemeris WASM. It sets Lahiri sidereal mode, calls the same Swiss Ephemeris houses_ex / Sripati Lagna calculation used by the Calendar, scans the complete local 03:00–12:00 morning range in 30-second steps, and refines each Pushkara entry/exit boundary by bisection to one second. The result is a list of place-specific start/end windows; it is not copied from Salem and does not need the p.107 printed correction table. IANA timezone offsets are resolved at each local sample when a location timezone is available; a manually entered location uses the supplied UTC offset.
+
+This verifies the astronomical Pushkara-Lagna interval for the selected date and place. It does not by itself approve a wedding time: the time must still be within Document 50's published marriage date/time eligibility, and must pass Panchaka, Tithi, Yoga, Rahu/Yamagandam, Kari/Thaniya, couple-star, planetary, and any source-specific substitute Graha Navamsa conditions. The currently supplied scan does not expose every one of those rules clearly enough to claim a complete marriage verdict.
 
 ### 12.5 Page 2 sex-prediction table is not implemented
 
@@ -412,6 +414,6 @@ Document 50_2 contains a table purporting to predict whether a child will be mal
 
 ### 12.6 Preview state and cache safety
 
-This work extends the existing Draft PR #532; no duplicate PR is created. The new Document 50 helpers and tests are part of the PR branch only. The UI exposes the source date lookup, a user-selected calculation time, the five-factor Panchaka components, and the independent time-screening reasons/warnings. It deliberately labels incomplete or unverified clauses instead of rendering a complete marriage verdict.
+This work extends the existing Draft PR #532; no duplicate PR is created. The new Document 50 helpers and tests are part of the PR branch only. The UI exposes the source date lookup, selected-time calculation, five-factor Panchaka components, selected-time restrictions, and coordinate-derived local morning Pushkara start/end intervals. It deliberately labels unresolved source rows and incomplete personal/planetary/Yoga checks instead of rendering a complete marriage verdict.
 
 No production merge, production deployment, origin-wide storage deletion or user-data reset is part of this change.
