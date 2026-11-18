@@ -17,8 +17,8 @@ test('full 1800–2399 daily Swiss Ephemeris coverage and both engine interfaces
   const swe=await getSwe();
   swe.setSiderealLahiri();
   const flags=swe.siderealSpeedFlags();
-  const planetBodies=[0,1,2,3,4,5,6,10];
-  const houseOccupants=Array.from({length:12},()=>[]);
+  const planetBodies=[0,1,4,2,5,3,6,10];
+  const planetNames=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu'];
   let scanned=0;
   for(let timestamp=START;timestamp<END;timestamp+=DAY_MS){
     const date=new Date(timestamp);
@@ -27,14 +27,16 @@ test('full 1800–2399 daily Swiss Ephemeris coverage and both engine interfaces
     // of observer, while using a fixed local civil-day instant keeps date mapping explicit.
     const jd=swe.utcToJd(y,m,d,6,30,0);
     const planetaryPositions=new Map();
-    for(const body of planetBodies){
+    for(let i=0;i<planetBodies.length;i++){
+      const body=planetBodies[i];
       const position=swe.calc(jd.et,body,flags);
       assert.ok(Number.isFinite(position.longitude)&&position.longitude>=0&&position.longitude<360,
         'invalid Swiss longitude body '+body+' on '+date.toISOString().slice(0,10));
+      assert.ok(Number.isFinite(position.speed),'invalid Swiss speed body '+body+' on '+date.toISOString().slice(0,10));
       assert.equal(position.ephemeris,'swiss');
-      planetaryPositions.set(body,position.longitude);
+      planetaryPositions.set(planetNames[i],position);
     }
-    const sun=planetaryPositions.get(0),moon=planetaryPositions.get(1);
+    const sun=planetaryPositions.get('Sun').longitude,moon=planetaryPositions.get('Moon').longitude;
     const elongation=norm360(moon-sun);
     const combined=norm360(moon+sun);
     const tithiNumber=Math.floor(elongation/12)+1;
@@ -48,6 +50,20 @@ test('full 1800–2399 daily Swiss Ephemeris coverage and both engine interfaces
     const ascendant=swe.houses(jd.ut,11.2342,78.8808,'S').ascendant;
     assert.ok(Number.isFinite(ascendant)&&ascendant>=0&&ascendant<360,
       'invalid sidereal ascendant on '+date.toISOString().slice(0,10));
+    const lagnaSignIndex=Math.floor(ascendant/30);
+    const planets=[];
+    const houseOccupants=Array.from({length:12},()=>[]);
+    for(const [name,position] of planetaryPositions){
+      const signIndex=Math.floor(position.longitude/30);
+      planets.push({name,signIndex,longitude:position.longitude,retrograde:position.speed<0,combust:false});
+      const house=((signIndex-lagnaSignIndex+12)%12)+1;
+      houseOccupants[house-1].push(name);
+    }
+    const ketuLongitude=norm360(planetaryPositions.get('Rahu').longitude+180);
+    const ketuSignIndex=Math.floor(ketuLongitude/30);
+    planets.push({name:'Ketu',signIndex:ketuSignIndex,longitude:ketuLongitude,retrograde:true,combust:false});
+    const ketuHouse=((ketuSignIndex-lagnaSignIndex+12)%12)+1;
+    houseOccupants[ketuHouse-1].push('Ketu');
     const weekdayIndex=date.getUTCDay();
     const facts={
       schema:'smv.muhurta.astronomy-facts.v1',
@@ -55,11 +71,10 @@ test('full 1800–2399 daily Swiss Ephemeris coverage and both engine interfaces
       date:date.toISOString().slice(0,10),
       time:'12:00',latitude:11.2342,longitude:78.8808,
       timezone:'Asia/Kolkata',utcOffsetMinutes:330,
-      weekdayIndex,tithiNumber,nakshatraNumber,
-      tithiName:'',nakshatraName:'',paksha:'',
-      yogaNumber:null,karanaNumber:null,
-      lagnaSignIndex:null,houseOccupants,
-      planets:[],panchangaBoundaries:{}
+      weekdayIndex,tithiNumber,karanaNumber,nakshatraNumber,yogaNumber,
+      tithiName:'',nakshatraName:'',paksha:tithiNumber<=15?'Shukla Paksha':'Krishna Paksha',
+      lagnaSignIndex,lagnaName:String(lagnaSignIndex),
+      houseOccupants,planets,panchangaBoundaries:{}
     };
     for(const item of TAMIL_ACTIVITIES){
       const result=evaluateTamilMuhurta(item.id,facts);
