@@ -661,7 +661,21 @@ try {
   assert.equal(toMinutes(vastuTimes[1][2]) - toMinutes(vastuTimes[1][1]), 36, 'Final Vastu puja interval must be 36 minutes');
   const pushkaraCheck = await page.$eval('#calMuhurtaLagna', el => el.textContent || '');
   assert.match(pushkaraCheck, /Pushkara Navamsa Lagna|புஷ்கர நவாம்ச லக்னம்/, 'Pushkara Navamsa Lagna must be visible');
+  assert.match(pushkaraCheck, /Document 50 marriage date|ஆவணம் 50 திருமண நாள்/, 'Document 50 marriage-date lookup must be visible');
+  assert.match(pushkaraCheck, /Document 50 Panchaka|ஆவணம் 50 பஞ்சகம்/, 'Document 50 Panchaka calculation must be visible');
+  assert.match(pushkaraCheck, /Document 50 time screening|ஆவணம் 50 நேரச் சரிபார்ப்பு/, 'Document 50 time exclusions must be visible');
   assert.doesNotMatch(pushkaraCheck, /not yet a calculated Thali-tying time|இன்னும் தாலி கட்டும் நேரக் கணக்கீடு அல்ல/, 'Do not display the Thali-time disclaimer in the Calendar UI');
+  assert.ok(await page.$('#calMuhurtaTime'), 'Optional local Muhurtham-time input must be available');
+  await page.$eval('#calMuhurtaTime', el => {
+    el.value = '08:45';
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await page.waitForFunction(() => {
+    const text = document.querySelector('#calMuhurtaLagna')?.textContent || '';
+    return /Calculated at 08:45|கணக்கீட்டு நேரம் 08:45/.test(text);
+  }, { timeout: 90000 });
+  const selectedTimeCheck = await page.$eval('#calMuhurtaLagna', el => el.textContent || '');
+  assert.match(selectedTimeCheck, /08:45/, 'Changing the local time must recalculate the selected-time Lagna and Panchaka');
   await checkMuhurthamDate(calendarDate, /Subha Muhurtham day|சுபமுகூர்த்த நாள்|^No$|^இல்லை$/);
   assert.equal(publicUi.separateAdminLink, false, 'Calendar should not link to a separate Admin page');
   assert.equal(publicUi.hasRasiPicker, true, 'Public Rasi Palan must include the selected-Rasi dropdown');
