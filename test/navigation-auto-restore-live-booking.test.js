@@ -51,8 +51,8 @@ test('Website, Horoscope and Calendar receive one synchronized cache release wit
     read('public/horoscope/calendar/sw.js')
   ];
   for (const source of serviceWorkers) {
-    assert.match(source, /20261118-calendar-heading-alignment-v4/);
-    assert.match(source, /20261118-calendar-heading-alignment-v4/);
+    assert.match(source, /20261118-calendar-centered-headings-v5/);
+    assert.match(source, /20261118-calendar-centered-headings-v5/);
     assert.doesNotMatch(source, /localStorage\.clear\(|sessionStorage\.clear\(|indexedDB\.deleteDatabase\(/);
   }
   assert.match(serviceWorkers[1], /v284-pages-dev-tamil-solar-20261116/);
