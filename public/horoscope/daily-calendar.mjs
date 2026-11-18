@@ -350,7 +350,7 @@ if(host){
 
  function renderExtra(){if(!daily)return;const r=+cfg.rasi,n=+cfg.star,p=daily.en.p,ps=daily.en.t.planets,mo=ps.find(x=>x.name==='Moon');if(!mo)return;const moonPosition=getNakshatraPadaAtLongitude(mo.longitude);if(!moonPosition)return;const moonSign=moonPosition.signIndex,tara=((p.nakshatra.number-1-n+27)%27)%9;const taraNames=[['Janma · birth','ஜன்மம்'],['Sampat · prosperity','சம்பத்து'],['Vipat · caution','விபத்து'],['Kshema · wellbeing','க்ஷேமம்'],['Pratyak · obstacles','பிரத்தியக்கு'],['Sadhana · achievement','சாதனம்'],['Naidhana · caution','நைதனம்'],['Mitra · friendship','மித்திரம்'],['Parama Mitra · support','பரம மித்திரம்']];
  const officialHolidays=holidays(selected);
- const normaliseObservance=value=>String(value??'').toLowerCase().replace(/[^\\p{L}\\p{N}]/gu,'').replace(/^diwali$/,'deepavali');
+ const normaliseObservance=value=>String(value??'').toLowerCase().replace(/[^\p{L}\p{N}]/gu,'').replace(/^diwali$/,'deepavali');
  const nameValues=value=>Array.isArray(value)?value:[value];
  const officialHolidayKeys=new Set(officialHolidays.flatMap(nameValues).map(normaliseObservance));
  const dailyObservances=daily.events.map(event=>event.name).filter(name=>
