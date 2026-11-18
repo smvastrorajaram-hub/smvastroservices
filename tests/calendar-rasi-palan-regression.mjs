@@ -318,7 +318,7 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   assert.doesNotMatch(dailyCalendarSource, /Eighth Rasi|எட்டாம் ராசி/);
   assert.match(dailyCalendarCssSource, /cal-chandrashtama-result\{[^}]*font-size:1rem!important;font-weight:400!important/);
   assert.match(dailyCalendarCssSource, /cal-chandrashtama-result\.is-present\{color:#c00000!important;-webkit-text-fill-color:#c00000!important;font-weight:400!important\}/);
-  assert.match(dailyCalendarCssSource, /cal-chandrashtama-result\.is-absent\{color:#111!important;-webkit-text-fill-color:#111!important;font-weight:400!important\}/);
+  assert.match(dailyCalendarCssSource, /cal-chandrashtama-result\.is-absent\{color:inherit!important;-webkit-text-fill-color:currentColor!important;font-weight:400!important\}/);
   assert.match(dailyCalendarCssSource, /cal-chandra-window\.is-selected-date\{display:block;border:0!important/);
   assert.ok(dailyCalendarCssSource.includes('Flatten all period detail tiles into the single outer Chandrashtama main card.'));
   assert.ok(dailyCalendarCssSource.includes('.cal-chandra-pada-row.is-janma-pada-projection'));

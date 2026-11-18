@@ -235,7 +235,7 @@
 #smvDailyCalendar .cal-chandrashtama-section>h3::after{display:none!important;content:none!important}
 #smvDailyCalendar .cal-chandrashtama-result{margin:0 0 8px;color:inherit!important;font-size:1rem!important;font-weight:400!important;line-height:inherit}
 #smvDailyCalendar .cal-chandrashtama-result.is-present{color:#c00000!important;-webkit-text-fill-color:#c00000!important;font-weight:400!important}
-#smvDailyCalendar .cal-chandrashtama-result.is-absent{color:#111!important;-webkit-text-fill-color:#111!important;font-weight:400!important}
+#smvDailyCalendar .cal-chandrashtama-result.is-absent{color:inherit!important;-webkit-text-fill-color:currentColor!important;font-weight:400!important}
 #smvDailyCalendar .cal-chandra-windows{display:block;gap:0;margin-top:12px;border:0;background:transparent}
 #smvDailyCalendar .cal-chandra-window,
 #smvDailyCalendar .cal-chandra-window.is-active,

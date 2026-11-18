@@ -286,6 +286,8 @@ try {
     result: status?.dataset.result || '',
     statusColor: status ? getComputedStyle(status).color : '',
     statusFillColor: status ? getComputedStyle(status).webkitTextFillColor : '',
+    referenceColor: getComputedStyle(section.querySelector('.cal-chandrashtama > p')).color,
+    referenceFillColor: getComputedStyle(section.querySelector('.cal-chandrashtama > p')).webkitTextFillColor,
     headingAlignment: getComputedStyle(section.querySelector(':scope > h3')).textAlign,
     headingDisplay: getComputedStyle(section.querySelector(':scope > h3')).display,
     headingAfterDisplay: getComputedStyle(section.querySelector(':scope > h3'), '::after').display,
@@ -334,9 +336,9 @@ try {
   } else {
     assert.equal(chandrashtamaSmoke.result, 'absent',
       'When no Chandrashtama is active now, preserve the direct Chandrashtama: No result.');
-    assert.equal(chandrashtamaSmoke.statusColor, 'rgb(17, 17, 17)',
-      'Chandrashtama: No must remain normal black text.');
-    assert.equal(chandrashtamaSmoke.statusFillColor, 'rgb(17, 17, 17)',
+    assert.equal(chandrashtamaSmoke.statusColor, chandrashtamaSmoke.referenceColor,
+      'Chandrashtama: No must use the ordinary detail-line text color.');
+    assert.equal(chandrashtamaSmoke.statusFillColor, chandrashtamaSmoke.referenceFillColor,
       'Chandrashtama: No must not inherit the old green WebKit text fill.');
     if (todayWindow) {
       assert.equal(todayWindow.isUpcoming, true,
