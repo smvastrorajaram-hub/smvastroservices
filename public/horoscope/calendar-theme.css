@@ -204,14 +204,14 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-amirthadi-yoga-card{gap:2px;padding:8px 10px;border-top:2px solid #2c875c}
 #smvDailyCalendar .cal-amirthadi-yoga-card.is-inauspicious{border-top-color:#b42318}
 #smvDailyCalendar .cal-amirthadi-yoga-card.is-unknown{border-top-color:#8b948b}
-#smvDailyCalendar .cal-yoga-segment{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;align-content:start;grid-auto-rows:max-content;row-gap:2px;column-gap:8px;width:100%;min-width:0}
+#smvDailyCalendar .cal-yoga-segment{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:2px;width:100%;min-width:0}
 #smvDailyCalendar .cal-yoga-segment-info{display:grid;gap:3px;min-width:0}
 #smvDailyCalendar .cal-yoga-segment-info>strong{color:#20704d;font-size:16px;font-weight:800;line-height:1.3;overflow-wrap:anywhere}
 #smvDailyCalendar .cal-yoga-segment-info>small{display:block;color:#5e7468;font-size:12px;font-weight:500;line-height:1.4}
 #smvDailyCalendar .cal-yoga-segment.is-inauspicious .cal-yoga-segment-info>strong{color:#b42318}
 #smvDailyCalendar .cal-yoga-segment.is-unknown .cal-yoga-segment-info>strong{color:#69746d}
 #smvDailyCalendar .cal-yoga-segment-time{align-self:start;color:#365d4a;font-size:12px;font-weight:750;line-height:1.4;font-variant-numeric:tabular-nums;text-align:right;overflow-wrap:anywhere}
-#smvDailyCalendar .cal-yoga-reference{grid-column:1/-1;display:block;align-self:start;margin:0;color:#667b70;font-size:10.5px;font-weight:500;line-height:1.3}
+#smvDailyCalendar .cal-yoga-reference{display:block;align-self:flex-start;margin:0;color:#667b70;font-size:10.5px;font-weight:500;line-height:1.3}
 #smvDailyCalendar .cal-panchang-detail-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0;margin:0}
 #smvDailyCalendar .cal-panchang-detail-item{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);align-items:center;gap:6px 10px;min-width:0;padding:9px 11px;border:1px solid #e1ebe3;border-radius:9px;background:#f1f7f2}
 #smvDailyCalendar .cal-panchang-detail-item>small{min-width:0;margin:0;color:#5e7568;font-size:12px;font-weight:650;line-height:1.4;overflow-wrap:anywhere}
