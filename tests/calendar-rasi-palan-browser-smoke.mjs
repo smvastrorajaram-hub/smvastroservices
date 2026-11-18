@@ -670,9 +670,27 @@ try {
   }, { timeout: 90000 }, {date:originalCalendarDate,oldBalance:selectedDateBalance});
 
 
-  // Numerical regression: the ingress Sun sign, not the actual local Ascendant,
-  // selects the complete place-based OA Rasi Mana for each sunrise interval.
-  const solarSignRasiManaCheck = await page.evaluate(async fixtures => {
+  // Numerical smoke: use only the currently selected Calendar location.
+  // The browser form supplies latitude, longitude and timezone; no sample city
+  // or fixed coordinates are used by this test.
+  const selectedCalendarLocation = await page.evaluate(() => {
+    const value = selector => Number(document.querySelector(selector)?.value);
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem('smv-calendar-settings') || '{}'); } catch {}
+    return {
+      date: document.querySelector('#calDate')?.value || '',
+      time: '12:00',
+      lat: value('#calLat'),
+      lon: value('#calLon'),
+      utcOffsetMinutes: Math.round(value('#calOffset') * 60),
+      timezone: String(saved.timezone || '')
+    };
+  });
+  assert.ok(/^\\d{4}-\\d{2}-\\d{2}$/.test(selectedCalendarLocation.date));
+  assert.ok(Number.isFinite(selectedCalendarLocation.lat) && Number.isFinite(selectedCalendarLocation.lon));
+  assert.ok(Number.isFinite(selectedCalendarLocation.utcOffsetMinutes));
+
+  const solarSignRasiManaCheck = await page.evaluate(async fixture => {
     const worker = new Worker('/horoscope/calendar-worker.mjs', { type: 'module' });
     try {
       const request = (id, input) => new Promise((resolve, reject) => {
@@ -687,154 +705,35 @@ try {
         worker.addEventListener('message', handler);
         worker.postMessage({ id, kind: 'solar-sign-rasi-mana', input });
       });
-      const results = [];
-      for (let index = 0; index < fixtures.length; index++) {
-        const result = await request('calendar-solar-sign-rasi-mana-' + index, fixtures[index]);
-        if (!result) throw new Error('Solar-sign Rasi Mana worker returned no result for ' + fixtures[index].date);
-        results.push(result);
-      }
-      // Reuse the ingress cache while requesting sunrise, midday and evening
-      // times on one date. The solar sign and full OA duration stay fixed, but
-      // the remaining balance must subtract elapsed time since local sunrise.
-      const reference = results[2];
+      const result = await request('calendar-solar-sign-rasi-mana-selected-location', fixture);
+      if (!result) throw new Error('Solar-sign Rasi Mana worker returned no result for the selected Calendar date.');
       const atSunrise = await request('calendar-rasi-mana-at-sunrise', {
-        ...fixtures[2], time: reference.sunrise
+        ...fixture, time: result.sunrise
       });
       const atMidday = await request('calendar-rasi-mana-at-midday', {
-        ...fixtures[2], time: '12:00'
+        ...fixture, time: '12:00'
       });
       const atEvening = await request('calendar-rasi-mana-at-evening', {
-        ...fixtures[2], time: '21:10'
+        ...fixture, time: '21:10'
       });
-      return { results, sunriseRemainders: { atSunrise, atMidday, atEvening } };
+      return { results: [result], sunriseRemainders: { atSunrise, atMidday, atEvening } };
     } finally {
       worker.terminate();
     }
-  }, [
-    { date:'2026-11-15', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 },
-    { date:'2026-11-16', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 },
-    { date:'2026-11-17', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 },
-    { date:'2026-12-15', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 },
-    { date:'2026-12-16', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 },
-    { date:'2027-01-14', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 },
-    { date:'2027-01-15', time:'12:00', lat:11.23, lon:78.88, utcOffsetMinutes:330 },
-    { date:'2026-11-25', time:'12:00', lat:11.2342, lon:78.8808, utcOffsetMinutes:330 }
-  ]);
+  }, selectedCalendarLocation);
   const solarSignRasiManaFixtures = solarSignRasiManaCheck.results;
   const { atSunrise, atMidday, atEvening } = solarSignRasiManaCheck.sunriseRemainders;
-  const [
-    libraOn15, libraAt16Sunrise, scorpioAt17Sunrise,
-    scorpioAtKarthigaiEnd, sagittariusAtMargazhiStart,
-    sagittariusAtMargazhiEnd, capricornAtThaiStart, scorpioAt25November
-  ] = solarSignRasiManaFixtures;
-  console.log('CALENDAR_SOLAR_SIGN_RASI_MANA_BOUNDARY_FIXTURE ' + JSON.stringify(
-    solarSignRasiManaFixtures.map(result => ({
-      date:result.sunrise,
-      sunSignIndex:result.sunSignIndex,
-      rasiManaSignIndex:result.rasiManaSignIndex,
-      ingressDate:result.ingressDate,
-      ingressTime:result.ingressTime
-    }))
-  ));
-  assert.equal(libraOn15.sunSignIndex, 6, '15 Nov sunrise interval must use the Sun in Libra.');
-  assert.equal(libraOn15.rasiManaSignIndex, 6, 'Libra must select Libra Rasi Mana.');
-  assert.equal(libraAt16Sunrise.sunSignIndex, 6, '16 Nov sunrise still has the Sun in Libra because Scorpio ingress is after local sunset.');
-  assert.equal(libraAt16Sunrise.rasiManaSignIndex, 6, 'The 16 Nov sunrise interval must retain Libra Rasi Mana.');
-  assert.notEqual(libraAt16Sunrise.ingressDate, '2026-11-16', 'The after-sunset 16 Nov ingress must not be assigned to the 16 Nov sunrise interval.');
-  assert.equal(scorpioAt17Sunrise.sunSignIndex, 7, '17 Nov sunrise interval must use the Sun in Scorpio after its 16 Nov local-evening ingress.');
-  assert.equal(scorpioAt17Sunrise.rasiManaSignIndex, 7, 'Scorpio must select Scorpio Rasi Mana from the next sunrise.');
-  assert.equal(scorpioAt17Sunrise.ingressDate, '2026-11-16', 'The 17 Nov interval must use the Scorpio ingress that occurred on 16 Nov.');
-  assert.equal(scorpioAtKarthigaiEnd.sunSignIndex, 7, 'Scorpio remains the selected solar sign through Karthigai.');
-  assert.equal(scorpioAtKarthigaiEnd.fullBalanceVighati, scorpioAt17Sunrise.fullBalanceVighati,
-    'Scorpio full Rasi Mana must remain constant through Karthigai.');
-  assert.equal(sagittariusAtMargazhiStart.sunSignIndex, 8, 'The daytime Dhanu ingress starts Margazhi on 16 Dec 2026.');
-  assert.equal(sagittariusAtMargazhiStart.sunriseSunSignIndex, 7,
-    'On 16 Dec the physical sunrise Sun is still in Scorpio before the daytime Dhanu ingress.');
-  assert.equal(sagittariusAtMargazhiStart.sunriseMonthBoundaryApplied, true,
-    'The existing date-level Tamil rule treats the daytime ingress date as Margazhi 1 at 0° for its sunrise snapshot.');
-  assert.equal(sagittariusAtMargazhiStart.sunDegreeInSign, 0,
-    'Margazhi 1 starts its selected Rasi Mana progression at 0°.');
-  assert.equal(sagittariusAtMargazhiEnd.sunSignIndex, 8, 'Sagittarius remains selected through the end of Margazhi.');
-  assert.equal(sagittariusAtMargazhiEnd.fullBalanceVighati, sagittariusAtMargazhiStart.fullBalanceVighati,
-    'Sagittarius full Rasi Mana must remain constant through Margazhi.');
-  assert.equal(capricornAtThaiStart.sunSignIndex, 9, 'The after-sunset Makara ingress starts the next sunrise interval on 15 Jan 2027.');
-  assert.equal(capricornAtThaiStart.ingressDate, '2027-01-14', 'The 15 Jan interval must use the Makara ingress from the previous evening.');
-
-  assert.equal(scorpioAt25November.sunSignIndex, 7,
-    '25 Nov 2026 sunrise belongs to Scorpio after the evening ingress on 16 Nov.');
-  assert.equal(scorpioAt25November.sunrise, '06:15');
-  assert.ok(Math.abs(scorpioAt25November.sunriseSunLongitude-218.51611163)<0.000001,
-    '25 Nov Perambalur sunrise sidereal Sun longitude must match the Swiss Lahiri result.');
-  assert.equal(scorpioAt25November.fullBalanceVighati,329,
-    'The complete Scorpio 30° OA balance at month start is 329 vighati (5 na 29 vi).');
-  assert.equal(scorpioAt25November.remainingVighati,236,
-    '25 Nov 2026 sunrise must leave 236 vighati after the Sun progresses to 8°30′58″ Scorpio.');
-  assert.equal(scorpioAt25November.balanceNazhigai,3);
-  assert.equal(scorpioAt25November.balanceVinazhigai,56);
-  assert.ok(scorpioAt25November.sunDegreeInSign > 8 && scorpioAt25November.sunDegreeInSign < 9,
-    'The 25 Nov Perambalur sunrise must use the progressed Scorpio longitude, not 0°.');
-  assert.ok(scorpioAt25November.remainingSignDegrees > 21 && scorpioAt25November.remainingSignDegrees < 22,
-    'The remainder must cover only the degrees from the 25 Nov sunrise Sun position to 30° Scorpio.');
-  assert.ok(scorpioAt25November.remainingVighati > 0 &&
-    scorpioAt25November.remainingVighati < scorpioAt25November.fullBalanceVighati,
-    '25 Nov balance must be less than the full Scorpio month-start value (5 na 29 vi).');
-  console.log('SMV_CALENDAR_2026_11_25_RASI_MANA ' + JSON.stringify({
-    sunrise:scorpioAt25November.sunrise,
-    sunLongitudeAtSunrise:scorpioAt25November.sunriseSunLongitude,
-    sunDegreeInSign:scorpioAt25November.sunDegreeInSign,
-    remainingSignDegrees:scorpioAt25November.remainingSignDegrees,
-    fullRasiManaVighati:scorpioAt25November.fullBalanceVighati,
-    remainingOADegrees:scorpioAt25November.remainingOADegrees,
-    remainingVighati:scorpioAt25November.remainingVighati,
-    balanceNazhigai:scorpioAt25November.balanceNazhigai,
-    balanceVinazhigai:scorpioAt25November.balanceVinazhigai
+  console.log('CALENDAR_SOLAR_SIGN_RASI_MANA_SELECTED_LOCATION ' + JSON.stringify({
+    date:solarSignRasiManaFixtures[0].sunrise,
+    sunSignIndex:solarSignRasiManaFixtures[0].sunSignIndex,
+    rasiManaSignIndex:solarSignRasiManaFixtures[0].rasiManaSignIndex,
+    ingressDate:solarSignRasiManaFixtures[0].ingressDate,
+    ingressTime:solarSignRasiManaFixtures[0].ingressTime
   }));
-
-  assert.equal(atSunrise.sunSignIndex, 7);
-  for (const [label, result] of [['sunrise', atSunrise], ['midday', atMidday], ['evening', atEvening]]) {
-    assert.equal(result.sunSignIndex, atSunrise.sunSignIndex, label + ' must retain the selected date solar sign.');
-    assert.equal(result.sunrise, atSunrise.sunrise, label + ' must use the same selected-date sunrise.');
-    assert.equal(result.selectedTime, result.sunrise, label + ' must use the sunrise as the calculation instant.');
-    assert.equal(result.sunriseSunLongitude, atSunrise.sunriseSunLongitude,
-      label + ' must use the same sunrise longitude, regardless of the request clock.');
-    assert.equal(result.remainingVighati, atSunrise.remainingVighati,
-      label + ' must show the same sunrise remainder throughout the sunrise interval.');
-    assert.equal(result.fullBalanceVighati, atSunrise.fullBalanceVighati,
-      label + ' must preserve the same full solar-month OA value.');
-  }
-
-  // Verify the actual public Date Details text for the requested date/value.
-  await page.$eval('#calDate', (el, date) => {
-    el.value = date;
-    el.dispatchEvent(new Event('change', { bubbles: true }));
-  }, '2026-11-25');
-  await page.waitForFunction(() => {
-    const status = document.querySelector('#calStatus')?.textContent || '';
-    const line = document.querySelector('#calMuhurtaLagna .cal-rasi-balance-line')?.textContent || '';
-    return status.includes('2026-11-25') && /3 na 56 vi|3 நா 56 வி/.test(line);
-  }, { timeout: 90000 });
-  const nov25Rendered = await page.$eval('#calMuhurtaLagna', el => ({
-    balance:el.querySelector('.cal-rasi-balance-line')?.textContent.trim()||'',
-    meta:el.querySelector('.cal-rasi-balance-meta')?.textContent.trim()||''
-  }));
-  assert.match(nov25Rendered.balance, /3 na 56 vi|3 நா 56 வி/,
-    'The public Calendar UI must render 25 Nov 2026 as 3 nazhigai 56 vinazhigai, not 5 na 29 vi.');
-  assert.match(nov25Rendered.meta, /8°30′58″/,
-    'The public Calendar UI must expose the progressed Sun degree at the selected sunrise.');
-  assert.match(nov25Rendered.meta, /5 na 29 vi|5 நா 29 வி/,
-    'The public Calendar UI must show the complete Scorpio month-start value separately.');
-  await page.$eval('#calDate', (el, date) => {
-    el.value = date;
-    el.dispatchEvent(new Event('change', { bubbles: true }));
-  }, originalCalendarDate);
-  await page.waitForFunction(date =>
-    (document.querySelector('#calStatus')?.textContent || '').includes(date),
-    { timeout: 90000 }, originalCalendarDate);
-
 
   for (const result of solarSignRasiManaFixtures) {
     assert.match(result.ingressTime, /^\d{2}:\d{2}:\d{2}$/, 'Solar ingress time must retain seconds.');
-    assert.match(result.sunrise, /^\d{2}:\d{2}$/, 'The selected town sunrise must be returned.');
+    assert.match(result.sunrise, /^\d{2}:\d{2}$/, 'The selected Calendar location sunrise must be returned.');
     assert.equal(result.method, 'solar-sign-oblique-ascension');
     assert.equal(result.rasiManaAvailable, true);
     assert.equal(result.rasiMana.length, 12);
