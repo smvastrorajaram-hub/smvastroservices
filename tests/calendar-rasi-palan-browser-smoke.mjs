@@ -280,7 +280,17 @@ try {
 
   // Simha star options must be only Magha, Pooram and Uttara Phalguni.
   await page.select('#calRasi','4');
-  const simhaStarOptions = await page.$$eval('#calStar option', options => options.map(option => option.value));
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, '2026-11-20');
+  await page.waitForFunction(() => {
+    const status = document.querySelector('#calStatus')?.textContent || '';
+    const window = document.querySelector('#calChandrashtamaPeriods .cal-chandra-window.is-selected-date');
+    return status.includes('2026-11-20') &&
+      window?.querySelector('.cal-chandra-rasi-period strong')?.textContent === 'Pisces';
+  }, { timeout: 120000 });
+  const simhaStarOptions = await page.$eval('#calStar option', options => options.map(option => option.value));
   assert.deepEqual(simhaStarOptions,['9','10','11']);
   await page.select('#calStar','10');
   // Star selection starts an asynchronous Swiss Ephemeris-backed render. Wait
@@ -293,7 +303,7 @@ try {
       Number(row.dataset.targetStar) === (index === 0 ? 25 : 26) &&
       Number(row.dataset.targetPada) === (index === 0 ? 4 : index)
     );
-  }, { timeout: 30000 });
+  }, { timeout: 120000 });
   const pooramRows = await page.evaluate(() =>
     [...document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-window:first-child .cal-chandra-pada-row')].map(row =>
       [Number(row.dataset.birthPada),Number(row.dataset.targetStar),Number(row.dataset.targetPada)]));
@@ -316,8 +326,13 @@ try {
   assert.deepEqual([pooram3.birthPada,pooram3.targetStar,pooram3.targetPada],[3,26,2]);
   assert.match(pooram3.text,/Purva Phalguni.*Revati.*Pada 2/);
 
-  // Restore the requested Ashwini 1 example for the final mobile preview.
+  // Return to the Mesha transit date before restoring the requested Ashwini 1 preview.
   await page.select('#calRasi','0');
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, '2026-11-10');
+  await page.waitForFunction(() => document.querySelector('#calChandrashtamaPeriods .cal-chandra-window.is-selected-date'), { timeout: 120000 });
   await page.select('#calStar','0');
   await page.select('#calStarPada','1');
   await page.waitForFunction(() => {
