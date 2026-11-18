@@ -288,7 +288,10 @@ if(host){
    status.classList.toggle('is-present',hasChandrashtama);
    status.classList.toggle('is-absent',!hasChandrashtama);
   }
-  return windowsHtml?'<div class="cal-chandra-windows">'+windowsHtml+'</div>':'';
+  const upcomingHeading=nearestUpcomingWindow&&windowsHtml
+   ?'<p class="cal-chandra-upcoming-heading">'+L('Next Chandrashtama for your ','உங்கள் ')+esc(signs[janmaRasiIndex]?.[lang]||'—')+L(' Rasi:',' ராசிக்கான அடுத்த சந்திராஷ்டம நாள் :')+'</p>'
+   :'';
+  return windowsHtml?'<div class="cal-chandra-windows">'+upcomingHeading+windowsHtml+'</div>':'';
  }
 
  function loadChandrashtamaWindows(){
