@@ -2,7 +2,7 @@
 
 Source: Read-only/Document 50_1.jpg through Document 50_5.jpg
 Engine: Tesseract OCR, Tamil + English language data
-Two page segmentation modes are retained for comparison: PSM 3 and PSM 6.
+Four page segmentation modes are retained for comparison: PSM 3, PSM 4, PSM 6 and PSM 11.
 This is raw OCR, not a corrected transcription.
 
 ## Source image checks
