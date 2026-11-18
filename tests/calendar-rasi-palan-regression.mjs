@@ -867,9 +867,9 @@ test('Calendar Date Details restores centred cards and positions day flags besid
   assert.match(calendarThemeCssSource, /\.cal-date-details \.cal-details-summary \.cal-day-flags-card\{[\s\S]*?justify-content:center/);
   assert.match(calendarThemeCssSource, /\.cal-date-details \.cal-details-summary \.cal-shoolam-card\{\s*grid-column:1\/-1;display:flex;align-items:center;justify-content:center/);
   assert.match(calendarThemeCssSource, /\.cal-month-grid button\{align-items:center;justify-content:flex-start/);
-  assert.match(calendarThemeCssSource, /#calDateDetailsExtra \.cal-day-yoga-card\.is-inauspicious\{border-left:0!important/);
-  assert.match(calendarThemeCssSource, /#calDateDetailsExtra \.cal-day-yoga-card\.is-inauspicious \.cal-yoga-segment\.is-inauspicious\{border-left:0!important/);
-  assert.match(calendarThemeCssSource, /\.cal-day-yoga-card\.is-inauspicious \.cal-yoga-segment-time\{align-self:center;text-align:center/);
+  assert.match(calendarThemeCssSource, /#calDateDetailsExtra \.cal-thyajyam-card\{border-left:0!important/);
+  assert.match(calendarThemeCssSource, /#calDateDetailsExtra \.cal-thyajyam-card \.cal-yoga-segment\.is-inauspicious\{border-left:0!important/);
+  assert.match(calendarThemeCssSource, /\.cal-thyajyam-card \.cal-yoga-segment-time\{align-self:center;text-align:center/);
   assert.match(dailyCalendarSource, /class="cal-day-flags-card"[\s\S]*?Abhijit Muhurtham/);
   const shoolamMarkup = dailyCalendarSource.match(/cal-shoolam-card"><div class="cal-shoolam-main"[\s\S]*?<\/article>/)?.[0] || '';
   assert.ok(shoolamMarkup, 'Travel Shoolam must render in its own full-width card.');
@@ -903,6 +903,17 @@ test('SMV CALENDAR daily Panchang and Hora use scoped black/red result typograph
   assert.equal(new Set(releases.map(match => match[2])).size, 1, 'Production cache release must match across all apps.');
   assert.equal(releases[0][1], '20261118-chandrashtama-panchang-details-v1');
   assert.equal(releases[0][2], '20261118-chandrashtama-panchang-details-v1');
+});
+
+
+test('Amirthadi Yoga results each occupy a natural left/right card beside the Tamil date', () => {
+  assert.match(dailyCalendarSource, /const yogaCardsHtml=yogaSegments\.length\?yogaSegments\.map/);
+  assert.match(dailyCalendarSource, /class="cal-day-yoga-cards" data-yoga-count="\'+yogaSegments\.length\+'/);
+  assert.match(dailyCalendarSource, /segment===yogaSegments\[0\]\?yogaReferenceHtml/);
+  assert.match(calendarThemeCssSource, /\.cal-details-summary>\.cal-day-yoga-cards\{display:contents\}/);
+  assert.match(calendarThemeCssSource, /\.cal-amirthadi-yoga-card/);
+  assert.doesNotMatch(dailyCalendarSource, /cal-empty-yoga-card|cal-empty-yoga-slot/);
+  assert.match(dailyCalendarSource, /class="cal-day-yoga-card cal-thyajyam-card is-inauspicious"/);
 });
 
 test('Calendar Daily Panchang values are integrated before Nakshatra Thyajyam without a date-only card', () => {
