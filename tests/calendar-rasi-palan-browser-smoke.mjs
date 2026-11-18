@@ -106,6 +106,50 @@ try {
   }, { timeout: 90000 });
   const calendarCalculationStatus = await page.$eval('#calStatus', el => el.textContent || '');
   await page.waitForSelector('#calMuhurtaLagna .cal-muhurta-lagna-grid .cal-muhurta-lagna-item', { timeout: 30000 });
+
+  await page.waitForSelector('#calDocument50PushkaraWindows .cal-pushkara-window-list', { timeout: 120000 });
+  const defaultPushkaraWindows = await page.$eval('#calDocument50PushkaraWindows', el => ({
+    text: el.textContent || '',
+    rows: [...el.querySelectorAll('.cal-pushkara-window-row')].map(row => row.textContent.trim())
+  }));
+  assert.ok(defaultPushkaraWindows.rows.length > 0, 'The selected default coordinates must produce morning Pushkara intervals.');
+  assert.match(defaultPushkaraWindows.text, /Swiss Ephemeris/i, 'The window calculation must identify its local ephemeris engine.');
+  assert.ok(defaultPushkaraWindows.rows.every(row => /\\d{2}:\\d{2}:\\d{2} – \\d{2}:\\d{2}:\\d{2}/.test(row)),
+    'Every Pushkara interval must display its one-second-refined start and end.');
+
+  const calculateForPlace = async (place, latitude, longitude, date) => {
+    await page.$eval('.cal-location', el => { el.open = true; });
+    await page.$eval('#calPlace', (el, name) => { el.value = name; el.dataset.timezone = 'Asia/Kolkata'; }, place);
+    await page.$eval('#calLat', (el, value) => { el.value = String(value); }, latitude);
+    await page.$eval('#calLon', (el, value) => { el.value = String(value); }, longitude);
+    await page.$eval('#calOffset', el => { el.value = '5.5'; });
+    await page.$eval('#calLocation', form => form.requestSubmit());
+    await page.waitForFunction(name => (document.querySelector('#calStatus')?.textContent || '').includes(name), { timeout: 30000 }, place);
+    await page.$eval('#calDate', (el, value) => {
+      el.value = value;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }, date);
+    await page.waitForFunction(value => {
+      const status = document.querySelector('#calStatus')?.textContent || '';
+      const result = document.querySelector('#calDocument50PushkaraWindows');
+      return status.includes(value) && result?.querySelector('.cal-pushkara-window-list');
+    }, { timeout: 120000 }, date);
+    return page.$eval('#calDocument50PushkaraWindows', el => ({
+      text: el.textContent || '',
+      rows: [...el.querySelectorAll('.cal-pushkara-window-row')].map(row => row.textContent.trim())
+    }));
+  };
+
+  const salemPushkara = await calculateForPlace('Salem Junction', 11.6714028, 78.113222, '2026-06-07');
+  assert.ok(salemPushkara.text.includes('11.67140, 78.11322') && salemPushkara.text.includes('Asia/Kolkata'),
+    'Salem Pushkara windows must be calculated from the selected coordinates and IANA timezone.');
+  assert.ok(salemPushkara.rows.length > 0, 'Salem must return local morning Pushkara intervals for 7 June 2026.');
+  const chennaiPushkara = await calculateForPlace('Chennai', 13.0827, 80.2707, '2026-06-07');
+  assert.ok(chennaiPushkara.text.includes('13.08270, 80.27070') && chennaiPushkara.text.includes('Asia/Kolkata'),
+    'Chennai Pushkara windows must be calculated from its own coordinates and IANA timezone.');
+  assert.ok(chennaiPushkara.rows.length > 0, 'Chennai must return local morning Pushkara intervals for 7 June 2026.');
+  assert.notDeepEqual(chennaiPushkara.rows, salemPushkara.rows,
+    'Changing longitude/latitude must recalculate the local time intervals rather than copy a Salem time table.');
   const resultPlacement = await page.$eval('#calMuhurtaLagna', el => {
     const dateDetails = document.querySelector('#calDateDetails');
     const summary = document.querySelector('#calDateDetailsExtra');
