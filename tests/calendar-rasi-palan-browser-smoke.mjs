@@ -198,7 +198,6 @@ try {
     const thyajyamTitle = thyajyamCard?.querySelector(':scope > small');
     const thyajyamSegments = thyajyamCard?.querySelector('.cal-yoga-segments');
     const thyajyamSegment = thyajyamSegments?.querySelector('.cal-yoga-segment');
-    const thyajyamNote = thyajyamCard?.querySelector(':scope > small:last-child');
     const style = element => element ? getComputedStyle(element) : null;
     const firstYogaRect = rect(firstYogaCard);
     const dateRect = rect(dateCard);
@@ -206,7 +205,6 @@ try {
     const referenceRect = rect(yogaReference);
     const thyajyamTitleRect = rect(thyajyamTitle);
     const thyajyamPeriodRect = rect(thyajyamSegment);
-    const thyajyamNoteRect = rect(thyajyamNote);
     return {
       declaredYogaCount:Number(wrapper?.dataset.yogaCount ?? -1),
       actualYogaCardCount:actualYogaCards.length,
@@ -223,7 +221,7 @@ try {
       thyajyamSegmentsGap:parseFloat(style(thyajyamSegments)?.rowGap || '0'),
       thyajyamSegmentsMarginTop:parseFloat(style(thyajyamSegments)?.marginTop || '0'),
       thyajyamTitleToPeriodGap:thyajyamTitleRect&&thyajyamPeriodRect?thyajyamPeriodRect.top-thyajyamTitleRect.bottom:null,
-      thyajyamPeriodToNoteGap:thyajyamPeriodRect&&thyajyamNoteRect?thyajyamNoteRect.top-thyajyamPeriodRect.bottom:null,
+      thyajyamHasVerboseNote:thyajyamCard ? thyajyamCard.querySelectorAll(':scope > small').length > 1 : true,
       threeYogaLayout:probe(3),
       oneYogaLayout:probe(1)
     };
@@ -271,7 +269,7 @@ try {
   assert.ok(yogaFlow.thyajyamSegmentsGap <= 2, 'Thyajyam interval rows must remain close together.');
   assert.ok(yogaFlow.thyajyamSegmentsMarginTop <= 2, 'Thyajyam heading must sit close to its period details.');
   assert.ok(yogaFlow.thyajyamTitleToPeriodGap <= 8, 'Thyajyam title and first result must not have excess space.');
-  assert.ok(yogaFlow.thyajyamPeriodToNoteGap <= 10, 'Thyajyam result and explanatory note must remain close together.');
+  assert.equal(yogaFlow.thyajyamHasVerboseNote, false, 'Thyajyam must not reserve space for a redundant explanatory note.');
   const dailyDetailsOrder = await page.$eval('#calDateDetails', root =>
     [...root.children].map(child => child.id).filter(id =>
       ['calChandrashtamaSection', 'calReadings', 'calEvents', 'calDaily'].includes(id)));
@@ -474,12 +472,10 @@ try {
     referenceFillColor: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).webkitTextFillColor
   }));
   assert.equal(futureDateStatus.result, 'present', 'A future date in Chandrashtama must show Yes.');
-  assert.equal(futureDateStatus.fontSize, futureDateStatus.referenceFontSize,
-    'The red Yes status must keep the same size as the normal detail-line typography.');
-  assert.equal(futureDateStatus.fontWeight, futureDateStatus.referenceFontWeight,
-    'The red Yes status must change color only, not typography weight.');
-  assert.equal(futureDateStatus.color, 'rgb(192, 0, 0)', 'Future Chandrashtama Yes must be red.');
-  assert.equal(futureDateStatus.fillColor, 'rgb(192, 0, 0)', 'Future Chandrashtama Yes must also render red in WebKit.');
+  assert.equal(futureDateStatus.fontSize, '16px', 'Chandrashtama Yes must be the prominent result tier.');
+  assert.equal(futureDateStatus.fontWeight, '800', 'Chandrashtama Yes must use the prominent result weight.');
+  assert.equal(futureDateStatus.color, 'rgb(180, 35, 24)', 'Future Chandrashtama Yes must use the green-theme red accent.');
+  assert.equal(futureDateStatus.fillColor, 'rgb(180, 35, 24)', 'Future Chandrashtama Yes must also render with the same WebKit color.');
   assert.equal(await page.$eval('#calChandrashtamaPeriods', root => Boolean(root.querySelector('.cal-chandra-upcoming-heading'))), false,
     'Do not show the next-Chandrashtama heading when a future selected date is already within Chandrashtama.');
 
@@ -511,17 +507,11 @@ try {
     referenceFontWeight: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).fontWeight,
     referenceColor: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).color
   }));
-  const expectedUpcomingHeading = upcomingHeading.language === 'ta'
-    ? 'உங்கள் '+upcomingHeading.janmaRasi+' ராசிக்கான அடுத்த சந்திராஷ்டம நாள் :'
-    : 'Next Chandrashtama for your '+upcomingHeading.janmaRasi+' Rasi:';
-  assert.equal(upcomingHeading.text, expectedUpcomingHeading,
-    'The upcoming-only heading must include the currently selected Janma Rasi name.');
-  assert.equal(upcomingHeading.fontSize, upcomingHeading.referenceFontSize,
-    'The upcoming heading must use the same typography size as the Janma Rasi detail line.');
-  assert.equal(upcomingHeading.fontWeight, upcomingHeading.referenceFontWeight,
-    'The upcoming heading must follow the normal typography hierarchy of the Rasi detail lines.');
-  assert.equal(upcomingHeading.color, upcomingHeading.referenceColor,
-    'The upcoming heading must keep the ordinary text color of the Rasi detail lines.');
+  const expectedUpcomingHeading = upcomingHeading.language === 'ta' ? 'அடுத்த சந்திராஷ்டமம்' : 'Next Chandrashtama';
+  assert.equal(upcomingHeading.text, expectedUpcomingHeading, 'The upcoming heading must use concise wording without repeating the selected Rasi.');
+  assert.equal(upcomingHeading.fontSize, '13px', 'The upcoming heading must use the supporting-label size.');
+  assert.equal(upcomingHeading.fontWeight, '750', 'The upcoming heading must be emphasized above ordinary supporting text.');
+  assert.equal(upcomingHeading.color, 'rgb(44, 112, 77)', 'The upcoming heading must use the green theme accent.');
   const rasiLabel = await page.$eval('#calChandrashtamaSection .cal-chandrashtama > p:nth-of-type(2)', el => el.textContent.trim());
   assert.match(rasiLabel, /சந்திராஷ்டம ராசி|Chandrashtama Rasi/);
   assert.doesNotMatch(rasiLabel, /எட்டாம் ராசி|Eighth Rasi/);
@@ -546,14 +536,10 @@ try {
     referenceFillColor: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).webkitTextFillColor
   }));
   assert.equal(noPeriodStatus.result, 'absent', 'An upcoming period must not change the selected-date Chandrashtama status.');
-  assert.equal(noPeriodStatus.fontSize, noPeriodStatus.referenceFontSize,
-    'Chandrashtama No must use the normal detail-line font size.');
-  assert.equal(noPeriodStatus.fontWeight, noPeriodStatus.referenceFontWeight,
-    'Chandrashtama No must not be bold or heavier than the general detail-line typography.');
-  assert.equal(noPeriodStatus.color, noPeriodStatus.referenceColor,
-    'Chandrashtama No must inherit the ordinary text color rather than forcing bright black.');
-  assert.equal(noPeriodStatus.fillColor, noPeriodStatus.referenceFillColor,
-    'The No status WebKit text fill must follow the ordinary detail-line color.');
+  assert.equal(noPeriodStatus.fontSize, '16px', 'Chandrashtama No must occupy the same prominent result tier as Yes.');
+  assert.equal(noPeriodStatus.fontWeight, '800', 'Chandrashtama No must use the prominent result weight.');
+  assert.equal(noPeriodStatus.color, 'rgb(40, 115, 77)', 'Chandrashtama No must use the affirmative green status color.');
+  assert.equal(noPeriodStatus.fillColor, 'rgb(40, 115, 77)', 'Chandrashtama No WebKit text fill must match its green status color.');
 
   // Return to the historical transit date for the exact Pada projection checks.
   await page.$eval('#calDate', (el, date) => {
@@ -913,16 +899,16 @@ try {
   assert.equal(dailyTypography.primaryResultWeights.length, 7, 'Sun Sign through Karana must all be present in the main Panchang results.');
   assert.ok(dailyTypography.primaryResultWeights.every(weight => weight === '700'), 'Sun Sign through Karana results must be bold.');
   assert.equal(dailyTypography.yogaLabel, 'நாம யோகம்', 'The Tamil Calendar yoga label must display the complete wording நாம யோகம்.');
-  assert.equal(dailyTypography.yogaLabelColor, 'rgb(0, 0, 0)', 'Namah Yoga must be black.');
+  assert.equal(dailyTypography.yogaLabelColor, 'rgb(66, 105, 87)', 'Namah Yoga must use the green theme label color.');
   assert.equal(dailyTypography.yogaLabelWeight, '700', 'Namah Yoga must be bold.');
   assert.equal(dailyTypography.yogaLabelFontSize, dailyTypography.varaLabelFontSize, 'Namah Yoga must use the same font size as the Vara label.');
   assert.equal(dailyTypography.yogaLabelFontSize, dailyTypography.tithiLabelFontSize, 'Namah Yoga must use the same font size as the Tithi label.');
-  assert.equal(dailyTypography.eventDateColor, 'rgb(0, 0, 0)', 'Panchang event dates must be black.');
-  assert.equal(dailyTypography.eventTimeColor, 'rgb(0, 0, 0)', 'Panchang event times must be black.');
-  assert.equal(dailyTypography.connectorColor, 'rgb(0, 0, 0)', 'The “முதல்” connector must be black.');
+  assert.equal(dailyTypography.eventDateColor, 'rgb(23, 79, 71)', 'Panchang event dates must use the standard green text color.');
+  assert.equal(dailyTypography.eventTimeColor, 'rgb(23, 79, 71)', 'Panchang event times must use the standard green text color.');
+  assert.equal(dailyTypography.connectorColor, 'rgb(112, 132, 119)', 'The “முதல்” connector must remain visually secondary.');
   assert.equal(dailyTypography.connectorWeight, '400', 'The “முதல்” connector must use normal weight.');
   assert.equal(dailyTypography.redTimeColors.length, 2, 'Rahu Kalam and Yamagandam must both be present.');
-  assert.ok(dailyTypography.redTimeColors.every(color => color === 'rgb(255, 0, 0)'), 'Rahu Kalam and Yamagandam must be bright red.');
+  assert.ok(dailyTypography.redTimeColors.every(color => color === 'rgb(180, 35, 24)'), 'Rahu Kalam and Yamagandam must use the restrained red accent.');
   assert.equal(await page.$$eval('#calDaily .hora-time.smv-calendar-neutral-time', nodes => nodes.length), 24, 'All 24 day/night Hora time cells must carry the Calendar typography marker.');
   assert.ok(dailyTypography.normalHoraCount >= 12, 'At least twelve ordinary Hora cells must remain in the normal black presentation while preserving weekday/current special colors.');
   assert.equal(dailyTypography.normalHoraColor, 'rgb(0, 0, 0)', 'Normal Hora time values must be black.');
