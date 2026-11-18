@@ -50,6 +50,48 @@ function clockWithSeconds(seconds){
  if(value===86400)return '24:00:00';
  return String(Math.floor(value/3600)).padStart(2,'0')+':'+String(Math.floor(value%3600/60)).padStart(2,'0')+':'+String(value%60).padStart(2,'0');
 }
+
+function pushkaraTimezoneSegments(date,startSeconds,endSeconds,timezone,defaultOffset){
+ if(!timezone)return [{start:startSeconds,end:endSeconds+1,offset:Number(defaultOffset)}];
+ const offsetAt=seconds=>{
+  const wall=localWallParts(date,seconds);
+  const value=Number(offsetMinutesAt(timezone,wall.date,wall.time.slice(0,5)));
+  if(!Number.isFinite(value)||value < -720||value > 840)throw new Error('Timezone offset is invalid for '+timezone+' at '+wall.date+' '+wall.time);
+  return value;
+ };
+ const segments=[];
+ const checkpointSeconds=15*60;
+ let segmentStart=startSeconds;
+ let previousCheckpoint=startSeconds;
+ let currentOffset=offsetAt(startSeconds);
+ for(let checkpoint=startSeconds+checkpointSeconds;checkpoint<=endSeconds;checkpoint+=checkpointSeconds){
+  const checkpointOffset=offsetAt(checkpoint);
+  if(checkpointOffset!==currentOffset){
+   // Resolve the minute at which the local civil-time offset changes.
+   // Checkpoint sampling avoids constructing Intl formatters per 30-second Lagna sample.
+   let lo=previousCheckpoint,hi=checkpoint;
+   while(hi-lo>60){
+    let mid=Math.floor(((lo+hi)/2)/60)*60;
+    if(mid<=lo)mid=lo+60;
+    if(mid>=hi)break;
+    if(offsetAt(mid)===currentOffset)lo=mid;else hi=mid;
+   }
+   const boundary=hi;
+   segments.push({start:segmentStart,end:boundary,offset:currentOffset});
+   segmentStart=boundary;
+   currentOffset=offsetAt(boundary);
+  }
+  previousCheckpoint=checkpoint;
+ }
+ segments.push({start:segmentStart,end:endSeconds+1,offset:currentOffset});
+ return segments;
+}
+function pushkaraOffsetAt(segments,seconds){
+ for(let i=segments.length-1;i>=0;i--){
+  if(seconds>=segments[i].start)return segments[i].offset;
+ }
+ throw new Error('Local timezone segment could not be resolved for Pushkara calculation.');
+}
 async function calculateDocument50PushkaraWindows(input){
  const date=String(input?.date||'');
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))throw new Error('Pushkara calculation needs a valid local date.');
@@ -59,6 +101,8 @@ async function calculateDocument50PushkaraWindows(input){
  if(!Number.isFinite(lat)||lat < -89||lat > 89||!Number.isFinite(lon)||lon < -180||lon > 180)throw new Error('Valid latitude and longitude are required for Pushkara calculation.');
  if(!Number.isFinite(defaultOffset)||defaultOffset < -720||defaultOffset > 840)throw new Error('A valid local UTC offset is required for Pushkara calculation.');
  const timezone=String(input.timezone||'').trim();
+ const startOfScan=3*3600,endOfScan=12*3600,step=30;
+ const timezoneSegments=pushkaraTimezoneSegments(date,startOfScan,endOfScan,timezone,defaultOffset);
  const swe=await getSwe();
  swe.setSiderealLahiri();
  const samples=new Map();
@@ -66,7 +110,7 @@ async function calculateDocument50PushkaraWindows(input){
   const s=Math.max(0,Math.min(86400,Math.round(seconds)));
   if(samples.has(s))return samples.get(s);
   const wall=localWallParts(date,s);
-  const offset=timezone?offsetMinutesAt(timezone,wall.date,wall.time.slice(0,5)):defaultOffset;
+  const offset=pushkaraOffsetAt(timezoneSegments,s);
   if(!Number.isFinite(Number(offset))||Number(offset)<-720||Number(offset)>840)throw new Error('Timezone offset is invalid for '+wall.date+' '+wall.time);
   const utcMs=Date.parse(wall.date+'T'+wall.time+'Z')-Number(offset)*60000;
   const utc=new Date(utcMs);
@@ -92,7 +136,6 @@ async function calculateDocument50PushkaraWindows(input){
  };
  // Document 50's table is explicitly a morning Pushkara-Lagna table.
  // Scan 03:00–12:00 local time and refine each crossing to one second.
- const startOfScan=3*3600,endOfScan=12*3600,step=30;
  let previousSecond=startOfScan;
  let previousInside=isPushkara(previousSecond);
  let openStart=previousInside?startOfScan:null;
