@@ -218,16 +218,13 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-panchang-detail-item>strong{display:block;width:100%;min-width:0;color:#174f47;font-size:13.5px;font-weight:700;line-height:1.45;text-align:left;word-break:normal;overflow-wrap:normal;hyphens:none}
 #smvDailyCalendar .cal-panchang-detail-item.is-primary>strong{color:#15564e;font-size:14px;font-weight:700}
 #smvDailyCalendar .cal-panchang-detail-item .cal-name-yoga-label{color:#426957;font-size:12px;font-weight:700}
-#smvDailyCalendar .cal-panchang-detail-item .cal-name-yoga-result{display:block;margin-top:3px;color:#36724f;font-size:12px;font-weight:700;line-height:1.4;text-align:left}
 #smvDailyCalendar .cal-panchang-detail-item .smv-calendar-neutral-date-time,#smvDailyCalendar .cal-panchang-detail-item .smv-calendar-neutral-time{color:inherit;font-weight:inherit}
 #smvDailyCalendar .cal-panchang-detail-item .smv-calendar-normal-connector{margin:0 3px;color:#708477;font-weight:400}
 #smvDailyCalendar .cal-panchang-detail-item .smv-calendar-bright-red-time{color:#b42318;font-weight:800}
 /* Calendar Panchang time periods: date/month above time, year omitted. */
-#smvDailyCalendar .cal-panchang-detail-item>strong .smv-calendar-event-range{display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%;font-size:inherit;line-height:1.35}
-#smvDailyCalendar .smv-calendar-event-boundary{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-width:0}
-#smvDailyCalendar .smv-calendar-event-date{display:block;font-size:12px;font-weight:650;line-height:1.35;color:#536f60}
-#smvDailyCalendar .smv-calendar-event-time{display:block;font-size:14px;font-weight:800;line-height:1.3;color:#174f47;white-space:nowrap}
-#smvDailyCalendar .smv-calendar-event-separator{display:block;color:#708477;font-size:11px;font-weight:600;line-height:1.2}
+#smvDailyCalendar .cal-panchang-detail-item>strong .smv-calendar-event-range{display:block;width:100%;font-size:11.5px;font-weight:750;line-height:1.35;white-space:nowrap;letter-spacing:-.15px;font-variant-numeric:tabular-nums}
+#smvDailyCalendar .cal-panchang-detail-item>strong .smv-calendar-range-separator{padding:0 2px;color:#708477;font-weight:400}
+@media(max-width:680px){#smvDailyCalendar .cal-panchang-detail-item>strong .smv-calendar-event-range{font-size:10.5px;letter-spacing:-.2px}}
 #smvDailyCalendar .cal-details-summary>article.cal-thyajyam-card{gap:2px;padding:8px 10px;border-top:2px solid #b65b50}
 #smvDailyCalendar .cal-thyajyam-card .cal-yoga-segments{display:grid;gap:2px;width:100%;margin:1px 0 0}
 #smvDailyCalendar .cal-thyajyam-card .cal-yoga-segment{grid-template-columns:minmax(0,1fr) auto;padding:5px 0;border-bottom:1px solid #f0e4e1}
@@ -322,9 +319,6 @@ html body.calendar-only>header.calendar-topbar{
 
 
 /* Name-yoga result and the Tamil calendar's four day-yoga classes. */
-#smvDailyCalendar .cal-name-yoga-result{display:inline-block;margin-top:4px;font-size:12px;line-height:1.45;font-weight:700}
-#smvDailyCalendar .cal-name-yoga-result.is-favourable{color:#247246}
-#smvDailyCalendar .cal-name-yoga-result.is-caution{color:#a12b27}
 
 /* 2026-11 Calendar visual corrections: balanced Date Details, selected-day border and equal year actions. */
 #smvDailyCalendar #calDateDetails #calReadings .cal-summary article{
