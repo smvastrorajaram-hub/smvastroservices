@@ -198,6 +198,7 @@ try {
   assert.equal(integratedPanchang.headingAfterHidden, true, 'Daily Panchang title must not show trailing decorative symbols.');
   assert.equal(integratedPanchang.headingHeaderBackground, 'rgba(0, 0, 0, 0)', 'Daily Panchang heading must have no red background.');
   assert.equal(integratedPanchang.headingTitleBackground, 'rgba(0, 0, 0, 0)', 'Daily Panchang title must remain transparent.');
+  assert.match(integratedPanchang.firstEventRangeText, /^\d{2}:\d{2}\(\d{2}\/\d{2}\)-\d{2}:\d{2}\(\d{2}\/\d{2}\)$/, 'Panchang time ranges must stay on one line with no spaces around the hyphen.');
   const centeredCalendarHeadings = await page.evaluate(() => {
     const inspect = selector => {
       const element=document.querySelector(selector);
@@ -1056,6 +1057,10 @@ try {
     const tithiLabel = labelFor(/^(?:Tithi|திதி)$/);
     const normalHora = [...document.querySelectorAll('#calDaily .hora-time.smv-calendar-neutral-time:not(.smv-hora-current-green):not(.smv-hora-bright-green):not(.smv-hora-current-red):not(.smv-hora-bright-red)')];
     const degree = document.querySelector('#calDaily .transit-position-table .transit-table-degree.smv-calendar-degree-normal');
+    const eventRange = grid?.querySelector('.smv-calendar-event-range');
+    const eventTime = eventRange?.querySelector('.smv-calendar-event-time');
+    const eventDate = eventRange?.querySelector('.smv-calendar-event-date');
+    const eventSeparator = eventRange?.querySelector('.smv-calendar-range-separator');
     const style = element => element ? getComputedStyle(element) : null;
     return {
       panchangItemCount: items.length,
@@ -1072,6 +1077,14 @@ try {
         namahYoga:panchangRangeFor(/^(?:Namah Yoga|நாம யோகம்)$/),
         karana:panchangRangeFor(/^(?:Karana|கரணம்)$/)
       },
+      panchangRangeWhiteSpace:style(eventRange)?.whiteSpace||'',
+      panchangRangeRectCount:eventRange?.getClientRects().length||0,
+      panchangRangeSeparator:eventSeparator?.textContent||'',
+      panchangRangeTimeColor:style(eventTime)?.color||'',
+      panchangRangeTimeWeight:style(eventTime)?.fontWeight||'',
+      panchangRangeDateColor:style(eventDate)?.color||'',
+      panchangRangeDateWeight:style(eventDate)?.fontWeight||'',
+      panchangRangeSeparatorWeight:style(eventSeparator)?.fontWeight||'',
       namahYogaValue,
       redTimeColors: redTimes.map(element => style(element)?.color || ''),
       normalHoraCount: normalHora.length,
@@ -1090,8 +1103,16 @@ try {
   assert.equal(dailyTypography.yogaLabelFontSize, dailyTypography.varaLabelFontSize, 'Namah Yoga must use the same font size as the Vara label.');
   assert.equal(dailyTypography.yogaLabelFontSize, dailyTypography.tithiLabelFontSize, 'Namah Yoga must use the same font size as the Tithi label.');
   for (const [kind, range] of Object.entries(dailyTypography.panchangRanges)) {
-    assert.match(range, /^\d{2}:\d{2} \(\d{2}\/\d{2}\) – \d{2}:\d{2} \(\d{2}\/\d{2}\)$/, kind+' must use HH:MM (DD/MM) – HH:MM (DD/MM) format.');
+    assert.match(range, /^\d{2}:\d{2}\(\d{2}\/\d{2}\)-\d{2}:\d{2}\(\d{2}\/\d{2}\)$/, kind+' must use HH:MM(DD/MM)-HH:MM(DD/MM) format without spaces.');
   }
+  assert.equal(dailyTypography.panchangRangeWhiteSpace, 'nowrap', 'Each Panchang time range must remain on one line.');
+  assert.equal(dailyTypography.panchangRangeRectCount, 1, 'Each Panchang time range must occupy a single line box.');
+  assert.equal(dailyTypography.panchangRangeSeparator, '-', 'The two time boundaries must be joined by a hyphen without spaces.');
+  assert.equal(dailyTypography.panchangRangeTimeColor, 'rgb(40, 115, 77)', 'Only the time values use the Calendar theme green.');
+  assert.equal(dailyTypography.panchangRangeTimeWeight, '800', 'Only the time values are bold.');
+  assert.equal(dailyTypography.panchangRangeDateColor, 'rgb(82, 100, 90)', 'The date text remains neutral rather than green.');
+  assert.equal(dailyTypography.panchangRangeDateWeight, '400', 'The date text is not bold.');
+  assert.equal(dailyTypography.panchangRangeSeparatorWeight, '400', 'The hyphen is not bold.');
   assert.doesNotMatch(dailyTypography.namahYogaValue, /impact|obstruction|தாக்கம்|இடையூறு|தடை/i, 'Namah Yoga must not display explanatory impact/obstruction wording.');
   assert.equal(dailyTypography.redTimeColors.length, 2, 'Rahu Kalam and Yamagandam must both be present.');
   assert.ok(dailyTypography.redTimeColors.every(color => color === 'rgb(180, 35, 24)'), 'Rahu Kalam and Yamagandam must use the restrained red accent.');
