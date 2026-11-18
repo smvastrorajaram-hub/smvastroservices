@@ -49,6 +49,7 @@ const PANCHAKA_NAMES = Object.freeze({
 const PANCHAKA_ACTIVITIES = Object.freeze([
   Object.freeze({ key: 'marriage', labelTa: 'திருமணம் / உபநயனம்', labelEn: 'Marriage / Upanayanam', blockedBy: ['mrityu', 'roga'] }),
   Object.freeze({ key: 'house', labelTa: 'வீடு கட்டுதல்', labelEn: 'House construction', blockedBy: ['agni', 'raja'] }),
+  Object.freeze({ key: 'griha-pravesh', labelTa: 'புதுமனை புகுதல்', labelEn: 'Griha Pravesh', blockedBy: ['agni', 'raja'] }),
   Object.freeze({ key: 'business', labelTa: 'தொழில் தொடக்கம்', labelEn: 'Business start', blockedBy: ['raja'] }),
   Object.freeze({ key: 'travel', labelTa: 'பயணம்', labelEn: 'Travel', blockedBy: ['chora'] })
 ]);
