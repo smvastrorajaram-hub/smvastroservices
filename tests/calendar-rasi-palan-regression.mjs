@@ -316,6 +316,7 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   assert.match(calendarThemeCssSource, /cal-chandrashtama-result\{margin:0;color:#28734d;font-size:16px;font-weight:800;line-height:1\.35\}/);
   assert.match(calendarThemeCssSource, /cal-chandrashtama-result\.is-present\{color:#b42318\}/);
   assert.match(calendarThemeCssSource, /cal-chandrashtama-result\.is-absent\{color:#28734d\}/);
+  assert.ok(dailyCalendarSource.includes('id="calChandrashtamaSection" class="cal-chandrashtama-section smv-css-island"'), "Chandrashtama is isolated from the shared legacy heading palette.");
   assert.ok(dailyCalendarSource.includes("L('Chandrashtama Rasi','சந்திராஷ்டம ராசி')"));
   assert.doesNotMatch(dailyCalendarSource, /Eighth Rasi|எட்டாம் ராசி/);
   assert.match(dailyCalendarSource, /L\('Moon Nakshatra \/ Pada','சந்திர நட்சத்திரம் \/ பாதம்'\)/);
