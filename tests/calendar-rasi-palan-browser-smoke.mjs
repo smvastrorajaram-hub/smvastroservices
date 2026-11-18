@@ -106,6 +106,7 @@ try {
     return status && (/Unable to calculate|கணக்கிட முடியவில்லை/.test(status) || (!/Calculating Panchang|பஞ்சாங்கம், ஹோரை/.test(status) && !/Loading monthly calendar|மாத நாட்காட்டி தயாராகிறது/.test(document.querySelector('#calMonth')?.textContent||'')));
   }, { timeout: 90000 });
   const calendarCalculationStatus = await page.$eval('#calStatus', el => el.textContent || '');
+  const defaultCalendarDate = await page.$eval('#calDate', el => el.value);
   const defaultSpecialSection = await page.$eval('#calMuhurtaLagna', section => ({
     hidden: section.hidden,
     text: section.textContent || ''
@@ -145,6 +146,28 @@ try {
     'Each interval must show only its final quality/Panchaka result.');
   assert.doesNotMatch(specialMuhurthaSmoke.text, /tithi|weekday|nakshatra|lagna|remainder|sum|திதி|வாரம்|நட்சத்திரம்|லக்னம்|கூட்டுத்தொகை|மீதி/i,
     'The visible result must not expose any Panchaka operands or calculation mechanics.');
+
+  // Preserve desktop and phone evidence for human review before switching
+  // back to the originally selected local date used by the Chandrashtama test.
+  await page.screenshot({
+    path: new URL('calendar-special-muhurtha-desktop.png', outputDir).pathname,
+    fullPage: true
+  });
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+  await page.screenshot({
+    path: new URL('calendar-special-muhurtha-mobile.png', outputDir).pathname,
+    fullPage: true
+  });
+  await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
+
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, defaultCalendarDate);
+  await page.waitForFunction(date =>
+    document.querySelector('#calDate')?.value === date &&
+    document.querySelector('#calChandrashtamaResult')?.dataset.resolved === 'true',
+    { timeout: 180000 }, defaultCalendarDate);
   await page.waitForFunction(() => document.querySelector('#calChandrashtamaResult')?.dataset.resolved === 'true', { timeout: 180000 });
   const chandrashtamaSmoke = await page.$eval('#calChandrashtamaSection', section => {
     const root = section.querySelector('#calChandrashtamaPeriods');
