@@ -357,13 +357,14 @@ if(host){
    : document50Date.listed
     ? L('Listed in Document 50 '+document50Date.year+' table ('+document50Date.transcribedCount+' transcribed dates'+(document50Date.unresolvedDateRows?' + '+document50Date.unresolvedDateRows+' unresolved date row':'')+')','ஆவணம் 50 '+document50Date.year+' அட்டவணையில் உள்ளது ('+document50Date.transcribedCount+' படித்த தேதிகள்'+(document50Date.unresolvedDateRows?' + '+document50Date.unresolvedDateRows+' தெளிவில்லாத தேதி வரி':'')+')')
     : L('Not listed in the scanned Document 50 table; not a full time-specific rejection','ஆவணம் 50 அட்டவணையில் இந்தத் தேதி இல்லை; இது முழுமையான நேரத் தடை முடிவு அல்ல');
+  const panchakaRemainderLabel=panchaka.remainder===0?'0 (9)':String(panchaka.remainder);
   const panchakaText=!panchaka.available
    ? L('Panchaka unavailable: '+panchaka.reason,'பஞ்சகம் கணக்கிட இயலவில்லை: '+panchaka.reason)
    : panchaka.eligible===true
-    ? L('Uttamam · remainder '+panchaka.remainder,'உத்தமம் · மீதி '+panchaka.remainder)
+    ? L(panchaka.category+' · remainder '+panchakaRemainderLabel,panchaka.categoryTa+' · மீதி '+panchakaRemainderLabel)
     : panchaka.eligible===false
-     ? L(panchaka.category+' · remainder '+panchaka.remainder,panchaka.categoryTa+' · மீதி '+panchaka.remainder)
-     : L('Remainder '+panchaka.remainder+' is not classified in Document 50','மீதி '+panchaka.remainder+' ஆவணம் 50-ல் வகைப்படுத்தப்படவில்லை');
+     ? L(panchaka.category+' · remainder '+panchakaRemainderLabel,panchaka.categoryTa+' · மீதி '+panchakaRemainderLabel)
+     : L('Remainder '+panchakaRemainderLabel+' is not classified in Document 50','மீதி '+panchakaRemainderLabel+' வகைப்படுத்தப்படவில்லை');
   const panchakaMeta=panchaka.available
    ? L('Week '+panchaka.weekdayCount+' + Tithi '+panchaka.tithiCount+' + Star '+panchaka.nakshatraCount+' + Lagna '+panchaka.lagnaCount+' + Dhruva '+panchaka.dhruva+' = '+panchaka.total,
        'வாரம் '+panchaka.weekdayCount+' + திதி '+panchaka.tithiCount+' + நட்சத்திரம் '+panchaka.nakshatraCount+' + லக்னம் '+panchaka.lagnaCount+' + துருவம் '+panchaka.dhruva+' = '+panchaka.total)
