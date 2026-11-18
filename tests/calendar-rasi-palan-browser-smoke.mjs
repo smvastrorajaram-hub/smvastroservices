@@ -201,6 +201,50 @@ try {
   assert.equal(integratedPanchang.headingAfterHidden, true, 'Daily Panchang title must not show trailing decorative symbols.');
   assert.equal(integratedPanchang.headingHeaderBackground, 'rgba(0, 0, 0, 0)', 'Daily Panchang heading must have no red background.');
   assert.equal(integratedPanchang.headingTitleBackground, 'rgba(0, 0, 0, 0)', 'Daily Panchang title must remain transparent.');
+  const centeredCalendarHeadings = await page.evaluate(() => {
+    const inspect = selector => {
+      const element=document.querySelector(selector);
+      if(!element)return null;
+      const style=getComputedStyle(element);
+      const after=getComputedStyle(element,'::after');
+      return {text:element.textContent.trim(),alignment:style.textAlign,display:style.display,afterContent:after.content,afterDisplay:after.display};
+    };
+    const dailyHora=inspect('#calDaily .hora-card>h3');
+    const transitChart=inspect('#calDaily .transit-card>h3');
+    const transitPositions=inspect('#calDaily .transit-table-card>h3');
+    const panchangHeader=document.querySelector('.cal-date-details-head');
+    const headerAfter=panchangHeader?getComputedStyle(panchangHeader,'::after'):null;
+    const rasiHeading=document.querySelector('#calRasiPalan .rp-heading h2');
+    const lagnaCell=document.querySelector('#calDaily .transit-position-table tbody tr:first-child td:first-child');
+    return {
+      dailyHora,transitChart,transitPositions,
+      panchangHeaderAfter:headerAfter?{content:headerAfter.content,display:headerAfter.display}:null,
+      rasiHeading:rasiHeading?{text:rasiHeading.textContent.trim(),color:getComputedStyle(rasiHeading).color,fill:getComputedStyle(rasiHeading).webkitTextFillColor}:null,
+      lagnaLabel:lagnaCell?.textContent.trim()||''
+    };
+  });
+  for(const [name,heading] of Object.entries({
+    'Daily Hora':centeredCalendarHeadings.dailyHora,
+    'Transit Chart':centeredCalendarHeadings.transitChart,
+    'Transit Planetary Positions':centeredCalendarHeadings.transitPositions
+  })){
+    assert.ok(heading, name+' heading must render.');
+    assert.equal(heading.alignment,'center',name+' heading must be centered.');
+    assert.equal(heading.display,'block',name+' heading must use a full-width block.');
+    assert.ok(heading.afterContent==='none'||heading.afterDisplay==='none',name+' heading must not retain the trailing flex ornament.');
+  }
+  assert.ok(centeredCalendarHeadings.panchangHeaderAfter &&
+    (centeredCalendarHeadings.panchangHeaderAfter.content==='none'||centeredCalendarHeadings.panchangHeaderAfter.display==='none'),
+    'Daily Panchang header must not display the inherited right-side Om-like ornament.');
+  assert.equal(centeredCalendarHeadings.rasiHeading?.text,'ராசி பலன்கள் & கிரக கோச்சார பலன்கள்',
+    'Rasi and planetary transit heading must use the corrected Tamil wording.');
+  assert.equal(centeredCalendarHeadings.rasiHeading?.color,'rgb(21, 86, 78)',
+    'Rasi and planetary transit heading must use the green Calendar theme.');
+  assert.equal(centeredCalendarHeadings.rasiHeading?.fill,'rgb(21, 86, 78)',
+    'Rasi and planetary transit heading WebKit text fill must also use the green theme.');
+  assert.equal(centeredCalendarHeadings.lagnaLabel,'லக்',
+    'Only the transit positions table Ascendant row must display the shortened Tamil label.');
+
   assert.equal(integratedPanchang.dateMonthAboveTime, true, 'Date and month must be shown above time.');
   assert.equal(integratedPanchang.dateMonthTimeHasNoYear, true, 'Panchang event dates must omit the Gregorian year. Rendered date: '+integratedPanchang.dateMonthText);
   assert.ok(integratedPanchang.dateMonthText.length>0, 'Date/month must remain visible.');
