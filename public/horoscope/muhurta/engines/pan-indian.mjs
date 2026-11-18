@@ -119,14 +119,35 @@ function evaluateRule(rule,facts){
   return {id:rule.id,kind:rule.kind,state,reasonTa:rule.reasonTa,reasonEn:rule.reasonEn,sourceId:rule.sourceId,reference:rule.reference,reviewStatus:rule.reviewStatus,exceptions:rule.exceptions};
 }
 
-export function evaluatePanIndianMuhurta(activityId,facts){
+export function evaluatePanIndianMuhurta(activityId,facts,options={}){
   if(!ACTIVITY_BY_ID.has(activityId)){
     return {tradition:'panIndian',activityId,status:'NOT_VERIFIED',complete:false,reason:'Unknown Pan-Indian activity.',rules:[]};
   }
   if(!facts||facts.schema!=='smv.muhurta.astronomy-facts.v1'||facts.tithiNumber==null||facts.weekdayIndex==null){
     return {tradition:'panIndian',activityId,status:'NOT_VERIFIED',complete:false,reason:'Required astronomical facts are unavailable.',rules:[]};
   }
-  const evaluated=RULES.filter(rule=>applies(rule,activityId)).map(rule=>evaluateRule(rule,facts));
+  const applicableRules=RULES.filter(rule=>applies(rule,activityId));
+  const evaluated=applicableRules.map(rule=>evaluateRule(rule,facts));
+  const segments=Array.isArray(options.nakshatraSegments)?options.nakshatraSegments:[];
+  const restrictedWindows=[];
+  for(const rule of applicableRules.filter(item=>item.enabled&&item.kind==='PROHIBITED')){
+    for(const segment of segments){
+      const star=Number(segment?.nakshatraNumber);
+      if(!Number.isInteger(star)||!rule.condition({...facts,nakshatraNumber:star}))continue;
+      const start=String(segment.start??'');
+      const end=String(segment.end??'');
+      if(!start||!end)continue;
+      restrictedWindows.push({
+        ruleId:rule.id,
+        start,end,
+        startTimestamp:Number.isFinite(Number(segment.startTimestamp))?Number(segment.startTimestamp):null,
+        endTimestamp:Number.isFinite(Number(segment.endTimestamp))?Number(segment.endTimestamp):null,
+        nakshatraNumber:star,
+        sourceId:rule.sourceId,
+        reference:rule.reference
+      });
+    }
+  }
   const failures=evaluated.filter(rule=>rule.state==='failed'||rule.state==='prohibited');
   const pending=evaluated.some(rule=>['pending','unknown','conditional'].includes(rule.state));
   return {
