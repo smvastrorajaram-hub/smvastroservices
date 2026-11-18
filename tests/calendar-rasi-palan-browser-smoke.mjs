@@ -234,7 +234,18 @@ try {
   const simhaStarOptions = await page.$$eval('#calStar option', options => options.map(option => option.value));
   assert.deepEqual(simhaStarOptions,['9','10','11']);
   await page.select('#calStar','10');
-  const pooramRows = await page.$$eval('#calChandrashtamaPeriods .cal-chandra-window:first-child .cal-chandra-pada-row', rows =>
+  // Star selection starts an asynchronous Swiss Ephemeris-backed render. Wait
+  // for Pooram's actual mapped Pada rows instead of reading the previous card.
+  await page.waitForFunction(() => {
+    if (document.querySelector('#calStar')?.value !== '10') return false;
+    const rows = [...document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-window:first-child .cal-chandra-pada-row')];
+    return rows.length === 4 && rows.every((row, index) =>
+      Number(row.dataset.birthPada) === index + 1 &&
+      Number(row.dataset.targetStar) === (index === 0 ? 25 : 26) &&
+      Number(row.dataset.targetPada) === (index === 0 ? 4 : index)
+    );
+  }, { timeout: 30000 });
+  const pooramRows = await page.$eval('#calChandrashtamaPeriods .cal-chandra-window:first-child .cal-chandra-pada-row', rows =>
     rows.map(row => [Number(row.dataset.birthPada),Number(row.dataset.targetStar),Number(row.dataset.targetPada)]));
   assert.deepEqual(pooramRows, [[1,25,4],[2,26,1],[3,26,2],[4,26,3]]);
   await page.select('#calStarPada','3');
