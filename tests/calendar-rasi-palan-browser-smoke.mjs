@@ -350,6 +350,18 @@ try {
   await page.$eval('#calDate', (el, date) => {
     el.value = date;
     el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, '2026-11-09');
+  await page.waitForFunction(() =>
+    document.querySelector('#calDate')?.value === '2026-11-09' &&
+    Boolean(document.querySelector('#calEvents .cal-government-holiday')),
+    { timeout: 120000 });
+  const additionalLocalHoliday = await page.$eval('#calEvents .cal-government-holiday', el => el.textContent.trim());
+  assert.ok(/Additional local holiday after Deepavali.*Government local holiday/i.test(additionalLocalHoliday) ||
+    /தீபாவளிக்கு அடுத்த நாள்.*அரசு உள்ளூர் விடுமுறை/.test(additionalLocalHoliday),
+    'The 9 November 2026 all-state local holiday under G.O.(1D) No.547 must be shown distinctly.');
+  await page.$eval('#calDate', (el, date) => {
+    el.value = date;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
   }, holidayOriginalDate);
   await page.waitForFunction(date =>
     document.querySelector('#calDate')?.value===date &&
