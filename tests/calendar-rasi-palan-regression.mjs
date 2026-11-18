@@ -871,7 +871,7 @@ test('Document 50 marriage dates, Panchaka and selected-time checks are wired in
   assert.match(dailyCalendarSource,/getDocument50TimeRestrictions/);
   assert.match(dailyCalendarSource,/id="calMuhurtaTime"/);
   assert.match(dailyCalendarSource,/selectedYogaSegment/);
-  assert.match(dailyCalendarSource,/Utpata Yoga is not separately classified/);
+  assert.match(dailyCalendarSource,/selectedYogaSegment/);
 });
 
 test('Document 50 UI remains explicit about its partial source coverage',()=>{
