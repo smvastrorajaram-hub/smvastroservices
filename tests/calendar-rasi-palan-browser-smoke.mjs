@@ -353,7 +353,8 @@ try {
   }, '2026-11-09');
   await page.waitForFunction(() =>
     document.querySelector('#calDate')?.value === '2026-11-09' &&
-    Boolean(document.querySelector('#calEvents .cal-government-holiday')),
+    [...document.querySelectorAll('#calEvents .cal-government-holiday')].some(el=>
+      /Additional local holiday after Deepavali|தீபாவளிக்கு அடுத்த நாள்/.test(el.textContent||'')),
     { timeout: 120000 });
   const additionalLocalHoliday = await page.$eval('#calEvents .cal-government-holiday', el => el.textContent.trim());
   assert.ok(/Additional local holiday after Deepavali.*Government local holiday/i.test(additionalLocalHoliday) ||
