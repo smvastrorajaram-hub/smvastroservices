@@ -171,3 +171,38 @@
 .smv-android-apk-card p{margin:0}
 .smv-android-apk-card [data-apk-download]{align-self:flex-start;text-decoration:none}
 @media(max-width:680px){.cal-download-app-link{margin-top:14px;max-width:none;width:100%;min-width:0;justify-content:center}.smv-android-apk-card{margin:16px 8px;padding:14px}}
+
+
+#calDocument50PushkaraWindows .cal-pushkara-window-list{
+ list-style:none;
+ display:grid;
+ grid-template-columns:minmax(0,1fr);
+ gap:7px;
+ margin:10px 0;
+ padding:0;
+}
+#calDocument50PushkaraWindows .cal-pushkara-window-row{
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ flex-wrap:wrap;
+ gap:6px 14px;
+ padding:8px 10px;
+ border:1px solid var(--cal-border,#d8dfdc);
+ border-radius:9px;
+ background:var(--cal-surface,#fff);
+}
+#calDocument50PushkaraWindows .cal-pushkara-window-row span{
+ font-weight:600;
+}
+#calDocument50PushkaraWindows .cal-pushkara-window-row strong{
+ white-space:nowrap;
+ font-variant-numeric:tabular-nums;
+}
+@media(max-width:420px){
+ #calDocument50PushkaraWindows .cal-pushkara-window-row{
+  align-items:flex-start;
+  flex-direction:column;
+  gap:4px;
+ }
+}
