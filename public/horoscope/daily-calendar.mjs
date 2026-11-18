@@ -266,7 +266,7 @@ if(host){
   const target=$('#calChandrashtamaPeriods');
   if(!target)return;
   const request=++chandrashtamaRequest;
-  const janmaRasiIndex=Number(cfg.rasi),starIndex=Number(cfg.star),birthPada=Number(cfg.starPada||1);
+  const janmaRasiIndex=Number(cfg.rasi),starIndex=Number(cfg.star),birthPada=Number(cfg.starPada??0);
   target.innerHTML='<p class="cal-note">'+L('Calculating exact Moon sign / Nakshatra Pada boundaries…','சந்திர ராசி / நட்சத்திரப் பாத எல்லைகள் துல்லியமாகக் கணக்கிடப்படுகின்றன…')+'</p>';
   workerCall('chandrashtama-windows',{
    ...input(selected,false),
