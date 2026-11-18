@@ -138,12 +138,14 @@ test('Document 50 annual marriage date tables preserve their printed coverage an
   assert.equal(classifyDocument50MarriageMuhurtham({date:'2027-04-11'}).listed,true);
   assert.equal(classifyDocument50MarriageMuhurtham({date:'2027-04-18'}).listed,true);
   assert.equal(classifyDocument50MarriageMuhurtham({date:'2027-12-10'}).listed,true);
+  assert.equal(classifyDocument50MarriageMuhurtham({date:'2026-12-13'}).listed,true);
 });
 
 test('Document 50 date lookup does not guess outside the printed annual table ranges',()=>{
   assert.equal(classifyDocument50MarriageMuhurtham({date:'2026-04-19'}).available,false);
   assert.equal(classifyDocument50MarriageMuhurtham({date:'2027-04-15'}).available,false);
   assert.equal(classifyDocument50MarriageMuhurtham({date:'2027-12-11'}).available,false);
+  assert.equal(classifyDocument50MarriageMuhurtham({date:'2026-12-18'}).listed,false);
   assert.equal(classifyDocument50MarriageMuhurtham({date:'2027-02-29'}).available,false);
 });
 
