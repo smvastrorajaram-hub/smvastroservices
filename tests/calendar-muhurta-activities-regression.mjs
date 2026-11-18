@@ -132,7 +132,9 @@ test('invalid solar dates and unknown activities stay unavailable',()=>{
 
 test('Document 50 annual marriage date tables preserve their printed coverage and counts',()=>{
   assert.equal(DOCUMENT50_MARRIAGE_DATE_SUMMARIES.parabhava2026To2027.transcribedCount,57);
-  assert.equal(DOCUMENT50_MARRIAGE_DATE_SUMMARIES.parabhava2026To2027.unresolvedDateRows,1);
+  assert.equal(DOCUMENT50_MARRIAGE_DATE_SUMMARIES.parabhava2026To2027.unresolvedDateRows,0);
+  assert.equal(classifyDocument50MarriageMuhurtham({date:'2026-12-13'}).listed,true,
+    'The corrected Karthigai 27 / Sunday / Chaturthi / Thiruvonam row belongs to 13 December 2026.');
   assert.equal(DOCUMENT50_MARRIAGE_DATE_SUMMARIES.pilavanga2027To2028.transcribedCount,41);
   assert.equal(classifyDocument50MarriageMuhurtham({date:'2026-04-20'}).listed,true);
   assert.equal(classifyDocument50MarriageMuhurtham({date:'2026-04-22'}).listed,false);
