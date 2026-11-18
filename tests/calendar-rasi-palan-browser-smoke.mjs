@@ -115,6 +115,7 @@ try {
     statusText: status?.textContent?.trim() || '',
     result: status?.dataset.result || '',
     statusColor: status ? getComputedStyle(status).color : '',
+    statusFillColor: status ? getComputedStyle(status).webkitTextFillColor : '',
     headingAlignment: getComputedStyle(section.querySelector(':scope > h3')).textAlign,
     headingDisplay: getComputedStyle(section.querySelector(':scope > h3')).display,
     headingAfterDisplay: getComputedStyle(section.querySelector(':scope > h3'), '::after').display,
@@ -153,6 +154,8 @@ try {
       'No matching window must produce the direct Chandrashtama: No result.');
     assert.equal(chandrashtamaSmoke.statusColor, 'rgb(17, 17, 17)',
       'Chandrashtama: No must remain normal black text.');
+    assert.equal(chandrashtamaSmoke.statusFillColor, 'rgb(17, 17, 17)',
+      'Chandrashtama: No must not inherit the old green WebKit text fill.');
     assert.equal(chandrashtamaSmoke.body, '',
       'When no Chandrashtama applies, show no additional notification or empty-period message.');
   } else {
@@ -160,6 +163,8 @@ try {
       'A matching active window must produce the direct Chandrashtama: Yes result.');
     assert.equal(chandrashtamaSmoke.statusColor, 'rgb(192, 0, 0)',
       'Chandrashtama: Yes must be red.');
+    assert.equal(chandrashtamaSmoke.statusFillColor, 'rgb(192, 0, 0)',
+      'Chandrashtama: Yes must override the old green WebKit text fill.');
   }
   assert.ok(chandrashtamaSmoke.windows.every(window => window.rasi === 'Scorpio' && window.star === 'Ashwini'),
     'Only the selected Mesha Janma Rasi and its compatible Ashwini birth star should be displayed.');
@@ -187,10 +192,12 @@ try {
   }, { timeout: 120000 });
   const pastDateStatus = await page.$eval('#calChandrashtamaResult', el => ({
     text: el.textContent.trim(), result: el.dataset.result,
-    color: getComputedStyle(el).color
+    color: getComputedStyle(el).color,
+    fillColor: getComputedStyle(el).webkitTextFillColor
   }));
   assert.equal(pastDateStatus.result, 'present', 'A selected historical Chandrashtama date must show Yes.');
   assert.equal(pastDateStatus.color, 'rgb(192, 0, 0)', 'Historical Chandrashtama Yes must be red.');
+  assert.equal(pastDateStatus.fillColor, 'rgb(192, 0, 0)', 'Historical Chandrashtama Yes must also render red in WebKit.');
   const independentChandrashtamaCheck = await page.$eval('#calChandrashtamaPeriods', root => {
     const windows = [...root.querySelectorAll('.cal-chandra-window')];
     const item = windows.length === 1 && windows[0].classList.contains('is-selected-date') ? windows[0] : null;
@@ -262,10 +269,12 @@ try {
   assert.ok(futureDateWindow.startDate <= '2026-12-08' && futureDateWindow.endDate >= '2026-12-08' && futureDateWindow.selectedDateMatch,
     'A future selected day must show the single Chandrashtama interval that overlaps that day.');
   const futureDateStatus = await page.$eval('#calChandrashtamaResult', el => ({
-    result: el.dataset.result, color: getComputedStyle(el).color
+    result: el.dataset.result, color: getComputedStyle(el).color,
+    fillColor: getComputedStyle(el).webkitTextFillColor
   }));
   assert.equal(futureDateStatus.result, 'present', 'A future date in Chandrashtama must show Yes.');
   assert.equal(futureDateStatus.color, 'rgb(192, 0, 0)', 'Future Chandrashtama Yes must be red.');
+  assert.equal(futureDateStatus.fillColor, 'rgb(192, 0, 0)', 'Future Chandrashtama Yes must also render red in WebKit.');
 
   // A selected date outside a transit must not list a later upcoming transit from the 30-day scan.
   await page.$eval('#calDate', (el, date) => {
@@ -395,6 +404,26 @@ try {
       Number(row?.dataset.targetStar) === 15 &&
       Number(row?.dataset.targetPada) === 4;
   }, { timeout: 30000 });
+  await page.waitForFunction(() => {
+    const status = document.querySelector('#calChandrashtamaResult');
+    return status?.dataset.resolved === 'true' && status.dataset.result === 'present' &&
+      getComputedStyle(status).color === 'rgb(192, 0, 0)' &&
+      getComputedStyle(status).webkitTextFillColor === 'rgb(192, 0, 0)';
+  }, { timeout: 120000 });
+  const chandrashtamaCard = await page.$('#calChandrashtamaSection');
+  assert.ok(chandrashtamaCard, 'The Chandrashtama Rasi card must be rendered for the preview.');
+  await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
+  const desktopHeadingAlignment = await page.$eval('#calChandrashtamaSection > h3', el => ({
+    textAlign: getComputedStyle(el).textAlign,
+    display: getComputedStyle(el).display,
+    afterDisplay: getComputedStyle(el, '::after').display
+  }));
+  assert.deepEqual(desktopHeadingAlignment, { textAlign:'center', display:'block', afterDisplay:'none' },
+    'The main Chandrashtama heading must be visibly centered on desktop.');
+  await chandrashtamaCard.evaluate(el => el.scrollIntoView({ block: 'center' }));
+  await chandrashtamaCard.screenshot({
+    path: new URL('calendar-chandrashtama-exact-padas-desktop.png', outputDir).pathname
+  });
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
   const mobileHeadingAlignment = await page.$eval('#calChandrashtamaSection > h3', el => ({
     textAlign: getComputedStyle(el).textAlign,
@@ -402,9 +431,7 @@ try {
     afterDisplay: getComputedStyle(el, '::after').display
   }));
   assert.deepEqual(mobileHeadingAlignment, { textAlign:'center', display:'block', afterDisplay:'none' },
-    'The main Chandrashtama heading must be centered on mobile without the trailing flex rule.');
-  const chandrashtamaCard = await page.$('#calChandrashtamaSection');
-  assert.ok(chandrashtamaCard, 'The Chandrashtama Rasi card must be rendered for the mobile preview.');
+    'The main Chandrashtama heading must be visibly centered on mobile.');
   await chandrashtamaCard.evaluate(el => el.scrollIntoView({ block: 'center' }));
   await chandrashtamaCard.screenshot({
     path: new URL('calendar-chandrashtama-exact-padas-mobile.png', outputDir).pathname
