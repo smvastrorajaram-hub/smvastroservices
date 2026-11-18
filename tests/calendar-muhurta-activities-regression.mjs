@@ -11,7 +11,8 @@ import {
   classifyDocument50MarriageMuhurtham,
   getDocument50Panchaka,
   DOCUMENT50_LAGNA_DHRUVA,
-  DOCUMENT50_MARRIAGE_DATE_SUMMARIES
+  DOCUMENT50_MARRIAGE_DATE_SUMMARIES,
+  getDocument50TimeRestrictions
 } from '../public/horoscope/calendar-muhurta-activities.mjs';
 
 const solar=(index,day)=>({index,day});
@@ -165,7 +166,7 @@ test('Document 50 Panchaka uses its own five source-stated Dhruva values only',(
 test('Document 50 Panchaka identifies the printed dosha remainders',()=>{
   for(const remainder of [1,2,4,6,8]){
     // Aries total = weekday(1) + tithi(1) + nakshatra + lagna(1) + Dhruva(5).
-    const nakshatraNumber=remainder===1?2:remainder===2?2:remainder===4?4:remainder===6?6:8;
+    const nakshatraNumber=remainder===1?2:remainder===2?3:remainder===4?5:remainder===6?7:9;
     const result=getDocument50Panchaka({
       weekdayIndex:0,tithiNumber:1,nakshatraNumber,lagnaSignIndex:0
     });
@@ -202,4 +203,67 @@ test('Document 50 Panchaka rejects incomplete or invalid input',()=>{
   assert.equal(getDocument50Panchaka({weekdayIndex:7,tithiNumber:1,nakshatraNumber:1,lagnaSignIndex:0}).available,false);
   assert.equal(getDocument50Panchaka({weekdayIndex:0,tithiNumber:0,nakshatraNumber:1,lagnaSignIndex:0}).available,false);
   assert.equal(getDocument50Panchaka({weekdayIndex:0,tithiNumber:1,nakshatraNumber:28,lagnaSignIndex:0}).available,false);
+});
+
+
+test('Document 50 selected-time screening blocks forbidden Tithis and weekdays',()=>{
+  const tithi=getDocument50TimeRestrictions({
+    weekdayIndex:1,tithiNumber:4,time:'11:00',
+    rahuKalam:'16:30 - 18:00',yamagandam:'09:00 - 10:30',
+    kariDay:false,thaniyaDay:false
+  });
+  assert.equal(tithi.blocked,true);
+  assert.match(tithi.reasons.join(' '),/Tithi/);
+
+  const tuesday=getDocument50TimeRestrictions({
+    weekdayIndex:2,tithiNumber:3,time:'11:00',
+    rahuKalam:'16:30 - 18:00',yamagandam:'09:00 - 10:30',
+    kariDay:false,thaniyaDay:false
+  });
+  assert.equal(tuesday.blocked,true);
+  assert.match(tuesday.reasons.join(' '),/Tuesday/);
+
+  const saturday=getDocument50TimeRestrictions({
+    weekdayIndex:6,tithiNumber:3,time:'11:00',
+    rahuKalam:'16:30 - 18:00',yamagandam:'09:00 - 10:30',
+    kariDay:false,thaniyaDay:false
+  });
+  assert.equal(saturday.blocked,true);
+  assert.match(saturday.reasons.join(' '),/Saturday/);
+});
+
+test('Document 50 treats Sunday as a caution because the scan records practical acceptance',()=>{
+  const result=getDocument50TimeRestrictions({
+    weekdayIndex:0,tithiNumber:3,time:'11:00',
+    rahuKalam:'16:30 - 18:00',yamagandam:'09:00 - 10:30',
+    kariDay:false,thaniyaDay:false
+  });
+  assert.equal(result.blocked,false);
+  assert.match(result.warnings.join(' '),/Sunday/);
+});
+
+test('Document 50 selected-time screening checks Rahu, Yamagandam, Kari and Thaniya',()=>{
+  const rahu=getDocument50TimeRestrictions({
+    weekdayIndex:1,tithiNumber:3,time:'17:00',
+    rahuKalam:'16:30 - 18:00',yamagandam:'09:00 - 10:30',
+    kariDay:false,thaniyaDay:false
+  });
+  assert.equal(rahu.blocked,true);
+  assert.match(rahu.reasons.join(' '),/Rahu Kalam/);
+
+  const yama=getDocument50TimeRestrictions({
+    weekdayIndex:1,tithiNumber:3,time:'09:30',
+    rahuKalam:'16:30 - 18:00',yamagandam:'09:00 - 10:30',
+    kariDay:false,thaniyaDay:false
+  });
+  assert.equal(yama.blocked,true);
+  assert.match(yama.reasons.join(' '),/Yamagandam/);
+
+  const dayFlag=getDocument50TimeRestrictions({
+    weekdayIndex:1,tithiNumber:3,time:'11:00',
+    rahuKalam:'16:30 - 18:00',yamagandam:'09:00 - 10:30',
+    kariDay:true,thaniyaDay:false
+  });
+  assert.equal(dayFlag.blocked,true);
+  assert.match(dayFlag.reasons.join(' '),/Kari Naal/);
 });
