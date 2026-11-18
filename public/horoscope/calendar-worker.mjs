@@ -5,6 +5,7 @@ import {panchang,transit,calendarTamil,solarNoaa,tamilSolarDate,nextSolarIngress
 import {getTamilDayYoga} from './tamil-day-classifications.mjs';
 import {meanObliquityAtJulianDay,calculateSolarSignRasiMana,calculateRemainingSolarSignRasiMana} from './offline/rasi-mana.browser.mjs';
 import {getChandrashtamaRasiIndex,getChandrashtamaPadaSegments,normalizeSiderealLongitude} from './calendar-chandrashtama.mjs';
+import {getPushkaraNavamsa,classifyDocument50MarriageMuhurtham} from './calendar-muhurta-activities.mjs';
 const norm=n=>(n%360+360)%360;
 const cache=new Map();
 const sampleCache=new Map();
@@ -40,6 +41,175 @@ function localPartsFromTs(ts,offset){
 // Exact Rasi-based Chandrashtama windows.
 // The Moon's geocentric sidereal Lahiri longitude is sampled locally, then
 // every 3°20' boundary inside the 8th Rasi is refined to the nearest second.
+function localWallParts(date, secondsAfterMidnight){
+ const base=Date.parse(String(date)+'T00:00:00Z');
+ if(!Number.isFinite(base))throw new Error('Invalid local civil date for Pushkara calculation.');
+ const d=new Date(base+Number(secondsAfterMidnight)*1000);
+ return {
+  date:String(d.getUTCFullYear()).padStart(4,'0')+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0'),
+  time:String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0')+':'+String(d.getUTCSeconds()).padStart(2,'0')
+ };
+}
+function clockWithSeconds(seconds){
+ const value=Math.max(0,Math.min(86400,Math.round(Number(seconds))));
+ if(value===86400)return '24:00:00';
+ return String(Math.floor(value/3600)).padStart(2,'0')+':'+String(Math.floor(value%3600/60)).padStart(2,'0')+':'+String(value%60).padStart(2,'0');
+}
+
+function pushkaraTimezoneSegments(date,startSeconds,endSeconds,timezone,defaultOffset){
+ if(!timezone)return [{start:startSeconds,end:endSeconds+1,offset:Number(defaultOffset)}];
+ const offsetAt=seconds=>{
+  const wall=localWallParts(date,seconds);
+  const value=Number(offsetMinutesAt(timezone,wall.date,wall.time.slice(0,5)));
+  if(!Number.isFinite(value)||value < -720||value > 840)throw new Error('Timezone offset is invalid for '+timezone+' at '+wall.date+' '+wall.time);
+  return value;
+ };
+ const segments=[];
+ const checkpointSeconds=15*60;
+ let segmentStart=startSeconds;
+ let previousCheckpoint=startSeconds;
+ let currentOffset=offsetAt(startSeconds);
+ for(let checkpoint=startSeconds+checkpointSeconds;checkpoint<=endSeconds;checkpoint+=checkpointSeconds){
+  const checkpointOffset=offsetAt(checkpoint);
+  if(checkpointOffset!==currentOffset){
+   // Resolve the minute at which the local civil-time offset changes.
+   // Checkpoint sampling avoids constructing Intl formatters per 30-second Lagna sample.
+   let lo=previousCheckpoint,hi=checkpoint;
+   while(hi-lo>60){
+    let mid=Math.floor(((lo+hi)/2)/60)*60;
+    if(mid<=lo)mid=lo+60;
+    if(mid>=hi)break;
+    if(offsetAt(mid)===currentOffset)lo=mid;else hi=mid;
+   }
+   const boundary=hi;
+   segments.push({start:segmentStart,end:boundary,offset:currentOffset});
+   segmentStart=boundary;
+   currentOffset=offsetAt(boundary);
+  }
+  previousCheckpoint=checkpoint;
+ }
+ segments.push({start:segmentStart,end:endSeconds+1,offset:currentOffset});
+ return segments;
+}
+function pushkaraOffsetAt(segments,seconds){
+ for(let i=segments.length-1;i>=0;i--){
+  if(seconds>=segments[i].start)return segments[i].offset;
+ }
+ throw new Error('Local timezone segment could not be resolved for Pushkara calculation.');
+}
+async function calculateDocument50PushkaraWindows(input){
+ const date=String(input?.date||'');
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date))throw new Error('Pushkara calculation needs a valid local date.');
+ const parsed=new Date(date+'T12:00:00Z');
+ if(Number.isNaN(parsed.getTime())||parsed.toISOString().slice(0,10)!==date)throw new Error('Pushkara calculation date is invalid.');
+ const annualDate=classifyDocument50MarriageMuhurtham({date});
+ if(!annualDate.available||annualDate.listed!==true)return {available:true,listed:false,date,reason:'Thali Pushkara timings are shown only for the 2026–2027 and 2027–2028 Document 50 listed dates',intervalCount:0,intervals:[]};
+ const janmaRasiIndex=Number(input.janmaRasiIndex);
+ const chandrashtamaRasiIndex=getChandrashtamaRasiIndex(janmaRasiIndex);
+ if(chandrashtamaRasiIndex===null)throw new Error('A valid selected Janma Rasi is required for the Chandrashtama check.');
+ const lat=Number(input.lat),lon=Number(input.lon),defaultOffset=Number(input.utcOffsetMinutes);
+ if(!Number.isFinite(lat)||lat < -89||lat > 89||!Number.isFinite(lon)||lon < -180||lon > 180)throw new Error('Valid latitude and longitude are required for Pushkara calculation.');
+ if(!Number.isFinite(defaultOffset)||defaultOffset < -720||defaultOffset > 840)throw new Error('A valid local UTC offset is required for Pushkara calculation.');
+ const timezone=String(input.timezone||'').trim();
+ const startOfScan=3*3600,endOfScan=12*3600,step=30;
+ const timezoneSegments=pushkaraTimezoneSegments(date,startOfScan,endOfScan,timezone,defaultOffset);
+ const swe=await getSwe();
+ swe.setSiderealLahiri();
+ const samples=new Map();
+ const lagnaAt=seconds=>{
+  const s=Math.max(0,Math.min(86400,Math.round(seconds)));
+  if(samples.has(s))return samples.get(s);
+  const wall=localWallParts(date,s);
+  const offset=pushkaraOffsetAt(timezoneSegments,s);
+  if(!Number.isFinite(Number(offset))||Number(offset)<-720||Number(offset)>840)throw new Error('Timezone offset is invalid for '+wall.date+' '+wall.time);
+  const utcMs=Date.parse(wall.date+'T'+wall.time+'Z')-Number(offset)*60000;
+  const utc=new Date(utcMs);
+  const jd=swe.utcToJd(
+   utc.getUTCFullYear(),utc.getUTCMonth()+1,utc.getUTCDate(),
+   utc.getUTCHours(),utc.getUTCMinutes(),utc.getUTCSeconds()
+  );
+  if(!jd||!Number.isFinite(Number(jd.ut)))throw new Error('Swiss Ephemeris could not calculate the local UTC Julian day.');
+  const houses=swe.houses(Number(jd.ut),lat,lon,'S');
+  const ascendant=Number(houses?.ascendant);
+  if(!Number.isFinite(ascendant))throw new Error('Swiss Ephemeris returned an invalid Lahiri Lagna at '+wall.date+' '+wall.time);
+  const result=norm(ascendant);
+  samples.set(s,result);
+  return result;
+ };
+ const isPushkara=seconds=>getPushkaraNavamsa(lagnaAt(seconds)).isPushkaraNavamsa===true;
+ const refine=async(lo,hi,target)=>{
+  while(hi-lo>1){
+   const mid=Math.floor((lo+hi)/2);
+   if(isPushkara(mid)===target)hi=mid;else lo=mid;
+  }
+  return hi;
+ };
+ // Document 50's table is explicitly a morning Pushkara-Lagna table.
+ // Scan 03:00–12:00 local time and refine each crossing to one second.
+ let previousSecond=startOfScan;
+ let previousInside=isPushkara(previousSecond);
+ let openStart=previousInside?startOfScan:null;
+ const intervals=[];
+ for(let second=startOfScan+step;second<=endOfScan;second+=step){
+  const currentInside=isPushkara(second);
+  if(!previousInside&&currentInside){
+   openStart=await refine(previousSecond,second,true);
+  }else if(previousInside&&!currentInside&&openStart!==null){
+   const close=await refine(previousSecond,second,false);
+   const mid=Math.floor((openStart+close)/2);
+   const midpoint=getPushkaraNavamsa(lagnaAt(mid));
+   if(midpoint.available&&midpoint.isPushkaraNavamsa){
+    intervals.push({
+     startSeconds:openStart,endSeconds:close,durationSeconds:close-openStart,
+     startTime:clockWithSeconds(openStart),endTime:clockWithSeconds(close),
+     lagnaSignEn:midpoint.signEn,lagnaSignTa:midpoint.signTa,
+     lagnaDegree:midpoint.degreeText,
+     navamsaSignEn:midpoint.navamsaSignEn,navamsaSignTa:midpoint.navamsaSignTa,
+     navamsaPart:midpoint.navamsaPart,
+     pushkaraStart:midpoint.pushkaraInterval?.start||null,
+     pushkaraEnd:midpoint.pushkaraInterval?.end||null
+    });
+   }
+   openStart=null;
+  }
+  previousSecond=second;
+  previousInside=currentInside;
+ }
+ if(previousInside&&openStart!==null){
+  const midpoint=getPushkaraNavamsa(lagnaAt(Math.floor((openStart+endOfScan)/2)));
+  if(midpoint.available&&midpoint.isPushkaraNavamsa){
+   intervals.push({
+    startSeconds:openStart,endSeconds:endOfScan,durationSeconds:endOfScan-openStart,
+    startTime:clockWithSeconds(openStart),endTime:clockWithSeconds(endOfScan),
+    lagnaSignEn:midpoint.signEn,lagnaSignTa:midpoint.signTa,
+    lagnaDegree:midpoint.degreeText,
+    navamsaSignEn:midpoint.navamsaSignEn,navamsaSignTa:midpoint.navamsaSignTa,
+    navamsaPart:midpoint.navamsaPart,
+    pushkaraStart:midpoint.pushkaraInterval?.start||null,
+    pushkaraEnd:midpoint.pushkaraInterval?.end||null
+   });
+  }
+ }
+ for(const interval of intervals){
+  const midpointSeconds=Math.floor((interval.startSeconds+interval.endSeconds)/2);
+  const midpointTime=clockWithSeconds(midpointSeconds).slice(0,5);
+  const midpointOffset=pushkaraOffsetAt(timezoneSegments,midpointSeconds);
+  const moon=await sample({...input,utcOffsetMinutes:midpointOffset},midpointTime);
+  interval.transitMoonSignIndex=Number(moon.moon);
+  interval.chandrashtamaRasiIndex=chandrashtamaRasiIndex;
+  interval.chandrashtama=interval.transitMoonSignIndex===chandrashtamaRasiIndex;
+  interval.chandrashtamaEvaluatedAt=midpointTime;
+ }
+ return {
+  available:true,listed:true,date,janmaRasiIndex,chandrashtamaRasiIndex,latitude:lat,longitude:lon,timezone:timezone||null,
+  utcOffsetMinutes:defaultOffset,houseSystem:'Sripati',
+  zodiac:'Sidereal Lahiri',engine:'Local Swiss Ephemeris WASM',
+  scanStart:'03:00:00',scanEnd:'12:00:00',scanStepSeconds:step,
+  boundaryPrecisionSeconds:1,intervalCount:intervals.length,intervals
+ };
+}
+
+
 function chandrashtamaLocalParts(timestamp,input){
  const ts=Math.round(Number(timestamp)/1000)*1000;
  if(input.timezone){
@@ -382,7 +552,8 @@ async function attachTamilSolarDates(input,entries){
 }
 
 self.onmessage=async({data})=>{const {id,kind,input}=data;try{const key=JSON.stringify([kind,input]);if(cache.has(key)){self.postMessage({id,result:cache.get(key)});return}let result;
- if(kind==='solar-sign-rasi-mana'){result=await calculateSolarSignRasiManaForIngress(input);}
+ if(kind==='thali-pushkara-windows'){result=await calculateDocument50PushkaraWindows(input);}
+ else if(kind==='solar-sign-rasi-mana'){result=await calculateSolarSignRasiManaForIngress(input);}
  else if(kind==='chandrashtama-windows'){result=await calculateChandrashtamaWindows(input);}
  else if(kind==='month'){const [y,m]=input.date.split('-').map(Number),days=new Date(Date.UTC(y,m,0)).getUTCDate();result=[];for(let d=1;d<=days;d++){result.push(await events({...input,date:`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`}));}result=await attachTamilSolarDates(input,result);}
  else {const chart=await calculateSwiss(input);const p=panchang(input,chart),t=transit(input,chart);const ev=await events(input);const beforeSunrise=minute(input.time)<minute(p.sunrise);let previousNight=null;if(beforeSunrise){const yesterday=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);previousNight=panchang({...input,date:yesterday,time:'12:00'});}const previousDate=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);const previousSunset=solarNoaa(previousDate,input.lat,input.lon,input.utcOffsetMinutes,false);const weekday=new Date(input.date+'T12:00:00Z').getUTCDay();const nakshatraTimeline=nakshatraIntervalsForLocalDay(input);const amirthadiYogaSegments=nakshatraTimeline.available?nakshatraTimeline.intervals.map(interval=>({...interval,...getTamilDayYoga(weekday,interval.nakshatraNumber)})):[];const thyajyam=thyajyamIntervalsForLocalDay(input,nakshatraTimeline);const nextDate=new Date(Date.parse(input.date+'T12:00:00Z')+86400000).toISOString().slice(0,10);
