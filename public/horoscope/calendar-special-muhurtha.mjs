@@ -2,7 +2,7 @@
 // Only published Subha Muhurtham dates inside Parabhava / Plavanga are eligible.
 export const SPECIAL_TAMIL_YEARS = Object.freeze([
   Object.freeze({ key: 'parabhava', nameTa: 'பராபவ', start: '2026-04-14', end: '2027-04-13' }),
-  Object.freeze({ key: 'plavanga', nameTa: 'பிலவங்க', start: '2027-04-14', end: '2028-04-13' })
+  Object.freeze({ key: 'plavanga', nameTa: 'பிலவங்க', start: '2027-04-14', end: '2028-04-14' })
 ]);
 
 export function getSpecialTamilYear(date) {
