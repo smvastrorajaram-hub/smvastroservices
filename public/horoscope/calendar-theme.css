@@ -517,3 +517,27 @@ html body.calendar-only>header.calendar-topbar{
 /* Sunday is identified only by its weekday label and Gregorian date number. */
 #smvDailyCalendar .cal-month-grid>b.cal-weekday-sunday{color:#b42318!important;-webkit-text-fill-color:#b42318!important}
 #smvDailyCalendar .cal-month-grid button.cal-sunday>strong{color:#b42318!important;-webkit-text-fill-color:#b42318!important}
+
+ 
+/* Calendar-only heading alignment: remove inherited flex lines and header ornaments. */
+#smvDailyCalendar .cal-date-details-head::before,
+#smvDailyCalendar .cal-date-details-head::after{
+ content:none!important;display:none!important;width:0!important;max-width:0!important;
+ margin:0!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;
+}
+#smvDailyCalendar #calDaily .hora-card>h3,
+#smvDailyCalendar #calDaily .transit-card>h3,
+#smvDailyCalendar #calDaily .transit-table-card>h3{
+ display:block!important;width:100%!important;max-width:none!important;
+ margin:0 auto 12px!important;padding:0!important;
+ text-align:center!important;justify-content:center!important;
+}
+#smvDailyCalendar #calDaily .hora-card>h3::before,
+#smvDailyCalendar #calDaily .hora-card>h3::after,
+#smvDailyCalendar #calDaily .transit-card>h3::before,
+#smvDailyCalendar #calDaily .transit-card>h3::after,
+#smvDailyCalendar #calDaily .transit-table-card>h3::before,
+#smvDailyCalendar #calDaily .transit-table-card>h3::after{
+ content:none!important;display:none!important;width:0!important;max-width:0!important;
+ margin:0!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;
+}
