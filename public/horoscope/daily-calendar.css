@@ -229,3 +229,25 @@
 #smvDailyCalendar .cal-chandrashtama-section>h3{margin:0 0 14px}
 #smvDailyCalendar .cal-chandrashtama-section .cal-summary,#smvDailyCalendar #calReadings .cal-summary{grid-template-columns:minmax(0,1fr)}
 #smvDailyCalendar .cal-chandra-window.is-selected-date{border:2px solid #a96d00;background:#fffaf0}
+
+/* Chandrashtama: centered section title, direct yes/no result, and one visible main card only. */
+#smvDailyCalendar .cal-chandrashtama-section>h3{display:block!important;width:100%!important;text-align:center!important}
+#smvDailyCalendar .cal-chandrashtama-section>h3::after{display:none!important;content:none!important}
+#smvDailyCalendar .cal-chandrashtama-result{margin:0 0 12px;color:#111!important;font-size:16px;font-weight:800}
+#smvDailyCalendar .cal-chandrashtama-result.is-present{color:#c00000!important;-webkit-text-fill-color:#c00000!important}
+#smvDailyCalendar .cal-chandrashtama-result.is-absent{color:#111!important;-webkit-text-fill-color:#111!important}
+#smvDailyCalendar .cal-chandra-windows{display:block;gap:0;margin-top:12px;border:0;background:transparent}
+#smvDailyCalendar .cal-chandra-window,
+#smvDailyCalendar .cal-chandra-window.is-active,
+#smvDailyCalendar .cal-chandra-window.is-selected-date{display:block;border:0!important;border-radius:0!important;padding:0!important;background:transparent!important;box-shadow:none!important}
+
+/* Flatten all period detail tiles into the single outer Chandrashtama main card. */
+#smvDailyCalendar .cal-chandra-rasi-period,
+#smvDailyCalendar .cal-chandra-star-period,
+#smvDailyCalendar .cal-chandra-pada-row,
+#smvDailyCalendar .cal-chandra-pada-row.is-janma-pada-projection,
+#smvDailyCalendar .cal-chandra-janma-projection{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;padding:0!important}
+#smvDailyCalendar .cal-chandra-rasi-period,
+#smvDailyCalendar .cal-chandra-star-period{display:grid;gap:5px;margin:12px 0}
+#smvDailyCalendar .cal-chandra-pada-list{display:grid;gap:10px;margin-top:12px}
+#smvDailyCalendar .cal-chandra-pada-row{display:grid;grid-template-columns:1fr;gap:4px;margin:0;min-width:0}
