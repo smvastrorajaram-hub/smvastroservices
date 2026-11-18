@@ -361,8 +361,10 @@ const DOCUMENT50_PANCHAKA_NAMES = Object.freeze({
  * Document 50 five-factor Panchaka screening.
  * Counts are 1-based: Sunday=1, Pratipada=1 within each Paksha,
  * Ashwini=1, Mesha=1. Only source-stated Dhruva values are computable.
- * Remainders 3/5/7 are stated as Uttamam; 1/2/4/6/8 as Dosham.
- * The scan does not specify remainder 0, so it remains unclassified.
+ * Remainders 3/5/7 are Uttamam; 1/2/4/6/8 are Dosham.
+ * Remainder 0 is the canonical modulo-9 form of traditional remainder 9:
+ * Nishpanchakam / Amirtham. The five inputs and Document 50 Dhruva table
+ * remain unchanged; independent references corroborate only this residue class.
  * This calculation does not apply the separately printed day/night or
  * ceremony exceptions, which require clearer source verification.
  */
@@ -407,8 +409,12 @@ export function getDocument50Panchaka({
   const total = Object.values(components).reduce((sum, value) => sum + value, 0);
   const remainder = total % 9;
   const name = DOCUMENT50_PANCHAKA_NAMES[remainder] || null;
-  const eligible = [3, 5, 7].includes(remainder) ? true :
+  const eligible = [0, 3, 5, 7].includes(remainder) ? true :
     [1, 2, 4, 6, 8].includes(remainder) ? false : null;
+  const category = remainder === 0 ? 'Nishpanchakam / Amirtham' :
+    name?.en || (eligible === true ? 'Uttamam' : eligible === false ? 'Panchaka Dosham' : 'Not stated by Document 50');
+  const categoryTa = remainder === 0 ? 'நிஷ்பஞ்சகம் / அமிர்தம்' :
+    name?.ta || (eligible === true ? 'உத்தமம்' : eligible === false ? 'பஞ்சக தோஷம்' : 'ஆவணத்தில் குறிப்பிடப்படவில்லை');
   return {
     available: true,
     eligible,
@@ -416,11 +422,14 @@ export function getDocument50Panchaka({
     lagnaSignIndex: lagna,
     total,
     remainder,
-    category: name?.en || (eligible === true ? 'Uttamam' : eligible === false ? 'Panchaka Dosham' : 'Not stated by Document 50'),
-    categoryTa: name?.ta || (eligible === true ? 'உத்தமம்' : eligible === false ? 'பஞ்சக தோஷம்' : 'ஆவணத்தில் குறிப்பிடப்படவில்லை'),
-    reason: eligible === true ? 'Remainder 3, 5 or 7 is Uttamam in Document 50' :
-      eligible === false ? 'Remainder 1, 2, 4, 6 or 8 is Panchaka Dosham in Document 50' :
-      'Document 50 does not classify remainder 0',
+    category,
+    categoryTa,
+    reason: eligible === true
+      ? (remainder === 0
+        ? 'Remainder 0 is the canonical modulo-9 form of traditional remainder 9 (Nishpanchakam / Amirtham)'
+        : 'Remainder 3, 5 or 7 is Uttamam in the adopted Panchaka residue convention')
+      : eligible === false ? 'Remainder 1, 2, 4, 6 or 8 is Panchaka Dosham in the adopted Panchaka residue convention'
+      : 'Panchaka remainder is not classified by the adopted residue convention',
     source: DOCUMENT50_MARRIAGE_SOURCES.rules
   };
 }
