@@ -300,6 +300,12 @@ for (const app of apps) {
     assert.ok(offlineState.offlineLocations.some(place => /chennai/i.test(place)), app.name + ' must return a real Chennai India location result with the browser offline.');
 
     if (app.name === 'SMV CALENDAR') {
+      // Calendar's Rasi Palan module mounts after its asynchronous offline import.
+      // DOMContentLoaded alone is too early for querying its section tabs.
+      await page.waitForSelector('#calRasiPalan [data-section="period"]', { timeout: 45000 });
+    }
+
+    if (app.name === 'SMV CALENDAR') {
       const forecastChecks = await page.evaluate(async () => {
         const waitForResult = async label => {
           const button = document.getElementById('rpRun');
@@ -321,7 +327,7 @@ for (const app of apps) {
           throw new Error(label + ' timed out while calculating offline.');
         };
         const selectSection = section => {
-          const tab = document.querySelector('[data-section="' + section + '"]');
+          const tab = document.querySelector('#calRasiPalan [data-section="' + section + '"]');
           if (!tab) throw new Error('Missing Calendar forecast section: ' + section);
           tab.click();
         };
