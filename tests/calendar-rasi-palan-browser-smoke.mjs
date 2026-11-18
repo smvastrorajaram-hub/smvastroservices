@@ -126,6 +126,8 @@ try {
       starPeriod: window.querySelector('.cal-chandra-star-period span')?.textContent || '',
       active: window.classList.contains('is-active'),
       selectedDateMatch: window.classList.contains('is-selected-date'),
+      isUpcoming: window.classList.contains('is-upcoming'),
+      periodType: window.dataset.periodType || '',
       startDate: window.dataset.startDate || '',
       endDate: window.dataset.endDate || '',
       padaRows: [...window.querySelectorAll('.cal-chandra-pada-row')].map(row => ({
@@ -147,24 +149,36 @@ try {
     'The old trailing flex rule must not push the Chandrashtama heading back to the left.');
   assert.ok(chandrashtamaSmoke.windows.length <= 1,
     'Calendar must never list multiple past or upcoming Chandrashtama Rasi windows.');
-  assert.ok(chandrashtamaSmoke.windows.every(window => window.active && !window.selectedDateMatch),
-    'For today, only the Chandrashtama window active at the current local instant may be displayed.');
-  if (chandrashtamaSmoke.windows.length === 0) {
-    assert.equal(chandrashtamaSmoke.result, 'absent',
-      'No matching window must produce the direct Chandrashtama: No result.');
-    assert.equal(chandrashtamaSmoke.statusColor, 'rgb(17, 17, 17)',
-      'Chandrashtama: No must remain normal black text.');
-    assert.equal(chandrashtamaSmoke.statusFillColor, 'rgb(17, 17, 17)',
-      'Chandrashtama: No must not inherit the old green WebKit text fill.');
-    assert.equal(chandrashtamaSmoke.body, '',
-      'When no Chandrashtama applies, show no additional notification or empty-period message.');
-  } else {
+  const todayWindow = chandrashtamaSmoke.windows[0] || null;
+  if (todayWindow?.active) {
+    assert.equal(todayWindow.selectedDateMatch, false,
+      'For today, an active Chandrashtama interval is the selected-date result, not a future fallback.');
+    assert.equal(todayWindow.periodType, 'selected',
+      'An active Chandrashtama interval must be marked as the selected period.');
     assert.equal(chandrashtamaSmoke.result, 'present',
-      'A matching active window must produce the direct Chandrashtama: Yes result.');
+      'A Chandrashtama window active now must produce the direct Chandrashtama: Yes result.');
     assert.equal(chandrashtamaSmoke.statusColor, 'rgb(192, 0, 0)',
       'Chandrashtama: Yes must be red.');
     assert.equal(chandrashtamaSmoke.statusFillColor, 'rgb(192, 0, 0)',
       'Chandrashtama: Yes must override the old green WebKit text fill.');
+  } else {
+    assert.equal(chandrashtamaSmoke.result, 'absent',
+      'When no Chandrashtama is active now, preserve the direct Chandrashtama: No result.');
+    assert.equal(chandrashtamaSmoke.statusColor, 'rgb(17, 17, 17)',
+      'Chandrashtama: No must remain normal black text.');
+    assert.equal(chandrashtamaSmoke.statusFillColor, 'rgb(17, 17, 17)',
+      'Chandrashtama: No must not inherit the old green WebKit text fill.');
+    if (todayWindow) {
+      assert.equal(todayWindow.isUpcoming, true,
+        'When today has no active Chandrashtama, only the nearest upcoming interval may be shown.');
+      assert.equal(todayWindow.periodType, 'upcoming',
+        'A future interval shown while today is clear must be marked upcoming.');
+      assert.equal(todayWindow.active, false,
+        'A future interval must not be styled as active.');
+    } else {
+      assert.equal(chandrashtamaSmoke.body, '',
+        'When no Chandrashtama exists in the calculation horizon, show no extra notification or empty-period message.');
+    }
   }
   assert.ok(chandrashtamaSmoke.windows.every(window => window.rasi === 'Scorpio' && window.star === 'Ashwini'),
     'Only the selected Mesha Janma Rasi and its compatible Ashwini birth star should be displayed.');
