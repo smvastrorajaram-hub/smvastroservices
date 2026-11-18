@@ -227,8 +227,8 @@ if(host){
   const birthStarPadas=getBirthStarPadasInRasi(starIndex,janmaRasiIndex);
   const chosenPada=Number(birthPada);
   const selectedPadas=chosenPada===0?birthStarPadas:birthStarPadas.filter(pada=>pada===chosenPada);
-  // For today, show only the transit active at the current local instant. For another selected date,
-  // show only the single transit interval that overlaps that local calendar day.
+  // Keep the selected-date transit when it exists. Only when that date has no
+  // Chandrashtama, show the single nearest upcoming transit from the 30-day scan.
   const overlapsSelectedDate=item=>{
    const endTime=String(item?.endTime||'00:00:00');
    return String(item?.startDate||'')<=selected&&(
@@ -236,7 +236,16 @@ if(host){
     (String(item?.endDate||'')===selected&&endTime>'00:00:00')
    );
   };
-  const windows=Array.isArray(result.windows)?result.windows.filter(item=>selectedIsToday?item?.active===true:overlapsSelectedDate(item)).map(item=>({...item,selectedDateMatch:!selectedIsToday})):[];
+  const availableWindows=Array.isArray(result.windows)?result.windows:[];
+  const selectedDateWindow=availableWindows.find(item=>selectedIsToday?item?.active===true:overlapsSelectedDate(item));
+  const requestedStart=Number(result.requestedStartTimestamp);
+  const nearestUpcomingWindow=selectedDateWindow?null:availableWindows
+   .filter(item=>Number.isFinite(Number(item?.startTimestamp))&&Number(item.startTimestamp)>=requestedStart)
+   .sort((a,b)=>Number(a.startTimestamp)-Number(b.startTimestamp))[0];
+  const windows=selectedDateWindow
+   ?[{...selectedDateWindow,selectedDateMatch:!selectedIsToday}]
+   :(nearestUpcomingWindow?[{...nearestUpcomingWindow,isUpcoming:true}]:[]);
+  const hasSelectedDateChandrashtama=Boolean(selectedDateWindow);
   const windowsHtml=windows.map(item=>{
    const segments=Array.isArray(item.segments)?item.segments:[];
    const projections=selectedPadas.map(pada=>{
@@ -264,13 +273,13 @@ if(host){
      '<span>'+esc(localDateLabel(entry.segment.startDate)+' '+entry.segment.startTime)+' – '+esc(localDateLabel(entry.segment.endDate)+' '+entry.segment.endTime)+'</span>'+
     '</div>';
    }).join('');
-   return '<article class="cal-chandra-window'+(item.selectedDateMatch?' is-selected-date':(item.active?' is-active':''))+'" data-start-date="'+esc(item.startDate)+'" data-end-date="'+esc(item.endDate)+'">'+
+   return '<article class="cal-chandra-window'+(item.selectedDateMatch?' is-selected-date':(item.isUpcoming?' is-upcoming':(item.active?' is-active':'')))+'" data-period-type="'+(item.isUpcoming?'upcoming':'selected')+'" data-start-date="'+esc(item.startDate)+'" data-end-date="'+esc(item.endDate)+'">'+
     '<div class="cal-chandra-rasi-period"><strong>'+esc(targetName)+'</strong><span>'+esc(fullRasiPeriod)+'</span></div>'+
     '<div class="cal-chandra-star-period"><strong>'+esc(birthStarName)+'</strong><span>'+esc(starPeriod)+'</span></div>'+
     '<div class="cal-chandra-pada-list">'+padaRows+'</div>'+
    '</article>';
   }).join('');
-  const hasChandrashtama=Boolean(windowsHtml);
+  const hasChandrashtama=hasSelectedDateChandrashtama;
   const status=$('#calChandrashtamaResult');
   if(status){
    status.textContent=hasChandrashtama?L('Chandrashtama: Yes','சந்திராஷ்டமம் : - உண்டு'):L('Chandrashtama: No','சந்திராஷ்டமம் : இல்லை');
