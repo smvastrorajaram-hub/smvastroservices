@@ -223,3 +223,9 @@
  #smvDailyCalendar .cal-controls{grid-template-columns:1fr!important}
  #smvDailyCalendar .cal-chandra-pada-row span{white-space:normal}
 }
+
+/* Current/selected-date Chandrashtama sits between Lagna balance and daily Panchang. */
+#smvDailyCalendar .cal-chandrashtama-section{margin:20px 0 24px}
+#smvDailyCalendar .cal-chandrashtama-section>h3{margin:0 0 14px}
+#smvDailyCalendar .cal-chandrashtama-section .cal-summary,#smvDailyCalendar #calReadings .cal-summary{grid-template-columns:minmax(0,1fr)}
+#smvDailyCalendar .cal-chandra-window.is-selected-date{border:2px solid #a96d00;background:#fffaf0}
