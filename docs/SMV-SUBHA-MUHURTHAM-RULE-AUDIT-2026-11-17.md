@@ -342,3 +342,76 @@ The two source documents answer different questions:
 **Implementation decision:** use Sri Thanigai's 2026–27 ephemeris / Lagna-Manam as the calculation-time reference for the calendar, and the September 2015 Sarva Muhurtha article as the primary Panchaka marriage-rule source, exactly as the user approved. Do not import the Rishabha 7 / Makara 2 values from the alternate 2012/2017 articles into that source's table. Do not infer 0 for the eight missing cells. Do not implement a final Panchaka verdict until the source explicitly resolves those cells and the divisor / remainder convention. The general five-factor structure and the four published Dhruva values can be unit-tested independently.
 
 **Pushkara decision:** the branch may continue displaying the selected-time Lahiri Lagna's Pushkara Navamsa status as a standalone computed attribute. The Sri Thanigai list confirms a named “Navamsa Pushkara Lagna” feature but does not provide the actual algorithm; source confirmation is still required before using that feature to select a final Thali moment. Per the user's explicit UI instruction, no disclaimer stating that it is not the final Thali time is to be displayed.
+
+
+## 12. Document 50 scanned marriage table and rule integration — 2026-11-18
+
+The five repository scans were OCR-processed on the isolated branch `temp/document50-ocr-20261118` using Tesseract Tamil + English with PSM 3, 4, 6 and 11. The raw outputs are retained on that temporary branch. The new rules below are integrated into this PR branch only; `main`, production deployments and user storage were not changed.
+
+Primary scan references:
+- [Document 50_1 — Muhurtha rules and Panchaka](https://github.com/smvastrorajaram-hub/smvastroservices/blob/main/Read-only/Document%2050_1.jpg)
+- [Document 50_2 — associated reference table](https://github.com/smvastrorajaram-hub/smvastroservices/blob/main/Read-only/Document%2050_2.jpg)
+- [Document 50_3 — Parabhava 2026–27 marriage date rows](https://github.com/smvastrorajaram-hub/smvastroservices/blob/main/Read-only/Document%2050_3.jpg)
+- [Document 50_4 — remaining Parabhava rows and Pushkara explanation; Pilavanga table starts](https://github.com/smvastrorajaram-hub/smvastroservices/blob/main/Read-only/Document%2050_4.jpg)
+- [Document 50_5 — Pilavanga 2027–28 rows and repeated rules](https://github.com/smvastrorajaram-hub/smvastroservices/blob/main/Read-only/Document%2050_5.jpg)
+
+### 12.1 Annual marriage-date transcription
+
+The new module `public/horoscope/calendar-muhurta-activities.mjs` adds a Document 50-specific date lookup. It is intentionally separate from the existing external published Subha Muhurtham list and the Apsara September 2015 marriage-month helper.
+
+- Parabhava 2026–27: 57 Gregorian dates were transcribed with cross-checks between OCR layouts. One additional Sunday row is legible in its weekday/Tithi/Nakshatra/time columns but its Gregorian date is not reliable across OCR passes; it is recorded as one unresolved row and is not turned into a guessed date.
+- Pilavanga 2027–28: 41 Gregorian dates were transcribed from the pages supplied, covering 18 April 2027 through 10 December 2027. Later dates are outside the supplied table coverage and return unavailable.
+- The date lookup returns “listed” or “not listed in the scanned date rows” within the observed coverage. “Not listed” is not a full time-specific rejection. A date outside the supplied table ranges returns unavailable.
+- A listed annual date is not, by itself, a final marriage approval. The source also requires checking the selected time, couple-specific stars, Panchaka, Yoga and Lagna conditions.
+
+### 12.2 Document 50 Panchaka — a separate source tradition
+
+The scan defines five 1-based counts for the Panchaka day/time:
+1. Weekday: Sunday = 1 through Saturday = 7.
+2. Tithi: count from Pratipada to the current Tithi within its Paksha.
+3. Nakshatra: count from Ashwini to the current Nakshatra.
+4. Lagna: count from Mesha to the current Lagna.
+5. Add the Lagna-Dhruva number.
+
+The total is divided by 9. The scan expressly says remainders 3, 5 and 7 are Uttamam; remainders 1, 2, 4, 6 and 8 are inauspicious. It does not classify remainder 0, so the implementation returns “not stated by Document 50” rather than treating 0 as 9 or as favourable.
+
+The only Dhruva cells legible in the supplied rule scan are:
+- Mesha = 5
+- Rishabha = 7
+- Makara = 2
+- Kumbha = 4
+- Meena = 6
+
+The other seven signs are not assigned a zero by assumption. The helper returns “source does not state a Dhruva value” for them. This Document 50 mapping is deliberately separate from the September 2015 Apsara article (which states Simha 7 instead of Rishabha 7 / Makara 2). The two editions must not be merged into a synthetic table.
+
+The printed remainder classes identify Mrityu (1), Agni (2), Raja (4), Chora (6) and Roga (8) Panchakam. The additional day/night and ceremony-specific exception sentences are partially unclear in OCR and are not yet applied. Their exact exception wording needs a legible source confirmation.
+
+### 12.3 Selected-time exclusions implemented from the readable clauses
+
+The Document 50 time-screen helper now checks:
+- Tithis 4, 6, 8, 9, 12 and 14 within the Paksha.
+- Tuesday and Saturday as excluded weekdays.
+- Sunday as a caution, not an automatic block: the same scanned paragraph states that Sunday is scripturally excluded but accepted in practice, and the annual date tables themselves contain Sunday entries.
+- Selected clock time against the calculated local Rahu Kalam and Yamagandam intervals.
+- Kari Naal and Thaniya Naal using the existing SMV / Sri Thanigai day-classification functions; unavailable Thaniya source data stays a warning.
+- Marana and Prabalarishta Amirthadi Yoga when the existing local-sunrise Nakshatra timeline returns those exact keys.
+
+Utpata Yoga is named in Document 50, but the current Calendar Yoga table does not provide a separately verified Utpata key; it remains an explicit warning, not a guessed result. The couple's Janma-star exclusions, 8th-from-Chandra-Lagna star group, bride/groom-specific star counts, full planetary filters, Guru/Sukra Moudham dates and the full night/day Panchaka exceptions remain pending source/data confirmation.
+
+### 12.4 Pushkara Navamsa and place-specific timing
+
+Document 50 explains that the unparenthesized Thali time is the Pushkara Navamsa interval; a parenthesized time is a substitute Subha Graha Navamsa interval where Pushkara is not present in the stated Muhurtha span. Its example table is calculated for Salem Central Station. It says to use the book's page 107 Lagna-specific minute-adjustment table for other places, and that the times may be reused unchanged only for places within 50 km.
+
+The supplied page 107 adjustment table is not among these five scans. Perambalur is not within 50 km of Salem. The Calendar therefore does not copy Salem's displayed times to Perambalur or claim that it has calculated the full Thali-tying interval. Instead, the new optional local time input recalculates the Thirukanitham/Lahiri Panchanga and local Lagna for the selected date, coordinates and clock time; the existing Pushkara helper then reports whether that exact selected-time Lagna is in Pushkara Navamsa. A selected instant is not a reconstructed 10-minute source window.
+
+### 12.5 Page 2 sex-prediction table is not implemented
+
+Document 50_2 contains a table purporting to predict whether a child will be male or female. SMV will not digitise, calculate or display a fetal-sex prediction feature. India's PCPNDT Act, 1994 prohibits communicating the sex of a foetus (section 5(2)) and prohibits sex determination and sex selection (section 6). The official IndiaCode text and Ministry of Health handbook describe these prohibitions:
+- https://upload.indiacode.nic.in/view-casepdf?id=AC_CEN_12_13_00013_199457_1517807323443&type=act
+- https://www.mohfw-dohfw.gov.in/static/uploads/2026/10/5c2716ba4b5e68c8fa2a27956fb16568.pdf
+
+### 12.6 Preview state and cache safety
+
+This work extends the existing Draft PR #532; no duplicate PR is created. The new Document 50 helpers and tests are part of the PR branch only. The UI exposes the source date lookup, a user-selected calculation time, the five-factor Panchaka components, and the independent time-screening reasons/warnings. It deliberately labels incomplete or unverified clauses instead of rendering a complete marriage verdict.
+
+No production merge, production deployment, origin-wide storage deletion or user-data reset is part of this change.
