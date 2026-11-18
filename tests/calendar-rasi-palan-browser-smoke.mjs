@@ -245,8 +245,9 @@ try {
       Number(row.dataset.targetPada) === (index === 0 ? 4 : index)
     );
   }, { timeout: 30000 });
-  const pooramRows = await page.$eval('#calChandrashtamaPeriods .cal-chandra-window:first-child .cal-chandra-pada-row', rows =>
-    rows.map(row => [Number(row.dataset.birthPada),Number(row.dataset.targetStar),Number(row.dataset.targetPada)]));
+  const pooramRows = await page.evaluate(() =>
+    [...document.querySelectorAll('#calChandrashtamaPeriods .cal-chandra-window:first-child .cal-chandra-pada-row')].map(row =>
+      [Number(row.dataset.birthPada),Number(row.dataset.targetStar),Number(row.dataset.targetPada)]));
   assert.deepEqual(pooramRows, [[1,25,4],[2,26,1],[3,26,2],[4,26,3]]);
   await page.select('#calStarPada','3');
   await page.waitForFunction(() => {
