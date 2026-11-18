@@ -1,7 +1,7 @@
 name: SMV CALENDAR Rasi Palan Scoped QA
 on:
   push:
-    branches: [main, 'feat/calendar-muhurta-day-lagna-balance', 'feat/calendar-exact-chandrashtama-windows-20261118']
+    branches: [main, 'feat/calendar-muhurta-day-lagna-balance', 'feat/calendar-exact-chandrashtama-windows-20261118', 'feat/document50-thali-pushkara-20261118-main14e6']
     paths:
       - 'public/horoscope/calendar/**'
       - 'public/_headers'
@@ -12,6 +12,8 @@ on:
       - 'public/horoscope/prediction-admin-workbench.mjs'
       - 'public/horoscope/daily-calendar.mjs'
       - 'public/horoscope/calendar-muhurta-classification.mjs'
+      - 'public/horoscope/calendar-muhurta-activities.mjs'
+      - 'tests/calendar-muhurta-activities-regression.mjs'
       - 'public/horoscope/calendar-chandrashtama.mjs'
       - 'tests/calendar-chandrashtama-regression.mjs'
       - 'tests/calendar-muhurta-lagna-regression.mjs'
@@ -40,6 +42,8 @@ on:
       - 'public/horoscope/prediction-admin-workbench.mjs'
       - 'public/horoscope/daily-calendar.mjs'
       - 'public/horoscope/calendar-muhurta-classification.mjs'
+      - 'public/horoscope/calendar-muhurta-activities.mjs'
+      - 'tests/calendar-muhurta-activities-regression.mjs'
       - 'tests/calendar-muhurta-lagna-regression.mjs'
       - 'public/horoscope/daily-calendar.css'
       - 'public/horoscope/calendar-theme.css'
@@ -76,6 +80,8 @@ jobs:
           node --check public/horoscope/calendar-worker.mjs
           node --check public/horoscope/daily-calendar.mjs
           node --check public/horoscope/calendar-muhurta-classification.mjs
+          node --check public/horoscope/calendar-muhurta-activities.mjs
+          node --check tests/calendar-muhurta-activities-regression.mjs
           node --check public/horoscope/calendar-chandrashtama.mjs
           node --check tests/calendar-chandrashtama-regression.mjs
           node --check tests/calendar-muhurta-lagna-regression.mjs
@@ -96,6 +102,8 @@ jobs:
         run: node tests/calendar-muhurta-lagna-regression.mjs
       - name: Run exact Chandrashtama Rasi and Nakshatra Pada regression
         run: node --test tests/calendar-chandrashtama-regression.mjs
+      - name: Run Document 50 Muhurtham, Panchaka and Pushkara activity regression
+        run: node --test tests/calendar-muhurta-activities-regression.mjs
   browser-preview:
     runs-on: ubuntu-latest
     timeout-minutes: 35
