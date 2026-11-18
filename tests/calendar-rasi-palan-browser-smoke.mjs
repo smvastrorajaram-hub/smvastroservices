@@ -246,7 +246,22 @@ try {
   assert.equal(yogaFlow.oneYogaLayout.lowerCardsShareRow, true, 'Thyajyam and the next lower card must fill left/right positions without an empty Yoga placeholder.');
   assert.equal(yogaFlow.oneYogaLayout.emptyYogaCards, 0, 'No empty Yoga card or reserved empty Yoga slot may be created.');
   assert.ok(yogaFlow.yogaCardGap <= 2, 'Yoga heading and result card must use a compact gap.');
-  assert.ok(yogaFlow.yogaCardPaddingTop <= 8, 'Yoga card top padding must remain compact.');
+  if (yogaFlow.yogaCardPaddingTop > 8) {
+    console.log('CALENDAR_YOGA_LAYOUT_DIAGNOSTIC='+JSON.stringify({
+      paddingTop:yogaFlow.yogaCardPaddingTop,
+      wrapperDisplay:yogaFlow.wrapperDisplay,
+      cardGap:yogaFlow.yogaCardGap,
+      selectorMatches:await page.$eval('#calDateDetailsExtra .cal-details-summary .cal-amirthadi-yoga-card', card => ({
+        id:card.closest('#calDateDetailsExtra')?.id||'',
+        parent:card.parentElement?.className||'',
+        summary:card.parentElement?.parentElement?.className||'',
+        exactSelector:card.matches('#calDateDetailsExtra .cal-details-summary>.cal-day-yoga-cards>.cal-amirthadi-yoga-card'),
+        stylesheets:[...document.styleSheets].map(sheet=>sheet.href).filter(Boolean)
+      }))
+    }));
+  }
+  assert.ok(yogaFlow.yogaCardPaddingTop <= 8,
+    'Yoga card top padding must remain compact. Actual computed layout: '+JSON.stringify({paddingTop:yogaFlow.yogaCardPaddingTop,cardGap:yogaFlow.yogaCardGap}));
   assert.ok(yogaFlow.yogaSegmentGap <= 2, 'Yoga result name, description and timing must remain close together.');
   assert.ok(yogaFlow.yogaSegmentPaddingTop <= 2, 'Yoga result segment must not add excess top padding.');
   assert.ok(yogaFlow.yogaReferenceMarginTop <= 2, 'Sunrise reference must sit close below the Yoga time.');
