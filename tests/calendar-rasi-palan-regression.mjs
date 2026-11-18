@@ -938,9 +938,11 @@ test('Calendar Date Details uses one green hierarchy with paired Panchang values
   assert.match(calendarThemeCssSource, /\.cal-date-details-head\{[^}]*background:transparent;[^}]*box-shadow:none/);
   assert.match(calendarThemeCssSource, /\.cal-date-details-title\{display:block;width:100%;[^}]*text-align:center/);
   assert.match(calendarThemeCssSource, /smv-calendar-event-range\{display:block;width:100%;font-size:11\.5px;font-weight:750;line-height:1\.35;white-space:nowrap/);
-  assert.match(calendarThemeCssSource, /smv-calendar-range-separator\{padding:0 2px;color:#708477;font-weight:400/);
-  assert.match(horoscopeRendererSource, /compactCalendarBoundary=point=>String\(point\.time\|\|'—'\)\+' \('\+compactCalendarDate\(point\.date\)\+'\)'/);
-  assert.doesNotMatch(horoscopeRendererSource, /smv-calendar-event-boundary|smv-calendar-event-date|smv-calendar-event-time/);
+  assert.match(calendarThemeCssSource, /smv-calendar-range-separator\\{padding:0;color:#708477;font-weight:400/);
+  assert.ok(horoscopeRendererSource.includes('class="smv-calendar-event-time"') && horoscopeRendererSource.includes('class="smv-calendar-event-date"'), 'Compact Panchang boundaries separate time and date for independent styling.');
+  assert.match(horoscopeRendererSource, /smv-calendar-range-separator">-<\\/strong>/, 'The Panchang range uses a hyphen without surrounding spaces.');
+  assert.match(calendarThemeCssSource, /smv-calendar-event-time\\{color:#28734d;font-weight:800\\}/, 'Time values alone use bold theme green.');
+  assert.match(calendarThemeCssSource, /smv-calendar-event-date\\{color:#52645a;font-weight:400\\}/, 'Date values remain regular-weight neutral text.');
 });
 
 test('SMV CALENDAR daily Panchang and Hora follow the green result hierarchy', () => {
