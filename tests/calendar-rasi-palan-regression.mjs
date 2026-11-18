@@ -326,6 +326,15 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   assert.match(dailyCalendarSource, /Tara Bala/);
   assert.match(dailyCalendarSource, /Transit Moon Rasi/);
   assert.match(dailyCalendarSource, /signs\[moonSign\]\[ta\(\)\?1:0\]/);
+  const detailsShellStart = dailyCalendarSource.indexOf('function shell()');
+  const detailsShell = dailyCalendarSource.slice(detailsShellStart, dailyCalendarSource.indexOf('function dateInMonth', detailsShellStart));
+  const chandrashtamaSectionPosition = detailsShell.indexOf('<section id="calChandrashtamaSection"');
+  const taraBalaPosition = detailsShell.indexOf('<section id="calReadings"');
+  const observancesPosition = detailsShell.indexOf('<section id="calEvents"');
+  const dailyPanchangPosition = detailsShell.indexOf('<div id="calDaily"');
+  assert.ok(chandrashtamaSectionPosition >= 0 && chandrashtamaSectionPosition < taraBalaPosition &&
+    taraBalaPosition < observancesPosition && observancesPosition < dailyPanchangPosition,
+    'Tara Bala and festivals/vrats/holidays must sit below Chandrashtama and above the daily Panchang.');
   assert.match(dailyCalendarSource, /Chandrashtama/);
   assert.doesNotMatch(dailyCalendarSource, /Daily Rasi Palan/);
   assert.doesNotMatch(dailyCalendarSource, /All eight transit planets/);
