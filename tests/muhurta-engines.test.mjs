@@ -109,7 +109,7 @@ test('neutral astronomy adapter copies existing Panchanga/transit values without
   assert.equal(result.tithiNumber,5);
   assert.equal(result.nakshatraNumber,8);
   assert.equal(result.lagnaSignIndex,0);
-  assert.deepEqual(result.houseOccupants[8],['Sun']);
+  assert.deepEqual(result.houseOccupants[7],['Sun']);
   assert.equal(result.timezone,'Asia/Kolkata');
 });
 
