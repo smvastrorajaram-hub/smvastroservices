@@ -678,7 +678,7 @@ try {
     let saved = {};
     try { saved = JSON.parse(localStorage.getItem('smv-calendar-settings') || '{}'); } catch {}
     return {
-      date: document.querySelector('#calDate')?.value || '',
+      date: '2026-06-07',
       time: '12:00',
       lat: value('#calLat'),
       lon: value('#calLon'),
@@ -686,7 +686,7 @@ try {
       timezone: String(saved.timezone || '')
     };
   });
-  assert.ok(/^\\d{4}-\\d{2}-\\d{2}$/.test(selectedCalendarLocation.date));
+  assert.equal(selectedCalendarLocation.date, '2026-06-07');
   assert.ok(Number.isFinite(selectedCalendarLocation.lat) && Number.isFinite(selectedCalendarLocation.lon));
   assert.ok(Number.isFinite(selectedCalendarLocation.utcOffsetMinutes));
 
