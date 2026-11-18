@@ -251,3 +251,6 @@
 #smvDailyCalendar .cal-chandra-star-period{display:grid;gap:5px;margin:12px 0}
 #smvDailyCalendar .cal-chandra-pada-list{display:grid;gap:10px;margin-top:12px}
 #smvDailyCalendar .cal-chandra-pada-row{display:grid;grid-template-columns:1fr;gap:4px;margin:0;min-width:0}
+
+/* Label the next transit only when the selected date itself has no Chandrashtama. */
+#smvDailyCalendar .cal-chandra-upcoming-heading{margin:12px 0 8px;color:#214f48;font-size:14px;font-weight:850;line-height:1.55}
