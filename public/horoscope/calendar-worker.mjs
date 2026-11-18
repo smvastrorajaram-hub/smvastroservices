@@ -4,6 +4,7 @@ import {calculateSwiss,calculateSunMoon,calculateLahiriContextAt} from './offlin
 import {panchang,transit,calendarTamil,solarNoaa,tamilSolarDate,nextSolarIngress,nakshatraIntervalsForLocalDay,thyajyamIntervalsForLocalDay,calculateAhasRatriPramana,calculateDinantham} from './offline/transit_panchang.browser.mjs';
 import {getTamilDayYoga} from './tamil-day-classifications.mjs';
 import {meanObliquityAtJulianDay,calculateSolarSignRasiMana,calculateRemainingSolarSignRasiMana} from './offline/rasi-mana.browser.mjs';
+import {getChandrashtamaRasiIndex,getChandrashtamaPadaSegments,normalizeSiderealLongitude} from './calendar-chandrashtama.mjs';
 const norm=n=>(n%360+360)%360;
 const cache=new Map();
 const sampleCache=new Map();
@@ -34,6 +35,164 @@ function localPartsFromTs(ts,offset){
   time:String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0')+':'+String(d.getUTCSeconds()).padStart(2,'0')
  };
 }
+
+
+// Exact Rasi-based Chandrashtama windows.
+// The Moon's geocentric sidereal Lahiri longitude is sampled locally, then
+// every 3°20' boundary inside the 8th Rasi is refined to the nearest second.
+function chandrashtamaLocalParts(timestamp,input){
+ const ts=Math.round(Number(timestamp)/1000)*1000;
+ if(input.timezone){
+  const formatter=new Intl.DateTimeFormat('en-CA',{
+   timeZone:String(input.timezone),year:'numeric',month:'2-digit',day:'2-digit',
+   hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'
+  });
+  const parts=Object.fromEntries(formatter.formatToParts(new Date(ts))
+   .filter(part=>part.type!=='literal').map(part=>[part.type,part.value]));
+  const date=parts.year+'-'+parts.month+'-'+parts.day;
+  const time=parts.hour+':'+parts.minute+':'+parts.second;
+  const utcOffsetMinutes=offsetMinutesAt(input.timezone,date,time);
+  return {date,time,utcOffsetMinutes};
+ }
+ return {...localPartsFromTs(ts,input.utcOffsetMinutes),utcOffsetMinutes:Number(input.utcOffsetMinutes??330)};
+}
+
+function chandrashtamaStartTimestamp(input){
+ const date=String(input.date||''),time=String(input.time||'12:00');
+ const match=time.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!match)throw new Error('சந்திராஷ்டமக் கணக்கிற்கு தேதி / நேரம் சரியாக இல்லை.');
+ const parts=chandrashtamaLocalParts(Date.UTC(
+  Number(date.slice(0,4)),Number(date.slice(5,7))-1,Number(date.slice(8,10)),
+  Number(match[1]),Number(match[2]),Number(match[3]||0)
+ )-Number(input.utcOffsetMinutes??330)*60000,input);
+ return Date.UTC(
+  Number(parts.date.slice(0,4)),Number(parts.date.slice(5,7))-1,Number(parts.date.slice(8,10)),
+  Number(parts.time.slice(0,2)),Number(parts.time.slice(3,5)),Number(parts.time.slice(6,8))
+ )-parts.utcOffsetMinutes*60000;
+}
+
+async function calculateChandrashtamaWindows(input){
+ const janmaRasiIndex=Number(input.janmaRasiIndex);
+ const chandrashtamaRasiIndex=getChandrashtamaRasiIndex(janmaRasiIndex);
+ const horizonDays=Math.max(30,Math.min(180,Math.floor(Number(input.horizonDays)||90)));
+ const latitude=Number(input.lat),longitude=Number(input.lon);
+ const fallbackOffset=Number(input.utcOffsetMinutes??330);
+ if(chandrashtamaRasiIndex===null||!Number.isFinite(latitude)||latitude<-90||latitude>90||
+    !Number.isFinite(longitude)||longitude<-180||longitude>180||
+    !Number.isFinite(fallbackOffset)||fallbackOffset < -720||fallbackOffset>840){
+  return {available:false,reason:'ஜன்ம ராசி, இடக் கோடுகள் அல்லது நேர மண்டலத் தகவல் சரியாக இல்லை.'};
+ }
+ const requestedStart=chandrashtamaStartTimestamp(input);
+ const horizonEnd=requestedStart+horizonDays*86400000;
+ // Three days of look-back ensure a window already in progress is complete.
+ const scanStart=requestedStart-3*86400000;
+ const stepMilliseconds=2*60*60*1000;
+ const sampleCacheLocal=new Map();
+ async function moonAt(timestamp){
+  const ts=Math.round(Number(timestamp)/1000)*1000;
+  if(sampleCacheLocal.has(ts))return sampleCacheLocal.get(ts);
+  const pending=Promise.resolve().then(async()=>{
+   const local=chandrashtamaLocalParts(ts,input);
+   const result=await calculateSunMoon({
+    ...input,date:local.date,time:local.time,utcOffsetMinutes:local.utcOffsetMinutes
+   });
+   const value=normalizeSiderealLongitude(result?.moonLongitude);
+   if(value===null)throw new Error('Swiss Ephemeris சந்திர தீர்க்கரேகை கிடைக்கவில்லை.');
+   return value;
+  });
+  sampleCacheLocal.set(ts,pending);
+  if(sampleCacheLocal.size>6000)sampleCacheLocal.delete(sampleCacheLocal.keys().next().value);
+  try{return await pending;}
+  catch(error){if(sampleCacheLocal.get(ts)===pending)sampleCacheLocal.delete(ts);throw error;}
+ }
+ function signedLongitudeDistance(value,target){
+  return ((normalizeSiderealLongitude(value)-normalizeSiderealLongitude(target)+540)%360)-180;
+ }
+ async function refineBoundary(loValue,hiValue,targetLongitude){
+  let lo=Number(loValue),hi=Number(hiValue);
+  for(let iteration=0;iteration<24&&hi-lo>1000;iteration++){
+   const mid=Math.floor((lo+hi)/2);
+   const value=await moonAt(mid);
+   if(signedLongitudeDistance(value,targetLongitude)>=0)hi=mid;
+   else lo=mid;
+  }
+  return Math.round(hi/1000)*1000;
+ }
+ const signStart=chandrashtamaRasiIndex*30;
+ const crossings=new Map();
+ let previousTimestamp=scanStart;
+ let previousLongitude=await moonAt(previousTimestamp);
+ let previousUnwrapped=previousLongitude;
+ const firstCycle=Math.floor(previousUnwrapped/360)-1;
+ let lastCycle=firstCycle;
+ for(let nextTimestamp=Math.min(scanEnd=scanStart+stepMilliseconds,horizonEnd);;){
+  const currentLongitude=await moonAt(nextTimestamp);
+  const delta=normalizeSiderealLongitude(currentLongitude-previousLongitude);
+  if(delta>180)throw new Error('சந்திரனின் தொடர்ச்சியான தீர்க்கரேகை மாற்றம் சரிபார்க்க முடியவில்லை.');
+  const currentUnwrapped=previousUnwrapped+delta;
+  const lowCycle=Math.floor(previousUnwrapped/360)-1;
+  const highCycle=Math.floor(currentUnwrapped/360)+1;
+  for(let cycle=lowCycle;cycle<=highCycle;cycle++){
+   for(let padaBoundary=0;padaBoundary<=9;padaBoundary++){
+    const target=signStart+cycle*360+padaBoundary*(30/9);
+    if(target>previousUnwrapped+1e-9&&target<=currentUnwrapped+1e-8){
+     const crossingKey=cycle+':'+padaBoundary;
+     if(!crossings.has(crossingKey)){
+      crossings.set(crossingKey,await refineBoundary(previousTimestamp,nextTimestamp,target));
+     }
+    }
+   }
+  }
+  lastCycle=Math.max(lastCycle,Math.floor(currentUnwrapped/360)+1);
+  previousTimestamp=nextTimestamp;
+  previousLongitude=currentLongitude;
+  previousUnwrapped=currentUnwrapped;
+  if(nextTimestamp>=horizonEnd)break;
+  nextTimestamp=Math.min(nextTimestamp+stepMilliseconds,horizonEnd);
+ }
+ const localCache=new Map();
+ function localAt(timestamp){
+  const ts=Math.round(Number(timestamp)/1000)*1000;
+  if(!localCache.has(ts))localCache.set(ts,chandrashtamaLocalParts(ts,input));
+  return localCache.get(ts);
+ }
+ const templates=getChandrashtamaPadaSegments(chandrashtamaRasiIndex);
+ const windows=[];
+ for(let cycle=firstCycle;cycle<=lastCycle;cycle++){
+  const boundaries=Array.from({length:10},(_,index)=>crossings.get(cycle+':'+index));
+  if(boundaries.some(value=>!Number.isFinite(value)))continue;
+  const startTimestamp=boundaries[0],endTimestamp=boundaries[9];
+  if(endTimestamp<=requestedStart||startTimestamp>=horizonEnd)continue;
+  const segments=templates.map((template,index)=>{
+   const startTimestamp=boundaries[index],endTimestamp=boundaries[index+1];
+   const start=localAt(startTimestamp),end=localAt(endTimestamp);
+   return {
+    ...template,startTimestamp,endTimestamp,
+    startDate:start.date,startTime:start.time,
+    endDate:end.date,endTime:end.time
+   };
+  });
+  const start=localAt(startTimestamp),end=localAt(endTimestamp);
+  windows.push({
+   startTimestamp,endTimestamp,
+   startDate:start.date,startTime:start.time,
+   endDate:end.date,endTime:end.time,
+   durationMinutes:Math.round((endTimestamp-startTimestamp)/60000),
+   active:startTimestamp<=requestedStart&&requestedStart<endTimestamp,
+   segments
+  });
+ }
+ windows.sort((a,b)=>a.startTimestamp-b.startTimestamp);
+ return {
+  available:true,
+  method:'Rasi-based Chandrashtama: transiting Moon in the eighth sidereal Rasi from Janma Rasi',
+  engine:'SMV Swiss Ephemeris WASM · geocentric sidereal Lahiri',
+  janmaRasiIndex,chandrashtamaRasiIndex,horizonDays,
+  requestedStartTimestamp:requestedStart,
+  windows
+ };
+}
+
 const solarSignRasiManaCache=new Map();
 async function calculateSolarSignRasiManaForIngress(input){
  // The solar sign is selected from the exact local-sunrise interval.
@@ -220,6 +379,7 @@ async function attachTamilSolarDates(input,entries){
 
 self.onmessage=async({data})=>{const {id,kind,input}=data;try{const key=JSON.stringify([kind,input]);if(cache.has(key)){self.postMessage({id,result:cache.get(key)});return}let result;
  if(kind==='solar-sign-rasi-mana'){result=await calculateSolarSignRasiManaForIngress(input);}
+ else if(kind==='chandrashtama-windows'){result=await calculateChandrashtamaWindows(input);}
  else if(kind==='month'){const [y,m]=input.date.split('-').map(Number),days=new Date(Date.UTC(y,m,0)).getUTCDate();result=[];for(let d=1;d<=days;d++){result.push(await events({...input,date:`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`}));}result=await attachTamilSolarDates(input,result);}
  else {const chart=await calculateSwiss(input);const p=panchang(input,chart),t=transit(input,chart);const ev=await events(input);const beforeSunrise=minute(input.time)<minute(p.sunrise);let previousNight=null;if(beforeSunrise){const yesterday=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);previousNight=panchang({...input,date:yesterday,time:'12:00'});}const previousDate=new Date(Date.parse(input.date+'T12:00:00Z')-86400000).toISOString().slice(0,10);const previousSunset=solarNoaa(previousDate,input.lat,input.lon,input.utcOffsetMinutes,false);const weekday=new Date(input.date+'T12:00:00Z').getUTCDay();const nakshatraTimeline=nakshatraIntervalsForLocalDay(input);const amirthadiYogaSegments=nakshatraTimeline.available?nakshatraTimeline.intervals.map(interval=>({...interval,...getTamilDayYoga(weekday,interval.nakshatraNumber)})):[];const thyajyam=thyajyamIntervalsForLocalDay(input,nakshatraTimeline);const nextDate=new Date(Date.parse(input.date+'T12:00:00Z')+86400000).toISOString().slice(0,10);
  let nextOffset=Number(input.utcOffsetMinutes??330);
