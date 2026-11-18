@@ -61,14 +61,13 @@ function chandrashtamaStartTimestamp(input){
  const date=String(input.date||''),time=String(input.time||'12:00');
  const match=time.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!match)throw new Error('சந்திராஷ்டமக் கணக்கிற்கு தேதி / நேரம் சரியாக இல்லை.');
- const parts=chandrashtamaLocalParts(Date.UTC(
+ const offset= input.timezone
+  ? offsetMinutesAt(input.timezone,date,match[1]+':'+match[2]+':'+(match[3]||'00'))
+  : Number(input.utcOffsetMinutes??330);
+ return Date.UTC(
   Number(date.slice(0,4)),Number(date.slice(5,7))-1,Number(date.slice(8,10)),
   Number(match[1]),Number(match[2]),Number(match[3]||0)
- )-Number(input.utcOffsetMinutes??330)*60000,input);
- return Date.UTC(
-  Number(parts.date.slice(0,4)),Number(parts.date.slice(5,7))-1,Number(parts.date.slice(8,10)),
-  Number(parts.time.slice(0,2)),Number(parts.time.slice(3,5)),Number(parts.time.slice(6,8))
- )-parts.utcOffsetMinutes*60000;
+ )-offset*60000;
 }
 
 async function calculateChandrashtamaWindows(input){
@@ -125,7 +124,8 @@ async function calculateChandrashtamaWindows(input){
  let previousUnwrapped=previousLongitude;
  const firstCycle=Math.floor(previousUnwrapped/360)-1;
  let lastCycle=firstCycle;
- for(let nextTimestamp=Math.min(scanEnd=scanStart+stepMilliseconds,horizonEnd);;){
+ const scanEnd=horizonEnd;
+ for(let nextTimestamp=Math.min(scanStart+stepMilliseconds,scanEnd);;){
   const currentLongitude=await moonAt(nextTimestamp);
   const delta=normalizeSiderealLongitude(currentLongitude-previousLongitude);
   if(delta>180)throw new Error('சந்திரனின் தொடர்ச்சியான தீர்க்கரேகை மாற்றம் சரிபார்க்க முடியவில்லை.');
