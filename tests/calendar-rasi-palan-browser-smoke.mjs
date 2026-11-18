@@ -258,7 +258,7 @@ try {
     centeredCalendarHeadings.language==='ta' ? 'லக்' : 'Asc',
     'Only the transit positions table Ascendant row must display the shortened Tamil label in Tamil mode.');
 
-  assert.match(integratedPanchang.firstEventRangeText, /^\d{2}:\d{2} \(\d{2}\/\d{2}\) – \d{2}:\d{2} \(\d{2}\/\d{2}\)$/, 'Panchang event timing must use the compact single-line HH:MM (DD/MM) – HH:MM (DD/MM) format.');
+  assert.match(integratedPanchang.firstEventRangeText, /^\d{2}:\d{2}\(\d{2}\/\d{2}\)-\d{2}:\d{2}\(\d{2}\/\d{2}\)$/, 'Panchang event timing must use the compact single-line HH:MM(DD/MM)-HH:MM(DD/MM) format.');
   assert.equal(integratedPanchang.firstEventNoYear, true, 'Panchang event ranges must omit the four-digit Gregorian year.');
 
   const yogaFlow = await page.$eval('#calDateDetailsExtra .cal-details-summary', summary => {
