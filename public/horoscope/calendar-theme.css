@@ -217,7 +217,7 @@ html body.calendar-only>header.calendar-topbar{
 #smvDailyCalendar .cal-panchang-detail-item>small{display:block;width:100%;min-width:0;margin:0;color:#5e7568;font-size:12px;font-weight:700;line-height:1.4;text-align:left;word-break:normal;overflow-wrap:normal;hyphens:none}
 #smvDailyCalendar .cal-panchang-detail-item>strong{display:block;width:100%;min-width:0;color:#174f47;font-size:13.5px;font-weight:700;line-height:1.45;text-align:left;word-break:normal;overflow-wrap:normal;hyphens:none}
 #smvDailyCalendar .cal-panchang-detail-item.is-primary>strong{color:#15564e;font-size:14px;font-weight:700}
-#smvDailyCalendar .cal-panchang-detail-item .cal-name-yoga-label{color:#426957;font-size:12px;font-weight:700}
+#smvDailyCalendar .cal-panchang-detail-item .cal-name-yoga-label{color:#426957;font-size:11px;font-weight:700}
 #smvDailyCalendar .cal-panchang-detail-item .smv-calendar-neutral-date-time,#smvDailyCalendar .cal-panchang-detail-item .smv-calendar-neutral-time{color:inherit;font-weight:inherit}
 #smvDailyCalendar .cal-panchang-detail-item .smv-calendar-normal-connector{margin:0 3px;color:#708477;font-weight:400}
 #smvDailyCalendar .cal-panchang-detail-item .smv-calendar-bright-red-time{color:#b42318;font-weight:800}
