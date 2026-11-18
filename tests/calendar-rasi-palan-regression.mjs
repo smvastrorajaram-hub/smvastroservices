@@ -895,7 +895,7 @@ test('SMV CALENDAR daily Panchang and Hora use scoped black/red result typograph
   assert.match(sharedHoroscopeCssSource, /hora-time:not\(\.smv-calendar-neutral-time\)/);
   assert.match(sharedHoroscopeCssSource, /transit-table-degree:not\(\.smv-calendar-degree-normal\)/);
   assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261118-chandrashtama-yoga-spacing-v1/);
-  assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261117-calendar-namah-yoga-label-v3/);
+  assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261118-chandrashtama-yoga-spacing-v1/);
   const releases = [astroServiceWorkerSource, horoscopeServiceWorkerSource, calendarWorkerSource]
     .map(source => source.match(/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '([^']+)' : '([^']+)';/));
   assert.ok(releases.every(Boolean), 'All three service workers must define the synchronized release marker.');
