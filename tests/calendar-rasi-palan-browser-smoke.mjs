@@ -106,6 +106,29 @@ try {
     return status && (/Unable to calculate|கணக்கிட முடியவில்லை/.test(status) || (!/Calculating Panchang|பஞ்சாங்கம், ஹோரை/.test(status) && !/Loading monthly calendar|மாத நாட்காட்டி தயாராகிறது/.test(document.querySelector('#calMonth')?.textContent||'')));
   }, { timeout: 90000 });
   const calendarCalculationStatus = await page.$eval('#calStatus', el => el.textContent || '');
+  await page.waitForSelector('#calMonth .cal-month-grid button.cal-sunday > strong', { timeout: 30000 });
+  const sundayCalendarStyle = await page.$eval('#calMonth .cal-month-grid', grid => {
+    const heading=grid.querySelector('b.cal-weekday-sunday');
+    const sunday=grid.querySelector('button.cal-sunday');
+    const ordinary=grid.querySelector('button:not(.cal-sunday) > strong');
+    return {
+      heading:heading?.textContent?.trim()||'',
+      headingColor:heading?getComputedStyle(heading).color:'',
+      dateColor:sunday?.querySelector('strong')?getComputedStyle(sunday.querySelector('strong')).color:'',
+      tamilDateColor:sunday?.querySelector('.cal-day-tamil')?getComputedStyle(sunday.querySelector('.cal-day-tamil')).color:'',
+      ordinaryDateColor:ordinary?getComputedStyle(ordinary).color:''
+    };
+  });
+  assert.ok(['ஞா','Su'].includes(sundayCalendarStyle.heading),
+    'The first Calendar weekday heading must be Sunday in the active language.');
+  assert.equal(sundayCalendarStyle.headingColor,'rgb(180, 35, 24)',
+    'Only the Sunday weekday abbreviation must be red.');
+  assert.equal(sundayCalendarStyle.dateColor,'rgb(180, 35, 24)',
+    'The Gregorian date number in Sunday cells must be red.');
+  assert.notEqual(sundayCalendarStyle.tamilDateColor,'rgb(180, 35, 24)',
+    'The Tamil date beneath the Gregorian number must retain its normal colour.');
+  assert.notEqual(sundayCalendarStyle.ordinaryDateColor,'rgb(180, 35, 24)',
+    'Dates in all non-Sunday columns must retain their normal colour.');
   await page.waitForSelector('#calMuhurtaLagna .cal-muhurta-lagna-grid .cal-muhurta-lagna-item', { timeout: 30000 });
   await page.waitForFunction(() => document.querySelector('#calChandrashtamaResult')?.dataset.resolved === 'true', { timeout: 180000 });
   await page.waitForFunction(() =>
