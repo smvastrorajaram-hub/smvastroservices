@@ -2,6 +2,7 @@ import {offsetMinutesAt} from './offline/places/timezone.mjs';
 import {signs,stars,planets,holidays2026,additionalGovernmentHolidays2026,holidaySource,favorable} from './calendar-data.mjs';
 import {getTamilCalendarDayFlags,getNakshatraDirection,getNethiramJeevan} from './tamil-day-classifications.mjs';
 import {classifySubhaMuhurtham} from './calendar-muhurta-classification.mjs';
+import {TAMIL_ACTIVITIES,PAN_INDIAN_ACTIVITIES,toAstronomyFacts,evaluateTamilMuhurta,evaluatePanIndianMuhurta} from './muhurta/index.mjs';
 import {getChandrashtamaRasiIndex,getBirthStarPadasInRasi,getNakshatraPadaAtLongitude,getChandrashtamaPadaProjection,formatRasiDegree} from './calendar-chandrashtama.mjs';
 
 const host=document.getElementById('smvDailyCalendar');
@@ -9,7 +10,7 @@ if(host){
  const $=s=>host.querySelector(s),ta=()=>document.documentElement.lang==='ta',L=(en,tamil)=>ta()?tamil:en;
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const storage={get(){try{return JSON.parse(localStorage.getItem('smv-calendar-settings')||'{}')}catch{return {}}},set(v){try{localStorage.setItem('smv-calendar-settings',JSON.stringify(v))}catch{}}};
- let cfg={lat:11.2342,lon:78.8808,offset:330,place:'Perambalur',rasi:0,star:0,starPada:0,...storage.get()},daily=null,month=null,seq=0,pending=new Map(),worker=null,dayRequest=0,monthRequest=0,locationSearchTimer=0,locationSearchAbort=null,chandrashtamaRequest=0,chandrashtamaCache=new Map(),chandrashtamaPending=new Map();
+ let cfg={lat:11.2342,lon:78.8808,offset:330,place:'Perambalur',rasi:0,star:0,starPada:0,...storage.get()},daily=null,month=null,seq=0,pending=new Map(),worker=null,dayRequest=0,monthRequest=0,locationSearchTimer=0,locationSearchAbort=null,chandrashtamaRequest=0,chandrashtamaCache=new Map(),chandrashtamaPending=new Map(),muhurtaTradition='tamil',muhurtaActivity='vivaha';
  // Migrate the old implicit Pada=1 default to the new All-Padas default without clearing other saved Calendar settings.
  if(cfg.birthPadaSelectorVersion!==1){cfg.starPada=0;cfg.birthPadaSelectorVersion=1;storage.set(cfg);}
  const monthCache=new Map();
@@ -392,6 +393,79 @@ if(host){
   return String(Math.floor(minute/60)).padStart(2,'0')+':'+String(minute%60).padStart(2,'0');
  }
 
+
+ function renderMuhurtaEngineControls(){
+  const target=$('#calMuhurtaEngine');
+  if(!target||!daily)return;
+  const activities=muhurtaTradition==='tamil'?TAMIL_ACTIVITIES:PAN_INDIAN_ACTIVITIES;
+  if(!activities.some(item=>item.id===muhurtaActivity))muhurtaActivity=activities[0]?.id||'';
+  const traditionLabel=muhurtaTradition==='tamil'?'தமிழ் மரபு':'Pan-Indian';
+  target.innerHTML=
+   '<div class="cal-muhurta-engine-head"><div><small>'+L('Independent rule engine','தனித்தனி விதி இயந்திரம்')+'</small><h4>'+L('Activity-specific Muhurta','சுபகாரிய முகூர்த்தம்')+'</h4></div><span class="cal-muhurta-engine-tag">'+esc(traditionLabel)+'</span></div>'+
+   '<div class="cal-muhurta-engine-controls">'+
+    '<label>'+L('Tradition','மரபு')+'<select id="calMuhurtaTradition"><option value="tamil" '+(muhurtaTradition==='tamil'?'selected':'')+'>தமிழ் மரபு</option><option value="pan" '+(muhurtaTradition==='pan'?'selected':'')+'>Pan-Indian</option></select></label>'+
+    '<label>'+L('Auspicious activity','சுபகாரியம்')+'<select id="calMuhurtaActivity">'+activities.map(item=>'<option value="'+esc(item.id)+'" '+(item.id===muhurtaActivity?'selected':'')+'>'+esc(item.labelTa)+'</option>').join('')+'</select></label>'+
+   '</div>'+
+   '<div id="calMuhurtaEngineResult" class="cal-muhurta-engine-result" aria-live="polite"></div>';
+  const tradition=$('#calMuhurtaTradition');
+  const activity=$('#calMuhurtaActivity');
+  if(tradition)tradition.onchange=()=>{
+   muhurtaTradition=tradition.value==='pan'?'pan':'tamil';
+   muhurtaActivity=muhurtaTradition==='tamil'?'vivaha':'vivaha';
+   renderMuhurtaEngineControls();
+  };
+  if(activity)activity.onchange=()=>{
+   muhurtaActivity=activity.value;
+   renderMuhurtaEngineResult();
+  };
+  renderMuhurtaEngineResult();
+ }
+
+ function renderMuhurtaEngineResult(){
+  const target=$('#calMuhurtaEngineResult');
+  if(!target||!daily)return;
+  try{
+   const facts=toAstronomyFacts(daily,{timezone:cfg.timezone||'',utcOffsetMinutes:cfg.offset});
+   const segments=Array.isArray(daily.amirthadiYogaSegments)?daily.amirthadiYogaSegments:[];
+   const result=muhurtaTradition==='tamil'
+    ?evaluateTamilMuhurta(muhurtaActivity,facts)
+    :evaluatePanIndianMuhurta(muhurtaActivity,facts,{nakshatraSegments:segments});
+   const statusLabels={
+    REJECTED:L('Rejected by a registered source rule','ஆதார விதிப்படி இந்த நேரம் தவிர்க்கப்பட வேண்டும்'),
+    CONDITIONAL:L('Conditional — source review is incomplete','நிபந்தனையுடன் — ஆதாரச் சரிபார்ப்பு முழுமையடையவில்லை'),
+    NOT_VERIFIED:L('Not verified','இன்னும் சரிபார்க்கப்படவில்லை'),
+    ELIGIBLE:L('Eligible under the registered rules','பதிவு செய்யப்பட்ட விதிகளின்படி தகுதி உள்ளது')
+   };
+   const status=statusLabels[result.status]||statusLabels.NOT_VERIFIED;
+   const rules=(result.rules||[]).map(rule=>{
+    const stateLabels={
+     preferred:L('Preferred','விருப்பமானது'),
+     prohibited:L('Prohibited','தடை'),
+     clear:L('No specific prohibition','குறிப்பிட்ட தடை இல்லை'),
+     satisfied:L('Satisfied','நிறைவேறியது'),
+     failed:L('Not satisfied','நிறைவேறவில்லை'),
+     pending:L('Pending source verification','ஆதாரச் சரிபார்ப்பு நிலுவையில்'),
+     unknown:L('Needs more information','கூடுதல் தகவல் தேவை'),
+     conditional:L('Conditional','நிபந்தனை'),
+     'not-preferred':L('Not listed as preferred','விருப்பமானதாகக் குறிப்பிடப்படவில்லை')
+    };
+    const explanation=ta()?rule.reasonTa:rule.reasonEn;
+    return '<article class="cal-muhurta-rule"><div><strong>'+esc(stateLabels[rule.state]||rule.state)+'</strong><small>'+esc(rule.id)+'</small></div><p>'+esc(explanation||rule.reference||'')+'</p><small>'+esc(rule.sourceId||'')+' · '+esc(rule.reference||'')+'</small></article>';
+   }).join('');
+   const windows=(result.restrictedWindows||[]).map(window=>
+    '<li><strong>'+esc(stars[Number(window.nakshatraNumber)-1]?.[ta()?1:0]||L('Nakshatra','நட்சத்திரம்'))+'</strong> · '+esc(window.start)+' – '+esc(window.end)+'<small>'+esc(window.ruleId)+'</small></li>'
+   ).join('');
+   target.innerHTML=
+    '<div class="cal-muhurta-engine-status '+(result.status==='REJECTED'?'is-rejected':'is-uncertain')+'"><small>'+L('Selected date and time','தேர்ந்தெடுத்த தேதி / நேரம்')+'</small><strong>'+esc(status)+'</strong><p>'+esc(result.reason||'')+'</p></div>'+
+    (windows?'<div class="cal-muhurta-restricted"><strong>'+L('Source-identified restricted windows on this local day','இந்த உள்ளூர் நாளில் ஆதாரத்தால் அடையாளம் காணப்பட்ட தவிர்க்க வேண்டிய நேரங்கள்')+'</strong><ul>'+windows+'</ul></div>':'')+
+    '<div class="cal-muhurta-rules"><strong>'+L('Source rule audit','ஆதார விதி விவரம்')+'</strong>'+(rules||'<p>'+L('No verified rule is registered for this activity yet.','இந்தச் செயலுக்கான சரிபார்க்கப்பட்ட விதி இன்னும் பதிவு செய்யப்படவில்லை.')+'</p>')+'</div>'+
+    '<p class="cal-muhurta-engine-disclaimer">'+L('This is a source-audit preview, not a certified final Muhurta result. Pending rules are not treated as approvals. Personal horoscope matching is separate.','இது ஆதார ஆய்வு முன்னோட்டம் மட்டுமே; இறுதி உறுதிப்படுத்தப்பட்ட முகூர்த்த முடிவு அல்ல. நிலுவையில் உள்ள விதிகள் ஒப்புதலாகக் கருதப்படாது. தனிநபர் ஜாதகப் பொருத்தம் தனியாகும்.')+'</p>';
+  }catch(error){
+   target.textContent=L('Muhurta evaluation unavailable: ','முகூர்த்த மதிப்பீடு கிடைக்கவில்லை: ')+String(error?.message||error);
+   console.warn('Calendar Muhurta evaluation unavailable.',error);
+  }
+ }
+
  function renderMuhurtaLagna(){
   const target=$('#calMuhurtaLagna');
   if(!target||!daily)return;
@@ -454,7 +528,9 @@ if(host){
     '<div class="cal-muhurta-lagna-item"><small>'+L('Subha Muhurtham day','சுபமுகூர்த்த நாள்')+'</small><strong class="cal-subha-verdict '+(classification.available?(classification.isSubhaMuhurtham?'is-subha':'is-not-subha'):'is-unknown')+'">'+esc(verdict)+'</strong><span>'+esc(phaseLabel)+'</span></div>'+
     '<div class="cal-muhurta-lagna-item"><small>'+esc(lagnaHeading)+'</small><strong>'+esc(lagnaName)+'</strong><span>'+L('Calculated at','கணக்கீட்டு நேரம்')+' '+esc(calculationTime)+'</span></div>'+
     '<div class="cal-muhurta-lagna-item"><small>'+L('Rasi Mana Lagna Balance','ராசி மான லக்ன இருப்பு')+'</small><strong class="cal-rasi-balance-line">'+esc(balanceLine)+'</strong><span class="cal-rasi-balance-meta">'+esc(balanceMeta)+'</span></div>'+
-   '</div>';
+   '</div>'+
+    '<section class="cal-muhurta-engine" id="calMuhurtaEngine" aria-label="'+L('Activity-specific Muhurta','சுபகாரிய முகூர்த்தம்')+'"></section>';
+  renderMuhurtaEngineControls();
  }
 
  function renderDateDetails(){
