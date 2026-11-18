@@ -187,7 +187,7 @@ if(location.hostname==='smvastroservices.pages.dev'){
       target.className='cal-rasi-palan';
       document.getElementById('smvDailyCalendar')?.insertAdjacentElement('afterend',target);
     }
-    target.innerHTML='<h2>ராசி பலன்கள் & கிரக கோச்சாரம் / Rasi Palan & Planetary Transits</h2><p role="alert">இந்தப் பகுதியின் source files தற்போதைய Calendar host-ல் ஏற்றப்படவில்லை. பக்கத்தை மீண்டும் திறக்கவும்; சிக்கல் தொடர்ந்தால் நிர்வாகத்திடம் தெரிவிக்கவும்.</p><p role="alert">The deployed forecast assets could not be loaded from this Calendar host.</p><details><summary>Asset diagnostics</summary><pre></pre></details>';
+    target.innerHTML='<h2>ராசி பலன்கள் & கிரக கோச்சார பலன்கள் / Rasi Palan & Planetary Transits</h2><p role="alert">இந்தப் பகுதியின் source files தற்போதைய Calendar host-ல் ஏற்றப்படவில்லை. பக்கத்தை மீண்டும் திறக்கவும்; சிக்கல் தொடர்ந்தால் நிர்வாகத்திடம் தெரிவிக்கவும்.</p><p role="alert">The deployed forecast assets could not be loaded from this Calendar host.</p><details><summary>Asset diagnostics</summary><pre></pre></details>';
     const detail=target.querySelector('pre');
     if(detail)detail.textContent=diagnostics.join('\n')||'No compatible candidate was found.';
     console.error('SMV Calendar Rasi Palan and Planetary Transits could not load.',diagnostics);
