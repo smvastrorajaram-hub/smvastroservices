@@ -109,8 +109,47 @@ try {
   await page.waitForSelector('#calMuhurtaLagna .cal-muhurta-lagna-grid .cal-muhurta-lagna-item', { timeout: 30000 });
   await page.waitForFunction(() => document.querySelector('#calChandrashtamaResult')?.dataset.resolved === 'true', { timeout: 180000 });
   await page.waitForFunction(() =>
-    Boolean(document.querySelector('#calReadings > h3') && document.querySelector('#calEvents > h3')),
+    Boolean(document.querySelector('#calReadings > h3') && document.querySelector('#calEvents > h3')) &&
+    document.querySelectorAll('#calDateDetailsExtra .cal-panchang-detail-grid .cal-panchang-detail-item').length === 14,
     { timeout: 30000 });
+  const integratedPanchang = await page.$eval('#calDateDetails', root => {
+    const title = root.querySelector('.cal-date-details-title')?.textContent?.trim() || '';
+    const source = root.querySelector('#calPanchangSource');
+    const summary = root.querySelector('#calDateDetailsExtra .cal-details-summary');
+    const grid = summary?.querySelector('.cal-panchang-detail-grid');
+    const items = [...(grid?.querySelectorAll('.cal-panchang-detail-item') || [])];
+    const first = items[0], second = items[1];
+    const firstRect = first?.getBoundingClientRect();
+    const secondRect = second?.getBoundingClientRect();
+    const firstLabel = first?.querySelector('small')?.getBoundingClientRect();
+    const firstValue = first?.querySelector('strong')?.getBoundingClientRect();
+    const thyajyam = summary?.querySelector('.cal-day-yoga-card.is-inauspicious');
+    return {
+      title,
+      sourceHidden: source?.hidden === true,
+      sourceRowCount: source?.querySelectorAll('.panchang-data-table tbody tr').length || 0,
+      itemCount: items.length,
+      visibleDateRow: items.some(item => /^(Date|தேதி)$/.test(item.querySelector('small')?.textContent?.trim() || '')),
+      tamilDateTile: Boolean(summary?.querySelector('.cal-tamil-date-card')),
+      standalonePanchangCard: Boolean(root.querySelector('#calDaily .panchang-card')),
+      dailyHoraKept: Boolean(root.querySelector('#calDaily .hora-card')),
+      gridBeforeThyajyam: Boolean(grid && thyajyam && (grid.compareDocumentPosition(thyajyam) & Node.DOCUMENT_POSITION_FOLLOWING)),
+      firstTwoShareRow: Boolean(firstRect && secondRect && Math.abs(firstRect.top - secondRect.top) < 1 && firstRect.left < secondRect.left),
+      labelLeftOfValue: Boolean(firstLabel && firstValue && firstLabel.left < firstValue.left)
+    };
+  });
+  assert.ok(['Daily Panchang', 'தினசரி பஞ்சாங்கம்'].includes(integratedPanchang.title),
+    'The Date Details heading must be renamed to Daily Panchang in both languages.');
+  assert.equal(integratedPanchang.sourceHidden, true, 'The old Panchang table is retained only as a hidden data source.');
+  assert.equal(integratedPanchang.sourceRowCount, 15, 'The source contains the original date and fourteen Panchang results.');
+  assert.equal(integratedPanchang.itemCount, 14, 'All fourteen non-date Panchang results must appear in the new detail grid.');
+  assert.equal(integratedPanchang.visibleDateRow, false, 'There must not be a separate date-only Panchang item.');
+  assert.equal(integratedPanchang.tamilDateTile, true, 'The Tamil date remains in the existing date tile.');
+  assert.equal(integratedPanchang.standalonePanchangCard, false, 'The separate Daily Panchang table card must be removed.');
+  assert.equal(integratedPanchang.dailyHoraKept, true, 'Daily Hora remains in its existing area.');
+  assert.equal(integratedPanchang.gridBeforeThyajyam, true, 'All Panchang results must appear above Nakshatra Thyajyam.');
+  assert.equal(integratedPanchang.firstTwoShareRow, true, 'Panchang result cards must be arranged left and right.');
+  assert.equal(integratedPanchang.labelLeftOfValue, true, 'Each Panchang card must place its label on the left and result on the right.');
   const dailyDetailsOrder = await page.$eval('#calDateDetails', root =>
     [...root.children].map(child => child.id).filter(id =>
       ['calChandrashtamaSection', 'calReadings', 'calEvents', 'calDaily'].includes(id)));
@@ -577,7 +616,7 @@ try {
       insideDateDetails: Boolean(dateDetails && el.parentElement === dateDetails),
       dayFlagsSeparated: Boolean(flagsCard && flags.length === 2),
       shoolamSeparate: Boolean(shoolam && !shoolam.querySelector('.cal-day-flag')),
-      immediatelyBeforePanchang: document.querySelector('#calChandrashtamaSection')?.nextElementSibling?.id === 'calDaily',
+      dailyContentAfterObservances: document.querySelector('#calEvents')?.nextElementSibling?.id === 'calDaily',
       lagnaBeforeChandrashtama: el.nextElementSibling?.id === 'calChandrashtamaSection',
       chandrashtamaSectionInsideDateDetails: Boolean(document.querySelector('#calChandrashtamaSection')?.parentElement === dateDetails)
     };
@@ -587,7 +626,7 @@ try {
   assert.equal(resultPlacement.shoolamSeparate, true, 'Travel Shoolam must be separate from the day flags.');
   assert.equal(resultPlacement.lagnaBeforeChandrashtama, true, 'Chandrashtama must appear immediately below the Rasi-Mana Lagna balance section.');
   assert.equal(resultPlacement.chandrashtamaSectionInsideDateDetails, true, 'Chandrashtama must remain inside Date Details.');
-  assert.equal(resultPlacement.immediatelyBeforePanchang, true, 'Chandrashtama must appear immediately above the daily Panchang.');
+  assert.equal(resultPlacement.dailyContentAfterObservances, true, 'Daily Hora and transit content must remain below Tara Bala and observances.');
 
   // Verify the requested Date Details layout and the month-number alignment at
   // a narrow phone viewport matching the submitted mobile screenshot.
@@ -692,42 +731,47 @@ try {
     fullPage: false,
     captureBeyondViewport: false
   });
-  // Verify PR #529 daily Panchang/Hora/transit typography on the real mobile DOM.
+  // Verify the integrated Daily Panchang/Hora/transit typography on the real mobile DOM.
   await page.waitForFunction(() => {
-    const rows = document.querySelectorAll('#calDaily .panchang-data-table tbody tr');
+    const items = document.querySelectorAll('#calDateDetailsExtra .cal-panchang-detail-grid .cal-panchang-detail-item');
     const hora = document.querySelectorAll('#calDaily .hora-time.smv-calendar-neutral-time');
-    return rows.length >= 8 && hora.length >= 20 &&
-      document.querySelector('#calDaily .cal-name-yoga-label') &&
-      document.querySelector('#calDaily .panchang-time-result.smv-calendar-bright-red-time') &&
+    return items.length === 14 && hora.length >= 20 &&
+      document.querySelector('#calDateDetailsExtra .cal-panchang-detail-grid .cal-name-yoga-label') &&
+      document.querySelector('#calDateDetailsExtra .cal-panchang-detail-grid .panchang-time-result.smv-calendar-bright-red-time') &&
       document.querySelector('#calDaily .transit-position-table .transit-table-degree.smv-calendar-degree-normal');
   }, { timeout: 90000 });
-  const tamilYogaLabel = await page.$eval('#calDaily .cal-name-yoga-label', el => el.textContent.trim());
+  const tamilYogaLabel = await page.$eval('#calDateDetailsExtra .cal-panchang-detail-grid .cal-name-yoga-label', el => el.textContent.trim());
   assert.equal(tamilYogaLabel, 'நாம யோகம்', 'Tamil Calendar must display the complete localized label “நாம யோகம்”.');
   await page.click('#calEnglish');
   await page.waitForFunction(() => document.documentElement.lang === 'en' &&
-    document.querySelector('#calDaily .cal-name-yoga-label')?.textContent.trim() === 'Namah Yoga', { timeout: 15000 });
+    document.querySelector('#calDateDetailsExtra .cal-panchang-detail-grid .cal-name-yoga-label')?.textContent.trim() === 'Namah Yoga', { timeout: 15000 });
   await page.click('#calTamil');
   await page.waitForFunction(() => document.documentElement.lang === 'ta' &&
-    document.querySelector('#calDaily .cal-name-yoga-label')?.textContent.trim() === 'நாம யோகம்', { timeout: 15000 });
+    document.querySelector('#calDateDetailsExtra .cal-panchang-detail-grid .cal-name-yoga-label')?.textContent.trim() === 'நாம யோகம்', { timeout: 15000 });
   const dailyTypography = await page.evaluate(() => {
-    const table = document.querySelector('#calDaily .panchang-data-table');
-    const rows = [...(table?.tBodies?.[0]?.rows || [])];
-    const yoga = table?.querySelector('.cal-name-yoga-label');
-    const eventDate = table?.querySelector('.event-date.smv-calendar-neutral-date-time');
-    const eventTime = table?.querySelector('.event-time.smv-calendar-neutral-date-time');
-    const connector = table?.querySelector('.event-to.smv-calendar-normal-connector');
-    const redTimes = [...(table?.querySelectorAll('.panchang-time-result.smv-calendar-bright-red-time') || [])];
+    const grid = document.querySelector('#calDateDetailsExtra .cal-panchang-detail-grid');
+    const items = [...(grid?.querySelectorAll('.cal-panchang-detail-item') || [])];
+    const primaryResults = items.filter(item => item.classList.contains('is-primary')).map(item => item.querySelector('strong'));
+    const yoga = grid?.querySelector('.cal-name-yoga-label');
+    const eventDate = grid?.querySelector('.event-date.smv-calendar-neutral-date-time');
+    const eventTime = grid?.querySelector('.event-time.smv-calendar-neutral-date-time');
+    const connector = grid?.querySelector('.event-to.smv-calendar-normal-connector');
+    const redTimes = [...(grid?.querySelectorAll('.panchang-time-result.smv-calendar-bright-red-time') || [])];
+    const labelFor = pattern => items.find(item => pattern.test(item.querySelector('small')?.textContent?.trim() || ''))?.querySelector('small');
+    const varaLabel = labelFor(/^(?:Vara|வாரம்)$/);
+    const tithiLabel = labelFor(/^(?:Tithi|திதி)$/);
     const normalHora = [...document.querySelectorAll('#calDaily .hora-time.smv-calendar-neutral-time:not(.smv-hora-current-green):not(.smv-hora-bright-green):not(.smv-hora-current-red):not(.smv-hora-bright-red)')];
     const degree = document.querySelector('#calDaily .transit-position-table .transit-table-degree.smv-calendar-degree-normal');
     const style = element => element ? getComputedStyle(element) : null;
     return {
-      primaryResultWeights: rows.slice(0, 8).map(row => style(row.cells[1])?.fontWeight || ''),
+      panchangItemCount: items.length,
+      primaryResultWeights: primaryResults.map(element => style(element)?.fontWeight || ''),
       yogaLabel: yoga?.textContent?.trim() || '',
       yogaLabelColor: style(yoga)?.color || '',
       yogaLabelWeight: style(yoga)?.fontWeight || '',
       yogaLabelFontSize: style(yoga)?.fontSize || '',
-      varaLabelFontSize: style(rows[3]?.cells?.[0])?.fontSize || '',
-      tithiLabelFontSize: style(rows[4]?.cells?.[0])?.fontSize || '',
+      varaLabelFontSize: style(varaLabel)?.fontSize || '',
+      tithiLabelFontSize: style(tithiLabel)?.fontSize || '',
       eventDateColor: style(eventDate)?.color || '',
       eventTimeColor: style(eventTime)?.color || '',
       connectorColor: style(connector)?.color || '',
@@ -740,9 +784,10 @@ try {
       degreeWeight: style(degree)?.fontWeight || ''
     };
   });
-  assert.equal(dailyTypography.primaryResultWeights.length, 8, 'Date through Karana must all be present in the Panchang results.');
-  assert.ok(dailyTypography.primaryResultWeights.every(weight => weight === '700'), 'Date through Karana results must be bold.');
-  assert.equal(dailyTypography.yogaLabel, 'நாம யோகம்', 'The Tamil Calendar yoga row must display the complete label நாம யோகம்.');
+  assert.equal(dailyTypography.panchangItemCount, 14, 'All fourteen non-date Panchang values must be present.');
+  assert.equal(dailyTypography.primaryResultWeights.length, 7, 'Sun Sign through Karana must all be present in the main Panchang results.');
+  assert.ok(dailyTypography.primaryResultWeights.every(weight => weight === '700'), 'Sun Sign through Karana results must be bold.');
+  assert.equal(dailyTypography.yogaLabel, 'நாம யோகம்', 'The Tamil Calendar yoga label must display the complete wording நாம யோகம்.');
   assert.equal(dailyTypography.yogaLabelColor, 'rgb(0, 0, 0)', 'Namah Yoga must be black.');
   assert.equal(dailyTypography.yogaLabelWeight, '700', 'Namah Yoga must be bold.');
   assert.equal(dailyTypography.yogaLabelFontSize, dailyTypography.varaLabelFontSize, 'Namah Yoga must use the same font size as the Vara label.');
@@ -754,14 +799,14 @@ try {
   assert.equal(dailyTypography.redTimeColors.length, 2, 'Rahu Kalam and Yamagandam must both be present.');
   assert.ok(dailyTypography.redTimeColors.every(color => color === 'rgb(255, 0, 0)'), 'Rahu Kalam and Yamagandam must be bright red.');
   assert.equal(await page.$$eval('#calDaily .hora-time.smv-calendar-neutral-time', nodes => nodes.length), 24, 'All 24 day/night Hora time cells must carry the Calendar typography marker.');
-  assert.ok(dailyTypography.normalHoraCount >= 12, 'At least twelve ordinary Hora cells must remain in the normal black presentation while preserving weekday/current special colors.')
+  assert.ok(dailyTypography.normalHoraCount >= 12, 'At least twelve ordinary Hora cells must remain in the normal black presentation while preserving weekday/current special colors.');
   assert.equal(dailyTypography.normalHoraColor, 'rgb(0, 0, 0)', 'Normal Hora time values must be black.');
   assert.equal(dailyTypography.normalHoraWeight, '400', 'Normal Hora time values must not be bold.');
   assert.equal(dailyTypography.degreeColor, 'rgb(0, 0, 0)', 'Transit Degree values must be black.');
   assert.equal(dailyTypography.degreeWeight, '400', 'Transit Degree values must use normal weight.');
   process.stdout.write('SMV_CALENDAR_DAILY_TYPOGRAPHY ' + JSON.stringify(dailyTypography) + '\\n');
 
-  await page.$eval('#calDaily .panchang-data-table', el => el.scrollIntoView({ block: 'start' }));
+  await page.$eval('#calDateDetailsExtra .cal-panchang-detail-grid', el => el.scrollIntoView({ block: 'start' }));
   await page.screenshot({
     path: new URL('calendar-daily-panchang-typography-mobile.png', outputDir).pathname,
     fullPage: false,
