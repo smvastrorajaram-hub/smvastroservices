@@ -5,7 +5,7 @@ import {panchang,transit,calendarTamil,solarNoaa,tamilSolarDate,nextSolarIngress
 import {getTamilDayYoga} from './tamil-day-classifications.mjs';
 import {meanObliquityAtJulianDay,calculateSolarSignRasiMana,calculateRemainingSolarSignRasiMana} from './offline/rasi-mana.browser.mjs';
 import {getChandrashtamaRasiIndex,getChandrashtamaPadaSegments,normalizeSiderealLongitude} from './calendar-chandrashtama.mjs';
-import {getPushkaraNavamsa,classifyDocument50MarriageMuhurtham} from './calendar-muhurta-activities.mjs';
+import {getPushkaraNavamsa,classifyDocument50MarriageMuhurtham,getDocument50Panchaka} from './calendar-muhurta-activities.mjs';
 const norm=n=>(n%360+360)%360;
 const cache=new Map();
 const sampleCache=new Map();
@@ -190,11 +190,24 @@ async function calculateDocument50PushkaraWindows(input){
    });
   }
  }
+ const weekdayIndex=new Date(date+'T12:00:00Z').getUTCDay();
  for(const interval of intervals){
   const midpointSeconds=Math.floor((interval.startSeconds+interval.endSeconds)/2);
   const midpointTime=clockWithSeconds(midpointSeconds).slice(0,5);
   const midpointOffset=pushkaraOffsetAt(timezoneSegments,midpointSeconds);
-  const moon=await sample({...input,utcOffsetMinutes:midpointOffset},midpointTime);
+  const [moon,midpointLagna]=await Promise.all([
+   sample({...input,utcOffsetMinutes:midpointOffset},midpointTime),
+   Promise.resolve(getPushkaraNavamsa(lagnaAt(midpointSeconds)))
+  ]);
+  if(!midpointLagna.available||!Number.isInteger(midpointLagna.signIndex))throw new Error('Pushkara interval Lagna sign could not be resolved.');
+  interval.midpointTime=midpointTime;
+  interval.tithiNumber=Number(moon.tithi);
+  interval.nakshatraNumber=Number(moon.star);
+  interval.lagnaSignIndex=midpointLagna.signIndex;
+  interval.panchaka=getDocument50Panchaka({
+   weekdayIndex,tithiNumber:interval.tithiNumber,nakshatraNumber:interval.nakshatraNumber,
+   lagnaSignIndex:interval.lagnaSignIndex
+  });
   interval.transitMoonSignIndex=Number(moon.moon);
   interval.chandrashtamaRasiIndex=chandrashtamaRasiIndex;
   interval.chandrashtama=interval.transitMoonSignIndex===chandrashtamaRasiIndex;
