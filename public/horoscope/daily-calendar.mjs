@@ -428,7 +428,7 @@ if(host){
     while(specialMuhurthaCache.size>24)specialMuhurthaCache.delete(specialMuhurthaCache.keys().next().value);
    }
    if(specialMuhurthaPending.get(key)===pending)specialMuhurthaPending.delete(key);
-   if(request!==specialMuhurthaRequest||selected!==String(input(selected,false).date)||!target.isConnected)return;
+   if(request!==specialMuhurthaRequest||!target.isConnected)return;
    if(!result?.available){
     target.innerHTML='<h3>'+L('Pushkara Navamsa','புஷ்கர நவாம்சம்')+'</h3><p>'+L('Local intervals are unavailable for this place and date.','இந்த ஊர் / தேதிக்கான நேரங்கள் கிடைக்கவில்லை.')+'</p>';
     return;
@@ -438,7 +438,7 @@ if(host){
     return;
    }
    const rows=result.windows.map(item=>{
-    const title=item.isRahita?L('உத்தமம்','Excellent'):(ta()?item.panchakaLabelTa:item.panchakaLabelEn);
+    const title=item.isRahita?L('Excellent','உத்தமம்'):(ta()?item.panchakaLabelTa:item.panchakaLabelEn);
     const detail=item.isRahita?'':(ta()?item.cautionTa:item.cautionEn);
     const state=item.isRahita?'is-uttamam':'is-panchaka';
     const activities=getPanchakaActivityResults({available:true,isRahita:item.isRahita,key:item.panchakaKey});
@@ -481,7 +481,7 @@ if(host){
     while(moudhyaCache.size>18)moudhyaCache.delete(moudhyaCache.keys().next().value);
    }
    if(moudhyaPending.get(key)===pending)moudhyaPending.delete(key);
-   if(request!==moudhyaRequest||selected!==String(input(selected,false).date)||!target.isConnected)return;
+   if(request!==moudhyaRequest||!target.isConnected)return;
    const windows=(result?.windows||[]);
    if(!result?.available||!windows.length)return;
    const rows=windows.map(item=>{
