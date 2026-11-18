@@ -4,6 +4,10 @@ on:
     branches: [main, 'feat/calendar-muhurta-day-lagna-balance', 'feat/calendar-exact-chandrashtama-windows-20261118']
     paths:
       - 'public/horoscope/calendar/**'
+      - 'public/horoscope/muhurta/**'
+      - 'tests/muhurta-*.mjs'
+      - 'public/horoscope/muhurta/**'
+      - 'tests/muhurta-*.mjs'
       - 'public/_headers'
       - 'public/horoscope/calendar-rasi-palan.*'
       - 'public/horoscope/horoscope-language.js'
@@ -63,7 +67,7 @@ concurrency:
 jobs:
   source-regression:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -75,6 +79,15 @@ jobs:
           node --check public/horoscope/calendar-rasi-palan.mjs
           node --check public/horoscope/calendar-worker.mjs
           node --check public/horoscope/daily-calendar.mjs
+          node --check public/horoscope/muhurta/activities.mjs
+          node --check public/horoscope/muhurta/source-registry.mjs
+          node --check public/horoscope/muhurta/core/astronomy-facts.mjs
+          node --check public/horoscope/muhurta/engines/tamil.mjs
+          node --check public/horoscope/muhurta/engines/pan-indian.mjs
+          node --check public/horoscope/muhurta/index.mjs
+          node --check tests/muhurta-engines.test.mjs
+          node --check tests/muhurta-calendar-integration-regression.mjs
+          node --check tests/muhurta-1800-2399-regression.test.mjs
           node --check public/horoscope/calendar-muhurta-classification.mjs
           node --check public/horoscope/calendar-chandrashtama.mjs
           node --check tests/calendar-chandrashtama-regression.mjs
@@ -94,6 +107,12 @@ jobs:
         run: node tests/calendar-rasi-palan-regression.mjs
       - name: Run Subha Muhurtham and Lagna balance regression
         run: node tests/calendar-muhurta-lagna-regression.mjs
+      - name: Run distinct Tamil and Pan-Indian source-rule regression
+        run: node --test tests/muhurta-engines.test.mjs
+      - name: Run Calendar integration and synchronized cache regression
+        run: node tests/muhurta-calendar-integration-regression.mjs
+      - name: Run complete 1800–2399 Swiss Ephemeris and muhurta regression
+        run: node --test tests/muhurta-1800-2399-regression.test.mjs
       - name: Run exact Chandrashtama Rasi and Nakshatra Pada regression
         run: node --test tests/calendar-chandrashtama-regression.mjs
   browser-preview:
