@@ -173,6 +173,16 @@ try {
     { nakshatraIndex: 17, pada: 1 }, { nakshatraIndex: 17, pada: 2 },
     { nakshatraIndex: 17, pada: 3 }, { nakshatraIndex: 17, pada: 4 }
   ], 'Mesha Janma Rasi must show Vishakha Pada 4, all Anuradha padas and all Jyeshtha padas during the Vrichigam transit.');
+
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+  await page.$eval('#calChandrashtamaPeriods .cal-chandra-window details', details => { details.open = true; });
+  const chandrashtamaCard = await page.$('#calReadings .cal-chandrashtama');
+  assert.ok(chandrashtamaCard, 'The Chandrashtama Rasi card must be rendered for the mobile preview.');
+  await chandrashtamaCard.evaluate(el => el.scrollIntoView({ block: 'center' }));
+  await chandrashtamaCard.screenshot({
+    path: new URL('calendar-chandrashtama-exact-padas-mobile.png', outputDir).pathname
+  });
+  console.log('EXACT_CHANDRASHTAMA_INDEPENDENT_CHECK ' + JSON.stringify(independentChandrashtamaCheck));
   await page.$eval('#calDate', (el, date) => {
     el.value = date;
     el.dispatchEvent(new Event('change', { bubbles: true }));
