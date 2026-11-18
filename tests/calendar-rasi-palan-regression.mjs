@@ -305,6 +305,12 @@ test('Moon transit appears first, the eight other planets remain separate, and o
     'Upcoming window details remain visible even when selected-date status is Chandrashtama No.');
   assert.match(dailyCalendarSource, /data-period-type=/);
   assert.match(dailyCalendarSource, /is-upcoming/);
+  assert.ok(dailyCalendarSource.includes('upcomingHeading=nearestUpcomingWindow&&windowsHtml'),
+    'The next-Chandrashtama label appears only with the absent-date upcoming fallback.');
+  assert.ok(dailyCalendarSource.includes("esc(signs[janmaRasiIndex]?.[lang]||'—')"),
+    'The next-Chandrashtama label uses the currently selected Janma Rasi name.');
+  assert.match(dailyCalendarSource, /return windowsHtml\?'<div class="cal-chandra-windows">'\+upcomingHeading\+windowsHtml/);
+  assert.match(dailyCalendarCssSource, /cal-chandra-upcoming-heading/);
   assert.match(dailyCalendarCssSource, /cal-chandrashtama-section>h3\{display:block!important;width:100%!important;text-align:center!important\}/);
   assert.match(dailyCalendarCssSource, /cal-chandrashtama-section>h3::after\{display:none!important;content:none!important\}/);
   assert.match(dailyCalendarCssSource, /cal-chandrashtama-result\.is-present\{color:#c00000!important;-webkit-text-fill-color:#c00000!important\}/);
