@@ -95,7 +95,12 @@ test('Vastu days are scoped to Parabhava and Plavanga including the confirmed 20
     date: '2027-11-24', monthTa: 'கார்த்திகை', tamilDay: 8
   });
   assert.equal(getVastuDay('2026-03-06'), null, 'Thai/Masi dates before Parabhava must not be shown.');
-  assert.equal(getVastuDay('2027-03-06'), null, 'Thai/Masi dates before Plavanga must not be shown.');
+  assert.deepEqual(getVastuDay('2027-01-26'), {
+    date: '2027-01-26', monthTa: 'தை', tamilDay: 12
+  });
+  assert.deepEqual(getVastuDay('2027-03-06'), {
+    date: '2027-03-06', monthTa: 'மாசி', tamilDay: 22
+  });
   assert.deepEqual(getVastuDay('2028-01-26'), {
     date: '2028-01-26', monthTa: 'தை', tamilDay: 12
   });
