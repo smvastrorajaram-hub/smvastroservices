@@ -134,6 +134,11 @@ try {
       const result = document.querySelector('#calDocument50PushkaraWindows');
       return status.includes(value) && result?.querySelector('.cal-pushkara-window-list');
     }, { timeout: 120000 }, date);
+
+    await page.waitForFunction(() => {
+      const balance = document.querySelector('#calMuhurtaLagna .cal-rasi-balance-line')?.textContent || '';
+      return balance && !/being calculated|கணக்கிடப்படுகிறது/i.test(balance);
+    }, { timeout: 90000 });
     return page.$eval('#calDocument50PushkaraWindows', el => ({
       text: el.textContent || '',
       rows: [...el.querySelectorAll('.cal-pushkara-window-row')].map(row => row.textContent.trim())
@@ -150,6 +155,27 @@ try {
   assert.ok(chennaiPushkara.rows.length > 0, 'Chennai must return local morning Pushkara intervals for 7 June 2026.');
   assert.notDeepEqual(chennaiPushkara.rows, salemPushkara.rows,
     'Changing longitude/latitude must recalculate the local time intervals rather than copy a Salem time table.');
+
+  // Restore the product's Perambalur default before the later fixed-value
+  // regression (25-Nov-2026). Salem/Chennai coordinate tests must not leak
+  // their changed location into an unrelated Perambalur fixture.
+  await page.$eval('.cal-location', el => { el.open = true; });
+  await page.$eval('#calPlace', el => { el.value = 'Perambalur'; el.dataset.timezone = ''; });
+  await page.$eval('#calLat', el => { el.value = '11.2342'; });
+  await page.$eval('#calLon', el => { el.value = '78.8808'; });
+  await page.$eval('#calOffset', el => { el.value = '5.5'; });
+  await page.$eval('#calLocation', form => form.requestSubmit());
+  await page.waitForFunction(() => {
+    const status = document.querySelector('#calStatus')?.textContent || '';
+    const result = document.querySelector('#calDocument50PushkaraWindows');
+    return status.includes('Perambalur') &&
+      result?.textContent.includes('11.23420, 78.88080') &&
+      result?.querySelector('.cal-pushkara-window-list');
+  }, { timeout: 120000 });
+  await page.waitForFunction(() => {
+    const balance = document.querySelector('#calMuhurtaLagna .cal-rasi-balance-line')?.textContent || '';
+    return balance && !/being calculated|கணக்கிடப்படுகிறது/i.test(balance);
+  }, { timeout: 90000 });
   const resultPlacement = await page.$eval('#calMuhurtaLagna', el => {
     const dateDetails = document.querySelector('#calDateDetails');
     const summary = document.querySelector('#calDateDetailsExtra');
