@@ -967,7 +967,7 @@ test('SMV CALENDAR daily Panchang and Hora follow the green result hierarchy', (
   assert.ok(calendarIndexSource.includes("const version='20261118-calendar-green-heading-v4'"),
     'The dynamically loaded Rasi Palan CSS must use the new version marker.');
   assert.match(dailyCalendarSource, /hora-time smv-calendar-neutral-time/);
-  assert.match(calendarThemeCssSource, /cal-name-yoga-label\{color:#426957;font-size:12px;font-weight:700\}/);
+  assert.match(calendarThemeCssSource, /cal-name-yoga-label\{color:#426957;font-size:11px;font-weight:700\}/);
   assert.match(calendarThemeCssSource, /cal-panchang-detail-item\.is-primary>strong\{color:#15564e;font-size:14px;font-weight:700\}/);
   assert.match(calendarThemeCssSource, /smv-calendar-bright-red-time\{color:#b42318;font-weight:800\}/);
   assert.match(calendarThemeCssSource, /smv-calendar-normal-connector\{margin:0 3px;color:#708477;font-weight:400\}/);
