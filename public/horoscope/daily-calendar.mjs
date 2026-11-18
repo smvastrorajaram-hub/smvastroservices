@@ -2,14 +2,14 @@ import {offsetMinutesAt} from './offline/places/timezone.mjs';
 import {signs,stars,planets,holidays2026,holidaySource,favorable} from './calendar-data.mjs';
 import {getTamilCalendarDayFlags,getNakshatraDirection,getNethiramJeevan} from './tamil-day-classifications.mjs';
 import {classifySubhaMuhurtham} from './calendar-muhurta-classification.mjs';
-import {getChandrashtamaRasiIndex,getBirthStarPadasInRasi,getNakshatraPadaAtLongitude,formatRasiDegree} from './calendar-chandrashtama.mjs';
+import {getChandrashtamaRasiIndex,getBirthStarPadasInRasi,getNakshatraPadaAtLongitude,getChandrashtamaPadaProjection,formatRasiDegree} from './calendar-chandrashtama.mjs';
 
 const host=document.getElementById('smvDailyCalendar');
 if(host){
  const $=s=>host.querySelector(s),ta=()=>document.documentElement.lang==='ta',L=(en,tamil)=>ta()?tamil:en;
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const storage={get(){try{return JSON.parse(localStorage.getItem('smv-calendar-settings')||'{}')}catch{return {}}},set(v){try{localStorage.setItem('smv-calendar-settings',JSON.stringify(v))}catch{}}};
- let cfg={lat:11.2342,lon:78.8808,offset:330,place:'Perambalur',rasi:0,star:0,...storage.get()},daily=null,month=null,seq=0,pending=new Map(),worker=null,dayRequest=0,monthRequest=0,locationSearchTimer=0,locationSearchAbort=null,chandrashtamaRequest=0;
+ let cfg={lat:11.2342,lon:78.8808,offset:330,place:'Perambalur',rasi:0,star:0,starPada:1,...storage.get()},daily=null,month=null,seq=0,pending=new Map(),worker=null,dayRequest=0,monthRequest=0,locationSearchTimer=0,locationSearchAbort=null,chandrashtamaRequest=0;
  const monthCache=new Map();
  let pendingMonthCacheKey='',pendingMonthPromise=null;
  const monthCacheKey=(key,offset=cfg.offset)=>[Number(cfg.lat).toFixed(5),Number(cfg.lon).toFixed(5),Number(offset),key].join('|');
@@ -27,7 +27,7 @@ if(host){
   const now=localNowAt(offset);
   return {date,time:date===now.slice(0,10)?now.slice(11,16):'12:00',lat:+cfg.lat,lon:+cfg.lon,utcOffsetMinutes:offset,timezone:cfg.timezone||'',language:'en'};
  }
- function settings(){cfg.rasi=+$('#calRasi').value;cfg.star=+$('#calStar').value;storage.set(cfg);renderExtra()}
+ function settings(){cfg.rasi=+$('#calRasi').value;cfg.star=+$('#calStar').value;cfg.starPada=+$('#calStarPada').value;storage.set(cfg);renderExtra()}
  function viewportAnchor(selector){const el=selector?$(selector):null;return el?{selector,top:el.getBoundingClientRect().top}:null}
  function restoreViewport(anchor){if(!anchor)return;requestAnimationFrame(()=>requestAnimationFrame(()=>{const el=$(anchor.selector);if(!el)return;const delta=el.getBoundingClientRect().top-anchor.top;if(Math.abs(delta)>1)window.scrollBy(0,delta)}))}
  function loadFrom(selector){return load(viewportAnchor(selector))}
@@ -61,7 +61,7 @@ if(host){
  function shell(){const pagesDevHost=location.hostname==='smvastroservices.pages.dev'||location.hostname.endsWith('.smvastroservices.pages.dev');const calendarAppPage=location.hostname==='calendar.smvastroservices.in'||location.pathname.startsWith('/horoscope/calendar/');host.innerHTML=`<header class="cal-header"><div><p>SMV CALENDAR</p><h2>${L('Your day, guided by the sky','உங்கள் நாளுக்கான ஜோதிட வழிகாட்டி')}</h2><span>${L('Panchang · Hora · Transits · Tamil calendar','பஞ்சாங்கம் · ஹோரை · கோச்சாரம் · தமிழ் நாட்காட்டி')}</span></div><a class="cal-download-app-link"${calendarAppPage&&pagesDevHost?' hidden aria-hidden="true"':''} href="${calendarAppPage?'#smvCalendarAndroidApkSection':(location.hostname==='smvastroservices.pages.dev'?'/horoscope/calendar/?lang=':'https://calendar.smvastroservices.in/?lang=')+(ta()?'ta':'en')}"${calendarAppPage?'':' target="_blank" rel="noopener"'}><span class="cal-app-badge" aria-hidden="true">APK</span>${calendarAppPage?L('Download Android App','Android App பதிவிறக்கம்'):L('Open Calendar','காலண்டரைத் திறக்க')}</a></header><section class="cal-input-zone" aria-label="${L('Daily reading inputs','தினசரி பலன் உள்ளீடுகள்')}"><div class="cal-controls"><label>${L('Date','தேதி')}<input id="calDate" type="date" min="1800-01-01" max="2399-12-31" value="${selected}"></label><label>${L('Your Moon sign','உங்கள் சந்திர ராசி')}<select id="calRasi">${signs.map((s,i)=>`<option value="${i}" ${i===+cfg.rasi?'selected':''}>${s[ta()?1:0]}</option>`).join('')}</select></label><label>${L('Birth star · Tara','பிறந்த நட்சத்திரம் · தாராபலம்')}<select id="calStar">${stars.map((s,i)=>`<option value="${i}" ${i===+cfg.star?'selected':''}>${s[ta()?1:0]}</option>`).join('')}</select></label><button type="button" id="calToday">${L('Today','இன்று')}</button></div><details class="cal-location"><summary>${L('Location','இடம்')}: ${esc(cfg.place)} · UTC ${(+cfg.offset/60>=0?'+':'')+ +cfg.offset/60}</summary><form id="calLocation"><label class="cal-place-label">${L('Place','இடம்')}<span class="cal-place-search"><input id="calPlace" name="place" value="${esc(cfg.place)}" required maxlength="80"><span id="calPlaceResults" class="cal-place-results" role="listbox"></span></span></label><label>${L('Latitude','அட்சரேகை')}<input id="calLat" name="lat" type="number" min="-89" max="89" step="any" value="${cfg.lat}" required></label><label>${L('Longitude','தீர்க்கரேகை')}<input id="calLon" name="lon" type="number" min="-180" max="180" step="any" value="${cfg.lon}" required></label><label>UTC ${L('hours','மணி')}<input id="calOffset" name="offset" type="number" min="-12" max="14" step=".25" value="${+cfg.offset/60}" required></label><button>${L('Apply location','இடத்தைப் பயன்படுத்து')}</button><button type="button" id="calGeo">${L('Use my location','என் இருப்பிடம்')}</button></form></details><p id="calStatus" role="status"></p></section><div id="calMonth"></div><section id="calDateDetails" class="cal-date-details" aria-label="${L('Date Details','தேதி விவரங்கள்')}"><header class="cal-date-details-head"><div><h3 class="cal-date-details-title">${L('Date Details','தேதி விவரங்கள்')}</h3><p>${L('Panchangam, Tamil date and daily muhurthas','பஞ்சாங்கம், தமிழ் தேதி மற்றும் தினசரி முகூர்த்தங்கள்')}</p></div></header><div id="calDateDetailsExtra"></div><div id="calMuhurtaLagna" class="cal-muhurta-lagna-section" aria-live="polite"></div><div id="calDaily"></div><section id="calReadings"></section><section id="calEvents"></section></section>`;
   if(calendarAppPage&&!pagesDevHost){const appLink=$('.cal-download-app-link');if(appLink)appLink.hidden=false;}
  bindPlaceSearch();
- $('#calDate').onchange=()=>{if(!$('#calDate').checkValidity()||!$('#calDate').value)return;selected=$('#calDate').value;loadFrom('#calDate')};$('#calToday').onclick=()=>{selected=localNow().slice(0,10);$('#calDate').value=selected;loadFrom('.cal-controls')};$('#calRasi').onchange=settings;$('#calStar').onchange=settings;
+ $('#calDate').onchange=()=>{if(!$('#calDate').checkValidity()||!$('#calDate').value)return;selected=$('#calDate').value;loadFrom('#calDate')};$('#calToday').onclick=()=>{selected=localNow().slice(0,10);$('#calDate').value=selected;loadFrom('.cal-controls')};$('#calRasi').onchange=settings;$('#calStar').onchange=settings;$('#calStarPada').onchange=settings;
  $('#calLocation').onsubmit=e=>{
   e.preventDefault();const f=new FormData(e.target);
   const raw=String(f.get('offset')??'').trim(),latitude=String(f.get('lat')??'').trim(),longitude=String(f.get('lon')??'').trim();
@@ -177,7 +177,7 @@ if(host){
   const match=String(date||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
   return match?match[3]+'/'+match[2]+'/'+match[1]:String(date||'—');
  }
- function chandrashtamaWindowsHtml(result,janmaRasiIndex,starIndex){
+ function chandrashtamaWindowsHtml(result,janmaRasiIndex,starIndex,birthPada){
   const lang=ta()?1:0;
   const targetRasi=getChandrashtamaRasiIndex(janmaRasiIndex);
   const targetName=signs[targetRasi]?.[lang]||'—';
@@ -225,7 +225,7 @@ if(host){
   const target=$('#calChandrashtamaPeriods');
   if(!target)return;
   const request=++chandrashtamaRequest;
-  const janmaRasiIndex=Number(cfg.rasi),starIndex=Number(cfg.star);
+  const janmaRasiIndex=Number(cfg.rasi),starIndex=Number(cfg.star),birthPada=Number(cfg.starPada||1);
   target.innerHTML='<p class="cal-note">'+L('Calculating exact Moon sign / Nakshatra Pada boundaries…','சந்திர ராசி / நட்சத்திரப் பாத எல்லைகள் துல்லியமாகக் கணக்கிடப்படுகின்றன…')+'</p>';
   workerCall('chandrashtama-windows',{
    ...input(selected,false),
@@ -237,7 +237,7 @@ if(host){
     target.innerHTML='<p class="cal-note">'+esc(result?.reason||L('Chandrashtama timing unavailable.','சந்திராஷ்டம நேரம் கிடைக்கவில்லை.'))+'</p>';
     return;
    }
-   target.innerHTML=chandrashtamaWindowsHtml(result,janmaRasiIndex,starIndex);
+   target.innerHTML=chandrashtamaWindowsHtml(result,janmaRasiIndex,starIndex,birthPada);
   }).catch(error=>{
    if(request!==chandrashtamaRequest||!$('#calChandrashtamaPeriods'))return;
    target.innerHTML='<p class="cal-note">'+esc(L('Chandrashtama timing unavailable: ','சந்திராஷ்டம நேரம் கிடைக்கவில்லை: ')+String(error?.message||error))+'</p>';
