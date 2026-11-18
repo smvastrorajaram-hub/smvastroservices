@@ -1,7 +1,7 @@
 name: SMV CALENDAR Rasi Palan Scoped QA
 on:
   push:
-    branches: [main, 'feat/calendar-muhurta-day-lagna-balance']
+    branches: [main, 'feat/calendar-muhurta-day-lagna-balance', 'research/subha-muhurtham-rule-audit-20261117']
     paths:
       - 'public/horoscope/calendar/**'
       - 'public/_headers'
