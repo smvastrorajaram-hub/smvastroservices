@@ -41,10 +41,26 @@ export function getPushkaraArcIndex(longitude) {
 const PANCHAKA_NAMES = Object.freeze({
   mrityu: Object.freeze({ ta: 'மிருத்யு பஞ்சகம்', en: 'Mrityu Panchaka', cautionTa: 'திருமணம் / உபநயனம் தவிர்க்கவும்', cautionEn: 'Avoid marriage / Upanayanam' }),
   agni: Object.freeze({ ta: 'அக்னி பஞ்சகம்', en: 'Agni Panchaka', cautionTa: 'வீடு கட்டும் பணியைத் தவிர்க்கவும்', cautionEn: 'Avoid house construction' }),
-  raja: Object.freeze({ ta: 'ராஜ பஞ்சகம்', en: 'Raja Panchaka', cautionTa: 'தொழில் தொடக்கம் / தொழில் சார்ந்த காரியங்களைத் தவிர்க்கவும்', cautionEn: 'Avoid occupation / business undertakings' }),
+  raja: Object.freeze({ ta: 'ராஜ பஞ்சகம்', en: 'Raja Panchaka', cautionTa: 'வீடு கட்டுதல் / தொழில் தொடக்கம் தவிர்க்கவும்', cautionEn: 'Avoid house construction / business undertakings' }),
   chora: Object.freeze({ ta: 'சோர பஞ்சகம்', en: 'Chora Panchaka', cautionTa: 'பயணத்தைத் தவிர்க்கவும்', cautionEn: 'Avoid travel' }),
   roga: Object.freeze({ ta: 'ரோக பஞ்சகம்', en: 'Roga Panchaka', cautionTa: 'திருமணம் / உபநயனம் தவிர்க்கவும்', cautionEn: 'Avoid marriage / Upanayanam' })
 });
+
+const PANCHAKA_ACTIVITIES = Object.freeze([
+  Object.freeze({ key: 'marriage', labelTa: 'திருமணம் / உபநயனம்', blockedBy: ['mrityu', 'roga'] }),
+  Object.freeze({ key: 'house', labelTa: 'வீடு கட்டுதல்', blockedBy: ['agni', 'raja'] }),
+  Object.freeze({ key: 'business', labelTa: 'தொழில் தொடக்கம்', blockedBy: ['raja'] }),
+  Object.freeze({ key: 'travel', labelTa: 'பயணம்', blockedBy: ['chora'] })
+]);
+
+export function getPanchakaActivityResults(result) {
+  if (!result?.available) return [];
+  return PANCHAKA_ACTIVITIES.map(activity => ({
+    key: activity.key,
+    labelTa: activity.labelTa,
+    suitableByPanchaka: result.isRahita === true || !activity.blockedBy.includes(result.key)
+  }));
+}
 
 export function classifyPanchaka({ tithi, weekday, nakshatra, lagna } = {}) {
   const values = [tithi, weekday, nakshatra, lagna].map(Number);
