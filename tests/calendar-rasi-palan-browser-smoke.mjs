@@ -504,6 +504,7 @@ try {
     janmaRasi: document.querySelector('#calRasi')?.selectedOptions[0]?.textContent?.trim() || '',
     fontSize: getComputedStyle(el).fontSize,
     fontWeight: getComputedStyle(el).fontWeight,
+    color: getComputedStyle(el).color,
     referenceFontSize: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).fontSize,
     referenceFontWeight: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).fontWeight,
     referenceColor: getComputedStyle(el.closest('.cal-chandrashtama')?.querySelector(':scope > p')).color
