@@ -12,6 +12,24 @@ await mkdir(outputDir, {recursive:true});
 const signOrder = [11,0,1,2,10,3,9,4,8,7,6,5];
 const zodiac = ['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
 const roman = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+const compartmentPolygons = {
+  north: {
+    1:[[50,0],[100,50],[0,50]], 2:[[0,0],[50,0],[25,25]], 3:[[0,0],[0,50],[25,25]],
+    4:[[0,50],[50,0],[50,100]], 5:[[0,50],[0,100],[25,75]], 6:[[0,100],[50,100],[25,75]],
+    7:[[50,100],[100,50],[0,50]], 8:[[50,100],[100,100],[75,75]], 9:[[100,100],[100,50],[75,75]],
+    10:[[100,50],[50,0],[50,100]], 11:[[100,0],[100,50],[75,25]], 12:[[50,0],[100,0],[75,25]]
+  },
+  east: {
+    1:[[33.333,0],[66.667,0],[66.667,33.333],[33.333,33.333]],
+    2:[[0,0],[33.333,0],[33.333,33.333]], 3:[[0,0],[0,33.333],[33.333,33.333]],
+    4:[[0,33.333],[33.333,33.333],[33.333,66.667],[0,66.667]],
+    5:[[0,66.667],[0,100],[33.333,66.667]], 6:[[0,100],[33.333,100],[33.333,66.667]],
+    7:[[33.333,66.667],[66.667,66.667],[66.667,100],[33.333,100]],
+    8:[[66.667,66.667],[100,100],[66.667,100]], 9:[[100,66.667],[100,100],[66.667,66.667]],
+    10:[[66.667,33.333],[100,33.333],[100,66.667],[66.667,66.667]],
+    11:[[100,0],[100,33.333],[66.667,33.333]], 12:[[66.667,0],[100,0],[66.667,33.333]]
+  }
+};
 const shortNames = ['சூ','சந்','செ','பு','கு','சு','ச','ரா'];
 const fullNames = ['சூரியன்','சந்திரன்','செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி','ராகு'];
 
@@ -120,7 +138,7 @@ try {
           window.SMVChartPresentationV342.setStyle(value);
         },style);
         await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-        const state = await page.evaluate(({style,language,signOrder})=>{
+        const state = await page.evaluate(({style,language,signOrder,compartmentPolygons})=>{
           const reports = [];
           const kinds = ['rasi','navamsa','transit','bhava'];
           for (const rootId of ['tamilHoroscopeResult','englishHoroscopeResult']) {
@@ -132,6 +150,31 @@ try {
               const cells = [...chart.querySelectorAll(selector)];
               const chartRect = chart.getBoundingClientRect();
               const cellBoundsOutside = cells.filter(cell=>{const rect=cell.getBoundingClientRect();return rect.left<chartRect.left-1||rect.right>chartRect.right+1||rect.top<chartRect.top-1||rect.bottom>chartRect.bottom+1;}).map(cell=>{const rect=cell.getBoundingClientRect();return {className:cell.className,house:cell.dataset.house||'',sign:cell.dataset.sign||'',left:Math.round(rect.left*10)/10,right:Math.round(rect.right*10)/10,top:Math.round(rect.top*10)/10,bottom:Math.round(rect.bottom*10)/10,chartLeft:Math.round(chartRect.left*10)/10,chartRight:Math.round(chartRect.right*10)/10,chartTop:Math.round(chartRect.top*10)/10,chartBottom:Math.round(chartRect.bottom*10)/10,chartWidth:Math.round(chartRect.width*10)/10,chartHeight:Math.round(chartRect.height*10)/10};});
+
+              const compartmentOutside = style==='south' ? [] : cells.flatMap(cell=>{
+                const compartment=style==='north'?Number(cell.dataset.house||0):Number(cell.dataset.sign||0);
+                const polygon=compartmentPolygons[style]?.[compartment];
+                if(!polygon)return [{compartment,reason:'missing polygon'}];
+                const area=polygon.reduce((sum,[x1,y1],index)=>{
+                  const [x2,y2]=polygon[(index+1)%polygon.length];return sum+x1*y2-x2*y1;
+                },0);
+                const orientation=Math.sign(area)||1;
+                const inside=point=>polygon.every(([x1,y1],index)=>{
+                  const [x2,y2]=polygon[(index+1)%polygon.length];
+                  const cross=(x2-x1)*(point[1]-y1)-(y2-y1)*(point[0]-x1);
+                  return orientation>0?cross>=-0.8:cross<=0.8;
+                });
+                const watched=[...cell.querySelectorAll('.planet-line,.planet-glyph,.rasi-status-marker,.planet-degree,.rasi-degree,.transit-degree,.smv-v342-sign-number,.smv-v342-house-number,.smv-v342-asc')];
+                return watched.flatMap(element=>{
+                  const rect=element.getBoundingClientRect();
+                  if(!rect.width||!rect.height)return [];
+                  const corners=[[rect.left,rect.top],[rect.right,rect.top],[rect.left,rect.bottom],[rect.right,rect.bottom]]
+                    .map(([x,y])=>[(x-chartRect.left)/chartRect.width*100,(y-chartRect.top)/chartRect.height*100]);
+                  const outside=corners.filter(point=>!inside(point));
+                  return outside.length?[{compartment,cellClass:cell.className,tag:element.tagName,classes:element.className,text:element.textContent.trim(),outsideCorners:outside.map(p=>p.map(v=>Math.round(v*10)/10))}]:[];
+                });
+              });
+
               const cellCount = node => Number(node.getAttribute('data-chart-planet-count') || 0);
               const picked = {};
               for (const target of [2,3,4,5]) {
@@ -202,12 +245,12 @@ try {
                 const labels=raw.flatMap(value=>value.split('/').map(label=>label.trim()).filter(Boolean));
                 return {sign,house:Number(cell.dataset.house||0),labels};
               }) : [];
-              reports.push({rootId,kind,cells:cells.length,picked,emptyDash,eastHouseNumbers,bhavaHouseLabels,cellBoundsOutside});
+              reports.push({rootId,kind,cells:cells.length,picked,emptyDash,eastHouseNumbers,bhavaHouseLabels,cellBoundsOutside,compartmentOutside,triangleCells:cells.filter(cell=>cell.classList.contains('smv-v342-triangle-cell')).length});
 
             }
           }
           return {viewport:innerWidth,language,reports};
-        },{style,language,signOrder});
+        },{style,language,signOrder,compartmentPolygons});
         for (const item of state.reports) {
           assert.equal(item.cells,12,item.rootId+' '+item.kind+' '+style+': all twelve chart boxes must remain present.');
           const two = item.picked[2];
@@ -244,6 +287,10 @@ try {
             assert.ok(five.numberText,item.rootId+' Tamil chart Number remains present.');
           }
           assert.equal(item.cellBoundsOutside.length,0,item.rootId+' '+item.kind+' '+style+': every chart box remains inside the chart boundary: '+JSON.stringify(item.cellBoundsOutside));
+          if(style!=='south'){
+            assert.equal(item.triangleCells,8,item.rootId+' '+item.kind+' '+style+': exactly the eight corner compartments use triangle-aware layout.');
+            assert.equal(item.compartmentOutside.length,0,item.rootId+' '+item.kind+' '+style+': planet names, markers, Degrees and numbers remain inside their actual compartment polygons: '+JSON.stringify(item.compartmentOutside));
+          }
           if (item.kind==='navamsa' || item.kind==='bhava') {
             assert.equal(item.emptyDash,false,item.rootId+' '+item.kind+' '+style+': empty planet cells stay blank.');
           } else if (style!=='south') {
