@@ -87,6 +87,7 @@ const fixture=JSON.parse(fs.readFileSync(
 ));
 assert.equal(fixture.ephemeris,'DE441');
 assert.equal(fixture.centerBody,'Earth (399)');
+assert.equal(fixture.referencePoint,'planetary-system barycentres');
 assert.equal(fixture.observerCenter,'500@399');
 assert.equal(fixture.quantity,31);
 assert.equal(fixture.interval.start,'1800-01-01');
@@ -118,6 +119,8 @@ const allRows=[], perPlanet={}, perCentury={};
 for(const body of ['Mercury','Venus','Mars','Jupiter','Saturn']){
   const source=fixture.bodies[body];
   assert.equal(source.rows.length,600,body+' JPL annual reference rows');
+  assert.equal(source.targetEphemeris,'DE441',body+' target source must be DE441');
+  assert.equal(source.targetName,body+' Barycenter',body+' target must use the DE441 planetary-system barycentre');
   const rows=[];
   for(const reference of source.rows){
     const year=reference.year;
