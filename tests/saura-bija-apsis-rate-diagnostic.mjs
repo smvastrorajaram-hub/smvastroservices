@@ -158,7 +158,7 @@ for(const body of BODIES){
     firstJ2000ApsisLongitude:+longitudes[0].toFixed(6),
     lastJ2000ApsisLongitude:+longitudes.at(-1).toFixed(6),
     unwrappedNetMotion600Years:+(unwrapped.at(-1)-unwrapped[0]).toFixed(6),
-    de441OsuclatingLinearTrendDegreesPer1000Years:+modernRate.toFixed(6),
+    de441OsculatingLinearTrendDegreesPer1000Years:+modernRate.toFixed(6),
     traditionalSiddhantaRateDegreesPer1000Years:+ssRateDegreesPer1000Years.toFixed(6),
     modernOverTraditionalRateRatio:+(modernRate/ssRateDegreesPer1000Years).toFixed(2),
     fitResidualRmsDegrees:+trend.fittedResidualRmsDegrees.toFixed(6),
