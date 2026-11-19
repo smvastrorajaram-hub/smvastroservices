@@ -159,7 +159,12 @@ try {
               }
               const emptyCells = cells.filter(cell=>cellCount(cell) === 0);
               const emptyDash = emptyCells.some(cell=>!!cell.querySelector('.smv-v342-empty'));
-              reports.push({rootId,kind,style,cells:cells.length,picked,emptyDash});
+              const eastHouseNumbers = style==='east' ? cells.map(cell=>({
+                house:Number(cell.dataset.house||0),
+                displayed:cell.querySelector('.smv-v342-house-number')?.textContent.trim()||'',
+                fixedSignNumber:!!cell.querySelector('.smv-v342-sign-number')
+              })) : [];
+              reports.push({rootId,kind,style,cells:cells.length,picked,emptyDash,eastHouseNumbers});
             }
           }
           return {viewport:innerWidth,language,reports};
@@ -188,6 +193,18 @@ try {
             assert.equal(item.emptyDash,false,item.rootId+' '+item.kind+' '+style+': empty planet cells stay blank.');
           } else if (style!=='south') {
             assert.equal(item.emptyDash,true,item.rootId+' '+item.kind+' '+style+': Rasi and Transit retain their alternate-layout empty dash.');
+          }
+          if(style==='east'&&item.kind==='bhava'){
+            assert.equal(item.eastHouseNumbers.length,12,item.rootId+' East Bhava must show all twelve house numbers.');
+            for(const number of item.eastHouseNumbers){
+              assert.ok(number.house>=1&&number.house<=12,item.rootId+' East Bhava cell must have a Lagna-based house number.');
+              assert.equal(number.displayed,String(number.house),item.rootId+' East Bhava must display Arabic 1–12 based on Lagna.');
+              assert.equal(number.fixedSignNumber,false,item.rootId+' East Bhava must not add a duplicate fixed sign number.');
+            }
+          }
+          if(style==='east'&&item.kind!=='bhava'){
+            assert.ok(item.eastHouseNumbers.every(number=>number.displayed===String(number.house)),item.rootId+' East '+item.kind+' must retain its existing Lagna-based house numbers.');
+            assert.ok(item.eastHouseNumbers.every(number=>number.fixedSignNumber),item.rootId+' East '+item.kind+' must retain its existing sign-number labels unchanged.');
           }
         }
         const image = join(outputDir,'horoscope-'+style+'-'+language+'-'+width+'.png');
