@@ -424,7 +424,8 @@ test('Calendar distinguishes Gazette government holidays from observances and do
   assert.ok(dailyCalendarCssSource.includes('#calDaily .hora-table-wrap{border:1px solid #dce8df!important;border-radius:5px!important;overflow:hidden!important}'), 'Only the Day and Night Hora table wrappers receive the thin green outer border.');
   assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar .transit-table-card .adv-scroll{border:1px solid #dce8df!important;border-radius:5px!important}'), 'Only the Transit Planetary Positions table wrapper receives the thin green outer border.');
   assert.ok(dailyCalendarCssSource.includes('data-transit-planet-count="4"]{--transit-cell-label-size:16px}'), 'Four-planet cells compact locally to 16px on regular mobile screens.');
-  assert.ok(dailyCalendarCssSource.includes('data-transit-planet-count="4"]{--transit-cell-label-size:14.5px}'), 'Four-planet cells compact locally to 14.5px on narrow mobile screens.');
+  assert.ok(dailyCalendarCssSource.includes('data-transit-planet-count="4"]{--transit-cell-label-size:13.5px}'), 'Four-planet cells compact locally to 13.5px on narrow mobile screens.');
+  assert.ok(dailyCalendarCssSource.includes('data-transit-planet-count="4"]{--transit-cell-label-size:12px}'), 'Four-planet cells compact locally to 12px on extra-narrow mobile screens.');
    assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .cal-centered-heading{'),
     'The Calendar-specific centered-heading class must be centered within the Calendar scope.');
   assert.match(calendarThemeCssSource, /#smvDailyCalendar #calDaily \.cal-centered-heading,\s*#smvDailyCalendar \.cal-date-details-head h3\.cal-date-details-title\{\s*font-size:19px!important;\s*line-height:1\.35!important;\s*\}/, 'Calendar primary headings use the compact desktop size.');
