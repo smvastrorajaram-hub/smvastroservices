@@ -74,7 +74,7 @@
 
 /* V343: positions must be external CSS. The Save-as-PDF CSP prohibits inline styles. */
 .south-indian-chart.smv-v342-north .smv-v342-cell[data-house="1"]{left:50%!important;top:24%!important}
-.south-indian-chart.smv-v342-north .smv-v342-cell[data-house="2"]{left:28%!important;top:12%!important}
+.south-indian-chart.smv-v342-north .smv-v342-cell[data-house="2"]{left:28%!important;top:14%!important}
 .south-indian-chart.smv-v342-north .smv-v342-cell[data-house="3"]{left:12%!important;top:28%!important}
 .south-indian-chart.smv-v342-north .smv-v342-cell[data-house="4"]{left:24%!important;top:50%!important}
 .south-indian-chart.smv-v342-north .smv-v342-cell[data-house="5"]{left:12%!important;top:72%!important}
@@ -84,9 +84,9 @@
 .south-indian-chart.smv-v342-north .smv-v342-cell[data-house="9"]{left:88%!important;top:72%!important}
 .south-indian-chart.smv-v342-north .smv-v342-cell[data-house="10"]{left:76%!important;top:50%!important}
 .south-indian-chart.smv-v342-north .smv-v342-cell[data-house="11"]{left:88%!important;top:28%!important}
-.south-indian-chart.smv-v342-north .smv-v342-cell[data-house="12"]{left:72%!important;top:12%!important}
+.south-indian-chart.smv-v342-north .smv-v342-cell[data-house="12"]{left:72%!important;top:14%!important}
 .south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="1"]{left:50%!important;top:16%!important}
-.south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="2"]{left:24%!important;top:12%!important}
+.south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="2"]{left:24%!important;top:14%!important}
 .south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="3"]{left:12%!important;top:24%!important}
 .south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="4"]{left:16%!important;top:50%!important}
 .south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="5"]{left:12%!important;top:76%!important}
@@ -96,4 +96,4 @@
 .south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="9"]{left:88%!important;top:76%!important}
 .south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="10"]{left:84%!important;top:50%!important}
 .south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="11"]{left:88%!important;top:24%!important}
-.south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="12"]{left:76%!important;top:12%!important}
+.south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="12"]{left:76%!important;top:14%!important}
