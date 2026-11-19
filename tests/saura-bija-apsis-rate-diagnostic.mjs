@@ -84,8 +84,10 @@ function dms([degrees,minutes]){
   return degrees+minutes/60;
 }
 for(const [body,source] of Object.entries(BURGESS_1850)){
-  const actual=signed(dms(source.siddhanta),dms(source.biot));
-  assert.ok(Math.abs(actual-dms(source.error))<1e-10,
+  const actual=dms(source.siddhanta)-dms(source.biot);
+  // The two source position columns and the printed error are each rounded
+  // to whole arcminutes; keep the original unwrapped signed difference.
+  assert.ok(Math.abs(actual-dms(source.error))<0.04,
     body+' Burgess 1850 printed Hindu-vs-Biot apsis position error');
 }
 
