@@ -1755,10 +1755,30 @@ try {
       const positionsTableWrap = positionsSection?.querySelector('.adv-scroll');
       const horaGridCell = horaTables[0]?.querySelector('tbody td');
       const positionsGridCell = positionsSection?.querySelector('tbody td');
-      const combustionInChart = chart?.querySelectorAll('.planet-short .status-c').length || 0;
+      const combustionInChart = chart?.querySelectorAll('.planet-status-slot .status-c').length || 0;
       const combustionInNames = rows.filter(row => row.name.includes(language === 'ta' ? '(அ)' : '(C)')).length;
-      const retrogradeInChart = chart?.querySelectorAll('.planet-short .status-r').length || 0;
+      const retrogradeInChart = chart?.querySelectorAll('.planet-status-slot .status-r').length || 0;
       const retrogradeInNames = rows.filter(row => row.name.includes(language === 'ta' ? '(வ)' : '(R)')).length;
+      // Deterministic dual-status fixture: verifies (அ)/(வ) and degree stay in one
+      // horizontal sequence even when both status markers belong to one planet.
+      const dualMarkerProbe=document.createElement('div');
+      dualMarkerProbe.className='south-rasi-cell';
+      dualMarkerProbe.dataset.transitPlanetCount='3';
+      dualMarkerProbe.style.cssText='position:absolute;left:-10000px;top:0;width:220px;height:44px;padding:0;';
+      dualMarkerProbe.innerHTML='<div class="transit-cell-planets"><div class="planet-line"><span class="planet-glyph"><span class="planet-short">கு</span><span class="planet-status-slot"><span class="rasi-status-marker status-c">(அ)</span></span><span class="planet-status-slot"><span class="rasi-status-marker status-r">(வ)</span></span><span class="rasi-degree transit-degree">18°</span></span></div></div>';
+      chart?.appendChild(dualMarkerProbe);
+      const probeGlyph=dualMarkerProbe.querySelector('.planet-glyph');
+      const probeCombust=dualMarkerProbe.querySelector('.status-c')?.getBoundingClientRect();
+      const probeRetro=dualMarkerProbe.querySelector('.status-r')?.getBoundingClientRect();
+      const probeDegree=dualMarkerProbe.querySelector('.transit-degree')?.getBoundingClientRect();
+      const probeGlyphSize=Number.parseFloat(probeGlyph?getComputedStyle(probeGlyph).fontSize:'0');
+      const dualMarkerLayout={
+        bothMarkersPresent:Boolean(probeCombust&&probeRetro&&probeDegree),
+        combustionBeforeRetrograde:Boolean(probeCombust&&probeRetro&&probeCombust.right<=probeRetro.left+.5),
+        retrogradeBeforeDegree:Boolean(probeRetro&&probeDegree&&probeRetro.right<=probeDegree.left+.5),
+        allLabelsSameSize:Boolean(probeGlyph&&[...dualMarkerProbe.querySelectorAll('.rasi-status-marker,.transit-degree')].every(el=>Math.abs(Number.parseFloat(getComputedStyle(el).fontSize)-probeGlyphSize)<.1))
+      };
+      dualMarkerProbe.remove();
       const separatorLines = [...(chart?.querySelectorAll('.planet-line') || [])].filter(line => {
         const style = getComputedStyle(line);
         return style.borderBottomStyle !== 'none' || style.borderBottomWidth !== '0px';
@@ -1873,6 +1893,7 @@ try {
         combustionInNames,
         retrogradeInChart,
         retrogradeInNames,
+        dualMarkerLayout,
         hasWrongLatinMarkersInTamil: language === 'ta' && (markerText.includes('(R)') || markerText.includes('(C)')),
         hasWrongTamilMarkersInEnglish: language === 'en' && (markerText.includes('(வ)') || markerText.includes('(அ)'))
       };
@@ -1916,6 +1937,7 @@ try {
       assert.equal(transitState.denseClass, transitState.maxStack >= 3, language + ' ' + date + ': dense chart sizing must be enabled exactly when a Rasi contains three or more planets.');
       assert.equal(transitState.combustionInNames, transitState.combustionInChart, language + ' ' + date + ': C / அ graha-name markers must match chart combustion markers.');
       assert.equal(transitState.retrogradeInNames, transitState.retrogradeInChart, language + ' ' + date + ': R / வ graha-name markers must match chart retrograde markers.');
+      assert.ok(transitState.dualMarkerLayout.bothMarkersPresent && transitState.dualMarkerLayout.combustionBeforeRetrograde && transitState.dualMarkerLayout.retrogradeBeforeDegree && transitState.dualMarkerLayout.allLabelsSameSize, language + ' ' + date + ': a planet carrying both (அ)/(வ) must keep degree after both markers without overlap: ' + JSON.stringify(transitState.dualMarkerLayout));
       assert.equal(transitState.hasWrongLatinMarkersInTamil, false, language + ' ' + date + ': Tamil UI must not show (R) or (C).');
       assert.equal(transitState.hasWrongTamilMarkersInEnglish, false, language + ' ' + date + ': English UI must retain Latin markers.');
     }
