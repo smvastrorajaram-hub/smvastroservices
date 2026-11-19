@@ -83,13 +83,14 @@ test('Calendar Graha table is a clean standalone three-column component with int
   assert.ok(scrollRule.includes('overflow-x:auto'));
   assert.ok(scrollRule.includes('overflow-y:hidden'));
   assert.ok(!scrollRule.includes('!important'));
-  assert.match(css, /#calGrahaPeriodCard \\.cal-graha-period-table\\{\\s*width:680px;\\s*min-width:680px;/);
+  const compactGrahaCss = css.slice(css.indexOf('/* Annual Graha table:')).replace(/\\s+/g, '');
+  assert.ok(compactGrahaCss.includes('#calGrahaPeriodCard .cal-graha-period-table{width:680px;min-width:680px;'));
   assert.ok(css.includes('#calGrahaPeriodCard .cal-graha-period-table th:first-child'));
-  assert.match(css, /#calGrahaPeriodCard \\.cal-graha-period-date-start,[\\s\\S]*?#calGrahaPeriodCard \\.cal-graha-period-date-end\\{\\s*display:block;\\s*white-space:nowrap;/);
+  assert.ok(compactGrahaCss.includes('#calGrahaPeriodCard .cal-graha-period-date-start,#calGrahaPeriodCard .cal-graha-period-date-end{display:block;white-space:nowrap;'));
   assert.ok(!css.includes('#smvDailyCalendar .cal-graha-period'));
   const grahaCss = css.slice(css.indexOf('/* Annual Graha table:'));
   assert.ok(!grahaCss.includes('!important'));
-  assert.doesNotMatch(grahaCss, /color:\\s*(?:red|#f00|#ff0000|rgb\\(255,\\s*0,\\s*0\\))/i);
+  assert.doesNotMatch(grahaCss, /color:\s*(?:red|#f00|#ff0000|rgb\(255,\s*0,\s*0\))/i);
   assert.ok(grahaCss.includes('width:120px;'));
   assert.ok(grahaCss.includes('width:280px;'));
   assert.ok(calendarSource.includes('cal-graha-period-date-start'));
