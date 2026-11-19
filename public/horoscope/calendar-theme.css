@@ -527,6 +527,9 @@ html body.calendar-only>header.calendar-topbar{
  content:none;display:none;width:0;max-width:0;margin:0;padding:0;border:0;background:none;box-shadow:none;
 }
 
+/* Transit label follows the same green heading theme as the rest of Calendar. */
+#smvDailyCalendar #calDaily .transit-card>.cal-centered-heading{color:#15564e;-webkit-text-fill-color:#15564e}
+
 /* Shared compact heading scale: match the existing Calendar section headings. */
 #smvDailyCalendar #calDaily .cal-centered-heading,
 #smvDailyCalendar .cal-date-details-head h3.cal-date-details-title{
