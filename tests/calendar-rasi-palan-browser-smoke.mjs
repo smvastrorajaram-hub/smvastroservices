@@ -452,8 +452,8 @@ try {
    assert.deepEqual(mobileHeadingSizes,{dailyPanchang:'17px',dailyHora:'17px',transitChart:'17px',transitPositions:'17px',rasiPalan:'17px'},'All Calendar section headings must use the same compact mobile font size.');
    await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
    assert.equal(centeredCalendarHeadings.lagnaLabel,
-    centeredCalendarHeadings.language==='ta' ? 'லக்' : 'Asc',
-    'Only the transit positions table Ascendant row must display the shortened Tamil label in Tamil mode.');
+    centeredCalendarHeadings.language==='ta' ? 'லக்னம்' : 'Ascendant',
+    'The transit positions table must display the full Lagna / Ascendant name.');
 
   assert.match(integratedPanchang.firstEventRangeText, /^\d{2}:\d{2}\(\d{2}\/\d{2}\)-\d{2}:\d{2}\(\d{2}\/\d{2}\)$/, 'Panchang event timing must use the compact single-line HH:MM(DD/MM)-HH:MM(DD/MM) format.');
   assert.equal(integratedPanchang.firstEventNoYear, true, 'Panchang event ranges must omit the four-digit Gregorian year.');
