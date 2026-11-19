@@ -399,8 +399,10 @@ test('Calendar distinguishes Gazette government holidays from observances and do
   assert.equal(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .transit-card>.cal-centered-heading{color:#15564e'), false, 'The outer Transit Chart heading must not receive a new green override.');
   assert.ok(horoscopeRendererSource.includes("<th>${ta?'கிரகங்கள்':'Planets'}</th>"), 'The positions table labels the first column as Planets / கிரகங்கள்.');
   assert.ok(horoscopeRendererSource.includes("calendarPresentation?'':`<td>${esc2(r.status||'—')}</td>`"), 'Status is omitted from Calendar but retained for non-Calendar Horoscope output.');
-  assert.ok(horoscopeRendererSource.includes("calendarPresentation?'hora-card':'card hora-card'"), 'Daily Hora is flat only in Calendar; Horoscope retains its original card.');
+  assert.ok(horoscopeRendererSource.includes('class="card hora-card"'), 'Daily Hora is flat only in Calendar; Horoscope retains its original card.');
   assert.ok(horoscopeRendererSource.includes("calendarPresentation?'transit-card':'card transit-card'"), 'Calendar Transit Chart has no outer card, while Horoscope retains its card.');
+  assert.ok(horoscopeRendererSource.includes("calendarPresentation?'card transit-table-card':'transit-table-card'"), 'Only the Calendar transit positions table receives its requested outer card.');
+  assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar #calDaily .transit-card{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;outline:0!important}'), 'The Transit Chart remains without an outer card.');
    assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .cal-centered-heading{'),
     'The Calendar-specific centered-heading class must be centered within the Calendar scope.');
   assert.match(calendarThemeCssSource, /#smvDailyCalendar #calDaily \.cal-centered-heading,\s*#smvDailyCalendar \.cal-date-details-head h3\.cal-date-details-title\{\s*font-size:19px!important;\s*line-height:1\.35!important;\s*\}/, 'Calendar primary headings use the compact desktop size.');
