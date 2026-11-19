@@ -18,11 +18,13 @@ const inHostSourceChanged = changed.has('public/index.html')
   || changed.has('public/sitemap.xml')
   || changed.has('public/sitemap.html')
   || [
+    'public/horoscope/index.html',
     'public/horoscope/calendar/index.html',
     'public/horoscope/daily-calendar.css',
     'public/horoscope/daily-calendar.mjs',
     'public/horoscope/calendar-theme.css',
     'public/horoscope/calendar-worker.mjs',
+    'public/horoscope/offline/swiss_vedic.browser.mjs',
     'public/horoscope/offline/transit_panchang.browser.mjs'
   ].some(path => changed.has(path))
   || [...changed].some(path => path.startsWith('public/astrology-guides/'))
