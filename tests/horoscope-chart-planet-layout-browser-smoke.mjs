@@ -197,7 +197,7 @@ try {
             }
           }
           return {viewport:innerWidth,language,reports};
-        },{style,language});
+        },{style,language,signOrder});
         for (const item of state.reports) {
           assert.equal(item.cells,12,item.rootId+' '+item.kind+' '+style+': all twelve chart boxes must remain present.');
           const two = item.picked[2];
