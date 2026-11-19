@@ -1717,9 +1717,13 @@ try {
         return mismatches + (Math.abs(Number.parseFloat(getComputedStyle(number).fontSize)-Number.parseFloat(getComputedStyle(cellGlyph).fontSize))>.1 ? 1 : 0);
       },0);
       const ordinaryPlanetCells = cells.filter(cell => {
-        const count = cell.querySelectorAll('.transit-cell-planets .planet-line').length + (cell.querySelector('.lagna') ? 1 : 0);
+        const count = Number(cell.dataset.transitPlanetCount || 0);
         return count > 0 && count <= 3;
       });
+      const planetCountClassMismatches = cells.filter(cell => {
+        const count = Number(cell.dataset.transitPlanetCount || 0);
+        return cell.classList.contains('south-rasi-cell-compact') !== (count > 3);
+      }).length;
       const ordinaryCellGroupsCentered = ordinaryPlanetCells.every(cell => {
         const cellRect = cell.getBoundingClientRect();
         const children = [...cell.children].filter(child => ['dynamic-rasi-number','lagna','transit-cell-planets'].some(cls => child.classList.contains(cls)));
@@ -1819,6 +1823,7 @@ try {
         compactPlanetFontSize: compactPlanetGlyphs[0] ? Number.parseFloat(getComputedStyle(compactPlanetGlyphs[0]).fontSize) : 0,
         ordinaryPlanetCellsCentered: ordinaryCellGroupsCentered,
         ordinaryPlanetCellCount: ordinaryPlanetCells.length,
+        planetCountClassMismatches,
         markerFontSizeMismatches,
         emptyCellPlaceholderCount,
         houseNumberFontMismatches,
@@ -1888,6 +1893,8 @@ try {
       assert.ok(mobileState.normalPlanetCellCount > 0, language + ' ' + width + 'px: ordinary Rasi cells must keep their normal font sizing.');
       assert.ok(mobileState.compactPlanetCellCount > 0, language + ' ' + width + 'px: only the crowded Rasi cell must receive compact sizing.');
       assert.ok(mobileState.normalPlanetFontSize > mobileState.compactPlanetFontSize, language + ' ' + width + 'px: crowded-cell font size must be smaller than ordinary cells.');
+      assert.ok(mobileState.normalPlanetFontSize >= 14, language + ' ' + width + 'px: one-to-three planet names must be visibly larger (at least 14px).');
+      assert.equal(mobileState.planetCountClassMismatches, 0, language + ' ' + width + 'px: only cells with more than three planet names may be compacted.');
       assert.ok(mobileState.ordinaryPlanetCellCount > 0, language + ' ' + width + 'px: one-to-three item cells must be present for centring checks.');
       assert.equal(mobileState.ordinaryPlanetCellsCentered, true, language + ' ' + width + 'px: one-to-three item cells must be centred inside their boxes.');
       assert.equal(mobileState.markerFontSizeMismatches, 0, language + ' ' + width + 'px: (அ)/(வ)/(C)/(R) and degree must match the planet font size.');
@@ -1902,6 +1909,8 @@ try {
     await ensureTransitLanguage(language);
     const desktopState = await inspectTransitDate('2026-08-12', language);
     assert.ok(desktopState.normalPlanetFontSize > desktopState.compactPlanetFontSize, language + ' desktop: crowded cells alone must use smaller labels.');
+    assert.ok(desktopState.normalPlanetFontSize >= 18, language + ' desktop: one-to-three planet names must use the increased 18px size.');
+    assert.equal(desktopState.planetCountClassMismatches, 0, language + ' desktop: only cells with more than three planet names may be compacted.');
     assert.equal(desktopState.ordinaryPlanetCellsCentered, true, language + ' desktop: one-to-three item cells must be centred.');
     assert.equal(desktopState.markerFontSizeMismatches, 0, language + ' desktop: markers and degrees must match the planet font size.');
     assert.equal(desktopState.emptyCellPlaceholderCount, 0, language + ' desktop: empty Rasi cells must not show a dash.');
