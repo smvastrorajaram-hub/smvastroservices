@@ -17,19 +17,50 @@
 #smvDailyCalendar #calDaily .transit-card{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;outline:0!important}
 #smvDailyCalendar #calDaily .transit-card>.south-indian-chart.transit-chart{display:grid;width:min(100%,520px)!important;max-width:520px!important;min-width:0!important;height:auto!important;aspect-ratio:1/1!important;margin:10px auto!important}
 #smvDailyCalendar .transit-chart.transit-chart-dense,#smvDailyCalendar .transit-chart.transit-chart-dense-4plus{aspect-ratio:1/1;grid-template-rows:repeat(4,minmax(0,1fr))}
-#smvDailyCalendar .transit-chart .south-rasi-cell{min-width:0!important;overflow:visible!important;padding:6px 4px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-start!important;gap:2px!important}
-#smvDailyCalendar .transit-chart .dynamic-rasi-number{flex:0 0 auto;margin:0!important;line-height:1.1!important}
-#smvDailyCalendar .transit-chart .lagna{flex:0 0 auto;line-height:1.1!important;margin:1px 0!important}
-#smvDailyCalendar .transit-cell-planets{width:100%;min-width:0;display:flex;flex:0 0 auto;flex-direction:column;align-items:center;justify-content:flex-start;gap:1px;overflow:visible}
-#smvDailyCalendar .transit-chart .planet-line{display:block!important;flex:0 0 auto;width:100%;min-width:0;margin:0!important;padding:0!important;text-align:center!important;line-height:1.08!important;border-bottom:0}
-#smvDailyCalendar .transit-chart .planet-glyph{display:inline-flex!important;align-items:baseline!important;justify-content:center!important;gap:2px!important;max-width:100%!important;white-space:nowrap!important;font-size:clamp(11px,2.4vw,15px)!important;line-height:1.08!important}
-#smvDailyCalendar .transit-chart .planet-short{min-width:0;font-weight:700;color:#15564e;-webkit-text-fill-color:#15564e}
-#smvDailyCalendar .transit-chart .rasi-status-marker{font-size:.72em!important;margin-left:0!important}
-#smvDailyCalendar .transit-chart .transit-degree{font-size:.78em!important;margin-left:1px!important;white-space:nowrap!important;flex:0 0 auto}
-#smvDailyCalendar .transit-chart.transit-chart-dense-4plus .south-rasi-cell{padding:2px 1px!important;gap:0!important}
-#smvDailyCalendar .transit-chart.transit-chart-dense-4plus .transit-cell-planets{gap:0!important}
-#smvDailyCalendar .transit-chart.transit-chart-dense-4plus .planet-glyph{font-size:clamp(8px,2.1vw,11px)!important;line-height:1!important;gap:1px!important}
-#smvDailyCalendar .transit-chart.transit-chart-dense-4plus .dynamic-rasi-number,#smvDailyCalendar .transit-chart.transit-chart-dense-4plus .lagna{font-size:clamp(8px,1.8vw,10px)!important;line-height:1!important;margin:0!important}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell{
+  --transit-cell-label-size:21px;
+  min-width:0!important;overflow:visible!important;padding:6px 4px!important;
+  display:flex!important;flex-direction:column!important;align-items:center!important;
+  justify-content:center!important;gap:2px!important;text-align:center!important;
+}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="4"]{--transit-cell-label-size:19px}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="5"]{--transit-cell-label-size:17.5px}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="6"]{--transit-cell-label-size:16px}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="7"]{--transit-cell-label-size:14.5px}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="8"]{--transit-cell-label-size:13.5px}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="9"]{--transit-cell-label-size:12.5px}
+#smvDailyCalendar #calDaily .transit-chart .dynamic-rasi-number,
+#smvDailyCalendar #calDaily .transit-chart .lagna,
+#smvDailyCalendar #calDaily .transit-chart .planet-glyph{
+  flex:0 0 auto;font-size:var(--transit-cell-label-size)!important;line-height:1.08!important;
+}
+#smvDailyCalendar #calDaily .transit-chart .dynamic-rasi-number{margin:0!important;text-align:center!important}
+#smvDailyCalendar #calDaily .transit-chart .lagna{margin:1px 0!important;text-align:center!important}
+#smvDailyCalendar #calDaily .transit-chart .transit-cell-planets{
+  width:100%;min-width:0;display:flex;flex:0 0 auto;flex-direction:column;
+  align-items:center;justify-content:center;gap:1px;overflow:visible;text-align:center;
+}
+#smvDailyCalendar #calDaily .transit-chart .planet-line{
+  display:flex!important;flex:0 0 auto!important;align-items:center!important;
+  justify-content:center!important;width:100%!important;min-width:0!important;
+  margin:0!important;padding:0!important;text-align:center!important;
+  line-height:1.08!important;border-bottom:0!important;white-space:nowrap!important;
+}
+#smvDailyCalendar #calDaily .transit-chart .planet-glyph{
+  display:inline-flex!important;align-items:baseline!important;justify-content:center!important;
+  gap:2px!important;max-width:100%!important;white-space:nowrap!important;
+}
+#smvDailyCalendar #calDaily .transit-chart .planet-short{
+  min-width:0;font-weight:700;color:#15564e;-webkit-text-fill-color:#15564e;
+}
+#smvDailyCalendar #calDaily .transit-chart .planet-glyph .rasi-status-marker,
+#smvDailyCalendar #calDaily .transit-chart .planet-glyph .transit-degree,
+#smvDailyCalendar #calDaily .transit-chart .planet-glyph .planet-short{
+  font-size:1em!important;line-height:inherit!important;
+}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact{padding:2px 1px!important;gap:0!important}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact .transit-cell-planets{gap:0!important}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact .planet-line{line-height:1.02!important}
 #smvDailyCalendar .transit-position-table th,#smvDailyCalendar .transit-position-table td{vertical-align:middle;word-break:normal;overflow-wrap:normal}
 #smvDailyCalendar .transit-position-table th:first-child,#smvDailyCalendar .transit-position-table td:first-child{white-space:nowrap}
 #smvDailyCalendar .cal-month-grid{gap:6px}
@@ -44,10 +75,13 @@
  #smvDailyCalendar .cal-month-grid strong{font-size:16px}
  #smvDailyCalendar .cal-month-grid .cal-event-name{font-size:9px;line-height:1.25;-webkit-line-clamp:2}
  #smvDailyCalendar .cal-month-grid .cal-event-more{right:3px;bottom:3px;font-size:8px;padding:2px 4px}
- #smvDailyCalendar .transit-chart .south-rasi-cell{padding:4px 2px!important}
- #smvDailyCalendar .transit-chart .planet-glyph{font-size:clamp(10px,3.15vw,13px)!important;gap:1px!important}
- #smvDailyCalendar .transit-chart .rasi-status-marker{font-size:.68em!important}
- #smvDailyCalendar .transit-chart .transit-degree{font-size:.72em!important}
+ #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell{--transit-cell-label-size:18px;padding:4px 2px!important}
+ #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="4"]{--transit-cell-label-size:16px}
+ #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="5"]{--transit-cell-label-size:14.5px}
+ #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="6"]{--transit-cell-label-size:12.5px}
+ #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="7"]{--transit-cell-label-size:11.5px}
+ #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="8"]{--transit-cell-label-size:10.5px}
+ #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="9"]{--transit-cell-label-size:9.5px}
  #smvDailyCalendar .transit-table-card{padding-top:12px;margin-top:12px}
 }
 
@@ -85,7 +119,7 @@
 .calendar-install{padding:0 18px max(24px,env(safe-area-inset-bottom))!important;background:transparent!important}.calendar-install-inner{width:min(100%,1180px);margin:0 auto;padding:16px;border:1px solid var(--cal-line);border-radius:14px;background:var(--cal-paper);text-align:center}.calendar-install button{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:50px;padding:10px 18px!important;border-radius:12px!important;background:var(--cal-deep)!important;font-weight:800}.calendar-install button img{border-radius:8px}.calendar-install p{margin:8px 0 0;font-size:12px;color:var(--cal-muted)}
 @media(max-width:960px){#smvDailyCalendar .cal-controls{grid-template-columns:1fr 1fr}#calToday{width:100%}#smvDailyCalendar #calLocation{grid-template-columns:1.6fr 1fr 1fr}.cal-summary,.cal-planets{grid-template-columns:repeat(2,minmax(0,1fr))!important}.calendar-sister-links{display:none}}
 @media(max-width:680px){.calendar-page-shell{padding:0 8px 24px}.calendar-only>header.calendar-topbar{padding:10px 10px!important;gap:8px!important;align-items:center!important}.calendar-brand-links{gap:8px!important}.calendar-brand-home img{width:38px;height:38px}.calendar-brand-home b{font-size:14px}.calendar-brand-home small{display:none}.calendar-language-switch{margin-left:auto!important}.calendar-only>header .calendar-language-switch button{min-width:64px!important;min-height:38px!important;padding:7px 8px!important;font-size:12px!important}#smvDailyCalendar{margin-top:10px!important}#smvDailyCalendar .cal-header{display:block!important;padding:20px 16px!important;border-radius:14px!important}#smvDailyCalendar .cal-header h2{font-size:25px!important}#smvDailyCalendar .cal-header span{font-size:12px}.cal-download-app-link{margin-top:14px!important;max-width:none!important;width:100%;min-width:0!important}.cal-engine-note{grid-template-columns:1fr;gap:4px;margin-top:10px;padding:12px 13px;font-size:12px}.cal-engine-note strong{white-space:normal}#smvDailyCalendar .cal-controls{grid-template-columns:1fr!important;padding:12px!important;gap:10px!important}#smvDailyCalendar #calLocation{grid-template-columns:1fr!important;padding:12px!important}#smvDailyCalendar .cal-location summary{padding:12px;font-size:12px}#smvDailyCalendar h3:not(.cal-date-details-title){font-size:17px!important;margin-top:22px!important}.cal-summary,.cal-planets{grid-template-columns:1fr!important}.cal-summary article:not(.cal-chandrashtama):not(.cal-chandra-window),.cal-planets article{padding:14px!important}#calDaily .card{padding:12px!important;border-radius:12px!important}#calDaily .hora-section{grid-template-columns:1fr!important}#calDaily table{min-width:570px!important;font-size:12px!important}#calDaily th,#calDaily td{padding:7px 8px!important}.cal-month-title{padding:8px}.cal-month-title h3{font-size:16px!important}.cal-month-title button{width:38px;min-width:38px!important;min-height:38px!important}.cal-month-grid{gap:3px!important;padding:6px}.cal-month-grid>b{font-size:10px!important}.cal-month-grid button{min-height:78px!important;padding:5px!important;border-radius:8px!important}.cal-month-grid strong{font-size:15px!important}.cal-month-grid .cal-event-name{font-size:8.5px!important;line-height:1.25!important}.cal-month-grid .cal-event-more{font-size:7.5px!important}.transit-chart .south-rasi-cell{padding:3px 1px!important}.transit-chart .planet-glyph{font-size:clamp(9px,3.05vw,12px)!important}.calendar-install{padding-inline:8px!important}.calendar-install-inner{padding:12px}}
-@media(max-width:390px){.calendar-only>header .calendar-language-switch button{min-width:57px!important;font-size:11px!important}.calendar-brand-home b{font-size:13px}.cal-month-grid button{min-height:70px!important}.cal-month-grid .cal-event-name{-webkit-line-clamp:1!important}.transit-chart .planet-glyph{font-size:9.5px!important}.transit-chart .transit-degree{font-size:.68em!important}}
+@media(max-width:390px){.calendar-only>header .calendar-language-switch button{min-width:57px!important;font-size:11px!important}.calendar-brand-home b{font-size:13px}.cal-month-grid button{min-height:70px!important}.cal-month-grid .cal-event-name{-webkit-line-clamp:1!important}}
 @media(prefers-reduced-motion:reduce){#smvDailyCalendar *,#smvDailyCalendar *:before,#smvDailyCalendar *:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
 
@@ -180,49 +214,6 @@
 /* Keep the user-selectable time directly below the selected Calendar date. */
 #smvDailyCalendar .cal-date-time-fields{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;min-width:0}
 #smvDailyCalendar .cal-date-time-fields label{min-width:0!important}
-
-/* Dense Calendar transit stacks: fit every graha inside its existing square Rasi cell. */
-@media(max-width:680px){
-  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .south-rasi-cell{
-    padding:1px!important;
-    gap:0!important;
-  }
-  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .dynamic-rasi-number,
-  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .lagna{
-    margin:0!important;
-    line-height:1!important;
-    font-size:clamp(8px,2vw,9px)!important;
-  }
-  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .transit-cell-planets{
-    gap:0!important;
-  }
-  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .planet-line{
-    min-height:0!important;
-    height:auto!important;
-    padding:0!important;
-    margin:0!important;
-    line-height:.9!important;
-  }
-  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .planet-glyph{
-    font-size:clamp(8px,2.2vw,9px)!important;
-    line-height:.92!important;
-    gap:0!important;
-  }
-  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .rasi-status-marker,
-  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .transit-degree{
-    font-size:.62em!important;
-    line-height:1!important;
-    margin-left:0!important;
-  }
-  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense-4plus .dynamic-rasi-number,
-  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense-4plus .lagna{
-    font-size:7.5px!important;
-  }
-  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense-4plus .planet-glyph{
-    font-size:clamp(7.5px,2vw,8.5px)!important;
-    line-height:.88!important;
-  }
-}
 
 /* Annual Graha periods: one single vertical sequence, with existing Calendar colours. */
 #calGrahaPeriodCard{
@@ -338,132 +329,3 @@
   }
 }
 @media(min-width:681px){#smvDailyCalendar .cal-header>div{text-align:center}}
-
-/* Transit chart labels: preserve the original size in ordinary cells and compact only crowded cells. */
-#smvDailyCalendar #calDaily .transit-chart .transit-cell-planets:not(.transit-cell-planets-compact) .planet-glyph{
-  font-size:clamp(11px,2.4vw,15px)!important;line-height:1.08!important;gap:2px!important;
-}
-#smvDailyCalendar #calDaily .transit-chart .transit-cell-planets.transit-cell-planets-compact .planet-glyph{
-  font-size:clamp(8px,2.1vw,11px)!important;line-height:1!important;gap:1px!important;
-}
-#smvDailyCalendar #calDaily .transit-chart .transit-cell-planets:not(.transit-cell-planets-compact) .rasi-status-marker{font-size:.72em!important}
-#smvDailyCalendar #calDaily .transit-chart .transit-cell-planets:not(.transit-cell-planets-compact) .transit-degree{font-size:.78em!important}
-@media(max-width:680px){
-  #smvDailyCalendar #calDaily .transit-chart .transit-cell-planets:not(.transit-cell-planets-compact) .planet-glyph{font-size:clamp(10px,3.15vw,13px)!important}
-  #smvDailyCalendar #calDaily .transit-chart .transit-cell-planets.transit-cell-planets-compact .planet-glyph{font-size:clamp(8px,2.5vw,10px)!important}
-  #smvDailyCalendar #calDaily .transit-chart .transit-cell-planets:not(.transit-cell-planets-compact) .rasi-status-marker{font-size:.68em!important}
-  #smvDailyCalendar #calDaily .transit-chart .transit-cell-planets:not(.transit-cell-planets-compact) .transit-degree{font-size:.72em!important}
-}
-@media(max-width:390px){
-  #smvDailyCalendar #calDaily .transit-chart .transit-cell-planets:not(.transit-cell-planets-compact) .planet-glyph{font-size:9.5px!important}
-  #smvDailyCalendar #calDaily .transit-chart .transit-cell-planets.transit-cell-planets-compact .planet-glyph{font-size:clamp(7.5px,2.2vw,8.5px)!important}
-}
-
-
-/* Final Calendar Transit sizing: centre each Rasi group and size all labels as one unit. */
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell{
-  display:flex!important;flex-direction:column!important;align-items:center!important;
-  justify-content:center!important;text-align:center!important;
-}
-#smvDailyCalendar #calDaily .transit-chart .transit-cell-planets{
-  display:flex!important;flex:0 0 auto!important;flex-direction:column!important;
-  align-items:center!important;justify-content:center!important;width:100%!important;
-  text-align:center!important;
-}
-#smvDailyCalendar #calDaily .transit-chart .transit-cell-planets .planet-line{
-  display:flex!important;flex:0 0 auto!important;align-items:center!important;
-  justify-content:center!important;width:100%!important;max-width:100%!important;
-  text-align:center!important;white-space:nowrap!important;
-}
-#smvDailyCalendar #calDaily .transit-chart .transit-cell-planets:not(.transit-cell-planets-compact) .planet-glyph,
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell:not(.south-rasi-cell-compact) .dynamic-rasi-number,
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell:not(.south-rasi-cell-compact) .lagna{
-  font-size:clamp(11px,2.4vw,15px)!important;line-height:1.08!important;gap:2px!important;
-}
-#smvDailyCalendar #calDaily .transit-chart .transit-cell-planets.transit-cell-planets-compact .planet-glyph,
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact .dynamic-rasi-number,
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact .lagna{
-  font-size:clamp(8px,2.1vw,11px)!important;line-height:1!important;gap:1px!important;
-}
-#smvDailyCalendar #calDaily .transit-chart .planet-short,
-#smvDailyCalendar #calDaily .transit-chart .rasi-status-marker,
-#smvDailyCalendar #calDaily .transit-chart .transit-degree{
-  font-size:1em!important;line-height:inherit!important;
-}
-@media(max-width:680px){
-  #smvDailyCalendar #calDaily .transit-chart .transit-cell-planets:not(.transit-cell-planets-compact) .planet-glyph,
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell:not(.south-rasi-cell-compact) .dynamic-rasi-number,
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell:not(.south-rasi-cell-compact) .lagna{
-    font-size:clamp(10px,3.15vw,13px)!important;
-  }
-  #smvDailyCalendar #calDaily .transit-chart .transit-cell-planets.transit-cell-planets-compact .planet-glyph,
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact .dynamic-rasi-number,
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact .lagna{
-    font-size:clamp(8px,2.5vw,10px)!important;
-  }
-}
-@media(max-width:390px){
-  #smvDailyCalendar #calDaily .transit-chart .transit-cell-planets:not(.transit-cell-planets-compact) .planet-glyph,
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell:not(.south-rasi-cell-compact) .dynamic-rasi-number,
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell:not(.south-rasi-cell-compact) .lagna{
-    font-size:9.5px!important;
-  }
-  #smvDailyCalendar #calDaily .transit-chart .transit-cell-planets.transit-cell-planets-compact .planet-glyph,
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact .dynamic-rasi-number,
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact .lagna{
-    font-size:clamp(7.5px,2.2vw,8.5px)!important;
-  }
-}
-
-
-
-/* Transit chart typography v3: planet count alone controls the cell font size. */
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell{
-  --transit-cell-label-size:18px;
-  display:flex!important;flex-direction:column!important;
-  align-items:center!important;justify-content:center!important;text-align:center!important;
-}
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact[data-transit-planet-count="4"]{--transit-cell-label-size:16px}
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact[data-transit-planet-count="5"]{--transit-cell-label-size:14px}
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact[data-transit-planet-count="6"]{--transit-cell-label-size:12px}
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact[data-transit-planet-count="7"]{--transit-cell-label-size:10px}
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact[data-transit-planet-count="8"]{--transit-cell-label-size:9px}
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact[data-transit-planet-count="9"]{--transit-cell-label-size:8px}
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell .dynamic-rasi-number,
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell .lagna,
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell .planet-glyph{
-  font-size:var(--transit-cell-label-size)!important;line-height:1.08!important;
-}
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell .planet-line{
-  display:flex!important;flex:0 0 auto!important;align-items:center!important;
-  justify-content:center!important;width:100%!important;max-width:100%!important;
-  margin:0!important;padding:0!important;text-align:center!important;white-space:nowrap!important;
-}
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell .transit-cell-planets{
-  display:flex!important;flex:0 0 auto!important;flex-direction:column!important;
-  align-items:center!important;justify-content:center!important;width:100%!important;
-  text-align:center!important;gap:1px!important;
-}
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell .planet-short,
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell .rasi-status-marker,
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell .transit-degree{
-  font-size:1em!important;line-height:inherit!important;
-}
-@media(max-width:680px){
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell{--transit-cell-label-size:15px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact[data-transit-planet-count="4"]{--transit-cell-label-size:13px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact[data-transit-planet-count="5"]{--transit-cell-label-size:11px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact[data-transit-planet-count="6"]{--transit-cell-label-size:10px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact[data-transit-planet-count="7"]{--transit-cell-label-size:9px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact[data-transit-planet-count="8"]{--transit-cell-label-size:8px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact[data-transit-planet-count="9"]{--transit-cell-label-size:7.5px}
-}
-@media(max-width:390px){
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell{--transit-cell-label-size:14px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact[data-transit-planet-count="4"]{--transit-cell-label-size:12px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact[data-transit-planet-count="5"]{--transit-cell-label-size:10.5px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact[data-transit-planet-count="6"]{--transit-cell-label-size:9px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact[data-transit-planet-count="7"]{--transit-cell-label-size:8px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact[data-transit-planet-count="8"]{--transit-cell-label-size:7.2px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell-compact[data-transit-planet-count="9"]{--transit-cell-label-size:7px}
-}
