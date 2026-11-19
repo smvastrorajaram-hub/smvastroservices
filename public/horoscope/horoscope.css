@@ -932,16 +932,16 @@ table.data-table{width:100%;min-width:680px;border-collapse:separate;border-spac
 .dasha-table th:nth-child(3), .dasha-table td:nth-child(3){width:30%}
 .dasha-table th:nth-child(4), .dasha-table td:nth-child(4){width:30%}
 .south-rasi-cell{position:relative;box-sizing:border-box}
-#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="3"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="3"]south-rasi-cell[data-chart-planet-count="3"]{--smv-chart-compact-white-space:normal}
-#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="4"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="4"]south-rasi-cell[data-chart-planet-count="4"]{--smv-chart-compact-white-space:normal}
-#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="5"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="5"]south-rasi-cell[data-chart-planet-count="5"]{--smv-chart-compact-font-size:8.5px;--smv-chart-compact-white-space:normal}
-#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="6"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="6"]south-rasi-cell[data-chart-planet-count="6"]{--smv-chart-compact-font-size:8px;--smv-chart-compact-white-space:normal}
-#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="7"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="7"]south-rasi-cell[data-chart-planet-count="7"]{--smv-chart-compact-font-size:7.5px;--smv-chart-compact-white-space:normal}
-#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="8"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="8"]south-rasi-cell[data-chart-planet-count="8"]{--smv-chart-compact-font-size:7px;--smv-chart-compact-white-space:normal}
-#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="9"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="9"]south-rasi-cell[data-chart-planet-count="9"]{--smv-chart-compact-font-size:6.5px;--smv-chart-compact-white-space:normal}
-#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="10"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="10"]south-rasi-cell[data-chart-planet-count="10"]{--smv-chart-compact-font-size:6px;--smv-chart-compact-white-space:normal}
-#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="11"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="11"]south-rasi-cell[data-chart-planet-count="11"]{--smv-chart-compact-font-size:5.5px;--smv-chart-compact-white-space:normal}
-#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="12"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="12"]south-rasi-cell[data-chart-planet-count="12"]{--smv-chart-compact-font-size:5px;--smv-chart-compact-white-space:normal}
+#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="3"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="3"]{--smv-chart-compact-white-space:normal}
+#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="4"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="4"]{--smv-chart-compact-white-space:normal}
+#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="5"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="5"]{--smv-chart-compact-font-size:8.5px;--smv-chart-compact-white-space:normal}
+#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="6"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="6"]{--smv-chart-compact-font-size:8px;--smv-chart-compact-white-space:normal}
+#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="7"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="7"]{--smv-chart-compact-font-size:7.5px;--smv-chart-compact-white-space:normal}
+#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="8"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="8"]{--smv-chart-compact-font-size:7px;--smv-chart-compact-white-space:normal}
+#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="9"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="9"]{--smv-chart-compact-font-size:6.5px;--smv-chart-compact-white-space:normal}
+#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="10"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="10"]{--smv-chart-compact-font-size:6px;--smv-chart-compact-white-space:normal}
+#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="11"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="11"]{--smv-chart-compact-font-size:5.5px;--smv-chart-compact-white-space:normal}
+#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="12"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="12"]{--smv-chart-compact-font-size:5px;--smv-chart-compact-white-space:normal}
 .south-rasi-cell.smv-chart-cell-compact .planet-line{min-width:0!important;max-width:100%!important;min-height:0!important;height:auto!important;overflow:visible!important;white-space:normal!important;overflow-wrap:anywhere!important}
 .south-rasi-cell.smv-chart-cell-compact .planet-glyph{display:inline-block!important;min-width:0!important;max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important}
 .south-rasi-cell.smv-chart-cell-compact .planet-degree,.south-rasi-cell.smv-chart-cell-compact .rasi-degree,.south-rasi-cell.smv-chart-cell-compact .rasi-status-marker{white-space:normal!important}
@@ -952,16 +952,16 @@ table.data-table{width:100%;min-width:680px;border-collapse:separate;border-spac
 .bhava-rasi-cell .planet-line{font-size:var(--smv-chart-compact-font-size,clamp(9px, 1.7vw, 12px))}
 .south-rasi-cell .lagna{display:block;width:100%;padding:2px 0px;border:1px solid rgb(183, 134, 37);border-radius:5px;background:rgb(255, 240, 199);color:rgb(123, 61, 14);font-size:var(--smv-chart-compact-font-size,10px)}
 @media (max-width: 700px){
-#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="3"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="3"]south-rasi-cell[data-chart-planet-count="3"]{--smv-chart-compact-white-space:normal}
-#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="4"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="4"]south-rasi-cell[data-chart-planet-count="4"]{--smv-chart-compact-white-space:normal}
-#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="5"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="5"]south-rasi-cell[data-chart-planet-count="5"]{--smv-chart-compact-font-size:8.5px;--smv-chart-compact-white-space:normal}
-#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="6"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="6"]south-rasi-cell[data-chart-planet-count="6"]{--smv-chart-compact-font-size:8px;--smv-chart-compact-white-space:normal}
-#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="7"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="7"]south-rasi-cell[data-chart-planet-count="7"]{--smv-chart-compact-font-size:7.5px;--smv-chart-compact-white-space:normal}
-#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="8"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="8"]south-rasi-cell[data-chart-planet-count="8"]{--smv-chart-compact-font-size:7px;--smv-chart-compact-white-space:normal}
-#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="9"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="9"]south-rasi-cell[data-chart-planet-count="9"]{--smv-chart-compact-font-size:6.5px;--smv-chart-compact-white-space:normal}
-#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="10"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="10"]south-rasi-cell[data-chart-planet-count="10"]{--smv-chart-compact-font-size:6px;--smv-chart-compact-white-space:normal}
-#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="11"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="11"]south-rasi-cell[data-chart-planet-count="11"]{--smv-chart-compact-font-size:5.5px;--smv-chart-compact-white-space:normal}
-#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="12"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="12"]south-rasi-cell[data-chart-planet-count="12"]{--smv-chart-compact-font-size:5px;--smv-chart-compact-white-space:normal}
+#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="3"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="3"]{--smv-chart-compact-white-space:normal}
+#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="4"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="4"]{--smv-chart-compact-white-space:normal}
+#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="5"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="5"]{--smv-chart-compact-font-size:8.5px;--smv-chart-compact-white-space:normal}
+#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="6"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="6"]{--smv-chart-compact-font-size:8px;--smv-chart-compact-white-space:normal}
+#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="7"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="7"]{--smv-chart-compact-font-size:7.5px;--smv-chart-compact-white-space:normal}
+#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="8"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="8"]{--smv-chart-compact-font-size:7px;--smv-chart-compact-white-space:normal}
+#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="9"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="9"]{--smv-chart-compact-font-size:6.5px;--smv-chart-compact-white-space:normal}
+#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="10"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="10"]{--smv-chart-compact-font-size:6px;--smv-chart-compact-white-space:normal}
+#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="11"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="11"]{--smv-chart-compact-font-size:5.5px;--smv-chart-compact-white-space:normal}
+#tamilHoroscopeResult .south-rasi-cell[data-chart-planet-count="12"],#englishHoroscopeResult .south-rasi-cell[data-chart-planet-count="12"]{--smv-chart-compact-font-size:5px;--smv-chart-compact-white-space:normal}
 table.data-table{min-width:620px}
 .data-table th, .data-table td{padding:9px 8px;font-size:13px}
 .south-indian-chart{width:min(680px, 100%)}
