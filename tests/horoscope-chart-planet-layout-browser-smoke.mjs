@@ -193,7 +193,17 @@ try {
                 const labels=raw.flatMap(value=>value.split('/').map(label=>label.trim()).filter(Boolean));
                 return {sign,house:Number(cell.dataset.house||0),labels};
               }) : [];
-              reports.push({rootId,kind,style,cells:cells.length,picked,emptyDash,eastHouseNumbers,bhavaHouseLabels});
+              const transitDebug=kind==='transit'&&style==='south'?{
+                rootFound:!!chart.closest('#'+rootId),
+                wrapperFound:!!chart.closest('.transit-card'),
+                chartClasses:chart.className,
+                mobileMedia:matchMedia('(max-width: 700px)').matches,
+                matchingPlanetLines:chart.querySelectorAll('.south-rasi-cell .planet-line').length,
+                matchingScopedLines:document.querySelectorAll('#'+rootId+' .transit-chart .south-rasi-cell .planet-line').length,
+                firstLineWhiteSpace:cells[0]?.querySelector('.planet-line')?getComputedStyle(cells[0].querySelector('.planet-line')).whiteSpace:null,
+                firstLineMaxWidth:cells[0]?.querySelector('.planet-line')?getComputedStyle(cells[0].querySelector('.planet-line')).maxWidth:null
+              }:null;
+              reports.push({rootId,kind,style,cells:cells.length,picked,emptyDash,eastHouseNumbers,bhavaHouseLabels,transitDebug});
             }
           }
           return {viewport:innerWidth,language,reports};
