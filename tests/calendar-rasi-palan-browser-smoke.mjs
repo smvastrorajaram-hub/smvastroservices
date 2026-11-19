@@ -1706,6 +1706,8 @@ try {
       }));
       const headers = [...(document.querySelectorAll('#calDaily .transit-position-table thead th') || [])].map(cell => cell.textContent.trim());
       const maxStack = Math.max(0, ...cells.map(cell => cell.querySelectorAll('.planet-line').length));
+      const normalPlanetGlyphs = [...(chart?.querySelectorAll('.transit-cell-planets:not(.transit-cell-planets-compact) .planet-glyph') || [])];
+      const compactPlanetGlyphs = [...(chart?.querySelectorAll('.transit-cell-planets.transit-cell-planets-compact .planet-glyph') || [])];
       const clippedStacks = cells.filter(cell => {
         const lines = [...cell.querySelectorAll('.transit-cell-planets .planet-line')];
         if (!lines.length) return false;
@@ -1787,6 +1789,10 @@ try {
         positionsGridLineColor: positionsGridCell ? getComputedStyle(positionsGridCell).borderRightColor : '',
         denseClass: Boolean(chart?.classList.contains('transit-chart-dense') || chart?.classList.contains('transit-chart-dense-4plus')),
         maxStack,
+        normalPlanetCellCount: chart?.querySelectorAll('.transit-cell-planets:not(.transit-cell-planets-compact)').length || 0,
+        compactPlanetCellCount: chart?.querySelectorAll('.transit-cell-planets.transit-cell-planets-compact').length || 0,
+        normalPlanetFontSize: normalPlanetGlyphs[0] ? Number.parseFloat(getComputedStyle(normalPlanetGlyphs[0]).fontSize) : 0,
+        compactPlanetFontSize: compactPlanetGlyphs[0] ? Number.parseFloat(getComputedStyle(compactPlanetGlyphs[0]).fontSize) : 0,
         clippedStacks,
         separatorLines,
         combustionInChart,
@@ -1850,6 +1856,9 @@ try {
       assert.equal(mobileState.chartPlanetCount, 9, language + ' ' + width + 'px: all nine planets must remain in the chart.');
       assert.equal(mobileState.visiblePlanetCount, 9, language + ' ' + width + 'px: every graha must remain fully visible inside its cell.');
       assert.ok(mobileState.maxStack >= 4, language + ' ' + width + 'px: the dense regression date must contain at least four grahas in one Rasi.');
+      assert.ok(mobileState.normalPlanetCellCount > 0, language + ' ' + width + 'px: ordinary Rasi cells must keep their normal font sizing.');
+      assert.ok(mobileState.compactPlanetCellCount > 0, language + ' ' + width + 'px: only the crowded Rasi cell must receive compact sizing.');
+      assert.ok(mobileState.normalPlanetFontSize > mobileState.compactPlanetFontSize, language + ' ' + width + 'px: crowded-cell font size must be smaller than ordinary cells.');
       assert.equal(mobileState.clippedStacks, 0, language + ' ' + width + 'px: no planet line may be clipped by its Rasi cell.');
       assert.equal(mobileState.squareChart, true, language + ' ' + width + 'px: preserve the existing square chart dimensions.');
     }
