@@ -1,49 +1,81 @@
 # Historical Saura Bīja research model (1800–2399)
 
-This PR adds an isolated research module. It does not edit Horoscope production calculations, Swiss/Lahiri, BPHS Shadbala, Marriage Matching, Calendar, cache versions, APKs, or deployed services.
+This PR adds a separate research layer. It does not edit production Horoscope calculations, Swiss/Lahiri, BPHS Shadbala, Marriage Matching, Calendar, cache versions, APKs, or deployed services.
 
-## Bīja profile used
+## Phase A — printed Bīja Mean source reconstruction: PASS
 
-The first implementation freezes the corrected Mahāyuga revolution counts from E. Burgess, *Translation of the Sūrya-Siddhānta* (1860), “Mean Motions of the Planets as corrected by the bīja”, pp. 22–23:
+The model uses Burgess's 1860 translation of the Sūrya-Siddhānta. The corrected Mahāyuga revolutions are:
 
-| Graha | Corrected revolutions / Mahāyuga |
-|---|---:|
-| Sun | 4,320,000 |
-| Mercury | 17,937,044 |
-| Venus | 7,022,364 |
-| Mars | 2,296,832 |
-| Jupiter | 364,212 |
-| Saturn | 146,580 |
+| Graha | Original revolutions | Bīja-corrected revolutions |
+|---|---:|---:|
+| Sun | 4,320,000 | 4,320,000 |
+| Mercury | 17,937,060 | 17,937,044 |
+| Venus | 7,022,376 | 7,022,364 |
+| Mars | 2,296,832 | 2,296,832 |
+| Jupiter | 364,220 | 364,212 |
+| Saturn | 146,568 | 146,580 |
 
-For body B, the corrected daily mean rate is:
+The corrected daily mean rate is:
 
-`360 × corrected_revolutions(B) ÷ 1,577,917,828` degrees per civil day.
+`360 × corrected_revolutions ÷ 1,577,917,828` degrees per civil day.
 
-The longitude calculation reuses the existing Saura Kali epoch and Ujjain mean-meridian convention, rather than building a second epoch implementation. Existing BPHS/Uttara Kalamrita mean/śīghrocca selection is preserved: Mars/Jupiter/Saturn use their own mean and mean Sun as śīghrocca; Mercury/Venus use mean Sun as mean and their own orbit as śīghrocca.
+The regression reconstructs the raw and Bīja-corrected mean longitudes for 1 January 1860 at Ujjain midnight for all six classical bodies. Both sets match the printed Burgess positions within 1.0 arcsecond (the largest observed residual is 0.9674 arcsecond). The Ujjain meridian and Kali epoch are reused from the repository's existing Saura mean engine; the test does not replace the epoch or silently mix it with the Lahiri frame.
 
-## Do not mix the two Bīja tables
+## Phase B — Kali-epoch Mandocca derivation: PASS
 
-IMD Rashtriya Panchang gives a separately dated 22 March 2026 table with mean Surya-Siddhānta positions, a Bīja correction in degrees, and the resulting mean Nirayana positions. Mercury and Venus are explicitly listed at śīghrocca, not as geocentric mean longitudes. This table is used as a separate contemporary benchmark; its one-date degree corrections must not be turned into annual rates or added on top of the Burgess corrected revolution counts.
+Mandocca is no longer extrapolated from the April 2024 anchor. It is derived from the published Surya-Siddhānta inputs:
+- I.41–42: apsis revolutions per Kalpa.
+- I.57–58: apsis longitudes at the beginning of Kali Yuga.
 
-Cidambi–Montelle–Plofker (2024) also document separate Brāhma-pakṣa and Ārya-pakṣa annual Bīja systems. Those coefficients are separate named models, not interchangeable with the Saura-pakṣa revolution table.
+Kalpa civil days are computed as 1,000 × the civil Mahāyuga days. For each body the date-dependent Mandocca is:
 
-## What the regression does now
+`Kali-epoch apsis + 360° × apsis revolutions per Kalpa × elapsed local-mean days ÷ Kalpa civil days`
 
-`tests/saura-bija-600y-regression.mjs` checks the corrected rates, independent formula reconstruction, mean/śīghrocca routing, strict date limits, and four dates per year across 1800–2399. That exercises 2,400 instants and 12,000 five-planet mean/true result rows. The True Longitude output deliberately reuses the existing four-pass classical evaluator and current Mandocca research model, and is not yet an independent accuracy result.
+The five derived April 9, 2024 Mandocca values reproduce the existing published anchors within 0.158 arcsecond. This removes dependence on the previous 2024-anchor extrapolation and uses a single traditional Saura-nirayana frame.
 
-## Concrete route to final historical accuracy
+## Phase C — independent JPL DE441 comparison: completed; strict classical accuracy gate NOT passed
 
-1. Freeze the source profile, epoch, Ujjain meridian and exact conventions; add separate profiles for IMD, Brāhma or Ārya only with their own sources and epochs.
-2. Validate all historical mean positions against printed tables and independently reconstruct the 22 March 2026 IMD table. Keep inner-planet śīghrocca values distinct from geocentric mean positions.
-3. Establish date-dependent Mandocca and śīghrocca values for all five planets from historical primary sources. Reconcile each Manda/Śīghra stage against printed worked examples without planet-specific fitted constants.
-4. Generate geocentric apparent positions from JPL DE441 across the entire interval, transform to one declared ecliptic/equinox frame and then Lahiri sidereal longitude. Use Swiss Ephemeris Lahiri as a second implementation; do not compare a tropical or heliocentric quantity against a sidereal geocentric result.
-5. First compare annual checkpoints and every retrograde station/extremum. Then run every day from 1800-01-01 through 2399-12-31 for all five planets (about 1.1 million rows). Record signed residual, RMS, 95th percentile and maximum error by planet and century. Check leap days, wraparound, direct/retrograde transitions and missing rows.
-6. Before calling the engine numerically certified, require a predeclared error budget. Proposed strict gate: maximum absolute true-longitude residual ≤ 0.05° against the independent JPL-derived result for every planet/date. Require Browser/Node parity ≤ 1e-10° as a separate implementation gate. Where the classical model cannot meet that limit, expose its classical Bīja output separately and use DE441-derived Lahiri true longitude as the accuracy-critical position.
-7. Only after those gates pass should Horoscope and Marriage Matching be wired to the selected certified output, followed by the existing regression suites. No production integration or merge is part of this PR.
+The fixture `tests/fixtures/saura-bija-jpl-de441-annual-1800-2399.json` contains 600 annual reference dates for each planet: 3,000 rows in all. It was captured from NASA/JPL Horizons:
+- Earth geocentric centre (399), DE441.
+- Quantity 31: apparent observer-centred IAU76/80 ecliptic-of-date longitude/latitude.
+- UT1 for dates before 1962, UTC thereafter.
+- Saturn-system barycentre (target 6) is used for Saturn so the requested ephemeris span reaches 2399; Saturn body target 699 ends in 2250.
 
-## Primary sources
+For the comparison the JPL tropical apparent longitude is transferred into the traditional Saura sidereal frame using the Burgess 1 January 1860 zero-point (18°05′08.25″) carried to each epoch by the Lahiri ayanāṃśa precession delta. The classical Bīja True Longitude is then compared to that JPL reference. All 3,000 comparisons are finite and complete.
 
-- Burgess, *Translation of the Sūrya-Siddhānta* (1860), corrected mean motions table: https://upload.wikimedia.org/wikipedia/commons/2/2b/Translation_of_the_S%C3%BBrya-Siddh%C3%A2nta%2C_A_Text-Book_of_Hindu_Astronomy%3B_With_Notes%2C_and_an_Appendix_%28IA_jstor-592174%29.pdf
+### Measured result — annual checkpoints
+
+Acceptance threshold was predeclared as maximum absolute longitude error ≤ 0.05° for every graha. This is a much tighter numerical-accuracy target than the historical classical model currently demonstrates.
+
+| Graha | Samples | RMS error | 95th-percentile absolute error | Maximum absolute error |
+|---|---:|---:|---:|---:|
+| Mercury | 600 | 4.734911° | 6.802282° | 7.588441° |
+| Venus | 600 | 5.890850° | 13.715045° | 21.503665° |
+| Mars | 600 | 5.753817° | 7.230395° | 9.925365° |
+| Jupiter | 600 | 2.477131° | 3.540302° | 3.993845° |
+| Saturn | 600 | 6.007322° | 8.866978° | 9.459852° |
+
+The residual is not a small rounding or numerical precision issue. The old-style four-pass classical geometry plus the historical corrected revolution counts does not reproduce the modern DE441 geocentric apparent true positions to the 0.05° requirement. The mean-source and apsis-source gates pass; the classical true-position accuracy gate fails.
+
+**Correct next step:** retain Bīja-corrected Mean and classical Bīja True as separately labelled historical/traditional outputs. For an accuracy-critical true longitude, use the DE441-derived geocentric apparent position transformed to the same declared Saura/Lahiri sidereal frame, with its own reproducible source and frame metadata. Do not tune planet-specific constants to hide the residual, and do not silently replace the Bīja Mean with a modern osculating mean.
+
+The current fixture checks annual epochs. It is a full 600-year coverage of yearly reference positions, not a daily 1.1-million-row comparison; daily or station/extrema sampling is a later dense-grid expansion. The result must not be described as a daily certification.
+
+## Mean / śīghrocca selection
+
+The existing BPHS/Uttara Kalamrita selection is retained: Mars/Jupiter/Saturn use their own mean and mean Sun as śīghrocca; Mercury/Venus use mean Sun as mean and their own orbit as śīghrocca.
+
+## Source-family separation
+
+The IMD Rashtriya Panchang's dated 22 March 2026 degree-correction table is a separate contemporary benchmark. Its one-date degree corrections must not be converted into annual rates or added on top of the Burgess corrected revolution counts. Brāhma-pakṣa and Ārya-pakṣa annual Bīja systems are also separate named models, not coefficients to transplant into this Saura-pakṣa profile.
+
+## Safety boundary
+
+The code and reports are isolated in this research branch. No production Horoscope, Swiss/Lahiri, BPHS Shadbala, Marriage Matching, Calendar, cache version, APK, Render, Cloudflare or Firebase changes are made. No production integration or merge is part of this PR.
+
+## Primary references
+
+- E. Burgess, *Translation of the Sūrya-Siddhānta* (1860), corrected mean motions and Kali-epoch apsis tables: https://upload.wikimedia.org/wikipedia/commons/2/2b/Translation_of_the_S%C3%BBrya-Siddh%C3%A2nta%2C_A_Text-Book_of_Hindu_Astronomy%3B_With_Notes%2C_and_an_Appendix_%28IA_jstor-592174%29.pdf
 - IMD Rashtriya Panchang 2026–27 Bīja table: https://packolkata.imd.gov.in/panchang/en/bija_corrections
-- Cidambi, Montelle & Plofker (2024), Appendix A: https://doi.org/10.1177/00218286241241812
-- JPL DE441 coverage and documentation: https://ssd.jpl.nasa.gov/planets/eph_export.html and https://ssd.jpl.nasa.gov/horizons/manual.html
+- Sahana Cidambi, Clemency Montelle and Kim Plofker (2024), Appendix A: https://doi.org/10.1177/00218286241241812
+- JPL DE441 / Horizons: https://ssd.jpl.nasa.gov/planets/eph_export.html and https://ssd.jpl.nasa.gov/horizons/manual.html
