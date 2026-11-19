@@ -1,0 +1,29 @@
+name: Historical Saura Bija 1800-2399 Research QA
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'research/saura-bija/**'
+      - 'tests/saura-bija-600y-regression.mjs'
+      - '.github/workflows/saura-bija-historical-600y-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: saura-bija-historical-600y-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  historical-bija-research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax-check isolated Bija engine and regression
+        run: |
+          node --check research/saura-bija/saura-bija-mean-motion.mjs
+          node --check tests/saura-bija-600y-regression.mjs
+      - name: Exercise 1800-2399 mean and true-longitude coverage
+        run: node tests/saura-bija-600y-regression.mjs
