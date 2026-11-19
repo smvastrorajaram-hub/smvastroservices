@@ -68,7 +68,9 @@ near(vargaDignityPoints('சூரியன்',4,{'சூரியன்':4},1,
 near(vargaDignityPoints('சூரியன்',4,{'சூரியன்':4},7,130),
   30,0,'Sun in Leo D7 does not incorrectly receive D1 Moolatrikona 45');
 near(vargaDignityPoints('சந்திரன்',1,{'சந்திரன்':1},1,33.999),
-  30,0,'Moon in Taurus before 4° receives own-sign 30');
+  10,0,'Moon in Taurus before 4° is not Moolatrikona or own sign');
+near(vargaDignityPoints('சந்திரன்',3,{'சந்திரன்':3},1,99.999),
+  30,0,'Moon in own sign Cancer receives 30 before Moolatrikona exception');
 near(vargaDignityPoints('சந்திரன்',1,{'சந்திரன்':1},1,34),
   45,0,'Moon at Taurus 4° enters D1 Moolatrikona 45');
 
