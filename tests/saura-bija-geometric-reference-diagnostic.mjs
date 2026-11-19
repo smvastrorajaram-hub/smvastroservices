@@ -108,6 +108,8 @@ for(const body of bodies){
     baseline:[],
     rawMean:[],
     legacyMandocca:[],
+    withoutMandaCorrection:[],
+    withoutSheeghraCorrection:[],
     geometry:{},
     frame:{
       fixedBurgessZero:[],
@@ -121,7 +123,9 @@ for(const body of bodies){
     lahiriOffsetMinusIau76:[],
     rawMeanInputDelta:[],
     mandoccaLegacyMinusKali:[],
-    geometryDelta:{}
+    geometryDelta:{},
+    mandaContributionDelta:[],
+    sheeghraContributionDelta:[]
   };
   for(const g of geometries){errors.geometry[g]=[];signals.geometryDelta[g]=[];}
 
@@ -146,6 +150,15 @@ for(const body of bodies){
     const oldMandocca=sauraMandoccaResearch(at,body).mandocca;
     const baseline=trueAt(body,bija.meanLongitude,bija.sheeghrocca,mandocca,'verse39-direct-jya').trueLongitude;
     errors.baseline.push(signed(baseline,reference));
+
+    // Remove one physical correction family at a time. Setting its
+    // anomaly-defining longitude equal to the mean makes that correction zero.
+    const noManda=trueAt(body,bija.meanLongitude,bija.sheeghrocca,bija.meanLongitude,'verse39-direct-jya').trueLongitude;
+    const noSheeghra=trueAt(body,bija.meanLongitude,bija.meanLongitude,mandocca,'verse39-direct-jya').trueLongitude;
+    errors.withoutMandaCorrection.push(signed(noManda,reference));
+    errors.withoutSheeghraCorrection.push(signed(noSheeghra,reference));
+    signals.mandaContributionDelta.push(signed(baseline,noManda));
+    signals.sheeghraContributionDelta.push(signed(baseline,noSheeghra));
 
     const rawTrue=trueAt(body,raw.meanLongitude,raw.sheeghrocca,mandocca,'verse39-direct-jya').trueLongitude;
     errors.rawMean.push(signed(rawTrue,reference));
@@ -179,6 +192,12 @@ for(const body of bodies){
     ablations:{
       rawVsBijaMeanMotion:compare(errors.rawMean),
       old2024MandoccaVsKaliEpoch:compare(errors.legacyMandocca),
+      correctionStages:{
+        MandaRemoved:compare(errors.withoutMandaCorrection),
+        SheeghraRemoved:compare(errors.withoutSheeghraCorrection),
+        combinedMandaContribution:summarize(signals.mandaContributionDelta),
+        combinedSheeghraContribution:summarize(signals.sheeghraContributionDelta)
+      },
       geometry:Object.fromEntries(geometries.map(g=>[g,{
         residual:compare(errors.geometry[g]),
         longitudeDeltaFromDirectJya:summarize(signals.geometryDelta[g])
@@ -209,6 +228,6 @@ report.interpretation={
   frame:'Burgess source zero point is retained; pure Lahiri is a different zodiac origin, not an allowed repair.',
   apparentVsGeometric:'Compare classical geometric true longitude to JPL VEC_CORR=NONE geometric vectors; quantity 31 apparent positions are a separate cross-check.',
   precession:'IAU76 transfer is the primary diagnostic frame; Lahiri delta remains a proxy/alternate until independently proven.',
-  modelComponents:'Mean motion, Kali-epoch Mandocca and uniform global geometry are changed one at a time; no planet-specific fitted constants are introduced.'
+  modelComponents:'Mean motion, Kali-epoch Mandocca, Manda-only/Sheeghra-only correction removals and uniform global geometry are changed one at a time; no planet-specific fitted constants are introduced.'
 };
 console.log(JSON.stringify(report));
