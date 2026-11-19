@@ -400,7 +400,7 @@ test('Calendar distinguishes Gazette government holidays from observances and do
   assert.ok(horoscopeRendererSource.includes('data-transit-planet-count="${transitPlanetCount}"'), 'The exact planet count is attached to each Rasi cell for its own font-size rule.');
   assert.ok(horoscopeRendererSource.includes("south-rasi-cell${compactPlanetCell?' south-rasi-cell-compact':''}"), 'The cell keeps its own compact class so house numbers use the same local planet size.');
   assert.ok(horoscopeRendererSource.includes("(houseNo??'')"), 'An unavailable house number renders blank rather than a dash.');
-  assert.ok(horoscopeRendererSource.includes('${ps}</div></div>`);});'), 'Empty transit cells do not render a dash placeholder.');
+  assert.ok(horoscopeRendererSource.includes('${ps}</div></div>'), 'The transit renderer leaves empty planet stacks blank instead of adding a dash placeholder.');
   assert.ok(dailyCalendarCssSource.includes('--transit-cell-label-size:21px;'), 'Desktop ordinary planet names, degrees, markers, Lagna and house numbers use a clearly increased 21px size.');
   assert.ok(dailyCalendarCssSource.includes('south-rasi-cell[data-transit-planet-count="4"]{--transit-cell-label-size:19px}'), 'A four-planet Rasi alone uses the first desktop compact size.');
   assert.ok(dailyCalendarCssSource.includes('south-rasi-cell[data-transit-planet-count="9"]{--transit-cell-label-size:12.5px}'), 'Nine-planet Rasi cells progressively compact only that cell.');
