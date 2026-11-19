@@ -402,7 +402,7 @@ test('Calendar distinguishes Gazette government holidays from observances and do
   assert.ok(horoscopeRendererSource.includes("(houseNo??'')"), 'An unavailable house number renders blank rather than a dash.');
   assert.ok(horoscopeRendererSource.includes('${ps}</div></div>'), 'The transit renderer leaves empty planet stacks blank instead of adding a dash placeholder.');
   assert.ok(dailyCalendarCssSource.includes('--transit-cell-label-size:20px;'), 'Desktop ordinary one-to-two planet names, degrees, markers, Lagna and house numbers use a consistent 20px size.');
-  assert.ok(dailyCalendarCssSource.includes('south-rasi-cell[data-transit-planet-count="3"]{--transit-cell-label-size:18px}'), 'A four-planet Rasi alone uses the first desktop compact size.');
+  assert.ok(dailyCalendarCssSource.includes('south-rasi-cell[data-transit-planet-count="3"]{--transit-cell-label-size:18px}'), 'A three-planet Rasi uses the first desktop compact size; one- and two-planet cells remain at the base size.');
   assert.ok(dailyCalendarCssSource.includes('south-rasi-cell[data-transit-planet-count="9"]{--transit-cell-label-size:10.5px}'), 'Nine-planet Rasi cells progressively compact only that cell.');
   assert.ok(dailyCalendarCssSource.includes('--transit-cell-label-size:17px;padding:4px 2px!important'), 'Mobile ordinary one-to-two planet cells use a consistent 17px size.');
   assert.ok(dailyCalendarCssSource.includes('--transit-cell-label-size:15px}'), 'Narrow mobile ordinary one-to-two planet cells remain readable at 15px.');
