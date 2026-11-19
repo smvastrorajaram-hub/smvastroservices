@@ -1719,7 +1719,13 @@ try {
         const style = getComputedStyle(line);
         return style.borderBottomStyle !== 'none' || style.borderBottomWidth !== '0px';
       }).length;
+      const chartCenter = chart?.querySelector('.south-chart-center');
+      const chartHeading = document.querySelector('#calDaily .transit-card>h3');
       return {
+        chartCenterText: chartCenter?.textContent.trim() || '',
+        chartCenterColor: chartCenter ? getComputedStyle(chartCenter).color : '',
+        planetShortColor: planetElements[0] ? getComputedStyle(planetElements[0]).color : '',
+        chartHeadingText: chartHeading?.textContent.trim() || '',
         chartPlanetCount: planetElements.length,
         chartHasJupiter: planetText.some(value => value.startsWith(language === 'ta' ? 'கு' : 'Ju')),
         tableHasJupiter: rows.some(row => row.name.startsWith(language === 'ta' ? 'குரு' : 'Jupiter')),
@@ -1751,6 +1757,10 @@ try {
       const transitState = await inspectTransitDate(date, language);
       assert.equal(transitState.chartPlanetCount, 9, language + ' ' + date + ': all nine grahas must be present in the Transit Chart: ' + JSON.stringify(transitState));
       assert.equal(transitState.chartHasJupiter, true, language + ' ' + date + ': Jupiter must be visible in the Transit Chart: ' + JSON.stringify(transitState));
+      assert.equal(transitState.chartCenterText, language === 'ta' ? 'கோச்சாரம்' : 'Transit', language + ' ' + date + ': only the chart center label must use the concise transit wording.');
+      assert.equal(transitState.chartCenterColor, 'rgb(21, 86, 78)', language + ' ' + date + ': the chart center label must use Calendar theme green.');
+      assert.equal(transitState.planetShortColor, 'rgb(21, 86, 78)', language + ' ' + date + ': short planet names inside the chart must use Calendar theme green.');
+      assert.ok(transitState.chartHeadingText.endsWith('Transit Chart'), language + ' ' + date + ': the outer Transit Chart heading must remain unchanged.');
       assert.equal(transitState.tableHasJupiter, true, language + ' ' + date + ': Jupiter must be present in Transit Planetary Positions: ' + JSON.stringify(transitState));
       assert.equal(transitState.tableHasFullJupiterName, true, language + ' ' + date + ': Jupiter must use its full graha name: ' + JSON.stringify(transitState));
       assert.equal(transitState.tablePlanetRows, 9, language + ' ' + date + ': all nine grahas must be present in the positions table.');
