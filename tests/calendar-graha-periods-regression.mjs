@@ -82,6 +82,8 @@ test('Calendar table is inserted after transit with readable two-axis scrolling 
   assert.ok(scrollRule.includes('max-height:min(70vh,620px)'));
   assert.ok(css.includes('#smvDailyCalendar .cal-graha-period-card table{width:1000px;min-width:1000px'));
   assert.ok(css.includes('#smvDailyCalendar .cal-graha-period-card thead th{position:sticky;top:0'));
+  assert.ok(css.includes('#smvDailyCalendar .cal-graha-period-card tbody th{position:sticky;left:0'));
+  assert.ok(calendarSource.includes('tabindex="0" role="region" aria-label="'));
 });
 
 test('the three application service workers use one synchronized cache release', async () => {
