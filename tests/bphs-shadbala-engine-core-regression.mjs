@@ -16,6 +16,8 @@ const near=(actual,expected,tolerance,message)=>{
   checks++;
 };
 const frame='TEST_TRADITIONAL_SIDEREAL_FRAME';
+const equatorialFrame='GEOCENTRIC_TROPICAL_EQUATORIAL_OF_DATE';
+const epochJdUt=2450000.5;
 const longitudes={
   'சூரியன்':300,'சந்திரன்':60,'செவ்வாய்':120,'புதன்':180,
   'குரு':240,'சுக்கிரன்':300,'சனி':0
@@ -23,27 +25,33 @@ const longitudes={
 const planets=BPHS_SHADBALA_PLANETS.map((name,index)=>({
   name,longitude:longitudes[name],speed:[1,.8,.5,-.2,.1,.3,.02][index],
   eclipticLatitude:[0,.5,1,-1,.2,-.3,.8][index],
-  bhava:index+1,referenceFrameId:frame
+  bhava:index+1,referenceFrameId:frame,
+  longitudeFrameId:frame,speedFrameId:frame,eclipticLatitudeFrameId:frame,
+  epochJdUt
 }));
 const bhavas=Array.from({length:12},(_,index)=>({
-  house:index+1,longitude:(index+1)*30%360
+  house:index+1,longitude:(index+1)*30%360,
+  referenceFrameId:frame,epochJdUt
 }));
 const temporal={
   solarCalendarDay:'1984-06-01',
-  apparentSolarHour:12,
+  apparentSolarHour:12,epochJdUt,solarTimeFrameId:equatorialFrame,
   abdaLord:'குரு',masaLord:'சுக்கிரன்',dinaLord:'சுக்கிரன்',
   horaLord:'சுக்கிரன்',tribhagaLord:'புதன்',
   solarTimeMethod:'independent test fixture',
   sunriseApprox:true
 };
-const declinations=Object.fromEntries(BPHS_SHADBALA_PLANETS.map(name=>[name,0]));
+const declinations={
+  referenceFrameId:equatorialFrame,epochJdUt,
+  values:Object.fromEntries(BPHS_SHADBALA_PLANETS.map(name=>[name,0]))
+};
 const cheshtaInputs=Object.fromEntries(BPHS_SHADBALA_CHESHTA_PLANETS.map((name,index)=>[
   name,{
     meanSunLongitude:170,
     meanPlanetLongitude:[100,190,220,250,310][index],
     truePlanetLongitude:longitudes[name],
     meanSunFrameId:frame,meanPlanetFrameId:frame,
-    truePlanetFrameId:frame,sheeghroccaFrameId:frame
+    truePlanetFrameId:frame,sheeghroccaFrameId:frame,epochJdUt
   }
 ]));
 const baseInput={
@@ -52,18 +60,21 @@ const baseInput={
 };
 
 // Dig Bala's exact endpoints: ideal point=60, opposite point=0.
-near(bphsDigBala('சூரியன்',300,bhavas),60,0.001,'Sun Dig Bala maximum at 10th cusp');
-near(bphsDigBala('சூரியன்',120,bhavas),0,0.001,'Sun Dig Bala zero at 180 degrees from ideal point');
-near(bphsDigBala('சந்திரன்',120,bhavas),60,0.001,'Moon Dig Bala maximum at 4th cusp');
-assert.throws(()=>bphsDigBala('ராகு',0,bhavas),RangeError);checks++;
-assert.throws(()=>bphsDigBala('சனி',0,bhavas.slice(0,11)),RangeError);checks++;
+near(bphsDigBala('சூரியன்',300,bhavas,frame,epochJdUt),60,0.001,'Sun Dig Bala maximum at 10th cusp');
+near(bphsDigBala('சூரியன்',120,bhavas,frame,epochJdUt),0,0.001,'Sun Dig Bala zero at 180 degrees from ideal point');
+near(bphsDigBala('சந்திரன்',120,bhavas,frame,epochJdUt),60,0.001,'Moon Dig Bala maximum at 4th cusp');
+assert.throws(()=>bphsDigBala('ராகு',0,bhavas,frame,epochJdUt),RangeError);checks++;
+assert.throws(()=>bphsDigBala('சனி',0,bhavas.slice(0,11),frame,epochJdUt),RangeError);checks++;
 
 // The core returns seven BPHS rows, but never claims historical certification.
 const result=calculateBphsShadbala(baseInput);
 eq(result.available,true,'complete source inputs produce an available research result');
 eq(result.method,'BPHS_CH27_ISOLATED_SIX_BALA_ENGINE','dedicated BPHS integration identity');
-eq(result.referenceFrameId,frame,'one frame is reported');
+eq(result.referenceFrameId,frame,'one ecliptic frame is reported');
 eq(result.frameConsistent,true,'frame validation passes for a single-frame fixture');
+eq(result.epochJdUt,epochJdUt,'one common epoch is reported');
+eq(result.solarTimeFrameId,equatorialFrame,'solar-time equatorial frame is reported');
+eq(result.declinationFrameId,equatorialFrame,'declination equatorial frame is reported');
 eq(result.ahargana,65295,'BPHS Ahargana anchor is surfaced');
 eq(Object.keys(result.planets).length,7,'exactly seven classical grahas');
 eq(result.classicalCertified,false,'arbitrary natal chart is never self-certified');
@@ -98,7 +109,22 @@ mixedCheshta.cheshtaInputs['குரு'].truePlanetFrameId='OTHER_FRAME';
 assert.throws(()=>calculateBphsShadbala(mixedCheshta),/frame/);checks++;
 const mixedChart=structuredClone(baseInput);
 mixedChart.planets[0].referenceFrameId='OTHER_FRAME';
-assert.throws(()=>calculateBphsShadbala(mixedChart),/Mixed planetary reference frames/);checks++;
+assert.throws(()=>calculateBphsShadbala(mixedChart),/longitudeFrameId/);checks++;
+const mixedSpeed=structuredClone(baseInput);
+mixedSpeed.planets[1].speedFrameId='OTHER_FRAME';
+assert.throws(()=>calculateBphsShadbala(mixedSpeed),/speedFrameId/);checks++;
+const mixedEpoch=structuredClone(baseInput);
+mixedEpoch.planets[2].epochJdUt=epochJdUt+1;
+assert.throws(()=>calculateBphsShadbala(mixedEpoch),/Mixed astronomical epochs/);checks++;
+const mixedCuspFrame=structuredClone(baseInput);
+mixedCuspFrame.bhavas[0].referenceFrameId='OTHER_FRAME';
+assert.throws(()=>calculateBphsShadbala(mixedCuspFrame),/cusp reference frame/);checks++;
+const mixedDeclinationFrame=structuredClone(baseInput);
+mixedDeclinationFrame.declinations.referenceFrameId='OTHER_EQUATORIAL_FRAME';
+assert.throws(()=>calculateBphsShadbala(mixedDeclinationFrame),/declination frame/);checks++;
+const mixedCheshtaEpoch=structuredClone(baseInput);
+mixedCheshtaEpoch.cheshtaInputs['குரு'].epochJdUt=epochJdUt+1;
+assert.throws(()=>calculateBphsShadbala(mixedCheshtaEpoch),/Chesta input epoch/);checks++;
 const mismatchedTrue=structuredClone(baseInput);
 mismatchedTrue.cheshtaInputs['செவ்வாய்'].truePlanetLongitude=121;
 assert.throws(()=>calculateBphsShadbala(mismatchedTrue),/chart longitude/);checks++;
