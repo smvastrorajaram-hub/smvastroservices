@@ -163,8 +163,6 @@ try {
                 const colors = [...cell.querySelectorAll('.planet-glyph')].map(element=>getComputedStyle(element).color);
                 picked[target] = {
                   compact:cell.classList.contains('smv-chart-cell-compact'),
-                  cellCompactFont:getComputedStyle(cell).getPropertyValue('--smv-chart-compact-font-size').trim(),
-                  cellClasses:cell.className,
                   lineSize:px(line),
                   glyphSize:px(glyph),
                   numberSize:px(number),
@@ -195,28 +193,16 @@ try {
                 const labels=raw.flatMap(value=>value.split('/').map(label=>label.trim()).filter(Boolean));
                 return {sign,house:Number(cell.dataset.house||0),labels};
               }) : [];
-              const transitDebug=kind==='transit'&&style==='south'?{
-                rootFound:!!chart.closest('#'+rootId),
-                wrapperFound:!!chart.closest('.transit-card'),
-                chartClasses:chart.className,
-                mobileMedia:matchMedia('(max-width: 700px)').matches,
-                matchingPlanetLines:chart.querySelectorAll('.south-rasi-cell .planet-line').length,
-                matchingScopedLines:document.querySelectorAll('#'+rootId+' .transit-chart .south-rasi-cell .planet-line').length,
-                firstLineWhiteSpace:cells[0]?.querySelector('.planet-line')?getComputedStyle(cells[0].querySelector('.planet-line')).whiteSpace:null,
-                firstLineMaxWidth:cells[0]?.querySelector('.planet-line')?getComputedStyle(cells[0].querySelector('.planet-line')).maxWidth:null
-              }:null;
-              reports.push({rootId,kind,style,cells:cells.length,picked,emptyDash,eastHouseNumbers,bhavaHouseLabels,transitDebug});
+
             }
           }
           return {viewport:innerWidth,language,reports};
         },{style,language,signOrder});
         for (const item of state.reports) {
-          if(item.transitDebug)console.log('TRANSIT DOM DEBUG',JSON.stringify(item.transitDebug));
           assert.equal(item.cells,12,item.rootId+' '+item.kind+' '+style+': all twelve chart boxes must remain present.');
           const two = item.picked[2];
           const three = item.picked[3];
           const four = item.picked[4];
-          if(state.viewport===768&&language==='ta'&&item.rootId==='tamilHoroscopeResult'&&item.kind==='rasi'&&style==='south')console.log('SOUTH RASI COMPACT DIAGNOSTIC',JSON.stringify({two:{cellClasses:two.cellClasses,cellCompactFont:two.cellCompactFont,lineSize:two.lineSize},three:{cellClasses:three.cellClasses,cellCompactFont:three.cellCompactFont,lineSize:three.lineSize},four:{cellClasses:four.cellClasses,cellCompactFont:four.cellCompactFont,lineSize:four.lineSize}}));
           for (const entry of [[2,two],[3,three],[4,four]]) {
             const count = entry[0];
             const value = entry[1];
@@ -228,7 +214,6 @@ try {
           assert.equal(two.compact,false,item.rootId+' '+item.kind+' '+style+': a two-planet cell keeps normal sizing.');
           assert.equal(three.compact,true,item.rootId+' '+item.kind+' '+style+': a three-planet cell compacts locally.');
           assert.equal(four.compact,true,item.rootId+' '+item.kind+' '+style+': a four-planet cell compacts locally.');
-          if(!(three.lineSize < two.lineSize))console.log('PLANET FONT DEBUG',JSON.stringify({viewport:state.viewport,language,root:item.rootId,kind:item.kind,style,two:{lineSize:two.lineSize,glyphSize:two.glyphSize,compact:two.compact},three:{lineSize:three.lineSize,glyphSize:three.glyphSize,compact:three.compact},four:{lineSize:four.lineSize,glyphSize:four.glyphSize,compact:four.compact}}));
           assert.ok(three.lineSize < two.lineSize,item.rootId+' '+item.kind+' '+style+': three-planet rows are smaller than two-planet rows.');
           assert.ok(four.lineSize < three.lineSize,item.rootId+' '+item.kind+' '+style+': four-planet rows shrink further than three-planet rows.');
           assert.equal(three.equalSizes,true,item.rootId+' '+item.kind+' '+style+': planet, number, degree and status labels share one cell size.');
