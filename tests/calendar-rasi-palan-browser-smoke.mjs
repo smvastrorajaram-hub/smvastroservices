@@ -162,18 +162,36 @@ try {
   await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
   const grahaDesktopLayout = await page.evaluate(() => {
     const card = document.querySelector('#calGrahaPeriodCard');
+    const mainHeading = card?.querySelector(':scope > h3');
+    const headingRect = mainHeading?.getBoundingClientRect();
+    const cardRect = card?.getBoundingClientRect();
+    const dateLines = [...(card?.querySelectorAll('.cal-graha-period-start,.cal-graha-period-end') || [])];
     return {
       found: Boolean(card),
       cardWidth: card?.getBoundingClientRect().width || 0,
       viewportWidth: window.innerWidth,
       pageScrollWidth: document.documentElement.scrollWidth,
       planetCount: card?.querySelectorAll('.cal-graha-planet').length || 0,
-      tableCount: card?.querySelectorAll('table').length || 0
+      tableCount: card?.querySelectorAll('table').length || 0,
+      mainHeadingTextAlign: mainHeading ? getComputedStyle(mainHeading).textAlign : '',
+      mainHeadingCenterDelta: headingRect && cardRect
+        ? Math.abs((headingRect.left + headingRect.right) / 2 - (cardRect.left + cardRect.right) / 2)
+        : Infinity,
+      dateTextAlignments: dateLines.map(line => getComputedStyle(line).textAlign),
+      dateLinesFit: dateLines.every(line => {
+        const range = document.createRange();
+        range.selectNodeContents(line);
+        return getComputedStyle(line).whiteSpace === 'nowrap' && range.getBoundingClientRect().width <= line.clientWidth + 1;
+      })
     };
   });
   assert.equal(grahaDesktopLayout.found, true, 'Annual Graha periods must remain visible on desktop.');
   assert.equal(grahaDesktopLayout.planetCount, 5, 'Desktop must show the same five-planet sequence.');
   assert.equal(grahaDesktopLayout.tableCount, 0, 'Desktop must not render a table.');
+  assert.equal(grahaDesktopLayout.mainHeadingTextAlign, 'center', 'The main Graha heading must be centered on desktop.');
+  assert.ok(grahaDesktopLayout.mainHeadingCenterDelta <= 2, 'The main Graha heading must be centered within its section on desktop: ' + JSON.stringify(grahaDesktopLayout));
+  assert.ok(grahaDesktopLayout.dateTextAlignments.length > 0 && grahaDesktopLayout.dateTextAlignments.every(value => value === 'center'), 'Start and end date-times must be centered on desktop: ' + JSON.stringify(grahaDesktopLayout));
+  assert.ok(grahaDesktopLayout.dateLinesFit, 'Full date-times must remain visible without clipping on desktop: ' + JSON.stringify(grahaDesktopLayout));
   assert.ok(grahaDesktopLayout.pageScrollWidth <= grahaDesktopLayout.viewportWidth + 1, 'Desktop page must not overflow horizontally: ' + JSON.stringify(grahaDesktopLayout));
 
   const calendarHeader = await page.evaluate(() => {
