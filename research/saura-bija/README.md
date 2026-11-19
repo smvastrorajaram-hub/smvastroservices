@@ -258,6 +258,15 @@ This PASS applies only to MODERN_MOSHIER_GEOCENTRIC_APPARENT_TROPICAL_VS_DE441. 
 
 The code and reports are isolated in this research branch. No production Horoscope, Swiss/Lahiri, BPHS Shadbala, Marriage Matching, Calendar, cache version, APK, Render, Cloudflare or Firebase changes are made. No production integration or merge is part of this PR.
 
+
+## Modern Bīja feasibility decision (2026-11-20)
+
+A separate historical/technical assessment is recorded in [`MODERN_BIJA_TRUE_0_05_FEASIBILITY_AUDIT.md`](./MODERN_BIJA_TRUE_0_05_FEASIBILITY_AUDIT.md).
+
+Decision: keep the source-faithful `CLASSICAL_BIJA_TRUE` model separate and do not describe it as a 0.05° DE441 pass. A modern semi-analytical Dṛk-calibrated hybrid is feasible in principle, but it must use a coherent 3D heliocentric-to-geocentric apparent pipeline, derived perturbation terms, blind time-blocked validation and dense 1800–2399 checkpoints. Adding a few Kepler harmonics and an unvalidated 15–25 periodic terms directly to the current four-pass output risks double-counting and is not certified by this research.
+
+**Merge decision:** PR #551 remains unmerged while the separate Modern Dṛk-Bīja model remains unimplemented and unvalidated. The current 0.05° certificate is only for explicit Moshier vs JPL DE441.
+
 ## Primary references
 
 - E. Burgess, *Translation of the Sūrya-Siddhānta* (1860), corrected mean motions and Kali-epoch apsis tables: https://upload.wikimedia.org/wikipedia/commons/2/2b/Translation_of_the_S%C3%BBrya-Siddh%C3%A2nta%2C_A_Text-Book_of_Hindu_Astronomy%3B_With_Notes%2C_and_an_Appendix_%28IA_jstor-592174%29.pdf
