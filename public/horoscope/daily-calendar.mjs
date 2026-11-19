@@ -584,7 +584,7 @@ if(host){
     if(event[5])notes.push(ta()?'அடுத்த தமிழ் ஆண்டிலும் தொடரும்':'Continues into next Tamil year');
     const title=(ta()?'தொடக்கம் IST: ':'Start IST: ')+start+' · '+(ta()?'முடிவு IST: ':'End IST: ')+end;
     const aria=dateText(start)+' '+timeText(start)+' to '+dateText(end)+' '+timeText(end)+' IST';
-    return '<li><span title="'+esc(title)+'" aria-label="'+esc(aria)+'">'+(index+1)+') '+dateText(start)+(ta()?' முதல் ':' to ')+dateText(end)+(ta()?' வரை':'')+'</span>'+
+    return '<li><span class="cal-graha-period-range" title="'+esc(title)+'" aria-label="'+esc(aria)+'"><span class="cal-graha-period-date-start">'+(index+1)+') '+dateText(start)+'</span><span class="cal-graha-period-date-end">'+(ta()?'முதல் ':'to ')+dateText(end)+(ta()?' வரை':'')+'</span></span>'+
      (notes.length?'<small>'+notes.map(esc).join(' · ')+'</small>':'')+'</li>';
    }).join('')+'</ol>';
   };
