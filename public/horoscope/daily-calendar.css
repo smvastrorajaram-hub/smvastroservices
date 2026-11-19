@@ -173,3 +173,26 @@
 /* Keep the user-selectable time directly below the selected Calendar date. */
 #smvDailyCalendar .cal-date-time-fields{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;min-width:0}
 #smvDailyCalendar .cal-date-time-fields label{min-width:0!important}
+
+
+/* Annual Graha vakra / asthamana reference table; precomputed data only. */
+#smvDailyCalendar .cal-graha-period-card{margin:18px 0;padding:14px;background:#fff;border:1px solid #9d9d9d;border-radius:0;color:#191919}
+#smvDailyCalendar .cal-graha-period-card h3{margin:0 0 6px;text-align:center;color:#202020;font-size:clamp(15px,2vw,19px);font-weight:800}
+#smvDailyCalendar .cal-graha-period-year{margin:0 0 12px;text-align:center;color:#303030;font-weight:700;font-size:13px}
+#smvDailyCalendar .cal-graha-period-scroll{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+#smvDailyCalendar .cal-graha-period-card table{width:100%;min-width:570px;border-collapse:collapse;table-layout:fixed;font-size:13px}
+#smvDailyCalendar .cal-graha-period-card th,#smvDailyCalendar .cal-graha-period-card td{border:1px solid #929292;padding:8px 9px;vertical-align:top;color:#202020;text-align:left;line-height:1.55}
+#smvDailyCalendar .cal-graha-period-card thead th{background:#ededed;text-align:center;font-weight:800}
+#smvDailyCalendar .cal-graha-period-card tbody th{width:15%;background:#f6f6f6;font-weight:800;white-space:nowrap}
+#smvDailyCalendar .cal-graha-period-list{list-style:none;margin:0;padding:0}
+#smvDailyCalendar .cal-graha-period-list li{margin:0;padding:3px 0 5px;border-bottom:1px solid #e3e3e3}
+#smvDailyCalendar .cal-graha-period-list li:last-child{border-bottom:0;padding-bottom:0}
+#smvDailyCalendar .cal-graha-period-list small{display:block;margin-top:2px;color:#555;font-size:10.5px;line-height:1.4}
+#smvDailyCalendar .cal-graha-period-empty{color:#555}
+#smvDailyCalendar .cal-graha-period-note{margin:8px 0 0;color:#555;font-size:10.5px;line-height:1.5}
+@media(max-width:680px){
+ #smvDailyCalendar .cal-graha-period-card{padding:9px}
+ #smvDailyCalendar .cal-graha-period-card table{font-size:11.5px;min-width:540px}
+ #smvDailyCalendar .cal-graha-period-card th,#smvDailyCalendar .cal-graha-period-card td{padding:6px}
+ #smvDailyCalendar .cal-graha-period-list small{font-size:9.5px}
+}
