@@ -194,3 +194,21 @@
 .south-indian-chart.smv-v342-east .smv-v342-planets .planet-glyph.smv-v342-black-planet-text{
  color:rgb(224,0,0)!important;
 }
+/* V347: the shared compact rules force 100%-wide planet rows and normal wrapping.
+   North/East rows use their actual glyph width, and status/degree children stay inline. */
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-chart-cell-compact .smv-v342-planets .planet-line,
+.south-indian-chart.smv-v342-east .smv-v342-cell.smv-chart-cell-compact .smv-v342-planets .planet-line{
+ display:inline-flex!important;flex:0 1 auto!important;width:max-content!important;
+ min-width:0!important;max-width:100%!important;box-sizing:border-box!important;
+ white-space:nowrap!important;line-height:1!important;overflow:visible!important;
+}
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-chart-cell-compact .smv-v342-planets .planet-glyph,
+.south-indian-chart.smv-v342-east .smv-v342-cell.smv-chart-cell-compact .smv-v342-planets .planet-glyph{
+ display:inline-flex!important;flex:0 1 auto!important;width:auto!important;
+ min-width:0!important;max-width:100%!important;flex-wrap:nowrap!important;
+ white-space:nowrap!important;line-height:1!important;overflow:visible!important;
+}
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-chart-cell-compact .smv-v342-planets .planet-glyph *,
+.south-indian-chart.smv-v342-east .smv-v342-cell.smv-chart-cell-compact .smv-v342-planets .planet-glyph *{
+ white-space:nowrap!important;max-width:none!important;
+}
