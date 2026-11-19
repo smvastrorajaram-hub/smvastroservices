@@ -38,6 +38,10 @@ A CI PASS would establish only that this version-0.1 model meets the declared to
 
 The raw Moshier kernel already has a separately scoped 0.05° annual DE441 comparison in PR #551 Phase H. The new test does not relabel that old result: it fits the Dṛk coefficients on the predeclared central training block and evaluates the corrected output separately.
 
+## Current measured results
+
+See [the annual DE441 holdout report](./ANNUAL_1800_2399_DE441_HOLDOUT_REPORT.md) for the exact run output, per-planet coefficients, training and blind-holdout errors, and the important caveat that the correction does not improve every planet relative to raw Moshier.
+
 ## Next validation phases before any accuracy certificate or production consideration
 
 1. Freeze the fitted coefficient set as a reviewed, versioned artifact with provenance, exact training epochs and a checksum; CI output alone is not a released coefficient package.
