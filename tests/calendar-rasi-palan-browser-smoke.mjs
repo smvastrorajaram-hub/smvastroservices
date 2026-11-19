@@ -108,8 +108,15 @@ try {
         name: heading?.textContent.trim() || '',
         centered: Boolean(rect && Math.abs((rect.left + rect.right) / 2 - window.innerWidth / 2) < 3),
         categoryCount: planet.querySelectorAll('.cal-graha-period-type').length,
+        categoriesBelowHeading: [...planet.querySelectorAll('.cal-graha-period-type')].every(type => type.getBoundingClientRect().top > (rect?.bottom || 0)),
+        categoryDisplays: [...planet.querySelectorAll('.cal-graha-period-type')].map(type => getComputedStyle(type).display),
         starts: [...planet.querySelectorAll('.cal-graha-period-start')].map(el => el.textContent.trim()),
-        ends: [...planet.querySelectorAll('.cal-graha-period-end')].map(el => el.textContent.trim())
+        ends: [...planet.querySelectorAll('.cal-graha-period-end')].map(el => el.textContent.trim()),
+        datesFit: [...planet.querySelectorAll('.cal-graha-period-start,.cal-graha-period-end')].every(el => {
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          return range.getBoundingClientRect().width <= el.clientWidth + 1;
+        })
       };
     });
     return {
@@ -120,7 +127,8 @@ try {
       pageScrollWidth: document.documentElement.scrollWidth,
       viewportWidth: window.innerWidth,
       tableCount: card.querySelectorAll('table').length,
-      columnLayouts: card.querySelectorAll('[style*="grid"],[style*="flex"]').length,
+      columnLayouts: [...card.querySelectorAll('.cal-graha-period-planets,.cal-graha-planet,.cal-graha-planet-periods,.cal-graha-period-type')].filter(el => ['grid','flex','inline-grid','inline-flex'].includes(getComputedStyle(el).display)).length,
+      titleColor: getComputedStyle(card.querySelector('h3')).color,
       horizontalScrollElements: [...card.querySelectorAll('*')].filter(el => {
         const style = getComputedStyle(el);
         return ['auto','scroll'].includes(style.overflowX) && el.scrollWidth > el.clientWidth + 1;
@@ -132,10 +140,11 @@ try {
   assert.equal(grahaMobileLayout.found, true, 'Annual Graha periods must render on mobile.');
   assert.equal(grahaMobileLayout.tableCount, 0, 'Graha periods must not use a table.');
   assert.equal(grahaMobileLayout.columnLayouts, 0, 'Graha periods must not use columns or flex rows.');
+  assert.notEqual(grahaMobileLayout.titleColor, 'rgb(255, 0, 0)', 'Graha heading must retain the existing Calendar colour instead of global Horoscope red.');
   assert.equal(grahaMobileLayout.horizontalScrollElements, 0, 'Graha periods must not introduce horizontal scrolling.');
   assert.ok(grahaMobileLayout.pageScrollWidth <= grahaMobileLayout.viewportWidth + 1, 'Mobile page must not overflow horizontally: ' + JSON.stringify(grahaMobileLayout));
   assert.equal(grahaMobileLayout.headingInfo.length, 5, 'Exactly five planets must be shown.');
-  assert.ok(grahaMobileLayout.headingInfo.every(item => item.centered && item.categoryCount === 2), 'Each planet must be centered and show its two periods below: ' + JSON.stringify(grahaMobileLayout.headingInfo));
+  assert.ok(grahaMobileLayout.headingInfo.every(item => item.centered && item.categoryCount === 2 && item.categoriesBelowHeading && item.categoryDisplays.every(display => display === 'block') && item.datesFit), 'Each planet must be centered and show its two periods below: ' + JSON.stringify(grahaMobileLayout.headingInfo));
   assert.equal(grahaMobileLayout.footnoteText, '', 'The annual-boundary / IST explanatory paragraph must remain absent.');
   assert.ok(grahaMobileLayout.headingInfo.every(item => item.starts.length === item.ends.length), 'Every period start must have a corresponding end date.');
   await page.$eval('#calGrahaPeriodCard', el => el.scrollIntoView({ block: 'center' }));
