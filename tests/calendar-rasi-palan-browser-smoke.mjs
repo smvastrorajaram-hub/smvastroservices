@@ -108,6 +108,7 @@ try {
         name: heading?.textContent.trim() || '',
         centered: Boolean(rect && Math.abs((rect.left + rect.right) / 2 - window.innerWidth / 2) < 3),
         categoryCount: planet.querySelectorAll('.cal-graha-period-type').length,
+        categories: [...planet.querySelectorAll('.cal-graha-period-type h5')].map(el => el.textContent.trim()),
         categoriesBelowHeading: [...planet.querySelectorAll('.cal-graha-period-type')].every(type => type.getBoundingClientRect().top > (rect?.bottom || 0)),
         categoryDisplays: [...planet.querySelectorAll('.cal-graha-period-type')].map(type => getComputedStyle(type).display),
         starts: [...planet.querySelectorAll('.cal-graha-period-start')].map(el => el.textContent.trim()),
@@ -115,7 +116,7 @@ try {
         datesFit: [...planet.querySelectorAll('.cal-graha-period-start,.cal-graha-period-end')].every(el => {
           const range = document.createRange();
           range.selectNodeContents(el);
-          return range.getBoundingClientRect().width <= el.clientWidth + 1;
+          return getComputedStyle(el).whiteSpace === 'nowrap' && range.getBoundingClientRect().width <= el.clientWidth + 1;
         })
       };
     });
@@ -141,10 +142,12 @@ try {
   assert.equal(grahaMobileLayout.tableCount, 0, 'Graha periods must not use a table.');
   assert.equal(grahaMobileLayout.columnLayouts, 0, 'Graha periods must not use columns or flex rows.');
   assert.notEqual(grahaMobileLayout.titleColor, 'rgb(255, 0, 0)', 'Graha heading must retain the existing Calendar colour instead of global Horoscope red.');
+  assert.notEqual(grahaMobileLayout.titleColor, 'rgb(255, 0, 0)', 'Graha heading must retain the existing Calendar colour instead of global Horoscope red.');
   assert.equal(grahaMobileLayout.horizontalScrollElements, 0, 'Graha periods must not introduce horizontal scrolling.');
   assert.ok(grahaMobileLayout.pageScrollWidth <= grahaMobileLayout.viewportWidth + 1, 'Mobile page must not overflow horizontally: ' + JSON.stringify(grahaMobileLayout));
   assert.equal(grahaMobileLayout.headingInfo.length, 5, 'Exactly five planets must be shown.');
-  assert.ok(grahaMobileLayout.headingInfo.every(item => item.centered && item.categoryCount === 2 && item.categoriesBelowHeading && item.categoryDisplays.every(display => display === 'block') && item.datesFit), 'Each planet must be centered and show its two periods below: ' + JSON.stringify(grahaMobileLayout.headingInfo));
+  assert.deepEqual(grahaMobileLayout.headingInfo.map(item => item.name), ['செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி'], 'The five planets must appear in their intended order.');
+  assert.ok(grahaMobileLayout.headingInfo.every(item => item.centered && item.categoryCount === 2 && item.categories.join('|') === 'வக்ரம்|அஸ்தமனம்' && item.categoriesBelowHeading && item.categoryDisplays.every(display => display === 'block') && item.datesFit), 'Each planet must be centered with Vakram and Asthamanam stacked below and full dates visible: ' + JSON.stringify(grahaMobileLayout.headingInfo));
   assert.equal(grahaMobileLayout.footnoteText, '', 'The annual-boundary / IST explanatory paragraph must remain absent.');
   assert.ok(grahaMobileLayout.headingInfo.every(item => item.starts.length === item.ends.length), 'Every period start must have a corresponding end date.');
   await page.$eval('#calGrahaPeriodCard', el => el.scrollIntoView({ block: 'center' }));
