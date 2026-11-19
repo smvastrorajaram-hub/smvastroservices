@@ -120,21 +120,36 @@ for(const [date,time] of [
  eq(result.deathAgeOrDate,null,'no invented death age');
  const ta=html({planets:r.chart.planets,lagna:r.chart.lagna,language:'ta'});
  const en=html({planets:r.chart.planets,lagna:r.chart.lagna,language:'en'});
- yes(result.totals.pinda.available===true,
-  'Pinda total resolves from all seven Harana-adjusted rows '+date);
- yes(result.totals.natural.available===true,
-  'Naisargika total resolves from all seven Harana-adjusted rows '+date);
- yes(result.totals.amsa.available===true,
-  'Amsa total resolves from all seven post-Harana rows '+date);
- yes(Boolean(result.totals.averageOfThreeTotals),
-  'three-method mean is calculated for a fully evidenced regression chart '+date);
- yes(!ta.includes('மூன்று முறைகளின் ஹரணத் தகவல் முழுமையில்லை')&&
-     !en.includes('Harana evidence incomplete'),
-  'no incomplete-average fallback for a fully evidenced regression chart '+date);
+ const expectedPinda=result.entries.every(e=>e.pindaHarana?.resolved===true&&e.pindaHarana.traditionalUnitsCandidate);
+ const expectedNatural=result.entries.every(e=>e.naturalHarana?.resolved===true&&e.naturalHarana.traditionalUnitsCandidate);
+ const expectedAmsa=result.entries.every(e=>e.amsaHarana?.resolved===true&&e.amsaHarana.traditionalUnitsCandidate);
+ eq(result.totals.pinda.available,expectedPinda,
+  'Pinda total is available only when all seven Harana-adjusted rows resolve '+date);
+ eq(result.totals.natural.available,expectedNatural,
+  'Naisargika total is available only when all seven Harana-adjusted rows resolve '+date);
+ eq(result.totals.amsa.available,expectedAmsa,
+  'Amsa total is available only when all seven post-Harana rows resolve '+date);
+ const allThreeAvailable=expectedPinda&&expectedNatural&&expectedAmsa;
+ eq(Boolean(result.totals.averageOfThreeTotals),allThreeAvailable,
+  'three-method mean exists only when all three complete seven-graha totals resolve '+date);
+ if(!expectedPinda){
+  eq(result.totals.pinda.traditionalUnits,null,'incomplete Pinda total is not fabricated '+date);
+  yes(result.totals.pinda.blockedGrahas.length>0,'Pinda exposes unresolved Harana grahas '+date);
+ }
+ if(!expectedNatural){
+  eq(result.totals.natural.traditionalUnits,null,'incomplete Naisargika total is not fabricated '+date);
+  yes(result.totals.natural.blockedGrahas.length>0,'Naisargika exposes unresolved Harana grahas '+date);
+ }
+ if(!expectedAmsa){
+  eq(result.totals.amsa.traditionalUnits,null,'incomplete Amsa total is not fabricated '+date);
+  yes(result.totals.amsa.blockedGrahas.length>0,'Amsa exposes unresolved Harana grahas '+date);
+ }
+ yes(!ta.includes('சராசரி ஆயுர்த்தாயம்')&&!en.includes('Average Ayurdaya'),
+  'three-method average is never displayed '+date);
  yes(ta.includes('ஆயுர்த்தாயக் கணக்கீடு')&&en.includes('Ayurdaya Calculation')&&!ta.includes('Jathaka Kanitham')&&!en.includes('Jathaka Kanitham'),
   'bilingual source-neutral customer heading');
- yes(!ta.includes('Jathaka Kanitham')&&!en.includes('Jathaka Kanitham')&&!ta.includes('Harana evidence incomplete')&&!en.includes('Harana evidence incomplete'),
-  'no source-book name or long calculation indication in customer results');
+ yes(!ta.includes('Jathaka Kanitham')&&!en.includes('Jathaka Kanitham'),
+  'no source-book name in customer results');
  for(const x of result.entries){
   rows++;
   yes(Number.isFinite(x.pinda.symbolicComponentYears),'numeric Pinda '+date+x.name);
