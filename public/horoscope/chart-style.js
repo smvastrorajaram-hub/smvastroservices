@@ -60,9 +60,12 @@
   // V343: No inline CSS coordinates — report-print.html CSP blocks style attributes.
   // Fixed [data-house] (North) / [data-sign] (East) positions live in external CSS.
   // This preserves placement in saved HTML and offline Android PDF prints.
-  const number=document.createElement('span');number.className='smv-v342-sign-number';number.textContent=String(sign+1);cell.append(number);
+  const number=document.createElement('span');number.className='smv-v342-sign-number';number.textContent=String(sign+1);
+  // Keep existing Lagna-derived labels in East Rasi, Navamsa and Transit.
+  // East Bhava displays only its Lagna-derived Arabic house number (1–12).
+  if(kind!=='bhava')cell.append(number);
   if(style==='east'){
-   const h=document.createElement('span');h.className='smv-v342-house-number';h.textContent=kind==='bhava'?source.cusp[sign].map(i=>roman[i-1]).join('/'):house?String(house):'';
+   const h=document.createElement('span');h.className='smv-v342-house-number';h.textContent=house>=1&&house<=12?String(house):'';
    cell.append(h);
   }
   if(house===1){const mark=document.createElement('span');mark.className='smv-v342-asc';mark.textContent=ta?'ல':'As';cell.append(mark);}
