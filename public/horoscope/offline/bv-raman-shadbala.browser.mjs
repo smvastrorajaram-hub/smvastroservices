@@ -11,7 +11,6 @@
  * disagreements, so full natal certification deliberately remains false.
  * Missing required inputs fail closed; no speed-bucket fallback is accepted.
  */
-import { sauraFivePlanetCheshtaInputs } from './saura-classical-mean-motion.browser.mjs';
 import { bvRamanIshtaKashta, bvRamanChestaForPhala } from './bv-raman-ishta-kashta.browser.mjs';
 
 const PLANETS=Object.freeze(['சூரியன்','சந்திரன்','செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி']);
@@ -164,48 +163,38 @@ function ayanaBala(planet,declination){
 function chestaFromRamanInputs(planet,sourceInputs){
  const required=['meanLongitude','trueLongitude','sheeghroccaLongitude'];
  if(!sourceInputs||!required.every(k=>finite(sourceInputs[k])))throw new TypeError('B.V. Raman Chesta Bala needs printed mean, true and Sheeghrocca longitudes for '+planet);
+ const frames=sourceInputs.referenceFrames||{};
+ const frameValues=[frames.mean,frames.true,frames.sheeghrocca];
+ if(!frameValues.every(x=>typeof x==='string'&&x.trim())||new Set(frameValues).size!==1)
+  throw new RangeError('B.V. Raman Chesta inputs must explicitly declare one identical reference frame for mean, true and Sheeghrocca longitudes');
+ if(typeof sourceInputs.sourceProvenance!=='string'||!sourceInputs.sourceProvenance.trim())
+  throw new TypeError('B.V. Raman Chesta inputs need source provenance');
  const mean=norm360(sourceInputs.meanLongitude),actual=norm360(sourceInputs.trueLongitude),sheeghrocca=norm360(sourceInputs.sheeghroccaLongitude);
  const separation=norm360(actual-mean);
  if(Math.abs(separation-180)<1e-10)throw new RangeError('Mean/true midpoint is ambiguous at 180 degrees for '+planet);
  const signed=separation>180?separation-360:separation,midpoint=norm360(mean+signed/2);
  const kendra=norm360(sheeghrocca-midpoint),reduced=kendra>180?360-kendra:kendra,value=round3(reduced/3);
  if(!finite(value)||value<0||value>60)throw new RangeError('Invalid B.V. Raman Chesta Bala for '+planet);
- return {value,available:true,method:'BV_RAMAN_CHAPTER_VI_VERIFIED_CLASSICAL_LONGITUDES',
+ return {value,available:true,method:'BV_RAMAN_CHAPTER_VI_SAME_FRAME_SOURCE_INPUTS',
   meanLongitude:mean,trueLongitude:actual,sheeghroccaLongitude:sheeghrocca,midpoint,reducedChestaKendra:reduced,
-  trueLongitudeHistoricalCertified:true,numericallyCertified:true};
+  referenceFrame:frameValues[0],referenceFrames:Object.freeze({mean:frameValues[0],true:frameValues[1],sheeghrocca:frameValues[2]}),
+  sourceProvenance:sourceInputs.sourceProvenance,sameReferenceFrameVerified:true,
+  trueLongitudeHistoricalCertified:false,numericallyCertified:true,historicalNatalCertified:false};
 }
 function chestaBala(planet,jdUt,planetRow,printedInputs){
- // In Raman Ch. VI the sixfold Cheshta is motional/retrograde strength.
- // The Sun/Moon special calculations in Ch. X are only for Ishta/Kashta Phala.
- if(planet==='சூரியன்'||planet==='சந்திரன்')return {
-  value:0,available:true,method:'BV_RAMAN_SIXFOLD_CHESTA_LUMINARIES_ZERO',
-  evidence:'Raman Ch. VI motional bala; Ch. X special Chesta-for-Phala remains separate',
-  frameCompatible:true,productionEligible:true,frameGateStatus:'SOURCE_DEFINED_LUMINARY_RULE'
- };
+ // B.V. Raman Chapter VI: the Sun/Moon sixfold motional Cheshta value is zero.
+ // Chapter X Chesta-for-Phala is calculated separately in ramanIshtaKashtaForPlanet.
+ if(planet==='சூரியன்'||planet==='சந்திரன்')return {value:0,available:true,method:'BV_RAMAN_SIXFOLD_CHESTA_LUMINARIES_ZERO',evidence:'Raman Ch. VI motional bala; Ch. X special Chesta-for-Phala remains separate'};
  const explicit=printedInputs||planetRow?.ramanChestaInputs;
  if(explicit)return chestaFromRamanInputs(planet,explicit);
- const english=EN[planet],inputs=sauraFivePlanetCheshtaInputs(jdUt,english);
- // Diagnostic only: mean/Sheeghrocccha come from the traditional Saura frame,
- // while the live chart true longitude is Swiss Lahiri. Their numeric difference
- // is not an admissible classical sixfold Cheshta input until same-frame true
- // longitude and historical Bija/apsis evidence are independently established.
- const mean=norm360(inputs.meanLongitude),actual=norm360(planetRow?.longitude);
- if(!finite(actual))throw new TypeError('Ephemeris true longitude missing for Raman Chesta Bala: '+planet);
- const separation=norm360(actual-mean);
- if(Math.abs(separation-180)<1e-10)throw new RangeError('Mean/true midpoint is ambiguous at 180 degrees for '+planet);
- const signed=separation>180?separation-360:separation,midpoint=norm360(mean+signed/2);
- const kendra=norm360(inputs.sheeghrocha-midpoint),reduced=kendra>180?360-kendra:kendra,value=round3(reduced/3);
- if(!finite(value)||value<0||value>60)throw new RangeError('Invalid B.V. Raman Chesta Bala for '+planet);
- return {
-  value,available:true,method:'BV_RAMAN_FORMULA_EPHEMERIS_TRUE_LONGITUDE_RESEARCH_MEAN_SHEEGHROCCA',
-  meanLongitude:mean,trueLongitude:actual,sheeghroccaLongitude:inputs.sheeghrocha,midpoint,reducedChestaKendra:reduced,
-  meanLongitudeFrame:'traditional-saura-nirayana',
-  trueLongitudeFrame:'swiss-lahiri-nirayana-geocentric',
-  sheeghroccaLongitudeFrame:'traditional-saura-nirayana',
-  frameCompatible:false,productionEligible:false,
-  frameGateStatus:'BLOCKED_MIXED_REFERENCE_FRAMES',
-  trueLongitudeHistoricalCertified:false,numericallyCertified:false
- };
+ // Production Swiss chart longitudes are Lahiri nirayana, while the five-graha
+ // mean/Sheeghrocca selector is Saura-paksha traditional nirayana. Never combine
+ // these frames to make a plausible-looking but invalid sixfold Cheshta number.
+ return {value:null,available:false,method:'BV_RAMAN_CHESHTA_BLOCKED_REFERENCE_FRAME_MISMATCH',
+  reason:'No independently verified same-frame classical mean/true/Sheeghrocca triplet is available for this natal epoch',
+  referenceFrames:Object.freeze({mean:'traditional-Saura-nirayana',true:'Swiss-Lahiri-nirayana',sheeghrocca:'traditional-Saura-nirayana'}),
+  sameReferenceFrameVerified:false,trueLongitudeHistoricalCertified:false,numericallyCertified:false,
+  productionUseAllowed:false};
 }
 function ramanDrishtiVirupa(angle,aspector){
  const a=norm360(angle);let base;
