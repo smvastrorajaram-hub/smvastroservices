@@ -570,13 +570,10 @@ if(host){
   if(!year)return;
   const planetEnglish=['Mars','Mercury','Jupiter','Venus','Saturn'];
   const dateText=value=>{
-   const m=String(value||'').match(/^(\\d{4})-(\\d{2})-(\\d{2})\\s+(\\d{2}):(\\d{2}):(\\d{2})$/);
-   return m?m[3]+'-'+m[2]+'-'+m[1]:'—';
+   const raw=String(value||'');
+   return raw.length>=10?raw.slice(8,10)+'-'+raw.slice(5,7)+'-'+raw.slice(0,4):'—';
   };
-  const timeText=value=>{
-   const m=String(value||'').match(/\\s(\\d{2}:\\d{2}):\\d{2}$/);
-   return m?m[1]:'—';
-  };
+  const timeText=value=>String(value||'').slice(11,16)||'—';
   const cell=(planet,type)=>{
    const events=year[5].filter(e=>e[0]===planet&&e[1]===type);
    if(!events.length)return '<span class="cal-graha-period-empty">—</span>';
