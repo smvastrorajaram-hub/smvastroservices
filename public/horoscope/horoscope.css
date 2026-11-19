@@ -2647,7 +2647,9 @@ html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .tra
 @media (min-width: 901px){
 html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-card .south-indian-chart.transit-chart{width:min(480px, 46vw)!important;max-width:480px!important;min-width:0px!important;margin:14px auto 20px!important;aspect-ratio:1 / 1!important;border-width:2px!important}
 html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-card .transit-chart .south-rasi-cell{padding:4px!important;overflow:hidden!important}
-html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-card .transit-chart .planet-line{font-size:var(--smv-chart-compact-font-size,12px)!important;line-height:1.15!important;gap:2px!important}
+html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-card .transit-chart .planet-line{font-size:var(--smv-chart-compact-font-size,12px)!important;line-height:1.15!important;gap:2px!important;display:flex!important;flex-wrap:wrap!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;white-space:normal!important;overflow-wrap:anywhere!important}
+html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-card .transit-chart .planet-glyph{min-width:0!important;max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important;box-sizing:border-box!important}
+html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-card .transit-chart .planet-glyph *{max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;box-sizing:border-box!important}
 html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-card .transit-chart .dynamic-rasi-number{font-size:var(--smv-chart-compact-font-size,10px)!important}
 html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-card .transit-chart .lagna{font-size:var(--smv-chart-compact-font-size,13px)!important;line-height:1.2!important}}
 @media (max-width: 700px){
