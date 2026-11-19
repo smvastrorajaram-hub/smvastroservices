@@ -22,7 +22,7 @@ for(const [name,source] of [['Node',nodeSource],['Browser',browserSource]]){
     name+' production Cheshta never consumes Swiss chart true longitude as a classical input');
   check(!body.includes('sauraFivePlanetCheshtaInputs'),
     name+' production Cheshta does not assemble Saura mean with an unrelated true longitude');
-  check(source.includes('same reference frame for mean, true and Sheeghrocccha'),
+  check(source.includes('one identical reference frame for mean, true and Sheeghrocca'),
     name+' validates the frame identity of all three explicit source inputs');
   check(source.includes('sourceInputs.referenceFrames'),
     name+' requires provenance metadata for the mean/true/Sheeghrocccha triplet');
