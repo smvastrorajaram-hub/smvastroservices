@@ -15,6 +15,14 @@ const roman = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
 const shortNames = ['சூ','சந்','செ','பு'];
 const fullNames = ['சூரியன்','சந்திரன்','செவ்வாய்','புதன்'];
 
+const bhavaHouseSigns = [0,0,1,2,3,4,5,6,7,8,9,10];
+const bhavaPlanetCounts = [2,0,3,4,0,0,0,0,0,0,0,0];
+const bhavaHousesBySign = Array.from({length:12},()=>[]);
+const bhavaPlanetCountsBySign = Array(12).fill(0);
+bhavaHouseSigns.forEach((sign,index)=>{
+  bhavaHousesBySign[sign].push(index+1);
+  bhavaPlanetCountsBySign[sign] += bhavaPlanetCounts[index];
+});
 function countForSign(sign) {
   if (sign === 0) return 2;
   if (sign === 1) return 3;
@@ -32,8 +40,8 @@ function planetRow(index, withState) {
     shortNames[index % shortNames.length] + '</span>' + state + '</span></div>';
 }
 function cell(sign, kind) {
-  const count = countForSign(sign);
   const bhava = kind === 'bhava';
+  const count = bhava ? bhavaPlanetCountsBySign[sign] : countForSign(sign);
   const transit = kind === 'transit';
   const classes = ['south-rasi-cell'];
   if (bhava) classes.push('bhava-rasi-cell');
@@ -41,7 +49,9 @@ function cell(sign, kind) {
   if (transit && count >= 3) classes.push('south-rasi-cell-compact');
   let label = '';
   if (bhava) {
-    label = '<div class="bhava-cusp"><span class="bhava-house-no">' + roman[sign] + '</span></div>';
+    label = bhavaHousesBySign[sign].map(house=>
+      '<div class="bhava-cusp"><span class="bhava-house-no">' + roman[house-1] + '</span></div>'
+    ).join('');
   } else {
     label = '<div class="dynamic-rasi-number">' + (sign === 0 ? '' : String(sign + 1)) + '</div>';
   }
@@ -61,10 +71,11 @@ function chart(id, kind) {
 }
 function bhavaTable() {
   const rows = Array.from({length:12},(_,i)=>{
-    const count = countForSign(i);
+    const sign = bhavaHouseSigns[i];
+    const count = bhavaPlanetCounts[i];
     const names = fullNames.slice(0,count).join(',');
     return '<tr><td>' + (i+1) + '</td><td>—</td><td>—</td><td>—</td><td>' +
-      zodiac[i] + '</td><td>' + (names || '—') + '</td></tr>';
+      zodiac[sign] + '</td><td>' + (names || '—') + '</td></tr>';
   }).join('');
   return '<table class="bhava-table"><tbody>' + rows + '</tbody></table>';
 }
@@ -108,7 +119,7 @@ try {
           window.SMVChartPresentationV342.setStyle(value);
         },style);
         await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-        const state = await page.evaluate(({style,language})=>{
+        const state = await page.evaluate(({style,language,signOrder})=>{
           const reports = [];
           const kinds = ['rasi','navamsa','transit','bhava'];
           for (const rootId of ['tamilHoroscopeResult','englishHoroscopeResult']) {
@@ -174,7 +185,15 @@ try {
                 displayed:cell.querySelector('.smv-v342-house-number')?.textContent.trim()||'',
                 fixedSignNumber:!!cell.querySelector('.smv-v342-sign-number')
               })) : [];
-              reports.push({rootId,kind,style,cells:cells.length,picked,emptyDash,eastHouseNumbers});
+              const bhavaHouseLabels = kind==='bhava' ? cells.map((cell,index)=>{
+                const sign=style==='south'?signOrder[index]:Number(cell.dataset.sign||0)-1;
+                const raw=style==='south'
+                  ? [...cell.querySelectorAll('.bhava-house-no')].map(el=>el.textContent.trim())
+                  : [cell.querySelector('.smv-v342-house-number')?.textContent.trim()||''];
+                const labels=raw.flatMap(value=>value.split('/').map(label=>label.trim()).filter(Boolean));
+                return {sign,house:Number(cell.dataset.house||0),labels};
+              }) : [];
+              reports.push({rootId,kind,style,cells:cells.length,picked,emptyDash,eastHouseNumbers,bhavaHouseLabels});
             }
           }
           return {viewport:innerWidth,language,reports};
@@ -204,12 +223,25 @@ try {
           } else if (style!=='south') {
             assert.equal(item.emptyDash,true,item.rootId+' '+item.kind+' '+style+': Rasi and Transit retain their alternate-layout empty dash.');
           }
-          if(style==='east'&&item.kind==='bhava'){
-            assert.equal(item.eastHouseNumbers.length,12,item.rootId+' East Bhava must show all twelve house numbers.');
-            for(const number of item.eastHouseNumbers){
-              assert.ok(number.house>=1&&number.house<=12,item.rootId+' East Bhava cell must have a Lagna-based house number.');
-              assert.equal(number.displayed,String(number.house),item.rootId+' East Bhava must display Arabic 1–12 based on Lagna.');
-              assert.equal(number.fixedSignNumber,false,item.rootId+' East Bhava must not add a duplicate fixed sign number.');
+          if(item.kind==='bhava'){
+            const labels=item.bhavaHouseLabels;
+            const allLabels=labels.flatMap(entry=>entry.labels);
+            assert.deepEqual([...allLabels].sort((a,b)=>roman.indexOf(a)-roman.indexOf(b)),roman,
+              item.rootId+' '+style+' Bhava must display every house I–XII exactly once.');
+            if(style==='north'){
+              assert.equal(labels.length,12,item.rootId+' North Bhava keeps twelve house-position cells.');
+              for(const entry of labels){
+                assert.ok(entry.house>=1&&entry.house<=12,item.rootId+' North Bhava cell must retain its actual house slot.');
+                assert.deepEqual(entry.labels,[roman[entry.house-1]],item.rootId+' North Bhava labels must follow the Bhava Table house number.');
+                assert.equal(entry.sign,bhavaHouseSigns[entry.house-1],item.rootId+' North Bhava sign placement must follow Bhava Sphuta Rasi.');
+              }
+            }else{
+              for(const entry of labels){
+                const expected=bhavaHousesBySign[entry.sign].map(house=>roman[house-1]);
+                assert.deepEqual(entry.labels,expected,item.rootId+' '+style+' Bhava house labels must follow the same sign mapping as the Bhava Table.');
+              }
+              assert.deepEqual(labels.find(entry=>entry.sign===0)?.labels,['I','II'],
+                item.rootId+' '+style+' Bhava groups two distinct cusp houses in one sign only when the Bhava Table maps both there.');
             }
           }
           if(style==='east'&&item.kind!=='bhava'){
