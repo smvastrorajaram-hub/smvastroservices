@@ -131,7 +131,7 @@ try {
               const selector = style === 'south' ? ':scope > .south-rasi-cell' : ':scope > .smv-v342-cell';
               const cells = [...chart.querySelectorAll(selector)];
               const chartRect = chart.getBoundingClientRect();
-              const cellBoundsOutside = cells.filter(cell=>{const rect=cell.getBoundingClientRect();return rect.left<chartRect.left-1||rect.right>chartRect.right+1||rect.top<chartRect.top-1||rect.bottom>chartRect.bottom+1;}).map(cell=>({className:cell.className,left:cell.getBoundingClientRect().left,right:cell.getBoundingClientRect().right,top:cell.getBoundingClientRect().top,bottom:cell.getBoundingClientRect().bottom}));
+              const cellBoundsOutside = cells.filter(cell=>{const rect=cell.getBoundingClientRect();return rect.left<chartRect.left-1||rect.right>chartRect.right+1||rect.top<chartRect.top-1||rect.bottom>chartRect.bottom+1;}).map(cell=>{const rect=cell.getBoundingClientRect();return {className:cell.className,house:cell.dataset.house||'',sign:cell.dataset.sign||'',left:Math.round(rect.left*10)/10,right:Math.round(rect.right*10)/10,top:Math.round(rect.top*10)/10,bottom:Math.round(rect.bottom*10)/10,chartLeft:Math.round(chartRect.left*10)/10,chartRight:Math.round(chartRect.right*10)/10,chartTop:Math.round(chartRect.top*10)/10,chartBottom:Math.round(chartRect.bottom*10)/10,chartWidth:Math.round(chartRect.width*10)/10,chartHeight:Math.round(chartRect.height*10)/10};});
               const cellCount = node => Number(node.getAttribute('data-chart-planet-count') || 0);
               const picked = {};
               for (const target of [2,3,4,5]) {
