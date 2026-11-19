@@ -1928,7 +1928,7 @@ try {
       await page.setViewport({ width, height: 844, deviceScaleFactor: 1 });
       const mobileState = await inspectTransitDate('2026-08-12', language);
       assert.equal(mobileState.chartPlanetCount, 9, language + ' ' + width + 'px: all nine planets must remain in the chart.');
-      assert.equal(mobileState.visiblePlanetCount, 9, language + ' ' + width + 'px: every graha must remain fully visible inside its cell.');
+      assert.equal(mobileState.visiblePlanetCount, 9, language + ' ' + width + 'px: every graha must remain fully visible inside its cell: ' + JSON.stringify(mobileState));
       assert.ok(mobileState.maxStack >= 4, language + ' ' + width + 'px: the dense regression date must contain at least four grahas in one Rasi.');
       assert.ok(mobileState.normalPlanetCellCount > 0, language + ' ' + width + 'px: ordinary Rasi cells must keep their normal font sizing.');
       assert.ok(mobileState.compactPlanetCellCount > 0, language + ' ' + width + 'px: only the crowded Rasi cell must receive compact sizing.');
