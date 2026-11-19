@@ -72,6 +72,11 @@ assert.ok(chartStyleCss.includes('.smv-v342-cell.smv-chart-cell-compact .smv-v34
 assert.ok(chartStyleCss.includes('overflow:hidden;display:flex;flex-direction:column;'));
 assert.ok(chartStyleCss.includes('width:22%;max-height:26%;min-width:0;overflow:hidden;'),'North/East cells remain width/height constrained and cannot escape the chart box.');
 assert.ok(chartStyleCss.includes('.smv-v342-cell{font-size:var(--smv-chart-compact-font-size,'));
+assert.ok(horoscopeCss.includes('.rasi-status-marker:where(:not(.smv-css-island,.smv-css-island *)){font-weight:900!important;font-size:var(--smv-chart-compact-font-size,'),'Tamil/English அ and வ markers inherit the five-plus cell size.');
+assert.ok(horoscopeCss.includes('#tamilHoroscopeResult .south-rasi-cell .planet-degree, #englishHoroscopeResult .south-rasi-cell .planet-degree{font-size:var(--smv-chart-compact-font-size,'),'Degree labels in Tamil and English inherit the five-plus cell size.');
+assert.ok(horoscopeCss.includes('#tamilHoroscopeResult .dynamic-rasi-number, #englishHoroscopeResult .dynamic-rasi-number{font-size:var(--smv-chart-compact-font-size,'),'Rasi house Number in Tamil and English inherits the five-plus cell size.');
+assert.ok(horoscopeJs.includes("calendarPresentation&&ta?'அ':'C'"),'Tamil transit combustion marker uses அ.');
+assert.ok(horoscopeJs.includes("calendarPresentation&&ta?'வ':'R'"),'Tamil transit retrograde marker uses வ.');
 
 assert.ok(horoscopeJs.includes('planetDisplayName(p,chartLang)'));
 assert.ok(horoscopeJs.includes('shortPlanetName(p.name,chartLang)'));
