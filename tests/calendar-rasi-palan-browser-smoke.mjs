@@ -1752,8 +1752,10 @@ try {
         squareChart: Boolean(chart && Math.abs(chart.getBoundingClientRect().width-chart.getBoundingClientRect().height)<=2),
         chartWidth: chart?.getBoundingClientRect().width || 0,
         horaHasCardLayer: Boolean(document.querySelector('#calDaily .hora-card')?.classList.contains('card')),
+        horaCardBorderWidth: document.querySelector('#calDaily .hora-card') ? getComputedStyle(document.querySelector('#calDaily .hora-card')).borderTopWidth : '0px',
         transitHasCardLayer: Boolean(document.querySelector('#calDaily .transit-card')?.classList.contains('card')),
         positionsHasLayer: Boolean(document.querySelector('#calDaily .transit-table-card')?.classList.contains('card')),
+        positionsCardBorderWidth: document.querySelector('#calDaily .transit-table-card') ? getComputedStyle(document.querySelector('#calDaily .transit-table-card')).borderTopWidth : '0px',
         denseClass: Boolean(chart?.classList.contains('transit-chart-dense') || chart?.classList.contains('transit-chart-dense-4plus')),
         maxStack,
         clippedStacks,
@@ -1783,7 +1785,11 @@ try {
       assert.deepEqual(transitState.tableHeaders, language === 'ta' ? ['கிரகங்கள்','ராசி','பாகை','நட்சத்திரம்','பாதம்'] : ['Planets','Rasi','Degree','Nakshatra','Pada'], language + ' ' + date + ': the positions table must have five columns and no Status.');
       assert.ok(transitState.tableCellCounts.every(count => count === 5), language + ' ' + date + ': every table row must have exactly five cells.');
       assert.equal(transitState.squareChart, true, language + ' ' + date + ': transit chart must retain its square proportions: ' + JSON.stringify(transitState));
-      assert.equal(transitState.horaHasCardLayer || transitState.transitHasCardLayer || transitState.positionsHasLayer, false, language + ' ' + date + ': Daily Hora, Transit Chart and positions must not have an outer card/layer.');
+      assert.equal(transitState.horaHasCardLayer, true, language + ' ' + date + ': Daily Hora must have its own outer card.');
+      assert.notEqual(transitState.horaCardBorderWidth, '0px', language + ' ' + date + ': Daily Hora outer card border must be visible.');
+      assert.equal(transitState.positionsHasLayer, true, language + ' ' + date + ': Transit Planetary Positions table must have its own outer card.');
+      assert.notEqual(transitState.positionsCardBorderWidth, '0px', language + ' ' + date + ': Transit positions outer card border must be visible.');
+      assert.equal(transitState.transitHasCardLayer, false, language + ' ' + date + ': Transit Chart itself must remain without an outer card.');
       assert.equal(transitState.clippedStacks, 0, language + ' ' + date + ': crowded Rasi cells must not clip planet rows: ' + JSON.stringify(transitState));
       assert.equal(transitState.separatorLines, 0, language + ' ' + date + ': no dotted line may appear below individual planet rows.');
       assert.equal(transitState.denseClass, transitState.maxStack >= 3, language + ' ' + date + ': dense chart sizing must be enabled exactly when a Rasi contains three or more planets.');
