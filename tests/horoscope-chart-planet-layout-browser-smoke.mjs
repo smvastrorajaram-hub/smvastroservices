@@ -209,6 +209,7 @@ try {
           return {viewport:innerWidth,language,reports};
         },{style,language,signOrder});
         for (const item of state.reports) {
+          if(item.transitDebug)console.log('TRANSIT DOM DEBUG',JSON.stringify(item.transitDebug));
           assert.equal(item.cells,12,item.rootId+' '+item.kind+' '+style+': all twelve chart boxes must remain present.');
           const two = item.picked[2];
           const three = item.picked[3];
