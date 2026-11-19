@@ -111,6 +111,19 @@ function crossingEvents(body, other, datesMs, targetBoundaryStep, eventType, add
   }
 }
 
+function solarCrossingType(boundaryDegrees) {
+  const halfTurns = Math.round(boundaryDegrees / 180);
+  if (Math.abs(boundaryDegrees - halfTurns * 180) > 1e-9) {
+    throw new RangeError('Solar crossing boundary must be a multiple of 180 degrees');
+  }
+  return Math.abs(halfTurns) % 2 === 0 ? 'solarConjunction' : 'solarOpposition';
+}
+assert.equal(solarCrossingType(0), 'solarConjunction');
+assert.equal(solarCrossingType(360), 'solarConjunction');
+assert.equal(solarCrossingType(180), 'solarOpposition');
+assert.equal(solarCrossingType(-180), 'solarOpposition');
+assert.equal(solarCrossingType(540), 'solarOpposition');
+
 function detectStations(longitudes, datesMs, addEvent) {
   const rates = new Float64Array(longitudes.length - 1);
   for (let i = 0; i < rates.length; i++) {
@@ -141,7 +154,7 @@ function makeEventEpochs(longitudes, datesMs) {
   for (const planet of PLANETS) {
     detectStations(longitudes[planet], datesMs, add(planet));
     crossingEvents(longitudes[planet], longitudes.Sun, datesMs, 180,
-      boundary => boundary % 2 === 0 ? 'solarConjunction' : 'solarOpposition',
+      solarCrossingType,
       add(planet));
   }
   for (let i = 0; i < PLANETS.length; i++) {
