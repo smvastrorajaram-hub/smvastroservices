@@ -176,14 +176,14 @@ test('all three PWA cache releases are synchronized for Pages.dev and .in conten
     return { pages: match[1], legacy: match[2] };
   });
   assert.deepEqual(releases.map(item => item.pages), [
-    '20261119-calendar-transit-status-v1',
-    '20261119-calendar-transit-status-v1',
-    '20261119-calendar-transit-status-v1'
+    '20261119-calendar-transit-status-v2',
+    '20261119-calendar-transit-status-v2',
+    '20261119-calendar-transit-status-v2'
   ]);
   assert.deepEqual(releases.map(item => item.legacy), [
-    '20261119-calendar-transit-status-v1',
-    '20261119-calendar-transit-status-v1',
-    '20261119-calendar-transit-status-v1'
+    '20261119-calendar-transit-status-v2',
+    '20261119-calendar-transit-status-v2',
+    '20261119-calendar-transit-status-v2'
   ]);
 });
 test('each installer creates its own 256x256 Windows icon', () => {
