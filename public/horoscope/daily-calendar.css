@@ -338,3 +338,23 @@
   }
 }
 @media(min-width:681px){#smvDailyCalendar .cal-header>div{text-align:center}}
+
+/* Transit chart labels: preserve the original size in ordinary cells and compact only crowded cells. */
+#smvDailyCalendar #calDaily .transit-chart .transit-cell-planets:not(.transit-cell-planets-compact) .planet-glyph{
+  font-size:clamp(11px,2.4vw,15px)!important;line-height:1.08!important;gap:2px!important;
+}
+#smvDailyCalendar #calDaily .transit-chart .transit-cell-planets.transit-cell-planets-compact .planet-glyph{
+  font-size:clamp(8px,2.1vw,11px)!important;line-height:1!important;gap:1px!important;
+}
+#smvDailyCalendar #calDaily .transit-chart .transit-cell-planets:not(.transit-cell-planets-compact) .rasi-status-marker{font-size:.72em!important}
+#smvDailyCalendar #calDaily .transit-chart .transit-cell-planets:not(.transit-cell-planets-compact) .transit-degree{font-size:.78em!important}
+@media(max-width:680px){
+  #smvDailyCalendar #calDaily .transit-chart .transit-cell-planets:not(.transit-cell-planets-compact) .planet-glyph{font-size:clamp(10px,3.15vw,13px)!important}
+  #smvDailyCalendar #calDaily .transit-chart .transit-cell-planets.transit-cell-planets-compact .planet-glyph{font-size:clamp(8px,2.5vw,10px)!important}
+  #smvDailyCalendar #calDaily .transit-chart .transit-cell-planets:not(.transit-cell-planets-compact) .rasi-status-marker{font-size:.68em!important}
+  #smvDailyCalendar #calDaily .transit-chart .transit-cell-planets:not(.transit-cell-planets-compact) .transit-degree{font-size:.72em!important}
+}
+@media(max-width:390px){
+  #smvDailyCalendar #calDaily .transit-chart .transit-cell-planets:not(.transit-cell-planets-compact) .planet-glyph{font-size:9.5px!important}
+  #smvDailyCalendar #calDaily .transit-chart .transit-cell-planets.transit-cell-planets-compact .planet-glyph{font-size:clamp(7.5px,2.2vw,8.5px)!important}
+}
