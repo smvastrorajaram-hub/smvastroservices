@@ -108,5 +108,5 @@ test('the three application service workers use one synchronized cache release',
     releases.push(match[1]);
   }
   assert.equal(new Set(releases).size, 1);
-  assert.equal(releases[0], '20261119-graha-period-table-v1');
+  assert.equal(releases[0], '20261119-graha-period-table-v2');
 });
