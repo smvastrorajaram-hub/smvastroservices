@@ -70,7 +70,7 @@ function chosenInputs(jdUt,body,raw=false){
 }
 function trueAt(body,meanLongitude,sheeghrocca,mandocca,geometry){
   return sauraFourPassTrueLongitude({
-    planet:body,meanLongitude,sheeghrocca,mandocca,
+    planet:body,meanLongitude,sheeghrocha:sheeghrocca,mandocca,
     mandaKarṇaConvention:geometry
   });
 }
