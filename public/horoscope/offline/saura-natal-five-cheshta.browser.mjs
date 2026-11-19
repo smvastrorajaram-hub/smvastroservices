@@ -78,7 +78,7 @@ export function computeClassicalFiveNatalCheshta(birth){
       planet,tamil,meanLongitude:args.meanLongitude,mandaKarṇaConvention,
       meanLongitudeFrameId:args.frameId,
       trueLongitudeFrameId:trueModel.frameId,
-      sheeghroccaLongitudeFrameId:args.frameId,
+      sheeghrochaLongitudeFrameId:args.frameId,
       frameCompatible:args.frameId===trueModel.frameId&&trueModel.frameId===tabular.frameId,
       sheeghrocha:args.sheeghrocha,mandocca:mandoccaModel.mandocca,
       trueLongitude:trueModel.trueLongitude,
