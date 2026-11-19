@@ -191,7 +191,7 @@ function chestaBala(planet,jdUt,planetRow,printedInputs){
  // mean/Sheeghrocca selector is Saura-paksha traditional nirayana. Never combine
  // these frames to make a plausible-looking but invalid sixfold Cheshta number.
  return {value:null,available:false,method:'BV_RAMAN_CHESHTA_BLOCKED_REFERENCE_FRAME_MISMATCH',
-  reason:'No independently verified same-frame classical mean/true/Sheeghrocca triplet is available for this natal epoch',
+  reason:'Blocked because mixed astronomical reference frames: no independently verified same-frame classical mean/true/Sheeghrocca triplet is available for this natal epoch',
   referenceFrames:Object.freeze({mean:'traditional-Saura-nirayana',true:'Swiss-Lahiri-nirayana',sheeghrocca:'traditional-Saura-nirayana'}),
   sameReferenceFrameVerified:false,trueLongitudeHistoricalCertified:false,numericallyCertified:false,
   productionUseAllowed:false};
