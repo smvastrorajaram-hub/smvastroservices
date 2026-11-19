@@ -187,6 +187,8 @@
 #smvDailyCalendar .cal-graha-period-card thead th:first-child,#smvDailyCalendar .cal-graha-period-card tbody th{width:140px}
 #smvDailyCalendar .cal-graha-period-card thead th:nth-child(2),#smvDailyCalendar .cal-graha-period-card thead th:nth-child(3){width:430px}
 #smvDailyCalendar .cal-graha-period-card tbody th{background:#f6f6f6;font-weight:800;white-space:nowrap}
+#smvDailyCalendar .cal-graha-period-card thead th:first-child{left:0;z-index:3}
+#smvDailyCalendar .cal-graha-period-card tbody th{position:sticky;left:0;z-index:1}
 #smvDailyCalendar .cal-graha-period-list{list-style:none;margin:0;padding:0}
 #smvDailyCalendar .cal-graha-period-list li{margin:0;padding:3px 0 5px;border-bottom:1px solid #e3e3e3}
 #smvDailyCalendar .cal-graha-period-list li:last-child{border-bottom:0;padding-bottom:0}
