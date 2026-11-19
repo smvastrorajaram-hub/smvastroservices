@@ -127,7 +127,7 @@ export function fitModernDrikBijaCoefficients({ planet, observations }) {
 
 /** Apply a previously fitted correction without refitting on the current epoch. */
 export function applyModernDrikBijaCorrection({ year, apparentLongitude, coefficients }) {
-  if (!Number.isInteger(year)) throw new TypeError('year must be an integer');
+  if (!Number.isFinite(year)) throw new TypeError('year must be a finite decimal year');
   if (!Number.isFinite(apparentLongitude)) throw new TypeError('apparentLongitude must be finite');
   if (!coefficients || coefficients.modelId !== MODERN_DRIK_BIJA_MODEL_ID ||
       !Number.isFinite(coefficients.interceptDegreesAt2100) ||
