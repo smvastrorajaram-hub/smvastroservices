@@ -76,6 +76,10 @@ export function computeClassicalFiveNatalCheshta(birth){
       throw new Error('BPHS input mismatch or Cheshta out of classical 0–60 Virupa range: '+planet);
     return Object.freeze({
       planet,tamil,meanLongitude:args.meanLongitude,mandaKarṇaConvention,
+      meanLongitudeFrameId:args.frameId,
+      trueLongitudeFrameId:trueModel.frameId,
+      sheeghroccaLongitudeFrameId:args.frameId,
+      frameCompatible:args.frameId===trueModel.frameId&&trueModel.frameId===tabular.frameId,
       sheeghrocha:args.sheeghrocha,mandocca:mandoccaModel.mandocca,
       trueLongitude:trueModel.trueLongitude,
       // Two self-consistent calculations; not independently observed truth.
@@ -85,13 +89,23 @@ export function computeClassicalFiveNatalCheshta(birth){
       cheshtaKendra:strength.cheshtaKendraDegrees,
       cheshtaVirupa:strength.virupa,
       trueModelStages:trueModel.stages,
-      model:'unmodified Surya Siddhanta',certified:false
+      model:'unmodified Surya Siddhanta',
+      historicalBijaCorrectionApplied:false,
+      independentHistoricalTrueOracleAvailable:false,
+      certified:false
     });
   });
   return Object.freeze({
     birth:Object.freeze({date:birth.date,time:birth.time,utcOffsetMinutes:birth.utcOffsetMinutes}),
     jdUt,meanSunLongitude:meanSun,planets:Object.freeze(planets),
     calculationAvailable:true,natalHistoricalNumericalCertified:false,
+    historicalTrueLongitudeEvidence:Object.freeze({
+      frameId:'surya-siddhanta-saura-nirayana',
+      meanTrueSheeghroccchaFrameConsistent:true,
+      historicalBijaCorrectionsVerified:false,
+      independentHistoricalTrueLongitudeOracles:0,
+      status:'SAME_FRAME_MODEL_ONLY_NOT_HISTORICALLY_CERTIFIED'
+    }),
     shadbalaNumericallyCertified:false,productionIntegrationAllowed:false,
     missingEvidence:Object.freeze([
       'historical Bija corrections for all five natal epochs',
