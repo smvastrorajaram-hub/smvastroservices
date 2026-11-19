@@ -166,6 +166,11 @@ try {
     const headingRect = mainHeading?.getBoundingClientRect();
     const cardRect = card?.getBoundingClientRect();
     const dateLines = [...(card?.querySelectorAll('.cal-graha-period-start,.cal-graha-period-end') || [])];
+    const heroHeader = document.querySelector('#smvDailyCalendar .cal-header');
+    const heroContent = heroHeader?.querySelector(':scope > div');
+    const heroHeaderRect = heroHeader?.getBoundingClientRect();
+    const heroContentRect = heroContent?.getBoundingClientRect();
+    const heroTextLines = [...(heroContent?.querySelectorAll(':scope > p,:scope > h2,:scope > span') || [])];
     return {
       found: Boolean(card),
       cardWidth: card?.getBoundingClientRect().width || 0,
@@ -173,6 +178,11 @@ try {
       pageScrollWidth: document.documentElement.scrollWidth,
       planetCount: card?.querySelectorAll('.cal-graha-planet').length || 0,
       tableCount: card?.querySelectorAll('table').length || 0,
+      heroHeaderFound: Boolean(heroHeader),
+      heroContentCenterDelta: heroHeaderRect && heroContentRect
+        ? Math.abs((heroContentRect.left + heroContentRect.right) / 2 - (heroHeaderRect.left + heroHeaderRect.right) / 2)
+        : Infinity,
+      heroTextAlignments: heroTextLines.map(line => getComputedStyle(line).textAlign),
       mainHeadingTextAlign: mainHeading ? getComputedStyle(mainHeading).textAlign : '',
       mainHeadingCenterDelta: headingRect && cardRect
         ? Math.abs((headingRect.left + headingRect.right) / 2 - (cardRect.left + cardRect.right) / 2)
@@ -188,6 +198,9 @@ try {
   assert.equal(grahaDesktopLayout.found, true, 'Annual Graha periods must remain visible on desktop.');
   assert.equal(grahaDesktopLayout.planetCount, 5, 'Desktop must show the same five-planet sequence.');
   assert.equal(grahaDesktopLayout.tableCount, 0, 'Desktop must not render a table.');
+  assert.equal(grahaDesktopLayout.heroHeaderFound, true, 'Calendar hero header must be visible on desktop.');
+  assert.ok(grahaDesktopLayout.heroContentCenterDelta <= 2, 'SMV CALENDAR title, subtitle and tagline block must be centered within the hero on desktop: ' + JSON.stringify(grahaDesktopLayout));
+  assert.ok(grahaDesktopLayout.heroTextAlignments.length === 3 && grahaDesktopLayout.heroTextAlignments.every(value => value === 'center'), 'All three Calendar hero text lines must be centered on desktop: ' + JSON.stringify(grahaDesktopLayout));
   assert.equal(grahaDesktopLayout.mainHeadingTextAlign, 'center', 'The main Graha heading must be centered on desktop.');
   assert.ok(grahaDesktopLayout.mainHeadingCenterDelta <= 2, 'The main Graha heading must be centered within its section on desktop: ' + JSON.stringify(grahaDesktopLayout));
   assert.ok(grahaDesktopLayout.dateTextAlignments.length > 0 && grahaDesktopLayout.dateTextAlignments.every(value => value === 'center'), 'Start and end date-times must be centered on desktop: ' + JSON.stringify(grahaDesktopLayout));
