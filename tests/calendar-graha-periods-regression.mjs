@@ -78,7 +78,8 @@ test('Calendar Graha periods render as one centered vertical list without tables
   assert.doesNotMatch(calendarSource, /ராகு–கேது|Rahu–Ketu|Not in supplied data|மூலத் தரவில் இல்லை/);
   assert.equal(TAMIL_GRAHA_PLANETS.length, 5);
   assert.ok(TAMIL_GRAHA_YEAR_DATA.every(year => year[5].every(event => Number.isInteger(event[0]) && event[0] >= 0 && event[0] < TAMIL_GRAHA_PLANETS.length)));
-  assert.doesNotMatch(calendarSource, /calculateSwiss|tamilSolarDate\(/);
+  assert.ok(!renderer.includes('calculateSwiss'));
+  assert.ok(!renderer.includes('tamilSolarDate('));
   assert.ok(calendarWorkerSource.includes("'../calendar-graha-periods-data.mjs'"));
   assert.ok(calendarWorkerSource.includes('calendar-graha-periods-data\\\\.mjs'));
   const css = await readFile(new URL('../public/horoscope/daily-calendar.css', import.meta.url), 'utf8');
