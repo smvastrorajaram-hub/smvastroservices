@@ -129,6 +129,8 @@ try {
               const chart = root.querySelector('#' + chartId);
               const selector = style === 'south' ? ':scope > .south-rasi-cell' : ':scope > .smv-v342-cell';
               const cells = [...chart.querySelectorAll(selector)];
+              const chartRect = chart.getBoundingClientRect();
+              const cellBoundsOutside = cells.filter(cell=>{const rect=cell.getBoundingClientRect();return rect.left<chartRect.left-1||rect.right>chartRect.right+1||rect.top<chartRect.top-1||rect.bottom>chartRect.bottom+1;}).map(cell=>({className:cell.className,left:cell.getBoundingClientRect().left,right:cell.getBoundingClientRect().right,top:cell.getBoundingClientRect().top,bottom:cell.getBoundingClientRect().bottom}));
               const cellCount = node => Number(node.getAttribute('data-chart-planet-count') || 0);
               const picked = {};
               for (const target of [2,3,4]) {
@@ -193,6 +195,7 @@ try {
                 const labels=raw.flatMap(value=>value.split('/').map(label=>label.trim()).filter(Boolean));
                 return {sign,house:Number(cell.dataset.house||0),labels};
               }) : [];
+              reports.push({rootId,kind,cells:cells.length,picked,emptyDash,eastHouseNumbers,bhavaHouseLabels,cellBoundsOutside});
 
             }
           }
@@ -214,10 +217,11 @@ try {
           assert.equal(two.compact,false,item.rootId+' '+item.kind+' '+style+': a two-planet cell keeps normal sizing.');
           assert.equal(three.compact,true,item.rootId+' '+item.kind+' '+style+': a three-planet cell compacts locally.');
           assert.equal(four.compact,true,item.rootId+' '+item.kind+' '+style+': a four-planet cell compacts locally.');
-          assert.ok(three.lineSize < two.lineSize,item.rootId+' '+item.kind+' '+style+': three-planet rows are smaller than two-planet rows.');
-          assert.ok(four.lineSize < three.lineSize,item.rootId+' '+item.kind+' '+style+': four-planet rows shrink further than three-planet rows.');
-          assert.equal(three.equalSizes,true,item.rootId+' '+item.kind+' '+style+': planet, number, degree and status labels share one cell size.');
-          assert.equal(four.equalSizes,true,item.rootId+' '+item.kind+' '+style+': all crowded-cell labels share one cell size.');
+          assert.ok(Math.abs(three.lineSize-two.lineSize)<0.6,item.rootId+' '+item.kind+' '+style+': three-planet labels keep the normal two-planet font size.');
+          assert.ok(Math.abs(four.lineSize-two.lineSize)<0.6,item.rootId+' '+item.kind+' '+style+': four-planet labels keep the normal two-planet font size.');
+          assert.ok(Math.abs(three.glyphSize-two.glyphSize)<0.6,item.rootId+' '+item.kind+' '+style+': three-planet glyphs are not reduced.');
+          assert.ok(Math.abs(four.glyphSize-two.glyphSize)<0.6,item.rootId+' '+item.kind+' '+style+': four-planet glyphs are not reduced.');
+          assert.equal(item.cellBoundsOutside.length,0,item.rootId+' '+item.kind+' '+style+': every chart box remains inside the chart boundary: '+JSON.stringify(item.cellBoundsOutside));
           if (item.kind==='navamsa' || item.kind==='bhava') {
             assert.equal(item.emptyDash,false,item.rootId+' '+item.kind+' '+style+': empty planet cells stay blank.');
           } else if (style!=='south') {
