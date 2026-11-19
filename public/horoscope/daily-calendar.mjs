@@ -1,4 +1,5 @@
 import {offsetMinutesAt} from './offline/places/timezone.mjs';
+import {TAMIL_GRAHA_PLANETS,TAMIL_GRAHA_TYPES,TAMIL_GRAHA_YEAR_DATA} from './calendar-graha-periods-data.mjs';
 import {signs,stars,planets,holidays2026,additionalGovernmentHolidays2026,holidaySource,favorable} from './calendar-data.mjs';
 import {getTamilCalendarDayFlags,getNakshatraDirection,getNethiramJeevan} from './tamil-day-classifications.mjs';
 import {classifySubhaMuhurtham} from './calendar-muhurta-classification.mjs';
@@ -556,11 +557,54 @@ if(host){
   renderMuhurtaLagna();
  }
 
+
+ function renderAnnualGrahaPeriods(){
+  const root=$('#calDaily');if(!root)return;
+  root.querySelector('#calGrahaPeriodCard')?.remove();
+  const transitCard=root.querySelector('.transit-card');if(!transitCard)return;
+  const day=String(selected||'');
+  const year=TAMIL_GRAHA_YEAR_DATA.find(item=>{
+   const start=String(item[3]||'').slice(0,10),end=String(item[4]||'').slice(0,10);
+   return day>=start&&day<end;
+  });
+  if(!year)return;
+  const planetEnglish=['Mars','Mercury','Jupiter','Venus','Saturn'];
+  const dateText=value=>{
+   const m=String(value||'').match(/^(\\d{4})-(\\d{2})-(\\d{2})\\s+(\\d{2}):(\\d{2}):(\\d{2})$/);
+   return m?m[3]+'-'+m[2]+'-'+m[1]:'—';
+  };
+  const timeText=value=>{
+   const m=String(value||'').match(/\\s(\\d{2}:\\d{2}):\\d{2}$/);
+   return m?m[1]:'—';
+  };
+  const cell=(planet,type)=>{
+   const events=year[5].filter(e=>e[0]===planet&&e[1]===type);
+   if(!events.length)return '<span class="cal-graha-period-empty">—</span>';
+   return '<ol class="cal-graha-period-list">'+events.map((event,index)=>{
+    const start=String(event[2]||''),end=String(event[3]||'');
+    const notes=[];
+    if(event[4])notes.push(ta()?'முந்தைய தமிழ் ஆண்டிலிருந்து தொடர்ச்சி':'Continues from previous Tamil year');
+    if(event[5])notes.push(ta()?'அடுத்த தமிழ் ஆண்டிலும் தொடரும்':'Continues into next Tamil year');
+    const title=(ta()?'தொடக்கம் IST: ':'Start IST: ')+start+' · '+(ta()?'முடிவு IST: ':'End IST: ')+end;
+    const aria=dateText(start)+' '+timeText(start)+' to '+dateText(end)+' '+timeText(end)+' IST';
+    return '<li><span title="'+esc(title)+'" aria-label="'+esc(aria)+'">'+(index+1)+') '+dateText(start)+(ta()?' முதல் ':' to ')+dateText(end)+(ta()?' வரை':'')+'</span>'+
+     (notes.length?'<small>'+notes.map(esc).join(' · ')+'</small>':'')+'</li>';
+   }).join('')+'</ol>';
+  };
+  const rows=TAMIL_GRAHA_PLANETS.map((name,index)=>'<tr><th scope="row">'+esc(ta()?name:planetEnglish[index])+'</th><td>'+cell(index,0)+'</td><td>'+cell(index,1)+'</td></tr>').join('');
+  const title=ta()?'செவ்வாய், புதன், குரு, சுக்கிரன், சனி வக்ர அஸ்தமனங்கள்':'Mars, Mercury, Jupiter, Venus and Saturn Retrograde / Combustion Periods';
+  const yearLabel=ta()?year[0]+' '+year[1]+' ஆண்டு':year[0]+' '+year[2]+' Year';
+  const note=ta()?'ஆண்டு எல்லையைத் தாண்டும் நிகழ்வுகள், இந்தத் தமிழ் ஆண்டிற்குள் வரும் காலப்பகுதியாக மட்டும் காட்டப்பட்டுள்ளன. நேரங்கள் IST (+05:30).':'Periods crossing a Tamil-year boundary are clipped to the selected Tamil year. Times are IST (+05:30).';
+  const card=document.createElement('section');card.id='calGrahaPeriodCard';card.className='cal-graha-period-card';card.setAttribute('aria-label',title);
+  card.innerHTML='<h3>'+esc(title)+'</h3><p class="cal-graha-period-year">'+esc(yearLabel)+'</p><div class="cal-graha-period-scroll"><table><thead><tr><th scope="col">'+(ta()?'கிரகம்':'Planet')+'</th><th scope="col">'+esc(ta()?TAMIL_GRAHA_TYPES[0]:'Retrograde')+'</th><th scope="col">'+esc(ta()?TAMIL_GRAHA_TYPES[1]:'Combustion')+'</th></tr></thead><tbody>'+rows+'</tbody></table></div><p class="cal-graha-period-note">'+esc(note)+'</p>';
+  transitCard.after(card);
+ }
+
  function renderDaily(){if(!daily)return;const lang=ta()?'ta':'en';const selectedMinute=clockMinutes(selectedTime),sunrise=clockMinutes(daily.en.p.sunrise),beforeSunrise=selectedMinute!==null&&sunrise!==null&&selectedMinute<sunrise,horaOverride=beforeSunrise?daily.en.previousNight:null;window.SMVRenderDaily(daily[lang].t,daily[lang].p,lang,'calDaily',horaOverride);
  // Calendar localisation is isolated from the stored horoscope and never recalculates it.
  const dict=new Map([...signs,...stars,...planets,...[['Transit Chart','கோச்சாரச் சக்கரம்'],['Transit Planetary Positions','கோச்சார கிரக நிலைகள்'],['Planet','கிரகம்'],['Rasi','ராசி'],['Degree','பாகை'],['Nakshatra','நட்சத்திரம்'],['Pada','பாதம்'],['Status','நிலை'],['Retrograde','வக்கிரம்'],['Direct','நேர்கதி'],['Asc','லக்'],['Su','சூ'],['Mo','சந்'],['Ma','செ'],['Me','பு'],['Ju','கு'],['Ve','சு'],['Sa','சனி'],['Ra(R)','ரா(R)'],['Ke(R)','கே(R)']]]);
  if(ta()){for(const [a,b] of [['Su','சூ'],['Mo','சந்'],['Ma','செ'],['Me','பு'],['Ju','கு'],['Ve','சு'],['Sa','சனி']])dict.set(a+'(R)',b+'(R)');for(const root of [$('#calDaily'),$('#calPanchangSource')]){if(!root)continue;const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);while(walker.nextNode()){const node=walker.currentNode;node.textContent=node.textContent.replace('Transit தேதி/நேரம்:','கோச்சார தேதி/நேரம்:').replace(/\bto\b/g,'முதல்');for(const [en,tamil]of dict)if(node.textContent.trim()===en||node.textContent.trim()==='🪐 '+en){node.textContent=node.textContent.replace(en,tamil);break}}}}
- updateHora();renderExtra();if(month&&monthKey===selected.slice(0,7))renderMonth();
+ renderAnnualGrahaPeriods();updateHora();renderExtra();if(month&&monthKey===selected.slice(0,7))renderMonth();
  }
  function updateHora(){
   if(!daily)return;
