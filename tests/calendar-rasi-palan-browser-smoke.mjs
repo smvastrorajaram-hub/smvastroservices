@@ -452,8 +452,8 @@ try {
    assert.deepEqual(mobileHeadingSizes,{dailyPanchang:'17px',dailyHora:'17px',transitChart:'17px',transitPositions:'17px',rasiPalan:'17px'},'All Calendar section headings must use the same compact mobile font size.');
    await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
    assert.equal(centeredCalendarHeadings.lagnaLabel,
-    centeredCalendarHeadings.language==='ta' ? 'லக்' : 'Asc',
-    'Only the transit positions table Ascendant row must display the shortened Tamil label in Tamil mode.');
+    centeredCalendarHeadings.language==='ta' ? 'லக்னம்' : 'Ascendant',
+    'The transit positions table must display the full Lagna / Ascendant name.');
 
   assert.match(integratedPanchang.firstEventRangeText, /^\d{2}:\d{2}\(\d{2}\/\d{2}\)-\d{2}:\d{2}\(\d{2}\/\d{2}\)$/, 'Panchang event timing must use the compact single-line HH:MM(DD/MM)-HH:MM(DD/MM) format.');
   assert.equal(integratedPanchang.firstEventNoYear, true, 'Panchang event ranges must omit the four-digit Gregorian year.');
@@ -1675,6 +1675,334 @@ try {
   assert.ok(['No','இல்லை'].includes(negativeMuhurtham.verdict), 'A non-Muhurtham date must show only No / இல்லை.');
   assert.equal(negativeMuhurtham.phase, '', 'A non-Muhurtham date must not append a paksha label.');
   await checkMuhurthamDate(calendarDate, /Subha Muhurtham day|சுபமுகூர்த்த நாள்|^No$|^இல்லை$/);
+
+  // Regression: Calendar transit chart must retain all nine grahas around 12 August 2026.
+  // Tamil uses வ / அ markers; English retains R / C. The chart and status table must agree.
+  const transitOriginalLanguage = await page.evaluate(() => document.documentElement.lang || 'en');
+  async function ensureTransitLanguage(language) {
+    const current = await page.evaluate(() => document.documentElement.lang || 'en');
+    if (current === language) return;
+    await page.click(language === 'ta' ? '#calTamil' : '#calEnglish');
+    await page.waitForFunction(value => document.documentElement.lang === value, { timeout: 20000 }, language);
+  }
+  async function inspectTransitDate(date, language) {
+    await page.$eval('#calDate', (el, value) => {
+      el.value = value;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }, date);
+    await page.waitForFunction(value => {
+      const status = document.querySelector('#calStatus')?.textContent || '';
+      const shell = document.querySelector('#smvDailyCalendar');
+      const rows = document.querySelectorAll('#calDaily .transit-position-table tbody tr').length;
+      return status.includes(value) && shell && !shell.hasAttribute('aria-busy') && rows >= 10;
+    }, { timeout: 90000 }, date);
+    return page.evaluate(language => {
+      const chart = document.querySelector('#calDaily .transit-chart');
+      const cells = [...(chart?.querySelectorAll('.south-rasi-cell') || [])];
+      const planetElements = [...(chart?.querySelectorAll('.planet-short') || [])];
+      const rows = [...(document.querySelectorAll('#calDaily .transit-position-table tbody tr') || [])].map(row => ({
+        name: row.querySelector('td:first-child')?.textContent.trim() || '',
+        cells: row.querySelectorAll('td').length
+      }));
+      const headers = [...(document.querySelectorAll('#calDaily .transit-position-table thead th') || [])].map(cell => cell.textContent.trim());
+      const maxStack = Math.max(0, ...cells.map(cell => cell.querySelectorAll('.planet-line').length));
+      const normalPlanetGlyphs = [...(chart?.querySelectorAll('.transit-cell-planets:not(.transit-cell-planets-compact) .planet-glyph') || [])];
+      const compactPlanetGlyphs = [...(chart?.querySelectorAll('.transit-cell-planets.transit-cell-planets-compact .planet-glyph') || [])];
+      const emptyCellPlaceholderCount = chart?.querySelectorAll('.transit-cell-planets .small').length || 0;
+      const houseNumberFontMismatches = cells.reduce((mismatches, cell) => {
+        const number = cell.querySelector('.dynamic-rasi-number');
+        if (!number || !number.textContent.trim()) return mismatches;
+        const cellGlyph = cell.querySelector('.planet-glyph') || (cell.classList.contains('south-rasi-cell-compact') ? compactPlanetGlyphs[0] : normalPlanetGlyphs[0]);
+        if (!cellGlyph) return mismatches;
+        return mismatches + (Math.abs(Number.parseFloat(getComputedStyle(number).fontSize)-Number.parseFloat(getComputedStyle(cellGlyph).fontSize))>.1 ? 1 : 0);
+      },0);
+      const ordinaryPlanetCells = cells.filter(cell => {
+        const count = Number(cell.dataset.transitPlanetCount || 0);
+        return count > 0 && count < 3;
+      });
+      const planetCountClassMismatches = cells.filter(cell => {
+        const count = Number(cell.dataset.transitPlanetCount || 0);
+        return cell.classList.contains('south-rasi-cell-compact') !== (count >= 3);
+      }).length;
+      const ordinaryCellGroupsCentered = ordinaryPlanetCells.every(cell => {
+        const cellRect = cell.getBoundingClientRect();
+        const children = [...cell.children].filter(child => ['dynamic-rasi-number','lagna','transit-cell-planets'].some(cls => child.classList.contains(cls)));
+        if (!children.length) return false;
+        const top = Math.min(...children.map(child => child.getBoundingClientRect().top));
+        const bottom = Math.max(...children.map(child => child.getBoundingClientRect().bottom));
+        return Math.abs((top + bottom) / 2 - (cellRect.top + cellRect.bottom) / 2) <= 2;
+      });
+      const markerFontSizeMismatches = [...(chart?.querySelectorAll('.planet-glyph') || [])].reduce((count, glyph) => {
+        const size = Number.parseFloat(getComputedStyle(glyph).fontSize);
+        return count + [...glyph.querySelectorAll('.rasi-status-marker,.transit-degree')].filter(child => Math.abs(Number.parseFloat(getComputedStyle(child).fontSize)-size)>.1).length;
+      },0);
+      const clippedStacks = cells.filter(cell => {
+        const lines = [...cell.querySelectorAll('.transit-cell-planets .planet-line')];
+        if (!lines.length) return false;
+        const cellRect = cell.getBoundingClientRect();
+        return lines.some(line => {
+          const rect = line.getBoundingClientRect();
+          return rect.height <= 0 || rect.top < cellRect.top - 1 || rect.bottom > cellRect.bottom + 1;
+        });
+      }).length;
+      const horizontalOverflowDetails = cells.flatMap(cell => {
+        const cellRect = cell.getBoundingClientRect();
+        return [...cell.querySelectorAll('.planet-glyph,.planet-short,.planet-status-slot,.rasi-status-marker,.transit-degree')]
+          .filter(el => {
+            const rect = el.getBoundingClientRect();
+            return rect.width > 0 && (
+              rect.left < cellRect.left - 1 || rect.right > cellRect.right + 1 ||
+              el.scrollWidth > el.clientWidth + 1
+            );
+          })
+          .map(el => ({planetCount:cell.dataset.transitPlanetCount||'',label:el.textContent.trim(),left:el.getBoundingClientRect().left,right:el.getBoundingClientRect().right,cellLeft:cellRect.left,cellRight:cellRect.right}));
+      });
+      const planetText = planetElements.map(el => el.textContent.trim());
+      const markerText = planetText.concat(rows.map(row => row.name)).join(' | ');
+      const horaSection = document.querySelector('#calDaily .hora-card');
+      const horaHeading = horaSection?.querySelector(':scope > h3');
+      const horaTables = [...(horaSection?.querySelectorAll('.hora-table-wrap') || [])];
+      const positionsSection = document.querySelector('#calDaily .transit-table-card');
+      const positionsHeading = positionsSection?.querySelector(':scope > h3');
+      const positionsTableWrap = positionsSection?.querySelector('.adv-scroll');
+      const horaGridCell = horaTables[0]?.querySelector('tbody td');
+      const positionsGridCell = positionsSection?.querySelector('tbody td');
+      const combustionInChart = chart?.querySelectorAll('.planet-status-slot .status-c').length || 0;
+      const combustionInNames = rows.filter(row => row.name.includes(language === 'ta' ? '(அ)' : '(C)')).length;
+      const retrogradeInChart = chart?.querySelectorAll('.planet-status-slot .status-r').length || 0;
+      const retrogradeInNames = rows.filter(row => row.name.includes(language === 'ta' ? '(வ)' : '(R)')).length;
+      // Deterministic dual-status fixture: verifies (அ)/(வ) and degree stay in one
+      // horizontal sequence even when both status markers belong to one planet.
+      const dualMarkerProbe=document.createElement('div');
+      dualMarkerProbe.className='south-rasi-cell';
+      dualMarkerProbe.dataset.transitPlanetCount='3';
+      dualMarkerProbe.style.cssText='position:absolute;left:-10000px;top:0;width:220px;height:44px;padding:0;';
+      dualMarkerProbe.innerHTML='<div class="transit-cell-planets"><div class="planet-line"><span class="planet-glyph"><span class="planet-short">கு</span><span class="planet-status-slot"><span class="rasi-status-marker status-c">(அ)</span></span><span class="planet-status-slot"><span class="rasi-status-marker status-r">(வ)</span></span><span class="rasi-degree transit-degree">18°</span></span></div></div>';
+      chart?.appendChild(dualMarkerProbe);
+      const probeGlyph=dualMarkerProbe.querySelector('.planet-glyph');
+      const probeCombust=dualMarkerProbe.querySelector('.status-c')?.getBoundingClientRect();
+      const probeRetro=dualMarkerProbe.querySelector('.status-r')?.getBoundingClientRect();
+      const probeDegree=dualMarkerProbe.querySelector('.transit-degree')?.getBoundingClientRect();
+      const probeGlyphSize=Number.parseFloat(probeGlyph?getComputedStyle(probeGlyph).fontSize:'0');
+      const dualMarkerLayout={
+        bothMarkersPresent:Boolean(probeCombust&&probeRetro&&probeDegree),
+        combustionBeforeRetrograde:Boolean(probeCombust&&probeRetro&&probeCombust.right<=probeRetro.left+.5),
+        retrogradeBeforeDegree:Boolean(probeRetro&&probeDegree&&probeRetro.right<=probeDegree.left+.5),
+        allLabelsSameSize:Boolean(probeGlyph&&[...dualMarkerProbe.querySelectorAll('.rasi-status-marker,.transit-degree')].every(el=>Math.abs(Number.parseFloat(getComputedStyle(el).fontSize)-probeGlyphSize)<.1))
+      };
+      dualMarkerProbe.remove();
+      const separatorLines = [...(chart?.querySelectorAll('.planet-line') || [])].filter(line => {
+        const style = getComputedStyle(line);
+        return style.borderBottomStyle !== 'none' || style.borderBottomWidth !== '0px';
+      }).length;
+      const chartCenter = chart?.querySelector('.south-chart-center');
+      const chartHeading = document.querySelector('#calDaily .transit-card>h3');
+      return {
+        chartCenterText: chartCenter?.textContent.trim() || '',
+        chartCenterColor: chartCenter ? getComputedStyle(chartCenter).color : '',
+        planetShortColor: planetElements[0] ? getComputedStyle(planetElements[0]).color : '',
+        chartHeadingText: chartHeading?.textContent.trim() || '',
+        chartPlanetCount: planetElements.length,
+        visiblePlanetCount: planetElements.filter(el => {
+          const cell = el.closest('.south-rasi-cell');
+          const line = el.closest('.planet-line');
+          const rect = el.getBoundingClientRect();
+          const cellRect = cell?.getBoundingClientRect();
+          const style = getComputedStyle(el);
+          return Boolean(cellRect && line && rect.width > 0 && rect.height > 0 &&
+            style.display !== 'none' && style.visibility !== 'hidden' &&
+            rect.top >= cellRect.top - 1 && rect.bottom <= cellRect.bottom + 1 &&
+            rect.left >= cellRect.left - 1 && rect.right <= cellRect.right + 1);
+        }).length,
+        chartHasJupiter: (() => {
+          const index = planetText.findIndex(value => value.startsWith(language === 'ta' ? 'கு' : 'Ju'));
+          if (index < 0) return false;
+          const el = planetElements[index];
+          const rect = el.getBoundingClientRect();
+          const style = getComputedStyle(el);
+          const chartRect = chart.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' &&
+            style.display !== 'none' && rect.top >= chartRect.top - 1 &&
+            rect.bottom <= chartRect.bottom + 1;
+        })(),
+        tableHasJupiter: rows.some(row => row.name.startsWith(language === 'ta' ? 'குரு' : 'Jupiter')),
+        tableHasFullJupiterName: rows.some(row => row.name.startsWith(language === 'ta' ? 'குரு' : 'Jupiter')),
+        tablePlanetRows: rows.length - 1,
+        tableHeaders: headers,
+        tableCellCounts: rows.map(row => row.cells),
+        squareChart: Boolean(chart && Math.abs(chart.getBoundingClientRect().width-chart.getBoundingClientRect().height)<=2),
+        chartWidth: chart?.getBoundingClientRect().width || 0,
+        horaHeadingText: horaHeading?.textContent.trim() || '',
+        horaHasCardLayer: Boolean(horaSection?.classList.contains('card')),
+        horaCardBorderWidth: horaSection ? getComputedStyle(horaSection).borderTopWidth : '0px',
+        horaTableBorderWidths: horaTables.map(wrap => getComputedStyle(wrap).borderTopWidth),
+        horaTableBorderColor: horaTables[0] ? getComputedStyle(horaTables[0]).borderTopColor : '',
+        horaGridLineWidth: horaGridCell ? getComputedStyle(horaGridCell).borderRightWidth : '0px',
+        horaGridLineColor: horaGridCell ? getComputedStyle(horaGridCell).borderRightColor : '',
+        transitHasCardLayer: Boolean(document.querySelector('#calDaily .transit-card')?.classList.contains('card')),
+        positionsHeadingText: positionsHeading?.textContent.trim() || '',
+        positionsHasLayer: Boolean(positionsSection?.classList.contains('card')),
+        positionsCardBorderWidth: positionsSection ? getComputedStyle(positionsSection).borderTopWidth : '0px',
+        positionsTableBorderWidth: positionsTableWrap ? getComputedStyle(positionsTableWrap).borderTopWidth : '0px',
+        positionsTableBorderColor: positionsTableWrap ? getComputedStyle(positionsTableWrap).borderTopColor : '',
+        positionsGridLineWidth: positionsGridCell ? getComputedStyle(positionsGridCell).borderRightWidth : '0px',
+        positionsGridLineColor: positionsGridCell ? getComputedStyle(positionsGridCell).borderRightColor : '',
+        denseClass: Boolean(chart?.classList.contains('transit-chart-dense') || chart?.classList.contains('transit-chart-dense-4plus')),
+        maxStack,
+        normalPlanetCellCount: chart?.querySelectorAll('.transit-cell-planets:not(.transit-cell-planets-compact)').length || 0,
+        compactPlanetCellCount: chart?.querySelectorAll('.transit-cell-planets.transit-cell-planets-compact').length || 0,
+        normalPlanetFontSize: normalPlanetGlyphs[0] ? Number.parseFloat(getComputedStyle(normalPlanetGlyphs[0]).fontSize) : 0,
+        compactPlanetFontSize: compactPlanetGlyphs[0] ? Number.parseFloat(getComputedStyle(compactPlanetGlyphs[0]).fontSize) : 0,
+        ordinaryPlanetCellsCentered: ordinaryCellGroupsCentered,
+        ordinaryPlanetCellCount: ordinaryPlanetCells.length,
+        planetCountClassMismatches,
+        markerFontSizeMismatches,
+        emptyCellPlaceholderCount,
+        houseNumberFontMismatches,
+        clippedStacks,
+        horizontalOverflowCount:horizontalOverflowDetails.length,
+        horizontalOverflowDetails:horizontalOverflowDetails.slice(0,8),
+        clippedStackDetails: cells.filter(cell => {
+          const cellRect = cell.getBoundingClientRect();
+          return [...cell.querySelectorAll('.transit-cell-planets .planet-line')].some(line => {
+            const rect = line.getBoundingClientRect();
+            return rect.height <= 0 || rect.top < cellRect.top - 1 || rect.bottom > cellRect.bottom + 1;
+          });
+        }).map(cell => {
+          const cellRect = cell.getBoundingClientRect();
+          return {
+            planetCount: cell.dataset.transitPlanetCount || '',
+            houseNumber: cell.querySelector('.dynamic-rasi-number')?.textContent.trim() || '',
+            cellRect: {top:cellRect.top,bottom:cellRect.bottom,left:cellRect.left,right:cellRect.right},
+            lines: [...cell.querySelectorAll('.transit-cell-planets .planet-line')].map(line => {
+              const rect=line.getBoundingClientRect();
+              const glyph=line.querySelector('.planet-glyph');
+              return {
+                label:line.textContent.trim(),
+                fontSize:glyph?getComputedStyle(glyph).fontSize:'',
+                rect:{top:rect.top,bottom:rect.bottom,left:rect.left,right:rect.right,height:rect.height}
+              };
+            })
+          };
+        }),
+        notFullyVisiblePlanets: planetElements.filter(el => {
+          const rect=el.getBoundingClientRect();
+          const cellRect=el.closest('.south-rasi-cell')?.getBoundingClientRect();
+          return !cellRect || rect.top < cellRect.top - 1 || rect.bottom > cellRect.bottom + 1 ||
+            rect.left < cellRect.left - 1 || rect.right > cellRect.right + 1;
+        }).map(el => {
+          const rect=el.getBoundingClientRect();
+          const cell=el.closest('.south-rasi-cell');
+          const cellRect=cell?.getBoundingClientRect();
+          return {
+            label:el.textContent.trim(),
+            planetCount:cell?.dataset.transitPlanetCount || '',
+            fontSize:getComputedStyle(el).fontSize,
+            rect:{top:rect.top,bottom:rect.bottom,left:rect.left,right:rect.right},
+            cellRect:cellRect?{top:cellRect.top,bottom:cellRect.bottom,left:cellRect.left,right:cellRect.right}:null
+          };
+        }),
+        separatorLines,
+        combustionInChart,
+        combustionInNames,
+        retrogradeInChart,
+        retrogradeInNames,
+        dualMarkerLayout,
+        hasWrongLatinMarkersInTamil: language === 'ta' && (markerText.includes('(R)') || markerText.includes('(C)')),
+        hasWrongTamilMarkersInEnglish: language === 'en' && (markerText.includes('(வ)') || markerText.includes('(அ)'))
+      };
+    }, language);
+  }
+  for (const language of ['ta', 'en']) {
+    await ensureTransitLanguage(language);
+    for (const date of ['2026-08-11', '2026-08-12', '2026-08-13']) {
+      const transitState = await inspectTransitDate(date, language);
+      assert.equal(transitState.chartPlanetCount, 9, language + ' ' + date + ': all nine grahas must be present in the Transit Chart: ' + JSON.stringify(transitState));
+      assert.equal(transitState.visiblePlanetCount, 9, language + ' ' + date + ': all nine grahas must be visibly inside their Rasi cells, not only present in the DOM: ' + JSON.stringify(transitState));
+      assert.equal(transitState.chartHasJupiter, true, language + ' ' + date + ': Jupiter must be visible in the Transit Chart: ' + JSON.stringify(transitState));
+      assert.equal(transitState.chartCenterText, language === 'ta' ? 'கோச்சாரம்' : 'Transit', language + ' ' + date + ': only the chart center label must use the concise transit wording.');
+      assert.equal(transitState.chartCenterColor, 'rgb(21, 86, 78)', language + ' ' + date + ': the chart center label must use Calendar theme green.');
+      assert.equal(transitState.planetShortColor, 'rgb(21, 86, 78)', language + ' ' + date + ': short planet names inside the chart must use Calendar theme green.');
+      assert.ok(transitState.chartHeadingText.endsWith(language === 'ta' ? 'கோச்சாரச் சக்கரம்' : 'Transit Chart'), language + ' ' + date + ': the outer Transit Chart heading must remain correctly localized.');
+      assert.equal(transitState.tableHasJupiter, true, language + ' ' + date + ': Jupiter must be present in Transit Planetary Positions: ' + JSON.stringify(transitState));
+      assert.equal(transitState.tableHasFullJupiterName, true, language + ' ' + date + ': Jupiter must use its full graha name: ' + JSON.stringify(transitState));
+      assert.equal(transitState.tablePlanetRows, 9, language + ' ' + date + ': all nine grahas must be present in the positions table.');
+      assert.deepEqual(transitState.tableHeaders, language === 'ta' ? ['கிரகங்கள்','ராசி','பாகை','நட்சத்திரம்','பாதம்'] : ['Planets','Rasi','Degree','Nakshatra','Pada'], language + ' ' + date + ': the positions table must have five columns and no Status.');
+      assert.ok(transitState.tableCellCounts.every(count => count === 5), language + ' ' + date + ': every table row must have exactly five cells.');
+      assert.equal(transitState.squareChart, true, language + ' ' + date + ': transit chart must retain its square proportions: ' + JSON.stringify(transitState));
+      assert.ok(transitState.horaHeadingText.includes(language === 'ta' ? 'தினசரி ஹோரா' : 'Daily Hora'), language + ' ' + date + ': Daily Hora heading must remain visible without a box.');
+      assert.equal(transitState.horaHasCardLayer, false, language + ' ' + date + ': Daily Hora outer wrapper must not be a card.');
+      assert.equal(transitState.horaCardBorderWidth, '0px', language + ' ' + date + ': Daily Hora section wrapper must not have an outer border.');
+      assert.equal(transitState.horaTableBorderWidths.length, 2, language + ' ' + date + ': Day and Night Hora must remain separate tables.');
+      assert.ok(transitState.horaTableBorderWidths.every(width => width === '1px'), language + ' ' + date + ': only each Hora table must have a thin outer border.');
+      assert.equal(transitState.horaTableBorderColor, 'rgb(220, 232, 223)', language + ' ' + date + ': Hora table outline must use the light theme green.');
+      assert.equal(transitState.horaGridLineWidth, '1px', language + ' ' + date + ': Hora row/column lines must stay thin.');
+      assert.equal(transitState.horaGridLineColor, 'rgb(228, 235, 231)', language + ' ' + date + ': Hora row/column lines must use the pale theme green.');
+      assert.ok(transitState.positionsHeadingText.includes(language === 'ta' ? 'கோச்சார கிரக நிலைகள்' : 'Transit Planetary Positions'), language + ' ' + date + ': Transit positions heading must remain visible without a box.');
+      assert.equal(transitState.positionsHasLayer, false, language + ' ' + date + ': Transit positions section wrapper must not be a card.');
+      assert.equal(transitState.positionsCardBorderWidth, '0px', language + ' ' + date + ': Transit positions heading section must not have an outer border.');
+      assert.equal(transitState.positionsTableBorderWidth, '1px', language + ' ' + date + ': only the positions table must have a thin outer border.');
+      assert.equal(transitState.positionsTableBorderColor, 'rgb(220, 232, 223)', language + ' ' + date + ': positions table outline must use the light theme green.');
+      assert.equal(transitState.positionsGridLineWidth, '1px', language + ' ' + date + ': positions table row/column lines must stay thin.');
+      assert.equal(transitState.positionsGridLineColor, 'rgb(228, 235, 231)', language + ' ' + date + ': positions table row/column lines must use the pale theme green.');
+      assert.equal(transitState.transitHasCardLayer, false, language + ' ' + date + ': Transit Chart itself must remain without an outer card.');
+      assert.equal(transitState.clippedStacks, 0, language + ' ' + date + ': crowded Rasi cells must not clip planet rows: ' + JSON.stringify(transitState));
+      assert.equal(transitState.horizontalOverflowCount, 0, language + ' ' + date + ': every planet name, status marker and degree must stay within its own Rasi box: ' + JSON.stringify(transitState.horizontalOverflowDetails));
+      assert.equal(transitState.separatorLines, 0, language + ' ' + date + ': no dotted line may appear below individual planet rows.');
+      assert.equal(transitState.denseClass, transitState.maxStack >= 3, language + ' ' + date + ': dense chart sizing must be enabled exactly when a Rasi contains three or more planets.');
+      assert.equal(transitState.combustionInNames, transitState.combustionInChart, language + ' ' + date + ': C / அ graha-name markers must match chart combustion markers.');
+      assert.equal(transitState.retrogradeInNames, transitState.retrogradeInChart, language + ' ' + date + ': R / வ graha-name markers must match chart retrograde markers.');
+      assert.ok(transitState.dualMarkerLayout.bothMarkersPresent && transitState.dualMarkerLayout.combustionBeforeRetrograde && transitState.dualMarkerLayout.retrogradeBeforeDegree && transitState.dualMarkerLayout.allLabelsSameSize, language + ' ' + date + ': a planet carrying both (அ)/(வ) must keep degree after both markers without overlap: ' + JSON.stringify(transitState.dualMarkerLayout));
+      assert.equal(transitState.hasWrongLatinMarkersInTamil, false, language + ' ' + date + ': Tamil UI must not show (R) or (C).');
+      assert.equal(transitState.hasWrongTamilMarkersInEnglish, false, language + ' ' + date + ': English UI must retain Latin markers.');
+    }
+  }
+  // Recheck the dense August 12 transit on narrow phones. The four-graha
+  // Rasi stack must fit inside its existing cell; chart dimensions stay square.
+  for (const language of ['ta', 'en']) {
+    await ensureTransitLanguage(language);
+    for (const width of [390, 360, 320]) {
+      await page.setViewport({ width, height: 844, deviceScaleFactor: 1 });
+      const mobileState = await inspectTransitDate('2026-08-12', language);
+      assert.equal(mobileState.chartPlanetCount, 9, language + ' ' + width + 'px: all nine planets must remain in the chart.');
+      assert.equal(mobileState.visiblePlanetCount, 9, language + ' ' + width + 'px: every graha must remain fully visible inside its cell: ' + JSON.stringify(mobileState));
+      assert.ok(mobileState.maxStack >= 4, language + ' ' + width + 'px: the dense regression date must contain at least four grahas in one Rasi.');
+      assert.ok(mobileState.normalPlanetCellCount > 0, language + ' ' + width + 'px: ordinary Rasi cells must keep their normal font sizing.');
+      assert.ok(mobileState.compactPlanetCellCount > 0, language + ' ' + width + 'px: only the crowded Rasi cell must receive compact sizing.');
+      assert.ok(mobileState.normalPlanetFontSize > mobileState.compactPlanetFontSize, language + ' ' + width + 'px: crowded-cell font size must be smaller than ordinary cells.');
+      assert.ok(mobileState.normalPlanetFontSize >= 15, language + ' ' + width + 'px: one-to-two planet names, markers and degrees must remain readable at 15px or larger.');
+      assert.equal(mobileState.planetCountClassMismatches, 0, language + ' ' + width + 'px: only cells with three or more planet names may be compacted.');
+      assert.ok(mobileState.ordinaryPlanetCellCount > 0, language + ' ' + width + 'px: one-to-two item cells must be present for centring checks.');
+      assert.equal(mobileState.ordinaryPlanetCellsCentered, true, language + ' ' + width + 'px: one-to-two item cells must be centred inside their boxes.');
+      assert.equal(mobileState.markerFontSizeMismatches, 0, language + ' ' + width + 'px: (அ)/(வ)/(C)/(R) and degree must match the planet font size.');
+      assert.ok(mobileState.dualMarkerLayout.bothMarkersPresent && mobileState.dualMarkerLayout.combustionBeforeRetrograde && mobileState.dualMarkerLayout.retrogradeBeforeDegree && mobileState.dualMarkerLayout.allLabelsSameSize, language + ' ' + width + 'px: both status markers and degree must remain separated and in order: ' + JSON.stringify(mobileState.dualMarkerLayout));
+      assert.equal(mobileState.emptyCellPlaceholderCount, 0, language + ' ' + width + 'px: empty Rasi cells must not show a dash.');
+      assert.equal(mobileState.houseNumberFontMismatches, 0, language + ' ' + width + 'px: house numbers 2–12 must match the corresponding planet font size.');
+      assert.equal(mobileState.clippedStacks, 0, language + ' ' + width + 'px: no planet line may be clipped by its Rasi cell.');
+      assert.equal(mobileState.horizontalOverflowCount, 0, language + ' ' + width + 'px: no planet name, status marker or degree may extend outside its Rasi box: ' + JSON.stringify(mobileState.horizontalOverflowDetails));
+      assert.equal(mobileState.squareChart, true, language + ' ' + width + 'px: preserve the existing square chart dimensions.');
+    }
+  }
+  for (const language of ['ta', 'en']) {
+    await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
+    await ensureTransitLanguage(language);
+    const desktopState = await inspectTransitDate('2026-08-12', language);
+    assert.ok(desktopState.normalPlanetFontSize > desktopState.compactPlanetFontSize, language + ' desktop: crowded cells alone must use smaller labels.');
+    assert.ok(desktopState.normalPlanetFontSize >= 20, language + ' desktop: one-to-two planet names, markers and degrees must use the 20px size.');
+    assert.equal(desktopState.planetCountClassMismatches, 0, language + ' desktop: only cells with three or more planet names may be compacted.');
+    assert.equal(desktopState.ordinaryPlanetCellsCentered, true, language + ' desktop: one-to-three item cells must be centred.');
+    assert.equal(desktopState.markerFontSizeMismatches, 0, language + ' desktop: markers and degrees must match the planet font size.');
+    assert.equal(desktopState.emptyCellPlaceholderCount, 0, language + ' desktop: empty Rasi cells must not show a dash.');
+    assert.equal(desktopState.houseNumberFontMismatches, 0, language + ' desktop: house numbers 2–12 must match the corresponding planet font size.');
+  }
+  await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
+  await ensureTransitLanguage(transitOriginalLanguage);
+  await page.$eval('#calDate', (el, value) => {
+    el.value = value;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, calendarDate);
+  await page.waitForFunction(value => (document.querySelector('#calStatus')?.textContent || '').includes(value) &&
+    !document.querySelector('#smvDailyCalendar')?.hasAttribute('aria-busy'), { timeout: 90000 }, calendarDate);
   assert.equal(publicUi.separateAdminLink, false, 'Calendar should not link to a separate Admin page');
   assert.equal(publicUi.hasRasiPicker, true, 'Public Rasi Palan must include the selected-Rasi dropdown');
 

@@ -386,7 +386,51 @@ test('Calendar distinguishes Gazette government holidays from observances and do
     'Transit/Panchang, Daily Hora, Transit Chart and Transit Planetary Positions use the dedicated centered-heading class.');
   assert.match(dailyCalendarCssSource, /h3:not\(\.cal-date-details-title\):not\(\.cal-section-title\):not\(\.cal-centered-heading\)/,
     'Generic left-aligned flex decoration must not target Calendar centered headings.');
-  assert.ok(horoscopeRendererSource.includes('class="card transit-card"><h3 class="cal-centered-heading">'), 'Transit Chart heading receives the centered-heading class.');
+  assert.ok(horoscopeRendererSource.includes("calendarPresentation?'transit-card':'card transit-card'"), 'Only Calendar removes the Transit Chart card layer; Horoscope retains it.');
+  assert.ok(horoscopeRendererSource.includes("const fullPlanetTamil={Sun:'சூரியன்',Moon:'சந்திரன்',Mars:'செவ்வாய்',Mercury:'புதன்',Jupiter:'குரு',Venus:'சுக்கிரன்',Saturn:'சனி',Rahu:'ராகு',Ketu:'கேது'};"), 'Calendar Transit Planetary Positions maps full Tamil graha names instead of short glyph labels.');
+  assert.ok(horoscopeRendererSource.includes("const combustionMarker=calendarPresentation&&isCombust?(ta?'(அ)':'(C)'):'';"), 'Combustion marker is appended to the graha name in the active language.');
+  assert.ok(horoscopeRendererSource.includes('<div class="south-chart-center">${calendarPresentation?(ta?\'கோச்சாரம்\':\'Transit\'):\'Transit Chart\'}</div>'), 'Only the label inside the Calendar transit chart is shortened to கோச்சாரம் / Transit.');
+  assert.ok(horoscopeRendererSource.includes('<h3 class="cal-centered-heading">🪐 ${ta?\'Transit Chart\':\'Transit Chart\'}</h3>'), 'The outer Transit Chart heading keeps its pre-existing wording.');
+  assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .transit-chart .planet-short,#smvDailyCalendar #calDaily .transit-chart .south-chart-center{color:#15564e!important;-webkit-text-fill-color:#15564e!important}'), 'Only short planet names and the chart centre label receive the Calendar theme green.');
+  assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell{'), 'Transit cell sizing is defined in the primary V211 source rules.');
+  assert.ok(dailyCalendarCssSource.includes('justify-content:center!important;gap:2px!important;text-align:center!important;'), 'Transit Rasi cell content is horizontally and vertically centred.');
+  assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar #calDaily .transit-chart .transit-cell-planets{'), 'The planet stack is vertically centred within its own Rasi cell.');
+  assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar #calDaily .transit-chart .planet-line{\n  display:flex!important;'), 'Each planet row is centred without a dotted separator.');
+  assert.ok(horoscopeRendererSource.includes('const transitPlanetCount=bySign[si].length;const compactPlanetCell=transitPlanetCount>=3;'), 'Only planet count controls compact sizing; Lagna, markers and degrees are excluded from the count.');
+  assert.ok(horoscopeRendererSource.includes('data-transit-planet-count="${transitPlanetCount}"'), 'The exact planet count is attached to each Rasi cell for its own font-size rule.');
+  assert.ok(horoscopeRendererSource.includes("south-rasi-cell${compactPlanetCell?' south-rasi-cell-compact':''}"), 'The cell keeps its own compact class so house numbers, Lagna, markers and degrees use the same local planet size.');
+  assert.ok(horoscopeRendererSource.includes("(houseNo??'')"), 'An unavailable house number renders blank rather than a dash.');
+  assert.ok(horoscopeRendererSource.includes('${ps}</div></div>'), 'The transit renderer leaves empty planet stacks blank instead of adding a dash placeholder.');
+  assert.ok(dailyCalendarCssSource.includes('--transit-cell-label-size:20px;'), 'Desktop ordinary one-to-two planet names, degrees, markers, Lagna and house numbers use a consistent 20px size.');
+  assert.ok(dailyCalendarCssSource.includes('south-rasi-cell[data-transit-planet-count="3"]{--transit-cell-label-size:18px}'), 'A three-planet Rasi uses the first desktop compact size; one- and two-planet cells remain at the base size.');
+  assert.ok(dailyCalendarCssSource.includes('south-rasi-cell[data-transit-planet-count="9"]{--transit-cell-label-size:10.5px}'), 'Nine-planet Rasi cells progressively compact only that cell.');
+  assert.ok(dailyCalendarCssSource.includes('--transit-cell-label-size:17px;padding:4px 2px!important'), 'Mobile ordinary one-to-two planet cells use a consistent 17px size.');
+  assert.ok(dailyCalendarCssSource.includes('--transit-cell-label-size:15px}'), 'Narrow mobile ordinary one-to-two planet cells remain readable at 15px.');
+  assert.ok(dailyCalendarCssSource.includes('.planet-glyph .rasi-status-marker,'), 'C/R and Tamil அ/வ markers inherit their planet name size.');
+  assert.ok(dailyCalendarCssSource.includes('font-size:1em!important;line-height:inherit!important;'), 'Planet name, marker and degree text use an identical font size.');
+  assert.ok(horoscopeRendererSource.includes('<span class="planet-status-slot">'), 'Combustion and retrograde markers each render in their own inline slot, separate from the planet name and degree.');
+  assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar #calDaily .transit-chart .planet-status-slot{'), 'Calendar status-marker slots are laid out by the primary transit source rules, not an appended override.');
+   assert.ok(dailyCalendarCssSource.includes('overflow:hidden!important;padding:6px 4px!important;'), 'Each transit Rasi cell contains all of its labels within its own box.');
+   assert.ok(dailyCalendarCssSource.includes('flex-wrap:wrap!important;') && dailyCalendarCssSource.includes('white-space:normal!important;'), 'Planet name, status markers and degree can wrap between their separate slots within a Rasi cell.');
+  assert.equal(horoscopeRendererSource.includes('<span class="planet-short">${nm}${c}${r}</span>'), false, 'Status markers are not nested together inside the planet-name element where legacy adjacent-marker negative margins could overlap them.');
+  assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar #calDaily .transit-chart .dynamic-rasi-number,'), 'House numbers inherit the exact same per-cell font size as planet labels.');
+  assert.ok(horoscopeRendererSource.includes("transit-cell-planets${compactPlanetCell?' transit-cell-planets-compact':''}"), 'Planet sizing is scoped to the individual Rasi cell.');
+  assert.equal(/transit-chart-dense(?:-4plus)?\s+\.planet-glyph/.test(dailyCalendarCssSource), false, 'Chart-wide dense rules must not shrink ordinary Rasi cells.');
+  assert.equal(dailyCalendarCssSource.includes('Transit chart typography v3'), false, 'No appended typography-v3 override patch may remain.');
+  assert.equal(dailyCalendarCssSource.includes('Final Calendar Transit sizing'), false, 'No duplicate end-of-file transit sizing patch may remain.');
+  assert.equal(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .transit-card>.cal-centered-heading{color:#15564e'), false, 'The outer Transit Chart heading must not receive a new green override.');
+  assert.ok(horoscopeRendererSource.includes("<th>${ta?'கிரகங்கள்':'Planets'}</th>"), 'The positions table labels the first column as Planets / கிரகங்கள்.');
+  assert.ok(horoscopeRendererSource.includes("calendarPresentation?'':`<td>${esc2(r.status||'—')}</td>`"), 'Status is omitted from Calendar but retained for non-Calendar Horoscope output.');
+  assert.ok(horoscopeRendererSource.includes("calendarPresentation?'hora-card':'card hora-card'"), 'Only Calendar removes the Daily Hora outer card; Horoscope retains its original card.');
+  assert.ok(horoscopeRendererSource.includes("calendarPresentation?'transit-card':'card transit-card'"), 'Calendar Transit Chart has no outer card, while Horoscope retains its card.');
+  assert.ok(horoscopeRendererSource.includes('<section class="transit-table-card">'), 'Transit Planetary Positions keeps its heading wrapper without an outer card.');
+  assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar #calDaily .transit-card{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;outline:0!important}'), 'The Transit Chart remains without an outer card.');
+  assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar #calDaily .hora-card,#smvDailyCalendar #calDaily .transit-table-card{padding:0!important;margin:12px 0!important;border:0!important;background:transparent!important;border-radius:0!important;box-shadow:none!important;outline:0!important}'), 'Daily Hora and Transit Planetary Positions sections must have no outer layer while retaining their headings.');
+  assert.ok(dailyCalendarCssSource.includes('#calDaily .hora-table-wrap{border:1px solid #dce8df!important;border-radius:5px!important;overflow:hidden!important}'), 'Only the Day and Night Hora table wrappers receive the thin green outer border.');
+  assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar .transit-table-card .adv-scroll{border:1px solid #dce8df!important;border-radius:5px!important}'), 'Only the Transit Planetary Positions table wrapper receives the thin green outer border.');
+  assert.ok(dailyCalendarCssSource.includes('data-transit-planet-count="3"]{--transit-cell-label-size:15px}'), 'Three-planet cells compact locally to 15px on regular mobile screens.');
+  assert.ok(dailyCalendarCssSource.includes('data-transit-planet-count="3"]{--transit-cell-label-size:12.5px}'), 'Three-planet cells compact locally to 12.5px on narrow mobile screens.');
+  assert.ok(dailyCalendarCssSource.includes('data-transit-planet-count="3"]{--transit-cell-label-size:11.5px}'), 'Three-planet cells compact locally to 11.5px on extra-narrow mobile screens.');
    assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .cal-centered-heading{'),
     'The Calendar-specific centered-heading class must be centered within the Calendar scope.');
   assert.match(calendarThemeCssSource, /#smvDailyCalendar #calDaily \.cal-centered-heading,\s*#smvDailyCalendar \.cal-date-details-head h3\.cal-date-details-title\{\s*font-size:19px!important;\s*line-height:1\.35!important;\s*\}/, 'Calendar primary headings use the compact desktop size.');
@@ -485,7 +529,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261119-graha-period-table-v7' : '20261119-graha-period-table-v7'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261119-calendar-transit-contained-layout-v6' : '20261119-calendar-transit-contained-layout-v6'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
@@ -495,10 +539,10 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261119-graha-period-table-v7'));
-   assert.ok(calendarIndexSource.includes('20261119-graha-period-table-v7'));
+   assert.ok(calendarIndexSource.includes('20261119-calendar-transit-contained-layout-v6'));
+   assert.ok(calendarIndexSource.includes('20261119-calendar-transit-contained-layout-v6'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
-   assert.ok(calendarIndexSource.includes('20261119-graha-period-table-v7'));
+   assert.ok(calendarIndexSource.includes('20261119-calendar-transit-contained-layout-v6'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'runPeriodForecast\')'));
    assert.ok(calendarIndexSource.includes('The deployed forecast assets could not be loaded from this Calendar host.'));
@@ -986,15 +1030,15 @@ test('SMV CALENDAR daily Panchang and Hora follow the green result hierarchy', (
   assert.match(sharedHoroscopeCssSource, /event-time:not\(\.smv-calendar-neutral-date-time\)/);
   assert.match(sharedHoroscopeCssSource, /hora-time:not\(\.smv-calendar-neutral-time\)/);
   assert.match(sharedHoroscopeCssSource, /transit-table-degree:not\(\.smv-calendar-degree-normal\)/);
-  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261119-graha-period-table-v7/);
-  assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261119-graha-period-table-v7/);
+  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261119-calendar-transit-contained-layout-v6/);
+  assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261119-calendar-transit-contained-layout-v6/);
   const releases = [astroServiceWorkerSource, horoscopeServiceWorkerSource, calendarWorkerSource]
     .map(source => source.match(/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '([^']+)' : '([^']+)';/));
   assert.ok(releases.every(Boolean), 'All three service workers must define the synchronized release marker.');
   assert.equal(new Set(releases.map(match => match[1])).size, 1);
   assert.equal(new Set(releases.map(match => match[2])).size, 1);
-  assert.equal(releases[0][1], '20261119-graha-period-table-v7');
-  assert.equal(releases[0][2], '20261119-graha-period-table-v7');
+  assert.equal(releases[0][1], '20261119-calendar-transit-contained-layout-v6');
+  assert.equal(releases[0][2], '20261119-calendar-transit-contained-layout-v6');
 });
 
 
