@@ -24,12 +24,12 @@
   justify-content:center!important;gap:2px!important;text-align:center!important;
 }
 #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="3"]{--transit-cell-label-size:18px}
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="4"]{--transit-cell-label-size:13.5px}
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="5"]{--transit-cell-label-size:11.5px}
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="6"]{--transit-cell-label-size:10.5px}
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="7"]{--transit-cell-label-size:9.5px}
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="8"]{--transit-cell-label-size:8.5px}
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="9"]{--transit-cell-label-size:7.5px}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="4"]{--transit-cell-label-size:16.5px}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="5"]{--transit-cell-label-size:15px}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="6"]{--transit-cell-label-size:13.5px}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="7"]{--transit-cell-label-size:12.5px}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="8"]{--transit-cell-label-size:11.5px}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="9"]{--transit-cell-label-size:10.5px}
 #smvDailyCalendar #calDaily .transit-chart .dynamic-rasi-number,
 #smvDailyCalendar #calDaily .transit-chart .lagna,
 #smvDailyCalendar #calDaily .transit-chart .planet-glyph{
@@ -83,12 +83,13 @@
  #smvDailyCalendar .cal-month-grid .cal-event-name{font-size:9px;line-height:1.25;-webkit-line-clamp:2}
  #smvDailyCalendar .cal-month-grid .cal-event-more{right:3px;bottom:3px;font-size:8px;padding:2px 4px}
  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell{--transit-cell-label-size:17px;padding:4px 2px!important}
- #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="4"]{--transit-cell-label-size:15px}
- #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="5"]{--transit-cell-label-size:13.5px}
- #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="6"]{--transit-cell-label-size:11.5px}
- #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="7"]{--transit-cell-label-size:10.5px}
- #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="8"]{--transit-cell-label-size:9.5px}
- #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="9"]{--transit-cell-label-size:8.5px}
+ #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="3"]{--transit-cell-label-size:15px}
+ #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="4"]{--transit-cell-label-size:13.5px}
+ #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="5"]{--transit-cell-label-size:11.5px}
+ #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="6"]{--transit-cell-label-size:10.5px}
+ #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="7"]{--transit-cell-label-size:9.5px}
+ #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="8"]{--transit-cell-label-size:8.5px}
+ #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="9"]{--transit-cell-label-size:7.5px}
  @media(max-width:390px){
   #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell{--transit-cell-label-size:15px}
 #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="3"]{--transit-cell-label-size:12.5px}
