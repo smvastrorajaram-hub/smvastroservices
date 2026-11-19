@@ -181,6 +181,49 @@
 #smvDailyCalendar .cal-date-time-fields{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;min-width:0}
 #smvDailyCalendar .cal-date-time-fields label{min-width:0!important}
 
+/* Dense Calendar transit stacks: fit every graha inside its existing square Rasi cell. */
+@media(max-width:680px){
+  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .south-rasi-cell{
+    padding:1px!important;
+    gap:0!important;
+  }
+  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .dynamic-rasi-number,
+  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .lagna{
+    margin:0!important;
+    line-height:1!important;
+    font-size:clamp(8px,2vw,9px)!important;
+  }
+  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .transit-cell-planets{
+    gap:0!important;
+  }
+  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .planet-line{
+    min-height:0!important;
+    height:auto!important;
+    padding:0!important;
+    margin:0!important;
+    line-height:.9!important;
+  }
+  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .planet-glyph{
+    font-size:clamp(8px,2.2vw,9px)!important;
+    line-height:.92!important;
+    gap:0!important;
+  }
+  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .rasi-status-marker,
+  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .transit-degree{
+    font-size:.62em!important;
+    line-height:1!important;
+    margin-left:0!important;
+  }
+  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense-4plus .dynamic-rasi-number,
+  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense-4plus .lagna{
+    font-size:7.5px!important;
+  }
+  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense-4plus .planet-glyph{
+    font-size:clamp(7.5px,2vw,8.5px)!important;
+    line-height:.88!important;
+  }
+}
+
 /* Annual Graha periods: one single vertical sequence, with existing Calendar colours. */
 #calGrahaPeriodCard{
   width:100%;
@@ -295,47 +338,3 @@
   }
 }
 @media(min-width:681px){#smvDailyCalendar .cal-header>div{text-align:center}}
-
-
-/* Dense Calendar transit stacks: fit every graha inside its existing square Rasi cell. */
-@media(max-width:680px){
-  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .south-rasi-cell{
-    padding:1px!important;
-    gap:0!important;
-  }
-  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .dynamic-rasi-number,
-  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .lagna{
-    margin:0!important;
-    line-height:1!important;
-    font-size:clamp(8px,2vw,9px)!important;
-  }
-  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .transit-cell-planets{
-    gap:0!important;
-  }
-  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .planet-line{
-    min-height:0!important;
-    height:auto!important;
-    padding:0!important;
-    margin:0!important;
-    line-height:.9!important;
-  }
-  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .planet-glyph{
-    font-size:clamp(8px,2.2vw,9px)!important;
-    line-height:.92!important;
-    gap:0!important;
-  }
-  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .rasi-status-marker,
-  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .transit-degree{
-    font-size:.62em!important;
-    line-height:1!important;
-    margin-left:0!important;
-  }
-  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense-4plus .dynamic-rasi-number,
-  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense-4plus .lagna{
-    font-size:7.5px!important;
-  }
-  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense-4plus .planet-glyph{
-    font-size:clamp(7.5px,2vw,8.5px)!important;
-    line-height:.88!important;
-  }
-}
