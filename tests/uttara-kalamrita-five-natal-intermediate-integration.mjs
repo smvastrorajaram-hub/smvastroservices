@@ -69,8 +69,12 @@ for(const [date,time] of dates){
 
   ok(u.naisargikaVirupa>=0&&u.naisargikaVirupa<=60,
     date+' '+p.name+' UK natural Virupa in range');
-  ok(u.source.includes('Uttara Kalamrita')&&Number.isFinite(prior?.totalVirupa),
-    date+' '+p.name+' UK separate from pre-existing live BPHS result');
+  const isFiveCheshtaGraha=['செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி'].includes(p.name);
+  const bvrFrameGateCorrect=isFiveCheshtaGraha
+    ? prior?.frameSafety?.status==='BLOCKED_MIXED_REFERENCE_FRAMES'&&prior.totalVirupa===null
+    : Number.isFinite(prior?.totalVirupa);
+  ok(u.source.includes('Uttara Kalamrita')&&bvrFrameGateCorrect,
+    date+' '+p.name+' UK remains separate from the fail-closed live B.V. Raman result');
   ok(!Object.hasOwn(u,'ayurdaya')&&!Object.hasOwn(u,'lifespan'),
     date+' '+p.name+' no Ayurdaya calculation present');
   if(Math.abs(u.sthana.totalVirupa-prior.components.sthana.total)>0.001)
