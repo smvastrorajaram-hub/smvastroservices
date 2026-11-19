@@ -1,4 +1,5 @@
 import {offsetMinutesAt} from './offline/places/timezone.mjs';
+import {TAMIL_GRAHA_PLANETS,TAMIL_GRAHA_TYPES,TAMIL_GRAHA_YEAR_DATA} from './calendar-graha-periods-data.mjs';
 import {signs,stars,planets,holidays2026,additionalGovernmentHolidays2026,holidaySource,favorable} from './calendar-data.mjs';
 import {getTamilCalendarDayFlags,getNakshatraDirection,getNethiramJeevan} from './tamil-day-classifications.mjs';
 import {classifySubhaMuhurtham} from './calendar-muhurta-classification.mjs';
@@ -556,11 +557,58 @@ if(host){
   renderMuhurtaLagna();
  }
 
+
+ function renderAnnualGrahaPeriods(){
+  const root=$('#calDaily');if(!root)return;
+  host.querySelector('#calGrahaPeriodCard')?.remove();
+  if(!root.querySelector('.transit-card'))return;
+  const day=String(selected||'');
+  const year=TAMIL_GRAHA_YEAR_DATA.find(item=>{
+   const start=String(item[3]||'').slice(0,10),end=String(item[4]||'').slice(0,10);
+   return day>=start&&day<end;
+  });
+  if(!year)return;
+  const planetEnglish=['Mars','Mercury','Jupiter','Venus','Saturn'];
+  const dateText=value=>{
+   const raw=String(value||'');
+   return raw.length>=10?raw.slice(8,10)+'-'+raw.slice(5,7)+'-'+raw.slice(0,4):'—';
+  };
+  const timeText=value=>String(value||'').slice(11,16)||'—';
+  const renderPeriods=(planet,type)=>{
+   const events=year[5].filter(event=>event[0]===planet&&event[1]===type);
+   if(!events.length)return '<p class="cal-graha-period-empty">—</p>';
+   return '<ol class="cal-graha-period-events">'+events.map(event=>{
+    const start=String(event[2]||''),end=String(event[3]||'');
+    return '<li class="cal-graha-period-event"><span class="cal-graha-period-start">'+
+     (ta()?'தொடக்கம்: ':'Start: ')+dateText(start)+' · '+timeText(start)+
+     '</span><span class="cal-graha-period-end">'+
+     (ta()?'முடிவு: ':'End: ')+dateText(end)+' · '+timeText(end)+
+     '</span></li>';
+   }).join('')+'</ol>';
+  };
+  const planets=TAMIL_GRAHA_PLANETS.map((name,index)=>{
+   const displayName=ta()?name:planetEnglish[index];
+   const periods=TAMIL_GRAHA_TYPES.map((type,typeIndex)=>
+    '<section class="cal-graha-period-type"><h5>'+esc(ta()?type:['Retrograde','Combustion'][typeIndex])+'</h5>'+
+    renderPeriods(index,typeIndex)+'</section>'
+   ).join('');
+   return '<section class="cal-graha-planet"><h4 class="cal-graha-planet-name">'+esc(displayName)+'</h4>'+
+    '<div class="cal-graha-planet-periods">'+periods+'</div></section>';
+  }).join('');
+  const title=ta()?'ஐந்து கிரகங்களின் வக்ரம் மற்றும் அஸ்தமன காலங்கள்':'Five Planet Retrograde and Combustion Periods';
+  const yearLabel=ta()?year[0]+' '+year[1]+' ஆண்டு':year[0]+' '+year[2]+' Year';
+  const card=document.createElement('section');
+  card.id='calGrahaPeriodCard';
+  card.className='cal-graha-period-card smv-css-island';
+  card.setAttribute('aria-label',title);
+  card.innerHTML='<h3>'+esc(title)+'</h3><p class="cal-graha-period-year">'+esc(yearLabel)+'</p><div class="cal-graha-period-planets">'+planets+'</div>';
+  root.after(card);
+ }
  function renderDaily(){if(!daily)return;const lang=ta()?'ta':'en';const selectedMinute=clockMinutes(selectedTime),sunrise=clockMinutes(daily.en.p.sunrise),beforeSunrise=selectedMinute!==null&&sunrise!==null&&selectedMinute<sunrise,horaOverride=beforeSunrise?daily.en.previousNight:null;window.SMVRenderDaily(daily[lang].t,daily[lang].p,lang,'calDaily',horaOverride);
  // Calendar localisation is isolated from the stored horoscope and never recalculates it.
  const dict=new Map([...signs,...stars,...planets,...[['Transit Chart','கோச்சாரச் சக்கரம்'],['Transit Planetary Positions','கோச்சார கிரக நிலைகள்'],['Planet','கிரகம்'],['Rasi','ராசி'],['Degree','பாகை'],['Nakshatra','நட்சத்திரம்'],['Pada','பாதம்'],['Status','நிலை'],['Retrograde','வக்கிரம்'],['Direct','நேர்கதி'],['Asc','லக்'],['Su','சூ'],['Mo','சந்'],['Ma','செ'],['Me','பு'],['Ju','கு'],['Ve','சு'],['Sa','சனி'],['Ra(R)','ரா(R)'],['Ke(R)','கே(R)']]]);
  if(ta()){for(const [a,b] of [['Su','சூ'],['Mo','சந்'],['Ma','செ'],['Me','பு'],['Ju','கு'],['Ve','சு'],['Sa','சனி']])dict.set(a+'(R)',b+'(R)');for(const root of [$('#calDaily'),$('#calPanchangSource')]){if(!root)continue;const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);while(walker.nextNode()){const node=walker.currentNode;node.textContent=node.textContent.replace('Transit தேதி/நேரம்:','கோச்சார தேதி/நேரம்:').replace(/\bto\b/g,'முதல்');for(const [en,tamil]of dict)if(node.textContent.trim()===en||node.textContent.trim()==='🪐 '+en){node.textContent=node.textContent.replace(en,tamil);break}}}}
- updateHora();renderExtra();if(month&&monthKey===selected.slice(0,7))renderMonth();
+ renderAnnualGrahaPeriods();updateHora();renderExtra();if(month&&monthKey===selected.slice(0,7))renderMonth();
  }
  function updateHora(){
   if(!daily)return;

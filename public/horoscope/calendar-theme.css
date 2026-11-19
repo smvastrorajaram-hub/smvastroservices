@@ -539,3 +539,26 @@ html body.calendar-only>header.calendar-topbar{
     font-size:17px!important;
   }
 }
+
+/* Desktop-only annual Graha headings: remove the generic flex divider and center labels. */
+@media(min-width:681px){
+  #smvDailyCalendar #calGrahaPeriodCard > h3{
+    display:block;
+    width:100%;
+    max-width:none;
+    margin:0 auto 5px;
+    padding:0;
+    text-align:center;
+    justify-content:center;
+  }
+  #smvDailyCalendar #calGrahaPeriodCard > h3::before,
+  #smvDailyCalendar #calGrahaPeriodCard > h3::after{
+    content:none;
+    display:none;
+  }
+  #smvDailyCalendar #calGrahaPeriodCard .cal-graha-period-type h5{
+    display:block;
+    width:100%;
+    text-align:center;
+  }
+}

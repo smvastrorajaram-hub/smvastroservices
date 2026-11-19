@@ -89,6 +89,130 @@ try {
   }
   assert.ok(ready, 'Calendar source did not become ready: ' + (lastError?.message || 'unknown error'));
 
+  // Verify the annual Graha section is a single vertical sequence on mobile and desktop.
+  const initialCalendarLanguage = await page.evaluate(() => document.documentElement.lang || 'en');
+  if (initialCalendarLanguage !== 'ta') {
+    await page.click('#calTamil');
+    await page.waitForFunction(() => document.documentElement.lang === 'ta', { timeout: 20000 });
+  }
+  await page.waitForSelector('#calGrahaPeriodCard .cal-graha-planet', { timeout: 90000 });
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+  const grahaMobileLayout = await page.evaluate(() => {
+    const card = document.querySelector('#calGrahaPeriodCard');
+    if (!card) return { found: false };
+    const planets = [...card.querySelectorAll('.cal-graha-planet')];
+    const headingInfo = planets.map(planet => {
+      const heading = planet.querySelector('.cal-graha-planet-name');
+      const rect = heading?.getBoundingClientRect();
+      return {
+        name: heading?.textContent.trim() || '',
+        centered: Boolean(rect && Math.abs((rect.left + rect.right) / 2 - window.innerWidth / 2) < 3),
+        categoryCount: planet.querySelectorAll('.cal-graha-period-type').length,
+        categories: [...planet.querySelectorAll('.cal-graha-period-type h5')].map(el => el.textContent.trim()),
+        categoriesBelowHeading: [...planet.querySelectorAll('.cal-graha-period-type')].every(type => type.getBoundingClientRect().top > (rect?.bottom || 0)),
+        categoryDisplays: [...planet.querySelectorAll('.cal-graha-period-type')].map(type => getComputedStyle(type).display),
+        starts: [...planet.querySelectorAll('.cal-graha-period-start')].map(el => el.textContent.trim()),
+        ends: [...planet.querySelectorAll('.cal-graha-period-end')].map(el => el.textContent.trim()),
+        datesFit: [...planet.querySelectorAll('.cal-graha-period-start,.cal-graha-period-end')].every(el => {
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          return getComputedStyle(el).whiteSpace === 'nowrap' && range.getBoundingClientRect().width <= el.clientWidth + 1;
+        })
+      };
+    });
+    return {
+      found: true,
+      width: card.getBoundingClientRect().width,
+      scrollWidth: card.scrollWidth,
+      clientWidth: card.clientWidth,
+      pageScrollWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth,
+      tableCount: card.querySelectorAll('table').length,
+      columnLayouts: [...card.querySelectorAll('.cal-graha-period-planets,.cal-graha-planet,.cal-graha-planet-periods,.cal-graha-period-type')].filter(el => ['grid','flex','inline-grid','inline-flex'].includes(getComputedStyle(el).display)).length,
+      titleColor: getComputedStyle(card.querySelector('h3')).color,
+      horizontalScrollElements: [...card.querySelectorAll('*')].filter(el => {
+        const style = getComputedStyle(el);
+        return ['auto','scroll'].includes(style.overflowX) && el.scrollWidth > el.clientWidth + 1;
+      }).length,
+      headingInfo,
+      footnoteText: card.querySelector('.cal-graha-period-note')?.textContent || ''
+    };
+  });
+  assert.equal(grahaMobileLayout.found, true, 'Annual Graha periods must render on mobile.');
+  assert.equal(grahaMobileLayout.tableCount, 0, 'Graha periods must not use a table.');
+  assert.equal(grahaMobileLayout.columnLayouts, 0, 'Graha periods must not use columns or flex rows.');
+  assert.notEqual(grahaMobileLayout.titleColor, 'rgb(255, 0, 0)', 'Graha heading must retain the existing Calendar colour instead of global Horoscope red.');
+  assert.equal(grahaMobileLayout.horizontalScrollElements, 0, 'Graha periods must not introduce horizontal scrolling.');
+  assert.ok(grahaMobileLayout.pageScrollWidth <= grahaMobileLayout.viewportWidth + 1, 'Mobile page must not overflow horizontally: ' + JSON.stringify(grahaMobileLayout));
+  assert.equal(grahaMobileLayout.headingInfo.length, 5, 'Exactly five planets must be shown.');
+  assert.deepEqual(grahaMobileLayout.headingInfo.map(item => item.name), ['செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி'], 'The five planets must appear in their intended order.');
+  assert.ok(grahaMobileLayout.headingInfo.every(item => item.centered && item.categoryCount === 2 && item.categories.join('|') === 'வக்ரம்|அஸ்தமனம்' && item.categoriesBelowHeading && item.categoryDisplays.every(display => display === 'block') && item.datesFit), 'Each planet must be centered with Vakram and Asthamanam stacked below and full dates visible: ' + JSON.stringify(grahaMobileLayout.headingInfo));
+  assert.equal(grahaMobileLayout.footnoteText, '', 'The annual-boundary / IST explanatory paragraph must remain absent.');
+  assert.ok(grahaMobileLayout.headingInfo.every(item => item.starts.length === item.ends.length), 'Every period start must have a corresponding end date.');
+  await page.$eval('#calGrahaPeriodCard', el => el.scrollIntoView({ block: 'center' }));
+  await page.screenshot({
+    path: new URL('calendar-graha-period-list-mobile.png', outputDir).pathname,
+    fullPage: false,
+    captureBeyondViewport: false
+  });
+  if (initialCalendarLanguage !== 'ta') {
+    await page.click('#calEnglish');
+    await page.waitForFunction(() => document.documentElement.lang === 'en', { timeout: 20000 });
+  }
+  await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
+  const grahaDesktopLayout = await page.evaluate(() => {
+    const card = document.querySelector('#calGrahaPeriodCard');
+    const mainHeading = card?.querySelector(':scope > h3');
+    const headingRect = mainHeading?.getBoundingClientRect();
+    const cardRect = card?.getBoundingClientRect();
+    const dateLines = [...(card?.querySelectorAll('.cal-graha-period-start,.cal-graha-period-end') || [])];
+    const heroHeader = document.querySelector('#smvDailyCalendar .cal-header');
+    const heroContent = heroHeader?.querySelector(':scope > div');
+    const heroHeaderRect = heroHeader?.getBoundingClientRect();
+    const heroContentRect = heroContent?.getBoundingClientRect();
+    const heroTextLines = [...(heroContent?.querySelectorAll(':scope > p,:scope > h2,:scope > span') || [])];
+    return {
+      found: Boolean(card),
+      cardWidth: card?.getBoundingClientRect().width || 0,
+      viewportWidth: window.innerWidth,
+      pageScrollWidth: document.documentElement.scrollWidth,
+      planetCount: card?.querySelectorAll('.cal-graha-planet').length || 0,
+      tableCount: card?.querySelectorAll('table').length || 0,
+      heroHeaderFound: Boolean(heroHeader),
+      heroContentCenterDelta: heroHeaderRect && heroContentRect
+        ? Math.abs((heroContentRect.left + heroContentRect.right) / 2 - (heroHeaderRect.left + heroHeaderRect.right) / 2)
+        : Infinity,
+      heroTextAlignments: heroTextLines.map(line => getComputedStyle(line).textAlign),
+      mainHeadingTextAlign: mainHeading ? getComputedStyle(mainHeading).textAlign : '',
+      mainHeadingCenterDelta: headingRect && cardRect
+        ? Math.abs((headingRect.left + headingRect.right) / 2 - (cardRect.left + cardRect.right) / 2)
+        : Infinity,
+      mainHeadingDisplay: mainHeading ? getComputedStyle(mainHeading).display : '',
+      mainHeadingAfterDisplay: mainHeading ? getComputedStyle(mainHeading, '::after').display : '',
+      categoryTextAlignments: [...(card?.querySelectorAll('.cal-graha-period-type h5') || [])].map(label => getComputedStyle(label).textAlign),
+      dateTextAlignments: dateLines.map(line => getComputedStyle(line).textAlign),
+      dateLinesFit: dateLines.every(line => {
+        const range = document.createRange();
+        range.selectNodeContents(line);
+        return getComputedStyle(line).whiteSpace === 'nowrap' && range.getBoundingClientRect().width <= line.clientWidth + 1;
+      })
+    };
+  });
+  assert.equal(grahaDesktopLayout.found, true, 'Annual Graha periods must remain visible on desktop.');
+  assert.equal(grahaDesktopLayout.planetCount, 5, 'Desktop must show the same five-planet sequence.');
+  assert.equal(grahaDesktopLayout.tableCount, 0, 'Desktop must not render a table.');
+  assert.equal(grahaDesktopLayout.heroHeaderFound, true, 'Calendar hero header must be visible on desktop.');
+  assert.ok(grahaDesktopLayout.heroContentCenterDelta <= 2, 'SMV CALENDAR title, subtitle and tagline block must be centered within the hero on desktop: ' + JSON.stringify(grahaDesktopLayout));
+  assert.ok(grahaDesktopLayout.heroTextAlignments.length === 3 && grahaDesktopLayout.heroTextAlignments.every(value => value === 'center'), 'All three Calendar hero text lines must be centered on desktop: ' + JSON.stringify(grahaDesktopLayout));
+  assert.equal(grahaDesktopLayout.mainHeadingTextAlign, 'center', 'The main Graha heading must be centered on desktop.');
+  assert.equal(grahaDesktopLayout.mainHeadingDisplay, 'block', 'The main Graha heading must not use the generic flex-and-divider heading layout on desktop.');
+  assert.equal(grahaDesktopLayout.mainHeadingAfterDisplay, 'none', 'The generic heading divider must not shift the Graha heading away from center on desktop.');
+  assert.ok(grahaDesktopLayout.categoryTextAlignments.length >= 2 && grahaDesktopLayout.categoryTextAlignments.every(value => value === 'center'), 'Vakram and Asthamanam labels must be centered on desktop: ' + JSON.stringify(grahaDesktopLayout));
+  assert.ok(grahaDesktopLayout.mainHeadingCenterDelta <= 2, 'The main Graha heading must be centered within its section on desktop: ' + JSON.stringify(grahaDesktopLayout));
+  assert.ok(grahaDesktopLayout.dateTextAlignments.length > 0 && grahaDesktopLayout.dateTextAlignments.every(value => value === 'center'), 'Start and end date-times must be centered on desktop: ' + JSON.stringify(grahaDesktopLayout));
+  assert.ok(grahaDesktopLayout.dateLinesFit, 'Full date-times must remain visible without clipping on desktop: ' + JSON.stringify(grahaDesktopLayout));
+  assert.ok(grahaDesktopLayout.pageScrollWidth <= grahaDesktopLayout.viewportWidth + 1, 'Desktop page must not overflow horizontally: ' + JSON.stringify(grahaDesktopLayout));
+
   const calendarHeader = await page.evaluate(() => {
     const header = document.querySelector('.calendar-topbar');
     const logo = document.querySelector('.calendar-brand-header img');
@@ -113,9 +237,19 @@ try {
   assert.ok(Math.max(...calendarHeader.controls.map(x => x.width)) - Math.min(...calendarHeader.controls.map(x => x.width)) < 1, 'All four Calendar header controls must have equal width.');
   assert.ok(calendarHeader.controls.every(x => Math.abs(x.height - 42) < 1), 'All four Calendar header controls must have the same 42px height.');
 
+  // Switching language rebuilds the Calendar shell and clears #calStatus.
+  // Readiness must therefore be based on the calculated UI, not the status text.
   await page.waitForFunction(() => {
     const status = document.querySelector('#calStatus')?.textContent || '';
-    return status && (/Unable to calculate|கணக்கிட முடியவில்லை/.test(status) || (!/Calculating Panchang|பஞ்சாங்கம், ஹோரை/.test(status) && !/Loading monthly calendar|மாத நாட்காட்டி தயாராகிறது/.test(document.querySelector('#calMonth')?.textContent||'')));
+    const calculationFailed = /Unable to calculate|கணக்கிட முடியவில்லை/.test(status);
+    const sunriseRendered = [...(document.querySelectorAll('#calDateDetailsExtra .cal-muhurta-card') || [])]
+      .some(card => /Sunrise:|சூரிய உதயம்/.test(card.querySelector('span')?.textContent || ''));
+    const timeEnabled = Boolean(document.querySelector('#calTime') && !document.querySelector('#calTime').disabled);
+    const monthRendered = Boolean(document.querySelector('#calMonth .cal-month-grid button'));
+    const dailyRendered = Boolean(document.querySelector('#calGrahaPeriodCard .cal-graha-planet'));
+    const stillCalculating = /Calculating Panchang|பஞ்சாங்கம், ஹோரை/.test(status) ||
+      /Loading monthly calendar|மாத நாட்காட்டி தயாராகிறது/.test(document.querySelector('#calMonth')?.textContent || '');
+    return calculationFailed || (!stillCalculating && sunriseRendered && timeEnabled && monthRendered && dailyRendered);
   }, { timeout: 90000 });
   const calendarCalculationStatus = await page.$eval('#calStatus', el => el.textContent || '');
   const dateTimeControlLayout = await page.$eval('.cal-date-time-fields', wrapper => {

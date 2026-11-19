@@ -23,6 +23,7 @@ on:
       - 'public/horoscope/offline/transit_panchang.browser.mjs'
       - 'tests/calendar-rasi-palan-regression.mjs'
       - 'tests/calendar-rasi-palan-browser-smoke.mjs'
+      - 'tests/calendar-graha-periods-regression.mjs'
       - 'tests/offline-first-app-browser-smoke.mjs'
       - 'tests/serve-public.mjs'
       - '.github/workflows/calendar-rasi-palan-qa.yml'
@@ -49,6 +50,7 @@ on:
       - 'public/horoscope/offline/transit_panchang.browser.mjs'
       - 'tests/calendar-rasi-palan-regression.mjs'
       - 'tests/calendar-rasi-palan-browser-smoke.mjs'
+      - 'tests/calendar-graha-periods-regression.mjs'
       - 'tests/offline-first-app-browser-smoke.mjs'
       - 'tests/serve-public.mjs'
       - '.github/workflows/calendar-rasi-palan-qa.yml'
@@ -75,6 +77,8 @@ jobs:
           node --check public/horoscope/calendar-rasi-palan.mjs
           node --check public/horoscope/calendar-worker.mjs
           node --check public/horoscope/daily-calendar.mjs
+          node --check public/horoscope/calendar-graha-periods-data.mjs
+          node --check tests/calendar-graha-periods-regression.mjs
           node --check public/horoscope/calendar-muhurta-classification.mjs
           node --check public/horoscope/calendar-chandrashtama.mjs
           node --check tests/calendar-chandrashtama-regression.mjs
@@ -92,6 +96,8 @@ jobs:
           node --check tests/serve-public.mjs
       - name: Run scoped Calendar Rasi Palan regression
         run: node tests/calendar-rasi-palan-regression.mjs
+      - name: Run annual Graha Vakra and Asthamana data regression
+        run: node --test tests/calendar-graha-periods-regression.mjs
       - name: Run Subha Muhurtham and Lagna balance regression
         run: node tests/calendar-muhurta-lagna-regression.mjs
       - name: Run exact Chandrashtama Rasi and Nakshatra Pada regression
