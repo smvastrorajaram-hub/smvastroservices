@@ -254,10 +254,18 @@ function compoundRelation(p, other, rasiPositions){
   if(n==='enemy' && t==='enemy') return 'greatEnemy';
   return 'neutral';
 }
-export function vargaDignityPoints(planet, sign, rasiPositions){
+export function vargaDignityPoints(planet, sign, rasiPositions, division=null, longitude=null){
   const lord=SIGN_LORDS[sign];
   const mt=MOOLOTRIKONA[planet];
-  if(mt && mt.rasi===sign) return 45;
+  // Keep the legacy three-argument source-oracle API intact. The integrated
+  // BPHS Saptavargaja path passes the division and natal longitude so the
+  // Moolatrikona 45-Virupa exception is awarded only inside its D1 degree span.
+  if(mt && mt.rasi===sign && division===null) return 45;
+  if(mt && mt.rasi===sign && division===1){
+    if(!Number.isFinite(longitude))throw new TypeError('D1 Moolatrikona check requires the natal longitude');
+    const degree=norm360(longitude)%30;
+    if(degree>=mt.from&&degree<mt.to)return 45;
+  }
   if((OWN_SIGNS[planet]||[]).includes(sign)) return 30;
   const rel=compoundRelation(planet,lord,rasiPositions);
   return {greatFriend:20,friend:15,neutral:10,enemy:4,greatEnemy:2}[rel] ?? 10;
@@ -273,7 +281,7 @@ export function sthanaClassical(planet, lon, house, rasiPositions){
   const vargas=[1,2,3,7,9,12,30];
   const points={};
   points.uccha=ucchaBala(planet,lon);
-  points.saptavargaja=vargas.reduce((sum,v)=>sum+vargaDignityPoints(planet,vargaSign(lon,v),rasiPositions),0);
+  points.saptavargaja=vargas.reduce((sum,v)=>sum+vargaDignityPoints(planet,vargaSign(lon,v),rasiPositions,v,lon),0);
   const d1=vargaSign(lon,1), d9=vargaSign(lon,9), g=PLANET_GENDER[planet];
   points.ojayugma=((g==='female')?(d1%2===1?15:0):(d1%2===0?15:0)) + ((g==='female')?(d9%2===1?15:0):(d9%2===0?15:0));
   const h=Number(house); points.kendradi=[1,4,7,10].includes(h)?60:([2,5,8,11].includes(h)?30:15);
