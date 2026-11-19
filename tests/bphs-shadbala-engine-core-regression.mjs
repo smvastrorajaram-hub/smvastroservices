@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { sthanaClassical, pakshaBala } from '../public/horoscope/offline/swiss_vedic.browser.mjs';
 import {
   BPHS_SHADBALA_PLANETS,
   BPHS_SHADBALA_REQUIRED_VIRUPA,
@@ -58,6 +59,30 @@ const baseInput={
   planets,bhavas,temporal,declinations,cheshtaInputs,
   yuddha:{reviewed:true,encounters:[]}
 };
+
+// Exact Uchcha endpoints reuse the existing BPHS Phase-3 Sthana helper.
+const signPositions=Object.fromEntries(BPHS_SHADBALA_PLANETS.map((name,index)=>[name,index]));
+const exaltationLongitude={
+  'சூரியன்':10,'சந்திரன்':33,'செவ்வாய்':298,'புதன்':165,
+  'குரு':95,'சுக்கிரன்':357,'சனி':200
+};
+const debilitationLongitude={
+  'சூரியன்':190,'சந்திரன்':213,'செவ்வாய்':118,'புதன்':345,
+  'குரு':275,'சுக்கிரன்':177,'சனி':20
+};
+for(const name of BPHS_SHADBALA_PLANETS){
+  near(sthanaClassical(name,exaltationLongitude[name],1,signPositions).uccha,
+    60,1e-9,name+' exact exaltation is 60 Uchcha Virupa');
+  near(sthanaClassical(name,debilitationLongitude[name],1,signPositions).uccha,
+    0,1e-9,name+' exact debilitation is zero Uchcha Virupa');
+}
+// Paksha endpoints: new Moon 0°, full Moon 180°; Moon itself doubles.
+near(pakshaBala('சந்திரன்',0,0,[]),0,0.001,'Moon Paksha Bala is zero at exact new Moon');
+near(pakshaBala('சந்திரன்',0,180,[]),120,0.001,'Moon Paksha Bala is 120 at exact full Moon');
+near(pakshaBala('குரு',0,0,[]),0,0.001,'benefic Paksha Bala is zero at new Moon');
+near(pakshaBala('குரு',0,180,[]),60,0.001,'benefic Paksha Bala is 60 at full Moon');
+near(pakshaBala('சூரியன்',0,0,[]),60,0.001,'malefic Paksha share is 60 at new Moon');
+near(pakshaBala('சூரியன்',0,180,[]),0,0.001,'malefic Paksha share is zero at full Moon');
 
 // Dig Bala's exact endpoints: ideal point=60, opposite point=0.
 near(bphsDigBala('சூரியன்',300,bhavas,frame,epochJdUt),60,0.001,'Sun Dig Bala maximum at 10th cusp');
