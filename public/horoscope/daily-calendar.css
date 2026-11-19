@@ -14,7 +14,8 @@
 #smvDailyCalendar .transit-table-card{margin:12px 0 0;padding:0;border:0;background:transparent;border-radius:0;box-shadow:none}
 #smvDailyCalendar .transit-table-card:before,#smvDailyCalendar .transit-table-card:after{display:none!important}
 #smvDailyCalendar .transit-chart{overflow:hidden!important}
-#smvDailyCalendar .transit-chart{width:min(520px,100%);aspect-ratio:1/1}
+#smvDailyCalendar #calDaily .hora-card,#smvDailyCalendar #calDaily .transit-card,#smvDailyCalendar #calDaily .transit-table-card{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;outline:0!important}
+#smvDailyCalendar #calDaily .transit-card>.south-indian-chart.transit-chart{display:grid;width:min(100%,520px)!important;max-width:520px!important;min-width:0!important;height:auto!important;aspect-ratio:1/1!important;margin:10px auto!important}
 #smvDailyCalendar .transit-chart.transit-chart-dense,#smvDailyCalendar .transit-chart.transit-chart-dense-4plus{aspect-ratio:1/1;grid-template-rows:repeat(4,minmax(0,1fr))}
 #smvDailyCalendar .transit-chart .south-rasi-cell{min-width:0!important;overflow:hidden!important;padding:6px 4px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-start!important;gap:2px!important}
 #smvDailyCalendar .transit-chart .dynamic-rasi-number{flex:0 0 auto;margin:0!important;line-height:1.1!important}
