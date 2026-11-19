@@ -109,7 +109,7 @@
 
 /* North corner triangle centres follow each compartment's actual centroid. */
 .south-indian-chart.smv-v342-north .smv-v342-cell[data-house="2"]{left:25%!important;top:9%!important}
-.south-indian-chart.smv-v342-north .smv-v342-cell[data-house="3"]{left:10%!important;top:25%!important}
+.south-indian-chart.smv-v342-north .smv-v342-cell[data-house="3"]{left:9%!important;top:25%!important}
 .south-indian-chart.smv-v342-north .smv-v342-cell[data-house="5"]{left:10%!important;top:75%!important}
 .south-indian-chart.smv-v342-north .smv-v342-cell[data-house="6"]{left:25%!important;top:91%!important}
 .south-indian-chart.smv-v342-north .smv-v342-cell[data-house="8"]{left:75%!important;top:91%!important}
