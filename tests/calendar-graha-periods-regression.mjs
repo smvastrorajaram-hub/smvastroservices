@@ -70,6 +70,11 @@ test('Calendar table is inserted after transit without altering calculation engi
   assert.doesNotMatch(calendarSource, /calculateSwiss|tamilSolarDate\(/);
   assert.ok(calendarWorkerSource.includes("'../calendar-graha-periods-data.mjs'"));
   assert.ok(calendarWorkerSource.includes('calendar-graha-periods-data\\.mjs'));
+  const css = await readFile(new URL('../public/horoscope/daily-calendar.css', import.meta.url), 'utf8');
+  assert.match(css, /cal-graha-period-scroll\\{[^}]*overflow:auto/);
+  assert.match(css, /cal-graha-period-scroll\\{[^}]*max-height:min\\(70vh,620px\\)/);
+  assert.match(css, /cal-graha-period-card table\\{width:1000px;min-width:1000px/);
+  assert.match(css, /cal-graha-period-card thead th\\{position:sticky;top:0/);
 });
 
 test('the three application service workers use one synchronized cache release', async () => {
