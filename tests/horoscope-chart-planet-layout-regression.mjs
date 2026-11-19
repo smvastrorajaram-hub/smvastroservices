@@ -81,7 +81,7 @@ assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-north .smv-v342-c
 assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-triangle-cell{width:18%!important;max-height:20%!important}'));
 assert.ok(chartStyleCss.includes('.smv-v342-cell.smv-v342-triangle-cell .smv-v342-planets .planet-line{'));
 assert.ok(chartStyleCss.includes('.smv-v342-cell.smv-v342-triangle-cell .smv-v342-planets .planet-glyph{'));
-assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-north .smv-v342-cell.smv-chart-cell-compact .smv-v342-planets .planet-line{'));
+assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-north .smv-v342-cell.smv-chart-cell-compact .smv-v342-planets .planet-line,'));
 assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-east .smv-v342-cell.smv-chart-cell-compact .smv-v342-planets .planet-glyph *{white-space:nowrap!important;max-width:none!important}'));
 assert.ok(chartStyleCss.includes('overflow:hidden;display:flex;flex-direction:column;'));
 assert.ok(chartStyleCss.includes('width:22%;max-height:26%;min-width:0;overflow:hidden;'),'North/East cells remain width/height constrained and cannot escape the chart box.');
