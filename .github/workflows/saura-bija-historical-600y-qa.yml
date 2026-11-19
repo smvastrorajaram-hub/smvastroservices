@@ -8,6 +8,8 @@ on:
       - 'tests/saura-bija-three-phase-validation.mjs'
       - 'tests/saura-bija-de441-adapter-regression.mjs'
       - 'tests/saura-bija-residual-ablation-diagnostic.mjs'
+      - 'tests/saura-bija-geometric-reference-diagnostic.mjs'
+      - 'tests/fixtures/saura-bija-jpl-de441-geometric-vectors-annual-1800-2399.json'
       - 'tests/fixtures/saura-bija-jpl-de441-annual-1800-2399.json'
       - '.github/workflows/saura-bija-historical-600y-qa.yml'
   workflow_dispatch:
@@ -33,11 +35,14 @@ jobs:
           node --check research/saura-bija/saura-de441-apparent-true.mjs
           node --check tests/saura-bija-de441-adapter-regression.mjs
           node --check tests/saura-bija-residual-ablation-diagnostic.mjs
+          node --check tests/saura-bija-geometric-reference-diagnostic.mjs
       - name: Exercise 1800-2399 Bija mean and true-longitude coverage
         run: node tests/saura-bija-600y-regression.mjs
       - name: Test direct DE441 adapter, source guard and three-output separation
         run: node tests/saura-bija-de441-adapter-regression.mjs
       - name: Decompose mean, Mandocca, geometry and frame residuals across 3,000 DE441 points
         run: node tests/saura-bija-residual-ablation-diagnostic.mjs
+      - name: Compare geometric DE441 vectors in Burgess/IAU76 Saura frame and isolate component residuals
+        run: node tests/saura-bija-geometric-reference-diagnostic.mjs
       - name: Validate historical printed mean and Kali-epoch Mandocca sources; compare 3,000 DE441 points
         run: node tests/saura-bija-three-phase-validation.mjs
