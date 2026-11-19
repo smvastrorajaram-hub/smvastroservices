@@ -1698,7 +1698,7 @@ try {
     }, { timeout: 90000 }, date);
     return page.evaluate(language => {
       const chart = document.querySelector('#calDaily .transit-chart');
-      const cells = [...(chart?.querySelectorAll('.transit-cell-planets') || [])];
+      const cells = [...(chart?.querySelectorAll('.south-rasi-cell') || [])];
       const planetElements = [...(chart?.querySelectorAll('.planet-short') || [])];
       const rows = [...(document.querySelectorAll('#calDaily .transit-position-table tbody tr') || [])].map(row => ({
         name: row.querySelector('td:first-child')?.textContent.trim() || '',
@@ -1706,9 +1706,15 @@ try {
       }));
       const headers = [...(document.querySelectorAll('#calDaily .transit-position-table thead th') || [])].map(cell => cell.textContent.trim());
       const maxStack = Math.max(0, ...cells.map(cell => cell.querySelectorAll('.planet-line').length));
-      const clippedStacks = cells.filter(cell =>
-        cell.querySelectorAll('.planet-line').length > 0 && cell.scrollHeight > cell.clientHeight + 1
-      ).length;
+      const clippedStacks = cells.filter(cell => {
+        const lines = [...cell.querySelectorAll('.transit-cell-planets .planet-line')];
+        if (!lines.length) return false;
+        const cellRect = cell.getBoundingClientRect();
+        return lines.some(line => {
+          const rect = line.getBoundingClientRect();
+          return rect.height <= 0 || rect.top < cellRect.top - 1 || rect.bottom > cellRect.bottom + 1;
+        });
+      }).length;
       const planetText = planetElements.map(el => el.textContent.trim());
       const markerText = planetText.concat(rows.map(row => row.name)).join(' | ');
       const combustionInChart = chart?.querySelectorAll('.planet-short .status-c').length || 0;
@@ -1727,7 +1733,17 @@ try {
         planetShortColor: planetElements[0] ? getComputedStyle(planetElements[0]).color : '',
         chartHeadingText: chartHeading?.textContent.trim() || '',
         chartPlanetCount: planetElements.length,
-        chartHasJupiter: planetText.some(value => value.startsWith(language === 'ta' ? 'கு' : 'Ju')),
+        chartHasJupiter: (() => {
+          const index = planetText.findIndex(value => value.startsWith(language === 'ta' ? 'கு' : 'Ju'));
+          if (index < 0) return false;
+          const el = planetElements[index];
+          const rect = el.getBoundingClientRect();
+          const style = getComputedStyle(el);
+          const chartRect = chart.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' &&
+            style.display !== 'none' && rect.top >= chartRect.top - 1 &&
+            rect.bottom <= chartRect.bottom + 1;
+        })(),
         tableHasJupiter: rows.some(row => row.name.startsWith(language === 'ta' ? 'குரு' : 'Jupiter')),
         tableHasFullJupiterName: rows.some(row => row.name.startsWith(language === 'ta' ? 'குரு' : 'Jupiter')),
         tablePlanetRows: rows.length - 1,
