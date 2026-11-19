@@ -146,6 +146,82 @@ Interpretation:
 
 No general four-pass sequencing or Śīghra sign error has been demonstrated. The main unresolved error is within the historical model's Manda/apsis input and the planet-specific historical mean-motion representation, with a separate Jupiter rate discrepancy. The classical model remains a historical reconstruction, not a 0.05° modern-ephemeris solution. The production engine must not be silently modified on the basis of these ablations.
 
+## Phase G — per-planet Manda/apsis source provenance and DE441 osculating-element audit
+
+This audit separates (a) the exact historical Sūrya-Siddhānta apsis model from (b) modern heliocentric osculating apsides. They are not interchangeable physical definitions.
+
+### Source values are now tied directly to Burgess's Sūrya-Siddhānta column
+
+The implementation's six Kalpa apsis counts match I.41–42 exactly:
+
+| Body | Apsis revolutions per Kalpa | Sūrya-Siddhānta Kali-start longitude |
+|---|---:|---:|
+| Sun | 387 | 77°07′48″ |
+| Mercury | 368 | 220°19′12″ |
+| Venus | 535 | 79°39′00″ |
+| Mars | 204 | 129°57′36″ |
+| Jupiter | 900 | 171°00′00″ |
+| Saturn | 39 | 236°36′36″ |
+
+The epoch longitudes are not approximate values borrowed from another Siddhānta. They reproduce the **Sūrya-Siddhānta column** in Burgess's table of apsis positions at the commencement of the Iron Age, 3102 BCE. Other columns in the same table give different epoch locations because the authorities use different revolution histories / starting conventions. The PR therefore intentionally keeps the Sūrya-Siddhānta column and does not blend it with Siddhānta-Śiromaṇi, Ārya or Pārāśara values.
+
+Bīja correction in this research model changes the named mean-orbit revolution counts from Burgess's Bīja table. It does **not** silently rewrite the separately sourced Sūrya-Siddhānta apsis revolution counts above.
+
+### Burgess's own 1850 audit documents the historical model's limits
+
+Burgess's same 1860 translation compares the Sūrya-Siddhānta apsis positions for 1850 with Biot's contemporary positions:
+
+| Apsis | Siddhānta position | Biot position | Printed Siddhānta error |
+|---|---:|---:|---:|
+| Sun | 95°04′ | 100°22′ | −5°16′ |
+| Mercury | 238°15′ | 255°07′ | −16°52′ |
+| Venus | 97°39′ | 309°24′ | −211°45′ |
+| Mars | 147°49′ | 153°18′ | −5°29′ |
+| Jupiter | 189°09′ | 191°55′ | −2°46′ |
+| Saturn | 254°24′ | 270°06′ | −15°42′ |
+
+These are discrepancies in the historical source's own apsis-position model, not newly discovered source-data corruption in this implementation. Burgess explicitly remarks that the system did not treat the apsides as readily observable motions and explains that the revolution counts were selected to put the assigned points at their intended positions. His explanation also distinguishes the Sūrya-Siddhānta's start of planetary motion from other Siddhānta systems. This is why using another school's Kali-epoch position with the Sūrya-Siddhānta's revolution count would be an invalid hybrid.
+
+### Modern DE441 osculating elements: a separate physical diagnostic
+
+The new fixture `tests/fixtures/saura-bija-jpl-de441-heliocentric-elements-annual-1800-2399.json` records 600 annual JPL Horizons DE441 heliocentric geometric osculating-element rows for each planetary-system barycentre:
+- Mercury 199, Venus 299, Mars 4, Jupiter 5, Saturn 6.
+- Sun centre `500@10`, DE441 for the target and Sun centre.
+- `EPHEM_TYPE=ELEMENTS`, `TIME_TYPE=TDB`.
+- J2000 ecliptic / ICRF.
+- Aphelion direction from the osculating elements: `normalize(OM + W + 180°)`.
+
+A straight-line regression over the 1800–2399 sampled annual osculating aphelion longitudes gives the following *interval-dependent* rates in the fixed J2000 ecliptic:
+
+| Planet | DE441 osculating trend | Sūrya-Siddhānta apsis rate | Fit RMS around straight line |
+|---|---:|---:|---:|
+| Mercury | 1.588259°/1000 y | 0.030667°/1000 y | 0.001968° |
+| Venus | 0.027143°/1000 y | 0.044583°/1000 y | 0.177077° |
+| Mars | 4.440149°/1000 y | 0.017000°/1000 y | 0.044452° |
+| Jupiter | 0.427749°/1000 y | 0.075000°/1000 y | 0.587840° |
+| Saturn | 2.222657°/1000 y | 0.003250°/1000 y | 2.008513° |
+
+The rate comparison has an important source caveat from Narayanan & Oak (2023):
+- For **Mercury and Venus**, the physical meaning of Sūrya-Siddhānta Manda has not been established. Do not label the modern heliocentric osculating aphelion as the answer to their traditional Manda.
+- For **Mars, Jupiter and Saturn**, a relationship between Manda and heliocentric aphelion is a published research interpretation. The table above is still a 600-year finite-interval osculating fit, not proof that the ancient Manda parameter equals a constant modern physical precession. Jupiter and Saturn in particular show substantial non-linear/long-period variation in the sampled fit (RMS 0.588° and 2.009° respectively).
+
+This comparison does not authorize changing traditional Manda rates to fit DE441. It only identifies where a physical correspondence may be tested and where it remains unknown.
+
+### Epicycle provenance
+
+The code's even/odd Manda and Śīghra sizes match Burgess's Sūrya-Siddhānta II.34–37 table:
+- Mercury Manda 30/28, Śīghra 133/132.
+- Venus Manda 12/11, Śīghra 262/260.
+- Mars Manda 75/72, Śīghra 235/232.
+- Jupiter Manda 33/32, Śīghra 70/72.
+- Saturn Manda 49/48, Śīghra 39/40.
+
+The date-dependent epicycle circumference uses the even-quadrant value less the even/odd difference multiplied by the absolute base-sine of the kendra, matching II.38. There is no evidence from the source audit that the current even/odd table or interpolation formula is a transcription error.
+
+### Revised forensic conclusion
+
+The current Kali-start positions, Kalpa revolution counts and epicycle sizes are source-faithful for the Sūrya-Siddhānta family. Burgess himself documents large historical apsis-position discrepancies against Biot, and the 2023 study cautions against interpreting inner-planet Manda as physical aphelion. The modern DE441 comparison therefore cannot be used as an instruction to overwrite the historic parameters. The outstanding work is to understand the historical system's intended geometric/physical interpretation and any remaining per-planet input assumptions, while retaining Classical Bīja Mean, Classical Bīja True and modern DE441 outputs as separate named models.
+
 ## Mean / śīghrocca selection
 
 The existing BPHS/Uttara Kalamrita selection is retained: Mars/Jupiter/Saturn use their own mean and mean Sun as śīghrocca; Mercury/Venus use mean Sun as mean and their own orbit as śīghrocca.
