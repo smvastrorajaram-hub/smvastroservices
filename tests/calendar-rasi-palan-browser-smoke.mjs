@@ -129,6 +129,11 @@ try {
     return {
       found: true,
       outsideLegacyDailyTableScope: !card.closest('#calDaily'),
+      positionedAfterDailyRoot: card.previousElementSibling?.id === 'calDaily',
+      positionedBeforeRasiPalan: (() => {
+        const rasiPalan = document.querySelector('#calRasiPalan');
+        return Boolean(rasiPalan && (card.compareDocumentPosition(rasiPalan) & Node.DOCUMENT_POSITION_FOLLOWING));
+      })(),
       viewportWidth: window.innerWidth,
       wrapperWidth: scroller.clientWidth,
       wrapperScrollWidth: scroller.scrollWidth,
@@ -141,6 +146,8 @@ try {
   });
   assert.equal(grahaMobileLayout.found, true, 'Annual Graha table must render in Calendar.');
   assert.equal(grahaMobileLayout.outsideLegacyDailyTableScope, true, 'Graha table must not inherit the legacy daily Panchang table layout rules.');
+  assert.equal(grahaMobileLayout.positionedAfterDailyRoot, true, 'Graha table must follow the complete Daily Panchang and Transit content.');
+  assert.equal(grahaMobileLayout.positionedBeforeRasiPalan, true, 'Graha table must appear before Rasi Palan.');
   assert.ok(grahaMobileLayout.tableWidth >= 1060, 'Annual Graha table must keep its full wide layout on mobile: ' + JSON.stringify(grahaMobileLayout));
   assert.ok(grahaMobileLayout.wrapperScrollWidth > grahaMobileLayout.wrapperWidth, 'Annual Graha table must overflow inside its own horizontal scroll area: ' + JSON.stringify(grahaMobileLayout));
   assert.equal(grahaMobileLayout.scrollMoved, true, 'The Graha table must respond to horizontal scrolling on mobile.');
