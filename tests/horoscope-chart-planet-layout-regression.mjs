@@ -47,6 +47,8 @@ assert.ok(chartStyleJs.includes('cell.dataset.chartPlanetCount=String(planetCoun
 assert.ok(chartStyleJs.includes("if(planetCount>=3)cell.classList.add('smv-chart-cell-compact')"));
 assert.match(chartStyleJs, /else if\(kind!=='d9'&&kind!=='bhava'\)\{/);
 assert.ok(chartStyleJs.includes("m.className='smv-v342-empty';m.textContent='—'"));
+assert.ok(chartStyleJs.includes("if(kind!=='bhava')cell.append(number);"), 'East Rasi, Navamsa and Transit keep their existing sign/house labels; only East Bhava suppresses the fixed sign number.');
+assert.ok(chartStyleJs.includes("h.textContent=house>=1&&house<=12?String(house):'';"), 'East Bhava displays the Lagna-derived Arabic house number 1–12.');
 
 for (let count=3;count<=12;count++) {
   assert.ok(horoscopeCss.includes('.south-rasi-cell[data-chart-planet-count="' + count + '"]'));
