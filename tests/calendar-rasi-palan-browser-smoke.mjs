@@ -142,7 +142,6 @@ try {
   assert.equal(grahaMobileLayout.tableCount, 0, 'Graha periods must not use a table.');
   assert.equal(grahaMobileLayout.columnLayouts, 0, 'Graha periods must not use columns or flex rows.');
   assert.notEqual(grahaMobileLayout.titleColor, 'rgb(255, 0, 0)', 'Graha heading must retain the existing Calendar colour instead of global Horoscope red.');
-  assert.notEqual(grahaMobileLayout.titleColor, 'rgb(255, 0, 0)', 'Graha heading must retain the existing Calendar colour instead of global Horoscope red.');
   assert.equal(grahaMobileLayout.horizontalScrollElements, 0, 'Graha periods must not introduce horizontal scrolling.');
   assert.ok(grahaMobileLayout.pageScrollWidth <= grahaMobileLayout.viewportWidth + 1, 'Mobile page must not overflow horizontally: ' + JSON.stringify(grahaMobileLayout));
   assert.equal(grahaMobileLayout.headingInfo.length, 5, 'Exactly five planets must be shown.');
