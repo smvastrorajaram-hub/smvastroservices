@@ -341,6 +341,9 @@ function applyRamanYuddha(rows,planets){
 /** Full seven-graha B.V. Raman Shadbala. Inputs are never guessed or replaced. */
 function ramanIshtaKashtaForPlanet({planet,sunRow,moonRow,ayanamsa,uchchaBala,sixfoldCheshtaBala,sixfoldCheshtaSource}){
  if(!finite(uchchaBala)||(planet==='சூரியன்'&&!finite(ayanamsa)))throw new TypeError('B.V. Raman Ishta/Kashta needs engine Uchcha Bala and (for Sun) Lahiri ayanamsa');
+ if(['செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி'].includes(planet)&&
+    (sixfoldCheshtaSource?.frameCompatible===false||sixfoldCheshtaSource?.productionEligible===false))
+  throw new Error('B.V. Raman Chapter X Phala withheld: five-graha Cheshta inputs use mixed astronomical reference frames');
  let chestaKendraRaw,midpoint=null,formula,cheshtaForPhala,specialChestaMethod;
  if(planet==='சூரியன்'){
   chestaKendraRaw=norm360(sunRow.longitude+ayanamsa+90);
