@@ -62,19 +62,23 @@ test('year-boundary continuations remain clipped and explicitly marked', () => {
   assert.equal(year[5].every(event => event[2] >= year[3] && event[3] <= year[4]), true);
 });
 
-test('Calendar table is inserted after transit without altering calculation engines', () => {
+test('Calendar table is inserted after transit with readable two-axis scrolling and no calculation changes', async () => {
   assert.ok(calendarSource.includes("from './calendar-graha-periods-data.mjs'"));
   assert.ok(calendarSource.includes('transitCard.after(card)'));
   assert.ok(calendarSource.includes('renderAnnualGrahaPeriods();updateHora()'));
   assert.ok(calendarSource.includes('day>=start&&day<end'));
-  assert.doesNotMatch(calendarSource, /calculateSwiss|tamilSolarDate\(/);
+  assert.ok(calendarSource.includes('Scroll horizontally and vertically to view the full table'));
+  assert.doesNotMatch(calendarSource, /calculateSwiss|tamilSolarDate\\(/);
   assert.ok(calendarWorkerSource.includes("'../calendar-graha-periods-data.mjs'"));
-  assert.ok(calendarWorkerSource.includes('calendar-graha-periods-data\\.mjs'));
+  assert.ok(calendarWorkerSource.includes('calendar-graha-periods-data\\\\.mjs'));
   const css = await readFile(new URL('../public/horoscope/daily-calendar.css', import.meta.url), 'utf8');
-  assert.match(css, /cal-graha-period-scroll\\{[^}]*overflow:auto/);
-  assert.match(css, /cal-graha-period-scroll\\{[^}]*max-height:min\\(70vh,620px\\)/);
-  assert.match(css, /cal-graha-period-card table\\{width:1000px;min-width:1000px/);
-  assert.match(css, /cal-graha-period-card thead th\\{position:sticky;top:0/);
+  const scrollStart = css.indexOf('#smvDailyCalendar .cal-graha-period-scroll{');
+  assert.notEqual(scrollStart, -1);
+  const scrollRule = css.slice(scrollStart, css.indexOf('}', scrollStart));
+  assert.ok(scrollRule.includes('overflow:auto'));
+  assert.ok(scrollRule.includes('max-height:min(70vh,620px)'));
+  assert.ok(css.includes('#smvDailyCalendar .cal-graha-period-card table{width:1000px;min-width:1000px'));
+  assert.ok(css.includes('#smvDailyCalendar .cal-graha-period-card thead th{position:sticky;top:0'));
 });
 
 test('the three application service workers use one synchronized cache release', async () => {
