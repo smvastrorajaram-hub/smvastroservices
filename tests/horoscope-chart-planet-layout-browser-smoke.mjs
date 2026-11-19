@@ -51,9 +51,9 @@ function countForSign(sign) {
 function planetRow(index, withState) {
   let state = '';
   if (withState) {
-    state = '<span class="status-combust rasi-status-marker status-c">(அ)</span>' +
-      '<span class="status-retro rasi-status-marker status-r">(வ)</span>' +
-      '<span class="rasi-degree transit-degree">18°</span>';
+    const combustion = index === 0 ? '<span class="status-combust rasi-status-marker status-c">(அ)</span>' : '';
+    const retrograde = index === 1 ? '<span class="status-retro rasi-status-marker status-r">(வ)</span>' : '';
+    state = combustion + retrograde + '<span class="rasi-degree transit-degree">18°</span>';
   }
   return '<div class="planet-line"><span class="planet-glyph"><span class="planet-short"' + (index === 4 ? ' style="color:rgb(0, 0, 200)"' : '') + '>' +
     shortNames[index % shortNames.length] + '</span>' + state + '</span></div>';
