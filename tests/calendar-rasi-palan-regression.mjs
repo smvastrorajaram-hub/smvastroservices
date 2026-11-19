@@ -401,15 +401,17 @@ test('Calendar distinguishes Gazette government holidays from observances and do
   assert.ok(horoscopeRendererSource.includes("south-rasi-cell${compactPlanetCell?' south-rasi-cell-compact':''}"), 'The cell keeps its own compact class so house numbers use the same local planet size.');
   assert.ok(horoscopeRendererSource.includes("(houseNo??'')"), 'An unavailable house number renders blank rather than a dash.');
   assert.ok(horoscopeRendererSource.includes('${ps}</div></div>'), 'The transit renderer leaves empty planet stacks blank instead of adding a dash placeholder.');
-  assert.ok(dailyCalendarCssSource.includes('--transit-cell-label-size:21px;'), 'Desktop ordinary planet names, degrees, markers, Lagna and house numbers use a clearly increased 21px size.');
-  assert.ok(dailyCalendarCssSource.includes('south-rasi-cell[data-transit-planet-count="4"]{--transit-cell-label-size:19px}'), 'A four-planet Rasi alone uses the first desktop compact size.');
-  assert.ok(dailyCalendarCssSource.includes('south-rasi-cell[data-transit-planet-count="9"]{--transit-cell-label-size:12.5px}'), 'Nine-planet Rasi cells progressively compact only that cell.');
-  assert.ok(dailyCalendarCssSource.includes('--transit-cell-label-size:18px;padding:4px 2px!important'), 'Mobile ordinary cells use an increased 18px size.');
-  assert.ok(dailyCalendarCssSource.includes('--transit-cell-label-size:16px}'), 'Narrow mobile ordinary cells remain readable at 16px.');
+  assert.ok(dailyCalendarCssSource.includes('--transit-cell-label-size:20px;'), 'Desktop ordinary planet names, degrees, markers, Lagna and house numbers use a clearly increased 21px size.');
+  assert.ok(dailyCalendarCssSource.includes('south-rasi-cell[data-transit-planet-count="4"]{--transit-cell-label-size:18px}'), 'A four-planet Rasi alone uses the first desktop compact size.');
+  assert.ok(dailyCalendarCssSource.includes('south-rasi-cell[data-transit-planet-count="9"]{--transit-cell-label-size:11.5px}'), 'Nine-planet Rasi cells progressively compact only that cell.');
+  assert.ok(dailyCalendarCssSource.includes('--transit-cell-label-size:17px;padding:4px 2px!important'), 'Mobile ordinary cells use an increased 18px size.');
+  assert.ok(dailyCalendarCssSource.includes('--transit-cell-label-size:15px}'), 'Narrow mobile ordinary cells remain readable at 15px.');
   assert.ok(dailyCalendarCssSource.includes('.planet-glyph .rasi-status-marker,'), 'C/R and Tamil அ/வ markers inherit their planet name size.');
   assert.ok(dailyCalendarCssSource.includes('font-size:1em!important;line-height:inherit!important;'), 'Planet name, marker and degree text use an identical font size.');
   assert.ok(horoscopeRendererSource.includes('<span class="planet-status-slot">'), 'Combustion and retrograde markers each render in their own inline slot, separate from the planet name and degree.');
   assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar #calDaily .transit-chart .planet-status-slot{'), 'Calendar status-marker slots are laid out by the primary transit source rules, not an appended override.');
+   assert.ok(dailyCalendarCssSource.includes('overflow:hidden!important;padding:6px 4px!important;'), 'Each transit Rasi cell contains all of its labels within its own box.');
+   assert.ok(dailyCalendarCssSource.includes('flex-wrap:wrap!important;') && dailyCalendarCssSource.includes('white-space:normal!important;'), 'Planet name, status markers and degree can wrap between their separate slots within a Rasi cell.');
   assert.equal(horoscopeRendererSource.includes('<span class="planet-short">${nm}${c}${r}</span>'), false, 'Status markers are not nested together inside the planet-name element where legacy adjacent-marker negative margins could overlap them.');
   assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar #calDaily .transit-chart .dynamic-rasi-number,'), 'House numbers inherit the exact same per-cell font size as planet labels.');
   assert.ok(horoscopeRendererSource.includes("transit-cell-planets${compactPlanetCell?' transit-cell-planets-compact':''}"), 'Planet sizing is scoped to the individual Rasi cell.');
@@ -426,9 +428,9 @@ test('Calendar distinguishes Gazette government holidays from observances and do
   assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar #calDaily .hora-card,#smvDailyCalendar #calDaily .transit-table-card{padding:0!important;margin:12px 0!important;border:0!important;background:transparent!important;border-radius:0!important;box-shadow:none!important;outline:0!important}'), 'Daily Hora and Transit Planetary Positions sections must have no outer layer while retaining their headings.');
   assert.ok(dailyCalendarCssSource.includes('#calDaily .hora-table-wrap{border:1px solid #dce8df!important;border-radius:5px!important;overflow:hidden!important}'), 'Only the Day and Night Hora table wrappers receive the thin green outer border.');
   assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar .transit-table-card .adv-scroll{border:1px solid #dce8df!important;border-radius:5px!important}'), 'Only the Transit Planetary Positions table wrapper receives the thin green outer border.');
-  assert.ok(dailyCalendarCssSource.includes('data-transit-planet-count="4"]{--transit-cell-label-size:16px}'), 'Four-planet cells compact locally to 16px on regular mobile screens.');
-  assert.ok(dailyCalendarCssSource.includes('data-transit-planet-count="4"]{--transit-cell-label-size:13.5px}'), 'Four-planet cells compact locally to 13.5px on narrow mobile screens.');
-  assert.ok(dailyCalendarCssSource.includes('data-transit-planet-count="4"]{--transit-cell-label-size:12px}'), 'Four-planet cells compact locally to 12px on extra-narrow mobile screens.');
+  assert.ok(dailyCalendarCssSource.includes('data-transit-planet-count="4"]{--transit-cell-label-size:15px}'), 'Four-planet cells compact locally to 16px on regular mobile screens.');
+  assert.ok(dailyCalendarCssSource.includes('data-transit-planet-count="4"]{--transit-cell-label-size:12.5px}'), 'Four-planet cells compact locally to 13.5px on narrow mobile screens.');
+  assert.ok(dailyCalendarCssSource.includes('data-transit-planet-count="4"]{--transit-cell-label-size:11.5px}'), 'Four-planet cells compact locally to 12px on extra-narrow mobile screens.');
    assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .cal-centered-heading{'),
     'The Calendar-specific centered-heading class must be centered within the Calendar scope.');
   assert.match(calendarThemeCssSource, /#smvDailyCalendar #calDaily \.cal-centered-heading,\s*#smvDailyCalendar \.cal-date-details-head h3\.cal-date-details-title\{\s*font-size:19px!important;\s*line-height:1\.35!important;\s*\}/, 'Calendar primary headings use the compact desktop size.');
