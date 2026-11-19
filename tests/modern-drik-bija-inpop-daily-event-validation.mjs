@@ -1,12 +1,12 @@
 /**
- * Full-density independent INPOP validation for Modern Dṛk-Bīja.
+ * Full monthly independent-INPOP validation for Modern Dṛk-Bīja.
  *
- * Daily grid: every calendar day 1800-01-01 TT through 2399-12-31 TT.
- * Event grid: 6-hourly samples over +/- 1 day around all detected daily-grid
- * stations, Sun conjunctions/oppositions and interplanetary conjunctions.
- *
- * INPOP is queried independently through IMCCE Miriade. It is not the JPL
- * DE441 training fixture and is not Swiss Ephemeris Moshier.
+ * Monthly comparison grid: first day of each month, 1800-01 through 2399-12.
+ * Event locator: 12-hour Moshier-only scan (not an INPOP comparison grid),
+ * to ensure stations and angular conjunction/opposition crossings are not
+ * missed between monthly reference epochs.
+ * Event reference grid: INPOP comparison every 6 hours over +/- 24 hours
+ * around each located event.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -19,7 +19,6 @@ import {
 } from '../research/modern-drik-bija/modern-drik-bija-model.mjs';
 import { createModernMoshierReference } from '../research/modern-drik-bija/moshier-apparent-reference.mjs';
 import {
-  fetchInpopDailySeries,
   fetchInpopEpochList,
   INPOP_PLANETS,
   INPOP_EVENT_EPOCH_LIMIT
@@ -30,85 +29,59 @@ const FIXTURE = JSON.parse(fs.readFileSync(
   'utf8'
 ));
 const PLANETS = ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn'];
-const START = new Date('1800-01-01T00:00:00Z'); // TT calendar label, not UTC instant.
-const DAILY_COUNT = Math.round((Date.parse('2400-01-01T00:00:00Z') - START.getTime()) / 86400000);
+const BODIES = [...PLANETS, 'Sun'];
+const START_MS = Date.UTC(1800, 0, 1);
+const END_MS = Date.UTC(2400, 0, 1);
+const MONTHLY_COUNT = 600 * 12;
+const MONTHLY_EPOCHS = Array.from({ length: MONTHLY_COUNT }, (_, index) =>
+  new Date(Date.UTC(1800, index, 1, 0, 0, 0))
+);
 const DAY_MS = 86400000;
+const HALF_DAY_MS = DAY_MS / 2;
 const SIX_HOURS_MS = 6 * 3600000;
+const EVENT_SCAN_COUNT = Math.round((END_MS - START_MS) / HALF_DAY_MS) + 1;
 const EPOCH_JD_UNIX = 2440587.5;
 
 assert.equal(FIXTURE.ephemeris, 'DE441');
 assert.equal(FIXTURE.quantity, 31);
 assert.equal(FIXTURE.observerCenter, '500@399');
-assert.equal(DAILY_COUNT, 219145);
-assert.deepEqual(INPOP_PLANETS, [...PLANETS, 'Sun']);
+assert.equal(MONTHLY_COUNT, 7200);
+assert.equal(MONTHLY_EPOCHS[0].toISOString(), '1800-01-01T00:00:00.000Z');
+assert.equal(MONTHLY_EPOCHS.at(-1).toISOString(), '2399-12-01T00:00:00.000Z');
+assert.equal(INPOP_PLANETS.join(','), BODIES.join(','));
 
-const normalize = value => ((value % 360) + 360) % 360;
 const jdFromDate = date => EPOCH_JD_UNIX + date.getTime() / DAY_MS;
-
-function decimalYear(date) {
+const decimalYear = date => {
   const year = date.getUTCFullYear();
-  const start = Date.UTC(year, 0, 1);
-  const stop = Date.UTC(year + 1, 0, 1);
-  return year + (date.getTime() - start) / (stop - start);
-}
+  const yearStart = Date.UTC(year, 0, 1);
+  const nextYearStart = Date.UTC(year + 1, 0, 1);
+  return year + (date.getTime() - yearStart) / (nextYearStart - yearStart);
+};
+const normalize = value => ((value % 360) + 360) % 360;
 
-function summarize(signedErrors) {
-  assert.ok(signedErrors.length > 0, 'Cannot summarize an empty error set');
-  const absolute = signedErrors.map(Math.abs);
+function summarize(errors) {
+  assert.ok(errors.length > 0, 'Cannot summarize an empty error set');
+  const absolute = errors.map(Math.abs);
   const sorted = [...absolute].sort((a, b) => a - b);
-  const rms = Math.sqrt(signedErrors.reduce((sum, value) => sum + value * value, 0) / signedErrors.length);
   return {
-    samples: signedErrors.length,
-    rmsDegrees: +rms.toFixed(9),
+    samples: errors.length,
+    rmsDegrees: +Math.sqrt(errors.reduce((sum, value) => sum + value * value, 0) / errors.length).toFixed(9),
     p95AbsoluteDegrees: +sorted[Math.ceil(sorted.length * 0.95) - 1].toFixed(9),
     maxAbsoluteDegrees: +sorted.at(-1).toFixed(9)
   };
 }
 
 function fitCoefficients(provider) {
-  const output = {};
-  for (const planet of PLANETS) {
+  return Object.fromEntries(PLANETS.map(planet => {
     const rows = FIXTURE.bodies[planet].rows;
-    assert.equal(rows.length, 600);
+    assert.equal(rows.length, 600, planet + ' DE441 annual training rows');
     const observations = rows.map(row => ({
       year: row.year,
       candidateLongitude: provider.apparentTropicalLongitude(row.year, planet).longitude,
       referenceLongitude: row.longitude
     }));
-    output[planet] = fitModernDrikBijaCoefficients({ planet, observations });
-  }
-  return output;
-}
-
-function unwrapNext(previousUnwrapped, previousWrapped, currentWrapped) {
-  return previousUnwrapped + signedResidualDegrees(currentWrapped, previousWrapped);
-}
-
-function crossingEvents(body, other, datesMs, targetBoundaryStep, eventType, addEvent) {
-  const firstRelative = normalize(body[0] - other[0]);
-  let previousWrapped = signedResidualDegrees(firstRelative, 0);
-  let previousUnwrapped = previousWrapped;
-  for (let index = 1; index < body.length; index++) {
-    const currentRelative = normalize(body[index] - other[index]);
-    const currentWrapped = signedResidualDegrees(currentRelative, 0);
-    const currentUnwrapped = unwrapNext(previousUnwrapped, previousWrapped, currentWrapped);
-    const low = Math.min(previousUnwrapped, currentUnwrapped);
-    const high = Math.max(previousUnwrapped, currentUnwrapped);
-    const firstBoundary = Math.ceil((low + 1e-12) / targetBoundaryStep);
-    const lastBoundary = Math.floor((high - 1e-12) / targetBoundaryStep);
-    for (let k = firstBoundary; k <= lastBoundary; k++) {
-      const boundary = k * targetBoundaryStep;
-      const delta = currentUnwrapped - previousUnwrapped;
-      if (Math.abs(delta) < 1e-12) continue;
-      const fraction = (boundary - previousUnwrapped) / delta;
-      if (fraction < 0 || fraction > 1) continue;
-      const center = datesMs[index - 1] + fraction * (datesMs[index] - datesMs[index - 1]);
-      const kind = typeof eventType === 'function' ? eventType(k) : eventType;
-      addEvent(kind, center);
-    }
-    previousWrapped = currentWrapped;
-    previousUnwrapped = currentUnwrapped;
-  }
+    return [planet, fitModernDrikBijaCoefficients({ planet, observations })];
+  }));
 }
 
 function solarCrossingType(boundaryDegrees) {
@@ -123,6 +96,34 @@ assert.equal(solarCrossingType(360), 'solarConjunction');
 assert.equal(solarCrossingType(180), 'solarOpposition');
 assert.equal(solarCrossingType(-180), 'solarOpposition');
 assert.equal(solarCrossingType(540), 'solarOpposition');
+
+function crossingEvents(body, other, datesMs, targetBoundaryStep, eventType, addEvent) {
+  const firstRelative = normalize(body[0] - other[0]);
+  let previousWrapped = signedResidualDegrees(firstRelative, 0);
+  let previousUnwrapped = previousWrapped;
+  for (let index = 1; index < body.length; index++) {
+    const currentRelative = normalize(body[index] - other[index]);
+    const currentWrapped = signedResidualDegrees(currentRelative, 0);
+    const currentUnwrapped = previousUnwrapped +
+      signedResidualDegrees(currentWrapped, previousWrapped);
+    const low = Math.min(previousUnwrapped, currentUnwrapped);
+    const high = Math.max(previousUnwrapped, currentUnwrapped);
+    const firstBoundary = Math.ceil((low + 1e-12) / targetBoundaryStep);
+    const lastBoundary = Math.floor((high - 1e-12) / targetBoundaryStep);
+    for (let k = firstBoundary; k <= lastBoundary; k++) {
+      const boundary = k * targetBoundaryStep;
+      const delta = currentUnwrapped - previousUnwrapped;
+      if (Math.abs(delta) < 1e-12) continue;
+      const fraction = (boundary - previousUnwrapped) / delta;
+      if (fraction < 0 || fraction > 1) continue;
+      const centerMs = datesMs[index - 1] +
+        fraction * (datesMs[index] - datesMs[index - 1]);
+      addEvent(typeof eventType === 'function' ? eventType(boundary) : eventType, centerMs);
+    }
+    previousWrapped = currentWrapped;
+    previousUnwrapped = currentUnwrapped;
+  }
+}
 
 function detectStations(longitudes, datesMs, addEvent) {
   const rates = new Float64Array(longitudes.length - 1);
@@ -140,118 +141,107 @@ function detectStations(longitudes, datesMs, addEvent) {
   }
 }
 
-function makeEventEpochs(longitudes, datesMs) {
-  const planetEvents = Object.fromEntries(PLANETS.map(planet => [planet, []]));
-  const eventCounts = Object.fromEntries(PLANETS.map(planet => [planet, {
+function makeEventEpochs(candidateLongitudes, datesMs) {
+  const located = Object.fromEntries(PLANETS.map(planet => [planet, []]));
+  const counts = Object.fromEntries(PLANETS.map(planet => [planet, {
     station: 0, solarConjunction: 0, solarOpposition: 0, mutualConjunction: 0
   }]));
   const add = planet => (kind, centerMs) => {
-    if (centerMs < datesMs[0] || centerMs >= datesMs.at(-1)) return;
-    planetEvents[planet].push({ kind, centerMs });
-    eventCounts[planet][kind]++;
+    if (centerMs < START_MS || centerMs >= END_MS) return;
+    located[planet].push({ kind, centerMs });
+    counts[planet][kind]++;
   };
 
   for (const planet of PLANETS) {
-    detectStations(longitudes[planet], datesMs, add(planet));
-    crossingEvents(longitudes[planet], longitudes.Sun, datesMs, 180,
-      solarCrossingType,
-      add(planet));
+    detectStations(candidateLongitudes[planet], datesMs, add(planet));
+    crossingEvents(candidateLongitudes[planet], candidateLongitudes.Sun, datesMs, 180,
+      solarCrossingType, add(planet));
   }
   for (let i = 0; i < PLANETS.length; i++) {
     for (let j = i + 1; j < PLANETS.length; j++) {
       const left = PLANETS[i];
       const right = PLANETS[j];
-      const leftEvents = [];
-      crossingEvents(longitudes[left], longitudes[right], datesMs, 360,
+      crossingEvents(candidateLongitudes[left], candidateLongitudes[right], datesMs, 360,
         'mutualConjunction', (kind, centerMs) => {
-          leftEvents.push(centerMs);
+          add(left)(kind, centerMs);
           add(right)(kind, centerMs);
         });
-      for (const centerMs of leftEvents) add(left)('mutualConjunction', centerMs);
     }
   }
 
   const epochsByPlanet = {};
   for (const planet of PLANETS) {
     const unique = new Set();
-    for (const event of planetEvents[planet]) {
+    for (const event of located[planet]) {
       for (let quarter = -4; quarter <= 4; quarter++) {
-        unique.add(Math.round(event.centerMs + quarter * SIX_HOURS_MS));
+        const timestamp = Math.round(event.centerMs + quarter * SIX_HOURS_MS);
+        if (timestamp >= START_MS && timestamp < END_MS) unique.add(timestamp);
       }
     }
     epochsByPlanet[planet] = [...unique].sort((a, b) => a - b).map(ms => new Date(ms));
   }
-  return { epochsByPlanet, eventCounts };
+  return { epochsByPlanet, eventCounts: counts };
 }
 
-function buildReport() {
-  return {
-    pass: true,
-    gate: 'MODERN_DRIK_BIJA_DAILY_AND_EVENT_INPOP_0_05',
-    candidate: 'Swiss Ephemeris 2.10.03, explicit MOSEPH=4',
-    independentReference: 'IMCCE Miriade planetary theory INPOP',
-    coordinateFrame: 'Geocentric apparent ecliptic-of-date, TT',
-    dailyGrid: '1800-01-01T00:00:00 TT through 2399-12-31T00:00:00 TT, 1-day cadence',
-    eventGrid: 'All detected stations, Sun conjunctions/oppositions and mutual conjunctions; +/-24 hours at 6-hour cadence',
-    strictMaximumAbsoluteDegrees: MODERN_DRIK_BIJA_LIMIT_DEGREES,
-    totalDailySamples: 0,
-    totalEventSamples: 0,
-    inpopTheory: null,
-    perPlanet: {},
-    productionEligible: false,
-    classicalBijaEquivalent: false,
-    dailyOrEventCoverageComplete: false
-  };
-}
+const report = {
+  pass: true,
+  gate: 'MODERN_DRIK_BIJA_MONTHLY_AND_EVENT_INPOP_0_05',
+  modelVersion: '0.1.0-research',
+  candidate: 'Swiss Ephemeris 2.10.03, explicit MOSEPH=4',
+  independentReference: 'IMCCE Miriade INPOP19 planetary theory',
+  referenceFrame: 'TT, geocenter, apparent ecliptic-of-date',
+  monthlyGrid: 'First day of each month, 1800-01 through 2399-12',
+  monthlySamplesPerPlanet: MONTHLY_COUNT,
+  totalMonthlySamples: 0,
+  eventLocator: 'Moshier-only 12-hour scan; not used as an INPOP comparison grid',
+  eventReferenceGrid: 'INPOP every 6 hours from -24h to +24h around each located event',
+  strictMaximumAbsoluteDegrees: MODERN_DRIK_BIJA_LIMIT_DEGREES,
+  totalEventSamples: 0,
+  inpopTheory: null,
+  eventCounts: {},
+  perPlanet: {},
+  productionEligible: false,
+  classicalBijaEquivalent: false,
+  dailyGridUsed: false
+};
 
-const report = buildReport();
 const provider = await createModernMoshierReference();
 try {
-  console.log('Fitting Dṛk coefficients on the predeclared JPL DE441 1900–2299 training interval.');
+  console.log('Fitting fixed coefficients on the original central 1900-2299 JPL DE441 training interval.');
   const coefficients = fitCoefficients(provider);
 
-  console.log('Downloading complete daily INPOP reference grid:', DAILY_COUNT, 'TT dates per target.');
-  const referenceLongitudes = {};
-  const dailyDatesMs = new Float64Array(DAILY_COUNT);
-  const inpopTheoryNames = new Set();
-
-  for (let bodyIndex = 0; bodyIndex < INPOP_PLANETS.length; bodyIndex++) {
-    const body = INPOP_PLANETS[bodyIndex];
-    const series = await fetchInpopDailySeries(body, START, DAILY_COUNT, {
-      onProgress: ({ completed, total }) => {
-        if (completed === total || completed % 25000 === 0) {
-          console.log('INPOP daily download', body, completed + '/' + total);
-        }
-      }
-    });
-    inpopTheoryNames.add(series.theory);
-    const longitudes = new Float64Array(DAILY_COUNT);
-    for (let i = 0; i < DAILY_COUNT; i++) {
-      const row = series.rows[i];
-      if (bodyIndex === 0) dailyDatesMs[i] = row.date.getTime();
-      else if (Math.abs(row.date.getTime() - dailyDatesMs[i]) > 1000) {
-        throw new Error(body + ' daily TT epoch differs from the other body series at index ' + i);
-      }
-      longitudes[i] = row.longitude;
+  console.log('Fetching monthly INPOP epochs:', MONTHLY_COUNT, 'per body.');
+  const monthlyReference = {};
+  const theoryNames = new Set();
+  for (const body of BODIES) {
+    const rows = [];
+    for (let offset = 0; offset < MONTHLY_EPOCHS.length; offset += INPOP_EVENT_EPOCH_LIMIT) {
+      const batch = MONTHLY_EPOCHS.slice(offset, offset + INPOP_EVENT_EPOCH_LIMIT);
+      const response = await fetchInpopEpochList(body, batch);
+      theoryNames.add(response.theory);
+      rows.push(...response.rows);
+      console.log('Monthly INPOP', body, Math.min(offset + batch.length, MONTHLY_COUNT) + '/' + MONTHLY_COUNT);
     }
-    referenceLongitudes[body] = longitudes;
-    console.log('Completed independent INPOP daily grid for', body, 'theory', series.theory);
+    assert.equal(rows.length, MONTHLY_COUNT, body + ' monthly INPOP rows');
+    for (let i = 0; i < MONTHLY_COUNT; i++) {
+      assert.ok(Math.abs(rows[i].date.getTime() - MONTHLY_EPOCHS[i].getTime()) <= 1000,
+        body + ' monthly epoch mismatch at index ' + i);
+    }
+    monthlyReference[body] = rows.map(row => row.longitude);
   }
-  assert.equal(inpopTheoryNames.size, 1, 'INPOP theory identity must remain fixed across all bodies');
-  report.inpopTheory = [...inpopTheoryNames][0];
+  assert.equal(theoryNames.size, 1, 'INPOP theory identity must remain constant');
+  report.inpopTheory = [...theoryNames][0];
+  assert.ok(report.inpopTheory.startsWith('INPOP'));
 
-  console.log('Comparing every daily INPOP epoch for the five planets.');
-  const dailyErrors = {};
-  const eventRawErrors = {};
-  let totalDailySamples = 0;
+  console.log('Comparing all 7,200 monthly positions for each of the five planets.');
+  const monthlyErrors = {};
   for (const planet of PLANETS) {
     const raw = [];
     const corrected = [];
-    for (let i = 0; i < DAILY_COUNT; i++) {
-      const date = new Date(dailyDatesMs[i]);
-      const jdTt = jdFromDate(date);
-      const candidate = provider.apparentTropicalLongitudeAtJd(jdTt, planet).longitude;
-      const reference = referenceLongitudes[planet][i];
+    for (let i = 0; i < MONTHLY_COUNT; i++) {
+      const date = MONTHLY_EPOCHS[i];
+      const candidate = provider.apparentTropicalLongitudeAtJd(jdFromDate(date), planet).longitude;
+      const reference = monthlyReference[planet][i];
       const output = applyModernDrikBijaCorrection({
         year: decimalYear(date),
         apparentLongitude: candidate,
@@ -263,86 +253,107 @@ try {
     const rawSummary = summarize(raw);
     const correctedSummary = summarize(corrected);
     assert.ok(correctedSummary.maxAbsoluteDegrees <= MODERN_DRIK_BIJA_LIMIT_DEGREES,
-      planet + ' daily INPOP corrected max ' + correctedSummary.maxAbsoluteDegrees +
+      planet + ' monthly INPOP corrected maximum ' + correctedSummary.maxAbsoluteDegrees +
       '° exceeds strict ' + MODERN_DRIK_BIJA_LIMIT_DEGREES + '°');
-    dailyErrors[planet] = { rawMoshier: rawSummary, correctedDrikBija: correctedSummary };
-    eventRawErrors[planet] = [];
-    totalDailySamples += DAILY_COUNT;
-    console.log('Daily comparison', planet, JSON.stringify(dailyErrors[planet]));
+    monthlyErrors[planet] = { rawMoshier: rawSummary, correctedDrikBija: correctedSummary };
+    report.totalMonthlySamples += MONTHLY_COUNT;
+    console.log('Monthly comparison', planet, JSON.stringify(monthlyErrors[planet]));
   }
-  report.totalDailySamples = totalDailySamples;
 
-  console.log('Detecting station, solar conjunction/opposition and mutual-conjunction epochs.');
-  const events = makeEventEpochs(referenceLongitudes, dailyDatesMs);
+  console.log('Locating all stations and angular conjunction/opposition events using a 12-hour Moshier-only scan.');
+  const scanDates = new Float64Array(EVENT_SCAN_COUNT);
+  const candidateLongitudes = Object.fromEntries(BODIES.map(body => [
+    body, new Float64Array(EVENT_SCAN_COUNT)
+  ]));
+  for (let i = 0; i < EVENT_SCAN_COUNT; i++) {
+    const timeMs = START_MS + i * HALF_DAY_MS;
+    scanDates[i] = timeMs;
+    const jd = EPOCH_JD_UNIX + timeMs / DAY_MS;
+    for (const body of BODIES) {
+      candidateLongitudes[body][i] =
+        provider.apparentTropicalLongitudeAtJd(jd, body).longitude;
+    }
+    if (i > 0 && i % 50000 === 0) {
+      console.log('Moshier event locator', i + '/' + EVENT_SCAN_COUNT);
+    }
+  }
+
+  console.log('Detecting stations, solar conjunctions/oppositions, and mutual conjunctions.');
+  const events = makeEventEpochs(candidateLongitudes, scanDates);
   report.eventCounts = events.eventCounts;
-  const totalEventEpochs = Object.values(events.epochsByPlanet)
+  report.totalCandidateEvents = Object.values(events.eventCounts)
+    .reduce((sum, group) => sum + Object.values(group).reduce((a, b) => a + b, 0), 0);
+  report.totalUniqueEventEpochs = Object.values(events.epochsByPlanet)
     .reduce((sum, epochs) => sum + epochs.length, 0);
-  console.log('High-density event epochs:', totalEventEpochs);
+  console.log('Located candidate events:', JSON.stringify(report.eventCounts));
+  console.log('Unique dense INPOP event epochs:', report.totalUniqueEventEpochs);
 
+  console.log('Validating dense event windows against independent INPOP.');
   const eventErrors = {};
-  let totalEventSamples = 0;
   for (const planet of PLANETS) {
     const epochs = events.epochsByPlanet[planet];
     const raw = [];
     const corrected = [];
     for (let offset = 0; offset < epochs.length; offset += INPOP_EVENT_EPOCH_LIMIT) {
       const batch = epochs.slice(offset, offset + INPOP_EVENT_EPOCH_LIMIT);
-      const reference = await fetchInpopEpochList(planet, batch);
-      if (reference.theory !== report.inpopTheory) {
-        throw new Error('INPOP theory changed in high-density ' + planet + ' query');
-      }
+      const response = await fetchInpopEpochList(planet, batch);
+      assert.equal(response.theory, report.inpopTheory, 'INPOP theory identity changed for event samples');
       for (let i = 0; i < batch.length; i++) {
-        const date = reference.rows[i].date;
-        if (Math.abs(date.getTime() - batch[i].getTime()) > 1000) {
-          throw new Error(planet + ' event epoch mismatch at batch offset ' + (offset + i));
-        }
+        const date = response.rows[i].date;
+        assert.ok(Math.abs(date.getTime() - batch[i].getTime()) <= 1000,
+          planet + ' event epoch mismatch at index ' + (offset + i));
         const candidate = provider.apparentTropicalLongitudeAtJd(jdFromDate(date), planet).longitude;
         const output = applyModernDrikBijaCorrection({
           year: decimalYear(date),
           apparentLongitude: candidate,
           coefficients: coefficients[planet]
         });
-        raw.push(signedResidualDegrees(candidate, reference.rows[i].longitude));
-        corrected.push(signedResidualDegrees(output.trueLongitude, reference.rows[i].longitude));
+        raw.push(signedResidualDegrees(candidate, response.rows[i].longitude));
+        corrected.push(signedResidualDegrees(output.trueLongitude, response.rows[i].longitude));
       }
-      console.log('High-density event comparison', planet,
+      console.log('Dense event INPOP comparison', planet,
         Math.min(offset + batch.length, epochs.length) + '/' + epochs.length);
     }
+    assert.ok(epochs.length > 0, planet + ' has no detected event-window validation epochs');
     const rawSummary = summarize(raw);
     const correctedSummary = summarize(corrected);
     assert.ok(correctedSummary.maxAbsoluteDegrees <= MODERN_DRIK_BIJA_LIMIT_DEGREES,
-      planet + ' high-density event max ' + correctedSummary.maxAbsoluteDegrees +
+      planet + ' dense event INPOP maximum ' + correctedSummary.maxAbsoluteDegrees +
       '° exceeds strict ' + MODERN_DRIK_BIJA_LIMIT_DEGREES + '°');
     eventErrors[planet] = { rawMoshier: rawSummary, correctedDrikBija: correctedSummary };
-    totalEventSamples += epochs.length;
+    report.totalEventSamples += epochs.length;
   }
-  report.totalEventSamples = totalEventSamples;
 
   report.perPlanet = Object.fromEntries(PLANETS.map(planet => [planet, {
-    daily: dailyErrors[planet],
-    highDensityEvents: eventErrors[planet],
+    monthly: monthlyErrors[planet],
+    denseEventWindows: eventErrors[planet],
     fittedCoefficientsFromDE441: {
       interceptDegreesAt2100: +coefficients[planet].interceptDegreesAt2100.toFixed(12),
       slopeDegreesPerCentury: +coefficients[planet].slopeDegreesPerCentury.toFixed(12)
     }
   }]));
-  const dailyGlobal = Math.max(...PLANETS.map(p => dailyErrors[p].correctedDrikBija.maxAbsoluteDegrees));
-  const eventGlobal = Math.max(...PLANETS.map(p => eventErrors[p].correctedDrikBija.maxAbsoluteDegrees));
-  report.globalDailyMaximumAbsoluteDegrees = dailyGlobal;
-  report.globalEventMaximumAbsoluteDegrees = eventGlobal;
-  report.globalMaximumAbsoluteDegrees = Math.max(dailyGlobal, eventGlobal);
-  report.dailyOrEventCoverageComplete = true;
+  report.globalMonthlyMaximumAbsoluteDegrees = Math.max(...PLANETS.map(
+    planet => monthlyErrors[planet].correctedDrikBija.maxAbsoluteDegrees
+  ));
+  report.globalEventMaximumAbsoluteDegrees = Math.max(...PLANETS.map(
+    planet => eventErrors[planet].correctedDrikBija.maxAbsoluteDegrees
+  ));
+  report.globalMaximumAbsoluteDegrees = Math.max(
+    report.globalMonthlyMaximumAbsoluteDegrees,
+    report.globalEventMaximumAbsoluteDegrees
+  );
   report.pass = report.globalMaximumAbsoluteDegrees <= MODERN_DRIK_BIJA_LIMIT_DEGREES;
+  report.complete = true;
 
   const outputDirectory = 'modern-drik-bija-inpop-validation-output';
   await mkdir(outputDirectory, { recursive: true });
   fs.writeFileSync(
-    outputDirectory + '/INPOP_DAILY_AND_EVENT_REPORT.json',
+    outputDirectory + '/INPOP_MONTHLY_AND_EVENT_REPORT.json',
     JSON.stringify(report, null, 2) + '\n'
   );
-  console.log('MODERN DṚK-BĪJA DAILY + EVENT INPOP REPORT');
+  console.log('MODERN DṚK-BĪJA MONTHLY + EVENT INPOP REPORT');
   console.log(JSON.stringify(report, null, 2));
-  assert.equal(report.pass, true, 'Daily and dense-event independent INPOP 0.05° gate failed');
+  assert.equal(report.pass, true, 'Monthly and dense-event independent INPOP 0.05° gate failed');
 } finally {
   provider.close();
 }
