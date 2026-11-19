@@ -42,6 +42,16 @@ The raw Moshier kernel already has a separately scoped 0.05° annual DE441 compa
 
 See [the annual DE441 holdout report](./ANNUAL_1800_2399_DE441_HOLDOUT_REPORT.md) for the exact run output, per-planet coefficients, training and blind-holdout errors, and the important caveat that the correction does not improve every planet relative to raw Moshier.
 
+## Dense daily and event validation against an independent theory
+
+A second research gate now downloads the complete 1800–2399 daily apparent-geocentric ecliptic grid from the IMCCE Miriade service with its INPOP planetary theory. The declared comparison frame is geocentric apparent-of-date ecliptic longitude in TT. The service's documented 5,000-date request cap is respected by chunked daily downloads; high-density event lists respect the documented 1,000-epoch request cap.
+
+The daily gate covers 219,145 calendar dates per planet (1,095,725 planetary rows total). A second event gate detects stations, solar conjunctions/oppositions and mutual planetary conjunctions from the daily INPOP series, then compares at six-hour cadence over ±24 hours around each event. The same fixed DE441-trained v0.1 coefficients are applied; no INPOP or event epoch is used to refit them. Both daily and event maxima must independently remain ≤0.05° for every planet. See the new workflow and tests/modern-drik-bija-inpop-daily-event-validation.mjs; the output JSON is published as a workflow artifact.
+
+INPOP is a separate planetary theory from the DE441 training reference and Moshier candidate. Coordinate metadata, ephemeris theory identity, geocentric centre, ecliptic plane, apparent-of-date flag and TT timescale are validated before accepting data. Official service documentation: https://ssp.imcce.fr/webservices/miriade/api/ephemcc/ and https://www.imcce.fr/inpop.
+
+This new validation is an independent cross-check, but it still does not replace a review of frame-systematic differences, daily residual distribution, event-specific worst cases, or formal coefficient freezing. A CI failure remains a failure; the threshold is not relaxed.
+
 ## Next validation phases before any accuracy certificate or production consideration
 
 1. Freeze the fitted coefficient set as a reviewed, versioned artifact with provenance, exact training epochs and a checksum; CI output alone is not a released coefficient package.
