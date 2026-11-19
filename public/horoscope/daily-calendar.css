@@ -194,7 +194,6 @@
 #smvDailyCalendar .cal-graha-period-list li:last-child{border-bottom:0;padding-bottom:0}
 #smvDailyCalendar .cal-graha-period-list small{display:block;margin-top:2px;color:#555;font-size:10.5px;line-height:1.4}
 #smvDailyCalendar .cal-graha-period-empty{color:#555}
-#smvDailyCalendar .cal-graha-period-unavailable{color:#777;font-style:italic;font-size:11px}
 #smvDailyCalendar .cal-graha-period-note{margin:8px 0 0;color:#555;font-size:10.5px;line-height:1.5}
 @media(max-width:680px){
  #smvDailyCalendar .cal-graha-period-card{padding:9px}
