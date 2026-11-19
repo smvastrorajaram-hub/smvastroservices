@@ -408,7 +408,7 @@ test('Calendar distinguishes Gazette government holidays from observances and do
   assert.ok(dailyCalendarCssSource.includes('--transit-cell-label-size:16px}'), 'Narrow mobile ordinary cells remain readable at 16px.');
   assert.ok(dailyCalendarCssSource.includes('.planet-glyph .rasi-status-marker,'), 'C/R and Tamil அ/வ markers inherit their planet name size.');
   assert.ok(dailyCalendarCssSource.includes('font-size:1em!important;line-height:inherit!important;'), 'Planet name, marker and degree text use an identical font size.');
-  assert.ok(dailyCalendarCssSource.includes('.south-rasi-cell-compact .dynamic-rasi-number'), 'House numbers use the same compact size as planets in crowded cells.');
+  assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar #calDaily .transit-chart .dynamic-rasi-number,'), 'House numbers inherit the exact same per-cell font size as planet labels.');
   assert.ok(horoscopeRendererSource.includes("transit-cell-planets${compactPlanetCell?' transit-cell-planets-compact':''}"), 'Planet sizing is scoped to the individual Rasi cell.');
   assert.equal(/transit-chart-dense(?:-4plus)?\s+\.planet-glyph/.test(dailyCalendarCssSource), false, 'Chart-wide dense rules must not shrink ordinary Rasi cells.');
   assert.equal(dailyCalendarCssSource.includes('Transit chart typography v3'), false, 'No appended typography-v3 override patch may remain.');
