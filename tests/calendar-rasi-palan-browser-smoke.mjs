@@ -121,7 +121,7 @@ try {
       };
     };
     const planetNames = [...card.querySelectorAll('tbody th')].map(textFits);
-    const dateEntries = [...card.querySelectorAll('.cal-graha-period-list li span')].map(textFits);
+    const dateEntries = [...card.querySelectorAll('.cal-graha-period-date-start,.cal-graha-period-date-end')].map(textFits);
     const startLeft = scroller.scrollLeft;
     scroller.scrollLeft = Math.min(160, scroller.scrollWidth - scroller.clientWidth);
     const scrollMoved = scroller.scrollLeft > startLeft;
@@ -148,11 +148,11 @@ try {
   assert.equal(grahaMobileLayout.outsideLegacyDailyTableScope, true, 'Graha table must not inherit the legacy daily Panchang table layout rules.');
   assert.equal(grahaMobileLayout.positionedAfterDailyRoot, true, 'Graha table must follow the complete Daily Panchang and Transit content.');
   assert.equal(grahaMobileLayout.positionedBeforeRasiPalan, true, 'Graha table must appear before Rasi Palan.');
-  assert.ok(grahaMobileLayout.tableWidth >= 1060, 'Annual Graha table must keep its full wide layout on mobile: ' + JSON.stringify(grahaMobileLayout));
-  assert.ok(grahaMobileLayout.wrapperScrollWidth > grahaMobileLayout.wrapperWidth, 'Annual Graha table must overflow inside its own horizontal scroll area: ' + JSON.stringify(grahaMobileLayout));
+  assert.ok(grahaMobileLayout.tableWidth >= 680 && grahaMobileLayout.tableWidth <= 700, 'Annual Graha table must keep its full wide layout on mobile: ' + JSON.stringify(grahaMobileLayout));
+  assert.ok(grahaMobileLayout.wrapperScrollWidth > grahaMobileLayout.wrapperWidth && grahaMobileLayout.wrapperScrollWidth - grahaMobileLayout.wrapperWidth < 380, 'Annual Graha table must overflow inside its own horizontal scroll area: ' + JSON.stringify(grahaMobileLayout));
   assert.equal(grahaMobileLayout.scrollMoved, true, 'The Graha table must respond to horizontal scrolling on mobile.');
   assert.ok(grahaMobileLayout.planetNames.length === 5 && grahaMobileLayout.planetNames.every(item => item.fits), 'All five Tamil planet names must stay on one line without clipping: ' + JSON.stringify(grahaMobileLayout.planetNames));
-  assert.ok(grahaMobileLayout.dateEntries.length > 0 && grahaMobileLayout.dateEntries.every(item => item.fits), 'Every Graha date range must stay on one line without wrapping: ' + JSON.stringify(grahaMobileLayout.dateEntries));
+  assert.ok(grahaMobileLayout.dateEntries.length > 0 && grahaMobileLayout.dateEntries.length % 2 === 0 && grahaMobileLayout.dateEntries.every(item => item.fits), 'Every Graha date range must stay on one line without wrapping: ' + JSON.stringify(grahaMobileLayout.dateEntries));
   assert.equal(grahaMobileLayout.footnoteText, '', 'The annual-boundary / IST explanatory paragraph must be completely absent.');
   await page.$eval('#calGrahaPeriodCard', el => el.scrollIntoView({ block: 'center' }));
   await page.screenshot({
