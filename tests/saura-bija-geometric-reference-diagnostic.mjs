@@ -42,6 +42,23 @@ assert.equal(apparent.centerBody,'Earth (399)');
 const swe=await getSwe();
 swe.setSiderealLahiri();
 const lahiri1860=swe.ayanamsa(jd(1860));
+
+// Burgess 1860 Mercury worked example (Sūrya Siddhānta II.40–42):
+// Mean place = 8s 18°13′13″; Śīghrocca = 4s16°57′22″.
+// His first Sighra equation is 21°12′ subtractive.
+// The continuous-trigonometric model should reproduce that rounded source value.
+const burgessMercury1860 = sauraFourPassTrueLongitude({
+  planet:'Mercury',
+  meanLongitude:8*30+18+13/60+13/3600,
+  mandocca:100,
+  sheeghrocha:4*30+16+57/60+22/3600,
+  mandaKarṇaConvention:'verse39-direct-jya'
+});
+const burgessFirstSighraDegrees = burgessMercury1860.stages.halfSighraDegrees*2;
+assert.ok(burgessFirstSighraDegrees < 0,
+  'Burgess Mercury worked example requires subtractive first Sighra equation');
+assert.ok(Math.abs(burgessFirstSighraDegrees - (-21-12/60)) < 0.02,
+  'Burgess Mercury first Sighra equation reproduces 21°12′ subtractive within continuous-Jya rounding tolerance');
 assert.ok(Math.abs(sauraSiderealOffsetFromBurgessIau76(jd(1860))-baseSauraZero)<1e-10,
   'Burgess zero point must be reproduced at its own epoch');
 const precession2020=sauraIau76PrecessionLongitudeFromBurgessEpoch(jd(2020));
@@ -86,6 +103,14 @@ const report={
     convertedFrame:'Mean ecliptic-of-date using IAU76 precession and mean obliquity',
     siderealOrigin:'Burgess 1860 Hindu sidereal sphere zero point 18°05′08.25″',
     transform:'Ecliptic J2000 vector -> equatorial J2000 -> IAU76 precession -> mean ecliptic of date; subtract Burgess-origin offset'
+  },
+  burgess1860MercuryWorkedExample:{
+    meanLongitude:258.220277778,
+    sighrocca:136.956111111,
+    firstSighraEquationDegrees:+burgessFirstSighraDegrees.toFixed(9),
+    printedEquationDegrees:-21.2,
+    residualFromPrintedDegrees:+(burgessFirstSighraDegrees+21.2).toFixed(9),
+    pass:true
   },
   precessionChecks:{
     burgessOffsetAt1860:+sauraSiderealOffsetFromBurgessIau76(jd(1860)).toFixed(10),
