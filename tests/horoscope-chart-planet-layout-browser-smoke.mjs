@@ -55,7 +55,7 @@ function planetRow(index, withState) {
       '<span class="status-retro rasi-status-marker status-r">(வ)</span>' +
       '<span class="rasi-degree transit-degree">18°</span>';
   }
-  return '<div class="planet-line"><span class="planet-glyph"><span class="planet-short">' +
+  return '<div class="planet-line"><span class="planet-glyph"><span class="planet-short"' + (index === 4 ? ' style="color:rgb(0, 0, 200)"' : '') + '>' +
     shortNames[index % shortNames.length] + '</span>' + state + '</span></div>';
 }
 function cell(sign, kind) {
@@ -230,6 +230,12 @@ try {
                   clientHeight:cell.clientHeight
                 };
               }
+              const planetGlyphColors = [...chart.querySelectorAll(style==='south'?'.planet-glyph':'.smv-v342-planets .planet-glyph')].map(glyph=>({
+                text:glyph.textContent.trim(),
+                marked:glyph.classList.contains('smv-v342-black-planet-text'),
+                glyphColor:getComputedStyle(glyph).color,
+                visibleTextColor:getComputedStyle(glyph.querySelector('.planet-short')||glyph).color
+              }));
               const emptyCells = cells.filter(cell=>cellCount(cell) === 0);
               const emptyDash = emptyCells.some(cell=>!!cell.querySelector('.smv-v342-empty'));
               const eastHouseNumbers = style==='east' ? cells.map(cell=>({
@@ -245,7 +251,7 @@ try {
                 const labels=raw.flatMap(value=>value.split('/').map(label=>label.trim()).filter(Boolean));
                 return {sign,house:Number(cell.dataset.house||0),labels};
               }) : [];
-              reports.push({rootId,kind,cells:cells.length,picked,emptyDash,eastHouseNumbers,bhavaHouseLabels,cellBoundsOutside,compartmentOutside,triangleCells:cells.filter(cell=>cell.classList.contains('smv-v342-triangle-cell')).length});
+              reports.push({rootId,kind,cells:cells.length,picked,emptyDash,eastHouseNumbers,bhavaHouseLabels,cellBoundsOutside,compartmentOutside,triangleCells:cells.filter(cell=>cell.classList.contains('smv-v342-triangle-cell')).length,planetGlyphColors});
 
             }
           }
@@ -287,7 +293,18 @@ try {
             assert.ok(five.numberText,item.rootId+' Tamil chart Number remains present.');
           }
           assert.equal(item.cellBoundsOutside.length,0,item.rootId+' '+item.kind+' '+style+': every chart box remains inside the chart boundary: '+JSON.stringify(item.cellBoundsOutside));
+          if(style==='south')assert.ok(item.planetGlyphColors.every(glyph=>!glyph.marked),item.rootId+' '+item.kind+': South chart planet colours remain untouched.');
           if(style!=='south'){
+            if(['rasi','navamsa','bhava'].includes(item.kind)){
+              assert.ok(item.planetGlyphColors.length>0,item.rootId+' '+item.kind+' '+style+': planet glyph color fixtures exist.');
+              assert.ok(item.planetGlyphColors.every(glyph=>glyph.marked&&glyph.glyphColor==='rgb(224, 0, 0)'),item.rootId+' '+item.kind+' '+style+': black planet names are turned red.');
+              if(['rasi','navamsa'].includes(item.kind)){
+                const preserved=item.planetGlyphColors.filter(glyph=>glyph.visibleTextColor==='rgb(0, 0, 200)');
+                assert.ok(preserved.length>0,item.rootId+' '+item.kind+' '+style+': an already-coloured planet label keeps its original blue colour.');
+              }
+            }else{
+              assert.ok(item.planetGlyphColors.every(glyph=>!glyph.marked),item.rootId+' '+item.kind+' '+style+': Transit is outside this colour change.');
+            }
             assert.equal(item.triangleCells,8,item.rootId+' '+item.kind+' '+style+': exactly the eight corner compartments use triangle-aware layout.');
             assert.equal(item.compartmentOutside.length,0,item.rootId+' '+item.kind+' '+style+': planet names, markers, Degrees and numbers remain inside their actual compartment polygons: '+JSON.stringify(item.compartmentOutside));
           }
