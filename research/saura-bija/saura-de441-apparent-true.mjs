@@ -31,6 +31,15 @@ const TAMIL = Object.freeze({
 });
 const norm360 = value => ((value % 360) + 360) % 360;
 const signedAngle = (a, b) => ((a - b + 540) % 360) - 180;
+const BURGESS_SAURA_ZERO_POINT_1860 = 18 + 5 / 60 + 8.25 / 3600;
+
+/** Carry the Burgess 1860 Saura zero point by the Lahiri precession delta. */
+export function sauraSiderealOffsetFromLahiri(lahiriAyanamsaAtDate, lahiriAyanamsaAt1860) {
+  if (!Number.isFinite(lahiriAyanamsaAtDate) || !Number.isFinite(lahiriAyanamsaAt1860)) {
+    throw new TypeError('Finite Lahiri ayanamsa values at the requested date and 1860 epoch are required');
+  }
+  return BURGESS_SAURA_ZERO_POINT_1860 + (lahiriAyanamsaAtDate - lahiriAyanamsaAt1860);
+}
 
 function bodyOf(value) {
   const body = TAMIL[value] || value;
@@ -232,6 +241,9 @@ export function sauraBijaLongitudeProducts(jdUt, planet, {
     : null;
   if (de441ApparentTrue && de441ApparentTrue.planet !== body) {
     throw new TypeError('The DE441 reference planet does not match the classical model planet');
+  }
+  if (de441ApparentTrue && Math.abs(de441ApparentTrue.jdUt - jdUt) > 1e-7) {
+    throw new TypeError('The DE441 reference epoch must exactly match the classical model epoch');
   }
 
   return Object.freeze({
