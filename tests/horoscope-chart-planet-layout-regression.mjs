@@ -62,6 +62,7 @@ for (let count=3;count<=12;count++) {
 assert.ok(horoscopeCss.includes('--smv-chart-compact-font-size'));
 assert.ok(horoscopeCss.includes('--smv-chart-compact-white-space'));
 assert.ok(horoscopeCss.includes('.south-rasi-cell.smv-chart-cell-compact .planet-line'));
+assert.ok(horoscopeCss.includes('.south-rasi-cell:not(.smv-chart-cell-compact) .planet-line'), 'The 701–900px baseline font-size rule must not override cells with 3+ planets.');
 assert.ok(chartStyleCss.includes('.smv-v342-cell.smv-chart-cell-compact .smv-v342-planets'));
 assert.ok(chartStyleCss.includes('overflow:hidden;display:flex;flex-direction:column;'));
 assert.ok(chartStyleCss.includes('.smv-v342-cell{font-size:var(--smv-chart-compact-font-size,'));
