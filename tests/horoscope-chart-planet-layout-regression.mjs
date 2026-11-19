@@ -49,6 +49,8 @@ assert.ok(chartStyleJs.includes("if(!['north','east'].includes(style)||!['d1','d
 assert.ok(chartStyleJs.includes("if(isBlack(getComputedStyle(glyph).color))glyph.classList.add('smv-v342-black-planet-text');"));
 assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-north .smv-v342-planets .planet-glyph.smv-v342-black-planet-text'));
 assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-east .smv-v342-planets .planet-glyph.smv-v342-black-planet-text'));
+assert.ok(chartStyleCss.includes('color:rgb(224,0,0)!important;'));
+assert.doesNotMatch(chartStyleCss,/smv-v342-black-planet-text[^{]*\{[^}]*-webkit-text-fill-color/s,'Explicit child planet colours must remain intact.');
 assert.ok(chartStyleJs.includes('cell.dataset.chartPlanetCount=String(planetCount);'));
 assert.ok(chartStyleJs.includes("if(planetCount>=3)cell.classList.add('smv-chart-cell-compact')"));
 assert.match(chartStyleJs, /else if\(kind!=='d9'&&kind!=='bhava'\)\{/);
