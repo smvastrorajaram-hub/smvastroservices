@@ -77,10 +77,10 @@ assert.ok(horoscopeCss.includes('.south-rasi-cell.smv-chart-cell-compact .planet
 assert.ok(horoscopeCss.includes('.south-rasi-cell:not(.smv-chart-cell-compact) .planet-line'), 'The 701–900px baseline font-size rule must not override cells with 3+ planets.');
 assert.ok(horoscopeCss.includes('.south-rasi-cell{border:1px solid rgb(143, 112, 79);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;padding:7px 4px;min-width:0px;overflow:hidden;'),'The South-chart Rasi box remains clipped to its own boundary.');
 assert.ok(chartStyleCss.includes('.smv-v342-cell.smv-chart-cell-compact .smv-v342-planets'));
-assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-triangle-cell{width:14%!important;max-height:16%!important}'));
-assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-triangle-cell{width:16%!important;max-height:16%!important}'));
-assert.ok(chartStyleCss.includes('.smv-v342-cell.smv-v342-triangle-cell.smv-chart-cell-compact .smv-v342-planets .planet-line{'));
-assert.ok(chartStyleCss.includes('.smv-v342-cell.smv-v342-triangle-cell.smv-chart-cell-compact .smv-v342-planets .planet-glyph{'));
+assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-triangle-cell{width:20%!important;max-height:18%!important}'));
+assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-triangle-cell{width:18%!important;max-height:20%!important}'));
+assert.ok(chartStyleCss.includes('.smv-v342-cell.smv-v342-triangle-cell .smv-v342-planets .planet-line{'));
+assert.ok(chartStyleCss.includes('.smv-v342-cell.smv-v342-triangle-cell .smv-v342-planets .planet-glyph{'));
 assert.ok(chartStyleCss.includes('overflow:hidden;display:flex;flex-direction:column;'));
 assert.ok(chartStyleCss.includes('width:22%;max-height:26%;min-width:0;overflow:hidden;'),'North/East cells remain width/height constrained and cannot escape the chart box.');
 assert.ok(chartStyleCss.includes('.smv-v342-cell{font-size:var(--smv-chart-compact-font-size,'));
