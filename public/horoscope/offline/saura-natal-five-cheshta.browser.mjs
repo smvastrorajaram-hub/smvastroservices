@@ -101,7 +101,7 @@ export function computeClassicalFiveNatalCheshta(birth){
     calculationAvailable:true,natalHistoricalNumericalCertified:false,
     historicalTrueLongitudeEvidence:Object.freeze({
       frameId:'surya-siddhanta-saura-nirayana',
-      meanTrueSheeghroccchaFrameConsistent:true,
+      meanTrueSheeghrochaFrameConsistent:true,
       historicalBijaCorrectionsVerified:false,
       independentHistoricalTrueLongitudeOracles:0,
       status:'SAME_FRAME_MODEL_ONLY_NOT_HISTORICALLY_CERTIFIED'
