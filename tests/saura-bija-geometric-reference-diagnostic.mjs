@@ -129,7 +129,7 @@ for(const body of bodies){
     const row=vecRows[i],app=appRows[i];
     assert.equal(row.year,app.year,body+' geometric/apparent epoch alignment');
     const at=jd(row.year);
-    const tropicalGeometric=jplEclipticJ2000VectorToMeanEclipticOfDateLongitude(row,at);
+    const tropicalGeometric=jplEclipticJ2000VectorToMeanEclipticOfDateLongitude({x:row.xAu,y:row.yAu,z:row.zAu},at);
     const tropicalApparent=app.longitude;
     const sauraOffset=sauraSiderealOffsetFromBurgessIau76(at);
     const reference=norm(tropicalGeometric-sauraOffset);
@@ -202,7 +202,7 @@ for(const body of bodies){
 }
 
 const mercury2020=geometric.bodies.Mercury.rows.find(r=>r.year===2020);
-const knownMercury2020=jplEclipticJ2000VectorToMeanEclipticOfDateLongitude(mercury2020,jd(2020));
+const knownMercury2020=jplEclipticJ2000VectorToMeanEclipticOfDateLongitude({x:mercury2020.xAu,y:mercury2020.yAu,z:mercury2020.zAu},jd(2020));
 assert.ok(Math.abs(signed(knownMercury2020,274.400974286077))<1e-7,
   'Mercury 2020 geometric vector transform known-value check');
 report.interpretation={
