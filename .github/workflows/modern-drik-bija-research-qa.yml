@@ -1,4 +1,4 @@
-name: Modern Dṛk-Bīja 1800-2399 Research QA
+name: Modern Dṛk-Bīja Monthly 1800-2399 Research QA
 on:
   pull_request:
     branches: [main]
@@ -15,7 +15,7 @@ concurrency:
   group: modern-drik-bija-research-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
-  modern-drik-bija-annual-validation:
+  modern-drik-bija-monthly-validation:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
@@ -32,13 +32,13 @@ jobs:
           node --check tests/modern-drik-bija-inpop-daily-event-validation.mjs
       - name: Fit on central 400 years and verify both blind 100-year DE441 edge blocks
         run: node tests/modern-drik-bija-true-regression.mjs
-      - name: Compare all daily dates and dense event windows against independent IMCCE INPOP
+      - name: Compare monthly epochs and dense event windows against independent IMCCE INPOP
         run: node tests/modern-drik-bija-inpop-daily-event-validation.mjs
       - name: Preserve full daily and event-focused INPOP report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MODERN-DRIK-BIJA-INPOP-DAILY-EVENT-VALIDATION
-          path: modern-drik-bija-inpop-validation-output/INPOP_DAILY_AND_EVENT_REPORT.json
+          name: MODERN-DRIK-BIJA-INPOP-MONTHLY-EVENT-VALIDATION
+          path: modern-drik-bija-inpop-validation-output/INPOP_MONTHLY_AND_EVENT_REPORT.json
           if-no-files-found: warn
           retention-days: 30
