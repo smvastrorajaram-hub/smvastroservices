@@ -64,7 +64,7 @@
   const number=document.createElement('span');number.className='smv-v342-sign-number';number.textContent=String(sign+1);
   // Bhava labels must come from the Bhava Table's house -> Sphuta Rasi map.
   // North is house-positioned; East is sign-positioned and may group cusps.
-  if(kind!=='bhava')cell.append(number);
+  if(kind!=='bhava'&&style!=='east')cell.append(number);
   if(kind==='bhava'){
    const h=document.createElement('span');h.className='smv-v342-house-number';
    h.textContent=style==='north'?romanHouse(house):String(bhavaHouseLabel||'');
