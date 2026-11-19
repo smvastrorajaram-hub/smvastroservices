@@ -408,6 +408,9 @@ test('Calendar distinguishes Gazette government holidays from observances and do
   assert.ok(dailyCalendarCssSource.includes('--transit-cell-label-size:16px}'), 'Narrow mobile ordinary cells remain readable at 16px.');
   assert.ok(dailyCalendarCssSource.includes('.planet-glyph .rasi-status-marker,'), 'C/R and Tamil அ/வ markers inherit their planet name size.');
   assert.ok(dailyCalendarCssSource.includes('font-size:1em!important;line-height:inherit!important;'), 'Planet name, marker and degree text use an identical font size.');
+  assert.ok(horoscopeRendererSource.includes('<span class="planet-status-slot">'), 'Combustion and retrograde markers each render in their own inline slot, separate from the planet name and degree.');
+  assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar #calDaily .transit-chart .planet-status-slot{'), 'Calendar status-marker slots are laid out by the primary transit source rules, not an appended override.');
+  assert.equal(horoscopeRendererSource.includes('<span class="planet-short">${nm}${c}${r}</span>'), false, 'Status markers are not nested together inside the planet-name element where legacy adjacent-marker negative margins could overlap them.');
   assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar #calDaily .transit-chart .dynamic-rasi-number,'), 'House numbers inherit the exact same per-cell font size as planet labels.');
   assert.ok(horoscopeRendererSource.includes("transit-cell-planets${compactPlanetCell?' transit-cell-planets-compact':''}"), 'Planet sizing is scoped to the individual Rasi cell.');
   assert.equal(/transit-chart-dense(?:-4plus)?\s+\.planet-glyph/.test(dailyCalendarCssSource), false, 'Chart-wide dense rules must not shrink ordinary Rasi cells.');
