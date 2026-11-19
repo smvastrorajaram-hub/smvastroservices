@@ -17,15 +17,19 @@
 #smvDailyCalendar #calDaily .hora-card,#smvDailyCalendar #calDaily .transit-card,#smvDailyCalendar #calDaily .transit-table-card{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;outline:0!important}
 #smvDailyCalendar #calDaily .transit-card>.south-indian-chart.transit-chart{display:grid;width:min(100%,520px)!important;max-width:520px!important;min-width:0!important;height:auto!important;aspect-ratio:1/1!important;margin:10px auto!important}
 #smvDailyCalendar .transit-chart.transit-chart-dense,#smvDailyCalendar .transit-chart.transit-chart-dense-4plus{aspect-ratio:1/1;grid-template-rows:repeat(4,minmax(0,1fr))}
-#smvDailyCalendar .transit-chart .south-rasi-cell{min-width:0!important;overflow:hidden!important;padding:6px 4px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-start!important;gap:2px!important}
+#smvDailyCalendar .transit-chart .south-rasi-cell{min-width:0!important;overflow:visible!important;padding:6px 4px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-start!important;gap:2px!important}
 #smvDailyCalendar .transit-chart .dynamic-rasi-number{flex:0 0 auto;margin:0!important;line-height:1.1!important}
 #smvDailyCalendar .transit-chart .lagna{flex:0 0 auto;line-height:1.1!important;margin:1px 0!important}
-#smvDailyCalendar .transit-cell-planets{width:100%;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:1px;overflow:hidden}
-#smvDailyCalendar .transit-chart .planet-line{display:block!important;width:100%;min-width:0;margin:0!important;padding:0!important;text-align:center!important;line-height:1.08!important;border-bottom:0}
+#smvDailyCalendar .transit-cell-planets{width:100%;min-width:0;display:flex;flex:0 0 auto;flex-direction:column;align-items:center;justify-content:flex-start;gap:1px;overflow:visible}
+#smvDailyCalendar .transit-chart .planet-line{display:block!important;flex:0 0 auto;width:100%;min-width:0;margin:0!important;padding:0!important;text-align:center!important;line-height:1.08!important;border-bottom:0}
 #smvDailyCalendar .transit-chart .planet-glyph{display:inline-flex!important;align-items:baseline!important;justify-content:center!important;gap:2px!important;max-width:100%!important;white-space:nowrap!important;font-size:clamp(11px,2.4vw,15px)!important;line-height:1.08!important}
 #smvDailyCalendar .transit-chart .planet-short{min-width:0;font-weight:700;color:#15564e;-webkit-text-fill-color:#15564e}
 #smvDailyCalendar .transit-chart .rasi-status-marker{font-size:.72em!important;margin-left:0!important}
 #smvDailyCalendar .transit-chart .transit-degree{font-size:.78em!important;margin-left:1px!important;white-space:nowrap!important;flex:0 0 auto}
+#smvDailyCalendar .transit-chart.transit-chart-dense-4plus .south-rasi-cell{padding:2px 1px!important;gap:0!important}
+#smvDailyCalendar .transit-chart.transit-chart-dense-4plus .transit-cell-planets{gap:0!important}
+#smvDailyCalendar .transit-chart.transit-chart-dense-4plus .planet-glyph{font-size:clamp(8px,2.1vw,11px)!important;line-height:1!important;gap:1px!important}
+#smvDailyCalendar .transit-chart.transit-chart-dense-4plus .dynamic-rasi-number,#smvDailyCalendar .transit-chart.transit-chart-dense-4plus .lagna{font-size:clamp(8px,1.8vw,10px)!important;line-height:1!important;margin:0!important}
 #smvDailyCalendar .transit-position-table th,#smvDailyCalendar .transit-position-table td{vertical-align:middle;word-break:normal;overflow-wrap:normal}
 #smvDailyCalendar .transit-position-table th:first-child,#smvDailyCalendar .transit-position-table td:first-child{white-space:nowrap}
 #smvDailyCalendar .cal-month-grid{gap:6px}
