@@ -1702,16 +1702,17 @@ try {
       const planetElements = [...(chart?.querySelectorAll('.planet-short') || [])];
       const rows = [...(document.querySelectorAll('#calDaily .transit-position-table tbody tr') || [])].map(row => ({
         name: row.querySelector('td:first-child')?.textContent.trim() || '',
-        status: row.querySelector('td:last-child')?.textContent.trim() || ''
+        cells: row.querySelectorAll('td').length
       }));
+      const headers = [...(document.querySelectorAll('#calDaily .transit-position-table thead th') || [])].map(cell => cell.textContent.trim());
       const maxStack = Math.max(0, ...cells.map(cell => cell.querySelectorAll('.planet-line').length));
       const clippedStacks = cells.filter(cell =>
         cell.querySelectorAll('.planet-line').length > 0 && cell.scrollHeight > cell.clientHeight + 1
       ).length;
       const planetText = planetElements.map(el => el.textContent.trim());
-      const markerText = planetText.concat(rows.map(row => row.name + ' ' + row.status)).join(' | ');
+      const markerText = planetText.concat(rows.map(row => row.name)).join(' | ');
       const combustionInChart = chart?.querySelectorAll('.planet-short .status-c').length || 0;
-      const combustionInStatus = rows.filter(row => row.status.includes(language === 'ta' ? 'அ' : 'C')).length;
+      const combustionInNames = rows.filter(row => row.name.includes(language === 'ta' ? '(அ)' : '(C)')).length;
       const retrogradeInChart = chart?.querySelectorAll('.planet-short .status-r').length || 0;
       const retrogradeInNames = rows.filter(row => row.name.includes(language === 'ta' ? '(வ)' : '(R)')).length;
       const separatorLines = [...(chart?.querySelectorAll('.planet-line') || [])].filter(line => {
@@ -1721,14 +1722,22 @@ try {
       return {
         chartPlanetCount: planetElements.length,
         chartHasJupiter: planetText.some(value => value.startsWith(language === 'ta' ? 'கு' : 'Ju')),
-        tableHasJupiter: rows.some(row => row.name.startsWith(language === 'ta' ? 'கு' : 'Ju')),
+        tableHasJupiter: rows.some(row => row.name.startsWith(language === 'ta' ? 'குரு' : 'Jupiter')),
+        tableHasFullJupiterName: rows.some(row => row.name.startsWith(language === 'ta' ? 'குரு' : 'Jupiter')),
         tablePlanetRows: rows.length - 1,
+        tableHeaders: headers,
+        tableCellCounts: rows.map(row => row.cells),
+        squareChart: Boolean(chart && Math.abs(chart.getBoundingClientRect().width-chart.getBoundingClientRect().height)<=2),
+        chartWidth: chart?.getBoundingClientRect().width || 0,
+        horaHasCardLayer: Boolean(document.querySelector('#calDaily .hora-card')?.classList.contains('card')),
+        transitHasCardLayer: Boolean(document.querySelector('#calDaily .transit-card')?.classList.contains('card')),
+        positionsHasLayer: Boolean(document.querySelector('#calDaily .transit-table-card')?.classList.contains('card')),
         denseClass: Boolean(chart?.classList.contains('transit-chart-dense') || chart?.classList.contains('transit-chart-dense-4plus')),
         maxStack,
         clippedStacks,
         separatorLines,
         combustionInChart,
-        combustionInStatus,
+        combustionInNames,
         retrogradeInChart,
         retrogradeInNames,
         hasWrongLatinMarkersInTamil: language === 'ta' && (markerText.includes('(R)') || markerText.includes('(C)')),
@@ -1743,12 +1752,17 @@ try {
       assert.equal(transitState.chartPlanetCount, 9, language + ' ' + date + ': all nine grahas must be present in the Transit Chart: ' + JSON.stringify(transitState));
       assert.equal(transitState.chartHasJupiter, true, language + ' ' + date + ': Jupiter must be visible in the Transit Chart: ' + JSON.stringify(transitState));
       assert.equal(transitState.tableHasJupiter, true, language + ' ' + date + ': Jupiter must be present in Transit Planetary Positions: ' + JSON.stringify(transitState));
+      assert.equal(transitState.tableHasFullJupiterName, true, language + ' ' + date + ': Jupiter must use its full graha name: ' + JSON.stringify(transitState));
       assert.equal(transitState.tablePlanetRows, 9, language + ' ' + date + ': all nine grahas must be present in the positions table.');
+      assert.deepEqual(transitState.tableHeaders, language === 'ta' ? ['கிரகங்கள்','ராசி','பாகை','நட்சத்திரம்','பாதம்'] : ['Planets','Rasi','Degree','Nakshatra','Pada'], language + ' ' + date + ': the positions table must have five columns and no Status.');
+      assert.ok(transitState.tableCellCounts.every(count => count === 5), language + ' ' + date + ': every table row must have exactly five cells.');
+      assert.equal(transitState.squareChart, true, language + ' ' + date + ': transit chart must retain its square proportions: ' + JSON.stringify(transitState));
+      assert.equal(transitState.horaHasCardLayer || transitState.transitHasCardLayer || transitState.positionsHasLayer, false, language + ' ' + date + ': Daily Hora, Transit Chart and positions must not have an outer card/layer.');
       assert.equal(transitState.clippedStacks, 0, language + ' ' + date + ': crowded Rasi cells must not clip planet rows: ' + JSON.stringify(transitState));
       assert.equal(transitState.separatorLines, 0, language + ' ' + date + ': no dotted line may appear below individual planet rows.');
       assert.equal(transitState.denseClass, transitState.maxStack >= 3, language + ' ' + date + ': dense chart sizing must be enabled exactly when a Rasi contains three or more planets.');
-      assert.equal(transitState.combustionInStatus, transitState.combustionInChart, language + ' ' + date + ': C / அ status must match chart combustion markers.');
-      assert.equal(transitState.retrogradeInNames, transitState.retrogradeInChart, language + ' ' + date + ': R / வ status must match chart retrograde markers.');
+      assert.equal(transitState.combustionInNames, transitState.combustionInChart, language + ' ' + date + ': C / அ graha-name markers must match chart combustion markers.');
+      assert.equal(transitState.retrogradeInNames, transitState.retrogradeInChart, language + ' ' + date + ': R / வ graha-name markers must match chart retrograde markers.');
       assert.equal(transitState.hasWrongLatinMarkersInTamil, false, language + ' ' + date + ': Tamil UI must not show (R) or (C).');
       assert.equal(transitState.hasWrongTamilMarkersInEnglish, false, language + ' ' + date + ': English UI must retain Latin markers.');
     }
