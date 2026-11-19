@@ -113,10 +113,17 @@ try {
         categoryDisplays: [...planet.querySelectorAll('.cal-graha-period-type')].map(type => getComputedStyle(type).display),
         starts: [...planet.querySelectorAll('.cal-graha-period-start')].map(el => el.textContent.trim()),
         ends: [...planet.querySelectorAll('.cal-graha-period-end')].map(el => el.textContent.trim()),
-        datesFit: [...planet.querySelectorAll('.cal-graha-period-start,.cal-graha-period-end')].every(el => {
-          const range = document.createRange();
-          range.selectNodeContents(el);
-          return getComputedStyle(el).whiteSpace === 'nowrap' && range.getBoundingClientRect().width <= el.clientWidth + 1;
+        datePairsOnOneLine: [...planet.querySelectorAll('.cal-graha-period-event')].every(row => {
+          const start = row.querySelector('.cal-graha-period-start')?.getBoundingClientRect();
+          const end = row.querySelector('.cal-graha-period-end')?.getBoundingClientRect();
+          const rowRect = row.getBoundingClientRect();
+          return Boolean(start && end) &&
+            getComputedStyle(row).display === 'flex' &&
+            getComputedStyle(row).flexWrap === 'nowrap' &&
+            Math.abs(start.top - end.top) <= 1 &&
+            start.left >= rowRect.left - 1 &&
+            end.right <= rowRect.right + 1 &&
+            row.scrollWidth <= row.clientWidth + 1;
         })
       };
     });
@@ -146,7 +153,7 @@ try {
   assert.ok(grahaMobileLayout.pageScrollWidth <= grahaMobileLayout.viewportWidth + 1, 'Mobile page must not overflow horizontally: ' + JSON.stringify(grahaMobileLayout));
   assert.equal(grahaMobileLayout.headingInfo.length, 5, 'Exactly five planets must be shown.');
   assert.deepEqual(grahaMobileLayout.headingInfo.map(item => item.name), ['செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி'], 'The five planets must appear in their intended order.');
-  assert.ok(grahaMobileLayout.headingInfo.every(item => item.centered && item.categoryCount === 2 && item.categories.join('|') === 'வக்ரம்|அஸ்தமனம்' && item.categoriesBelowHeading && item.categoryDisplays.every(display => display === 'block') && item.datesFit), 'Each planet must be centered with Vakram and Asthamanam stacked below and full dates visible: ' + JSON.stringify(grahaMobileLayout.headingInfo));
+  assert.ok(grahaMobileLayout.headingInfo.every(item => item.centered && item.categoryCount === 2 && item.categories.join('|') === 'வக்ரம்|அஸ்தமனம்' && item.categoriesBelowHeading && item.categoryDisplays.every(display => display === 'block') && item.datePairsOnOneLine), 'Each planet must be centered with Vakram and Asthamanam stacked below and full dates visible: ' + JSON.stringify(grahaMobileLayout.headingInfo));
   assert.equal(grahaMobileLayout.footnoteText, '', 'The annual-boundary / IST explanatory paragraph must remain absent.');
   assert.ok(grahaMobileLayout.headingInfo.every(item => item.starts.length === item.ends.length), 'Every period start must have a corresponding end date.');
   await page.$eval('#calGrahaPeriodCard', el => el.scrollIntoView({ block: 'center' }));
@@ -191,10 +198,17 @@ try {
       mainHeadingAfterDisplay: mainHeading ? getComputedStyle(mainHeading, '::after').display : '',
       categoryTextAlignments: [...(card?.querySelectorAll('.cal-graha-period-type h5') || [])].map(label => getComputedStyle(label).textAlign),
       dateTextAlignments: dateLines.map(line => getComputedStyle(line).textAlign),
-      dateLinesFit: dateLines.every(line => {
-        const range = document.createRange();
-        range.selectNodeContents(line);
-        return getComputedStyle(line).whiteSpace === 'nowrap' && range.getBoundingClientRect().width <= line.clientWidth + 1;
+      datePairsOnOneLine: [...(card?.querySelectorAll('.cal-graha-period-event') || [])].every(row => {
+        const start = row.querySelector('.cal-graha-period-start')?.getBoundingClientRect();
+        const end = row.querySelector('.cal-graha-period-end')?.getBoundingClientRect();
+        const rowRect = row.getBoundingClientRect();
+        return Boolean(start && end) &&
+          getComputedStyle(row).display === 'flex' &&
+          getComputedStyle(row).flexWrap === 'nowrap' &&
+          Math.abs(start.top - end.top) <= 1 &&
+          start.left >= rowRect.left - 1 &&
+          end.right <= rowRect.right + 1 &&
+          row.scrollWidth <= row.clientWidth + 1;
       })
     };
   });
@@ -210,7 +224,7 @@ try {
   assert.ok(grahaDesktopLayout.categoryTextAlignments.length >= 2 && grahaDesktopLayout.categoryTextAlignments.every(value => value === 'center'), 'Vakram and Asthamanam labels must be centered on desktop: ' + JSON.stringify(grahaDesktopLayout));
   assert.ok(grahaDesktopLayout.mainHeadingCenterDelta <= 2, 'The main Graha heading must be centered within its section on desktop: ' + JSON.stringify(grahaDesktopLayout));
   assert.ok(grahaDesktopLayout.dateTextAlignments.length > 0 && grahaDesktopLayout.dateTextAlignments.every(value => value === 'center'), 'Start and end date-times must be centered on desktop: ' + JSON.stringify(grahaDesktopLayout));
-  assert.ok(grahaDesktopLayout.dateLinesFit, 'Full date-times must remain visible without clipping on desktop: ' + JSON.stringify(grahaDesktopLayout));
+  assert.ok(grahaDesktopLayout.datePairsOnOneLine, 'Each Start and End date-time pair must share one centered line on desktop without clipping: ' + JSON.stringify(grahaDesktopLayout));
   assert.ok(grahaDesktopLayout.pageScrollWidth <= grahaDesktopLayout.viewportWidth + 1, 'Desktop page must not overflow horizontally: ' + JSON.stringify(grahaDesktopLayout));
 
   const calendarHeader = await page.evaluate(() => {
