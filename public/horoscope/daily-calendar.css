@@ -180,10 +180,10 @@
 #smvDailyCalendar .cal-graha-period-card h3{margin:0 0 6px;text-align:center;color:#202020;font-size:clamp(15px,2vw,19px);font-weight:800}
 #smvDailyCalendar .cal-graha-period-year{margin:0 0 12px;text-align:center;color:#303030;font-weight:700;font-size:13px}
 #smvDailyCalendar .cal-graha-period-scroll-hint{margin:0 0 8px;color:#555;text-align:right;font-size:10.5px;line-height:1.4}
-#smvDailyCalendar .cal-graha-period-scroll{width:100%;max-width:100%;max-height:min(70vh,620px);overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;border:1px solid #929292}
+#smvDailyCalendar .cal-graha-period-scroll{width:100%;max-width:100%;max-height:none;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;border:1px solid #929292}
 #smvDailyCalendar .cal-graha-period-card table{width:1000px;min-width:1000px;border-collapse:collapse;table-layout:fixed;font-size:13px}
-#smvDailyCalendar .cal-graha-period-card th,#smvDailyCalendar .cal-graha-period-card td{border:1px solid #929292;padding:10px 12px;vertical-align:top;color:#202020;text-align:left;line-height:1.6;white-space:normal}
-#smvDailyCalendar .cal-graha-period-card thead th{position:sticky;top:0;z-index:2;background:#ededed;text-align:center;font-weight:800}
+#smvDailyCalendar .cal-graha-period-card th,#smvDailyCalendar .cal-graha-period-card td{border:1px solid #929292;padding:10px 12px;vertical-align:top;color:#202020;text-align:left;line-height:1.6;white-space:nowrap;word-break:keep-all;overflow-wrap:normal;hyphens:none}
+#smvDailyCalendar .cal-graha-period-card thead th{background:#ededed;text-align:center;font-weight:800}
 #smvDailyCalendar .cal-graha-period-card thead th:first-child,#smvDailyCalendar .cal-graha-period-card tbody th{width:140px}
 #smvDailyCalendar .cal-graha-period-card thead th:nth-child(2),#smvDailyCalendar .cal-graha-period-card thead th:nth-child(3){width:430px}
 #smvDailyCalendar .cal-graha-period-card tbody th{background:#f6f6f6;font-weight:800;white-space:nowrap}
