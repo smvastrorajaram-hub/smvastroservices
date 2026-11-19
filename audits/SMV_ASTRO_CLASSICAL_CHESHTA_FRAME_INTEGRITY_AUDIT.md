@@ -14,9 +14,9 @@ The automatic five-graha B.V. Raman path combined:
 
 Those are not the same declared astronomical reference frame. Computing a numeric angle from them is possible, but it is not evidence of a valid classical mean/true/Sheeghrocccha triple.
 
-The live diagnostic value is therefore retained only as a provisional comparison candidate. It must not be summed into Shadbala, converted to a Shadbala Rupa total, or used for a strength ranking.
+The prior automatic mixed-frame numerical candidate is no longer emitted as a Cheshta Bala. The Node and browser B.V. Raman engines now return `value:null`, `available:false`, and `BV_RAMAN_CHESHTA_BLOCKED_REFERENCE_FRAME_MISMATCH` for Mars–Saturn when no verified same-frame triplet is provided. The source evidence retains the three frame labels so the mismatch remains auditable.
 
-The updated Node and browser B.V. Raman engines attach explicit frame metadata and withhold the final total for affected five-graha rows. The individual diagnostic candidate remains inspectable so the source mismatch can be audited. Sun/Moon continue to follow the B.V. Raman Chapter VI luminary rule; this guard does not replace the separate Chapter X Chesta-for-Phala calculation.
+The dependent Chapter X Ishta/Kashta calculation is also withheld for those five planets because it reuses the unavailable Chapter VI input. The sixfold Shadbala total, Rupa, ratio and strength ranking remain null. The other partial Bala components stay available. Sun/Moon continue to follow the B.V. Raman Chapter VI luminary rule and their separate Chapter X Chesta-for-Phala calculation remains intact.
 
 ## 2. Same-frame research model
 
@@ -93,7 +93,7 @@ The new workflow runs `tests/saura-historical-true-longitude-frame-regression.mj
 - Same-frame tags on all 25 historical research candidates.
 - The unresolved 2024 independent published comparison.
 - The absence of a false historical certificate or Production integration flag.
-- Live B.V. Raman rows continue to expose the mixed-frame candidate for diagnostics, but all five affected planets have null Shadbala Virupa/Rupa/ranking totals.
+- Live B.V. Raman rows emit no mixed-frame Cheshta number: the five affected grahas expose null Cheshta and an explicit blocked frame status; dependent Ishta/Kashta and Shadbala Virupa/Rupa/ratio/strength ranking are withheld.
 
 The existing standard-horoscope printed-input tests remain separate. Their source-transcribed Chapter VI mean, true and Sheeghrocche values are valid arithmetic fixtures for that worked example; they do not authorize arbitrary-date live Swiss/Saura frame mixing.
 
