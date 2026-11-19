@@ -39,7 +39,7 @@ The fixture `tests/fixtures/saura-bija-jpl-de441-annual-1800-2399.json` contains
 - Earth geocentric centre (399), DE441.
 - Quantity 31: apparent observer-centred IAU76/80 ecliptic-of-date longitude/latitude.
 - UT1 for dates before 1962, UTC thereafter.
-- Saturn-system barycentre (target 6) is used for Saturn so the requested ephemeris span reaches 2399; Saturn body target 699 ends in 2250.
+- Consistent planetary-system barycentre targets are used: Mercury 199, Venus 299, Mars 4, Jupiter 5, Saturn 6. Each returned target header and the Earth-centre header identifies DE441. Mars centre (499) and Jupiter centre (599) currently select separate target ephemerides, so those IDs are not mislabeled as DE441.
 
 For the comparison every fixture record is passed through the same explicit frame-transfer function used by the on-demand adapter: the JPL tropical apparent longitude is transferred using the Burgess 1 January 1860 zero-point (18°05′08.25″) plus the Lahiri ayanāṃśa precession delta at that epoch. The classical Bīja True Longitude is then compared to that independently sourced JPL apparent position. All 3,000 comparisons are finite and complete.
 
@@ -71,7 +71,7 @@ The research API now exposes three distinct products and never substitutes one f
 | `CLASSICAL_BIJA_TRUE` | Four-pass Sūrya Siddhānta true longitude | Traditional Saura-nirayana; strict DE441 accuracy gate remains failed |
 | `DE441_GEOCENTRIC_APPARENT_TRUE` | JPL apparent geocentric longitude for the exact requested epoch | DE441 Earth-centred IAU76/80 ecliptic-of-date, transferred to the declared Saura sidereal frame |
 
-The new `research/saura-bija/saura-de441-apparent-true.mjs` adapter queries the NASA/JPL Horizons API using a discrete Julian Day list (`TLIST_TYPE=JD`), Earth centre `500@399`, observer quantity 31, UT time input, and the exact planetary target IDs. Saturn uses the Saturn-system barycentre (target 6), matching the 1800–2399 reference fixture. The adapter requires the response headers to identify DE441 for both the target and Earth centre. A different ephemeris, malformed response, unsupported date, or multiple data rows causes an error; there is no silent fallback.
+The new `research/saura-bija/saura-de441-apparent-true.mjs` adapter queries the NASA/JPL Horizons API using a discrete Julian Day list (`TLIST_TYPE=JD`), Earth centre `500@399`, observer quantity 31, UT time input, and the DE441 planetary-system barycentre target IDs (Mercury 199, Venus 299, Mars 4, Jupiter 5 and Saturn 6). Saturn uses the Saturn-system barycentre (target 6), matching the 1800–2399 reference fixture. The adapter requires the response headers to identify DE441 for both the target barycentre and Earth centre. A different ephemeris, malformed response, unsupported date, or multiple data rows causes an error; there is no silent fallback.
 
 The sidereal transfer is an explicit function, not a hidden default:
 
@@ -79,7 +79,7 @@ The sidereal transfer is an explicit function, not a hidden default:
 
 The adapter requires the caller to supply the date-specific offset and checks that the reference JD exactly matches the classical calculation JD. The JPL quantity is *apparent* ecliptic-of-date longitude (including light-time and relativistic/stellar-aberration corrections); it is not described as a geometric longitude or a classical mean place. The three products carry separate keys, source labels and frame labels.
 
-The 600-row-per-planet annual fixture is used only for annual regression checkpoints. It is not interpolated for intermediate dates. Arbitrary supported epochs are queried directly from JPL Horizons. CI uses a mocked API response to test request construction, DE441 header enforcement, parsing, frame conversion, epoch matching and output separation; it does not depend on network availability.
+The 600-row-per-planet annual fixture uses the same five DE441 barycentre targets and is used only for annual regression checkpoints. It is not interpolated for intermediate dates. Arbitrary supported epochs are queried directly from JPL Horizons. CI uses a mocked API response to test request construction, DE441 header enforcement, parsing, frame conversion, epoch matching and output separation; it does not depend on network availability.
 
 
 ## Mean / śīghrocca selection
