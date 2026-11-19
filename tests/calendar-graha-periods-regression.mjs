@@ -71,7 +71,7 @@ test('Calendar table is inserted after transit with readable two-axis scrolling 
   assert.ok(calendarSource.includes('ராகு–கேது'));
   assert.ok(calendarSource.includes('Not in supplied data'));
   assert.ok(calendarSource.includes('ராகு–கேது நிகழ்வுகள் வழங்கப்பட்ட மூலத் தரவில் இல்லை'));
-  assert.doesNotMatch(calendarSource, /calculateSwiss|tamilSolarDate\\(/);
+  assert.doesNotMatch(calendarSource, /calculateSwiss|tamilSolarDate\(/);
   assert.ok(calendarWorkerSource.includes("'../calendar-graha-periods-data.mjs'"));
   assert.ok(calendarWorkerSource.includes('calendar-graha-periods-data\\.mjs'));
   const css = await readFile(new URL('../public/horoscope/daily-calendar.css', import.meta.url), 'utf8');
