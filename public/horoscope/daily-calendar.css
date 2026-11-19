@@ -246,8 +246,8 @@
   width:100%;
   font-size:13px;
   line-height:1.55;
-  white-space:normal;
-  overflow-wrap:anywhere;
+  white-space:nowrap;
+  overflow-wrap:normal;
 }
 #calGrahaPeriodCard .cal-graha-period-empty{
   margin:0;
