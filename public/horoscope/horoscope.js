@@ -668,7 +668,7 @@
         const isLagna=si===lagnaD9;
         const chartLang=getHoroscopeLang();
         const ps=bySign[si].map(p=>`<div class="planet-line navamsa-planet-only"><span class="planet-glyph">${esc(shortPlanetName(p.name,chartLang))}</span></div>`).join('');
-        h+=`<div class="south-rasi-cell"><div class="dynamic-rasi-number">${isLagna?'':(houseNo??'—')}</div>${isLagna?'<div class="lagna">'+(document.documentElement.lang==='ta'?'ல':'As')+'</div>':''}${ps||'<div class="small">—</div>'}</div>`;
+        h+=`<div class="south-rasi-cell"><div class="dynamic-rasi-number">${isLagna?'':(houseNo??'—')}</div>${isLagna?'<div class="lagna">'+(document.documentElement.lang==='ta'?'ல':'As')+'</div>':''}${ps}</div>`;
       });
       navChart.innerHTML=h;
     }
@@ -713,7 +713,7 @@
         const chartLang=getHoroscopeLang();
         const houseLabels=bhavaHouseBySign[si].map(n=>`<div class="bhava-cusp"><span class="bhava-house-no">${romanHouse(n)}</span></div>`).join('');
         const ps=planetsByBhavaSign[si].map(p=>`<div class="planet-line"><span class="planet-glyph">${esc(shortPlanetName(p.name,chartLang))}</span></div>`).join('');
-        h+=`<div class="south-rasi-cell bhava-rasi-cell">${houseLabels}${ps||'<div class="small">—</div>'}</div>`;
+        h+=`<div class="south-rasi-cell bhava-rasi-cell">${houseLabels}${ps}</div>`;
       });
       bhChart.innerHTML=h;
     }
