@@ -26,6 +26,8 @@ on:
       - 'public/horoscope/offline/uttara-kalamrita-shadbala.browser.mjs'
       - 'public/horoscope/offline/wasm-provider.mjs'
       - 'public/horoscope/offline/bphs-shadbala-rectification.browser.mjs'
+      - 'public/horoscope/offline/bphs-shadbala-engine.browser.mjs'
+      - 'tests/bphs-shadbala-engine-core-regression.mjs'
       - 'tests/cg-rajan-jathaka-kanitham-shadbala-source-qa.mjs'
       - 'tests/cg-rajan-jathaka-kanitham-shadbala-five-natal-integration.mjs'
       - 'tests/bphs-shadbala-combined-regression.mjs'
