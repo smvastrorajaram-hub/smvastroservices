@@ -64,7 +64,9 @@ test('year-boundary continuations remain clipped and explicitly marked', () => {
 
 test('Calendar table is inserted after transit with horizontal-only scrolling and intact text', async () => {
   assert.ok(calendarSource.includes("from './calendar-graha-periods-data.mjs'"));
-  assert.ok(calendarSource.includes('transitCard.after(card)'));
+  assert.ok(calendarSource.includes('root.after(card)'));
+  assert.ok(calendarSource.includes("host.querySelector('#calGrahaPeriodCard')?.remove()"));
+  assert.ok(calendarSource.includes('cal-graha-period-table'));
   assert.ok(calendarSource.includes('renderAnnualGrahaPeriods();updateHora()'));
   assert.ok(calendarSource.includes('day>=start&&day<end'));
   assert.doesNotMatch(calendarSource, /அட்டவணையை முழுமையாகப் பார்க்க கிடைமட்டமாக நகர்த்தவும்|Scroll horizontally to view the full table/);
@@ -75,26 +77,17 @@ test('Calendar table is inserted after transit with horizontal-only scrolling an
   assert.ok(calendarWorkerSource.includes("'../calendar-graha-periods-data.mjs'"));
   assert.ok(calendarWorkerSource.includes('calendar-graha-periods-data\\.mjs'));
   const css = await readFile(new URL('../public/horoscope/daily-calendar.css', import.meta.url), 'utf8');
-  const scrollStart = css.indexOf('#smvDailyCalendar .cal-graha-period-scroll{');
-  assert.notEqual(scrollStart, -1);
-  const scrollRule = css.slice(scrollStart, css.indexOf('}', scrollStart));
-  assert.ok(scrollRule.includes('overflow-x:auto!important'));
-  assert.ok(scrollRule.includes('overflow-y:hidden!important'));
-  assert.ok(scrollRule.includes('touch-action:pan-x!important'));
-  assert.ok(!scrollRule.includes('overflow:auto'));
-  const cellRule = css.slice(css.indexOf('#smvDailyCalendar .cal-graha-period-card th,#smvDailyCalendar .cal-graha-period-card td{'));
-  assert.ok(cellRule.includes('white-space:nowrap'));
-  assert.ok(cellRule.includes('word-break:keep-all'));
-  assert.ok(cellRule.includes('overflow-wrap:normal'));
-  assert.ok(cellRule.includes('hyphens:none'));
-  assert.ok(css.includes('#smvDailyCalendar .cal-graha-period-card table{display:table!important;width:1060px!important;min-width:1060px!important;max-width:none!important'));
-  assert.ok(css.includes('width:180px!important;min-width:180px!important;max-width:180px!important'));
-  assert.ok(css.includes('width:440px!important;min-width:440px!important;max-width:440px!important'));
-  assert.ok(css.includes('white-space:nowrap!important;word-break:keep-all!important;overflow-wrap:normal!important;hyphens:none!important'));
-  assert.doesNotMatch(calendarSource, /ஆண்டு எல்லையைத் தாண்டும் நிகழ்வுகள்|Periods crossing a Tamil-year boundary|நேரங்கள் IST|Times are IST/);
-  assert.ok(css.includes('#smvDailyCalendar .cal-graha-period-card thead th{background:#ededed'));
-  assert.ok(!css.includes('#smvDailyCalendar .cal-graha-period-card thead th{position:sticky;top:0'));
-  assert.ok(css.includes('#smvDailyCalendar .cal-graha-period-card tbody th{position:sticky;left:0'));
+  const grahaScrollStart = css.indexOf('#calGrahaPeriodCard .cal-graha-period-scroll{');
+  assert.notEqual(grahaScrollStart, -1);
+  const scrollRule = css.slice(grahaScrollStart, css.indexOf('}', grahaScrollStart));
+  assert.ok(scrollRule.includes('overflow-x:auto'));
+  assert.ok(scrollRule.includes('overflow-y:hidden'));
+  assert.ok(!scrollRule.includes('!important'));
+  assert.ok(css.includes('#calGrahaPeriodCard .cal-graha-period-table{width:1060px;min-width:1060px'));
+  assert.ok(css.includes('#calGrahaPeriodCard .cal-graha-period-table th:first-child'));
+  assert.ok(css.includes('#calGrahaPeriodCard .cal-graha-period-list li span{white-space:nowrap'));
+  assert.ok(!css.includes('#smvDailyCalendar .cal-graha-period'));
+  assert.ok(!css.includes('cal-graha-period-note'));
   assert.ok(calendarSource.includes('tabindex="0" role="region" aria-label="'));
 });
 
