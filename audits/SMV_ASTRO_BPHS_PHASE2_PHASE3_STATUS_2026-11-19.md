@@ -40,9 +40,9 @@ The new module composes the existing BPHS components into Sthana, Dig, Kala, Che
 5. Sunrise-selected Ahargana lords are checked against the supplied solar-calendar date. Sunrise approximation and solar-time provenance must be disclosed.
 6. Sun Cheshta reuses BPHS Ayana Bala; Moon Cheshta reuses BPHS Paksha Bala. The five other eligible planets use the already-existing BPHS input selector and formula.
 7. Graha Yuddha requires an explicit review and winner/loser input. The core applies BPHS v20's pre-war total difference; it does not silently infer the winner from incomplete latitude/bhava data.
-8. classicallyCertified remains false and productionIntegrationAllowed remains false. The module is not imported by the live chart path and is not placed in the service-worker cache.
+8. classicallyCertified remains false and productionIntegrationAllowed remains false. The module is not imported by the live chart path and is not placed in the service-worker precache.
 9. The eight named Cheshta motion states are not yet independently source-validated and are explicitly listed as a limitation. The five-planet historical Mean/True/Sheeghrocca chain and arbitrary-epoch Bija/mandocca accuracy also remain uncertified.
-10. This change does not modify the customer-facing B.V. Raman strength6, Horoscope or Marriage Matching output, service-worker cache versions, production deployments, or APKs.
+10. The customer-facing B.V. Raman strength6 and Horoscope/Marriage Matching calculation output are not modified. The Pages.dev and .in cache release markers are synchronized across all three service workers, and Horoscope/Calendar asset URLs are cache-busted. No localStorage, sessionStorage, India location shards or saved user data are cleared. No production deployment or APK release is performed.
 
 ## Release decision
 
