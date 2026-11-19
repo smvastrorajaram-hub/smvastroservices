@@ -1,0 +1,56 @@
+name: Classical Cheshta Frame Integrity QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'bv-raman-shadbala.cjs'
+      - 'public/horoscope/offline/bv-raman-shadbala.browser.mjs'
+      - 'public/horoscope/offline/saura-classical-mean-motion.browser.mjs'
+      - 'public/horoscope/offline/saura-classical-true-longitude.browser.mjs'
+      - 'public/horoscope/offline/saura-classical-tabular-jya.browser.mjs'
+      - 'public/horoscope/offline/saura-natal-five-cheshta.browser.mjs'
+      - 'public/horoscope/offline/bphs-swiss-solar-cheshta.browser.mjs'
+      - 'tests/saura-historical-true-longitude-frame-regression.mjs'
+      - '.github/workflows/classical-cheshta-frame-integrity-qa.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'bv-raman-shadbala.cjs'
+      - 'public/horoscope/offline/bv-raman-shadbala.browser.mjs'
+      - 'public/horoscope/offline/saura-classical-mean-motion.browser.mjs'
+      - 'public/horoscope/offline/saura-classical-true-longitude.browser.mjs'
+      - 'public/horoscope/offline/saura-classical-tabular-jya.browser.mjs'
+      - 'public/horoscope/offline/saura-natal-five-cheshta.browser.mjs'
+      - 'public/horoscope/offline/bphs-swiss-solar-cheshta.browser.mjs'
+      - 'tests/saura-historical-true-longitude-frame-regression.mjs'
+      - '.github/workflows/classical-cheshta-frame-integrity-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: classical-cheshta-frame-integrity-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  same-frame-research-and-production-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax-check all isolated research and production guard sources
+        run: |
+          node --check bv-raman-shadbala.cjs
+          node --check public/horoscope/offline/bv-raman-shadbala.browser.mjs
+          node --check public/horoscope/offline/saura-classical-mean-motion.browser.mjs
+          node --check public/horoscope/offline/saura-classical-true-longitude.browser.mjs
+          node --check public/horoscope/offline/saura-classical-tabular-jya.browser.mjs
+          node --check public/horoscope/offline/saura-natal-five-cheshta.browser.mjs
+          node --check public/horoscope/offline/bphs-swiss-solar-cheshta.browser.mjs
+          node --check tests/saura-historical-true-longitude-frame-regression.mjs
+      - name: Verify official IMD pair, independent 2024 oracle and 25 historical same-frame candidates
+        run: node tests/saura-historical-true-longitude-frame-regression.mjs
