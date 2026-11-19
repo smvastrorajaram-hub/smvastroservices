@@ -392,7 +392,7 @@ test('Calendar distinguishes Gazette government holidays from observances and do
   assert.ok(horoscopeRendererSource.includes('<div class="south-chart-center">${calendarPresentation?(ta?\'கோச்சாரம்\':\'Transit\'):\'Transit Chart\'}</div>'), 'Only the label inside the Calendar transit chart is shortened to கோச்சாரம் / Transit.');
   assert.ok(horoscopeRendererSource.includes('<h3 class="cal-centered-heading">🪐 ${ta?\'Transit Chart\':\'Transit Chart\'}</h3>'), 'The outer Transit Chart heading keeps its pre-existing wording.');
   assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .transit-chart .planet-short,#smvDailyCalendar #calDaily .transit-chart .south-chart-center{color:#15564e!important;-webkit-text-fill-color:#15564e!important}'), 'Only short planet names and the chart centre label receive the Calendar theme green.');
-  assert.doesNotMatch(calendarThemeCssSource, /transit-card>\\.cal-centered-heading\\{color:#15564e/, 'The outer Transit Chart heading must not receive a new green override.');
+  assert.equal(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .transit-card>.cal-centered-heading{color:#15564e'), false, 'The outer Transit Chart heading must not receive a new green override.');
   assert.ok(horoscopeRendererSource.includes("<th>${ta?'கிரகங்கள்':'Planets'}</th>"), 'The positions table labels the first column as Planets / கிரகங்கள்.');
   assert.ok(horoscopeRendererSource.includes("calendarPresentation?'':`<td>${esc2(r.status||'—')}</td>`"), 'Status is omitted from Calendar but retained for non-Calendar Horoscope output.');
   assert.ok(horoscopeRendererSource.includes("calendarPresentation?'hora-card':'card hora-card'"), 'Daily Hora is flat only in Calendar; Horoscope retains its original card.');
