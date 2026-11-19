@@ -16,7 +16,7 @@ Those are not the same declared astronomical reference frame. Computing a numeri
 
 The prior automatic mixed-frame numerical candidate is no longer emitted as a Cheshta Bala. The Node and browser B.V. Raman engines now return `value:null`, `available:false`, and `BV_RAMAN_CHESHTA_BLOCKED_REFERENCE_FRAME_MISMATCH` for Mars–Saturn when no verified same-frame triplet is provided. The source evidence retains the three frame labels so the mismatch remains auditable.
 
-The dependent Chapter X Ishta/Kashta calculation is also withheld for those five planets because it reuses the unavailable Chapter VI input. The sixfold Shadbala total, Rupa, ratio and strength ranking remain null. The other partial Bala components stay available. Sun/Moon continue to follow the B.V. Raman Chapter VI luminary rule and their separate Chapter X Chesta-for-Phala calculation remains intact.
+The dependent Chapter X Ishta/Kashta calculation is also withheld for those five planets because it reuses the unavailable Chapter VI input. The sixfold Shadbala total, Rupa, ratio and strength ranking remain null. The other partial Bala components stay available. Sun/Moon continue to follow the B.V. Raman Chapter VI luminary rule and their separate Chapter X Chesta-for-Phala calculation remains intact. Downstream consumers that require a complete Shadbala total (including C.G. Rajan's Sun/Moon/Lagna-lord method selector and any multi-occupant Harana ranking that depends on Shadbala) must likewise show an unavailable/unresolved state rather than substitute a partial subtotal. Their source formulas are not changed by this guard.
 
 ## 2. Same-frame research model
 
