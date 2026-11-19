@@ -34,13 +34,24 @@ The coefficient fit function filters to the declared 1900–2299 training interv
 
 ## What a PASS would and would not mean
 
-A CI PASS would establish only that this version-0.1 model meets the declared tolerance at the 3,000 **annual checkpoints**, including withheld early/late time blocks, against DE441. It would not certify daily positions, conjunction/station extremes between annual samples, a second independent ephemeris, external accreditation, or production behavior.
+## 0.05° evidence certificate — PASS
 
-The raw Moshier kernel already has a separately scoped 0.05° annual DE441 comparison in PR #551 Phase H. The new test does not relabel that old result: it fits the Dṛk coefficients on the predeclared central training block and evaluates the corrected output separately.
+The annual DE441 blind-holdout regression and the independent monthly/event INPOP19 validation have completed successfully.
+
+- Annual DE441 grid: 3,000 comparisons; fit uses 1900–2299 and withholds 1800–1899 plus 2300–2399.
+- Monthly INPOP19 grid: 36,000 comparisons (7,200 per planet; first day of each month from 1800-01 through 2399-12).
+- Dense event-window INPOP19 grid: 245,925 comparisons around candidate stations, solar conjunctions/oppositions and mutual conjunctions.
+- Corrected-model maximum absolute residual: **0.002457605°**, against the strict **0.05°** limit separately for every planet on both monthly and event-window grids.
+- No daily INPOP grid was used; the requested monthly cadence is supplemented by a 12-hour candidate event locator and 6-hour independent INPOP samples across each detected event's ±24-hour window.
+
+Certificate: [MODERN_DRIK_BIJA_INPOP_0_05_ACCURACY_CERTIFICATE.md](./MODERN_DRIK_BIJA_INPOP_0_05_ACCURACY_CERTIFICATE.md).  
+Run [#44606465328](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44606465328) and its [validation job](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44606465328/job/135851363567) both succeeded.
+
+The raw Moshier kernel and corrected Modern Dṛk-Bīja results are reported separately. The fitted correction does not improve every planet relative to raw Moshier; the certificate proves the declared error ceiling on the specified validation sets, not universal improvement.
 
 ## Current measured results
 
-See [the annual DE441 holdout report](./ANNUAL_1800_2399_DE441_HOLDOUT_REPORT.md) for the exact run output, per-planet coefficients, training and blind-holdout errors, and the important caveat that the correction does not improve every planet relative to raw Moshier.
+See [the annual DE441 holdout report](./ANNUAL_1800_2399_DE441_HOLDOUT_REPORT.md) for the per-planet coefficients and training/blind-holdout metrics. See the [certificate](./MODERN_DRIK_BIJA_INPOP_0_05_ACCURACY_CERTIFICATE.md) for the complete monthly and event-window INPOP result table and scope limitations.
 
 ## Monthly and event validation against an independent theory
 
@@ -55,13 +66,11 @@ Every planet must independently remain within the strict 0.05° maximum absolute
 See [the monthly/event validation protocol](./INPOP_MONTHLY_EVENT_VALIDATION_PROTOCOL.md) and tests/modern-drik-bija-inpop-monthly-event-validation.mjs.
 
 
-## Next validation phases before any accuracy certificate or production consideration
+## Remaining research phases before any production consideration
 
-1. Freeze the fitted coefficient set as a reviewed, versioned artifact with provenance, exact training epochs and a checksum; CI output alone is not a released coefficient package.
-2. Run a daily 1800–2399 comparison (about 1.1 million planet/date points), plus high-density stations, conjunctions, oppositions and apsis windows. Keep the same per-planet 0.05° maximum.
-3. Cross-check against an independent source such as IMCCE INPOP or a suitable VSOP theory, not only DE441. DE440 and DE441 share observational input and are not fully independent.
-4. Audit the underlying heliocentric 3D vectors, time scale, Earth/Moon centre, light-time, aberration, deflection and ecliptic-of-date transformation.
-5. Publish a coefficient derivation note and test a version with a truly heliocentric mean/apsis parameterization before calling the result a full semi-analytical Bīja theory.
+1. Freeze the fitted coefficient set as a reviewed, versioned artifact with provenance, exact training epochs and a checksum; the present certificate binds the values to its recorded CI run but does not package a production coefficient release.
+2. Continue the fuller heliocentric 3D audit, including Earth/Moon centre, light-time, aberration, deflection, timescale and ecliptic-of-date transformations.
+3. Publish a derivation note and test a physically interpretable heliocentric mean/apsis parameterization before describing the prototype as a complete semi-analytical Bīja theory.
 
 ## Safety boundary
 
