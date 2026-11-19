@@ -181,6 +181,17 @@
    title.textContent=kind==='d9'?(ta?'நவாம்சம்':'Navamsa'):kind==='bhava'?(ta?'பாவம்':'Bhava'):kind==='transit'?(ta?'கோச்சாரம்':'Transit'):(ta?'ராசி':'Rasi');
    chart.append(title);
   }
+  markBlackPlanetText(chart,style,kind);
+ }
+ function markBlackPlanetText(chart,style,kind){
+  if(!['north','east'].includes(style)||!['d1','d9','bhava'].includes(kind))return;
+  const isBlack=color=>{
+   const values=(color.match(/[0-9.]+/g)||[]).map(Number);
+   return values.length>=3&&values.slice(0,3).every(value=>value<=72);
+  };
+  for(const glyph of chart.querySelectorAll('.smv-v342-planets .planet-glyph')){
+   if(isBlack(getComputedStyle(glyph).color))glyph.classList.add('smv-v342-black-planet-text');
+  }
  }
  function apply(root,style=choice){
   if(!root)return;
