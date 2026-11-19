@@ -80,6 +80,7 @@ export function sauraFivePlanetCheshtaInputs(jdUt,planet){
     isInnerPlanet:INNER.has(key),
     model:'Saura-paksha extant Surya Siddhanta; Ujjain mean-meridian',
     frame:'traditional-Saura-nirayana',
+    frameId:'surya-siddhanta-saura-nirayana',
     trueLongitudeAvailable:false,
     liveCheshtaEligible:false,
     fullShadbalaNumericallyCertified:false
@@ -93,6 +94,7 @@ export const SAURA_MEAN_MOTION_METADATA=Object.freeze({
   source:'Extant Surya Siddhanta, Saura-paksha mean-motion astronomical constants',
   independentReference:'India Meteorological Department Rashtriya Panchang 2026-27, 2026-03-22 05:30 IST uncorrected Mean Surya Siddhanta Longitude',
   bphsInputSelection:'BPHS I Ch27 24–25; Uttara Kalamrita Ch II 42–43',
+  frameId:'surya-siddhanta-saura-nirayana',
   modernSwissOrbitalElementsEquivalent:false,
   liveCheshtaEligible:false
 });
