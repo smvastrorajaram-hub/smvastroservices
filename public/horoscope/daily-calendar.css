@@ -77,7 +77,8 @@
 #calDaily .card{margin:14px 0!important;padding:18px!important;border:1px solid var(--cal-line)!important;border-radius:14px!important;background:var(--cal-paper)!important;box-shadow:none!important}#calDaily .card h3{margin-top:0!important}#calDaily .hora-section{gap:14px!important}#calDaily .hora-section>div,#calDaily .hora-section>section{min-width:0}
 #calDaily .adv-scroll,#calDaily .adv-table-wrap{max-width:100%;overflow-x:auto!important;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;border:1px solid #e1e9e4;border-radius:10px}#calDaily table{min-width:620px;width:100%!important;border-collapse:separate!important;border-spacing:0!important;font-size:13px!important;background:#fff}#calDaily th,#calDaily td{padding:9px 10px!important;border:0!important;border-right:1px solid #e4ebe7!important;border-bottom:1px solid #e4ebe7!important;vertical-align:middle!important}#calDaily tr>:last-child{border-right:0!important}#calDaily tbody tr:last-child td{border-bottom:0!important}#calDaily th{background:#edf3ef!important;color:#224d47!important;font-weight:800!important;white-space:nowrap}#calDaily tbody tr:nth-child(even){background:#fbfcfa}
 #smvDailyCalendar .south-indian-chart{width:min(100%,520px)!important;max-width:520px!important;margin:10px auto!important;border-color:#b9cdc5!important}.transit-chart{aspect-ratio:1/1;max-height:520px}.south-rasi-cell{min-height:0}
-#smvDailyCalendar .transit-table-card:not(.card){padding:0!important;margin:0!important;border:0!important;background:transparent!important;border-radius:0!important;box-shadow:none!important}#smvDailyCalendar .transit-table-card .adv-scroll{border:0!important;border-radius:0!important}#smvDailyCalendar .transit-position-table{min-width:0!important;width:100%!important;table-layout:fixed!important}
+#smvDailyCalendar #calDaily .hora-card,#smvDailyCalendar #calDaily .transit-table-card{padding:0!important;margin:12px 0!important;border:0!important;background:transparent!important;border-radius:0!important;box-shadow:none!important;outline:0!important}
+#smvDailyCalendar #calDaily .transit-table-card:not(.card){padding:0!important;border:0!important;background:transparent!important;border-radius:0!important;box-shadow:none!important}#smvDailyCalendar .transit-table-card .adv-scroll{border:1px solid #dce8df!important;border-radius:5px!important}#smvDailyCalendar .transit-position-table{min-width:0!important;width:100%!important;table-layout:fixed!important}
 #smvDailyCalendar .cal-summary,#smvDailyCalendar .cal-planets{gap:12px!important}.cal-summary article:not(.cal-chandrashtama):not(.cal-chandra-window),.cal-planets article{padding:16px!important;border:1px solid var(--cal-line)!important;border-radius:12px!important;background:var(--cal-paper)!important;box-shadow:none!important;line-height:1.65!important}.cal-summary h4:not(.cal-chandrashtama-result),.cal-planets h4{font-size:14px!important;line-height:1.45!important}.cal-planets p{margin:0;font-size:13px!important;color:#365a55}.cal-planets h4 small{margin-top:3px;font-size:11px!important;color:#877038!important}
 .cal-tags{gap:6px!important}.cal-tags span{padding:7px 10px!important;border:1px solid #ead9aa;border-radius:999px!important;background:#fbf4e4!important;color:#6b4a17!important;font-size:12px!important;font-weight:750!important}.cal-note{margin:10px 0 0!important;font-size:11.5px!important;line-height:1.65!important;color:#63746f!important}
 .cal-month-title{margin-top:26px;padding:11px 12px;border:1px solid var(--cal-line);border-bottom:0;border-radius:14px 14px 0 0;background:var(--cal-paper)}.cal-month-title h3{margin:0!important;text-align:center;font-size:18px!important;flex:1}.cal-month-title h3:after{display:none}.cal-month-title button{width:42px;min-width:42px!important;min-height:42px!important;padding:0!important;border-radius:50%!important;font-size:24px!important;line-height:1!important}.cal-month-grid{gap:5px!important;padding:10px;border:1px solid var(--cal-line);border-radius:0 0 14px 14px;background:var(--cal-paper)}.cal-month-grid>b{padding:6px 2px!important;color:#66807a;font-size:11px!important;text-transform:uppercase;letter-spacing:.05em}.cal-month-grid>span{min-height:1px}.cal-month-grid button{min-height:88px!important;padding:8px!important;border:1px solid #e0e8e3!important;border-radius:10px!important;background:#fff!important}.cal-month-grid button:hover{background:#f5faf7!important}.cal-month-grid strong{font-size:17px!important;color:#214f49}.cal-month-grid .cal-special{background:#fff9ea!important;border-color:#ead8aa!important}.cal-month-grid [aria-current]{background:#e7f3ed!important;border-color:#5f9a8f!important;box-shadow:inset 0 0 0 1px #5f9a8f!important}.cal-month-grid .cal-event-name{font-size:10px!important;line-height:1.3!important;color:#71531d}.cal-month-grid .cal-event-more{background:#e9dcc0!important;color:#614617!important}
@@ -110,7 +111,7 @@
 /* Hora uses the same quiet table styling as Panchang; remove legacy pink bands. */
 #calDaily .hora-vertical-block{max-width:none!important;width:100%!important;margin:0!important;border:0!important;border-radius:0!important;overflow:visible!important;background:transparent!important;box-shadow:none!important}
 #calDaily .hora-band{margin:0!important;padding:7px 0!important;border:0!important;background:transparent!important;color:#224d47!important;-webkit-text-fill-color:#224d47!important;text-align:center!important;font-size:13px!important;font-weight:850!important;line-height:1.35!important}
-#calDaily .hora-table-wrap{border:0!important;border-radius:0!important}
+#calDaily .hora-table-wrap{border:1px solid #dce8df!important;border-radius:5px!important;overflow:hidden!important}
 #calDaily .hora-table th:nth-child(1),#calDaily .hora-table td:nth-child(1){width:15%!important;text-align:center!important}
 #calDaily .hora-table th:nth-child(2),#calDaily .hora-table td:nth-child(2){width:35%!important}
 #calDaily .hora-table th:nth-child(3),#calDaily .hora-table td:nth-child(3){width:50%!important}
@@ -294,3 +295,47 @@
   }
 }
 @media(min-width:681px){#smvDailyCalendar .cal-header>div{text-align:center}}
+
+
+/* Dense Calendar transit stacks: fit every graha inside its existing square Rasi cell. */
+@media(max-width:680px){
+  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .south-rasi-cell{
+    padding:1px!important;
+    gap:0!important;
+  }
+  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .dynamic-rasi-number,
+  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .lagna{
+    margin:0!important;
+    line-height:1!important;
+    font-size:clamp(8px,2vw,9px)!important;
+  }
+  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .transit-cell-planets{
+    gap:0!important;
+  }
+  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .planet-line{
+    min-height:0!important;
+    height:auto!important;
+    padding:0!important;
+    margin:0!important;
+    line-height:.9!important;
+  }
+  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .planet-glyph{
+    font-size:clamp(8px,2.2vw,9px)!important;
+    line-height:.92!important;
+    gap:0!important;
+  }
+  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .rasi-status-marker,
+  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense .transit-degree{
+    font-size:.62em!important;
+    line-height:1!important;
+    margin-left:0!important;
+  }
+  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense-4plus .dynamic-rasi-number,
+  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense-4plus .lagna{
+    font-size:7.5px!important;
+  }
+  #smvDailyCalendar #calDaily .transit-chart.transit-chart-dense-4plus .planet-glyph{
+    font-size:clamp(7.5px,2vw,8.5px)!important;
+    line-height:.88!important;
+  }
+}
