@@ -82,6 +82,26 @@ The adapter requires the caller to supply the date-specific offset and checks th
 The 600-row-per-planet annual fixture uses the same five DE441 barycentre targets and is used only for annual regression checkpoints. It is not interpolated for intermediate dates. Arbitrary supported epochs are queried directly from JPL Horizons. CI uses a mocked API response to test request construction, DE441 header enforcement, parsing, frame conversion, epoch matching and output separation; it does not depend on network availability.
 
 
+## Phase E — geometric DE441 and Burgess/IAU76 frame audit
+
+A second, non-apparent reference has been added so that a classical geometric true-place calculation is not judged only against apparent observer positions.
+
+The independent fixture `tests/fixtures/saura-bija-jpl-de441-geometric-vectors-annual-1800-2399.json` contains 600 annual Earth-geocentric geometric position vectors for each of the five planetary-system barycentres (Mercury 199, Venus 299, Mars 4, Jupiter 5, Saturn 6). Its Horizons request uses:
+- `EPHEM_TYPE=VECTORS`, vector table 1.
+- `VEC_CORR=NONE`: geometric states without light-time or aberration corrections.
+- Earth centre `500@399`, DE441 for both target and centre.
+- Ecliptic J2000.0 axes, ICRF.
+- UT1 before 1962 and UTC thereafter.
+
+The geometric vectors are transformed to the mean ecliptic of date using an explicit IAU 1976 precession chain: J2000 ecliptic → J2000 equatorial → equatorial of date → mean ecliptic of date. The Saura sidereal origin is held to Burgess's 1 January 1860 Hindu sidereal-sphere zero point (18°05′08.25″), propagated by the IAU76 precession longitude of the 1860 equinox. This source-defined origin is not Lahiri ayanāṃśa; a lower residual from substituting Lahiri's absolute origin is not an admissible correction.
+
+The new exported research functions in `saura-de441-apparent-true.mjs` are:
+- `sauraIau76PrecessionLongitudeFromBurgessEpoch(jdUt)`
+- `sauraSiderealOffsetFromBurgessIau76(jdUt)`
+- `jplEclipticJ2000VectorToMeanEclipticOfDateLongitude(vector, jdUt)`
+
+`tests/saura-bija-geometric-reference-diagnostic.mjs` compares the classical true longitude against the geometric vector fixture, separately measures apparent-minus-geometric differences against the existing quantity-31 fixture, and repeats the one-factor ablations for mean motion, Mandocca, geometry and frame. The annual diagnostic is not a daily certification and does not tune planet-specific coefficients.
+
 ## Mean / śīghrocca selection
 
 The existing BPHS/Uttara Kalamrita selection is retained: Mars/Jupiter/Saturn use their own mean and mean Sun as śīghrocca; Mercury/Venus use mean Sun as mean and their own orbit as śīghrocca.
