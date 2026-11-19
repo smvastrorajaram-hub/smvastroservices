@@ -23,12 +23,13 @@
   display:flex!important;flex-direction:column!important;align-items:center!important;
   justify-content:center!important;gap:2px!important;text-align:center!important;
 }
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="4"]{--transit-cell-label-size:18px}
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="5"]{--transit-cell-label-size:16.5px}
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="6"]{--transit-cell-label-size:15px}
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="7"]{--transit-cell-label-size:13.5px}
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="8"]{--transit-cell-label-size:12.5px}
-#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="9"]{--transit-cell-label-size:11.5px}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="3"]{--transit-cell-label-size:18px}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="4"]{--transit-cell-label-size:13.5px}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="5"]{--transit-cell-label-size:11.5px}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="6"]{--transit-cell-label-size:10.5px}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="7"]{--transit-cell-label-size:9.5px}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="8"]{--transit-cell-label-size:8.5px}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="9"]{--transit-cell-label-size:7.5px}
 #smvDailyCalendar #calDaily .transit-chart .dynamic-rasi-number,
 #smvDailyCalendar #calDaily .transit-chart .lagna,
 #smvDailyCalendar #calDaily .transit-chart .planet-glyph{
@@ -90,21 +91,23 @@
  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="9"]{--transit-cell-label-size:8.5px}
  @media(max-width:390px){
   #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell{--transit-cell-label-size:15px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="4"]{--transit-cell-label-size:12.5px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="5"]{--transit-cell-label-size:10.5px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="6"]{--transit-cell-label-size:9px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="7"]{--transit-cell-label-size:8px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="8"]{--transit-cell-label-size:7.2px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="9"]{--transit-cell-label-size:6.7px}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="3"]{--transit-cell-label-size:12.5px}
+  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="4"]{--transit-cell-label-size:10.5px}
+  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="5"]{--transit-cell-label-size:9px}
+  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="6"]{--transit-cell-label-size:8px}
+  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="7"]{--transit-cell-label-size:7.2px}
+  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="8"]{--transit-cell-label-size:6.7px}
+  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="9"]{--transit-cell-label-size:6.3px}
  }
  @media(max-width:340px){
   #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell{--transit-cell-label-size:15px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="4"]{--transit-cell-label-size:11.5px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="5"]{--transit-cell-label-size:9.5px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="6"]{--transit-cell-label-size:8px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="7"]{--transit-cell-label-size:7.2px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="8"]{--transit-cell-label-size:6.6px}
-  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="9"]{--transit-cell-label-size:6.1px}
+#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="3"]{--transit-cell-label-size:11.5px}
+  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="4"]{--transit-cell-label-size:9.5px}
+  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="5"]{--transit-cell-label-size:8px}
+  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="6"]{--transit-cell-label-size:7.2px}
+  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="7"]{--transit-cell-label-size:6.6px}
+  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="8"]{--transit-cell-label-size:6.1px}
+  #smvDailyCalendar #calDaily .transit-chart .south-rasi-cell[data-transit-planet-count="9"]{--transit-cell-label-size:5.8px}
  }
  #smvDailyCalendar .transit-table-card{padding-top:12px;margin-top:12px}
 }
