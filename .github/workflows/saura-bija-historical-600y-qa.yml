@@ -40,7 +40,7 @@ jobs:
         run: node tests/saura-bija-600y-regression.mjs
       - name: Test direct DE441 adapter, source guard and three-output separation
         run: node tests/saura-bija-de441-adapter-regression.mjs
-      - name: Decompose mean, Mandocca, geometry and frame residuals across 3,000 DE441 points
+      - name: Decompose mean, Mandocca, Manda/Sheeghra geometry and frame residuals across 3,000 DE441 points
         run: node tests/saura-bija-residual-ablation-diagnostic.mjs
       - name: Compare geometric DE441 vectors in Burgess/IAU76 Saura frame and isolate component residuals
         run: node tests/saura-bija-geometric-reference-diagnostic.mjs
