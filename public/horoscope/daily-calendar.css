@@ -43,8 +43,9 @@
 #smvDailyCalendar #calDaily .transit-chart .planet-line{
   display:flex!important;flex:0 0 auto!important;align-items:center!important;
   justify-content:center!important;width:100%!important;min-width:0!important;
-  margin:0!important;padding:0!important;text-align:center!important;
-  line-height:1.08!important;border-bottom:0!important;white-space:nowrap!important;
+  min-height:0!important;height:auto!important;margin:0!important;padding:0!important;
+  text-align:center!important;line-height:1.08!important;
+  border-bottom:0!important;white-space:nowrap!important;
 }
 #smvDailyCalendar #calDaily .transit-chart .planet-glyph{
   display:inline-flex!important;align-items:baseline!important;justify-content:center!important;
