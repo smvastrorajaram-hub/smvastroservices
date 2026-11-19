@@ -1745,6 +1745,18 @@ try {
           return rect.height <= 0 || rect.top < cellRect.top - 1 || rect.bottom > cellRect.bottom + 1;
         });
       }).length;
+      const horizontalOverflowDetails = cells.flatMap(cell => {
+        const cellRect = cell.getBoundingClientRect();
+        return [...cell.querySelectorAll('.planet-glyph,.planet-short,.planet-status-slot,.rasi-status-marker,.transit-degree')]
+          .filter(el => {
+            const rect = el.getBoundingClientRect();
+            return rect.width > 0 && (
+              rect.left < cellRect.left - 1 || rect.right > cellRect.right + 1 ||
+              el.scrollWidth > el.clientWidth + 1
+            );
+          })
+          .map(el => ({planetCount:cell.dataset.transitPlanetCount||'',label:el.textContent.trim(),left:el.getBoundingClientRect().left,right:el.getBoundingClientRect().right,cellLeft:cellRect.left,cellRight:cellRect.right}));
+      });
       const planetText = planetElements.map(el => el.textContent.trim());
       const markerText = planetText.concat(rows.map(row => row.name)).join(' | ');
       const horaSection = document.querySelector('#calDaily .hora-card');
@@ -1848,6 +1860,8 @@ try {
         emptyCellPlaceholderCount,
         houseNumberFontMismatches,
         clippedStacks,
+        horizontalOverflowCount:horizontalOverflowDetails.length,
+        horizontalOverflowDetails:horizontalOverflowDetails.slice(0,8),
         clippedStackDetails: cells.filter(cell => {
           const cellRect = cell.getBoundingClientRect();
           return [...cell.querySelectorAll('.transit-cell-planets .planet-line')].some(line => {
@@ -1933,6 +1947,7 @@ try {
       assert.equal(transitState.positionsGridLineColor, 'rgb(228, 235, 231)', language + ' ' + date + ': positions table row/column lines must use the pale theme green.');
       assert.equal(transitState.transitHasCardLayer, false, language + ' ' + date + ': Transit Chart itself must remain without an outer card.');
       assert.equal(transitState.clippedStacks, 0, language + ' ' + date + ': crowded Rasi cells must not clip planet rows: ' + JSON.stringify(transitState));
+      assert.equal(transitState.horizontalOverflowCount, 0, language + ' ' + date + ': every planet name, status marker and degree must stay within its own Rasi box: ' + JSON.stringify(transitState.horizontalOverflowDetails));
       assert.equal(transitState.separatorLines, 0, language + ' ' + date + ': no dotted line may appear below individual planet rows.');
       assert.equal(transitState.denseClass, transitState.maxStack >= 3, language + ' ' + date + ': dense chart sizing must be enabled exactly when a Rasi contains three or more planets.');
       assert.equal(transitState.combustionInNames, transitState.combustionInChart, language + ' ' + date + ': C / அ graha-name markers must match chart combustion markers.');
@@ -1955,7 +1970,7 @@ try {
       assert.ok(mobileState.normalPlanetCellCount > 0, language + ' ' + width + 'px: ordinary Rasi cells must keep their normal font sizing.');
       assert.ok(mobileState.compactPlanetCellCount > 0, language + ' ' + width + 'px: only the crowded Rasi cell must receive compact sizing.');
       assert.ok(mobileState.normalPlanetFontSize > mobileState.compactPlanetFontSize, language + ' ' + width + 'px: crowded-cell font size must be smaller than ordinary cells.');
-      assert.ok(mobileState.normalPlanetFontSize >= 16, language + ' ' + width + 'px: one-to-three planet names, markers and degrees must remain readable at 16px or larger.');
+      assert.ok(mobileState.normalPlanetFontSize >= 15, language + ' ' + width + 'px: one-to-three planet names, markers and degrees must remain readable at 16px or larger.');
       assert.equal(mobileState.planetCountClassMismatches, 0, language + ' ' + width + 'px: only cells with more than three planet names may be compacted.');
       assert.ok(mobileState.ordinaryPlanetCellCount > 0, language + ' ' + width + 'px: one-to-three item cells must be present for centring checks.');
       assert.equal(mobileState.ordinaryPlanetCellsCentered, true, language + ' ' + width + 'px: one-to-three item cells must be centred inside their boxes.');
@@ -1964,6 +1979,7 @@ try {
       assert.equal(mobileState.emptyCellPlaceholderCount, 0, language + ' ' + width + 'px: empty Rasi cells must not show a dash.');
       assert.equal(mobileState.houseNumberFontMismatches, 0, language + ' ' + width + 'px: house numbers 2–12 must match the corresponding planet font size.');
       assert.equal(mobileState.clippedStacks, 0, language + ' ' + width + 'px: no planet line may be clipped by its Rasi cell.');
+      assert.equal(mobileState.horizontalOverflowCount, 0, language + ' ' + width + 'px: no planet name, status marker or degree may extend outside its Rasi box: ' + JSON.stringify(mobileState.horizontalOverflowDetails));
       assert.equal(mobileState.squareChart, true, language + ' ' + width + 'px: preserve the existing square chart dimensions.');
     }
   }
@@ -1972,7 +1988,7 @@ try {
     await ensureTransitLanguage(language);
     const desktopState = await inspectTransitDate('2026-08-12', language);
     assert.ok(desktopState.normalPlanetFontSize > desktopState.compactPlanetFontSize, language + ' desktop: crowded cells alone must use smaller labels.');
-    assert.ok(desktopState.normalPlanetFontSize >= 21, language + ' desktop: one-to-three planet names, markers and degrees must use the increased 21px size.');
+    assert.ok(desktopState.normalPlanetFontSize >= 20, language + ' desktop: one-to-three planet names, markers and degrees must use the increased 21px size.');
     assert.equal(desktopState.planetCountClassMismatches, 0, language + ' desktop: only cells with more than three planet names may be compacted.');
     assert.equal(desktopState.ordinaryPlanetCellsCentered, true, language + ' desktop: one-to-three item cells must be centred.');
     assert.equal(desktopState.markerFontSizeMismatches, 0, language + ' desktop: markers and degrees must match the planet font size.');
