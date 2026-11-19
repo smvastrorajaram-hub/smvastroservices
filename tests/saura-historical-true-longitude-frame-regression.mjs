@@ -104,9 +104,9 @@ const academic2024=Object.freeze({
   Saturn:[316.5202,236.6267,353.2261,313.0236]
 });
 const academicRows=[];
-for(const [planet,[meanLongitude,mandocca,sheeghrocca,publishedTrue]] of Object.entries(academic2024)){
+for(const [planet,[meanLongitude,mandocca,sheeghrocha,publishedTrue]] of Object.entries(academic2024)){
   const candidate=sauraTabularFourPassTrueLongitude({
-    planet,meanLongitude,mandocca,sheeghrocca,
+    planet,meanLongitude,mandocca,sheeghrocha,
     mandaKarṇaConvention:'absolute-koti-minus'
   });
   const error=angle(candidate.trueLongitude,publishedTrue);
@@ -158,7 +158,7 @@ for(const [date,time] of births){
     yes(Number.isFinite(p.trueLongitude)&&Number.isFinite(p.cheshtaVirupa)&&p.cheshtaVirupa>=0&&p.cheshtaVirupa<=60,
       date+' '+p.planet+' bounded research candidate exists');
     historicalCandidates.push({date,planet:p.planet,mean:p.meanLongitude,
-      trueLongitude:p.trueLongitude,sheeghrocccha:p.sheeghrocca,
+      trueLongitude:p.trueLongitude,sheeghrocccha:p.sheeghrocha,
       cheshtaVirupa:p.cheshtaVirupa,frameId:p.trueLongitudeFrameId,certified:false});
   }
 }
