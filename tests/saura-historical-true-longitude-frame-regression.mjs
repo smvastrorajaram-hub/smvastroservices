@@ -139,7 +139,7 @@ for(const [date,time] of births){
   yes(result.calculationAvailable===true,date+' research calculation available');
   yes(result.historicalTrueLongitudeEvidence?.frameId===frameId,
     date+' research evidence declares the canonical same-frame model');
-  yes(result.historicalTrueLongitudeEvidence?.meanTrueSheeghroccchaFrameConsistent===true,
+  yes(result.historicalTrueLongitudeEvidence?.meanTrueSheeghrochaFrameConsistent===true,
     date+' mean/true/Sheeghrocccha use one model frame');
   yes(result.historicalTrueLongitudeEvidence?.historicalBijaCorrectionsVerified===false,
     date+' historical Bija remains honestly unverified');
