@@ -97,3 +97,40 @@
 .south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="10"]{left:84%!important;top:50%!important}
 .south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="11"]{left:88%!important;top:24%!important}
 .south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="12"]{left:76%!important;top:14%!important}
+
+
+/* V344: keep North/East corner-triangle content wholly inside its own compartment. */
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-triangle-cell{width:14%!important;max-height:16%!important}
+.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-triangle-cell{width:16%!important;max-height:16%!important}
+.south-indian-chart.smv-v342-north .smv-v342-cell[data-house="2"]{left:25%!important;top:8%!important}
+.south-indian-chart.smv-v342-north .smv-v342-cell[data-house="3"]{left:8%!important;top:25%!important}
+.south-indian-chart.smv-v342-north .smv-v342-cell[data-house="5"]{left:8%!important;top:75%!important}
+.south-indian-chart.smv-v342-north .smv-v342-cell[data-house="6"]{left:25%!important;top:92%!important}
+.south-indian-chart.smv-v342-north .smv-v342-cell[data-house="8"]{left:75%!important;top:92%!important}
+.south-indian-chart.smv-v342-north .smv-v342-cell[data-house="9"]{left:92%!important;top:75%!important}
+.south-indian-chart.smv-v342-north .smv-v342-cell[data-house="11"]{left:92%!important;top:25%!important}
+.south-indian-chart.smv-v342-north .smv-v342-cell[data-house="12"]{left:75%!important;top:8%!important}
+.south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="2"]{left:24%!important;top:8%!important}
+.south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="3"]{left:8%!important;top:24%!important}
+.south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="5"]{left:8%!important;top:76%!important}
+.south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="6"]{left:24%!important;top:92%!important}
+.south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="8"]{left:76%!important;top:92%!important}
+.south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="9"]{left:92%!important;top:76%!important}
+.south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="11"]{left:92%!important;top:24%!important}
+.south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="12"]{left:76%!important;top:8%!important}
+.smv-v342-cell.smv-v342-triangle-cell .smv-v342-planets{
+ display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;
+ align-content:center;align-items:center;justify-content:center;
+ width:100%;min-width:0;max-width:100%;gap:0 2px;overflow:hidden;
+}
+.smv-v342-cell.smv-v342-triangle-cell.smv-chart-cell-compact .smv-v342-planets .planet-line{
+ display:inline-flex!important;flex:0 1 auto!important;width:auto!important;
+ min-width:0!important;max-width:100%!important;box-sizing:border-box!important;
+ white-space:normal!important;overflow-wrap:anywhere;word-break:break-word;
+}
+.smv-v342-cell.smv-v342-triangle-cell.smv-chart-cell-compact .smv-v342-planets .planet-glyph{
+ display:inline-flex!important;flex:0 1 auto!important;width:auto!important;
+ min-width:0!important;max-width:100%!important;flex-wrap:wrap;
+ justify-content:center;align-items:baseline;box-sizing:border-box!important;
+ white-space:normal!important;overflow-wrap:anywhere;word-break:break-word;
+}
