@@ -83,7 +83,7 @@ test('Calendar Graha periods render as one centered vertical list without tables
   assert.ok(calendarWorkerSource.includes('calendar-graha-periods-data\\\\.mjs'));
   const css = await readFile(new URL('../public/horoscope/daily-calendar.css', import.meta.url), 'utf8');
   const verticalCss = css.slice(css.indexOf('/* Annual Graha periods:'));
-  const compactVerticalCss = verticalCss.replace(/\\s+/g, '');
+  const compactVerticalCss = verticalCss.replace(/\s+/g, '');
   assert.ok(compactVerticalCss.includes('#calGrahaPeriodCard .cal-graha-period-planets{display:block;width:100%;'));
   assert.ok(compactVerticalCss.includes('#calGrahaPeriodCard .cal-graha-planet{display:block;width:100%;'));
   assert.ok(compactVerticalCss.includes('#calGrahaPeriodCard .cal-graha-planet-name{'));
@@ -92,7 +92,7 @@ test('Calendar Graha periods render as one centered vertical list without tables
   assert.ok(compactVerticalCss.includes('#calGrahaPeriodCard .cal-graha-period-start,#calGrahaPeriodCard .cal-graha-period-end{display:block;width:100%;'));
   assert.ok(!verticalCss.includes('!important'));
   assert.doesNotMatch(verticalCss, /overflow-x|overflow:auto|display:grid|display:flex|grid-template-columns/i);
-  assert.doesNotMatch(verticalCss, /color:\\s*(?:red|#f00|#ff0000|rgb\\(255,\\s*0,\\s*0\\))/i);
+  assert.doesNotMatch(verticalCss, /color:\s*(?:red|#f00|#ff0000|rgb\(255,\s*0,\s*0\))/i);
   assert.doesNotMatch(verticalCss, /cal-graha-period-table|cal-graha-period-scroll/);
   assert.ok(calendarSource.includes('smv-css-island'));
   assert.ok(!css.includes('cal-graha-period-note'));
