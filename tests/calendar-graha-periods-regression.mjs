@@ -84,7 +84,7 @@ test('Calendar Graha periods render as one centered vertical list without tables
   assert.ok(!renderer.includes('calculateSwiss'));
   assert.ok(!renderer.includes('tamilSolarDate('));
   assert.ok(calendarWorkerSource.includes("'../calendar-graha-periods-data.mjs'"));
-  assert.ok(calendarWorkerSource.includes('calendar-graha-periods-data\\\\.mjs'));
+  assert.ok(calendarWorkerSource.includes('calendar-graha-periods-data.mjs'));
   const css = await readFile(new URL('../public/horoscope/daily-calendar.css', import.meta.url), 'utf8');
   const verticalCss = css.slice(css.indexOf('/* Annual Graha periods:'));
   const compactVerticalCss = verticalCss.replace(/\s+/g, '');
