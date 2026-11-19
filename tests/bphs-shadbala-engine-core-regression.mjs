@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { sthanaClassical, pakshaBala } from '../public/horoscope/offline/swiss_vedic.browser.mjs';
+import { sthanaClassical, vargaDignityPoints, pakshaBala } from '../public/horoscope/offline/swiss_vedic.browser.mjs';
 import {
   BPHS_SHADBALA_PLANETS,
   BPHS_SHADBALA_REQUIRED_VIRUPA,
@@ -59,6 +59,18 @@ const baseInput={
   planets,bhavas,temporal,declinations,cheshtaInputs,
   yuddha:{reviewed:true,encounters:[]}
 };
+
+// Saptavargaja must award 45 for Moolatrikona only in the exact D1 degree span.
+near(vargaDignityPoints('சூரியன்',4,{'சூரியன்':4},1,139.999),
+  45,0,'Sun in Leo before 20° receives D1 Moolatrikona 45');
+near(vargaDignityPoints('சூரியன்',4,{'சூரியன்':4},1,140),
+  30,0,'Sun at Leo 20° falls back to own-sign 30');
+near(vargaDignityPoints('சூரியன்',4,{'சூரியன்':4},7,130),
+  30,0,'Sun in Leo D7 does not incorrectly receive D1 Moolatrikona 45');
+near(vargaDignityPoints('சந்திரன்',1,{'சந்திரன்':1},1,33.999),
+  30,0,'Moon in Taurus before 4° receives own-sign 30');
+near(vargaDignityPoints('சந்திரன்',1,{'சந்திரன்':1},1,34),
+  45,0,'Moon at Taurus 4° enters D1 Moolatrikona 45');
 
 // Exact Uchcha endpoints reuse the existing BPHS Phase-3 Sthana helper.
 const signPositions=Object.fromEntries(BPHS_SHADBALA_PLANETS.map((name,index)=>[name,index]));
