@@ -647,9 +647,11 @@
         const houseNo=houseForSign(si);
         const isLagna=si===lagnaIndex;
         const items=bySign[si].slice();
+        const rasiPlanetCount=items.length;
+        const rasiCompactClass=rasiPlanetCount>=3?' smv-chart-cell-compact':'';
         const chartLang=getHoroscopeLang();
         const planetLines=items.map(item=>{ const p=item.p; const nm=item.type==='maandi'?'<span class="maandi-mark">Md</span>':planetDisplayName(p,chartLang); return `<div class="planet-line"><span class="planet-glyph">${nm}${degreeOnly(p)}</span></div>`; }).join('');
-        html+=`<div class="south-rasi-cell"><div class="dynamic-rasi-number">${isLagna?'':(houseNo??'—')}</div>${isLagna?'<div class="lagna">'+(document.documentElement.lang==='ta'?'ல':'As')+'</div>':''}${planetLines}</div>`;
+        html+=`<div class="south-rasi-cell${rasiCompactClass}" data-chart-planet-count="${rasiPlanetCount}"><div class="dynamic-rasi-number">${isLagna?'':(houseNo??'—')}</div>${isLagna?'<div class="lagna">'+(document.documentElement.lang==='ta'?'ல':'As')+'</div>':''}${planetLines}</div>`;
       });
       chart.innerHTML=html;
     }
@@ -668,7 +670,9 @@
         const isLagna=si===lagnaD9;
         const chartLang=getHoroscopeLang();
         const ps=bySign[si].map(p=>`<div class="planet-line navamsa-planet-only"><span class="planet-glyph">${esc(shortPlanetName(p.name,chartLang))}</span></div>`).join('');
-        h+=`<div class="south-rasi-cell"><div class="dynamic-rasi-number">${isLagna?'':(houseNo??'—')}</div>${isLagna?'<div class="lagna">'+(document.documentElement.lang==='ta'?'ல':'As')+'</div>':''}${ps}</div>`;
+        const navamsaPlanetCount=bySign[si].length;
+        const navamsaCompactClass=navamsaPlanetCount>=3?' smv-chart-cell-compact':'';
+        h+=`<div class="south-rasi-cell${navamsaCompactClass}" data-chart-planet-count="${navamsaPlanetCount}"><div class="dynamic-rasi-number">${isLagna?'':(houseNo??'—')}</div>${isLagna?'<div class="lagna">'+(document.documentElement.lang==='ta'?'ல':'As')+'</div>':''}${ps}</div>`;
       });
       navChart.innerHTML=h;
     }
@@ -713,7 +717,9 @@
         const chartLang=getHoroscopeLang();
         const houseLabels=bhavaHouseBySign[si].map(n=>`<div class="bhava-cusp"><span class="bhava-house-no">${romanHouse(n)}</span></div>`).join('');
         const ps=planetsByBhavaSign[si].map(p=>`<div class="planet-line"><span class="planet-glyph">${esc(shortPlanetName(p.name,chartLang))}</span></div>`).join('');
-        h+=`<div class="south-rasi-cell bhava-rasi-cell">${houseLabels}${ps}</div>`;
+        const bhavaPlanetCount=planetsByBhavaSign[si].length;
+        const bhavaCompactClass=bhavaPlanetCount>=3?' smv-chart-cell-compact':'';
+        h+=`<div class="south-rasi-cell bhava-rasi-cell${bhavaCompactClass}" data-chart-planet-count="${bhavaPlanetCount}">${houseLabels}${ps}</div>`;
       });
       bhChart.innerHTML=h;
     }
@@ -2425,7 +2431,7 @@ function renderTransitPanchang(t,p,lang,rootId,horaOverride=null){
     const maxPlanetsPerSign=Math.max(0,...bySign.map(list=>list.length));
     const transitChartDensity=maxPlanetsPerSign>=4?' transit-chart-dense transit-chart-dense-4plus':maxPlanetsPerSign>=3?' transit-chart-dense':'';
     const lagnaIndex=signIndex(t?.lagna?.rasi); const order=[11,0,1,2,10,null,null,3,9,null,null,4,8,7,6,5];
-    let transitChart=''; order.forEach((si,pos)=>{if(si===null){if(pos===5)transitChart+=`<div class="south-chart-center">${calendarPresentation?(ta?'கோச்சாரம்':'Transit'):'Transit Chart'}</div>`;return;}const isLagna=si===lagnaIndex;const houseNo=lagnaIndex>=0?((si-lagnaIndex+12)%12)+1:null;const ps=bySign[si].map(x=>{const enName=transitPlanetEn(x.name);const nm=ta?(short[x.name]||short[fmt(x.name)]||esc2(fmt(x.name))):(short[enName]||esc2(enName));const isCombust=Boolean(x?.combustion??x?.strength?.combustion);const c=isCombust?`<span class="rasi-status-marker status-c">(${calendarPresentation&&ta?'அ':'C'})</span>`:'';const isNode=['Rahu','Ketu'].includes(enName);const isRetrograde=Boolean(x.retrograde||isNode);const r=isRetrograde?`<span class="rasi-status-marker status-r">(${calendarPresentation&&ta?'வ':'R'})</span>`:'';const lon=Number(x.longitude??x.lon??x.degreeLongitude);let deg='';if(Number.isFinite(lon)){const d=((lon%30)+30)%30,dd=Math.floor(d);deg=`<span class="rasi-degree transit-degree">${dd}°</span>`;}else if(x.degree!=null&&String(x.degree).trim()){deg=`<span class="rasi-degree transit-degree">${esc2(x.degree)}</span>`;}return `<div class="planet-line"><span class="planet-glyph"><span class="planet-short">${nm}</span>${c?'<span class="planet-status-slot">'+c+'</span>':''}${r?'<span class="planet-status-slot">'+r+'</span>':''}${deg}</span></div>`;}).join('');const transitPlanetCount=bySign[si].length;const compactPlanetCell=transitPlanetCount>=3;transitChart+=`<div class="south-rasi-cell${compactPlanetCell?' south-rasi-cell-compact':''}" data-transit-planet-count="${transitPlanetCount}"><div class="dynamic-rasi-number">${isLagna?'':(houseNo??'')}</div>${isLagna?'<div class="lagna">'+(document.documentElement.lang==='ta'?'ல':'As')+'</div>':''}<div class="transit-cell-planets${compactPlanetCell?' transit-cell-planets-compact':''}">${ps}</div></div>`;});
+    let transitChart=''; order.forEach((si,pos)=>{if(si===null){if(pos===5)transitChart+=`<div class="south-chart-center">${calendarPresentation?(ta?'கோச்சாரம்':'Transit'):'Transit Chart'}</div>`;return;}const isLagna=si===lagnaIndex;const houseNo=lagnaIndex>=0?((si-lagnaIndex+12)%12)+1:null;const ps=bySign[si].map(x=>{const enName=transitPlanetEn(x.name);const nm=ta?(short[x.name]||short[fmt(x.name)]||esc2(fmt(x.name))):(short[enName]||esc2(enName));const isCombust=Boolean(x?.combustion??x?.strength?.combustion);const c=isCombust?`<span class="rasi-status-marker status-c">(${calendarPresentation&&ta?'அ':'C'})</span>`:'';const isNode=['Rahu','Ketu'].includes(enName);const isRetrograde=Boolean(x.retrograde||isNode);const r=isRetrograde?`<span class="rasi-status-marker status-r">(${calendarPresentation&&ta?'வ':'R'})</span>`:'';const lon=Number(x.longitude??x.lon??x.degreeLongitude);let deg='';if(Number.isFinite(lon)){const d=((lon%30)+30)%30,dd=Math.floor(d);deg=`<span class="rasi-degree transit-degree">${dd}°</span>`;}else if(x.degree!=null&&String(x.degree).trim()){deg=`<span class="rasi-degree transit-degree">${esc2(x.degree)}</span>`;}return `<div class="planet-line"><span class="planet-glyph"><span class="planet-short">${nm}</span>${c?'<span class="planet-status-slot">'+c+'</span>':''}${r?'<span class="planet-status-slot">'+r+'</span>':''}${deg}</span></div>`;}).join('');const transitPlanetCount=bySign[si].length;const compactPlanetCell=transitPlanetCount>=3;transitChart+=`<div class="south-rasi-cell${compactPlanetCell?' south-rasi-cell-compact smv-chart-cell-compact':''}" data-transit-planet-count="${transitPlanetCount}" data-chart-planet-count="${transitPlanetCount}"><div class="dynamic-rasi-number">${isLagna?'':(houseNo??'')}</div>${isLagna?'<div class="lagna">'+(document.documentElement.lang==='ta'?'ல':'As')+'</div>':''}<div class="transit-cell-planets${compactPlanetCell?' transit-cell-planets-compact':''}">${ps}</div></div>`;});
     const dms=v=>{const n=Number(v);if(!Number.isFinite(n))return esc2(v??'—');let d=((n%30)+30)%30,dd=Math.floor(d),mf=(d-dd)*60,mm=Math.floor(mf),ss=Math.round((mf-mm)*60);if(ss>=60){ss=0;mm+=1}if(mm>=60){mm=0;dd=(dd+1)%30}return `${String(dd).padStart(2,'0')}° ${String(mm).padStart(2,'0')}′ ${String(ss).padStart(2,'0')}″`;};
     const transitRows=[];
     if(t?.lagna){const ll=Number(t.lagna.longitude??t.lagna.lon??t.lagna.degreeLongitude??t.lagna.degree);transitRows.push({rank:-1,name:calendarPresentation?(ta?'லக்னம்':'Ascendant'):'Asc',rasi:transitRasiEn(t.lagna.rasi),degree:dms(ll),nak:transitNakEn(t.lagna.nakshatra?.name||t.lagna.nakshatra),pada:t.lagna.nakshatra?.pada||t.lagna.pada||'—'});}
