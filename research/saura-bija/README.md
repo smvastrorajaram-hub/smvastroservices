@@ -41,7 +41,7 @@ The fixture `tests/fixtures/saura-bija-jpl-de441-annual-1800-2399.json` contains
 - UT1 for dates before 1962, UTC thereafter.
 - Saturn-system barycentre (target 6) is used for Saturn so the requested ephemeris span reaches 2399; Saturn body target 699 ends in 2250.
 
-For the comparison the JPL tropical apparent longitude is transferred into the traditional Saura sidereal frame using the Burgess 1 January 1860 zero-point (18°05′08.25″) carried to each epoch by the Lahiri ayanāṃśa precession delta. The classical Bīja True Longitude is then compared to that JPL reference. All 3,000 comparisons are finite and complete.
+For the comparison every fixture record is passed through the same explicit frame-transfer function used by the on-demand adapter: the JPL tropical apparent longitude is transferred using the Burgess 1 January 1860 zero-point (18°05′08.25″) plus the Lahiri ayanāṃśa precession delta at that epoch. The classical Bīja True Longitude is then compared to that independently sourced JPL apparent position. All 3,000 comparisons are finite and complete.
 
 ### Measured result — annual checkpoints
 
@@ -60,6 +60,27 @@ The residual is not a small rounding or numerical precision issue. The old-style
 **Correct next step:** retain Bīja-corrected Mean and classical Bīja True as separately labelled historical/traditional outputs. For an accuracy-critical true longitude, use the DE441-derived geocentric apparent position transformed to the same declared Saura/Lahiri sidereal frame, with its own reproducible source and frame metadata. Do not tune planet-specific constants to hide the residual, and do not silently replace the Bīja Mean with a modern osculating mean.
 
 The current fixture checks annual epochs. It is a full 600-year coverage of yearly reference positions, not a daily 1.1-million-row comparison; daily or station/extrema sampling is a later dense-grid expansion. The result must not be described as a daily certification.
+
+## Phase D — separate outputs and on-demand DE441 apparent True: implemented
+
+The research API now exposes three distinct products and never substitutes one for another:
+
+| Product key | Meaning | Coordinate/source identity |
+|---|---|---|
+| `CLASSICAL_BIJA_MEAN` | Bīja-corrected classical mean longitude | Traditional Saura-nirayana |
+| `CLASSICAL_BIJA_TRUE` | Four-pass Sūrya Siddhānta true longitude | Traditional Saura-nirayana; strict DE441 accuracy gate remains failed |
+| `DE441_GEOCENTRIC_APPARENT_TRUE` | JPL apparent geocentric longitude for the exact requested epoch | DE441 Earth-centred IAU76/80 ecliptic-of-date, transferred to the declared Saura sidereal frame |
+
+The new `research/saura-bija/saura-de441-apparent-true.mjs` adapter queries the NASA/JPL Horizons API using a discrete Julian Day list (`TLIST_TYPE=JD`), Earth centre `500@399`, observer quantity 31, UT time input, and the exact planetary target IDs. Saturn uses the Saturn-system barycentre (target 6), matching the 1800–2399 reference fixture. The adapter requires the response headers to identify DE441 for both the target and Earth centre. A different ephemeris, malformed response, unsupported date, or multiple data rows causes an error; there is no silent fallback.
+
+The sidereal transfer is an explicit function, not a hidden default:
+
+`Saura offset(t) = 18°05′08.25″ + [Lahiri(t) − Lahiri(1860-01-01)]`
+
+The adapter requires the caller to supply the date-specific offset and checks that the reference JD exactly matches the classical calculation JD. The JPL quantity is *apparent* ecliptic-of-date longitude (including light-time and relativistic/stellar-aberration corrections); it is not described as a geometric longitude or a classical mean place. The three products carry separate keys, source labels and frame labels.
+
+The 600-row-per-planet annual fixture is used only for annual regression checkpoints. It is not interpolated for intermediate dates. Arbitrary supported epochs are queried directly from JPL Horizons. CI uses a mocked API response to test request construction, DE441 header enforcement, parsing, frame conversion, epoch matching and output separation; it does not depend on network availability.
+
 
 ## Mean / śīghrocca selection
 
