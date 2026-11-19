@@ -144,15 +144,18 @@ for(const [date,time] of births){
   ok(p.strength6?.available===true,date+' '+p.name+' strength6 attached');
   eq(Object.hasOwn(p,'strength3'),false,date+' '+p.name+' old BPHS strength3 field removed');
   eq(p.strength6.classicalCertified,false,date+' '+p.name+' inputs remain honestly provisional');
-  ok(p.strength6.ishtaKashta?.available===true,date+' '+p.name+' Ishta/Kashta is attached to B.V. Raman engine');
-  eq(p.strength6.ishtaKashta.classicalCertified,false,date+' '+p.name+' Ishta/Kashta remains uncertified');
-  near(p.strength6.ishtaKashta.sixfoldShadbalaCheshtaBala,p.strength6.components.cheshta,0.001,date+' '+p.name+' Phala input never replaces sixfold Cheshta');
   const c=p.strength6.components;
   if(p.name==='சூரியன்'||p.name==='சந்திரன்'){
+   ok(p.strength6.ishtaKashta?.available===true,date+' '+p.name+' Ishta/Kashta is attached to B.V. Raman engine');
+   eq(p.strength6.ishtaKashta.classicalCertified,false,date+' '+p.name+' Ishta/Kashta remains uncertified');
+   near(p.strength6.ishtaKashta.sixfoldShadbalaCheshtaBala,c.cheshta,0.001,date+' '+p.name+' Phala input never replaces sixfold Cheshta');
    eq(c.cheshta,0,date+' '+p.name+' sixfold Shadbala Cheshta stays zero by Raman Chapter VI');
    ok(p.strength6.ishtaKashta.cheshtaForPhala>0,date+' '+p.name+' separate Chapter X Chesta-for-Phala remains non-zero');
   }else{
-   near(p.strength6.ishtaKashta.cheshtaForPhala,c.cheshta,0.001,date+' '+p.name+' Ishta/Kashta Chesta-for-Phala equals sixfold Cheshta');
+   eq(p.strength6.ishtaKashta?.available,false,date+' '+p.name+' Chapter X Phala is withheld for mixed-frame Cheshta inputs');
+   ok(String(p.strength6.ishtaKashta?.reason||'').includes('mixed astronomical reference frames'),date+' '+p.name+' Phala withholding explains its frame blocker');
+   eq(p.strength6.totalVirupa,null,date+' '+p.name+' mixed-frame total remains withheld');
+   eq(p.strength6.totalRupa,null,date+' '+p.name+' mixed-frame Rupa remains withheld');
   }
   ok(Number.isFinite(c.sthana.total)&&Number.isFinite(c.dig)&&Number.isFinite(c.kala.total)&&Number.isFinite(c.cheshta)&&Number.isFinite(c.naisargika)&&Number.isFinite(c.drik),date+' '+p.name+' six Bala components present');
   if(p.name==='செவ்வாய்'||p.name==='புதன்'||p.name==='குரு'||p.name==='சுக்கிரன்'||p.name==='சனி'){
