@@ -528,7 +528,8 @@ html body.calendar-only>header.calendar-topbar{
 }
 
 /* Transit label follows the same green heading theme as the rest of Calendar. */
-#smvDailyCalendar #calDaily .transit-card>.cal-centered-heading{color:#15564e;-webkit-text-fill-color:#15564e}
+#smvDailyCalendar #calDaily .transit-card>.cal-centered-heading{color:#15564e!important;-webkit-text-fill-color:#15564e!important}
+#smvDailyCalendar #calDaily .transit-chart .planet-short,#smvDailyCalendar #calDaily .transit-chart .south-chart-center{color:#15564e!important;-webkit-text-fill-color:#15564e!important}
 
 /* Shared compact heading scale: match the existing Calendar section headings. */
 #smvDailyCalendar #calDaily .cal-centered-heading,
