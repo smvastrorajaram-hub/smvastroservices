@@ -402,9 +402,8 @@ function calculateBVRamanShadbala({planets,bhavas,ascendantLongitude,midheavenLo
   }
   baseRows[planet]={available:true,classicalCertified:false,provisional:true,method:'B.V. Raman, Graha and Bhava Balas',unit:'virupa',source:'B.V. Raman, Graha and Bhava Balas, 13th ed., Chapters III–VIII',ishtaKashta,
    components:{sthana,dig,kala,cheshta:cheshta.value,naisargika,drik:drik.drik},
-   frameSafety:cheshta.method==='BV_RAMAN_CHESHTA_BLOCKED_REFERENCE_FRAME_MISMATCH'?Object.freeze({status:'BLOCKED_MIXED_REFERENCE_FRAMES',referenceFrames:cheshta.referenceFrames,productionUseAllowed:false}):Object.freeze({status:cheshta.sameReferenceFrameVerified?'SAME_FRAME_SOURCE_INPUTS':'LUMINARY_SOURCE_RULE',productionUseAllowed:cheshta.available===true}),
    evidence:{drikPinda:drik.pinda,drikTrace:drik.trace,cheshtaSource:cheshta,solarTimeMethod:temporal?.solarTimeMethod??'unverified/fallback solar-time context',birthApparentSolarHour:round3(apparentSolarHour)},
-   frameSafety:cheshta.frameCompatible===false?{status:'BLOCKED_MIXED_REFERENCE_FRAMES',meanLongitudeFrame:cheshta.meanLongitudeFrame,trueLongitudeFrame:cheshta.trueLongitudeFrame,sheeghroccaLongitudeFrame:cheshta.sheeghroccaLongitudeFrame,productionEligible:false}: {status:'NO_MIXED_FRAME_DETECTED',productionEligible:cheshta.productionEligible!==false},
+    frameSafety:cheshta.method==='BV_RAMAN_CHESHTA_BLOCKED_REFERENCE_FRAME_MISMATCH'?Object.freeze({status:'BLOCKED_MIXED_REFERENCE_FRAMES',referenceFrames:cheshta.referenceFrames,productionEligible:false,productionUseAllowed:false}):Object.freeze({status:cheshta.sameReferenceFrameVerified?'SAME_FRAME_SOURCE_INPUTS':'LUMINARY_SOURCE_RULE',productionEligible:cheshta.available===true,productionUseAllowed:cheshta.available===true}),
    limitations:['Full natal Shadbala remains uncertified until the worked example and historical astronomical inputs reconcile independently',...(cheshta.trueLongitudeHistoricalCertified===false?['Five-planet traditional mean-longitude/Sheeghrocca chain remains research-only; sixfold Cheshta uses the calculated chart true longitude rather than a synthetic reconstructed true longitude. No modern speed-bucket estimate is substituted.']:[])],
    totalVirupa:null,totalRupa:null,requiredVirupa:REQUIRED[planet],ratio:null,isStrong:null};
  }
@@ -429,8 +428,10 @@ function calculateBVRamanShadbala({planets,bhavas,ascendantLongitude,midheavenLo
    continue;
   }
   if(!finite(chesta.value)||!finite(c.sthana.total)||!finite(c.dig)||!finite(c.kala.total)||!finite(c.naisargika)||!finite(c.drik)){
-   r.available=false;r.reason='One or more B.V. Raman six-Bala components is unavailable';continue;
+   r.available=true;r.complete=false;r.totalVirupa=null;r.totalRupa=null;r.ratio=null;r.isStrong=null;
+   r.reason='Shadbala components are attached, but the complete total is withheld because a required source-verified Bala is unavailable';continue;
   }
+  r.complete=true;
   const total=c.sthana.total+c.dig+c.kala.total+c.cheshta+c.naisargika+c.drik;
   r.totalVirupa=round3(total);r.totalRupa=round3(total/60);r.ratio=round3(total/r.requiredVirupa);r.isStrong=total>=r.requiredVirupa;r.classicalCertified=false;r.warEvidence=wars;
  }
