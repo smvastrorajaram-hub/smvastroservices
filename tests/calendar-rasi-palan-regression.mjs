@@ -387,7 +387,7 @@ test('Calendar distinguishes Gazette government holidays from observances and do
   assert.match(dailyCalendarCssSource, /h3:not\(\.cal-date-details-title\):not\(\.cal-section-title\):not\(\.cal-centered-heading\)/,
     'Generic left-aligned flex decoration must not target Calendar centered headings.');
   assert.ok(horoscopeRendererSource.includes('class="transit-card"><h3 class="cal-centered-heading">'), 'Transit Chart renders without an outer card/layer and keeps the centered heading.');
-  assert.ok(horoscopeRendererSource.includes("const planetLabel=calendarPresentation&&ta?String(x.name||enName):enName;"), 'Calendar Transit Planetary Positions uses full graha names instead of short glyph labels.');
+  assert.ok(horoscopeRendererSource.includes("const fullPlanetTamil={Sun:'சூரியன்',Moon:'சந்திரன்',Mars:'செவ்வாய்',Mercury:'புதன்',Jupiter:'குரு',Venus:'சுக்கிரன்',Saturn:'சனி',Rahu:'ராகு',Ketu:'கேது'};"), 'Calendar Transit Planetary Positions maps full Tamil graha names instead of short glyph labels.');
   assert.ok(horoscopeRendererSource.includes("const combustionMarker=isCombust?(calendarPresentation&&ta?'(அ)':'(C)'):'';"), 'Combustion marker is appended to the graha name in the active language.');
   assert.ok(horoscopeRendererSource.includes("<th>${ta?'கிரகங்கள்':'Planets'}</th>"), 'The positions table labels the first column as Planets / கிரகங்கள்.');
   assert.ok(!horoscopeRendererSource.includes('<th>Status</th>') && !horoscopeRendererSource.includes('r.status'), 'The Transit Planetary Positions table does not render a Status column.');
