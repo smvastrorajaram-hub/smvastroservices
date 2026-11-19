@@ -1731,8 +1731,8 @@ try {
         combustionInStatus,
         retrogradeInChart,
         retrogradeInNames,
-        hasWrongLatinMarkersInTamil: language === 'ta' && /\\((?:R|C)\\)/.test(markerText),
-        hasWrongTamilMarkersInEnglish: language === 'en' && /\\((?:வ|அ)\\)/.test(markerText)
+        hasWrongLatinMarkersInTamil: language === 'ta' && (markerText.includes('(R)') || markerText.includes('(C)'),
+        hasWrongTamilMarkersInEnglish: language === 'en' && (markerText.includes('(வ)') || markerText.includes('(அ)'))
       };
     }, language);
   }
