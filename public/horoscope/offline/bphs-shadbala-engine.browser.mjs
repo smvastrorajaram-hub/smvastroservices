@@ -53,22 +53,26 @@ const circularDistance = (a,b) => {
 };
 const round3 = value => Math.round((value+Number.EPSILON)*1000)/1000;
 
-function requireCondition(condition,message) {
-  if(!condition) throw new TypeError(message);
-}
 function requireLongitude(value,label) {
   if(!finite(value)||value<0||value>=360)
     throw new RangeError(label+' must be a finite longitude in [0,360)');
 }
 function requirePlanetaryInputs(planets) {
   if(!Array.isArray(planets)) throw new TypeError('Planetary input array required');
-  const byName=new Map();
+  const byName=new Map(),epochs=new Set();
   for(const row of planets) {
     if(!row||!VALID_GRAHAS.has(row.name)||byName.has(row.name))
       throw new RangeError('Unknown or duplicate graha input: '+String(row?.name));
     requireLongitude(row.longitude,row.name+' longitude');
     if(typeof row.referenceFrameId!=='string'||!row.referenceFrameId.trim())
       throw new TypeError(row.name+' referenceFrameId required');
+    for(const field of ['longitudeFrameId','speedFrameId','eclipticLatitudeFrameId']) {
+      if(row[field]!==row.referenceFrameId)
+        throw new RangeError(row.name+' '+field+' must match its declared longitude reference frame');
+    }
+    if(!finite(row.epochJdUt))
+      throw new TypeError(row.name+' epochJdUt is required');
+    epochs.add(row.epochJdUt);
     byName.set(row.name,row);
   }
   for(const name of BPHS_SHADBALA_PLANETS) {
@@ -78,10 +82,12 @@ function requirePlanetaryInputs(planets) {
       throw new RangeError(name+' Bhava must be an integer from 1 to 12');
     if(!finite(row.speed))
       throw new TypeError(name+' geocentric speed is required for astronomical input audit');
-    if(!finite(row.eclipticLatitude))
-      throw new TypeError(name+' ecliptic latitude is required for Yuddha review');
+    if(!finite(row.eclipticLatitude)||row.eclipticLatitude < -90||row.eclipticLatitude > 90)
+      throw new RangeError(name+' ecliptic latitude must be within -90..90 degrees');
   }
-  return byName;
+  if(epochs.size!==1)
+    throw new RangeError('Mixed astronomical epochs: all graha inputs must share one epochJdUt');
+  return {byName,epochJdUt:[...epochs][0]};
 }
 function requireSharedFrame(byName) {
   const frameIds=new Set([...byName.values()].map(row=>row.referenceFrameId));
@@ -89,7 +95,7 @@ function requireSharedFrame(byName) {
     throw new RangeError('Mixed planetary reference frames: all grahas must use one referenceFrameId');
   return [...frameIds][0];
 }
-function requireBhavaCusps(bhavas) {
+function requireBhavaCusps(bhavas,frameId,epochJdUt) {
   if(!Array.isArray(bhavas)) throw new TypeError('Twelve Bhava cusp longitudes are required');
   const byHouse=new Map();
   for(const row of bhavas) {
@@ -97,6 +103,10 @@ function requireBhavaCusps(bhavas) {
     if(!Number.isInteger(house)||house<1||house>12||byHouse.has(house))
       throw new RangeError('Bhava cusp table must contain unique houses 1..12');
     requireLongitude(longitude,'Bhava '+house+' cusp');
+    if(row.referenceFrameId!==frameId)
+      throw new RangeError('Bhava '+house+' cusp reference frame does not match the chart');
+    if(row.epochJdUt!==epochJdUt)
+      throw new RangeError('Bhava '+house+' cusp epoch does not match the chart');
     byHouse.set(house,longitude);
   }
   if(byHouse.size!==12) throw new RangeError('All twelve Bhava cusps are required; missing cusps cannot be treated as zero Dig Bala');
@@ -104,16 +114,16 @@ function requireBhavaCusps(bhavas) {
 }
 
 /** BPHS Dig Bala: 60 Virupas at the planet's ideal direction, 0 at 180°. */
-export function bphsDigBala(planet,longitude,bhavas) {
+export function bphsDigBala(planet,longitude,bhavas,frameId,epochJdUt) {
   const idealHouse=DIG_IDEAL_HOUSE[planet];
   if(!idealHouse) throw new RangeError('Unknown Dig Bala graha: '+planet);
   requireLongitude(longitude,planet+' longitude');
-  const cusps=requireBhavaCusps(bhavas);
+  const cusps=requireBhavaCusps(bhavas,frameId,epochJdUt);
   const idealLongitude=cusps.get(idealHouse);
   return round3(Math.max(0,Math.min(60,60-circularDistance(longitude,idealLongitude)/3)));
 }
 
-function requireTemporalContext(temporal) {
+function requireTemporalContext(temporal,epochJdUt) {
   if(!temporal||typeof temporal!=='object')
     throw new TypeError('BPHS temporal context required');
   const hour=temporal.apparentSolarHour;
@@ -125,6 +135,10 @@ function requireTemporalContext(temporal) {
     throw new TypeError('Solar-time method provenance is required');
   if(temporal.sunriseApprox!==true)
     throw new TypeError('Sunrise approximation/provenance must be explicitly disclosed');
+  if(temporal.epochJdUt!==epochJdUt||!finite(temporal.epochJdUt))
+    throw new RangeError('Solar-time epoch does not match the chart epoch');
+  if(typeof temporal.solarTimeFrameId!=='string'||!temporal.solarTimeFrameId.trim())
+    throw new TypeError('Solar-time equatorial reference-frame ID is required');
   const ahargana=traditionalAharganaLords(temporal.solarCalendarDay);
   for(const [field,key] of [
     ['abdaLord','abdaLord'],['masaLord','masaLord'],['dinaLord','dinaLord']
@@ -138,19 +152,24 @@ function requireTemporalContext(temporal) {
   }
   return {...temporal,ahargana:ahargana.ahargana};
 }
-function requireDeclinations(declinations) {
-  if(!declinations||typeof declinations!=='object')
-    throw new TypeError('Tropical equatorial declinations are required');
+function requireDeclinations(declinations,epochJdUt,solarTimeFrameId) {
+  if(!declinations||typeof declinations!=='object'||!declinations.values)
+    throw new TypeError('Tropical equatorial declination values and provenance are required');
+  if(typeof declinations.referenceFrameId!=='string'||
+     declinations.referenceFrameId!==solarTimeFrameId)
+    throw new RangeError('Tropical declination frame must match the solar-time equatorial frame');
+  if(declinations.epochJdUt!==epochJdUt)
+    throw new RangeError('Tropical declination epoch does not match the chart');
   const out={};
   for(const name of BPHS_SHADBALA_PLANETS) {
-    const value=declinations[name];
+    const value=declinations.values[name];
     if(!finite(value)||value < -90||value > 90)
       throw new RangeError('Valid tropical declination is required for '+name);
     out[name]=value;
   }
-  return out;
+  return {values:out,referenceFrameId:declinations.referenceFrameId,epochJdUt};
 }
-function requireCheshtaInputs(cheshtaInputs,frameId,byName) {
+function requireCheshtaInputs(cheshtaInputs,frameId,epochJdUt,byName) {
   if(!cheshtaInputs||typeof cheshtaInputs!=='object')
     throw new TypeError('Five classical Mean / True / Sheeghrocca triples are required');
   const out={};
@@ -162,6 +181,8 @@ function requireCheshtaInputs(cheshtaInputs,frameId,byName) {
       if(row[field]!==frameId)
         throw new RangeError(name+' '+field+' does not match chart frame '+frameId);
     }
+    if(row.epochJdUt!==epochJdUt)
+      throw new RangeError(name+' Chesta input epoch does not match the chart');
     for(const field of ['meanSunLongitude','meanPlanetLongitude','truePlanetLongitude'])
       requireLongitude(row[field],name+' '+field);
     if(circularDistance(row.truePlanetLongitude,byName.get(name).longitude)>1e-7)
@@ -227,23 +248,26 @@ function cheshtaForPlanet(name,planets,declinations,cheshtaInputs) {
  *
  * Required inputs:
  *  - planets: seven grahas (optional Rahu/Ketu for Mercury's Paksha association),
- *    each with longitude, speed, eclipticLatitude, Bhava, referenceFrameId.
- *  - bhavas: all twelve cusp longitudes.
- *  - temporal: apparentSolarHour, sunrise-selected Ahargana lords,
- *    horaLord, tribhagaLord and explicit sunrise provenance.
- *  - declinations: tropical equatorial declinations for all seven grahas.
- *  - cheshtaInputs: the five eligible Mean/True/Sheeghrocca triples and frame IDs.
+ *    each with longitude, speed, eclipticLatitude, Bhava, per-input frame IDs and epochJdUt.
+ *  - bhavas: all twelve cusp longitudes, each with the same ecliptic frame and epoch.
+ *  - temporal: apparentSolarHour, solar-time equatorial frame/epoch,
+ *    sunrise-selected Ahargana lords and explicit sunrise provenance.
+ *  - declinations: tropical equatorial values, frame ID and epoch for all seven grahas.
+ *  - cheshtaInputs: five Mean/True/Sheeghrocca triples, frame IDs and epoch.
  *  - yuddha: { reviewed:true, encounters:[{winner,loser}, ...] }.
  */
 export function calculateBphsShadbala({
   planets,bhavas,temporal,declinations,cheshtaInputs,yuddha
 }={}) {
-  const byName=requirePlanetaryInputs(planets);
+  const {byName,epochJdUt}=requirePlanetaryInputs(planets);
   const frameId=requireSharedFrame(byName);
-  const temporalContext=requireTemporalContext(temporal);
-  const declinationMap=requireDeclinations(declinations);
-  const cusps=requireBhavaCusps(bhavas);
-  const cheshtaMap=requireCheshtaInputs(cheshtaInputs,frameId,byName);
+  const temporalContext=requireTemporalContext(temporal,epochJdUt);
+  const declinationEvidence=requireDeclinations(
+    declinations,epochJdUt,temporalContext.solarTimeFrameId
+  );
+  const declinationMap=declinationEvidence.values;
+  requireBhavaCusps(bhavas,frameId,epochJdUt);
+  const cheshtaMap=requireCheshtaInputs(cheshtaInputs,frameId,epochJdUt,byName);
   const encounters=requireYuddhaReview(yuddha,byName);
 
   const seven=BPHS_SHADBALA_PLANETS.map(name=>byName.get(name));
@@ -254,7 +278,7 @@ export function calculateBphsShadbala({
   for(const name of BPHS_SHADBALA_PLANETS) {
     const planet=byName.get(name);
     const sthana=sthanaClassical(name,planet.longitude,planet.bhava,rasiPositions);
-    const dig=bphsDigBala(name,planet.longitude,bhavas);
+    const dig=bphsDigBala(name,planet.longitude,bhavas,frameId,epochJdUt);
     const kala=kalaBeforeYuddha(name,planets,temporalContext,declinationMap);
     const cheshta=cheshtaForPlanet(name,planets,declinationMap,cheshtaMap);
     const naisargika=SHADBALA_NATURAL[name];
@@ -295,7 +319,9 @@ export function calculateBphsShadbala({
   return Object.freeze({
     available:true,method:'BPHS_CH27_ISOLATED_SIX_BALA_ENGINE',
     source:'Brihat Parashara Hora Shastra, R. Santhanam Vol I, Chapter 27',
-    referenceFrameId:frameId,frameConsistent:true,
+    referenceFrameId:frameId,frameConsistent:true,epochJdUt,
+    solarTimeFrameId:temporalContext.solarTimeFrameId,
+    declinationFrameId:declinationEvidence.referenceFrameId,
     ahargana:temporalContext.ahargana,solarCalendarDay:temporalContext.solarCalendarDay,
     planets:Object.freeze(rows),yuddhaEvidence:yuddhaResult,
     classicalCertified:false,provisional:true,researchOnly:true,
