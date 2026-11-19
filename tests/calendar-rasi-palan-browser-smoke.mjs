@@ -1717,6 +1717,12 @@ try {
       }).length;
       const planetText = planetElements.map(el => el.textContent.trim());
       const markerText = planetText.concat(rows.map(row => row.name)).join(' | ');
+      const horaSection = document.querySelector('#calDaily .hora-card');
+      const horaHeading = horaSection?.querySelector(':scope > h3');
+      const horaTables = [...(horaSection?.querySelectorAll('.hora-table-wrap') || [])];
+      const positionsSection = document.querySelector('#calDaily .transit-table-card');
+      const positionsHeading = positionsSection?.querySelector(':scope > h3');
+      const positionsTableWrap = positionsSection?.querySelector('.adv-scroll');
       const combustionInChart = chart?.querySelectorAll('.planet-short .status-c').length || 0;
       const combustionInNames = rows.filter(row => row.name.includes(language === 'ta' ? '(அ)' : '(C)')).length;
       const retrogradeInChart = chart?.querySelectorAll('.planet-short .status-r').length || 0;
@@ -1733,6 +1739,17 @@ try {
         planetShortColor: planetElements[0] ? getComputedStyle(planetElements[0]).color : '',
         chartHeadingText: chartHeading?.textContent.trim() || '',
         chartPlanetCount: planetElements.length,
+        visiblePlanetCount: planetElements.filter(el => {
+          const cell = el.closest('.south-rasi-cell');
+          const line = el.closest('.planet-line');
+          const rect = el.getBoundingClientRect();
+          const cellRect = cell?.getBoundingClientRect();
+          const style = getComputedStyle(el);
+          return Boolean(cellRect && line && rect.width > 0 && rect.height > 0 &&
+            style.display !== 'none' && style.visibility !== 'hidden' &&
+            rect.top >= cellRect.top - 1 && rect.bottom <= cellRect.bottom + 1 &&
+            rect.left >= cellRect.left - 1 && rect.right <= cellRect.right + 1);
+        }).length,
         chartHasJupiter: (() => {
           const index = planetText.findIndex(value => value.startsWith(language === 'ta' ? 'கு' : 'Ju'));
           if (index < 0) return false;
@@ -1751,11 +1768,17 @@ try {
         tableCellCounts: rows.map(row => row.cells),
         squareChart: Boolean(chart && Math.abs(chart.getBoundingClientRect().width-chart.getBoundingClientRect().height)<=2),
         chartWidth: chart?.getBoundingClientRect().width || 0,
-        horaHasCardLayer: Boolean(document.querySelector('#calDaily .hora-card')?.classList.contains('card')),
-        horaCardBorderWidth: document.querySelector('#calDaily .hora-card') ? getComputedStyle(document.querySelector('#calDaily .hora-card')).borderTopWidth : '0px',
+        horaHeadingText: horaHeading?.textContent.trim() || '',
+        horaHasCardLayer: Boolean(horaSection?.classList.contains('card')),
+        horaCardBorderWidth: horaSection ? getComputedStyle(horaSection).borderTopWidth : '0px',
+        horaTableBorderWidths: horaTables.map(wrap => getComputedStyle(wrap).borderTopWidth),
+        horaTableBorderColor: horaTables[0] ? getComputedStyle(horaTables[0]).borderTopColor : '',
         transitHasCardLayer: Boolean(document.querySelector('#calDaily .transit-card')?.classList.contains('card')),
-        positionsHasLayer: Boolean(document.querySelector('#calDaily .transit-table-card')?.classList.contains('card')),
-        positionsCardBorderWidth: document.querySelector('#calDaily .transit-table-card') ? getComputedStyle(document.querySelector('#calDaily .transit-table-card')).borderTopWidth : '0px',
+        positionsHeadingText: positionsHeading?.textContent.trim() || '',
+        positionsHasLayer: Boolean(positionsSection?.classList.contains('card')),
+        positionsCardBorderWidth: positionsSection ? getComputedStyle(positionsSection).borderTopWidth : '0px',
+        positionsTableBorderWidth: positionsTableWrap ? getComputedStyle(positionsTableWrap).borderTopWidth : '0px',
+        positionsTableBorderColor: positionsTableWrap ? getComputedStyle(positionsTableWrap).borderTopColor : '',
         denseClass: Boolean(chart?.classList.contains('transit-chart-dense') || chart?.classList.contains('transit-chart-dense-4plus')),
         maxStack,
         clippedStacks,
@@ -1774,6 +1797,7 @@ try {
     for (const date of ['2026-08-11', '2026-08-12', '2026-08-13']) {
       const transitState = await inspectTransitDate(date, language);
       assert.equal(transitState.chartPlanetCount, 9, language + ' ' + date + ': all nine grahas must be present in the Transit Chart: ' + JSON.stringify(transitState));
+      assert.equal(transitState.visiblePlanetCount, 9, language + ' ' + date + ': all nine grahas must be visibly inside their Rasi cells, not only present in the DOM: ' + JSON.stringify(transitState));
       assert.equal(transitState.chartHasJupiter, true, language + ' ' + date + ': Jupiter must be visible in the Transit Chart: ' + JSON.stringify(transitState));
       assert.equal(transitState.chartCenterText, language === 'ta' ? 'கோச்சாரம்' : 'Transit', language + ' ' + date + ': only the chart center label must use the concise transit wording.');
       assert.equal(transitState.chartCenterColor, 'rgb(21, 86, 78)', language + ' ' + date + ': the chart center label must use Calendar theme green.');
@@ -1785,10 +1809,17 @@ try {
       assert.deepEqual(transitState.tableHeaders, language === 'ta' ? ['கிரகங்கள்','ராசி','பாகை','நட்சத்திரம்','பாதம்'] : ['Planets','Rasi','Degree','Nakshatra','Pada'], language + ' ' + date + ': the positions table must have five columns and no Status.');
       assert.ok(transitState.tableCellCounts.every(count => count === 5), language + ' ' + date + ': every table row must have exactly five cells.');
       assert.equal(transitState.squareChart, true, language + ' ' + date + ': transit chart must retain its square proportions: ' + JSON.stringify(transitState));
-      assert.equal(transitState.horaHasCardLayer, true, language + ' ' + date + ': Daily Hora must have its own outer card.');
-      assert.notEqual(transitState.horaCardBorderWidth, '0px', language + ' ' + date + ': Daily Hora outer card border must be visible.');
-      assert.equal(transitState.positionsHasLayer, true, language + ' ' + date + ': Transit Planetary Positions table must have its own outer card.');
-      assert.notEqual(transitState.positionsCardBorderWidth, '0px', language + ' ' + date + ': Transit positions outer card border must be visible.');
+      assert.ok(transitState.horaHeadingText.includes(language === 'ta' ? 'தினசரி ஹோரா' : 'Daily Hora'), language + ' ' + date + ': Daily Hora heading must remain visible without a box.');
+      assert.equal(transitState.horaHasCardLayer, false, language + ' ' + date + ': Daily Hora outer wrapper must not be a card.');
+      assert.equal(transitState.horaCardBorderWidth, '0px', language + ' ' + date + ': Daily Hora section wrapper must not have an outer border.');
+      assert.equal(transitState.horaTableBorderWidths.length, 2, language + ' ' + date + ': Day and Night Hora must remain separate tables.');
+      assert.ok(transitState.horaTableBorderWidths.every(width => width === '1px'), language + ' ' + date + ': only each Hora table must have a thin outer border.');
+      assert.equal(transitState.horaTableBorderColor, 'rgb(220, 232, 223)', language + ' ' + date + ': Hora table outline must use the light theme green.');
+      assert.ok(transitState.positionsHeadingText.includes(language === 'ta' ? 'கோச்சார கிரக நிலைகள்' : 'Transit Planetary Positions'), language + ' ' + date + ': Transit positions heading must remain visible without a box.');
+      assert.equal(transitState.positionsHasLayer, false, language + ' ' + date + ': Transit positions section wrapper must not be a card.');
+      assert.equal(transitState.positionsCardBorderWidth, '0px', language + ' ' + date + ': Transit positions heading section must not have an outer border.');
+      assert.equal(transitState.positionsTableBorderWidth, '1px', language + ' ' + date + ': only the positions table must have a thin outer border.');
+      assert.equal(transitState.positionsTableBorderColor, 'rgb(220, 232, 223)', language + ' ' + date + ': positions table outline must use the light theme green.');
       assert.equal(transitState.transitHasCardLayer, false, language + ' ' + date + ': Transit Chart itself must remain without an outer card.');
       assert.equal(transitState.clippedStacks, 0, language + ' ' + date + ': crowded Rasi cells must not clip planet rows: ' + JSON.stringify(transitState));
       assert.equal(transitState.separatorLines, 0, language + ' ' + date + ': no dotted line may appear below individual planet rows.');
@@ -1799,6 +1830,21 @@ try {
       assert.equal(transitState.hasWrongTamilMarkersInEnglish, false, language + ' ' + date + ': English UI must retain Latin markers.');
     }
   }
+  // Recheck the dense August 12 transit on narrow phones. The four-graha
+  // Rasi stack must fit inside its existing cell; chart dimensions stay square.
+  for (const language of ['ta', 'en']) {
+    await ensureTransitLanguage(language);
+    for (const width of [390, 360, 320]) {
+      await page.setViewport({ width, height: 844, deviceScaleFactor: 1 });
+      const mobileState = await inspectTransitDate('2026-08-12', language);
+      assert.equal(mobileState.chartPlanetCount, 9, language + ' ' + width + 'px: all nine planets must remain in the chart.');
+      assert.equal(mobileState.visiblePlanetCount, 9, language + ' ' + width + 'px: every graha must remain fully visible inside its cell.');
+      assert.ok(mobileState.maxStack >= 4, language + ' ' + width + 'px: the dense regression date must contain at least four grahas in one Rasi.');
+      assert.equal(mobileState.clippedStacks, 0, language + ' ' + width + 'px: no planet line may be clipped by its Rasi cell.');
+      assert.equal(mobileState.squareChart, true, language + ' ' + width + 'px: preserve the existing square chart dimensions.');
+    }
+  }
+  await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
   await ensureTransitLanguage(transitOriginalLanguage);
   await page.$eval('#calDate', (el, value) => {
     el.value = value;
