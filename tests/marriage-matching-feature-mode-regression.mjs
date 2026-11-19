@@ -150,7 +150,7 @@ yes(html.includes('horoscope.css?v=20261119-horoscope-four-chart-planet-layout-v
 yes(html.includes('marriage-matching.js?v=20261117-english-report-language-consistency-v1'),'Marriage Matching uses its cache-busted URL');
 
 // All three products share the marker. Existing offline/user data is not cleared.
-const marker='20261119-calendar-transit-marker-layout-v5';
+const marker='20261119-horoscope-four-chart-planet-layout-v1';
 yes(workers.every(source=>source.includes(marker)),'All three Service Workers share the synchronized cache release');
 no(policy.includes('localStorage.clear('),'The policy does not clear origin-wide localStorage');
 no(policy.includes('caches.delete('),'The policy does not clear Cache Storage');
