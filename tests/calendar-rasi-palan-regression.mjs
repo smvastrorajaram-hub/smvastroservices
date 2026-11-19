@@ -398,7 +398,7 @@ test('Calendar distinguishes Gazette government holidays from observances and do
   assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar #calDaily .transit-chart .planet-line{\n  display:flex!important;'), 'Each planet row is centred without a dotted separator.');
   assert.ok(horoscopeRendererSource.includes('const transitPlanetCount=bySign[si].length;const compactPlanetCell=transitPlanetCount>=3;'), 'Only planet count controls compact sizing; Lagna, markers and degrees are excluded from the count.');
   assert.ok(horoscopeRendererSource.includes('data-transit-planet-count="${transitPlanetCount}"'), 'The exact planet count is attached to each Rasi cell for its own font-size rule.');
-  assert.ok(horoscopeRendererSource.includes("south-rasi-cell${compactPlanetCell?' south-rasi-cell-compact':''}"), 'The cell keeps its own compact class so house numbers, Lagna, markers and degrees use the same local planet size.');
+   assert.ok(horoscopeRendererSource.includes('south-rasi-cell-compact smv-chart-cell-compact'), 'The transit cell keeps both the transit-specific and shared compact classes so all cell labels use the same local font size.');
   assert.ok(horoscopeRendererSource.includes("(houseNo??'')"), 'An unavailable house number renders blank rather than a dash.');
   assert.ok(horoscopeRendererSource.includes('${ps}</div></div>'), 'The transit renderer leaves empty planet stacks blank instead of adding a dash placeholder.');
   assert.ok(dailyCalendarCssSource.includes('--transit-cell-label-size:20px;'), 'Desktop ordinary one-to-two planet names, degrees, markers, Lagna and house numbers use a consistent 20px size.');
