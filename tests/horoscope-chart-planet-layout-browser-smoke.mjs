@@ -225,6 +225,7 @@ try {
           assert.equal(two.compact,false,item.rootId+' '+item.kind+' '+style+': a two-planet cell keeps normal sizing.');
           assert.equal(three.compact,true,item.rootId+' '+item.kind+' '+style+': a three-planet cell compacts locally.');
           assert.equal(four.compact,true,item.rootId+' '+item.kind+' '+style+': a four-planet cell compacts locally.');
+          if(!(three.lineSize < two.lineSize))console.log('PLANET FONT DEBUG',JSON.stringify({viewport:innerWidth,language,root:item.rootId,kind:item.kind,style,two:{lineSize:two.lineSize,glyphSize:two.glyphSize,compact:two.compact},three:{lineSize:three.lineSize,glyphSize:three.glyphSize,compact:three.compact},four:{lineSize:four.lineSize,glyphSize:four.glyphSize,compact:four.compact}}));
           assert.ok(three.lineSize < two.lineSize,item.rootId+' '+item.kind+' '+style+': three-planet rows are smaller than two-planet rows.');
           assert.ok(four.lineSize < three.lineSize,item.rootId+' '+item.kind+' '+style+': four-planet rows shrink further than three-planet rows.');
           assert.equal(three.equalSizes,true,item.rootId+' '+item.kind+' '+style+': planet, number, degree and status labels share one cell size.');
