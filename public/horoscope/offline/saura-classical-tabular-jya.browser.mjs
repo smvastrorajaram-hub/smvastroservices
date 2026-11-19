@@ -110,6 +110,7 @@ export function sauraTabularFourPassTrueLongitude({planet,meanLongitude,mandocca
   return Object.freeze({
     planet:p,meanLongitude:m,mandocca:a,sheeghrocha:s,mandaKarṇaConvention,
     trueLongitude:norm(afterFullManda+sh2.correctionDegrees),
+    frameId:'surya-siddhanta-saura-nirayana',
     stages:Object.freeze({
       halfSighraDegrees:sh1.correctionDegrees/2,
       halfMandaDegrees:ma1.correctionDegrees/2,
