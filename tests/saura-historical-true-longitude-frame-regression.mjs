@@ -149,7 +149,7 @@ for(const [date,time] of births){
     date+' research candidates cannot be promoted to Production');
   for(const p of result.planets){
     yes(p.frameCompatible===true,date+' '+p.planet+' one-frame model inputs');
-    yes(p.meanLongitudeFrameId===frameId&&p.trueLongitudeFrameId===frameId&&p.sheeghroccchaLongitudeFrameId===frameId,
+    yes(p.meanLongitudeFrameId===frameId&&p.trueLongitudeFrameId===frameId&&p.sheeghrochaLongitudeFrameId===frameId,
       date+' '+p.planet+' all three source frame IDs match');
     yes(p.mathematicalCrossCheckPass===true,
       date+' '+p.planet+' continuous/tabular implementation cross-check passes');
