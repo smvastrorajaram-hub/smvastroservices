@@ -10,7 +10,6 @@ on:
       - 'tests/saura-bija-residual-ablation-diagnostic.mjs'
       - 'tests/saura-bija-geometric-reference-diagnostic.mjs'
       - 'tests/saura-bija-apsis-rate-diagnostic.mjs'
-      - 'tests/saura-bija-modern-swieph-de441-accuracy.mjs'
       - 'tests/saura-bija-modern-moshier-de441-accuracy.mjs'
       - 'tests/fixtures/saura-bija-jpl-de441-heliocentric-elements-annual-1800-2399.json'
       - 'tests/fixtures/saura-bija-jpl-de441-geometric-vectors-annual-1800-2399.json'
@@ -41,7 +40,6 @@ jobs:
           node --check tests/saura-bija-residual-ablation-diagnostic.mjs
           node --check tests/saura-bija-geometric-reference-diagnostic.mjs
           node --check tests/saura-bija-apsis-rate-diagnostic.mjs
-          node --check tests/saura-bija-modern-swieph-de441-accuracy.mjs
           node --check tests/saura-bija-modern-moshier-de441-accuracy.mjs
       - name: Exercise 1800-2399 Bija mean and true-longitude coverage
         run: node tests/saura-bija-600y-regression.mjs
