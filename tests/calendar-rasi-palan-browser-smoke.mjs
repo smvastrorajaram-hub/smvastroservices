@@ -1675,6 +1675,91 @@ try {
   assert.ok(['No','இல்லை'].includes(negativeMuhurtham.verdict), 'A non-Muhurtham date must show only No / இல்லை.');
   assert.equal(negativeMuhurtham.phase, '', 'A non-Muhurtham date must not append a paksha label.');
   await checkMuhurthamDate(calendarDate, /Subha Muhurtham day|சுபமுகூர்த்த நாள்|^No$|^இல்லை$/);
+
+  // Regression: Calendar transit chart must retain all nine grahas around 12 August 2026.
+  // Tamil uses வ / அ markers; English retains R / C. The chart and status table must agree.
+  const transitOriginalLanguage = await page.evaluate(() => document.documentElement.lang || 'en');
+  async function ensureTransitLanguage(language) {
+    const current = await page.evaluate(() => document.documentElement.lang || 'en');
+    if (current === language) return;
+    await page.click(language === 'ta' ? '#calTamil' : '#calEnglish');
+    await page.waitForFunction(value => document.documentElement.lang === value, { timeout: 20000 }, language);
+  }
+  async function inspectTransitDate(date, language) {
+    await page.$eval('#calDate', (el, value) => {
+      el.value = value;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }, date);
+    await page.waitForFunction(value => {
+      const status = document.querySelector('#calStatus')?.textContent || '';
+      const shell = document.querySelector('#smvDailyCalendar');
+      const rows = document.querySelectorAll('#calDaily .transit-position-table tbody tr').length;
+      return status.includes(value) && shell && !shell.hasAttribute('aria-busy') && rows >= 10;
+    }, { timeout: 90000 }, date);
+    return page.evaluate(language => {
+      const chart = document.querySelector('#calDaily .transit-chart');
+      const cells = [...(chart?.querySelectorAll('.transit-cell-planets') || [])];
+      const planetElements = [...(chart?.querySelectorAll('.planet-short') || [])];
+      const rows = [...(document.querySelectorAll('#calDaily .transit-position-table tbody tr') || [])].map(row => ({
+        name: row.querySelector('td:first-child')?.textContent.trim() || '',
+        status: row.querySelector('td:last-child')?.textContent.trim() || ''
+      }));
+      const maxStack = Math.max(0, ...cells.map(cell => cell.querySelectorAll('.planet-line').length));
+      const clippedStacks = cells.filter(cell =>
+        cell.querySelectorAll('.planet-line').length > 0 && cell.scrollHeight > cell.clientHeight + 1
+      ).length;
+      const planetText = planetElements.map(el => el.textContent.trim());
+      const markerText = planetText.concat(rows.map(row => row.name + ' ' + row.status)).join(' | ');
+      const combustionInChart = chart?.querySelectorAll('.planet-short .status-c').length || 0;
+      const combustionInStatus = rows.filter(row => row.status.includes(language === 'ta' ? 'அ' : 'C')).length;
+      const retrogradeInChart = chart?.querySelectorAll('.planet-short .status-r').length || 0;
+      const retrogradeInNames = rows.filter(row => row.name.includes(language === 'ta' ? '(வ)' : '(R)')).length;
+      const separatorLines = [...(chart?.querySelectorAll('.planet-line') || [])].filter(line => {
+        const style = getComputedStyle(line);
+        return style.borderBottomStyle !== 'none' || style.borderBottomWidth !== '0px';
+      }).length;
+      return {
+        chartPlanetCount: planetElements.length,
+        chartHasJupiter: planetText.some(value => value.startsWith(language === 'ta' ? 'கு' : 'Ju')),
+        tableHasJupiter: rows.some(row => row.name.startsWith(language === 'ta' ? 'கு' : 'Ju')),
+        tablePlanetRows: rows.length - 1,
+        denseClass: Boolean(chart?.classList.contains('transit-chart-dense') || chart?.classList.contains('transit-chart-dense-4plus')),
+        maxStack,
+        clippedStacks,
+        separatorLines,
+        combustionInChart,
+        combustionInStatus,
+        retrogradeInChart,
+        retrogradeInNames,
+        hasWrongLatinMarkersInTamil: language === 'ta' && /\\((?:R|C)\\)/.test(markerText),
+        hasWrongTamilMarkersInEnglish: language === 'en' && /\\((?:வ|அ)\\)/.test(markerText)
+      };
+    }, language);
+  }
+  for (const language of ['ta', 'en']) {
+    await ensureTransitLanguage(language);
+    for (const date of ['2026-08-11', '2026-08-12', '2026-08-13']) {
+      const transitState = await inspectTransitDate(date, language);
+      assert.equal(transitState.chartPlanetCount, 9, language + ' ' + date + ': all nine grahas must be present in the Transit Chart: ' + JSON.stringify(transitState));
+      assert.equal(transitState.chartHasJupiter, true, language + ' ' + date + ': Jupiter must be visible in the Transit Chart: ' + JSON.stringify(transitState));
+      assert.equal(transitState.tableHasJupiter, true, language + ' ' + date + ': Jupiter must be present in Transit Planetary Positions: ' + JSON.stringify(transitState));
+      assert.equal(transitState.tablePlanetRows, 9, language + ' ' + date + ': all nine grahas must be present in the positions table.');
+      assert.equal(transitState.clippedStacks, 0, language + ' ' + date + ': crowded Rasi cells must not clip planet rows: ' + JSON.stringify(transitState));
+      assert.equal(transitState.separatorLines, 0, language + ' ' + date + ': no dotted line may appear below individual planet rows.');
+      assert.equal(transitState.denseClass, transitState.maxStack >= 3, language + ' ' + date + ': dense chart sizing must be enabled exactly when a Rasi contains three or more planets.');
+      assert.equal(transitState.combustionInStatus, transitState.combustionInChart, language + ' ' + date + ': C / அ status must match chart combustion markers.');
+      assert.equal(transitState.retrogradeInNames, transitState.retrogradeInChart, language + ' ' + date + ': R / வ status must match chart retrograde markers.');
+      assert.equal(transitState.hasWrongLatinMarkersInTamil, false, language + ' ' + date + ': Tamil UI must not show (R) or (C).');
+      assert.equal(transitState.hasWrongTamilMarkersInEnglish, false, language + ' ' + date + ': English UI must retain Latin markers.');
+    }
+  }
+  await ensureTransitLanguage(transitOriginalLanguage);
+  await page.$eval('#calDate', (el, value) => {
+    el.value = value;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, calendarDate);
+  await page.waitForFunction(value => (document.querySelector('#calStatus')?.textContent || '').includes(value) &&
+    !document.querySelector('#smvDailyCalendar')?.hasAttribute('aria-busy'), { timeout: 90000 }, calendarDate);
   assert.equal(publicUi.separateAdminLink, false, 'Calendar should not link to a separate Admin page');
   assert.equal(publicUi.hasRasiPicker, true, 'Public Rasi Palan must include the selected-Rasi dropdown');
 
