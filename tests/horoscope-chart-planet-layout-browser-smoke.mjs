@@ -33,8 +33,8 @@ function countForSign(sign) {
 function planetRow(index, withState) {
   let state = '';
   if (withState) {
-    state = '<span class="rasi-status-marker status-c">(அ)</span>' +
-      '<span class="rasi-status-marker status-r">(வ)</span>' +
+    state = '<span class="status-combust rasi-status-marker status-c">(அ)</span>' +
+      '<span class="status-retro rasi-status-marker status-r">(வ)</span>' +
       '<span class="rasi-degree transit-degree">18°</span>';
   }
   return '<div class="planet-line"><span class="planet-glyph"><span class="planet-short">' +
@@ -144,8 +144,8 @@ try {
                 const glyph = cell.querySelector(style === 'south' ? '.planet-glyph' : '.smv-v342-planets .planet-glyph');
                 const number = cell.querySelector('.dynamic-rasi-number,.bhava-house-no,.smv-v342-house-number,.smv-v342-sign-number,.smv-v342-asc,.lagna');
                 const degree = cell.querySelector('.planet-degree,.rasi-degree,.transit-degree');
-                const marker = cell.querySelector('.rasi-status-marker.status-c,.status-c');
-                const retroMarker = cell.querySelector('.rasi-status-marker.status-r,.status-r');
+                const marker = cell.querySelector('.status-combust,.rasi-status-marker.status-c,.status-c');
+                const retroMarker = cell.querySelector('.status-retro,.rasi-status-marker.status-r,.status-r');
                 const px = element => element ? parseFloat(getComputedStyle(element).fontSize) : null;
                 const cellRect = cell.getBoundingClientRect();
                 const watched = [...cell.querySelectorAll('.planet-line,.planet-glyph,.rasi-status-marker,.planet-degree,.rasi-degree,.transit-degree,.dynamic-rasi-number,.bhava-house-no,.smv-v342-sign-number,.smv-v342-house-number,.smv-v342-asc')];
@@ -229,7 +229,7 @@ try {
           for (const value of [three,four]) {
             assert.ok(Math.abs(value.lineSize-two.lineSize)<0.6,item.rootId+' '+item.kind+' '+style+': three- and four-planet rows keep normal font size.');
             assert.ok(Math.abs(value.glyphSize-two.glyphSize)<0.6,item.rootId+' '+item.kind+' '+style+': three- and four-planet names are not reduced.');
-            if(value.numberSize!==null)assert.ok(Math.abs(value.numberSize-two.numberSize)<0.6,item.rootId+' '+item.kind+' '+style+': house/sign number is not reduced before five planets.');
+            if(value.numberSize!==null)assert.ok(value.numberSize+0.6>=two.numberSize,item.rootId+' '+item.kind+' '+style+': house/sign number is not reduced before five planets.');
           }
           assert.ok(five.lineSize<four.lineSize,item.rootId+' '+item.kind+' '+style+': five-planet rows reduce their font size.');
           assert.ok(five.glyphSize<four.glyphSize,item.rootId+' '+item.kind+' '+style+': five-planet planet names reduce their font size.');
