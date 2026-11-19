@@ -88,7 +88,8 @@ test('Calendar table is inserted after transit with horizontal-only scrolling an
   assert.ok(cellRule.includes('overflow-wrap:normal'));
   assert.ok(cellRule.includes('hyphens:none'));
   assert.ok(css.includes('#smvDailyCalendar .cal-graha-period-card table{width:1000px;min-width:1000px'));
-  assert.ok(css.includes('#smvDailyCalendar .cal-graha-period-card thead th{position:sticky;top:0'));
+  assert.ok(css.includes('#smvDailyCalendar .cal-graha-period-card thead th{background:#ededed'));
+  assert.ok(!css.includes('#smvDailyCalendar .cal-graha-period-card thead th{position:sticky;top:0'));
   assert.ok(css.includes('#smvDailyCalendar .cal-graha-period-card tbody th{position:sticky;left:0'));
   assert.ok(calendarSource.includes('tabindex="0" role="region" aria-label="'));
 });
