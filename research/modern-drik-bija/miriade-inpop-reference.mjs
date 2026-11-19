@@ -101,7 +101,9 @@ async function fetchJson(url, options, context) {
       const response = await fetch(url, { ...options, signal: AbortSignal.timeout(120000) });
       const body = await response.text();
       if (!response.ok) {
-        throw new Error('Miriade HTTP ' + response.status + ': ' + body.slice(0, 500));
+        const error = new Error('Miriade HTTP ' + response.status + ': ' + body.slice(0, 500));
+        error.retryable = response.status === 429 || response.status >= 500;
+        throw error;
       }
       let payload;
       try {
@@ -115,6 +117,7 @@ async function fetchJson(url, options, context) {
       return payload;
     } catch (error) {
       lastError = error;
+      if (error.retryable === false) throw error;
       if (attempt === 5) break;
       const delay = Math.min(30000, 1000 * (2 ** attempt));
       console.warn('Retrying INPOP request', context, 'attempt', attempt + 2, 'after', String(error));
@@ -180,7 +183,7 @@ export async function fetchInpopEpochList(planet, epochs) {
   const lines = dates.map(isoUtc);
   const params = baseParameters(planet);
   const form = new FormData();
-  form.set('epochs', new Blob([lines.join('\\n') + '\\n'], { type: 'text/plain' }), 'epochs.txt');
+  form.set('epochs', new Blob([lines.join('\n') + '\n'], { type: 'text/plain' }), 'epochs.txt');
   const payload = await fetchJson(API + '?' + params.toString(), {
     method: 'POST',
     body: form
