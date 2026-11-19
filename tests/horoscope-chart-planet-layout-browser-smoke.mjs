@@ -12,11 +12,11 @@ await mkdir(outputDir, {recursive:true});
 const signOrder = [11,0,1,2,10,3,9,4,8,7,6,5];
 const zodiac = ['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
 const roman = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
-const shortNames = ['சூ','சந்','செ','பு'];
-const fullNames = ['சூரியன்','சந்திரன்','செவ்வாய்','புதன்'];
+const shortNames = ['சூ','சந்','செ','பு','கு','சு','ச','ரா'];
+const fullNames = ['சூரியன்','சந்திரன்','செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி','ராகு'];
 
 const bhavaHouseSigns = [0,0,1,2,3,4,5,6,7,8,9,10];
-const bhavaPlanetCounts = [2,0,3,4,0,0,0,0,0,0,0,0];
+const bhavaPlanetCounts = [2,0,3,4,5,0,0,0,0,0,0,0];
 const bhavaHousesBySign = Array.from({length:12},()=>[]);
 const bhavaPlanetCountsBySign = Array(12).fill(0);
 bhavaHouseSigns.forEach((sign,index)=>{
@@ -27,6 +27,7 @@ function countForSign(sign) {
   if (sign === 0) return 2;
   if (sign === 1) return 3;
   if (sign === 2) return 4;
+  if (sign === 3) return 5;
   return 0;
 }
 function planetRow(index, withState) {
@@ -133,7 +134,7 @@ try {
               const cellBoundsOutside = cells.filter(cell=>{const rect=cell.getBoundingClientRect();return rect.left<chartRect.left-1||rect.right>chartRect.right+1||rect.top<chartRect.top-1||rect.bottom>chartRect.bottom+1;}).map(cell=>({className:cell.className,left:cell.getBoundingClientRect().left,right:cell.getBoundingClientRect().right,top:cell.getBoundingClientRect().top,bottom:cell.getBoundingClientRect().bottom}));
               const cellCount = node => Number(node.getAttribute('data-chart-planet-count') || 0);
               const picked = {};
-              for (const target of [2,3,4]) {
+              for (const target of [2,3,4,5]) {
                 const cell = cells.find(node=>cellCount(node) === target);
                 if (!cell) {
                   picked[target] = {missing:true};
@@ -206,7 +207,8 @@ try {
           const two = item.picked[2];
           const three = item.picked[3];
           const four = item.picked[4];
-          for (const entry of [[2,two],[3,three],[4,four]]) {
+          const five = item.picked[5];
+          for (const entry of [[2,two],[3,three],[4,four],[5,five]]) {
             const count = entry[0];
             const value = entry[1];
             assert.ok(!value.missing,item.rootId+' '+item.kind+' '+style+': '+count+' planet test cell must exist.');
@@ -217,10 +219,17 @@ try {
           assert.equal(two.compact,false,item.rootId+' '+item.kind+' '+style+': a two-planet cell keeps normal sizing.');
           assert.equal(three.compact,true,item.rootId+' '+item.kind+' '+style+': a three-planet cell compacts locally.');
           assert.equal(four.compact,true,item.rootId+' '+item.kind+' '+style+': a four-planet cell compacts locally.');
-          assert.ok(Math.abs(three.lineSize-two.lineSize)<0.6,item.rootId+' '+item.kind+' '+style+': three-planet labels keep the normal two-planet font size.');
-          assert.ok(Math.abs(four.lineSize-two.lineSize)<0.6,item.rootId+' '+item.kind+' '+style+': four-planet labels keep the normal two-planet font size.');
-          assert.ok(Math.abs(three.glyphSize-two.glyphSize)<0.6,item.rootId+' '+item.kind+' '+style+': three-planet glyphs are not reduced.');
-          assert.ok(Math.abs(four.glyphSize-two.glyphSize)<0.6,item.rootId+' '+item.kind+' '+style+': four-planet glyphs are not reduced.');
+          assert.equal(five.compact,true,item.rootId+' '+item.kind+' '+style+': five-planet cells keep the wrapping/containment class.');
+          for (const value of [three,four]) {
+            assert.ok(Math.abs(value.lineSize-two.lineSize)<0.6,item.rootId+' '+item.kind+' '+style+': three- and four-planet rows keep normal font size.');
+            assert.ok(Math.abs(value.glyphSize-two.glyphSize)<0.6,item.rootId+' '+item.kind+' '+style+': three- and four-planet names are not reduced.');
+            if(value.numberSize!==null)assert.ok(Math.abs(value.numberSize-two.numberSize)<0.6,item.rootId+' '+item.kind+' '+style+': house/sign number is not reduced before five planets.');
+          }
+          assert.ok(five.lineSize<four.lineSize,item.rootId+' '+item.kind+' '+style+': five-planet rows reduce their font size.');
+          assert.ok(five.glyphSize<four.glyphSize,item.rootId+' '+item.kind+' '+style+': five-planet planet names reduce their font size.');
+          if(five.numberSize!==null&&four.numberSize!==null)assert.ok(five.numberSize<four.numberSize,item.rootId+' '+item.kind+' '+style+': five-planet house/sign numbers reduce too.');
+          if(five.degreeSize!==null&&four.degreeSize!==null)assert.ok(five.degreeSize<four.degreeSize,item.rootId+' '+item.kind+' '+style+': Degree labels reduce only at five planets.');
+          if(five.markerSize!==null&&four.markerSize!==null)assert.ok(five.markerSize<four.markerSize,item.rootId+' '+item.kind+' '+style+': C/R status markers reduce only at five planets.');
           assert.equal(item.cellBoundsOutside.length,0,item.rootId+' '+item.kind+' '+style+': every chart box remains inside the chart boundary: '+JSON.stringify(item.cellBoundsOutside));
           if (item.kind==='navamsa' || item.kind==='bhava') {
             assert.equal(item.emptyDash,false,item.rootId+' '+item.kind+' '+style+': empty planet cells stay blank.');
