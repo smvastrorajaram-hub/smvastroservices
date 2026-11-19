@@ -137,7 +137,17 @@ try {
                 const outside = watched.filter(element=>{
                   const rect = element.getBoundingClientRect();
                   return rect.width > 0 && (rect.left < cellRect.left - 1 || rect.right > cellRect.right + 1);
-                }).map(element=>element.textContent.trim());
+                }).map(element=>{
+                  const rect=element.getBoundingClientRect(),style=getComputedStyle(element);
+                  return {
+                    tag:element.tagName,classes:element.className,text:element.textContent.trim(),
+                    left:Math.round(rect.left*10)/10,right:Math.round(rect.right*10)/10,width:Math.round(rect.width*10)/10,
+                    cellLeft:Math.round(cellRect.left*10)/10,cellRight:Math.round(cellRect.right*10)/10,cellWidth:Math.round(cellRect.width*10)/10,
+                    display:style.display,whiteSpace:style.whiteSpace,fontSize:style.fontSize,
+                    widthStyle:style.width,minWidth:style.minWidth,maxWidth:style.maxWidth,
+                    overflowWrap:style.overflowWrap,wordBreak:style.wordBreak,flexShrink:style.flexShrink
+                  };
+                });
                 const sizes = [line,glyph,number,degree,marker].filter(Boolean).map(px);
                 const colors = [...cell.querySelectorAll('.planet-glyph')].map(element=>getComputedStyle(element).color);
                 picked[target] = {
