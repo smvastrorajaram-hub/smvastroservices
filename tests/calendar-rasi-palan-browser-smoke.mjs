@@ -89,74 +89,58 @@ try {
   }
   assert.ok(ready, 'Calendar source did not become ready: ' + (lastError?.message || 'unknown error'));
 
-  // Verify the annual Graha table at a phone-width viewport, including the CSS
-  // cascade that previously forced this table to shrink and wrap its labels.
+  // Verify the annual Graha section is a single vertical sequence on mobile and desktop.
   const initialCalendarLanguage = await page.evaluate(() => document.documentElement.lang || 'en');
   if (initialCalendarLanguage !== 'ta') {
     await page.click('#calTamil');
     await page.waitForFunction(() => document.documentElement.lang === 'ta', { timeout: 20000 });
   }
-  await page.waitForSelector('#calGrahaPeriodCard .cal-graha-period-scroll', { timeout: 90000 });
+  await page.waitForSelector('#calGrahaPeriodCard .cal-graha-planet', { timeout: 90000 });
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
   const grahaMobileLayout = await page.evaluate(() => {
     const card = document.querySelector('#calGrahaPeriodCard');
-    const scroller = card?.querySelector('.cal-graha-period-scroll');
-    const table = scroller?.querySelector('table');
-    if (!card || !scroller || !table) return { found: false };
-    const textFits = element => {
-      const range = document.createRange();
-      range.selectNodeContents(element);
-      const textWidth = range.getBoundingClientRect().width;
-      const textStyle = getComputedStyle(element);
-      const cell = element.matches('th,td') ? element : element.closest('td');
-      const cellStyle = getComputedStyle(cell);
-      const contentWidth = cell.getBoundingClientRect().width -
-        parseFloat(cellStyle.paddingLeft || '0') - parseFloat(cellStyle.paddingRight || '0');
+    if (!card) return { found: false };
+    const planets = [...card.querySelectorAll('.cal-graha-planet')];
+    const headingInfo = planets.map(planet => {
+      const heading = planet.querySelector('.cal-graha-planet-name');
+      const rect = heading?.getBoundingClientRect();
       return {
-        text: element.textContent.trim(),
-        whiteSpace: textStyle.whiteSpace,
-        textWidth,
-        contentWidth,
-        fits: textStyle.whiteSpace === 'nowrap' && textWidth <= contentWidth + 1
+        name: heading?.textContent.trim() || '',
+        centered: Boolean(rect && Math.abs((rect.left + rect.right) / 2 - window.innerWidth / 2) < 3),
+        categoryCount: planet.querySelectorAll('.cal-graha-period-type').length,
+        starts: [...planet.querySelectorAll('.cal-graha-period-start')].map(el => el.textContent.trim()),
+        ends: [...planet.querySelectorAll('.cal-graha-period-end')].map(el => el.textContent.trim())
       };
-    };
-    const planetNames = [...card.querySelectorAll('tbody th')].map(textFits);
-    const dateEntries = [...card.querySelectorAll('.cal-graha-period-date-start,.cal-graha-period-date-end')].map(textFits);
-    const startLeft = scroller.scrollLeft;
-    scroller.scrollLeft = Math.min(160, scroller.scrollWidth - scroller.clientWidth);
-    const scrollMoved = scroller.scrollLeft > startLeft;
-    scroller.scrollLeft = 0;
+    });
     return {
       found: true,
-      outsideLegacyDailyTableScope: !card.closest('#calDaily'),
-      positionedAfterDailyRoot: card.previousElementSibling?.id === 'calDaily',
-      positionedBeforeRasiPalan: (() => {
-        const rasiPalan = document.querySelector('#calRasiPalan');
-        return Boolean(rasiPalan && (card.compareDocumentPosition(rasiPalan) & Node.DOCUMENT_POSITION_FOLLOWING));
-      })(),
+      width: card.getBoundingClientRect().width,
+      scrollWidth: card.scrollWidth,
+      clientWidth: card.clientWidth,
+      pageScrollWidth: document.documentElement.scrollWidth,
       viewportWidth: window.innerWidth,
-      wrapperWidth: scroller.clientWidth,
-      wrapperScrollWidth: scroller.scrollWidth,
-      tableWidth: table.getBoundingClientRect().width,
-      scrollMoved,
-      planetNames,
-      dateEntries,
+      tableCount: card.querySelectorAll('table').length,
+      columnLayouts: card.querySelectorAll('[style*="grid"],[style*="flex"]').length,
+      horizontalScrollElements: [...card.querySelectorAll('*')].filter(el => {
+        const style = getComputedStyle(el);
+        return ['auto','scroll'].includes(style.overflowX) && el.scrollWidth > el.clientWidth + 1;
+      }).length,
+      headingInfo,
       footnoteText: card.querySelector('.cal-graha-period-note')?.textContent || ''
     };
   });
-  assert.equal(grahaMobileLayout.found, true, 'Annual Graha table must render in Calendar.');
-  assert.equal(grahaMobileLayout.outsideLegacyDailyTableScope, true, 'Graha table must not inherit the legacy daily Panchang table layout rules.');
-  assert.equal(grahaMobileLayout.positionedAfterDailyRoot, true, 'Graha table must follow the complete Daily Panchang and Transit content.');
-  assert.equal(grahaMobileLayout.positionedBeforeRasiPalan, true, 'Graha table must appear before Rasi Palan.');
-  assert.ok(grahaMobileLayout.tableWidth >= 680 && grahaMobileLayout.tableWidth <= 700, 'Annual Graha table must keep its full wide layout on mobile: ' + JSON.stringify(grahaMobileLayout));
-  assert.ok(grahaMobileLayout.wrapperScrollWidth > grahaMobileLayout.wrapperWidth && grahaMobileLayout.wrapperScrollWidth - grahaMobileLayout.wrapperWidth < 380, 'Annual Graha table must overflow inside its own horizontal scroll area: ' + JSON.stringify(grahaMobileLayout));
-  assert.equal(grahaMobileLayout.scrollMoved, true, 'The Graha table must respond to horizontal scrolling on mobile.');
-  assert.ok(grahaMobileLayout.planetNames.length === 5 && grahaMobileLayout.planetNames.every(item => item.fits), 'All five Tamil planet names must stay on one line without clipping: ' + JSON.stringify(grahaMobileLayout.planetNames));
-  assert.ok(grahaMobileLayout.dateEntries.length > 0 && grahaMobileLayout.dateEntries.length % 2 === 0 && grahaMobileLayout.dateEntries.every(item => item.fits), 'Every Graha date range must stay on one line without wrapping: ' + JSON.stringify(grahaMobileLayout.dateEntries));
-  assert.equal(grahaMobileLayout.footnoteText, '', 'The annual-boundary / IST explanatory paragraph must be completely absent.');
+  assert.equal(grahaMobileLayout.found, true, 'Annual Graha periods must render on mobile.');
+  assert.equal(grahaMobileLayout.tableCount, 0, 'Graha periods must not use a table.');
+  assert.equal(grahaMobileLayout.columnLayouts, 0, 'Graha periods must not use columns or flex rows.');
+  assert.equal(grahaMobileLayout.horizontalScrollElements, 0, 'Graha periods must not introduce horizontal scrolling.');
+  assert.ok(grahaMobileLayout.pageScrollWidth <= grahaMobileLayout.viewportWidth + 1, 'Mobile page must not overflow horizontally: ' + JSON.stringify(grahaMobileLayout));
+  assert.equal(grahaMobileLayout.headingInfo.length, 5, 'Exactly five planets must be shown.');
+  assert.ok(grahaMobileLayout.headingInfo.every(item => item.centered && item.categoryCount === 2), 'Each planet must be centered and show its two periods below: ' + JSON.stringify(grahaMobileLayout.headingInfo));
+  assert.equal(grahaMobileLayout.footnoteText, '', 'The annual-boundary / IST explanatory paragraph must remain absent.');
+  assert.ok(grahaMobileLayout.headingInfo.every(item => item.starts.length === item.ends.length), 'Every period start must have a corresponding end date.');
   await page.$eval('#calGrahaPeriodCard', el => el.scrollIntoView({ block: 'center' }));
   await page.screenshot({
-    path: new URL('calendar-graha-period-table-mobile.png', outputDir).pathname,
+    path: new URL('calendar-graha-period-list-mobile.png', outputDir).pathname,
     fullPage: false,
     captureBeyondViewport: false
   });
@@ -167,21 +151,19 @@ try {
   await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
   const grahaDesktopLayout = await page.evaluate(() => {
     const card = document.querySelector('#calGrahaPeriodCard');
-    const scroller = card?.querySelector('.cal-graha-period-scroll');
-    const table = scroller?.querySelector('table');
-    const cardRect = card?.getBoundingClientRect();
     return {
-      found: Boolean(card && scroller && table),
+      found: Boolean(card),
+      cardWidth: card?.getBoundingClientRect().width || 0,
       viewportWidth: window.innerWidth,
-      cardWidth: cardRect?.width || 0,
-      wrapperWidth: scroller?.clientWidth || 0,
-      tableWidth: table?.getBoundingClientRect().width || 0,
-      fitsWithoutHorizontalScroll: Boolean(scroller && table && scroller.clientWidth >= table.getBoundingClientRect().width)
+      pageScrollWidth: document.documentElement.scrollWidth,
+      planetCount: card?.querySelectorAll('.cal-graha-planet').length || 0,
+      tableCount: card?.querySelectorAll('table').length || 0
     };
   });
-  assert.equal(grahaDesktopLayout.found, true, 'Annual Graha table must remain visible on desktop.');
-  assert.ok(grahaDesktopLayout.cardWidth <= grahaDesktopLayout.viewportWidth, 'Graha card must remain within the desktop viewport: ' + JSON.stringify(grahaDesktopLayout));
-  assert.equal(grahaDesktopLayout.fitsWithoutHorizontalScroll, true, 'The full annual Graha table should fit on a 1280px desktop view: ' + JSON.stringify(grahaDesktopLayout));
+  assert.equal(grahaDesktopLayout.found, true, 'Annual Graha periods must remain visible on desktop.');
+  assert.equal(grahaDesktopLayout.planetCount, 5, 'Desktop must show the same five-planet sequence.');
+  assert.equal(grahaDesktopLayout.tableCount, 0, 'Desktop must not render a table.');
+  assert.ok(grahaDesktopLayout.pageScrollWidth <= grahaDesktopLayout.viewportWidth + 1, 'Desktop page must not overflow horizontally: ' + JSON.stringify(grahaDesktopLayout));
 
   const calendarHeader = await page.evaluate(() => {
     const header = document.querySelector('.calendar-topbar');
