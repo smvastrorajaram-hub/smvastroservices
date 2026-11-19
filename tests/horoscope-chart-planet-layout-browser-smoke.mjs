@@ -255,9 +255,11 @@ try {
                 item.rootId+' '+style+' Bhava groups two distinct cusp houses in one sign only when the Bhava Table maps both there.');
             }
           }
-          if(style==='east'&&item.kind!=='bhava'){
-            assert.ok(item.eastHouseNumbers.every(number=>number.displayed===String(number.house)),item.rootId+' East '+item.kind+' must retain its existing Lagna-based house numbers.');
-            assert.ok(item.eastHouseNumbers.every(number=>number.fixedSignNumber),item.rootId+' East '+item.kind+' must retain its existing sign-number labels unchanged.');
+          if(style==='east'&&['rasi','navamsa','transit'].includes(item.kind)){
+            assert.equal(item.eastHouseNumbers.length,12,item.rootId+' East '+item.kind+' keeps all twelve chart cells.');
+            assert.ok(item.eastHouseNumbers.every(number=>number.displayed===String(number.house)),item.rootId+' East '+item.kind+' must retain its Lagna-based house numbers.');
+            assert.ok(item.eastHouseNumbers.every(number=>number.house>=1&&number.house<=12),item.rootId+' East '+item.kind+' keeps valid house numbers 1–12.');
+            assert.ok(item.eastHouseNumbers.every(number=>!number.fixedSignNumber),item.rootId+' East '+item.kind+' must remove fixed zodiac-sign numbers from every cell.');
           }
         }
         const image = join(outputDir,'horoscope-'+style+'-'+language+'-'+width+'.png');
