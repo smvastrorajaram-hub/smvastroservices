@@ -62,7 +62,7 @@ test('year-boundary continuations remain clipped and explicitly marked', () => {
   assert.equal(year[5].every(event => event[2] >= year[3] && event[3] <= year[4]), true);
 });
 
-test('Calendar table is inserted after transit with horizontal-only scrolling and intact text', async () => {
+test('Calendar Graha table is a clean standalone three-column component with intact dates', async () => {
   assert.ok(calendarSource.includes("from './calendar-graha-periods-data.mjs'"));
   assert.ok(calendarSource.includes('root.after(card)'));
   assert.ok(calendarSource.includes("host.querySelector('#calGrahaPeriodCard')?.remove()"));
@@ -83,10 +83,17 @@ test('Calendar table is inserted after transit with horizontal-only scrolling an
   assert.ok(scrollRule.includes('overflow-x:auto'));
   assert.ok(scrollRule.includes('overflow-y:hidden'));
   assert.ok(!scrollRule.includes('!important'));
-  assert.ok(css.includes('#calGrahaPeriodCard .cal-graha-period-table{width:1060px;min-width:1060px'));
+  assert.match(css, /#calGrahaPeriodCard \\.cal-graha-period-table\\{\\s*width:680px;\\s*min-width:680px;/);
   assert.ok(css.includes('#calGrahaPeriodCard .cal-graha-period-table th:first-child'));
-  assert.ok(css.includes('#calGrahaPeriodCard .cal-graha-period-list li span{white-space:nowrap'));
+  assert.match(css, /#calGrahaPeriodCard \\.cal-graha-period-date-start,[\\s\\S]*?#calGrahaPeriodCard \\.cal-graha-period-date-end\\{\\s*display:block;\\s*white-space:nowrap;/);
   assert.ok(!css.includes('#smvDailyCalendar .cal-graha-period'));
+  const grahaCss = css.slice(css.indexOf('/* Annual Graha table:'));
+  assert.ok(!grahaCss.includes('!important'));
+  assert.doesNotMatch(grahaCss, /color:\\s*(?:red|#f00|#ff0000|rgb\\(255,\\s*0,\\s*0\\))/i);
+  assert.ok(grahaCss.includes('width:120px;'));
+  assert.ok(grahaCss.includes('width:280px;'));
+  assert.ok(calendarSource.includes('cal-graha-period-date-start'));
+  assert.ok(calendarSource.includes('cal-graha-period-date-end'));
   assert.ok(!css.includes('cal-graha-period-note'));
   assert.ok(calendarSource.includes('tabindex="0" role="region" aria-label="'));
 });
