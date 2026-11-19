@@ -18,6 +18,11 @@ const inHostSourceChanged = changed.has('public/index.html')
   || changed.has('public/sitemap.xml')
   || changed.has('public/sitemap.html')
   || [
+    'public/horoscope/offline/bv-raman-shadbala.browser.mjs',
+    'public/horoscope/offline/saura-classical-mean-motion.browser.mjs',
+    'public/horoscope/offline/saura-classical-true-longitude.browser.mjs',
+    'public/horoscope/offline/saura-classical-tabular-jya.browser.mjs',
+    'public/horoscope/offline/saura-natal-five-cheshta.browser.mjs',
     'public/horoscope/calendar/index.html',
     'public/horoscope/daily-calendar.css',
     'public/horoscope/daily-calendar.mjs',
