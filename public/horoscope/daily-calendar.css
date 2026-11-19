@@ -11,11 +11,11 @@
 
 
 /* V211: compact single-layer calendar + transit containment. */
-#smvDailyCalendar .transit-table-card{margin:18px 0 0;padding:18px 0 0;border:0;border-top:1px solid #d9e5dc;background:transparent;border-radius:0;box-shadow:none}
+#smvDailyCalendar .transit-table-card{margin:12px 0 0;padding:0;border:0;background:transparent;border-radius:0;box-shadow:none}
 #smvDailyCalendar .transit-table-card:before,#smvDailyCalendar .transit-table-card:after{display:none!important}
 #smvDailyCalendar .transit-chart{overflow:hidden!important}
-#smvDailyCalendar .transit-chart.transit-chart-dense{aspect-ratio:auto;max-height:none;grid-template-rows:repeat(4,minmax(112px,auto))}
-#smvDailyCalendar .transit-chart.transit-chart-dense-4plus{grid-template-rows:repeat(4,minmax(132px,auto))}
+#smvDailyCalendar .transit-chart{width:min(520px,100%);aspect-ratio:1/1}
+#smvDailyCalendar .transit-chart.transit-chart-dense,#smvDailyCalendar .transit-chart.transit-chart-dense-4plus{aspect-ratio:1/1;grid-template-rows:repeat(4,minmax(0,1fr))}
 #smvDailyCalendar .transit-chart .south-rasi-cell{min-width:0!important;overflow:hidden!important;padding:6px 4px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-start!important;gap:2px!important}
 #smvDailyCalendar .transit-chart .dynamic-rasi-number{flex:0 0 auto;margin:0!important;line-height:1.1!important}
 #smvDailyCalendar .transit-chart .lagna{flex:0 0 auto;line-height:1.1!important;margin:1px 0!important}
