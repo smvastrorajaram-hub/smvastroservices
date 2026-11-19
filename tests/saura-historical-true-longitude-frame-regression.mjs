@@ -168,14 +168,18 @@ yes(historicalCandidates.length===25,'exactly five dates x five planets = 25 sam
 // mean/Sheeghrocccha from Saura and chart true longitude from Swiss Lahiri.
 // It may retain the numeric candidate for diagnostics, but MUST withhold the
 // aggregate Shadbala totals/rankings for all five affected grahas.
-yes(nodeSource.includes("frameGateStatus:'BLOCKED_MIXED_REFERENCE_FRAMES'"),
-  'Node engine marks mixed Saura/Swiss live inputs as blocked');
-yes(browserSource.includes("frameGateStatus:'BLOCKED_MIXED_REFERENCE_FRAMES'"),
-  'browser engine marks mixed Saura/Swiss live inputs as blocked');
-yes(nodeSource.includes('chesta.frameCompatible===false||chesta.productionEligible===false'),
-  'Node Shadbala total has a hard frame-compatibility gate');
-yes(browserSource.includes('chesta.frameCompatible===false||chesta.productionEligible===false'),
-  'browser Shadbala total has a hard frame-compatibility gate');
+for(const [engine,source] of [['Node',nodeSource],['Browser',browserSource]]){
+  const start=source.indexOf('function chestaBala('),end=source.indexOf('function ramanDrishtiVirupa(',start);
+  yes(start>=0&&end>start,engine+' Cheshta function boundaries exist');
+  const body=source.slice(start,end);
+  yes(body.includes('BV_RAMAN_CHESHTA_BLOCKED_REFERENCE_FRAME_MISMATCH'),
+    engine+' production Cheshta blocks an unverified mixed-frame fallback');
+  yes(!body.includes('planetRow?.longitude')&&!body.includes('sauraFivePlanetCheshtaInputs'),
+    engine+' production Cheshta never combines Swiss true with Saura mean/Sheeghrocchea');
+  yes(source.includes('sourceInputs.referenceFrames')&&
+      source.includes('one identical reference frame for mean, true and Sheeghrocca'),
+    engine+' explicit worked-example inputs must declare one shared frame');
+}
 
 const liveBirths=[];
 for(const [date,time] of births){
@@ -186,15 +190,17 @@ for(const [date,time] of births){
     const p=live.chart.planets.find(x=>x.name===name);
     const s=p?.strength6;
     yes(!!s,date+' '+name+' live B.V. Raman strength6 exists');
-    yes(Number.isFinite(s.components.cheshta),date+' '+name+' diagnostic Cheshta candidate remains inspectable');
-    yes(s.evidence?.cheshtaSource?.frameCompatible===false,date+' '+name+' live candidate identifies frame mismatch');
-    yes(s.evidence?.cheshtaSource?.productionEligible===false,date+' '+name+' candidate is explicitly production-ineligible');
+    yes(s.components.cheshta===null,date+' '+name+' mixed-frame numerical Cheshta is withheld rather than displayed as valid Bala');
+    yes(s.evidence?.cheshtaSource?.method==='BV_RAMAN_CHESHTA_BLOCKED_REFERENCE_FRAME_MISMATCH'&&
+      s.evidence?.cheshtaSource?.available===false&&s.evidence?.cheshtaSource?.sameReferenceFrameVerified===false,
+      date+' '+name+' source explicitly blocks the mixed input triplet');
+    yes(s.frameSafety?.status==='BLOCKED_MIXED_REFERENCE_FRAMES'&&
+      s.frameSafety?.productionUseAllowed===false,date+' '+name+' exposes a fail-closed production frame gate');
     yes(s.ishtaKashta?.available===false,date+' '+name+' Chapter X Phala is also withheld for mixed-frame Cheshta inputs');
     yes(String(s.ishtaKashta?.reason||'').includes('mixed astronomical reference frames'),date+' '+name+' Phala withholding exposes its frame reason');
-    yes(s.frameSafety?.status==='BLOCKED_MIXED_REFERENCE_FRAMES',date+' '+name+' exposes blocked frame safety result');
     yes(s.totalVirupa===null&&s.totalRupa===null&&s.ratio===null&&s.isStrong===null,
       date+' '+name+' mixed-frame Cheshta is excluded from Shadbala total, Rupa and strength ranking');
-    liveBirths.push({date,planet:name,diagnosticCheshta:s.components.cheshta,
+    liveBirths.push({date,planet:name,diagnosticCheshta:null,
       totalVirupa:s.totalVirupa,frameSafety:s.frameSafety.status});
   }
 }
