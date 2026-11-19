@@ -70,7 +70,7 @@ test('Calendar table is inserted after transit with readable two-axis scrolling 
   assert.ok(calendarSource.includes('Scroll horizontally and vertically to view the full table'));
   assert.doesNotMatch(calendarSource, /calculateSwiss|tamilSolarDate\\(/);
   assert.ok(calendarWorkerSource.includes("'../calendar-graha-periods-data.mjs'"));
-  assert.ok(calendarWorkerSource.includes('calendar-graha-periods-data\\\\.mjs'));
+  assert.ok(calendarWorkerSource.includes('calendar-graha-periods-data\\.mjs'));
   const css = await readFile(new URL('../public/horoscope/daily-calendar.css', import.meta.url), 'utf8');
   const scrollStart = css.indexOf('#smvDailyCalendar .cal-graha-period-scroll{');
   assert.notEqual(scrollStart, -1);
