@@ -52,7 +52,7 @@ A monthly grid can miss short station and retrograde intervals. Therefore a sepa
 
 Every planet must independently remain within the strict 0.05° maximum absolute error on both the entire 7,200-epoch monthly grid and its dense event subset. The threshold is not relaxed. The machine-readable report is uploaded as the MODERN-DRIK-BIJA-INPOP-MONTHLY-EVENT-VALIDATION artifact.
 
-See [the monthly/event validation protocol](./INPOP_DAILY_EVENT_VALIDATION_PROTOCOL.md) and tests/modern-drik-bija-inpop-monthly-event-validation.mjs.
+See [the monthly/event validation protocol](./INPOP_MONTHLY_EVENT_VALIDATION_PROTOCOL.md) and tests/modern-drik-bija-inpop-monthly-event-validation.mjs.
 
 
 ## Next validation phases before any accuracy certificate or production consideration
