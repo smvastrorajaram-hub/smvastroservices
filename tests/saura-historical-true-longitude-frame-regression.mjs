@@ -189,6 +189,8 @@ for(const [date,time] of births){
     yes(Number.isFinite(s.components.cheshta),date+' '+name+' diagnostic Cheshta candidate remains inspectable');
     yes(s.evidence?.cheshtaSource?.frameCompatible===false,date+' '+name+' live candidate identifies frame mismatch');
     yes(s.evidence?.cheshtaSource?.productionEligible===false,date+' '+name+' candidate is explicitly production-ineligible');
+    yes(s.ishtaKashta?.available===false,date+' '+name+' Chapter X Phala is also withheld for mixed-frame Cheshta inputs');
+    yes(String(s.ishtaKashta?.reason||'').includes('mixed astronomical reference frames'),date+' '+name+' Phala withholding exposes its frame reason');
     yes(s.frameSafety?.status==='BLOCKED_MIXED_REFERENCE_FRAMES',date+' '+name+' exposes blocked frame safety result');
     yes(s.totalVirupa===null&&s.totalRupa===null&&s.ratio===null&&s.isStrong===null,
       date+' '+name+' mixed-frame Cheshta is excluded from Shadbala total, Rupa and strength ranking');
