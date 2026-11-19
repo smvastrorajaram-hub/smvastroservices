@@ -55,11 +55,16 @@ assert.ok(chartStyleJs.includes("h.textContent=style==='north'?romanHouse(house)
 assert.ok(chartStyleJs.includes("const bhavaLabel=kind==='bhava'?bhavaHousesBySign[sign].map(romanHouse).join('/'):'';"), 'East does not substitute ordinary Lagna-based Rasi house numbers for Bhava numbers.');
 assert.ok(chartStyleJs.includes("h.textContent=house>=1&&house<=12?String(house):'';"), 'East Rasi, Navamsa and Transit retain their existing Lagna-derived house numbers unchanged.');
 
-const horoscopeCountRules = [...horoscopeCss.matchAll(/\\.south-rasi-cell\\[data-chart-planet-count="\\d+"\\]\\{([^}]*)\\}/g)];
-assert.equal(horoscopeCountRules.length,20,'All 3–12 planet South-chart cells retain local wrapping rules at desktop and mobile widths.');
-assert.ok(horoscopeCountRules.every(([,body])=>!body.includes('--smv-chart-compact-font-size')),'Planet count must never set a smaller Horoscope font size.');
-assert.ok(horoscopeCountRules.every(([,body])=>body.includes('--smv-chart-compact-white-space:normal')),'Crowded cells continue wrapping text instead of extending beyond their boxes.');
-assert.doesNotMatch(chartStyleCss,/\\.smv-v342-cell\\[data-chart-planet-count="\\d+"\\]\\{[^}]*--smv-chart-compact-font-size/,'North/East chart cells no longer shrink fonts according to planet count.');
+const horoscopeCountRules = horoscopeCss.split('\n').filter(line=>/^\.south-rasi-cell\[data-chart-planet-count="\d+"\]\{/.test(line));
+assert.equal(horoscopeCountRules.length,20,'South-chart count rules exist at desktop and mobile widths for each 3–12 planet stack.');
+for (const line of horoscopeCountRules) {
+  const count=Number(/data-chart-planet-count="(\d+)"/.exec(line)[1]);
+  assert.ok(line.includes('--smv-chart-compact-white-space:normal'),'Planet rows wrap inside the fixed box at '+count+' planets.');
+  assert.equal(line.includes('--smv-chart-compact-font-size:'),count>=5,'Only 5+ planet South-chart cells receive the reduced font-size variable.');
+}
+const chartStyleCountRules=chartStyleCss.split('\n').filter(line=>/^\.smv-v342-cell\[data-chart-planet-count="\d+"\]\{/.test(line));
+assert.equal(chartStyleCountRules.length,16,'North/East chart sizing has desktop and mobile reduced-size rules for 5–12 planets only.');
+assert.ok(chartStyleCountRules.every(line=>Number(/data-chart-planet-count="(\d+)"/.exec(line)[1])>=5&&line.includes('--smv-chart-compact-font-size:'),'North/East font reduction starts only at five planets.');
 assert.ok(horoscopeCss.includes('.south-rasi-cell.smv-chart-cell-compact .planet-line'));
 assert.ok(horoscopeCss.includes('.south-rasi-cell:not(.smv-chart-cell-compact) .planet-line'), 'The 701–900px baseline font-size rule must not override cells with 3+ planets.');
 assert.ok(horoscopeCss.includes('.south-rasi-cell{border:1px solid rgb(143, 112, 79);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;padding:7px 4px;min-width:0px;overflow:hidden;'),'The South-chart Rasi box remains clipped to its own boundary.');
