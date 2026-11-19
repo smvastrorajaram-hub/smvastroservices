@@ -187,6 +187,9 @@ try {
       mainHeadingCenterDelta: headingRect && cardRect
         ? Math.abs((headingRect.left + headingRect.right) / 2 - (cardRect.left + cardRect.right) / 2)
         : Infinity,
+      mainHeadingDisplay: mainHeading ? getComputedStyle(mainHeading).display : '',
+      mainHeadingAfterDisplay: mainHeading ? getComputedStyle(mainHeading, '::after').display : '',
+      categoryTextAlignments: [...(card?.querySelectorAll('.cal-graha-period-type h5') || [])].map(label => getComputedStyle(label).textAlign),
       dateTextAlignments: dateLines.map(line => getComputedStyle(line).textAlign),
       dateLinesFit: dateLines.every(line => {
         const range = document.createRange();
@@ -202,6 +205,9 @@ try {
   assert.ok(grahaDesktopLayout.heroContentCenterDelta <= 2, 'SMV CALENDAR title, subtitle and tagline block must be centered within the hero on desktop: ' + JSON.stringify(grahaDesktopLayout));
   assert.ok(grahaDesktopLayout.heroTextAlignments.length === 3 && grahaDesktopLayout.heroTextAlignments.every(value => value === 'center'), 'All three Calendar hero text lines must be centered on desktop: ' + JSON.stringify(grahaDesktopLayout));
   assert.equal(grahaDesktopLayout.mainHeadingTextAlign, 'center', 'The main Graha heading must be centered on desktop.');
+  assert.equal(grahaDesktopLayout.mainHeadingDisplay, 'block', 'The main Graha heading must not use the generic flex-and-divider heading layout on desktop.');
+  assert.equal(grahaDesktopLayout.mainHeadingAfterDisplay, 'none', 'The generic heading divider must not shift the Graha heading away from center on desktop.');
+  assert.ok(grahaDesktopLayout.categoryTextAlignments.length >= 2 && grahaDesktopLayout.categoryTextAlignments.every(value => value === 'center'), 'Vakram and Asthamanam labels must be centered on desktop: ' + JSON.stringify(grahaDesktopLayout));
   assert.ok(grahaDesktopLayout.mainHeadingCenterDelta <= 2, 'The main Graha heading must be centered within its section on desktop: ' + JSON.stringify(grahaDesktopLayout));
   assert.ok(grahaDesktopLayout.dateTextAlignments.length > 0 && grahaDesktopLayout.dateTextAlignments.every(value => value === 'center'), 'Start and end date-times must be centered on desktop: ' + JSON.stringify(grahaDesktopLayout));
   assert.ok(grahaDesktopLayout.dateLinesFit, 'Full date-times must remain visible without clipping on desktop: ' + JSON.stringify(grahaDesktopLayout));
