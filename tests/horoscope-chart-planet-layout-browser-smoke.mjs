@@ -184,7 +184,7 @@ try {
           assert.ok(four.lineSize < three.lineSize,item.rootId+' '+item.kind+' '+style+': four-planet rows shrink further than three-planet rows.');
           assert.equal(three.equalSizes,true,item.rootId+' '+item.kind+' '+style+': planet, number, degree and status labels share one cell size.');
           assert.equal(four.equalSizes,true,item.rootId+' '+item.kind+' '+style+': all crowded-cell labels share one cell size.');
-          if (kind==='navamsa' || kind==='bhava') {
+          if (item.kind==='navamsa' || item.kind==='bhava') {
             assert.equal(item.emptyDash,false,item.rootId+' '+item.kind+' '+style+': empty planet cells stay blank.');
           } else if (style!=='south') {
             assert.equal(item.emptyDash,true,item.rootId+' '+item.kind+' '+style+': Rasi and Transit retain their alternate-layout empty dash.');
