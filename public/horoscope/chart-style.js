@@ -68,6 +68,9 @@
   if(house===1){const mark=document.createElement('span');mark.className='smv-v342-asc';mark.textContent=ta?'ல':'As';cell.append(mark);}
   const contents=document.createElement('span');contents.className='smv-v342-planets';
   const items=planetEntries??[...source.out[sign].querySelectorAll('.planet-line')];
+  const planetCount=items.length;
+  cell.dataset.chartPlanetCount=String(planetCount);
+  if(planetCount>=3)cell.classList.add('smv-chart-cell-compact');
   if(items.length){for(const item of items){contents.append(item.cloneNode(true));}}
   else if(kind!=='d9'&&kind!=='bhava'){
    // Rasi and Transit retain their existing empty-cell dash; Navamsa and Bhava stay blank.
