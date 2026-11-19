@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import {
   fetchSauraDe441Reference,
   sauraDe441ApparentTrueLongitude,
-  sauraBijaLongitudeProducts
+  sauraBijaLongitudeProducts,
+  sauraSiderealOffsetFromLahiri,
+  SAURA_DE441_TARGET_IDS
 } from '../research/saura-bija/saura-de441-apparent-true.mjs';
 
 const jdUt = 2458849.5;
@@ -53,6 +55,12 @@ assert.equal(ref.longitude, 274.3833145);
 assert.equal(ref.latitude, -1.2728377);
 assert.equal(ref.interpolated, false);
 assert.equal(ref.observerCenter, '500@399');
+assert.equal(SAURA_DE441_TARGET_IDS.Mercury,'199');
+assert.equal(SAURA_DE441_TARGET_IDS.Venus,'299');
+assert.equal(SAURA_DE441_TARGET_IDS.Mars,'4');
+assert.equal(SAURA_DE441_TARGET_IDS.Jupiter,'5');
+assert.equal(SAURA_DE441_TARGET_IDS.Saturn,'6');
+assert.ok(Math.abs(sauraSiderealOffsetFromLahiri(23.9,23.3)-(18+5/60+8.25/3600+0.6))<1e-12);
 
 const transformed = sauraDe441ApparentTrueLongitude(ref, 23.5);
 assert.ok(Math.abs(transformed.trueLongitude - 250.8833145) < 1e-10);
@@ -73,6 +81,9 @@ assert.notEqual(products.classicalBijaMean.frame, products.de441ApparentTrue.fra
 assert.notEqual(products.classicalBijaTrue.source, products.de441ApparentTrue.source);
 assert.ok(Number.isFinite(products.classicalTrueMinusDe441Degrees));
 assert.equal(products.productionEligible, false);
+assert.throws(() => sauraBijaLongitudeProducts(jdUt + 1, 'Mercury', {
+  de441Reference: ref, sauraSiderealOffsetDegrees: 23.5
+}), /epoch must exactly match/);
 
 await assert.rejects(
   () => fetchSauraDe441Reference({planet:'Mercury',jdUt,fetchImpl:async()=>({
@@ -87,7 +98,7 @@ await assert.rejects(
 
 console.log(JSON.stringify({
   pass:true,
-  checks:25,
+  checks:34,
   liveApiFetchMocked:true,
   sourceHeaderEnforced:'DE441 target + Earth centre',
   request:'single discrete JD; Earth-geocentric observer quantity 31',
