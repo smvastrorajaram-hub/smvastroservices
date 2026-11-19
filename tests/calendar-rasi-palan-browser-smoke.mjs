@@ -107,15 +107,17 @@ try {
       const range = document.createRange();
       range.selectNodeContents(element);
       const textWidth = range.getBoundingClientRect().width;
-      const style = getComputedStyle(element);
-      const contentWidth = element.getBoundingClientRect().width -
-        parseFloat(style.paddingLeft || '0') - parseFloat(style.paddingRight || '0');
+      const textStyle = getComputedStyle(element);
+      const cell = element.matches('th,td') ? element : element.closest('td');
+      const cellStyle = getComputedStyle(cell);
+      const contentWidth = cell.getBoundingClientRect().width -
+        parseFloat(cellStyle.paddingLeft || '0') - parseFloat(cellStyle.paddingRight || '0');
       return {
         text: element.textContent.trim(),
-        whiteSpace: style.whiteSpace,
+        whiteSpace: textStyle.whiteSpace,
         textWidth,
         contentWidth,
-        fits: style.whiteSpace === 'nowrap' && textWidth <= contentWidth + 1
+        fits: textStyle.whiteSpace === 'nowrap' && textWidth <= contentWidth + 1
       };
     };
     const planetNames = [...card.querySelectorAll('tbody th')].map(textFits);
@@ -156,6 +158,23 @@ try {
     await page.waitForFunction(() => document.documentElement.lang === 'en', { timeout: 20000 });
   }
   await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
+  const grahaDesktopLayout = await page.evaluate(() => {
+    const card = document.querySelector('#calGrahaPeriodCard');
+    const scroller = card?.querySelector('.cal-graha-period-scroll');
+    const table = scroller?.querySelector('table');
+    const cardRect = card?.getBoundingClientRect();
+    return {
+      found: Boolean(card && scroller && table),
+      viewportWidth: window.innerWidth,
+      cardWidth: cardRect?.width || 0,
+      wrapperWidth: scroller?.clientWidth || 0,
+      tableWidth: table?.getBoundingClientRect().width || 0,
+      fitsWithoutHorizontalScroll: Boolean(scroller && table && scroller.clientWidth >= table.getBoundingClientRect().width)
+    };
+  });
+  assert.equal(grahaDesktopLayout.found, true, 'Annual Graha table must remain visible on desktop.');
+  assert.ok(grahaDesktopLayout.cardWidth <= grahaDesktopLayout.viewportWidth, 'Graha card must remain within the desktop viewport: ' + JSON.stringify(grahaDesktopLayout));
+  assert.equal(grahaDesktopLayout.fitsWithoutHorizontalScroll, true, 'The full annual Graha table should fit on a 1280px desktop view: ' + JSON.stringify(grahaDesktopLayout));
 
   const calendarHeader = await page.evaluate(() => {
     const header = document.querySelector('.calendar-topbar');
