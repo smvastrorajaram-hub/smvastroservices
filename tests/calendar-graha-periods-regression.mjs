@@ -62,12 +62,12 @@ test('year-boundary continuations remain clipped and explicitly marked', () => {
   assert.equal(year[5].every(event => event[2] >= year[3] && event[3] <= year[4]), true);
 });
 
-test('Calendar table is inserted after transit with readable two-axis scrolling and no calculation changes', async () => {
+test('Calendar table is inserted after transit with horizontal-only scrolling and intact text', async () => {
   assert.ok(calendarSource.includes("from './calendar-graha-periods-data.mjs'"));
   assert.ok(calendarSource.includes('transitCard.after(card)'));
   assert.ok(calendarSource.includes('renderAnnualGrahaPeriods();updateHora()'));
   assert.ok(calendarSource.includes('day>=start&&day<end'));
-  assert.ok(calendarSource.includes('Scroll horizontally and vertically to view the full table'));
+  assert.ok(calendarSource.includes('Scroll horizontally to view the full table'));
   assert.ok(calendarSource.includes('ராகு–கேது'));
   assert.ok(calendarSource.includes('Not in supplied data'));
   assert.ok(calendarSource.includes('ராகு–கேது நிகழ்வுகள் வழங்கப்பட்ட மூலத் தரவில் இல்லை'));
