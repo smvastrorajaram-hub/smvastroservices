@@ -1,0 +1,57 @@
+name: Historical Saura Bija 1800-2399 Research QA
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'research/saura-bija/**'
+      - 'tests/saura-bija-600y-regression.mjs'
+      - 'tests/saura-bija-three-phase-validation.mjs'
+      - 'tests/saura-bija-de441-adapter-regression.mjs'
+      - 'tests/saura-bija-residual-ablation-diagnostic.mjs'
+      - 'tests/saura-bija-geometric-reference-diagnostic.mjs'
+      - 'tests/saura-bija-apsis-rate-diagnostic.mjs'
+      - 'tests/saura-bija-modern-moshier-de441-accuracy.mjs'
+      - 'tests/fixtures/saura-bija-jpl-de441-heliocentric-elements-annual-1800-2399.json'
+      - 'tests/fixtures/saura-bija-jpl-de441-geometric-vectors-annual-1800-2399.json'
+      - 'tests/fixtures/saura-bija-jpl-de441-annual-1800-2399.json'
+      - '.github/workflows/saura-bija-historical-600y-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: saura-bija-historical-600y-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  historical-bija-research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax-check isolated Bija engine and regressions
+        run: |
+          node --check research/saura-bija/saura-bija-mean-motion.mjs
+          node --check tests/saura-bija-600y-regression.mjs
+          node --check tests/saura-bija-three-phase-validation.mjs
+          node --check research/saura-bija/saura-de441-apparent-true.mjs
+          node --check tests/saura-bija-de441-adapter-regression.mjs
+          node --check tests/saura-bija-residual-ablation-diagnostic.mjs
+          node --check tests/saura-bija-geometric-reference-diagnostic.mjs
+          node --check tests/saura-bija-apsis-rate-diagnostic.mjs
+          node --check tests/saura-bija-modern-moshier-de441-accuracy.mjs
+      - name: Exercise 1800-2399 Bija mean and true-longitude coverage
+        run: node tests/saura-bija-600y-regression.mjs
+      - name: Test direct DE441 adapter, source guard and three-output separation
+        run: node tests/saura-bija-de441-adapter-regression.mjs
+      - name: Decompose mean, Mandocca, Manda/Sheeghra geometry and frame residuals across 3,000 DE441 points
+        run: node tests/saura-bija-residual-ablation-diagnostic.mjs
+      - name: Compare geometric DE441 vectors in Burgess/IAU76 Saura frame and isolate component residuals
+        run: node tests/saura-bija-geometric-reference-diagnostic.mjs
+      - name: Audit source-faithful Kali apsides, 1850 Burgess comparisons and DE441 heliocentric element trends
+        run: node tests/saura-bija-apsis-rate-diagnostic.mjs
+      - name: Validate historical printed mean and Kali-epoch Mandocca sources; compare 3,000 DE441 points
+        run: node tests/saura-bija-three-phase-validation.mjs
+      - name: Independently verify modern Moshier apparent longitudes against DE441 within 0.05 degrees
+        run: node tests/saura-bija-modern-moshier-de441-accuracy.mjs
