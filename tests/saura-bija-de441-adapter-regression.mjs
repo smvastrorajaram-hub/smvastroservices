@@ -4,10 +4,27 @@ import {
   sauraDe441ApparentTrueLongitude,
   sauraBijaLongitudeProducts,
   sauraSiderealOffsetFromLahiri,
+  sauraIau76PrecessionLongitudeFromBurgessEpoch,
+  sauraSiderealOffsetFromBurgessIau76,
+  jplEclipticJ2000VectorToMeanEclipticOfDateLongitude,
   SAURA_DE441_TARGET_IDS
 } from '../research/saura-bija/saura-de441-apparent-true.mjs';
 
 const jdUt = 2458849.5;
+const jd1860 = Date.UTC(1860,0,1)/86400000 + 2440587.5;
+const jd2020 = Date.UTC(2020,0,1)/86400000 + 2440587.5;
+assert.ok(Math.abs(sauraSiderealOffsetFromBurgessIau76(jd1860) - (18+5/60+8.25/3600)) < 1e-10);
+assert.ok(Math.abs(sauraIau76PrecessionLongitudeFromBurgessEpoch(jd2020) - 2.234522726663259) < 1e-7);
+assert.ok(Math.abs(sauraSiderealOffsetFromBurgessIau76(jd2020) - 20.32014772666326) < 1e-7);
+const mercuryVector2020 = {
+  x:0.1030424868682581,
+  y:-1.429965253154608,
+  z:-0.03180814613136105
+};
+assert.ok(Math.abs(
+  jplEclipticJ2000VectorToMeanEclipticOfDateLongitude(mercuryVector2020,jd2020) -
+  274.400974286077
+) < 1e-7);
 const jplResult = [
   'Ephemeris / API_USER test / Horizons',
   'Target body name: Mercury (199)                   {source: DE441}',
@@ -98,7 +115,7 @@ await assert.rejects(
 
 console.log(JSON.stringify({
   pass:true,
-  checks:34,
+  checks:38,
   liveApiFetchMocked:true,
   sourceHeaderEnforced:'DE441 target + Earth centre',
   request:'single discrete JD; Earth-geocentric observer quantity 31',
