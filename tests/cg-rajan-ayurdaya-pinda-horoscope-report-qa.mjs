@@ -419,10 +419,15 @@ for(const [date,time] of births){
  for(const p of shadbalaRows){
   eq(p.strength6.classicalCertified,false,'Shadbala is not falsely certified '+date+' '+p.name);
   eq(p.strength6.provisional,true,'Shadbala stays provisional '+date+' '+p.name);
-  eq(p.strength6.ishtaKashta?.available,true,'integrated B.V. Raman Ishta/Kashta is present '+date+' '+p.name);
-  eq(p.strength6.ishtaKashta.classicalCertified,false,'Ishta/Kashta inputs remain uncertified '+date+' '+p.name);
   const c=p.strength6.components||{};
-  ok(Math.abs(p.strength6.ishtaKashta.sixfoldShadbalaCheshtaBala-c.cheshta)<0.001,'special Chesta-for-Phala does not replace sixfold Cheshta Bala '+date+' '+p.name);
+  if(['சூரியன்','சந்திரன்'].includes(p.name)){
+   eq(p.strength6.ishtaKashta?.available,true,'integrated B.V. Raman luminary Ishta/Kashta is present '+date+' '+p.name);
+   eq(p.strength6.ishtaKashta.classicalCertified,false,'luminary Ishta/Kashta inputs remain uncertified '+date+' '+p.name);
+   ok(Math.abs(p.strength6.ishtaKashta.sixfoldShadbalaCheshtaBala-c.cheshta)<0.001,'luminary Chapter X Phala remains separate from sixfold Cheshta '+date+' '+p.name);
+  }else{
+   eq(p.strength6.ishtaKashta?.available,false,'five-graha B.V. Raman Phala is withheld for mixed-frame Cheshta '+date+' '+p.name);
+   ok(String(p.strength6.ishtaKashta?.reason||'').includes('mixed astronomical reference frames'),'five-graha Phala withholding exposes its frame blocker '+date+' '+p.name);
+  }
   ok(Number.isFinite(c.sthana?.total)&&Number.isFinite(c.dig)&&Number.isFinite(c.kala?.total)&&
    Number.isFinite(c.cheshta)&&Number.isFinite(c.naisargika)&&Number.isFinite(c.drik),
    'B.V. Raman six individual components remain available '+date+' '+p.name);
