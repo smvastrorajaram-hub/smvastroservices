@@ -932,7 +932,7 @@ table.data-table{width:100%;min-width:680px;border-collapse:separate;border-spac
 .dasha-table th:nth-child(3), .dasha-table td:nth-child(3){width:30%}
 .dasha-table th:nth-child(4), .dasha-table td:nth-child(4){width:30%}
 .south-rasi-cell{position:relative;box-sizing:border-box}
-.south-rasi-cell[data-chart-planet-count="3"]{--smv-chart-compact-font-size:12px;--smv-chart-compact-white-space:normal}
+.south-rasi-cell[data-chart-planet-count="3"]{--smv-chart-compact-font-size:11.5px;--smv-chart-compact-white-space:normal}
 .south-rasi-cell[data-chart-planet-count="4"]{--smv-chart-compact-font-size:11px;--smv-chart-compact-white-space:normal}
 .south-rasi-cell[data-chart-planet-count="5"]{--smv-chart-compact-font-size:10px;--smv-chart-compact-white-space:normal}
 .south-rasi-cell[data-chart-planet-count="6"]{--smv-chart-compact-font-size:9.5px;--smv-chart-compact-white-space:normal}
