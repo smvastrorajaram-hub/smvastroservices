@@ -157,68 +157,42 @@ function decodePayload(payload, planet, expectedCount) {
   return { planet, theory, rows };
 }
 
-export async function fetchInpopDailySeries(planet, startDate, totalDays, {
-  chunkSize = DAILY_LIMIT,
-  onProgress = () => {}
-} = {}) {
-  if (!PLANET_NAMES.includes(planet)) throw new RangeError('Unsupported INPOP body: ' + planet);
-  if (!(startDate instanceof Date) || !Number.isFinite(startDate.getTime())) {
-    throw new TypeError('A valid TT start date is required');
-  }
-  if (!Number.isInteger(totalDays) || totalDays < 1) throw new RangeError('totalDays must be a positive integer');
-  if (!Number.isInteger(chunkSize) || chunkSize < 1 || chunkSize > DAILY_LIMIT) {
-    throw new RangeError('INPOP daily chunk size must be 1..5000');
-  }
-
-  const allRows = [];
-  let theoryName = null;
-  for (let offset = 0; offset < totalDays; offset += chunkSize) {
-    const count = Math.min(chunkSize, totalDays - offset);
-    const chunkDate = new Date(startDate.getTime() + offset * 86400000);
-    const params = baseParameters(planet);
-    params.set('-ep', isoUtc(chunkDate));
-    params.set('-nbd', String(count));
-    params.set('-step', '1d');
-    const payload = await fetchJson(API + '?' + params.toString(), { method: 'GET' },
-      planet + ' daily offset=' + offset);
-    const chunk = decodePayload(payload, planet, count);
-    if (theoryName && theoryName !== chunk.theory) {
-      throw new Error('INPOP theory changed during daily download for ' + planet);
-    }
-    theoryName = chunk.theory;
-    allRows.push(...chunk.rows);
-    onProgress({ planet, completed: allRows.length, total: totalDays });
-  }
-  for (let index = 0; index < allRows.length; index++) {
-    const expected = new Date(startDate.getTime() + index * 86400000).getTime();
-    if (Math.abs(allRows[index].date.getTime() - expected) > 1000) {
-      throw new Error(planet + ' daily INPOP grid mismatch at row ' + index +
-        ': ' + allRows[index].date.toISOString());
-    }
-  }
-  return Object.freeze({ planet, theory: theoryName, rows: allRows });
-}
-
+/**
+ * Fetch a sorted explicit epoch list from IMCCE INPOP.
+ * Miriade's documented HTTP POST contract requires a plain-text file field
+ * named "epochs", with -ep, -nbd and -step omitted from the query.
+ */
 export async function fetchInpopEpochList(planet, epochs) {
   if (!PLANET_NAMES.includes(planet)) throw new RangeError('Unsupported INPOP body: ' + planet);
   if (!Array.isArray(epochs) || epochs.length < 1 || epochs.length > EVENT_EPOCH_LIMIT) {
-    throw new RangeError('INPOP event epochs must contain 1..1000 entries per request');
+    throw new RangeError('INPOP epoch list must contain 1..1000 entries per request');
   }
-  const lines = epochs.map(value => {
-    const date = value instanceof Date ? value : new Date(value);
-    if (!Number.isFinite(date.getTime())) throw new TypeError('Invalid event epoch');
-    return isoUtc(date);
-  });
+  const dates = epochs.map(value => value instanceof Date ? value : new Date(value));
+  for (const date of dates) {
+    if (!Number.isFinite(date.getTime())) throw new TypeError('Invalid INPOP epoch');
+  }
+  for (let i = 1; i < dates.length; i++) {
+    if (!(dates[i] > dates[i - 1])) {
+      throw new Error('INPOP epoch-list dates must be strictly ascending');
+    }
+  }
+
+  const lines = dates.map(isoUtc);
   const params = baseParameters(planet);
   const form = new FormData();
-  form.set('epochs', new Blob([lines.join('\n') + '\n'], { type: 'text/plain' }), 'epochs.txt');
+  form.set('epochs', new Blob([lines.join('\\n') + '\\n'], { type: 'text/plain' }), 'epochs.txt');
   const payload = await fetchJson(API + '?' + params.toString(), {
     method: 'POST',
     body: form
-  }, planet + ' high-density event epochs=' + epochs.length);
-  return decodePayload(payload, planet, epochs.length);
+  }, planet + ' epoch-list count=' + epochs.length);
+  const decoded = decodePayload(payload, planet, epochs.length);
+  for (let i = 0; i < dates.length; i++) {
+    if (Math.abs(decoded.rows[i].date.getTime() - dates[i].getTime()) > 1000) {
+      throw new Error(planet + ' INPOP epoch-list order/date mismatch at index ' + i);
+    }
+  }
+  return decoded;
 }
 
-export const INPOP_DAILY_LIMIT = DAILY_LIMIT;
 export const INPOP_EVENT_EPOCH_LIMIT = EVENT_EPOCH_LIMIT;
 export const INPOP_PLANETS = PLANET_NAMES;
