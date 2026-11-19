@@ -24,7 +24,7 @@ function chart(id, kind, emptyDash) {
     '<div class="south-rasi-cell' + extra + '">' +
       '<div class="dynamic-rasi-number">3</div>' +
       (kind === 'bhava' ? '<div class="bhava-cusp"><span class="bhava-house-no">III</span></div>' : '') +
-      (emptyDash ? '<div class="small">—</div>' : '') +
+      (emptyDash ? '<span class="smv-v342-empty">—</span>' : '') +
     '</div>';
   return '<section class="' + wrapper + '">' +
     '<div id="' + id + '" class="' + chartClass + '" data-chart-kind="' + kind + '">' +
@@ -73,8 +73,8 @@ try {
           const glyphs = [...chart.querySelectorAll('.planet-glyph')];
           const emptyCell = [...chart.querySelectorAll('.south-rasi-cell')]
             .find(cell => !cell.querySelector('.planet-line'));
-          const small = emptyCell && emptyCell.querySelector('.small');
-          const emptyDash = Boolean(small && small.textContent.trim() === '—');
+          const emptyMark = emptyCell && emptyCell.querySelector('.smv-v342-empty');
+          const emptyDash = Boolean(emptyMark && emptyMark.textContent.trim() === '—');
           reports.push({
             rootId, kind,
             lineCount:lines.length,
