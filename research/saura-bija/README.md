@@ -234,6 +234,26 @@ The existing BPHS/Uttara Kalamrita selection is retained: Mars/Jupiter/Saturn us
 
 The IMD Rashtriya Panchang's dated 22 March 2026 degree-correction table is a separate contemporary benchmark. Its one-date degree corrections must not be converted into annual rates or added on top of the Burgess corrected revolution counts. Brāhma-pakṣa and Ārya-pakṣa annual Bīja systems are also separate named models, not coefficients to transplant into this Saura-pakṣa profile.
 
+## Phase H — independent modern Moshier vs DE441 accuracy: PASS at 0.05°
+
+This is a separate modern-ephemeris gate, not a retroactive pass for CLASSICAL_BIJA_TRUE.
+
+The repository's guarded browser provider requests Swiss SWIEPH data and rejects fallback when the returned flag is not SWIEPH. A preliminary request confirmed that the current packaged runtime returns retFlag=4 (Moshier) because the Swiss planetary .se1 files are not present in the runtime. The research test therefore calls the bundled Swiss Ephemeris WASM explicitly with MOSEPH flag 4. It does not mislabel Moshier as SWIEPH.
+
+The candidate's default geocentric apparent tropical ecliptic-of-date longitude is compared directly with the independent JPL Horizons DE441 Earth-geocentric apparent quantity-31 fixture. Both values remain tropical; no Lahiri or Saura ayanāṃśa is subtracted, and no annual interpolation is used. The grid contains 600 annual epochs per planet (3,000 comparisons total) from 1800-01-01 through 2399-01-01.
+
+| Planet | RMS residual | Maximum absolute residual | Result |
+|---|---:|---:|---|
+| Mercury | 0.00219727° | 0.00783929° | PASS |
+| Venus | 0.00184286° | 0.00609985° | PASS |
+| Mars | 0.00097395° | 0.00360333° | PASS |
+| Jupiter | 0.00024697° | 0.00102214° | PASS |
+| Saturn | 0.00016420° | 0.00073721° | PASS |
+
+**Maximum across all 3,000 comparisons: 0.00783929°**, below the strict 0.05° limit by a factor of approximately 6.38. The new regression asserts the limit separately for every planet; any planet exceeding 0.05° fails CI.
+
+This PASS applies only to MODERN_MOSHIER_GEOCENTRIC_APPARENT_TROPICAL_VS_DE441. The Phase C CLASSICAL_BIJA_TRUE vs DE441 gate remains failed with multi-degree residuals. No Moshier values are fused into Bīja revolution counts, Mandocca, Manda or Śīghra. No production provider, Swiss ephemeris data, or Horoscope/Shadbala output is modified. The test is annual research validation, not a claim of daily certification or production eligibility.
+
 ## Safety boundary
 
 The code and reports are isolated in this research branch. No production Horoscope, Swiss/Lahiri, BPHS Shadbala, Marriage Matching, Calendar, cache version, APK, Render, Cloudflare or Firebase changes are made. No production integration or merge is part of this PR.
