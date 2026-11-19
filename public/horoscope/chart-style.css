@@ -12,14 +12,32 @@
 .smv-v342-geometry{position:absolute;inset:0;width:100%!important;height:100%!important;max-width:none!important;display:block;pointer-events:none}
 .smv-v342-geometry rect,.smv-v342-geometry path{stroke:#4c473e;stroke-width:.65;fill:none;vector-effect:non-scaling-stroke;stroke-linejoin:round}
 .smv-v342-cell{position:absolute!important;transform:translate(-50%,-50%)!important;box-sizing:border-box!important;
- width:22%;max-height:26%;min-width:0;overflow:visible;display:flex;flex-direction:column;
+ width:22%;max-height:26%;min-width:0;overflow:hidden;display:flex;flex-direction:column;
  justify-content:center;align-items:center;gap:0!important;font-family:inherit;text-align:center;
- font-size:clamp(12px,2.4vw,15px)!important;line-height:1.16!important;color:#251e18!important;z-index:1;}
+ font-size:var(--smv-chart-compact-font-size,clamp(12px,2.4vw,15px))!important;line-height:1.16!important;color:#251e18!important;z-index:1;}
 .smv-v342-sign-number{color:#853323;font-weight:800;font-size:1.0em;line-height:1.1}
+.smv-v342-cell[data-chart-planet-count="3"]{--smv-chart-compact-font-size:11px}
+.smv-v342-cell[data-chart-planet-count="4"]{--smv-chart-compact-font-size:10.5px}
+.smv-v342-cell[data-chart-planet-count="5"]{--smv-chart-compact-font-size:10px}
+.smv-v342-cell[data-chart-planet-count="6"]{--smv-chart-compact-font-size:9.5px}
+.smv-v342-cell[data-chart-planet-count="7"]{--smv-chart-compact-font-size:9px}
+.smv-v342-cell[data-chart-planet-count="8"]{--smv-chart-compact-font-size:8.5px}
+.smv-v342-cell[data-chart-planet-count="9"]{--smv-chart-compact-font-size:8px}
+.smv-v342-cell[data-chart-planet-count="10"]{--smv-chart-compact-font-size:7.5px}
+.smv-v342-cell[data-chart-planet-count="11"]{--smv-chart-compact-font-size:7px}
+.smv-v342-cell[data-chart-planet-count="12"]{--smv-chart-compact-font-size:6.5px}
 .smv-v342-house-number{font-size:.86em;color:#555;line-height:1}
 .smv-v342-asc{font-size:1.06em;font-weight:900;color:#933b20;line-height:1}
 .smv-v342-planets{display:flex!important;flex-wrap:wrap;column-gap:3px;row-gap:1px;justify-content:center;align-items:center;max-width:100%;overflow:hidden;line-height:1.12}
-.smv-v342-planets .planet-line{display:inline-block!important;width:auto!important;min-width:0!important;padding:0!important;margin:0!important;line-height:1.12!important;font-size:inherit!important;white-space:nowrap}
+.smv-v342-planets .planet-line{display:inline-block!important;width:auto!important;min-width:0!important;max-width:100%!important;padding:0!important;margin:0!important;line-height:1.12!important;font-size:inherit!important;white-space:normal!important;overflow-wrap:anywhere}
+.smv-v342-planets .planet-glyph{display:inline-flex!important;flex-wrap:wrap;justify-content:center;align-items:baseline;max-width:100%;white-space:normal!important;overflow-wrap:anywhere;box-sizing:border-box}
+.smv-v342-planets .planet-glyph *{max-width:100%;white-space:normal!important;overflow-wrap:anywhere;box-sizing:border-box}
+.smv-v342-cell.smv-chart-cell-compact .smv-v342-sign-number,.smv-v342-cell.smv-chart-cell-compact .smv-v342-house-number,.smv-v342-cell.smv-chart-cell-compact .smv-v342-asc,.smv-v342-cell.smv-chart-cell-compact .smv-v342-planets,.smv-v342-cell.smv-chart-cell-compact .smv-v342-planets .planet-line,.smv-v342-cell.smv-chart-cell-compact .smv-v342-planets .planet-glyph,.smv-v342-cell.smv-chart-cell-compact .smv-v342-planets .rasi-degree,.smv-v342-cell.smv-chart-cell-compact .smv-v342-planets .rasi-status-marker{font-size:inherit!important}
+.smv-v342-cell.smv-chart-cell-compact .smv-v342-planets{display:flex!important;flex-wrap:wrap;justify-content:center;align-items:center;width:100%;min-width:0;max-width:100%;overflow:hidden}
+.smv-v342-cell.smv-chart-cell-compact .smv-v342-planets .planet-line{display:flex!important;flex:0 1 100%;flex-wrap:wrap;justify-content:center;align-items:baseline;width:100%!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;white-space:normal!important;overflow-wrap:anywhere;word-break:break-word}
+.smv-v342-cell.smv-chart-cell-compact .smv-v342-planets .planet-glyph{display:flex!important;flex:1 1 100%;width:100%!important;min-width:0!important;max-width:100%!important;flex-wrap:wrap;justify-content:center;align-items:baseline;box-sizing:border-box!important;white-space:normal!important;overflow-wrap:anywhere;word-break:break-word}
+.smv-v342-cell.smv-chart-cell-compact .smv-v342-planets *{font-size:inherit!important;white-space:normal!important;max-width:100%;box-sizing:border-box}
+
 .smv-v342-planets .planet-glyph{font-size:inherit!important;white-space:nowrap!important}
 .smv-v342-planets .rasi-degree{margin-left:1px;font-size:.78em!important}
 .smv-v342-empty{opacity:.45}
@@ -33,7 +51,17 @@
 .south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="10"]{width:27%}
 @media(max-width:570px){
  .south-indian-chart.smv-v342-north,.south-indian-chart.smv-v342-east{width:min(100%,94vw)!important}
- .smv-v342-cell{font-size:clamp(12px,3.1vw,14px)!important}
+ .smv-v342-cell[data-chart-planet-count="3"]{--smv-chart-compact-font-size:11.5px}
+.smv-v342-cell[data-chart-planet-count="4"]{--smv-chart-compact-font-size:10.5px}
+.smv-v342-cell[data-chart-planet-count="5"]{--smv-chart-compact-font-size:10px}
+.smv-v342-cell[data-chart-planet-count="6"]{--smv-chart-compact-font-size:9.5px}
+.smv-v342-cell[data-chart-planet-count="7"]{--smv-chart-compact-font-size:9px}
+.smv-v342-cell[data-chart-planet-count="8"]{--smv-chart-compact-font-size:8.5px}
+.smv-v342-cell[data-chart-planet-count="9"]{--smv-chart-compact-font-size:8px}
+.smv-v342-cell[data-chart-planet-count="10"]{--smv-chart-compact-font-size:7.5px}
+.smv-v342-cell[data-chart-planet-count="11"]{--smv-chart-compact-font-size:7px}
+.smv-v342-cell[data-chart-planet-count="12"]{--smv-chart-compact-font-size:6.5px}
+ .smv-v342-cell{font-size:var(--smv-chart-compact-font-size,clamp(12px,3.1vw,14px))!important}
  .smv-v342-cell .planet-glyph{font-size:inherit!important}
 }
 @media print{
@@ -43,7 +71,7 @@
   border:0!important;overflow:hidden!important;margin:4mm auto 6mm!important;
   print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;
  }
- #printReport .smv-v342-cell{font-size:10pt!important;line-height:1.14!important}
+ #printReport .smv-v342-cell{font-size:var(--smv-chart-compact-font-size,10pt)!important;line-height:1.14!important}
  #printReport .smv-v342-cell .planet-line{font-size:inherit!important}
  #printReport .smv-v342-east-center{font-size:15pt!important}
 }

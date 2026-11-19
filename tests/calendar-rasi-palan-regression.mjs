@@ -398,7 +398,7 @@ test('Calendar distinguishes Gazette government holidays from observances and do
   assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar #calDaily .transit-chart .planet-line{\n  display:flex!important;'), 'Each planet row is centred without a dotted separator.');
   assert.ok(horoscopeRendererSource.includes('const transitPlanetCount=bySign[si].length;const compactPlanetCell=transitPlanetCount>=3;'), 'Only planet count controls compact sizing; Lagna, markers and degrees are excluded from the count.');
   assert.ok(horoscopeRendererSource.includes('data-transit-planet-count="${transitPlanetCount}"'), 'The exact planet count is attached to each Rasi cell for its own font-size rule.');
-  assert.ok(horoscopeRendererSource.includes("south-rasi-cell${compactPlanetCell?' south-rasi-cell-compact':''}"), 'The cell keeps its own compact class so house numbers, Lagna, markers and degrees use the same local planet size.');
+   assert.ok(horoscopeRendererSource.includes('south-rasi-cell-compact smv-chart-cell-compact'), 'The transit cell keeps both the transit-specific and shared compact classes so all cell labels use the same local font size.');
   assert.ok(horoscopeRendererSource.includes("(houseNo??'')"), 'An unavailable house number renders blank rather than a dash.');
   assert.ok(horoscopeRendererSource.includes('${ps}</div></div>'), 'The transit renderer leaves empty planet stacks blank instead of adding a dash placeholder.');
   assert.ok(dailyCalendarCssSource.includes('--transit-cell-label-size:20px;'), 'Desktop ordinary one-to-two planet names, degrees, markers, Lagna and house numbers use a consistent 20px size.');
@@ -529,7 +529,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261119-calendar-transit-contained-layout-v6' : '20261119-calendar-transit-contained-layout-v6'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261119-horoscope-four-chart-planet-layout-v1' : '20261119-horoscope-four-chart-planet-layout-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
@@ -539,10 +539,10 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261119-calendar-transit-contained-layout-v6'));
-   assert.ok(calendarIndexSource.includes('20261119-calendar-transit-contained-layout-v6'));
+   assert.ok(calendarIndexSource.includes('20261119-horoscope-four-chart-planet-layout-v1'));
+   assert.ok(calendarIndexSource.includes('20261119-horoscope-four-chart-planet-layout-v1'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
-   assert.ok(calendarIndexSource.includes('20261119-calendar-transit-contained-layout-v6'));
+   assert.ok(calendarIndexSource.includes('20261119-horoscope-four-chart-planet-layout-v1'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'runPeriodForecast\')'));
    assert.ok(calendarIndexSource.includes('The deployed forecast assets could not be loaded from this Calendar host.'));
@@ -1030,15 +1030,15 @@ test('SMV CALENDAR daily Panchang and Hora follow the green result hierarchy', (
   assert.match(sharedHoroscopeCssSource, /event-time:not\(\.smv-calendar-neutral-date-time\)/);
   assert.match(sharedHoroscopeCssSource, /hora-time:not\(\.smv-calendar-neutral-time\)/);
   assert.match(sharedHoroscopeCssSource, /transit-table-degree:not\(\.smv-calendar-degree-normal\)/);
-  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261119-calendar-transit-contained-layout-v6/);
-  assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261119-calendar-transit-contained-layout-v6/);
+  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261119-horoscope-four-chart-planet-layout-v1/);
+  assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261119-horoscope-four-chart-planet-layout-v1/);
   const releases = [astroServiceWorkerSource, horoscopeServiceWorkerSource, calendarWorkerSource]
     .map(source => source.match(/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '([^']+)' : '([^']+)';/));
   assert.ok(releases.every(Boolean), 'All three service workers must define the synchronized release marker.');
   assert.equal(new Set(releases.map(match => match[1])).size, 1);
   assert.equal(new Set(releases.map(match => match[2])).size, 1);
-  assert.equal(releases[0][1], '20261119-calendar-transit-contained-layout-v6');
-  assert.equal(releases[0][2], '20261119-calendar-transit-contained-layout-v6');
+  assert.equal(releases[0][1], '20261119-horoscope-four-chart-planet-layout-v1');
+  assert.equal(releases[0][2], '20261119-horoscope-four-chart-planet-layout-v1');
 });
 
 

@@ -1,0 +1,52 @@
+name: Horoscope Four-Chart Planet Presentation
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/horoscope/horoscope.css'
+      - 'public/horoscope/horoscope.js'
+      - 'public/horoscope/chart-style.js'
+      - 'public/horoscope/chart-style.css'
+      - 'public/horoscope/index.html'
+      - 'public/horoscope/calendar/index.html'
+      - 'tests/horoscope-chart-planet-layout-regression.mjs'
+      - 'tests/horoscope-chart-planet-layout-browser-smoke.mjs'
+      - '.github/workflows/horoscope-four-chart-planet-presentation.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/horoscope/horoscope.css'
+      - 'public/horoscope/horoscope.js'
+      - 'public/horoscope/chart-style.js'
+      - 'public/horoscope/chart-style.css'
+      - 'public/horoscope/index.html'
+      - 'public/horoscope/calendar/index.html'
+      - 'tests/horoscope-chart-planet-layout-regression.mjs'
+      - 'tests/horoscope-chart-planet-layout-browser-smoke.mjs'
+      - '.github/workflows/horoscope-four-chart-planet-presentation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  horoscope-chart-presentation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install repository Chromium dependencies
+        run: npm install --no-save --package-lock=false --no-audit --no-fund
+      - name: Verify source-level four-chart rendering rules
+        run: node tests/horoscope-chart-planet-layout-regression.mjs
+      - name: Verify four-chart layout in Chromium across viewport widths
+        run: node tests/horoscope-chart-planet-layout-browser-smoke.mjs
+      - name: Preserve four-chart preview screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMV-HOROSCOPE-FOUR-CHART-PLANET-LAYOUT
+          path: horoscope-chart-planet-layout-smoke-output/
+          if-no-files-found: warn
+          retention-days: 14

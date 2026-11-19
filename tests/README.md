@@ -10,6 +10,7 @@ This folder intentionally contains two kinds of checks:
 - `.github/workflows/cg-rajan-jathaka-kanitham-shadbala-qa.yml`: independent C.G. Rajan printed-source Shadbala research and five-natal integration, plus a standalone BPHS Drig-source oracle. BPHS `strength3` is no longer a production chart result; production Shadbala is B. V. Raman `strength6`.
 - `.github/workflows/uttara-kalamrita-six-bala-source-qa.yml`: independent Uttara Kalamrita six-Bala, Section III Ayurdaya, 2026 IMD Cheshta inputs, V363/V364/V366 numerical evidence, V367 certification blockers, V368 published-stage audit, and five-natal integration. Nine independent Ayurdaya/Cheshta oracles are consolidated in `uttara-kalamrita-cheshta-ayurdaya-combined-regression.mjs`, including the official IMD 2026 live discrepancy check and the Surya Siddhanta five-graha natal Cheshta research engine check.
 - `.github/workflows/horoscope-result-layout-browser-smoke.yml`: V358/V359 browser geometry checks.
+- `.github/workflows/horoscope-four-chart-planet-presentation.yml`: four-chart planet row separators and scoped Navamsa/Bhava empty-cell checks.
 - `.github/workflows/marriage-print-browser-smoke.yml`: Chromium native-print integration.
 - `.github/workflows/smv-output-pdf-report-audit.yml`: searchable-text audit of checked-in PDF fixtures.
 - `.github/workflows/world-timezone-certification.yml`: independent IANA/tzdata comparison. `global-timezone-probe.mjs` is a helper invoked by `global-timezone-audit.py`; it is not an unused standalone test.

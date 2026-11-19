@@ -67,7 +67,7 @@ form input, form select, form textarea{width:100%;box-sizing:border-box;font-fam
 #tamilHoroscopeResult .data-table, #englishHoroscopeResult .data-table{font-size:15px}
 #tamilHoroscopeResult .data-table th, #englishHoroscopeResult .data-table th{font-size:15px;font-weight:800}
 #tamilHoroscopeResult .south-rasi-cell .sign, #englishHoroscopeResult .south-rasi-cell .sign{font-size:clamp(14px, 2.6vw, 18px)}
-#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{font-size:clamp(13px, 2.5vw, 17px);line-height:1.45}
+#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{font-size:var(--smv-chart-compact-font-size,clamp(13px, 2.5vw, 17px));line-height:1.45}
 #tamilHoroscopeResult .dasha-head, #englishHoroscopeResult .dasha-head{font-size:16px;min-height:52px}
 #tamilHoroscopeResult .dasha-title, #englishHoroscopeResult .dasha-title{font-size:17px}
 #tamilHoroscopeResult .dasha-dates, #englishHoroscopeResult .dasha-dates{font-size:14px}
@@ -79,16 +79,16 @@ form input, form select, form textarea{width:100%;box-sizing:border-box;font-fam
 #tamilHoroscopeResult .small, #englishHoroscopeResult .small{font-size:14px}
 #tamilHoroscopeResult .data-table, #englishHoroscopeResult .data-table{font-size:14px}
 #tamilHoroscopeResult .data-table th, #englishHoroscopeResult .data-table th{font-size:14px}
-#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{font-size:14px}
+#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{font-size:var(--smv-chart-compact-font-size,14px)}
 #tamilHoroscopeResult .south-rasi-cell .sign, #englishHoroscopeResult .south-rasi-cell .sign{font-size:15px}
 #tamilHoroscopeResult .dasha-head, #englishHoroscopeResult .dasha-head{font-size:15px;padding:13px 12px}
 #tamilHoroscopeResult .dasha-title, #englishHoroscopeResult .dasha-title{font-size:16px}
 #tamilHoroscopeResult .dasha-dates, #englishHoroscopeResult .dasha-dates{font-size:13px}}
 .language-exclusive-hide:where(:not(.smv-css-island,.smv-css-island *)){display:none!important}
 #englishHoroscopeResult{font-size:16px;line-height:1.55}
-#englishHoroscopeResult .south-rasi-cell .planet-line{min-height:28px;font-size:clamp(18px, 3.6vw, 24px)!important;font-weight:900!important;line-height:1.5!important}
-#englishHoroscopeResult .south-rasi-cell .planet-glyph{letter-spacing:0.2px;font-size:1.08em!important;font-weight:900!important}
-#englishHoroscopeResult .south-rasi-cell .planet-degree{font-size:0.92em!important;font-weight:800}
+#englishHoroscopeResult .south-rasi-cell .planet-line{min-height:28px;font-size:var(--smv-chart-compact-font-size,clamp(18px, 3.6vw, 24px))!important;font-weight:900!important;line-height:1.5!important}
+#englishHoroscopeResult .south-rasi-cell .planet-glyph{letter-spacing:0.2px;font-size:var(--smv-chart-compact-font-size,1.08em)!important;font-weight:900!important}
+#englishHoroscopeResult .south-rasi-cell .planet-degree{font-size:var(--smv-chart-compact-font-size,0.92em)!important;font-weight:800}
 #englishHoroscopeResult .south-rasi-cell .sign{font-size:clamp(15px, 2.8vw, 19px)!important;font-weight:800!important}
 #englishHoroscopeResult table{font-size:15px}
 #englishHoroscopeResult th, #englishHoroscopeResult td{font-size:15px;line-height:1.45}
@@ -97,7 +97,7 @@ form input, form select, form textarea{width:100%;box-sizing:border-box;font-fam
 #englishHoroscopeResult .dasha-subtable th, #englishHoroscopeResult .dasha-subtable td{font-size:15px}
 @media (max-width: 700px){
 #englishHoroscopeResult{font-size:16px}
-#englishHoroscopeResult .south-rasi-cell .planet-line{font-size:clamp(17px, 4.6vw, 22px)!important;min-height:27px}
+#englishHoroscopeResult .south-rasi-cell .planet-line{font-size:var(--smv-chart-compact-font-size,clamp(17px, 4.6vw, 22px))!important;min-height:27px}
 #englishHoroscopeResult .south-rasi-cell .sign{font-size:16px!important}
 #englishHoroscopeResult table, #englishHoroscopeResult th, #englishHoroscopeResult td{font-size:14px}
 #englishHoroscopeResult .dasha-head{font-size:16px;padding:15px 14px;min-height:56px}
@@ -108,8 +108,8 @@ form input, form select, form textarea{width:100%;box-sizing:border-box;font-fam
 #tamilHoroscopeResult .south-rasi-cell .sign, #englishHoroscopeResult .south-rasi-cell .sign{flex:0 0 auto;min-height:25px;margin-bottom:2px;font-size:clamp(19px, 3.4vw, 27px)!important}
 #tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{gap:3px;white-space:normal!important;line-height:1.15!important;min-height:22px!important}
 #tamilHoroscopeResult .south-rasi-cell .planet-glyph, #englishHoroscopeResult .south-rasi-cell .planet-glyph{line-height:1.1}
-#tamilHoroscopeResult .south-rasi-cell .planet-degree, #englishHoroscopeResult .south-rasi-cell .planet-degree{line-height:1.1;font-size:clamp(8px, 1.8vw, 12px)!important}
-#tamilHoroscopeResult .bhava-rasi-cell .bhava-cusp, #englishHoroscopeResult .bhava-rasi-cell .bhava-cusp{width:100%;margin:2px 0px;padding:2px 3px;font-size:clamp(9px, 1.9vw, 13px)!important;line-height:1.15!important}
+#tamilHoroscopeResult .south-rasi-cell .planet-degree, #englishHoroscopeResult .south-rasi-cell .planet-degree{line-height:1.1;font-size:var(--smv-chart-compact-font-size,clamp(8px, 1.8vw, 12px))!important}
+#tamilHoroscopeResult .bhava-rasi-cell .bhava-cusp, #englishHoroscopeResult .bhava-rasi-cell .bhava-cusp{width:100%;margin:2px 0px;padding:2px 3px;font-size:var(--smv-chart-compact-font-size,clamp(9px, 1.9vw, 13px))!important;line-height:1.15!important}
 #tamilHoroscopeResult .bhava-rasi-cell .bhava-house-no, #englishHoroscopeResult .bhava-rasi-cell .bhava-house-no{display:inline-flex;align-items:center;justify-content:center;min-width:1.5em;font-weight:900;letter-spacing:0.03em}
 #tamilHoroscopeResult .bhava-rasi-cell .bhava-planet-house, #englishHoroscopeResult .bhava-rasi-cell .bhava-planet-house{font-weight:900;white-space:nowrap}
 #tamil-horoscope #tamilLat, #tamil-horoscope #tamilLon, #english-horoscope #englishLat, #english-horoscope #englishLon{display:block!important}
@@ -120,20 +120,20 @@ form input, form select, form textarea{width:100%;box-sizing:border-box;font-fam
 #tamilHoroscopeResult .south-indian-chart, #englishHoroscopeResult .south-indian-chart{width:100%;margin:12px auto 18px}
 #tamilHoroscopeResult .south-rasi-cell, #englishHoroscopeResult .south-rasi-cell{padding:5px 3px}
 #tamilHoroscopeResult .south-rasi-cell .sign, #englishHoroscopeResult .south-rasi-cell .sign{font-size:21px!important;min-height:23px}
-#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{gap:2px;padding:2px 0px;font-size:14px!important}
-#tamilHoroscopeResult .south-rasi-cell .planet-degree, #englishHoroscopeResult .south-rasi-cell .planet-degree{font-size:9px!important}
-#tamilHoroscopeResult .bhava-rasi-cell .bhava-cusp, #englishHoroscopeResult .bhava-rasi-cell .bhava-cusp{padding:2px;font-size:9px!important}}
+#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{gap:2px;padding:2px 0px;font-size:var(--smv-chart-compact-font-size,14px)!important}
+#tamilHoroscopeResult .south-rasi-cell .planet-degree, #englishHoroscopeResult .south-rasi-cell .planet-degree{font-size:var(--smv-chart-compact-font-size,9px)!important}
+#tamilHoroscopeResult .bhava-rasi-cell .bhava-cusp, #englishHoroscopeResult .bhava-rasi-cell .bhava-cusp{padding:2px;font-size:var(--smv-chart-compact-font-size,9px)!important}}
 @media (min-width: 701px){
-#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{font-size:16px!important}}
+#tamilHoroscopeResult .south-rasi-cell:not(.smv-chart-cell-compact) .planet-line, #englishHoroscopeResult .south-rasi-cell:not(.smv-chart-cell-compact) .planet-line{font-size:var(--smv-chart-compact-font-size,16px)!important}}
 #tamilHoroscopeResult .south-indian-chart, #englishHoroscopeResult .south-indian-chart{width:min(620px, 100%);max-width:100%;margin:14px auto 20px;aspect-ratio:1 / 1;overflow:hidden;box-sizing:border-box}
 #tamilHoroscopeResult .south-rasi-cell, #englishHoroscopeResult .south-rasi-cell{min-width:0px;min-height:0px;padding:4px 3px;overflow:hidden;box-sizing:border-box}
 #tamilHoroscopeResult .south-rasi-cell .sign, #englishHoroscopeResult .south-rasi-cell .sign{min-height:22px;margin-bottom:1px;line-height:1;font-size:clamp(18px, 3vw, 27px)!important}
 #tamilHoroscopeResult .south-rasi-cell .house, #englishHoroscopeResult .south-rasi-cell .house{line-height:1.05;white-space:nowrap;font-size:clamp(7px, 1.7vw, 10px)!important}
-#tamilHoroscopeResult .south-rasi-cell .lagna, #englishHoroscopeResult .south-rasi-cell .lagna{max-width:100%;padding:1px 2px;margin-top:2px;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box;font-size:clamp(7px, 1.8vw, 11px)!important}
-#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{grid-template-columns:auto minmax(0px, 1fr);gap:2px;width:100%;min-width:0px;padding:1px 0px;margin:0px;box-sizing:border-box;display:grid!important;min-height:17px!important;font-size:clamp(9px, 2.15vw, 14px)!important}
-#tamilHoroscopeResult .south-rasi-cell .planet-glyph, #englishHoroscopeResult .south-rasi-cell .planet-glyph{min-width:0px;white-space:nowrap;line-height:1}
-#tamilHoroscopeResult .south-rasi-cell .planet-degree, #englishHoroscopeResult .south-rasi-cell .planet-degree{min-width:0px;max-width:100%;overflow:hidden;text-overflow:ellipsis;line-height:1.05;font-size:clamp(7px, 1.65vw, 10px)!important}
-#tamilHoroscopeResult .bhava-rasi-cell .bhava-cusp, #englishHoroscopeResult .bhava-rasi-cell .bhava-cusp{max-width:100%;margin:1px 0px;padding:1px 2px;box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:clamp(7px, 1.7vw, 10px)!important;line-height:1.05!important}
+#tamilHoroscopeResult .south-rasi-cell .lagna, #englishHoroscopeResult .south-rasi-cell .lagna{max-width:100%;padding:1px 2px;margin-top:2px;line-height:1.05;white-space:var(--smv-chart-compact-white-space,nowrap);overflow:hidden;text-overflow:ellipsis;box-sizing:border-box;font-size:var(--smv-chart-compact-font-size,clamp(7px, 1.8vw, 11px))!important}
+#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{grid-template-columns:auto minmax(0px, 1fr);gap:2px;width:100%;min-width:0px;padding:1px 0px;margin:0px;box-sizing:border-box;display:grid!important;min-height:17px!important;font-size:var(--smv-chart-compact-font-size,clamp(9px, 2.15vw, 14px))!important}
+#tamilHoroscopeResult .south-rasi-cell .planet-glyph, #englishHoroscopeResult .south-rasi-cell .planet-glyph{min-width:0px;white-space:var(--smv-chart-compact-white-space,nowrap);line-height:1}
+#tamilHoroscopeResult .south-rasi-cell .planet-degree, #englishHoroscopeResult .south-rasi-cell .planet-degree{min-width:0px;max-width:100%;overflow:hidden;text-overflow:ellipsis;line-height:1.05;font-size:var(--smv-chart-compact-font-size,clamp(7px, 1.65vw, 10px))!important}
+#tamilHoroscopeResult .bhava-rasi-cell .bhava-cusp, #englishHoroscopeResult .bhava-rasi-cell .bhava-cusp{max-width:100%;margin:1px 0px;padding:1px 2px;box-sizing:border-box;white-space:var(--smv-chart-compact-white-space,nowrap);overflow:hidden;text-overflow:ellipsis;font-size:var(--smv-chart-compact-font-size,clamp(7px, 1.7vw, 10px))!important;line-height:1.05!important}
 #tamilHoroscopeResult .bhava-rasi-cell .bhava-planet-house, #englishHoroscopeResult .bhava-rasi-cell .bhava-planet-house{font-size:0.9em}
 #tamilHoroscopeResult .south-chart-center, #englishHoroscopeResult .south-chart-center{font-size:clamp(15px, 3.4vw, 25px);line-height:1.15;letter-spacing:0.5px}
 @media (max-width: 520px){
@@ -141,46 +141,46 @@ form input, form select, form textarea{width:100%;box-sizing:border-box;font-fam
 #tamilHoroscopeResult .south-rasi-cell, #englishHoroscopeResult .south-rasi-cell{padding:3px 2px}
 #tamilHoroscopeResult .south-rasi-cell .sign, #englishHoroscopeResult .south-rasi-cell .sign{font-size:20px!important;min-height:21px}
 #tamilHoroscopeResult .south-rasi-cell .house, #englishHoroscopeResult .south-rasi-cell .house{font-size:7px!important}
-#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{gap:1px;min-height:16px!important;font-size:9px!important}
-#tamilHoroscopeResult .south-rasi-cell .planet-degree, #englishHoroscopeResult .south-rasi-cell .planet-degree{font-size:7.5px!important}
-#tamilHoroscopeResult .bhava-rasi-cell .bhava-cusp, #englishHoroscopeResult .bhava-rasi-cell .bhava-cusp{font-size:7.5px!important}}
-#tamilHoroscopeResult .dynamic-rasi-number, #englishHoroscopeResult .dynamic-rasi-number{font-size:clamp(16px, 3.4vw, 25px);font-weight:800;line-height:1.05;min-height:24px;margin:2px 0px;text-align:center;color:rgb(111, 77, 44)}
+#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{gap:1px;min-height:16px!important;font-size:var(--smv-chart-compact-font-size,9px)!important}
+#tamilHoroscopeResult .south-rasi-cell .planet-degree, #englishHoroscopeResult .south-rasi-cell .planet-degree{font-size:var(--smv-chart-compact-font-size,7.5px)!important}
+#tamilHoroscopeResult .bhava-rasi-cell .bhava-cusp, #englishHoroscopeResult .bhava-rasi-cell .bhava-cusp{font-size:var(--smv-chart-compact-font-size,7.5px)!important}}
+#tamilHoroscopeResult .dynamic-rasi-number, #englishHoroscopeResult .dynamic-rasi-number{font-size:var(--smv-chart-compact-font-size,clamp(16px, 3.4vw, 25px));font-weight:800;line-height:1.05;min-height:24px;margin:2px 0px;text-align:center;color:rgb(111, 77, 44)}
 #tamilHoroscopeResult .south-rasi-cell .lagna, #englishHoroscopeResult .south-rasi-cell .lagna{display:inline-block;font-weight:900;color:rgb(166, 107, 0);background:transparent;border:0px;padding:0px;margin:1px 0px 2px;line-height:1}
 #tamilHoroscopeResult .bhava-rasi-cell .bhava-cusp, #englishHoroscopeResult .bhava-rasi-cell .bhava-cusp{font-weight:900;text-align:center;border:0px!important;background:transparent!important;padding:1px 0px!important;margin:1px 0px!important}
-#tamilHoroscopeResult .bhava-rasi-cell .bhava-house-no, #englishHoroscopeResult .bhava-rasi-cell .bhava-house-no{font-size:clamp(14px, 3vw, 22px);color:rgb(111, 77, 44)}
+#tamilHoroscopeResult .bhava-rasi-cell .bhava-house-no, #englishHoroscopeResult .bhava-rasi-cell .bhava-house-no{font-size:var(--smv-chart-compact-font-size,clamp(14px, 3vw, 22px));color:rgb(111, 77, 44)}
 @media (max-width: 520px){
-#tamilHoroscopeResult .dynamic-rasi-number, #englishHoroscopeResult .dynamic-rasi-number{font-size:19px!important;min-height:21px}
-#tamilHoroscopeResult .south-rasi-cell .lagna, #englishHoroscopeResult .south-rasi-cell .lagna{font-size:9px!important}
-#tamilHoroscopeResult .bhava-rasi-cell .bhava-house-no, #englishHoroscopeResult .bhava-rasi-cell .bhava-house-no{font-size:16px!important}}
+#tamilHoroscopeResult .dynamic-rasi-number, #englishHoroscopeResult .dynamic-rasi-number{font-size:var(--smv-chart-compact-font-size,19px)!important;min-height:21px}
+#tamilHoroscopeResult .south-rasi-cell .lagna, #englishHoroscopeResult .south-rasi-cell .lagna{font-size:var(--smv-chart-compact-font-size,9px)!important}
+#tamilHoroscopeResult .bhava-rasi-cell .bhava-house-no, #englishHoroscopeResult .bhava-rasi-cell .bhava-house-no{font-size:var(--smv-chart-compact-font-size,16px)!important}}
 #tamilHoroscopeResult .south-rasi-cell .sign, #englishHoroscopeResult .south-rasi-cell .sign, #tamilHoroscopeResult .south-rasi-cell .rasi-name, #englishHoroscopeResult .south-rasi-cell .rasi-name{display:none!important}
-#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{align-items:center;justify-content:center;gap:4px;min-height:22px;padding:2px 1px;white-space:nowrap;overflow:hidden;display:flex!important;font-size:clamp(13px, 2.7vw, 18px)!important;font-weight:900!important;line-height:1.25!important}
-#tamilHoroscopeResult .south-rasi-cell .planet-glyph, #englishHoroscopeResult .south-rasi-cell .planet-glyph{font-size:1em!important;font-weight:900!important}
-#tamilHoroscopeResult .south-rasi-cell .planet-degree, #englishHoroscopeResult .south-rasi-cell .planet-degree{white-space:nowrap;font-size:0.72em!important}
-#tamilHoroscopeResult .south-rasi-cell .dynamic-rasi-number, #englishHoroscopeResult .south-rasi-cell .dynamic-rasi-number{font-size:clamp(17px, 3.5vw, 24px)!important;font-weight:900!important;color:rgb(111, 77, 44)!important;line-height:1.05!important}
-#tamilHoroscopeResult .south-rasi-cell .lagna, #englishHoroscopeResult .south-rasi-cell .lagna{font-size:10px!important;font-weight:900!important;color:rgb(166, 107, 0)!important}
+#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{align-items:center;justify-content:center;gap:4px;min-height:22px;padding:2px 1px;white-space:var(--smv-chart-compact-white-space,nowrap);overflow:hidden;display:flex!important;font-size:var(--smv-chart-compact-font-size,clamp(13px, 2.7vw, 18px))!important;font-weight:900!important;line-height:1.25!important}
+#tamilHoroscopeResult .south-rasi-cell .planet-glyph, #englishHoroscopeResult .south-rasi-cell .planet-glyph{font-size:var(--smv-chart-compact-font-size,1em)!important;font-weight:900!important}
+#tamilHoroscopeResult .south-rasi-cell .planet-degree, #englishHoroscopeResult .south-rasi-cell .planet-degree{white-space:var(--smv-chart-compact-white-space,nowrap);font-size:var(--smv-chart-compact-font-size,0.72em)!important}
+#tamilHoroscopeResult .south-rasi-cell .dynamic-rasi-number, #englishHoroscopeResult .south-rasi-cell .dynamic-rasi-number{font-size:var(--smv-chart-compact-font-size,clamp(17px, 3.5vw, 24px))!important;font-weight:900!important;color:rgb(111, 77, 44)!important;line-height:1.05!important}
+#tamilHoroscopeResult .south-rasi-cell .lagna, #englishHoroscopeResult .south-rasi-cell .lagna{font-size:var(--smv-chart-compact-font-size,10px)!important;font-weight:900!important;color:rgb(166, 107, 0)!important}
 @media (max-width: 520px){
-#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{gap:3px;min-height:20px;font-size:15px!important}
-#tamilHoroscopeResult .south-rasi-cell .planet-degree, #englishHoroscopeResult .south-rasi-cell .planet-degree{font-size:9px!important}
-#tamilHoroscopeResult .south-rasi-cell .dynamic-rasi-number, #englishHoroscopeResult .south-rasi-cell .dynamic-rasi-number{font-size:19px!important}}
+#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{gap:3px;min-height:20px;font-size:var(--smv-chart-compact-font-size,15px)!important}
+#tamilHoroscopeResult .south-rasi-cell .planet-degree, #englishHoroscopeResult .south-rasi-cell .planet-degree{font-size:var(--smv-chart-compact-font-size,9px)!important}
+#tamilHoroscopeResult .south-rasi-cell .dynamic-rasi-number, #englishHoroscopeResult .south-rasi-cell .dynamic-rasi-number{font-size:var(--smv-chart-compact-font-size,19px)!important}}
 #tamilHoroscopeResult .south-rasi-cell, #englishHoroscopeResult .south-rasi-cell{overflow:hidden!important;padding:4px 3px!important}
-#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{font-size:13px!important;line-height:1.05!important;min-height:0px!important;height:auto!important;padding:1px 0px!important;gap:2px!important;margin:0px!important}
-#tamilHoroscopeResult .south-rasi-cell .planet-degree, #englishHoroscopeResult .south-rasi-cell .planet-degree{font-size:8px!important;line-height:1!important}
-#tamilHoroscopeResult .south-rasi-cell .dynamic-rasi-number, #englishHoroscopeResult .south-rasi-cell .dynamic-rasi-number{font-size:18px!important;min-height:0px!important;margin:1px 0px!important}
-#tamilHoroscopeResult .south-rasi-cell .lagna, #englishHoroscopeResult .south-rasi-cell .lagna{font-size:9px!important;line-height:1!important;margin:0px 0px 1px!important}
+#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{font-size:var(--smv-chart-compact-font-size,13px)!important;line-height:1.05!important;min-height:0px!important;height:auto!important;padding:1px 0px!important;gap:2px!important;margin:0px!important}
+#tamilHoroscopeResult .south-rasi-cell .planet-degree, #englishHoroscopeResult .south-rasi-cell .planet-degree{font-size:var(--smv-chart-compact-font-size,8px)!important;line-height:1!important}
+#tamilHoroscopeResult .south-rasi-cell .dynamic-rasi-number, #englishHoroscopeResult .south-rasi-cell .dynamic-rasi-number{font-size:var(--smv-chart-compact-font-size,18px)!important;min-height:0px!important;margin:1px 0px!important}
+#tamilHoroscopeResult .south-rasi-cell .lagna, #englishHoroscopeResult .south-rasi-cell .lagna{font-size:var(--smv-chart-compact-font-size,9px)!important;line-height:1!important;margin:0px 0px 1px!important}
 @media (min-width: 901px){
 #tamilHoroscopeResult, #englishHoroscopeResult{max-width:1240px;margin:0px auto;font-size:17px;line-height:1.7}
 #tamilHoroscopeResult > .card, #englishHoroscopeResult > .card{padding:30px 38px!important}
 #tamilHoroscopeResult .south-indian-chart, #englishHoroscopeResult .south-indian-chart{width:min(760px, 78vw)!important;max-width:760px!important;margin:22px auto 30px!important;border-width:3px!important}
 #tamilHoroscopeResult .south-rasi-cell, #englishHoroscopeResult .south-rasi-cell{min-width:0px;padding:12px 8px!important}
-#tamilHoroscopeResult .dynamic-rasi-number, #englishHoroscopeResult .dynamic-rasi-number{font-size:24px!important;line-height:1.05!important;font-weight:900!important;margin-bottom:7px!important}
-#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{font-size:18px!important;line-height:1.35!important;gap:6px!important;padding:4px 2px!important;white-space:nowrap!important}
-#tamilHoroscopeResult .south-rasi-cell .planet-glyph, #englishHoroscopeResult .south-rasi-cell .planet-glyph{font-size:1.05em!important}
-#tamilHoroscopeResult .south-rasi-cell .planet-degree, #englishHoroscopeResult .south-rasi-cell .planet-degree{font-size:0.78em!important}
-#tamilHoroscopeResult .south-rasi-cell .lagna, #englishHoroscopeResult .south-rasi-cell .lagna{font-size:14px!important;padding:4px 8px!important;margin:2px 0px 4px!important}
+#tamilHoroscopeResult .dynamic-rasi-number, #englishHoroscopeResult .dynamic-rasi-number{font-size:var(--smv-chart-compact-font-size,24px)!important;line-height:1.05!important;font-weight:900!important;margin-bottom:7px!important}
+#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{font-size:var(--smv-chart-compact-font-size,18px)!important;line-height:1.35!important;gap:6px!important;padding:4px 2px!important;white-space:var(--smv-chart-compact-white-space,nowrap)!important}
+#tamilHoroscopeResult .south-rasi-cell .planet-glyph, #englishHoroscopeResult .south-rasi-cell .planet-glyph{font-size:var(--smv-chart-compact-font-size,1.05em)!important}
+#tamilHoroscopeResult .south-rasi-cell .planet-degree, #englishHoroscopeResult .south-rasi-cell .planet-degree{font-size:var(--smv-chart-compact-font-size,0.78em)!important}
+#tamilHoroscopeResult .south-rasi-cell .lagna, #englishHoroscopeResult .south-rasi-cell .lagna{font-size:var(--smv-chart-compact-font-size,14px)!important;padding:4px 8px!important;margin:2px 0px 4px!important}
 #tamilHoroscopeResult .south-chart-center, #englishHoroscopeResult .south-chart-center{font-size:21px!important;line-height:1.35!important}
-#tamilHoroscopeResult .navamsa-planet-only .planet-glyph, #englishHoroscopeResult .navamsa-planet-only .planet-glyph{font-size:1.08em!important}
-#tamilHoroscopeResult .bhava-rasi-cell .planet-line, #englishHoroscopeResult .bhava-rasi-cell .planet-line{font-size:17px!important;line-height:1.35!important}
-#tamilHoroscopeResult .bhava-rasi-cell .bhava-house-no, #englishHoroscopeResult .bhava-rasi-cell .bhava-house-no{font-size:19px!important;font-weight:900!important}
+#tamilHoroscopeResult .navamsa-planet-only .planet-glyph, #englishHoroscopeResult .navamsa-planet-only .planet-glyph{font-size:var(--smv-chart-compact-font-size,1.08em)!important}
+#tamilHoroscopeResult .bhava-rasi-cell .planet-line, #englishHoroscopeResult .bhava-rasi-cell .planet-line{font-size:var(--smv-chart-compact-font-size,17px)!important;line-height:1.35!important}
+#tamilHoroscopeResult .bhava-rasi-cell .bhava-house-no, #englishHoroscopeResult .bhava-rasi-cell .bhava-house-no{font-size:var(--smv-chart-compact-font-size,19px)!important;font-weight:900!important}
 #tamilHoroscopeResult h2, #englishHoroscopeResult h2{font-size:34px!important}
 #tamilHoroscopeResult h3, #englishHoroscopeResult h3{font-size:26px!important;margin-top:30px!important}
 #tamilHoroscopeResult .data-table, #englishHoroscopeResult .data-table{font-size:15px}
@@ -189,7 +189,7 @@ form input, form select, form textarea{width:100%;box-sizing:border-box;font-fam
 @media (min-width: 701px) and (max-width: 900px){
 #tamilHoroscopeResult, #englishHoroscopeResult{max-width:980px;margin:0px auto}
 #tamilHoroscopeResult .south-indian-chart, #englishHoroscopeResult .south-indian-chart{width:min(700px, 88vw)!important}
-#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{font-size:16px!important}}
+#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{font-size:var(--smv-chart-compact-font-size,16px)!important}}
 #astroQuestionQueue .astro-question-item.pending-approval textarea{border:2px solid rgb(199, 155, 82);background:rgb(255, 253, 248)}
 #astroQuestionQueue .astro-question-item.pending-approval .pending-note{color:rgb(122, 90, 34)}
 .astro-question-item, .astro-answer-item{overflow:hidden}
@@ -295,12 +295,12 @@ input::placeholder:where(), textarea::placeholder:where(){font-size:16px!importa
 .card h3:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:23px!important}
 table:where(:not(.smv-css-island,.smv-css-island *)), table th:where(:not(.smv-css-island,.smv-css-island *)), table td:where(:not(.smv-css-island,.smv-css-island *)){font-size:15px!important;line-height:1.5!important}
 table th:where(:not(.smv-css-island,.smv-css-island *)){font-weight:800!important}
-.south-rasi-cell .planet-line:where(:not(.smv-css-island,.smv-css-island *)){font-size:clamp(13px, 1.8vw, 16px)!important;line-height:1.35!important}
-.south-rasi-cell .planet-degree:where(:not(.smv-css-island,.smv-css-island *)){font-size:12px!important}
+.south-rasi-cell .planet-line:where(:not(.smv-css-island,.smv-css-island *)){font-size:var(--smv-chart-compact-font-size,clamp(13px, 1.8vw, 16px))!important;line-height:1.35!important}
+.south-rasi-cell .planet-degree:where(:not(.smv-css-island,.smv-css-island *)){font-size:var(--smv-chart-compact-font-size,12px)!important}
 .south-rasi-cell .house:where(:not(.smv-css-island,.smv-css-island *)){font-size:12px!important}
-.south-rasi-cell .lagna:where(:not(.smv-css-island,.smv-css-island *)){font-size:13px!important}
-.bhava-rasi-cell .planet-line:where(:not(.smv-css-island,.smv-css-island *)){font-size:clamp(13px, 1.7vw, 15px)!important}
-.bhava-rasi-cell .bhava-cusp:where(:not(.smv-css-island,.smv-css-island *)){font-size:11px!important}
+.south-rasi-cell .lagna:where(:not(.smv-css-island,.smv-css-island *)){font-size:var(--smv-chart-compact-font-size,13px)!important}
+.bhava-rasi-cell .planet-line:where(:not(.smv-css-island,.smv-css-island *)){font-size:var(--smv-chart-compact-font-size,clamp(13px, 1.7vw, 15px))!important}
+.bhava-rasi-cell .bhava-cusp:where(:not(.smv-css-island,.smv-css-island *)){font-size:var(--smv-chart-compact-font-size,11px)!important}
 footer p:where(:not(.smv-css-island,.smv-css-island *)), footer li:where(:not(.smv-css-island,.smv-css-island *)), footer a:where(:not(.smv-css-island,.smv-css-island *)){font-size:16px!important;line-height:1.6!important}
 @media (max-width: 767px){
 body:where(:not(.smv-css-island,.smv-css-island *)){font-size:18px!important;line-height:1.6!important}
@@ -323,12 +323,12 @@ textarea:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-roo
 .card .small:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)),
 .small:where(:not(.smv-css-island,.smv-css-island *)):where(:not(.smv-type-root,.smv-type-root *)){font-size:16px!important}
 table:where(:not(.smv-css-island,.smv-css-island *)), table th:where(:not(.smv-css-island,.smv-css-island *)), table td:where(:not(.smv-css-island,.smv-css-island *)){font-size:14px!important;line-height:1.5!important}
-.south-rasi-cell .planet-line:where(:not(.smv-css-island,.smv-css-island *)){font-size:14px!important}
-.south-rasi-cell .planet-degree:where(:not(.smv-css-island,.smv-css-island *)){font-size:11px!important}
+.south-rasi-cell .planet-line:where(:not(.smv-css-island,.smv-css-island *)){font-size:var(--smv-chart-compact-font-size,14px)!important}
+.south-rasi-cell .planet-degree:where(:not(.smv-css-island,.smv-css-island *)){font-size:var(--smv-chart-compact-font-size,11px)!important}
 .south-rasi-cell .house:where(:not(.smv-css-island,.smv-css-island *)){font-size:11px!important}
-.south-rasi-cell .lagna:where(:not(.smv-css-island,.smv-css-island *)){font-size:12px!important}
-.bhava-rasi-cell .planet-line:where(:not(.smv-css-island,.smv-css-island *)){font-size:13px!important}
-.bhava-rasi-cell .bhava-cusp:where(:not(.smv-css-island,.smv-css-island *)){font-size:10px!important}
+.south-rasi-cell .lagna:where(:not(.smv-css-island,.smv-css-island *)){font-size:var(--smv-chart-compact-font-size,12px)!important}
+.bhava-rasi-cell .planet-line:where(:not(.smv-css-island,.smv-css-island *)){font-size:var(--smv-chart-compact-font-size,13px)!important}
+.bhava-rasi-cell .bhava-cusp:where(:not(.smv-css-island,.smv-css-island *)){font-size:var(--smv-chart-compact-font-size,10px)!important}
 footer p:where(:not(.smv-css-island,.smv-css-island *)), footer li:where(:not(.smv-css-island,.smv-css-island *)), footer a:where(:not(.smv-css-island,.smv-css-island *)){font-size:15px!important}}
 @media (max-width: 380px){
 body:where(:not(.smv-css-island,.smv-css-island *)){font-size:17px!important}
@@ -491,8 +491,8 @@ n#modal.profile-modal-active .profile-dialog .profile-bio::-webkit-scrollbar-tra
 #tamilHoroscopeResult .phase3-shadbala-table, #englishHoroscopeResult .phase3-shadbala-table{min-width:900px!important}
 #tamilHoroscopeResult .adv-wide, #englishHoroscopeResult .adv-wide{min-width:760px!important}
 #tamilHoroscopeResult .dasha-subtable, #englishHoroscopeResult .dasha-subtable{font-size:12px!important}}
-#tamilHoroscopeResult .south-rasi-cell .planet-glyph, #englishHoroscopeResult .south-rasi-cell .planet-glyph{white-space:nowrap!important;display:inline-block!important;letter-spacing:0px!important}
-#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{white-space:nowrap!important}
+#tamilHoroscopeResult .south-rasi-cell .planet-glyph, #englishHoroscopeResult .south-rasi-cell .planet-glyph{white-space:var(--smv-chart-compact-white-space,nowrap)!important;display:inline-block!important;letter-spacing:0px!important}
+#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{white-space:var(--smv-chart-compact-white-space,nowrap)!important}
 #tamilHoroscopeResult .data-table:not(.bhava-table):not(.navamsa-table):not(.strength-table):not(.phase3-shadbala-table) td:first-child, #englishHoroscopeResult .data-table:not(.bhava-table):not(.navamsa-table):not(.strength-table):not(.phase3-shadbala-table) td:first-child{white-space:nowrap!important;word-break:normal!important;overflow-wrap:normal!important}
 #tamilHoroscopeResult .dasha-subtable th:first-child, #englishHoroscopeResult .dasha-subtable th:first-child{white-space:nowrap!important}
 .smv-verified-badge:where(:not(.smv-css-island,.smv-css-island *)), .smv-approved-badge:where(:not(.smv-css-island,.smv-css-island *)){display:inline-flex!important;align-items:center!important;gap:6px!important;color:rgb(22, 163, 74)!important;font-weight:800!important;white-space:nowrap!important}
@@ -893,11 +893,11 @@ table.data-table{width:100%;min-width:680px;border-collapse:separate;border-spac
 .strength-table th:nth-child(3), .strength-table td:nth-child(3){width:14%}
 .strength-table th:nth-child(4), .strength-table td:nth-child(4){width:18%}
 .strength-table th:nth-child(5), .strength-table td:nth-child(5){width:38%}
-#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .navamsa-planet-only .planet-glyph{font-size:1.08em;font-weight:700}
+#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .navamsa-planet-only .planet-glyph{font-size:var(--smv-chart-compact-font-size,1.08em);font-weight:700}
 .navamsa-planet-only{margin-top:1px}
-.planet-line{font-size:clamp(15px, 2.9vw, 19px);font-weight:900;line-height:1.5;min-height:24px}
-#tamilHoroscopeResult .south-rasi-cell .planet-glyph, #englishHoroscopeResult .south-rasi-cell .planet-glyph{font-size:1.05em;letter-spacing:0.2px}
-#tamilHoroscopeResult .south-rasi-cell .planet-degree, #englishHoroscopeResult .south-rasi-cell .planet-degree{font-size:0.9em;font-weight:800}
+.planet-line{font-size:var(--smv-chart-compact-font-size,clamp(15px, 2.9vw, 19px));font-weight:900;line-height:1.5;min-height:24px}
+#tamilHoroscopeResult .south-rasi-cell .planet-glyph, #englishHoroscopeResult .south-rasi-cell .planet-glyph{font-size:var(--smv-chart-compact-font-size,1.05em);letter-spacing:0.2px}
+#tamilHoroscopeResult .south-rasi-cell .planet-degree, #englishHoroscopeResult .south-rasi-cell .planet-degree{font-size:var(--smv-chart-compact-font-size,0.9em);font-weight:800}
 @media (max-width: 700px){
 .bhava-table{font-size:12px}
 .bhava-table th:where(:not(.smv-css-island,.smv-css-island *)), .bhava-table td:where(:not(.smv-css-island,.smv-css-island *)){line-height:1.35;padding:9px 5px!important}
@@ -909,7 +909,7 @@ table.data-table{width:100%;min-width:680px;border-collapse:separate;border-spac
 .phase3-shadbala-table th:where(:not(.smv-css-island,.smv-css-island *)), .phase3-shadbala-table td:where(:not(.smv-css-island,.smv-css-island *)){line-height:1.35;padding:8px 4px!important}
 .strength-table th:nth-child(4), .strength-table td:nth-child(4){width:17%}
 .strength-table th:nth-child(5), .strength-table td:nth-child(5){width:39%}
-#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{font-size:15px}}
+#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{font-size:var(--smv-chart-compact-font-size,15px)}}
 .dasha-tree{display:flex;flex-direction:column;gap:10px}
 .dasha-node{border:1px solid rgb(216, 199, 167);border-radius:12px;background:rgb(255, 253, 248);overflow:hidden}
 .dasha-head{width:100%;border:0px;background:transparent;padding:14px 16px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:10px;font:inherit;cursor:pointer}
@@ -932,32 +932,54 @@ table.data-table{width:100%;min-width:680px;border-collapse:separate;border-spac
 .dasha-table th:nth-child(3), .dasha-table td:nth-child(3){width:30%}
 .dasha-table th:nth-child(4), .dasha-table td:nth-child(4){width:30%}
 .south-rasi-cell{position:relative;box-sizing:border-box}
-.south-rasi-cell .planet-line{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;padding:2px 1px;border-bottom:1px dotted rgb(219, 201, 170);font-size:clamp(10px, 1.9vw, 13px);font-weight:800;color:rgb(107, 45, 22);line-height:1.3;white-space:nowrap}
-.south-rasi-cell .planet-line:last-child{border-bottom:0px}
+.south-rasi-cell[data-chart-planet-count="3"]{--smv-chart-compact-font-size:11.5px;--smv-chart-compact-white-space:normal}
+.south-rasi-cell[data-chart-planet-count="4"]{--smv-chart-compact-font-size:11px;--smv-chart-compact-white-space:normal}
+.south-rasi-cell[data-chart-planet-count="5"]{--smv-chart-compact-font-size:10px;--smv-chart-compact-white-space:normal}
+.south-rasi-cell[data-chart-planet-count="6"]{--smv-chart-compact-font-size:9.5px;--smv-chart-compact-white-space:normal}
+.south-rasi-cell[data-chart-planet-count="7"]{--smv-chart-compact-font-size:9px;--smv-chart-compact-white-space:normal}
+.south-rasi-cell[data-chart-planet-count="8"]{--smv-chart-compact-font-size:8.5px;--smv-chart-compact-white-space:normal}
+.south-rasi-cell[data-chart-planet-count="9"]{--smv-chart-compact-font-size:8px;--smv-chart-compact-white-space:normal}
+.south-rasi-cell[data-chart-planet-count="10"]{--smv-chart-compact-font-size:7.5px;--smv-chart-compact-white-space:normal}
+.south-rasi-cell[data-chart-planet-count="11"]{--smv-chart-compact-font-size:7px;--smv-chart-compact-white-space:normal}
+.south-rasi-cell[data-chart-planet-count="12"]{--smv-chart-compact-font-size:6.5px;--smv-chart-compact-white-space:normal}
+.south-rasi-cell.smv-chart-cell-compact .planet-line{min-width:0!important;max-width:100%!important;min-height:0!important;height:auto!important;overflow:visible!important;white-space:normal!important;overflow-wrap:anywhere!important}
+.south-rasi-cell.smv-chart-cell-compact .planet-glyph{display:inline-block!important;min-width:0!important;max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important}
+.south-rasi-cell.smv-chart-cell-compact .planet-degree,.south-rasi-cell.smv-chart-cell-compact .rasi-degree,.south-rasi-cell.smv-chart-cell-compact .rasi-status-marker{white-space:normal!important}
+.south-rasi-cell .planet-line{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;padding:2px 1px;font-size:var(--smv-chart-compact-font-size,clamp(10px, 1.9vw, 13px));font-weight:800;color:rgb(107, 45, 22);line-height:1.3;white-space:var(--smv-chart-compact-white-space,nowrap)}
 .south-rasi-cell .planet-glyph{font-weight:900;color:rgb(138, 75, 22)}
 .south-rasi-cell .planet-degree{font-weight:700;color:rgb(95, 83, 70)}
-.bhava-rasi-cell .bhava-cusp{font-size:9px;color:rgb(139, 91, 30);font-weight:800;border:1px dashed rgb(201, 168, 107);border-radius:4px;padding:2px 3px;margin:2px 0px;line-height:1.15}
-.bhava-rasi-cell .planet-line{font-size:clamp(9px, 1.7vw, 12px)}
-.south-rasi-cell .lagna{display:block;width:100%;padding:2px 0px;border:1px solid rgb(183, 134, 37);border-radius:5px;background:rgb(255, 240, 199);color:rgb(123, 61, 14);font-size:10px}
+.bhava-rasi-cell .bhava-cusp{font-size:var(--smv-chart-compact-font-size,9px);color:rgb(139, 91, 30);font-weight:800;border:1px dashed rgb(201, 168, 107);border-radius:4px;padding:2px 3px;margin:2px 0px;line-height:1.15}
+.bhava-rasi-cell .planet-line{font-size:var(--smv-chart-compact-font-size,clamp(9px, 1.7vw, 12px))}
+.south-rasi-cell .lagna{display:block;width:100%;padding:2px 0px;border:1px solid rgb(183, 134, 37);border-radius:5px;background:rgb(255, 240, 199);color:rgb(123, 61, 14);font-size:var(--smv-chart-compact-font-size,10px)}
 @media (max-width: 700px){
+.south-rasi-cell[data-chart-planet-count="3"]{--smv-chart-compact-font-size:9.5px;--smv-chart-compact-white-space:normal}
+.south-rasi-cell[data-chart-planet-count="4"]{--smv-chart-compact-font-size:9px;--smv-chart-compact-white-space:normal}
+.south-rasi-cell[data-chart-planet-count="5"]{--smv-chart-compact-font-size:8.5px;--smv-chart-compact-white-space:normal}
+.south-rasi-cell[data-chart-planet-count="6"]{--smv-chart-compact-font-size:8px;--smv-chart-compact-white-space:normal}
+.south-rasi-cell[data-chart-planet-count="7"]{--smv-chart-compact-font-size:7.5px;--smv-chart-compact-white-space:normal}
+.south-rasi-cell[data-chart-planet-count="8"]{--smv-chart-compact-font-size:7px;--smv-chart-compact-white-space:normal}
+.south-rasi-cell[data-chart-planet-count="9"]{--smv-chart-compact-font-size:6.5px;--smv-chart-compact-white-space:normal}
+.south-rasi-cell[data-chart-planet-count="10"]{--smv-chart-compact-font-size:6px;--smv-chart-compact-white-space:normal}
+.south-rasi-cell[data-chart-planet-count="11"]{--smv-chart-compact-font-size:5.5px;--smv-chart-compact-white-space:normal}
+.south-rasi-cell[data-chart-planet-count="12"]{--smv-chart-compact-font-size:5px;--smv-chart-compact-white-space:normal}
 table.data-table{min-width:620px}
 .data-table th, .data-table td{padding:9px 8px;font-size:13px}
 .south-indian-chart{width:min(680px, 100%)}
-.south-rasi-cell .planet-line{font-size:10px;gap:2px}}
+.south-rasi-cell .planet-line{font-size:var(--smv-chart-compact-font-size,10px);gap:2px}}
 .south-indian-chart{width:min(640px, 100%);margin:0px auto;display:grid;grid-template-columns:repeat(4, 1fr);grid-template-rows:repeat(4, 1fr);border:2px solid rgb(111, 77, 44);background:rgb(255, 253, 247);aspect-ratio:1 / 1;box-shadow:rgba(111, 21, 21, 0.08) 0px 8px 24px}
 .south-rasi-cell{border:1px solid rgb(143, 112, 79);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;padding:7px 4px;min-width:0px;overflow:hidden;background:linear-gradient(rgb(255, 253, 247), rgb(255, 248, 233))}
 .south-rasi-cell .sign{font-weight:900;color:var(--maroon);font-size:clamp(20px, 3.8vw, 28px);line-height:1;min-height:28px;display:flex;align-items:center;justify-content:center;width:100%;margin:0px 0px 3px}
 .south-rasi-cell .house{font-size:10px;color:rgb(128, 101, 77);margin-top:2px}
-.south-rasi-cell .lagna{font-weight:900;color:rgb(155, 75, 22);font-size:11px;margin-top:3px}
+.south-rasi-cell .lagna{font-weight:900;color:rgb(155, 75, 22);font-size:var(--smv-chart-compact-font-size,11px);margin-top:3px}
 .south-rasi-cell .planet{font-size:clamp(10px, 2vw, 14px);font-weight:800;color:var(--primary);line-height:1.25;margin-top:2px;overflow-wrap:anywhere}
 .south-chart-center{grid-area:2 / 2 / 4 / 4;border:1px solid rgb(143, 112, 79);display:flex;align-items:center;justify-content:center;background:rgb(255, 253, 247);color:rgb(176, 138, 91);font-family:"Noto Sans Tamil", Georgia, serif;font-size:clamp(18px, 4vw, 28px);letter-spacing:3px}
 @media (max-width: 520px){
 .south-rasi-cell{padding:5px 3px}
 .south-rasi-cell .sign{font-size:22px;min-height:25px;margin-bottom:2px}
 .south-rasi-cell .house{font-size:8px;line-height:1.15}
-.south-rasi-cell .lagna{font-size:9px}
-.bhava-rasi-cell .planet-line{font-size:11px;line-height:1.2}
-.bhava-rasi-cell .bhava-cusp{font-size:8px;line-height:1.1;padding:2px}}
+.south-rasi-cell .lagna{font-size:var(--smv-chart-compact-font-size,9px)}
+.bhava-rasi-cell .planet-line{font-size:var(--smv-chart-compact-font-size,11px);line-height:1.2}
+.bhava-rasi-cell .bhava-cusp{font-size:var(--smv-chart-compact-font-size,8px);line-height:1.1;padding:2px}}
 footer{text-align:center;padding:35px 16px;color:var(--muted);border-top:3px double var(--gold);margin-top:30px;background:rgb(255, 250, 240)}
 .registration-panel{margin-top:12px;padding:10px 0px 35px}
 .registration-intro{text-align:center;max-width:720px;margin:0px auto 24px}
@@ -1521,17 +1543,17 @@ header .brand-sub:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 
 #tamilHoroscopeResult h2, #englishHoroscopeResult h2, #tamilHoroscopeResult h3, #englishHoroscopeResult h3{color:rgb(139, 90, 43)!important;-webkit-text-fill-color:rgb(139, 90, 43)!important}
 #tamilHoroscopeResult h2, #englishHoroscopeResult h2, #tamilHoroscopeResult h3, #englishHoroscopeResult h3, #tamilHoroscopeResult .section-title, #englishHoroscopeResult .section-title{color:rgb(212, 175, 55)!important;-webkit-text-fill-color:rgb(212, 175, 55)!important}
 #tamilHoroscopeResult h2, #englishHoroscopeResult h2, #tamilHoroscopeResult h3, #englishHoroscopeResult h3, #tamilHoroscopeResult .section-title, #englishHoroscopeResult .section-title{color:rgb(233, 30, 99)!important;-webkit-text-fill-color:rgb(233, 30, 99)!important;font-weight:900!important}
-.rasi-status-marker:where(:not(.smv-css-island,.smv-css-island *)){font-weight:900!important;font-size:0.82em!important;white-space:nowrap!important;margin-left:2px!important;letter-spacing:0px!important}
+.rasi-status-marker:where(:not(.smv-css-island,.smv-css-island *)){font-weight:900!important;font-size:var(--smv-chart-compact-font-size,0.82em)!important;white-space:var(--smv-chart-compact-white-space,nowrap)!important;margin-left:2px!important;letter-spacing:0px!important}
 .rasi-status-marker.status-c:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(23, 59, 143)!important;-webkit-text-fill-color:rgb(23, 59, 143)!important}
 .rasi-status-marker.status-r:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(46, 139, 87)!important;-webkit-text-fill-color:rgb(46, 139, 87)!important}
-#tamilHoroscopeResult #rasiChart .rasi-status-marker, #englishHoroscopeResult #rasiChart .rasi-status-marker{font-size:0.78em!important}
-#tamilHoroscopeResult .data-table .rasi-status-marker, #englishHoroscopeResult .data-table .rasi-status-marker{font-size:0.82em!important}
-#tamilHoroscopeResult .south-rasi-cell .lagna, #englishHoroscopeResult .south-rasi-cell .lagna, #tamilHoroscopeResult .bhava-rasi-cell .lagna, #englishHoroscopeResult .bhava-rasi-cell .lagna{color:rgb(255, 20, 147)!important;-webkit-text-fill-color:rgb(255, 20, 147)!important;font-weight:900!important;font-size:inherit!important}
+#tamilHoroscopeResult #rasiChart .rasi-status-marker, #englishHoroscopeResult #rasiChart .rasi-status-marker{font-size:var(--smv-chart-compact-font-size,0.78em)!important}
+#tamilHoroscopeResult .data-table .rasi-status-marker, #englishHoroscopeResult .data-table .rasi-status-marker{font-size:var(--smv-chart-compact-font-size,0.82em)!important}
+#tamilHoroscopeResult .south-rasi-cell .lagna, #englishHoroscopeResult .south-rasi-cell .lagna, #tamilHoroscopeResult .bhava-rasi-cell .lagna, #englishHoroscopeResult .bhava-rasi-cell .lagna{color:rgb(255, 20, 147)!important;-webkit-text-fill-color:rgb(255, 20, 147)!important;font-weight:900!important;font-size:var(--smv-chart-compact-font-size,inherit)!important}
 #tamilHoroscopeResult #rasiChart .rasi-status-marker, #englishHoroscopeResult #rasiChart .rasi-status-marker{font-weight:900!important}
-#tamilHoroscopeResult #rasiChart .lagna, #englishHoroscopeResult #rasiChart .lagna, #tamilHoroscopeResult #navamsaChart .lagna, #englishHoroscopeResult #navamsaChart .lagna{display:inline-block!important;width:auto!important;max-width:none!important;padding:0px!important;margin:1px 0px 2px!important;border:0px!important;background:transparent!important;color:rgb(255, 20, 147)!important;-webkit-text-fill-color:rgb(255, 20, 147)!important;font-size:clamp(15px, 2.9vw, 19px)!important;font-weight:900!important;line-height:1.5!important;white-space:nowrap!important}
+#tamilHoroscopeResult #rasiChart .lagna, #englishHoroscopeResult #rasiChart .lagna, #tamilHoroscopeResult #navamsaChart .lagna, #englishHoroscopeResult #navamsaChart .lagna{display:inline-block!important;width:auto!important;max-width:none!important;padding:0px!important;margin:1px 0px 2px!important;border:0px!important;background:transparent!important;color:rgb(255, 20, 147)!important;-webkit-text-fill-color:rgb(255, 20, 147)!important;font-size:var(--smv-chart-compact-font-size,clamp(15px, 2.9vw, 19px))!important;font-weight:900!important;line-height:1.5!important;white-space:var(--smv-chart-compact-white-space,nowrap)!important}
 #tamilHoroscopeResult .data-table td:nth-child(3), #englishHoroscopeResult .data-table td:nth-child(3){font-weight:700!important}
-#tamilHoroscopeResult #rasiChart .planet-line, #englishHoroscopeResult #rasiChart .planet-line{display:flex!important;align-items:baseline!important;justify-content:center!important;gap:4px!important;white-space:nowrap!important}
-#tamilHoroscopeResult #rasiChart .planet-degree, #englishHoroscopeResult #rasiChart .planet-degree{display:inline-block!important;visibility:visible!important;opacity:1!important;overflow:visible!important;width:auto!important;max-width:none!important;min-width:0px!important;color:rgb(122, 31, 162)!important;-webkit-text-fill-color:rgb(122, 31, 162)!important;font-size:0.92em!important;font-weight:900!important;line-height:1.2!important;white-space:nowrap!important}
+#tamilHoroscopeResult #rasiChart .planet-line, #englishHoroscopeResult #rasiChart .planet-line{display:flex!important;align-items:baseline!important;justify-content:center!important;gap:4px!important;white-space:var(--smv-chart-compact-white-space,nowrap)!important}
+#tamilHoroscopeResult #rasiChart .planet-degree, #englishHoroscopeResult #rasiChart .planet-degree{display:inline-block!important;visibility:visible!important;opacity:1!important;overflow:visible!important;width:auto!important;max-width:none!important;min-width:0px!important;color:rgb(122, 31, 162)!important;-webkit-text-fill-color:rgb(122, 31, 162)!important;font-size:var(--smv-chart-compact-font-size,0.92em)!important;font-weight:900!important;line-height:1.2!important;white-space:var(--smv-chart-compact-white-space,nowrap)!important}
 #tamilHoroscopeResult .data-table .full-degree, #englishHoroscopeResult .data-table .full-degree{display:table-cell!important;visibility:visible!important;opacity:1!important;white-space:nowrap!important;font-weight:700!important}
 .transit-panchang-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
 .advanced-astro-card .highlight-row{background:rgb(255, 247, 220)}
@@ -1607,7 +1629,7 @@ header .brand-sub:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 
 .panchang-compact-grid{grid-template-columns:1fr}}
 #tamilHoroscopeResult .data-table-wrap, #englishHoroscopeResult .data-table-wrap{width:100%!important;max-width:100%!important;box-sizing:border-box!important}
 #tamilHoroscopeResult .data-table-wrap table, #englishHoroscopeResult .data-table-wrap table{width:100%!important;max-width:100%!important;box-sizing:border-box!important}
-#tamilHoroscopeResult .rasi-status-marker, #englishHoroscopeResult .rasi-status-marker{margin-left:0px!important;margin-right:0px!important;display:inline-block!important;white-space:nowrap!important}
+#tamilHoroscopeResult .rasi-status-marker, #englishHoroscopeResult .rasi-status-marker{margin-left:0px!important;margin-right:0px!important;display:inline-block!important;white-space:var(--smv-chart-compact-white-space,nowrap)!important}
 #tamilHoroscopeResult .planet-line, #englishHoroscopeResult .planet-line{gap:0px!important}
 .transit-panchang-grid:where(:not(.smv-css-island,.smv-css-island *)){grid-template-columns:minmax(0px, 1.5fr) minmax(360px, 1fr)!important;gap:14px!important}
 .transit-planet:where(:not(.smv-css-island,.smv-css-island *)){font-size:11.5px!important;line-height:1.18!important}
@@ -1855,7 +1877,7 @@ input, textarea, select{min-height:46px;font-family:inherit}}
 #tamilHoroscopeResult #rasiChart .rasi-degree, #englishHoroscopeResult #rasiChart .rasi-degree{font-weight:900!important;color:rgb(124, 58, 237)!important}
 #tamilHoroscopeResult .status-combust, #englishHoroscopeResult .status-combust{font-weight:900!important;color:rgb(98, 183, 232)!important;margin:0px!important;padding:0px!important}
 #tamilHoroscopeResult .status-retro, #englishHoroscopeResult .status-retro{font-weight:900!important;color:rgb(242, 138, 53)!important;margin:0px!important;padding:0px!important}
-#tamilHoroscopeResult .south-rasi-cell .lagna, #englishHoroscopeResult .south-rasi-cell .lagna{font-size:inherit!important}
+#tamilHoroscopeResult .south-rasi-cell .lagna, #englishHoroscopeResult .south-rasi-cell .lagna{font-size:var(--smv-chart-compact-font-size,inherit)!important}
 .birth-panchang-before-rasi{margin-top:18px}
 .smv-advanced-title h2:where(:not(.smv-css-island,.smv-css-island *)){font-size:clamp(20px, 4.5vw, 30px)!important}
 .smv-advanced-part:where(:not(.smv-css-island,.smv-css-island *)){overflow:visible!important}
@@ -2551,13 +2573,13 @@ html body.smv-v12-theme #home .smv33-trust{color:rgb(23, 23, 23);font-weight:700
 @media (min-width: 901px){
 #tamilHoroscopeResult #rasiChart, #englishHoroscopeResult #rasiChart, #tamilHoroscopeResult #navamsaChart, #englishHoroscopeResult #navamsaChart, #tamilHoroscopeResult #bhavaChart, #englishHoroscopeResult #bhavaChart{width:min(480px, 46vw)!important;max-width:480px!important;margin:14px auto 20px!important;border-width:2px!important}
 #tamilHoroscopeResult #rasiChart .south-rasi-cell, #englishHoroscopeResult #rasiChart .south-rasi-cell, #tamilHoroscopeResult #navamsaChart .south-rasi-cell, #englishHoroscopeResult #navamsaChart .south-rasi-cell, #tamilHoroscopeResult #bhavaChart .south-rasi-cell, #englishHoroscopeResult #bhavaChart .south-rasi-cell{padding:4px!important;overflow:hidden!important}
-#tamilHoroscopeResult #rasiChart .planet-line, #englishHoroscopeResult #rasiChart .planet-line, #tamilHoroscopeResult #navamsaChart .planet-line, #englishHoroscopeResult #navamsaChart .planet-line, #tamilHoroscopeResult #bhavaChart .planet-line, #englishHoroscopeResult #bhavaChart .planet-line{font-size:12px!important;line-height:1.15!important;gap:2px!important}
-#tamilHoroscopeResult #rasiChart .dynamic-rasi-number, #englishHoroscopeResult #rasiChart .dynamic-rasi-number, #tamilHoroscopeResult #navamsaChart .dynamic-rasi-number, #englishHoroscopeResult #navamsaChart .dynamic-rasi-number{font-size:10px!important}
-#tamilHoroscopeResult #rasiChart .lagna, #englishHoroscopeResult #rasiChart .lagna, #tamilHoroscopeResult #navamsaChart .lagna, #englishHoroscopeResult #navamsaChart .lagna{font-size:13px!important;line-height:1.2!important}
+#tamilHoroscopeResult #rasiChart .planet-line, #englishHoroscopeResult #rasiChart .planet-line, #tamilHoroscopeResult #navamsaChart .planet-line, #englishHoroscopeResult #navamsaChart .planet-line, #tamilHoroscopeResult #bhavaChart .planet-line, #englishHoroscopeResult #bhavaChart .planet-line{font-size:var(--smv-chart-compact-font-size,12px)!important;line-height:1.15!important;gap:2px!important}
+#tamilHoroscopeResult #rasiChart .dynamic-rasi-number, #englishHoroscopeResult #rasiChart .dynamic-rasi-number, #tamilHoroscopeResult #navamsaChart .dynamic-rasi-number, #englishHoroscopeResult #navamsaChart .dynamic-rasi-number{font-size:var(--smv-chart-compact-font-size,10px)!important}
+#tamilHoroscopeResult #rasiChart .lagna, #englishHoroscopeResult #rasiChart .lagna, #tamilHoroscopeResult #navamsaChart .lagna, #englishHoroscopeResult #navamsaChart .lagna{font-size:var(--smv-chart-compact-font-size,13px)!important;line-height:1.2!important}
 .transit-panchang-grid:where(:not(.smv-css-island,.smv-css-island *)){grid-template-columns:minmax(0px, 1.25fr) minmax(0px, 0.9fr) minmax(0px, 1fr)!important}
 .transit-card .south-rasi-cell:where(:not(.smv-css-island,.smv-css-island *)){padding:3px!important;overflow:hidden!important}
-.transit-card .planet-line:where(:not(.smv-css-island,.smv-css-island *)){font-size:10px!important;line-height:1.12!important}
-.transit-card .dynamic-rasi-number:where(:not(.smv-css-island,.smv-css-island *)){font-size:9px!important}}
+.transit-card .planet-line:where(:not(.smv-css-island,.smv-css-island *)){font-size:var(--smv-chart-compact-font-size,10px)!important;line-height:1.12!important}
+.transit-card .dynamic-rasi-number:where(:not(.smv-css-island,.smv-css-island *)){font-size:var(--smv-chart-compact-font-size,9px)!important}}
 @media (max-width: 900px){
 .transit-card .transit-chart:where(:not(.smv-css-island,.smv-css-island *)){width:min(100%, 430px)!important}
 .hora-table th:where(:not(.smv-css-island,.smv-css-island *)), .hora-table td:where(:not(.smv-css-island,.smv-css-island *)){padding:8px 7px!important;font-size:13px!important}}
@@ -2591,7 +2613,7 @@ html body.smv-v12-theme #home .smv33-trust{color:rgb(23, 23, 23);font-weight:700
 .panchang-date-result:where(:not(.smv-css-island,.smv-css-island *)), .panchang-event-range .event-date:not(.smv-calendar-neutral-date-time):where(:not(.smv-css-island,.smv-css-island *)){color:rgb(8, 124, 255)!important;-webkit-text-fill-color:rgb(8, 124, 255)!important;font-weight:900!important}
 .panchang-time-result:not(.smv-calendar-neutral-time):not(.smv-calendar-bright-red-time):where(:not(.smv-css-island,.smv-css-island *)), .panchang-event-range .event-time:not(.smv-calendar-neutral-date-time):where(:not(.smv-css-island,.smv-css-island *)){color:rgb(0, 168, 255)!important;-webkit-text-fill-color:rgb(0, 168, 255)!important}
 .panchang-card:where(:not(.smv-css-island,.smv-css-island *)), .panchang-card .panchang-compact-grid > div:where(:not(.smv-css-island,.smv-css-island *)){background:none rgb(255, 255, 255)!important}
-.transit-card .transit-chart .lagna:where(:not(.smv-css-island,.smv-css-island *)){font-size:13px!important;line-height:1.15!important}
+.transit-card .transit-chart .lagna:where(:not(.smv-css-island,.smv-css-island *)){font-size:var(--smv-chart-compact-font-size,13px)!important;line-height:1.15!important}
 .transit-table-card:where(:not(.smv-css-island,.smv-css-island *)){margin:14px 0px 0px!important;background:rgb(255, 255, 255)!important;box-shadow:none!important}
 .transit-table-card h3:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(233, 30, 99)!important;-webkit-text-fill-color:rgb(233, 30, 99)!important}
 .transit-position-table:where(:not(.smv-css-island,.smv-css-island *)){min-width:620px!important;border-collapse:collapse!important;background:rgb(255, 255, 255)!important}
@@ -2600,15 +2622,15 @@ html body.smv-v12-theme #home .smv33-trust{color:rgb(23, 23, 23);font-weight:700
 .transit-position-table .transit-table-degree:not(.smv-calendar-degree-normal):where(:not(.smv-css-island,.smv-css-island *)){color:rgb(8, 124, 255)!important;-webkit-text-fill-color:rgb(8, 124, 255)!important;font-weight:900!important}
 @media (min-width: 901px){
 .hora-vertical-block:where(:not(.smv-css-island,.smv-css-island *)){max-width:680px!important}
-.transit-card .transit-chart .lagna:where(:not(.smv-css-island,.smv-css-island *)){font-size:12px!important}}
+.transit-card .transit-chart .lagna:where(:not(.smv-css-island,.smv-css-island *)){font-size:var(--smv-chart-compact-font-size,12px)!important}}
 @media (max-width: 900px){
 .hora-vertical-block:where(:not(.smv-css-island,.smv-css-island *)){max-width:100%!important}
 .hora-vertical th:where(:not(.smv-css-island,.smv-css-island *)), .hora-vertical td:where(:not(.smv-css-island,.smv-css-island *)){font-size:13px!important;padding:8px 6px!important}
-.transit-card .transit-chart .lagna:where(:not(.smv-css-island,.smv-css-island *)){font-size:13px!important}}
+.transit-card .transit-chart .lagna:where(:not(.smv-css-island,.smv-css-island *)){font-size:var(--smv-chart-compact-font-size,13px)!important}}
 .panchang-time-result:not(.smv-calendar-neutral-time):not(.smv-calendar-bright-red-time):where(:not(.smv-css-island,.smv-css-island *)), .panchang-event-range .event-time:not(.smv-calendar-neutral-date-time):where(:not(.smv-css-island,.smv-css-island *)){color:rgb(255, 20, 147)!important;-webkit-text-fill-color:rgb(255, 20, 147)!important;font-weight:900!important}
 .nalla-neram-time:where(:not(.smv-css-island,.smv-css-island *)){color:rgb(21, 148, 71)!important;-webkit-text-fill-color:rgb(21, 148, 71)!important;font-weight:900!important}
 .transit-card .transit-chart .south-chart-center:where(:not(.smv-css-island,.smv-css-island *)){background:none rgb(255, 255, 255)!important;color:rgb(233, 30, 99)!important;-webkit-text-fill-color:rgb(233, 30, 99)!important}
-.transit-card .transit-chart .lagna:where(:not(.smv-css-island,.smv-css-island *)){font-size:inherit!important;line-height:inherit!important}
+.transit-card .transit-chart .lagna:where(:not(.smv-css-island,.smv-css-island *)){font-size:var(--smv-chart-compact-font-size,inherit)!important;line-height:inherit!important}
 .transit-position-table:where(:not(.smv-css-island,.smv-css-island *)){width:100%!important;min-width:0px!important;max-width:100%!important;table-layout:fixed!important}
 .transit-position-table th:where(:not(.smv-css-island,.smv-css-island *)), .transit-position-table td:where(:not(.smv-css-island,.smv-css-island *)){white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important;vertical-align:middle!important}
 .transit-position-table th:nth-child(1):where(:not(.smv-css-island,.smv-css-island *)), .transit-position-table td:nth-child(1):where(:not(.smv-css-island,.smv-css-island *)){width:12%!important}
@@ -2625,19 +2647,28 @@ html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .tra
 @media (min-width: 901px){
 html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-card .south-indian-chart.transit-chart{width:min(480px, 46vw)!important;max-width:480px!important;min-width:0px!important;margin:14px auto 20px!important;aspect-ratio:1 / 1!important;border-width:2px!important}
 html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-card .transit-chart .south-rasi-cell{padding:4px!important;overflow:hidden!important}
-html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-card .transit-chart .planet-line{font-size:12px!important;line-height:1.15!important;gap:2px!important}
-html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-card .transit-chart .dynamic-rasi-number{font-size:10px!important}
-html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-card .transit-chart .lagna{font-size:13px!important;line-height:1.2!important}}
+#tamilHoroscopeResult .transit-chart .south-rasi-cell .planet-line, #englishHoroscopeResult .transit-chart .south-rasi-cell .planet-line{font-size:var(--smv-chart-compact-font-size,12px)!important;line-height:1.15!important;gap:2px!important;display:flex!important;flex-wrap:wrap!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;white-space:normal!important;overflow-wrap:anywhere!important}
+#tamilHoroscopeResult .transit-chart .south-rasi-cell .planet-glyph, #englishHoroscopeResult .transit-chart .south-rasi-cell .planet-glyph{min-width:0!important;max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important;box-sizing:border-box!important}
+#tamilHoroscopeResult .transit-chart .south-rasi-cell .planet-glyph *, #englishHoroscopeResult .transit-chart .south-rasi-cell .planet-glyph *{max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;box-sizing:border-box!important}
+html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-card .transit-chart .dynamic-rasi-number{font-size:var(--smv-chart-compact-font-size,10px)!important}
+html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-card .transit-chart .lagna{font-size:var(--smv-chart-compact-font-size,13px)!important;line-height:1.2!important}}
 @media (max-width: 700px){
 html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-table-card .adv-scroll{display:block!important;width:100%!important;max-width:100%!important;overflow:auto hidden!important;touch-action:pan-x pan-y!important}
 html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-table-card .transit-position-table{width:680px!important;min-width:680px!important;max-width:none!important;table-layout:auto!important}
-html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-table-card .transit-position-table th, html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-table-card .transit-position-table td{padding:8px 10px!important;font-size:13px!important;line-height:1.3!important;white-space:nowrap!important;overflow-wrap:normal!important;word-break:normal!important}}
+html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-table-card .transit-position-table th, html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-table-card .transit-position-table td{padding:8px 10px!important;font-size:13px!important;line-height:1.3!important;white-space:nowrap!important;overflow-wrap:normal!important;word-break:normal!important}
+#tamilHoroscopeResult .transit-chart .south-rasi-cell .planet-line, #englishHoroscopeResult .transit-chart .south-rasi-cell .planet-line{flex-wrap:wrap!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;white-space:normal!important;overflow-wrap:anywhere!important}
+#tamilHoroscopeResult .transit-chart .south-rasi-cell .planet-glyph, #englishHoroscopeResult .transit-chart .south-rasi-cell .planet-glyph{min-width:0!important;max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important;box-sizing:border-box!important}
+#tamilHoroscopeResult .transit-chart .south-rasi-cell .planet-glyph *, #englishHoroscopeResult .transit-chart .south-rasi-cell .planet-glyph *{max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;box-sizing:border-box!important}}
+@media (min-width: 701px) and (max-width: 900px){
+#tamilHoroscopeResult .transit-chart .south-rasi-cell .planet-line, #englishHoroscopeResult .transit-chart .south-rasi-cell .planet-line{flex-wrap:wrap!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;white-space:normal!important;overflow-wrap:anywhere!important}
+#tamilHoroscopeResult .transit-chart .south-rasi-cell .planet-glyph, #englishHoroscopeResult .transit-chart .south-rasi-cell .planet-glyph{min-width:0!important;max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important;box-sizing:border-box!important}
+#tamilHoroscopeResult .transit-chart .south-rasi-cell .planet-glyph *, #englishHoroscopeResult .transit-chart .south-rasi-cell .planet-glyph *{max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;box-sizing:border-box!important}}
 html body.smv-v12-theme :is(#englishHoroscopeResult, #tamilHoroscopeResult) .dasha-node.smv-current-dasha > .dasha-head, html body.smv-v12-theme :is(#englishHoroscopeResult, #tamilHoroscopeResult) .dasha-node.smv-current-bhukthi > .dasha-head{background:none rgb(0, 191, 255)!important;border-color:rgb(0, 191, 255)!important}
 html body.smv-v12-theme :is(#englishHoroscopeResult, #tamilHoroscopeResult) .dasha-subtable tbody tr.smv-current-antharam > td{background:rgb(0, 191, 255)!important}
 html body.smv-v12-theme #englishHoroscopeResult#englishHoroscopeResult#englishHoroscopeResult#englishHoroscopeResult .dasha-tree > .dasha-node.smv-current-dasha[data-level="1"] > .dasha-head, html body.smv-v12-theme #tamilHoroscopeResult#tamilHoroscopeResult#tamilHoroscopeResult#tamilHoroscopeResult .dasha-tree > .dasha-node.smv-current-dasha[data-level="1"] > .dasha-head{background:none rgb(0, 191, 255)!important;border-color:rgb(0, 191, 255)!important}
 html body.smv-v12-theme #englishHoroscopeResult#englishHoroscopeResult#englishHoroscopeResult#englishHoroscopeResult .dasha-tree > .dasha-node[data-level="1"] > .dasha-body > .dasha-node.smv-current-bhukthi[data-level="2"] > .dasha-head, html body.smv-v12-theme #tamilHoroscopeResult#tamilHoroscopeResult#tamilHoroscopeResult#tamilHoroscopeResult .dasha-tree > .dasha-node[data-level="1"] > .dasha-body > .dasha-node.smv-current-bhukthi[data-level="2"] > .dasha-head{background:none rgb(0, 191, 255)!important;border-color:rgb(0, 191, 255)!important}
 .hora-vertical .hora-time.smv-current-hora-time:where(:not(.smv-css-island,.smv-css-island *)){background:rgb(0, 191, 255)!important;color:rgb(255, 255, 255)!important;-webkit-text-fill-color:rgb(255, 255, 255)!important;font-weight:900!important}
-html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-card .transit-chart .lagna{font-size:clamp(10px, 1.9vw, 13px)!important;line-height:1.3!important}
+html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-card .transit-chart .lagna{font-size:var(--smv-chart-compact-font-size,clamp(10px, 1.9vw, 13px))!important;line-height:1.3!important}
 .transit-before-vimsottari:empty:where(:not(.smv-css-island,.smv-css-island *)){display:none!important}
 .hora-vertical .hora-time.smv-current-hora-time:where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important;color:inherit!important;-webkit-text-fill-color:currentcolor!important}
 .hora-vertical .hora-time.smv-hora-current-green:where(:not(.smv-css-island,.smv-css-island *)){background:transparent!important;color:rgb(21, 148, 71)!important;-webkit-text-fill-color:rgb(21, 148, 71)!important;font-weight:900!important}
