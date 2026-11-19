@@ -102,6 +102,50 @@ The new exported research functions in `saura-de441-apparent-true.mjs` are:
 
 `tests/saura-bija-geometric-reference-diagnostic.mjs` compares the classical true longitude against the geometric vector fixture, separately measures apparent-minus-geometric differences against the existing quantity-31 fixture, and repeats the one-factor ablations for mean motion, Mandocca, geometry and frame. The annual diagnostic is not a daily certification and does not tune planet-specific coefficients.
 
+## Phase F — source audit of the four correction stages
+
+The source-level audit compared the implementation with Burgess's translation of Sūrya-Siddhānta II.29–45 and his 1 January 1860 Mercury worked example.
+
+### What matches the historical source
+
+1. **Mean / conjunction selection.** For Mercury and Venus, the classical system exchanges the roles: the Sun supplies the mean place while the planet's own orbit supplies the conjunction/śīghrocca. The current selector implements that interchange. Burgess explicitly describes it in the Mercury worked example.
+2. **Anomaly direction and sign.** The kendra is measured forward from the planet to the apsis or conjunction; an equation is additive in the Aries half and subtractive in the Libra half. For Mercury/Venus, the exchanged conjunction makes the commutation direction reverse. The current normalised signed-sine calculation reproduces that direction.
+3. **Manda geometry.** Sūrya-Siddhānta II.39 uses the corrected variable epicycle multiplied by the base-sine and divided by 360, then takes the corresponding arc. The research engine's `verse39-direct-jya` branch follows this rule.
+4. **Śīghra geometry.** II.40–42 requires the corrected epicycle's base/perpendicular components and the variable hypotenuse. The current `atan2` form is the continuous-trigonometric equivalent of that construction.
+5. **Four-stage order.** The sequence is conjunction half-correction, apsis half-correction, apsis full-correction applied to the original mean place, then conjunction full-correction. This is the sequence described by Burgess under II.43–45 and matches the four-pass implementation.
+
+### 1860 numerical source check
+
+Burgess's Mercury example gives:
+- Mean longitude: 8 signs 18°13′13″.
+- Conjunction/śīghrocca: 4 signs 16°57′22″.
+- First Śīghra equation: 21°12′, subtractive.
+
+The new regression feeds those source inputs through the actual engine. It obtains -21.1866191109°, within 0.02° of the printed -21°12′. This verifies the first Śīghra correction's sign, variable-epicycle geometry and continuous-Jya numerical implementation against a historical worked example. It is not a full six-planet true-place certification.
+
+### What the 600-year stage ablations show
+
+The geometric DE441 test removes one correction family at a time. These removals are diagnostic counterfactuals only; they are not proposed changes to the classical model.
+
+| Graha | Baseline RMS | Manda removed RMS | Śīghra removed RMS |
+|---|---:|---:|---:|
+| Mercury | 4.7416° | 2.7647° | 14.9778° |
+| Venus | 5.8945° | 5.6397° | 32.4808° |
+| Mars | 5.7592° | 11.8658° | 27.3927° |
+| Jupiter | 2.4797° | 4.6450° | 8.3480° |
+| Saturn | 6.0099° | 7.4581° | 7.2154° |
+
+Interpretation:
+- Removing Śīghra makes every planet materially worse. The first Śīghra stage also reproduces Burgess's 1860 Mercury example. The evidence does not point to a general Śīghra sign/order bug.
+- Removing Manda improves Mercury and slightly improves Venus in this modern-reference diagnostic, but worsens Mars, Jupiter and Saturn. Since the source prescribes both correction families for all five planets, disabling Manda globally would contradict the text and is not accepted.
+- The mixed Manda response makes the next research target the **Manda input chain per planet**: date-dependent mandocca/apogee provenance, the ancient apsis revolution rates, epicycle source table and its interpolation convention. The present Kali-epoch Mandocca and the older 2024-anchor series differ by at most 0.000044° in this 600-year test, so that old-vs-new propagation choice is not the multi-degree cause.
+- Global alternative Manda denominator conventions do not produce a universal improvement. Do not select a different formula per planet to fit DE441.
+- Raw mean-motion ablation improves Jupiter's RMS from 2.4797° to 1.2775°, but worsens the other four (and greatly worsens Venus and Saturn). This is evidence for a Jupiter-specific historical-rate question, not permission to discard the source-defined Bīja profile.
+
+### Current forensic conclusion
+
+No general four-pass sequencing or Śīghra sign error has been demonstrated. The main unresolved error is within the historical model's Manda/apsis input and the planet-specific historical mean-motion representation, with a separate Jupiter rate discrepancy. The classical model remains a historical reconstruction, not a 0.05° modern-ephemeris solution. The production engine must not be silently modified on the basis of these ablations.
+
 ## Mean / śīghrocca selection
 
 The existing BPHS/Uttara Kalamrita selection is retained: Mars/Jupiter/Saturn use their own mean and mean Sun as śīghrocca; Mercury/Venus use mean Sun as mean and their own orbit as śīghrocca.
