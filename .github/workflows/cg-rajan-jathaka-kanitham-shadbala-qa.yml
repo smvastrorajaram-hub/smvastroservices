@@ -10,6 +10,8 @@ on:
       - 'public/horoscope/offline/uttara-kalamrita-shadbala.browser.mjs'
       - 'public/horoscope/offline/wasm-provider.mjs'
       - 'public/horoscope/offline/bphs-shadbala-rectification.browser.mjs'
+      - 'public/horoscope/offline/bphs-shadbala-engine.browser.mjs'
+      - 'tests/bphs-shadbala-engine-core-regression.mjs'
       - 'tests/cg-rajan-jathaka-kanitham-shadbala-source-qa.mjs'
       - 'tests/cg-rajan-jathaka-kanitham-shadbala-five-natal-integration.mjs'
       - 'tests/bphs-shadbala-combined-regression.mjs'
@@ -52,9 +54,13 @@ jobs:
           node --check tests/cg-rajan-jathaka-kanitham-shadbala-five-natal-integration.mjs
           node --check public/horoscope/offline/bphs-shadbala-rectification.browser.mjs
           node --check tests/bphs-shadbala-combined-regression.mjs
+          node --check public/horoscope/offline/bphs-shadbala-engine.browser.mjs
+          node --check tests/bphs-shadbala-engine-core-regression.mjs
       - name: Reconcile C.G. Rajan printed Shadbala source arithmetic and blockers
         run: node tests/cg-rajan-jathaka-kanitham-shadbala-source-qa.mjs
       - name: Check seven source-specific Shadbala rows across five natal charts
         run: node tests/cg-rajan-jathaka-kanitham-shadbala-five-natal-integration.mjs
       - name: Run consolidated BPHS positional, temporal, Drig and Yuddha oracle suite
         run: node tests/bphs-shadbala-combined-regression.mjs
+      - name: Run isolated BPHS six-Bala integration and frame guard regression
+        run: node tests/bphs-shadbala-engine-core-regression.mjs
