@@ -124,7 +124,7 @@ form input, form select, form textarea{width:100%;box-sizing:border-box;font-fam
 #tamilHoroscopeResult .south-rasi-cell .planet-degree, #englishHoroscopeResult .south-rasi-cell .planet-degree{font-size:var(--smv-chart-compact-font-size,9px)!important}
 #tamilHoroscopeResult .bhava-rasi-cell .bhava-cusp, #englishHoroscopeResult .bhava-rasi-cell .bhava-cusp{padding:2px;font-size:var(--smv-chart-compact-font-size,9px)!important}}
 @media (min-width: 701px){
-#tamilHoroscopeResult .south-rasi-cell .planet-line, #englishHoroscopeResult .south-rasi-cell .planet-line{font-size:var(--smv-chart-compact-font-size,16px)!important}}
+#tamilHoroscopeResult .south-rasi-cell:not(.smv-chart-cell-compact) .planet-line, #englishHoroscopeResult .south-rasi-cell:not(.smv-chart-cell-compact) .planet-line{font-size:var(--smv-chart-compact-font-size,16px)!important}}
 #tamilHoroscopeResult .south-indian-chart, #englishHoroscopeResult .south-indian-chart{width:min(620px, 100%);max-width:100%;margin:14px auto 20px;aspect-ratio:1 / 1;overflow:hidden;box-sizing:border-box}
 #tamilHoroscopeResult .south-rasi-cell, #englishHoroscopeResult .south-rasi-cell{min-width:0px;min-height:0px;padding:4px 3px;overflow:hidden;box-sizing:border-box}
 #tamilHoroscopeResult .south-rasi-cell .sign, #englishHoroscopeResult .south-rasi-cell .sign{min-height:22px;margin-bottom:1px;line-height:1;font-size:clamp(18px, 3vw, 27px)!important}
