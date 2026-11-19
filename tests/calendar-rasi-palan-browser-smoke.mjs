@@ -237,9 +237,19 @@ try {
   assert.ok(Math.max(...calendarHeader.controls.map(x => x.width)) - Math.min(...calendarHeader.controls.map(x => x.width)) < 1, 'All four Calendar header controls must have equal width.');
   assert.ok(calendarHeader.controls.every(x => Math.abs(x.height - 42) < 1), 'All four Calendar header controls must have the same 42px height.');
 
+  // Switching language rebuilds the Calendar shell and clears #calStatus.
+  // Readiness must therefore be based on the calculated UI, not the status text.
   await page.waitForFunction(() => {
     const status = document.querySelector('#calStatus')?.textContent || '';
-    return status && (/Unable to calculate|கணக்கிட முடியவில்லை/.test(status) || (!/Calculating Panchang|பஞ்சாங்கம், ஹோரை/.test(status) && !/Loading monthly calendar|மாத நாட்காட்டி தயாராகிறது/.test(document.querySelector('#calMonth')?.textContent||'')));
+    const calculationFailed = /Unable to calculate|கணக்கிட முடியவில்லை/.test(status);
+    const sunriseRendered = [...(document.querySelectorAll('#calDateDetailsExtra .cal-muhurta-card') || [])]
+      .some(card => /Sunrise:|சூரிய உதயம்/.test(card.querySelector('span')?.textContent || ''));
+    const timeEnabled = Boolean(document.querySelector('#calTime') && !document.querySelector('#calTime').disabled);
+    const monthRendered = Boolean(document.querySelector('#calMonth .cal-month-grid button'));
+    const dailyRendered = Boolean(document.querySelector('#calGrahaPeriodCard .cal-graha-planet'));
+    const stillCalculating = /Calculating Panchang|பஞ்சாங்கம், ஹோரை/.test(status) ||
+      /Loading monthly calendar|மாத நாட்காட்டி தயாராகிறது/.test(document.querySelector('#calMonth')?.textContent || '');
+    return calculationFailed || (!stillCalculating && sunriseRendered && timeEnabled && monthRendered && dailyRendered);
   }, { timeout: 90000 });
   const calendarCalculationStatus = await page.$eval('#calStatus', el => el.textContent || '');
   const dateTimeControlLayout = await page.$eval('.cal-date-time-fields', wrapper => {
