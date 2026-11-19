@@ -2416,7 +2416,7 @@ function renderTransitPanchang(t,p,lang,rootId,horaOverride=null){
     const calendarPanchangSlot=calendarPresentation?document.getElementById('calPanchangSource'):null;
     if(calendarPanchangSlot)calendarPanchangSlot.innerHTML=dailyTable;
     let h=calendarPanchangSlot?'':`<div class="transit-panchang-grid"><div class="card panchang-card" data-smv-screen-only="daily-panchang"><h3>📅 ${ta?'தினசரி பஞ்சாங்கம்':'Daily Panchang'}</h3><div class="small">${ta?'திருக்கணித பஞ்சாங்க கணிப்பு':'Thirukanitha Panchang calculation'}</div>${dailyTable}</div></div>`;
-    h+=`<div class="hora-card" data-smv-screen-only="daily-hora"><h3 class="cal-centered-heading">🕐 ${ta?'தினசரி ஹோரா':'Daily Hora'}</h3><div class="hora-section">${horaHtml}</div></div>`;
+    h+=`<div class="${calendarPresentation?'hora-card':'card hora-card'}" data-smv-screen-only="daily-hora"><h3 class="cal-centered-heading">🕐 ${ta?'தினசரி ஹோரா':'Daily Hora'}</h3><div class="hora-section">${horaHtml}</div></div>`;
     const signIndex=v=>{const en=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];const taR=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];let i=en.indexOf(String(v));return i>=0?i:taR.indexOf(String(v));};
     const short={Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa',Rahu:'Ra',Ketu:'Ke','சூரியன்':'சூ','சந்திரன்':'சந்','செவ்வாய்':'செ','புதன்':'பு','குரு':'கு','சுக்கிரன்':'சு','சனி':'ச','ராகு':'ரா','கேது':'கே'};
     const bySign=Array.from({length:12},()=>[]); planets.forEach(x=>{const i=signIndex(x.rasi);if(i>=0)bySign[i].push(x);});
