@@ -47,7 +47,7 @@ assert.ok(chartStyleJs.includes('cell.dataset.chartPlanetCount=String(planetCoun
 assert.ok(chartStyleJs.includes("if(planetCount>=3)cell.classList.add('smv-chart-cell-compact')"));
 assert.match(chartStyleJs, /else if\(kind!=='d9'&&kind!=='bhava'\)\{/);
 assert.ok(chartStyleJs.includes("m.className='smv-v342-empty';m.textContent='—'"));
-assert.ok(chartStyleJs.includes("if(kind!=='bhava')cell.append(number);"), 'Bhava charts suppress zodiac-sign numbers rather than displaying them as house numbers.');
+assert.ok(chartStyleJs.includes("if(kind!=='bhava'&&style!=='east')cell.append(number);"), 'East Rasi, Navamsa and Transit suppress fixed zodiac-sign numbers; South and North retain their existing numbering.');
 assert.ok(chartStyleJs.includes("const bhavaRows=kind==='bhava'?readBhavaTable(chart,isTa()):null;"), 'North and East both read the same authoritative Bhava Table mapping.');
 assert.ok(chartStyleJs.includes('const bhavaHousesBySign=Array.from({length:12},()=>[]);'));
 assert.ok(chartStyleJs.includes('bhavaHousesBySign[row.sign].push(h);'), 'Each Bhava house is placed under its Bhava Madhya/Sphuta Rasi.');
