@@ -101,6 +101,7 @@ The existing standard-horoscope printed-input tests remain separate. Their sourc
 
 - No Horoscope or Calendar calculation engine is replaced.
 - No Swiss ephemeris or Lahiri chart longitude is changed.
-- No production deployment, PR merge, cache invalidation, or user-data operation is performed by this research branch.
+- The three SMV ASTRO / HOROSCOPE / CALENDAR Service Worker release markers are synchronized at `20261119-cheshta-frame-integrity-v3` so their existing clients request the updated offline calculation shell. No origin-wide Cache Storage deletion, local/session storage clearing, IndexedDB deletion, or user-data operation is introduced.
+- No production deployment or PR merge is performed by this research branch.
 - No unsupported historical value is substituted for a missing source.
 - BPHS, B.V. Raman and Uttara Kalamrita remain separate source methods; their luminary and five-graha rules must not be blended.
