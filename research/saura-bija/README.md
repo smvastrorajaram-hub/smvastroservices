@@ -142,9 +142,13 @@ Interpretation:
 - Global alternative Manda denominator conventions do not produce a universal improvement. Do not select a different formula per planet to fit DE441.
 - Raw mean-motion ablation improves Jupiter's RMS from 2.4797° to 1.2775°, but worsens the other four (and greatly worsens Venus and Saturn). This is evidence for a Jupiter-specific historical-rate question, not permission to discard the source-defined Bīja profile.
 
-### Current forensic conclusion
+### Revised forensic conclusion after the per-planet source audit
 
-No general four-pass sequencing or Śīghra sign error has been demonstrated. The main unresolved error is within the historical model's Manda/apsis input and the planet-specific historical mean-motion representation, with a separate Jupiter rate discrepancy. The classical model remains a historical reconstruction, not a 0.05° modern-ephemeris solution. The production engine must not be silently modified on the basis of these ablations.
+The earlier hypothesis that the multi-degree modern residual must come from a corrupted Manda/apsis source input is **not supported**. The six Kali-epoch locations, six Kalpa revolution counts, and five-planet even/odd epicycle tables now match the Sūrya-Siddhānta-specific Burgess source columns. Burgess's own 1850 comparison already documents substantial differences between the historical apsis model and contemporary true positions, and he explains that these very slow apsis motions were assigned as part of the Siddhānta's system rather than treated as readily observable physical precession.
+
+For Mercury/Venus, Manda's physical identity is unresolved, so comparing their traditional Manda with modern heliocentric aphelion is not justified. For Mars/Jupiter/Saturn, heliocentric-aphelion comparison is a published research hypothesis, but a 600-year osculating-element slope is not a timeless constant; Jupiter and Saturn show material non-linear residuals. Therefore no historical apsis-rate or epicycle constant is changed.
+
+The remaining distinction is between a **source-faithful historical Saura model** and a **modern physical ephemeris**. The strict modern 0.05° accuracy gate remains failed, but this is not evidence that the current apsis source transcription is wrong. No general four-pass sequence or Śīghra sign/order bug has been demonstrated. The production engine must not be silently modified on the basis of modern-reference ablations.
 
 ## Phase G — per-planet Manda/apsis source provenance and DE441 osculating-element audit
 
@@ -238,5 +242,6 @@ The code and reports are isolated in this research branch. No production Horosco
 
 - E. Burgess, *Translation of the Sūrya-Siddhānta* (1860), corrected mean motions and Kali-epoch apsis tables: https://upload.wikimedia.org/wikipedia/commons/2/2b/Translation_of_the_S%C3%BBrya-Siddh%C3%A2nta%2C_A_Text-Book_of_Hindu_Astronomy%3B_With_Notes%2C_and_an_Appendix_%28IA_jstor-592174%29.pdf
 - IMD Rashtriya Panchang 2026–27 Bīja table: https://packolkata.imd.gov.in/panchang/en/bija_corrections
+- Anil Narayanan and Nilesh Oak (2023), “Planetary nodes and apses in the Sūrya-Siddhānta,” *Indian Journal of History of Science* 58:87–95: https://doi.org/10.1007/s43539-023-00083-3
 - Sahana Cidambi, Clemency Montelle and Kim Plofker (2024), Appendix A: https://doi.org/10.1177/00218286241241812
 - JPL DE441 / Horizons: https://ssd.jpl.nasa.gov/planets/eph_export.html and https://ssd.jpl.nasa.gov/horizons/manual.html
