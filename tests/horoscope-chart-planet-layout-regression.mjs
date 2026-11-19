@@ -77,6 +77,10 @@ assert.ok(horoscopeCss.includes('#tamilHoroscopeResult .south-rasi-cell .planet-
 assert.ok(horoscopeCss.includes('#tamilHoroscopeResult .dynamic-rasi-number, #englishHoroscopeResult .dynamic-rasi-number{font-size:var(--smv-chart-compact-font-size,'),'Rasi house Number in Tamil and English inherits the five-plus cell size.');
 assert.ok(horoscopeJs.includes("calendarPresentation&&ta?'அ':'C'"),'Tamil transit combustion marker uses அ.');
 assert.ok(horoscopeJs.includes("calendarPresentation&&ta?'வ':'R'"),'Tamil transit retrograde marker uses வ.');
+assert.ok(horoscopeJs.includes('class="status-combust"'),'Horoscope Rasi renderer retains its combustion marker element for inherited five-plus sizing.');
+assert.ok(horoscopeJs.includes('class="status-retro"'),'Horoscope Rasi renderer retains its retrograde marker element for inherited five-plus sizing.');
+assert.ok(horoscopeCss.includes('#tamilHoroscopeResult .status-combust, #englishHoroscopeResult .status-combust{'),'Tamil/English combustion marker styling remains attached to the marker text.');
+assert.ok(horoscopeCss.includes('#tamilHoroscopeResult .status-retro, #englishHoroscopeResult .status-retro{'),'Tamil/English retrograde marker styling remains attached to the marker text.');
 
 assert.ok(horoscopeJs.includes('planetDisplayName(p,chartLang)'));
 assert.ok(horoscopeJs.includes('shortPlanetName(p.name,chartLang)'));
