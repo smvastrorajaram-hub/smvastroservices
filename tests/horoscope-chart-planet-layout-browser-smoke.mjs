@@ -140,7 +140,7 @@ try {
                 }).map(element=>{
                   const rect=element.getBoundingClientRect(),style=getComputedStyle(element);
                   return {
-                    tag:element.tagName,classes:element.className,text:element.textContent.trim(),
+                    tag:element.tagName,classes:element.className,text:element.textContent.trim(),cellClass:cell.className,glyphMatchesCompact:element.matches('.smv-v342-cell.smv-chart-cell-compact .smv-v342-planets .planet-glyph'),ancestors:[element.parentElement?.className,element.parentElement?.parentElement?.className,element.parentElement?.parentElement?.parentElement?.className],
                     left:Math.round(rect.left*10)/10,right:Math.round(rect.right*10)/10,width:Math.round(rect.width*10)/10,
                     cellLeft:Math.round(cellRect.left*10)/10,cellRight:Math.round(cellRect.right*10)/10,cellWidth:Math.round(cellRect.width*10)/10,
                     display:style.display,whiteSpace:style.whiteSpace,fontSize:style.fontSize,
