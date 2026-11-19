@@ -17,8 +17,8 @@ import {
 const TARGET_IDS = Object.freeze({
   Mercury: '199',
   Venus: '299',
-  Mars: '499',
-  Jupiter: '599',
+  Mars: '4',
+  Jupiter: '5',
   // Saturn-system barycentre is required to span the complete 1800–2399 grid.
   Saturn: '6'
 });
