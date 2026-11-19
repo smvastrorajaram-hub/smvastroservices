@@ -55,14 +55,14 @@ assert.ok(chartStyleJs.includes("h.textContent=style==='north'?romanHouse(house)
 assert.ok(chartStyleJs.includes("const bhavaLabel=kind==='bhava'?bhavaHousesBySign[sign].map(romanHouse).join('/'):'';"), 'East does not substitute ordinary Lagna-based Rasi house numbers for Bhava numbers.');
 assert.ok(chartStyleJs.includes("h.textContent=house>=1&&house<=12?String(house):'';"), 'East Rasi, Navamsa and Transit retain their existing Lagna-derived house numbers unchanged.');
 
-const horoscopeCountRules = horoscopeCss.split('\n').filter(line=>/^\.south-rasi-cell\[data-chart-planet-count="\d+"\]\{/.test(line));
+const horoscopeCountRules = horoscopeCss.split('\n').filter(line=>/^\.south-rasi-cell\[data-chart-planet-count="\d+"\]\{/.test(line.trim()));
 assert.equal(horoscopeCountRules.length,20,'South-chart count rules exist at desktop and mobile widths for each 3–12 planet stack.');
 for (const line of horoscopeCountRules) {
   const count=Number(/data-chart-planet-count="(\d+)"/.exec(line)[1]);
   assert.ok(line.includes('--smv-chart-compact-white-space:normal'),'Planet rows wrap inside the fixed box at '+count+' planets.');
   assert.equal(line.includes('--smv-chart-compact-font-size:'),count>=5,'Only 5+ planet South-chart cells receive the reduced font-size variable.');
 }
-const chartStyleCountRules=chartStyleCss.split('\n').filter(line=>/^\.smv-v342-cell\[data-chart-planet-count="\d+"\]\{/.test(line));
+const chartStyleCountRules=chartStyleCss.split('\n').filter(line=>/^\.smv-v342-cell\[data-chart-planet-count="\d+"\]\{/.test(line.trim()));
 assert.equal(chartStyleCountRules.length,16,'North/East chart sizing has desktop and mobile reduced-size rules for 5–12 planets only.');
 assert.ok(chartStyleCountRules.every(line=>Number(/data-chart-planet-count="(\d+)"/.exec(line)[1])>=5&&line.includes('--smv-chart-compact-font-size:')),'North/East font reduction starts only at five planets.');
 assert.ok(horoscopeCss.includes('.south-rasi-cell.smv-chart-cell-compact .planet-line'));
