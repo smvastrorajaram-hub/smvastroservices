@@ -1960,6 +1960,7 @@ try {
       assert.ok(mobileState.ordinaryPlanetCellCount > 0, language + ' ' + width + 'px: one-to-three item cells must be present for centring checks.');
       assert.equal(mobileState.ordinaryPlanetCellsCentered, true, language + ' ' + width + 'px: one-to-three item cells must be centred inside their boxes.');
       assert.equal(mobileState.markerFontSizeMismatches, 0, language + ' ' + width + 'px: (அ)/(வ)/(C)/(R) and degree must match the planet font size.');
+      assert.ok(mobileState.dualMarkerLayout.bothMarkersPresent && mobileState.dualMarkerLayout.combustionBeforeRetrograde && mobileState.dualMarkerLayout.retrogradeBeforeDegree && mobileState.dualMarkerLayout.allLabelsSameSize, language + ' ' + width + 'px: both status markers and degree must remain separated and in order: ' + JSON.stringify(mobileState.dualMarkerLayout));
       assert.equal(mobileState.emptyCellPlaceholderCount, 0, language + ' ' + width + 'px: empty Rasi cells must not show a dash.');
       assert.equal(mobileState.houseNumberFontMismatches, 0, language + ' ' + width + 'px: house numbers 2–12 must match the corresponding planet font size.');
       assert.equal(mobileState.clippedStacks, 0, language + ' ' + width + 'px: no planet line may be clipped by its Rasi cell.');
