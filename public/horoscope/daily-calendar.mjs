@@ -591,9 +591,8 @@ if(host){
   const rows=TAMIL_GRAHA_PLANETS.map((name,index)=>'<tr><th scope="row">'+esc(ta()?name:planetEnglish[index])+'</th><td>'+cell(index,0)+'</td><td>'+cell(index,1)+'</td></tr>').join('');
   const title=ta()?'செவ்வாய், புதன், குரு, சுக்கிரன், சனி வக்ர அஸ்தமனங்கள்':'Mars, Mercury, Jupiter, Venus and Saturn Retrograde / Combustion Periods';
   const yearLabel=ta()?year[0]+' '+year[1]+' ஆண்டு':year[0]+' '+year[2]+' Year';
-  const note=ta()?'ஆண்டு எல்லையைத் தாண்டும் நிகழ்வுகள், இந்தத் தமிழ் ஆண்டிற்குள் வரும் காலப்பகுதியாக மட்டும் காட்டப்பட்டுள்ளன. நேரங்கள் IST (+05:30).':'Periods crossing a Tamil-year boundary are clipped to the selected Tamil year. Times are IST (+05:30).';
   const card=document.createElement('section');card.id='calGrahaPeriodCard';card.className='cal-graha-period-card';card.setAttribute('aria-label',title);
-  card.innerHTML='<h3>'+esc(title)+'</h3><p class="cal-graha-period-year">'+esc(yearLabel)+'</p><div class="cal-graha-period-scroll" tabindex="0" role="region" aria-label="'+esc(ta()?'வக்ர அஸ்தமன அட்டவணை நகர்த்தும் பகுதி':'Graha periods table scroll area')+'"><table><thead><tr><th scope="col">'+(ta()?'கிரகம்':'Planet')+'</th><th scope="col">'+esc(ta()?TAMIL_GRAHA_TYPES[0]:'Retrograde')+'</th><th scope="col">'+esc(ta()?TAMIL_GRAHA_TYPES[1]:'Combustion')+'</th></tr></thead><tbody>'+rows+'</tbody></table></div><p class="cal-graha-period-note">'+esc(note)+'</p>';
+  card.innerHTML='<h3>'+esc(title)+'</h3><p class="cal-graha-period-year">'+esc(yearLabel)+'</p><div class="cal-graha-period-scroll" tabindex="0" role="region" aria-label="'+esc(ta()?'வக்ர அஸ்தமன அட்டவணை நகர்த்தும் பகுதி':'Graha periods table scroll area')+'"><table><thead><tr><th scope="col">'+(ta()?'கிரகம்':'Planet')+'</th><th scope="col">'+esc(ta()?TAMIL_GRAHA_TYPES[0]:'Retrograde')+'</th><th scope="col">'+esc(ta()?TAMIL_GRAHA_TYPES[1]:'Combustion')+'</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
   transitCard.after(card);
  }
 
