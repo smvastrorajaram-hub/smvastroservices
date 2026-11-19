@@ -55,7 +55,7 @@ assert.ok(chartStyleJs.includes("h.textContent=style==='north'?romanHouse(house)
 assert.ok(chartStyleJs.includes("const bhavaLabel=kind==='bhava'?bhavaHousesBySign[sign].map(romanHouse).join('/'):'';"), 'East does not substitute ordinary Lagna-based Rasi house numbers for Bhava numbers.');
 assert.ok(chartStyleJs.includes("h.textContent=house>=1&&house<=12?String(house):'';"), 'East Rasi, Navamsa and Transit retain their existing Lagna-derived house numbers unchanged.');
 
-const horoscopeCountRules = horoscopeCss.split('\n').filter(line=>/^\.south-rasi-cell\[data-chart-planet-count="\d+"\]\{/.test(line.trim()));
+const horoscopeCountRules = horoscopeCss.split('\n').filter(line=>/^#tamilHoroscopeResult \.south-rasi-cell\[data-chart-planet-count="\d+"\],#englishHoroscopeResult \.south-rasi-cell\[data-chart-planet-count="\d+"\]\{/.test(line.trim()));
 assert.equal(horoscopeCountRules.length,20,'South-chart count rules exist at desktop and mobile widths for each 3–12 planet stack.');
 for (const line of horoscopeCountRules) {
   const count=Number(/data-chart-planet-count="(\d+)"/.exec(line)[1]);
