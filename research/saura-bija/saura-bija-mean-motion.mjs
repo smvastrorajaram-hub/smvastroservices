@@ -131,6 +131,8 @@ export function sauraBijaCorrectedTrueLongitudeResearch(jdUt, planet) {
     ...input,
     mandocca: mandocca.mandocca,
     trueLongitude: trueModel.trueLongitude,
+    trueLongitudeAvailable: true,
+    trueLongitudeResearchOnly: true,
     trueLongitudeStages: trueModel.stages,
     trueLongitudeMethod: 'Sūrya Siddhānta II.39 direct-Jya Manda + II.40–45 Śīghra four-pass',
     mandoccaSource: mandocca.source,
