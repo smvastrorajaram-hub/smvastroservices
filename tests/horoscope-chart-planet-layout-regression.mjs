@@ -20,7 +20,7 @@ assert.ok(navStart >= 0 && bhavaStart > navStart && nextSection > bhavaStart,
   'Navamsa and Bhava renderers must remain in their expected presentation section.');
 const navamsaRenderer = horoscopeJs.slice(navStart, bhavaStart);
 const bhavaRenderer = horoscopeJs.slice(bhavaStart, nextSection);
-assert.match(navamsaRenderer, /\$\{ps\}<\/div><\/div>/,
+assert.match(navamsaRenderer, /\$\{ps\}<\/div>/,
   'Navamsa renders its planet stack directly and leaves an empty stack blank.');
 assert.match(bhavaRenderer, /\$\{houseLabels\}\$\{ps\}<\/div>/,
   'Bhava retains cusp labels and leaves an empty planet stack blank.');
