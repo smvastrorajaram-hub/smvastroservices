@@ -266,3 +266,14 @@
     font-size:12.5px;
   }
 }
+@media(min-width:681px){
+  #calGrahaPeriodCard > h3{
+    width:100%;
+    margin-inline:auto;
+    text-align:center;
+  }
+  #calGrahaPeriodCard .cal-graha-period-start,
+  #calGrahaPeriodCard .cal-graha-period-end{
+    text-align:center;
+  }
+}
