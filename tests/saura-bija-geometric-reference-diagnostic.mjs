@@ -90,7 +90,7 @@ const report={
   precessionChecks:{
     burgessOffsetAt1860:+sauraSiderealOffsetFromBurgessIau76(jd(1860)).toFixed(10),
     burgessOffsetAt2020:+sauraSiderealOffsetFromBurgessIau76(jd(2020)).toFixed(9),
-    1860EquinoxPrecessionAt2020:+precession2020.toFixed(9),
+    '1860EquinoxPrecessionAt2020':+precession2020.toFixed(9),
     lahiriAyanamsaAt1860:+lahiri1860.toFixed(9)
   },
   perPlanet:{},
