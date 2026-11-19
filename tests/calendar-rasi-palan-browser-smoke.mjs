@@ -1723,6 +1723,8 @@ try {
       const positionsSection = document.querySelector('#calDaily .transit-table-card');
       const positionsHeading = positionsSection?.querySelector(':scope > h3');
       const positionsTableWrap = positionsSection?.querySelector('.adv-scroll');
+      const horaGridCell = horaTables[0]?.querySelector('tbody td');
+      const positionsGridCell = positionsSection?.querySelector('tbody td');
       const combustionInChart = chart?.querySelectorAll('.planet-short .status-c').length || 0;
       const combustionInNames = rows.filter(row => row.name.includes(language === 'ta' ? '(அ)' : '(C)')).length;
       const retrogradeInChart = chart?.querySelectorAll('.planet-short .status-r').length || 0;
@@ -1773,12 +1775,16 @@ try {
         horaCardBorderWidth: horaSection ? getComputedStyle(horaSection).borderTopWidth : '0px',
         horaTableBorderWidths: horaTables.map(wrap => getComputedStyle(wrap).borderTopWidth),
         horaTableBorderColor: horaTables[0] ? getComputedStyle(horaTables[0]).borderTopColor : '',
+        horaGridLineWidth: horaGridCell ? getComputedStyle(horaGridCell).borderRightWidth : '0px',
+        horaGridLineColor: horaGridCell ? getComputedStyle(horaGridCell).borderRightColor : '',
         transitHasCardLayer: Boolean(document.querySelector('#calDaily .transit-card')?.classList.contains('card')),
         positionsHeadingText: positionsHeading?.textContent.trim() || '',
         positionsHasLayer: Boolean(positionsSection?.classList.contains('card')),
         positionsCardBorderWidth: positionsSection ? getComputedStyle(positionsSection).borderTopWidth : '0px',
         positionsTableBorderWidth: positionsTableWrap ? getComputedStyle(positionsTableWrap).borderTopWidth : '0px',
         positionsTableBorderColor: positionsTableWrap ? getComputedStyle(positionsTableWrap).borderTopColor : '',
+        positionsGridLineWidth: positionsGridCell ? getComputedStyle(positionsGridCell).borderRightWidth : '0px',
+        positionsGridLineColor: positionsGridCell ? getComputedStyle(positionsGridCell).borderRightColor : '',
         denseClass: Boolean(chart?.classList.contains('transit-chart-dense') || chart?.classList.contains('transit-chart-dense-4plus')),
         maxStack,
         clippedStacks,
@@ -1815,11 +1821,15 @@ try {
       assert.equal(transitState.horaTableBorderWidths.length, 2, language + ' ' + date + ': Day and Night Hora must remain separate tables.');
       assert.ok(transitState.horaTableBorderWidths.every(width => width === '1px'), language + ' ' + date + ': only each Hora table must have a thin outer border.');
       assert.equal(transitState.horaTableBorderColor, 'rgb(220, 232, 223)', language + ' ' + date + ': Hora table outline must use the light theme green.');
+      assert.equal(transitState.horaGridLineWidth, '1px', language + ' ' + date + ': Hora row/column lines must stay thin.');
+      assert.equal(transitState.horaGridLineColor, 'rgb(228, 235, 231)', language + ' ' + date + ': Hora row/column lines must use the pale theme green.');
       assert.ok(transitState.positionsHeadingText.includes(language === 'ta' ? 'கோச்சார கிரக நிலைகள்' : 'Transit Planetary Positions'), language + ' ' + date + ': Transit positions heading must remain visible without a box.');
       assert.equal(transitState.positionsHasLayer, false, language + ' ' + date + ': Transit positions section wrapper must not be a card.');
       assert.equal(transitState.positionsCardBorderWidth, '0px', language + ' ' + date + ': Transit positions heading section must not have an outer border.');
       assert.equal(transitState.positionsTableBorderWidth, '1px', language + ' ' + date + ': only the positions table must have a thin outer border.');
       assert.equal(transitState.positionsTableBorderColor, 'rgb(220, 232, 223)', language + ' ' + date + ': positions table outline must use the light theme green.');
+      assert.equal(transitState.positionsGridLineWidth, '1px', language + ' ' + date + ': positions table row/column lines must stay thin.');
+      assert.equal(transitState.positionsGridLineColor, 'rgb(228, 235, 231)', language + ' ' + date + ': positions table row/column lines must use the pale theme green.');
       assert.equal(transitState.transitHasCardLayer, false, language + ' ' + date + ': Transit Chart itself must remain without an outer card.');
       assert.equal(transitState.clippedStacks, 0, language + ' ' + date + ': crowded Rasi cells must not clip planet rows: ' + JSON.stringify(transitState));
       assert.equal(transitState.separatorLines, 0, language + ' ' + date + ': no dotted line may appear below individual planet rows.');
