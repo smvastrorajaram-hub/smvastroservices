@@ -3018,7 +3018,9 @@
           "longitude": 264.4547003,
           "latitude": 3.0630665
         }
-      ]
+      ],
+      "targetName": "Mercury Barycenter",
+      "targetEphemeris": "DE441"
     },
     "Venus": {
       "target": "299",
@@ -6024,10 +6026,12 @@
           "longitude": 322.129099,
           "latitude": -1.9004649
         }
-      ]
+      ],
+      "targetName": "Venus Barycenter",
+      "targetEphemeris": "DE441"
     },
     "Mars": {
-      "target": "499",
+      "target": "4",
       "note": null,
       "rows": [
         {
@@ -6227,7 +6231,7 @@
         },
         {
           "year": 1839,
-          "longitude": 175.1817114,
+          "longitude": 175.1817115,
           "latitude": 2.7640276
         },
         {
@@ -6658,7 +6662,7 @@
         {
           "year": 1925,
           "longitude": 7.6202732,
-          "latitude": 0.0178177
+          "latitude": 0.0178178
         },
         {
           "year": 1926,
@@ -9030,3013 +9034,3017 @@
           "longitude": 18.0529351,
           "latitude": 0.3265751
         }
-      ]
+      ],
+      "targetName": "Mars Barycenter",
+      "targetEphemeris": "DE441"
     },
     "Jupiter": {
-      "target": "599",
+      "target": "5",
       "note": null,
       "rows": [
         {
           "year": 1800,
-          "longitude": 84.5269169,
-          "latitude": -0.3033285
+          "longitude": 84.5269231,
+          "latitude": -0.3033283
         },
         {
           "year": 1801,
-          "longitude": 121.8580296,
+          "longitude": 121.8580257,
           "latitude": 0.5332294
         },
         {
           "year": 1802,
-          "longitude": 155.5563384,
-          "latitude": 1.1118307
+          "longitude": 155.5563426,
+          "latitude": 1.1118306
         },
         {
           "year": 1803,
-          "longitude": 185.2546945,
-          "latitude": 1.3180613
+          "longitude": 185.2547057,
+          "latitude": 1.3180607
         },
         {
           "year": 1804,
-          "longitude": 212.0732808,
-          "latitude": 1.2082288
+          "longitude": 212.0732845,
+          "latitude": 1.2082281
         },
         {
           "year": 1805,
-          "longitude": 237.509153,
-          "latitude": 0.8679887
+          "longitude": 237.5091525,
+          "latitude": 0.8679881
         },
         {
           "year": 1806,
-          "longitude": 262.32753,
-          "latitude": 0.3707598
+          "longitude": 262.3275252,
+          "latitude": 0.3707597
         },
         {
           "year": 1807,
-          "longitude": 287.6222844,
-          "latitude": -0.2045835
+          "longitude": 287.6222835,
+          "latitude": -0.2045834
         },
         {
           "year": 1808,
-          "longitude": 314.3001683,
+          "longitude": 314.3001712,
           "latitude": -0.7655196
         },
         {
           "year": 1809,
-          "longitude": 343.4864662,
-          "latitude": -1.1839266
+          "longitude": 343.4864726,
+          "latitude": -1.1839262
         },
         {
           "year": 1810,
-          "longitude": 15.7474157,
-          "latitude": -1.2968071
+          "longitude": 15.7474075,
+          "latitude": -1.2968068
         },
         {
           "year": 1811,
-          "longitude": 51.7817156,
-          "latitude": -0.95054
+          "longitude": 51.7817012,
+          "latitude": -0.9505401
         },
         {
           "year": 1812,
-          "longitude": 90.1078554,
-          "latitude": -0.1869533
+          "longitude": 90.1078509,
+          "latitude": -0.1869536
         },
         {
           "year": 1813,
-          "longitude": 126.9815467,
-          "latitude": 0.6353019
+          "longitude": 126.981549,
+          "latitude": 0.6353018
         },
         {
           "year": 1814,
-          "longitude": 160.0948049,
+          "longitude": 160.0948032,
           "latitude": 1.1624711
         },
         {
           "year": 1815,
-          "longitude": 189.290108,
-          "latitude": 1.3190946
+          "longitude": 189.2900984,
+          "latitude": 1.3190949
         },
         {
           "year": 1816,
-          "longitude": 215.7925621,
-          "latitude": 1.1719713
+          "longitude": 215.7925518,
+          "latitude": 1.1719718
         },
         {
           "year": 1817,
-          "longitude": 241.0921476,
-          "latitude": 0.8056196
+          "longitude": 241.0921416,
+          "latitude": 0.8056201
         },
         {
           "year": 1818,
-          "longitude": 265.916751,
-          "latitude": 0.2929845
+          "longitude": 265.9167504,
+          "latitude": 0.2929847
         },
         {
           "year": 1819,
-          "longitude": 291.3537855,
+          "longitude": 291.3537877,
           "latitude": -0.2863451
         },
         {
           "year": 1820,
-          "longitude": 318.3116082,
+          "longitude": 318.311607,
           "latitude": -0.836217
         },
         {
           "year": 1821,
-          "longitude": 347.9195605,
-          "latitude": -1.2220917
+          "longitude": 347.9195509,
+          "latitude": -1.222092
         },
         {
           "year": 1822,
-          "longitude": 20.7352082,
-          "latitude": -1.2778069
+          "longitude": 20.7352044,
+          "latitude": -1.2778076
         },
         {
           "year": 1823,
-          "longitude": 57.2543337,
-          "latitude": -0.8626345
+          "longitude": 57.2543432,
+          "latitude": -0.8626351
         },
         {
           "year": 1824,
-          "longitude": 95.6003377,
+          "longitude": 95.600349,
           "latitude": -0.0652855
         },
         {
           "year": 1825,
-          "longitude": 131.9751126,
+          "longitude": 131.975114,
           "latitude": 0.7297436
         },
         {
           "year": 1826,
-          "longitude": 164.4588961,
-          "latitude": 1.2042193
+          "longitude": 164.4588917,
+          "latitude": 1.2042196
         },
         {
           "year": 1827,
-          "longitude": 193.1834352,
-          "latitude": 1.3140907
+          "longitude": 193.1834393,
+          "latitude": 1.3140908
         },
         {
           "year": 1828,
-          "longitude": 219.4241428,
-          "latitude": 1.1323487
+          "longitude": 219.4241567,
+          "latitude": 1.1323485
         },
         {
           "year": 1829,
-          "longitude": 244.648365,
-          "latitude": 0.7415742
+          "longitude": 244.6483763,
+          "latitude": 0.7415741
         },
         {
           "year": 1830,
-          "longitude": 269.5367535,
-          "latitude": 0.2144564
+          "longitude": 269.5367589,
+          "latitude": 0.2144562
         },
         {
           "year": 1831,
-          "longitude": 295.168002,
-          "latitude": -0.3677054
+          "longitude": 295.1679994,
+          "latitude": -0.3677055
         },
         {
           "year": 1832,
-          "longitude": 322.4484791,
-          "latitude": -0.9041508
+          "longitude": 322.4484797,
+          "latitude": -0.9041507
         },
         {
           "year": 1833,
-          "longitude": 352.4955955,
-          "latitude": -1.2535592
+          "longitude": 352.4956061,
+          "latitude": -1.2535591
         },
         {
           "year": 1834,
-          "longitude": 25.8383773,
-          "latitude": -1.248182
+          "longitude": 25.8383902,
+          "latitude": -1.2481813
         },
         {
           "year": 1835,
-          "longitude": 62.7569584,
-          "latitude": -0.7656905
+          "longitude": 62.756956,
+          "latitude": -0.7656896
         },
         {
           "year": 1836,
-          "longitude": 101.0273012,
-          "latitude": 0.0566858
+          "longitude": 101.027291,
+          "latitude": 0.0566861
         },
         {
           "year": 1837,
-          "longitude": 136.8825146,
-          "latitude": 0.8186913
+          "longitude": 136.8825121,
+          "latitude": 0.8186914
         },
         {
           "year": 1838,
-          "longitude": 168.7786901,
-          "latitude": 1.2399767
+          "longitude": 168.7786976,
+          "latitude": 1.2399763
         },
         {
           "year": 1839,
-          "longitude": 197.0828823,
-          "latitude": 1.3038014
+          "longitude": 197.0828834,
+          "latitude": 1.303801
         },
         {
           "year": 1840,
-          "longitude": 223.0993958,
-          "latitude": 1.0879379
+          "longitude": 223.0993858,
+          "latitude": 1.0879377
         },
         {
           "year": 1841,
-          "longitude": 248.2662374,
-          "latitude": 0.6733492
+          "longitude": 248.2662279,
+          "latitude": 0.6733491
         },
         {
           "year": 1842,
-          "longitude": 273.2228301,
+          "longitude": 273.2228229,
           "latitude": 0.1332594
         },
         {
           "year": 1843,
-          "longitude": 299.0395719,
+          "longitude": 299.0395713,
           "latitude": -0.4490213
         },
         {
           "year": 1844,
-          "longitude": 326.6192602,
+          "longitude": 326.6192612,
           "latitude": -0.9682617
         },
         {
           "year": 1845,
-          "longitude": 357.0704996,
-          "latitude": -1.2773125
+          "longitude": 357.0704936,
+          "latitude": -1.2773123
         },
         {
           "year": 1846,
-          "longitude": 30.8969057,
-          "latitude": -1.2094378
+          "longitude": 30.8968926,
+          "latitude": -1.2094381
         },
         {
           "year": 1847,
-          "longitude": 68.1500116,
-          "latitude": -0.6643376
+          "longitude": 68.1500031,
+          "latitude": -0.6643383
         },
         {
           "year": 1848,
-          "longitude": 106.2876878,
-          "latitude": 0.1739631
+          "longitude": 106.2876905,
+          "latitude": 0.1739627
         },
         {
           "year": 1849,
-          "longitude": 141.6394887,
+          "longitude": 141.6394908,
           "latitude": 0.8988755
         },
         {
           "year": 1850,
-          "longitude": 173.0056583,
-          "latitude": 1.2680546
+          "longitude": 173.005653,
+          "latitude": 1.2680548
         },
         {
           "year": 1851,
-          "longitude": 200.9404239,
-          "latitude": 1.2876676
+          "longitude": 200.9404167,
+          "latitude": 1.287668
         },
         {
           "year": 1852,
-          "longitude": 226.7572524,
-          "latitude": 1.0392303
+          "longitude": 226.757253,
+          "latitude": 1.0392308
         },
         {
           "year": 1853,
-          "longitude": 251.8694666,
-          "latitude": 0.6025804
+          "longitude": 251.8694685,
+          "latitude": 0.6025808
         },
         {
           "year": 1854,
-          "longitude": 276.8819748,
-          "latitude": 0.0517469
+          "longitude": 276.8819831,
+          "latitude": 0.0517471
         },
         {
           "year": 1855,
-          "longitude": 302.8695749,
-          "latitude": -0.5280461
+          "longitude": 302.8695794,
+          "latitude": -0.5280459
         },
         {
           "year": 1856,
-          "longitude": 330.7487153,
-          "latitude": -1.0274537
+          "longitude": 330.7487114,
+          "latitude": -1.0274538
         },
         {
           "year": 1857,
-          "longitude": 1.6297324,
-          "latitude": -1.293694
+          "longitude": 1.6297294,
+          "latitude": -1.2936945
         },
         {
           "year": 1858,
-          "longitude": 35.9818597,
-          "latitude": -1.1616392
+          "longitude": 35.9818682,
+          "latitude": -1.1616396
         },
         {
           "year": 1859,
-          "longitude": 73.5883405,
-          "latitude": -0.5564853
+          "longitude": 73.5883571,
+          "latitude": -0.556485
         },
         {
           "year": 1860,
-          "longitude": 111.582409,
-          "latitude": 0.2906146
+          "longitude": 111.5824127,
+          "latitude": 0.2906148
         },
         {
           "year": 1861,
-          "longitude": 146.4282831,
-          "latitude": 0.9738672
+          "longitude": 146.4282794,
+          "latitude": 0.9738673
         },
         {
           "year": 1862,
-          "longitude": 177.2654853,
+          "longitude": 177.2654873,
           "latitude": 1.2901859
         },
         {
           "year": 1863,
-          "longitude": 204.8160298,
-          "latitude": 1.2667691
+          "longitude": 204.8160407,
+          "latitude": 1.2667689
         },
         {
           "year": 1864,
-          "longitude": 230.4047532,
-          "latitude": 0.9879376
+          "longitude": 230.4047598,
+          "latitude": 0.987937
         },
         {
           "year": 1865,
-          "longitude": 255.4261334,
-          "latitude": 0.5319593
+          "longitude": 255.4261388,
+          "latitude": 0.5319588
         },
         {
           "year": 1866,
-          "longitude": 280.4618273,
-          "latitude": -0.0267803
+          "longitude": 280.4618216,
+          "latitude": -0.0267806
         },
         {
           "year": 1867,
-          "longitude": 306.598088,
-          "latitude": -0.6018136
+          "longitude": 306.5980835,
+          "latitude": -0.6018137
         },
         {
           "year": 1868,
-          "longitude": 334.7740786,
-          "latitude": -1.0799247
+          "longitude": 334.7740832,
+          "latitude": -1.0799246
         },
         {
           "year": 1869,
-          "longitude": 6.1061179,
-          "latitude": -1.3025849
+          "longitude": 6.1061276,
+          "latitude": -1.3025842
         },
         {
           "year": 1870,
-          "longitude": 41.0182082,
-          "latitude": -1.1068027
+          "longitude": 41.0182074,
+          "latitude": -1.1068018
         },
         {
           "year": 1871,
-          "longitude": 78.9865029,
-          "latitude": -0.4460091
+          "longitude": 78.9864888,
+          "latitude": -0.4460089
         },
         {
           "year": 1872,
-          "longitude": 116.8075209,
-          "latitude": 0.4022962
+          "longitude": 116.8075109,
+          "latitude": 0.4022963
         },
         {
           "year": 1873,
-          "longitude": 151.1223179,
+          "longitude": 151.1223198,
           "latitude": 1.0404356
         },
         {
           "year": 1874,
-          "longitude": 181.4204481,
-          "latitude": 1.3048868
+          "longitude": 181.4204474,
+          "latitude": 1.3048867
         },
         {
           "year": 1875,
-          "longitude": 208.6015238,
+          "longitude": 208.6015154,
           "latitude": 1.240518
         },
         {
           "year": 1876,
-          "longitude": 234.0006638,
-          "latitude": 0.932822
+          "longitude": 234.0006543,
+          "latitude": 0.9328222
         },
         {
           "year": 1877,
-          "longitude": 258.9900761,
-          "latitude": 0.4582065
+          "longitude": 258.9900662,
+          "latitude": 0.4582067
         },
         {
           "year": 1878,
-          "longitude": 284.1243965,
-          "latitude": -0.1081162
+          "longitude": 284.1243952,
+          "latitude": -0.108116
         },
         {
           "year": 1879,
-          "longitude": 310.4961683,
-          "latitude": -0.6771507
+          "longitude": 310.4961715,
+          "latitude": -0.6771506
         },
         {
           "year": 1880,
-          "longitude": 339.0546398,
-          "latitude": -1.1304643
+          "longitude": 339.0546388,
+          "latitude": -1.1304644
         },
         {
           "year": 1881,
-          "longitude": 10.9005421,
-          "latitude": -1.3034783
+          "longitude": 10.9005331,
+          "latitude": -1.3034787
         },
         {
           "year": 1882,
-          "longitude": 46.36179,
-          "latitude": -1.0391675
+          "longitude": 46.3617804,
+          "latitude": -1.0391684
         },
         {
           "year": 1883,
-          "longitude": 84.5380469,
-          "latitude": -0.3282986
+          "longitude": 84.5380513,
+          "latitude": -0.3282993
         },
         {
           "year": 1884,
-          "longitude": 121.979775,
-          "latitude": 0.509333
+          "longitude": 121.9797895,
+          "latitude": 0.5093326
         },
         {
           "year": 1885,
-          "longitude": 155.6587116,
-          "latitude": 1.0979514
+          "longitude": 155.6587139,
+          "latitude": 1.0979513
         },
         {
           "year": 1886,
-          "longitude": 185.4150391,
+          "longitude": 185.4150371,
           "latitude": 1.3124609
         },
         {
           "year": 1887,
-          "longitude": 212.2642142,
-          "latitude": 1.2102613
+          "longitude": 212.2642157,
+          "latitude": 1.2102616
         },
         {
           "year": 1888,
-          "longitude": 237.5240205,
-          "latitude": 0.8758637
+          "longitude": 237.5240297,
+          "latitude": 0.875864
         },
         {
           "year": 1889,
-          "longitude": 262.5376037,
-          "latitude": 0.3837675
+          "longitude": 262.5376156,
+          "latitude": 0.3837678
         },
         {
           "year": 1890,
-          "longitude": 287.8293837,
-          "latitude": -0.1891731
+          "longitude": 287.8293914,
+          "latitude": -0.189173
         },
         {
           "year": 1891,
-          "longitude": 314.4890721,
-          "latitude": -0.750573
+          "longitude": 314.4890702,
+          "latitude": -0.7505731
         },
         {
           "year": 1892,
-          "longitude": 343.4702449,
-          "latitude": -1.1757729
+          "longitude": 343.4702439,
+          "latitude": -1.175773
         },
         {
           "year": 1893,
-          "longitude": 15.8363206,
-          "latitude": -1.2947187
+          "longitude": 15.8363264,
+          "latitude": -1.2947188
         },
         {
           "year": 1894,
-          "longitude": 51.7876169,
-          "latitude": -0.960905
+          "longitude": 51.7876346,
+          "latitude": -0.9609045
         },
         {
           "year": 1895,
-          "longitude": 90.0645748,
-          "latitude": -0.2069726
+          "longitude": 90.0645801,
+          "latitude": -0.2069719
         },
         {
           "year": 1896,
-          "longitude": 127.0753705,
-          "latitude": 0.6122647
+          "longitude": 127.0753592,
+          "latitude": 0.6122651
         },
         {
           "year": 1897,
-          "longitude": 160.1548081,
-          "latitude": 1.1496834
+          "longitude": 160.1548043,
+          "latitude": 1.1496835
         },
         {
           "year": 1898,
-          "longitude": 189.4250967,
-          "latitude": 1.3149215
+          "longitude": 189.4251007,
+          "latitude": 1.3149214
         },
         {
           "year": 1899,
-          "longitude": 215.9875899,
-          "latitude": 1.1751741
+          "longitude": 215.9875928,
+          "latitude": 1.1751736
         },
         {
           "year": 1900,
-          "longitude": 241.135883,
-          "latitude": 0.8142907
+          "longitude": 241.1358781,
+          "latitude": 0.8142902
         },
         {
           "year": 1901,
-          "longitude": 265.9582592,
-          "latitude": 0.3070136
+          "longitude": 265.9582498,
+          "latitude": 0.3070133
         },
         {
           "year": 1902,
-          "longitude": 291.3912205,
+          "longitude": 291.391212,
           "latitude": -0.2703086
         },
         {
           "year": 1903,
-          "longitude": 318.3366341,
-          "latitude": -0.8221521
+          "longitude": 318.3366306,
+          "latitude": -0.8221522
         },
         {
           "year": 1904,
-          "longitude": 347.7602487,
+          "longitude": 347.7602507,
           "latitude": -1.2178392
         },
         {
           "year": 1905,
-          "longitude": 20.6906659,
+          "longitude": 20.6906595,
           "latitude": -1.2820339
         },
         {
           "year": 1906,
-          "longitude": 57.1827027,
-          "latitude": -0.8800986
+          "longitude": 57.1826901,
+          "latitude": -0.8800987
         },
         {
           "year": 1907,
-          "longitude": 95.5510697,
-          "latitude": -0.0902502
+          "longitude": 95.5510653,
+          "latitude": -0.0902507
         },
         {
           "year": 1908,
-          "longitude": 132.0798296,
-          "latitude": 0.7034237
+          "longitude": 132.0798406,
+          "latitude": 0.7034233
         },
         {
           "year": 1909,
-          "longitude": 164.5193708,
-          "latitude": 1.1885441
+          "longitude": 164.5193789,
+          "latitude": 1.188544
         },
         {
           "year": 1910,
-          "longitude": 193.2752322,
+          "longitude": 193.2752348,
           "latitude": 1.3069316
         },
         {
           "year": 1911,
-          "longitude": 219.5247636,
-          "latitude": 1.1333145
+          "longitude": 219.5247591,
+          "latitude": 1.1333148
         },
         {
           "year": 1912,
           "longitude": 244.5328417,
-          "latitude": 0.7496975
+          "latitude": 0.7496979
         },
         {
           "year": 1913,
-          "longitude": 269.5860818,
-          "latitude": 0.2279287
+          "longitude": 269.586085,
+          "latitude": 0.2279291
         },
         {
           "year": 1914,
-          "longitude": 295.1632329,
-          "latitude": -0.3515638
+          "longitude": 295.1632439,
+          "latitude": -0.3515634
         },
         {
           "year": 1915,
-          "longitude": 322.3730584,
-          "latitude": -0.8897725
+          "longitude": 322.3730668,
+          "latitude": -0.8897722
         },
         {
           "year": 1916,
-          "longitude": 352.2002213,
+          "longitude": 352.2002197,
           "latitude": -1.250581
         },
         {
           "year": 1917,
-          "longitude": 25.6360177,
-          "latitude": -1.2555829
+          "longitude": 25.6360174,
+          "latitude": -1.2555832
         },
         {
           "year": 1918,
-          "longitude": 62.5687762,
-          "latitude": -0.7872784
+          "longitude": 62.5687897,
+          "latitude": -0.7872789
         },
         {
           "year": 1919,
-          "longitude": 100.9372308,
+          "longitude": 100.9372449,
           "latitude": 0.0299992
         },
         {
           "year": 1920,
-          "longitude": 137.0025284,
-          "latitude": 0.7930565
+          "longitude": 137.0025249,
+          "latitude": 0.7930566
         },
         {
           "year": 1921,
-          "longitude": 168.9008591,
+          "longitude": 168.9008527,
           "latitude": 1.2259008
         },
         {
           "year": 1922,
-          "longitude": 197.2319694,
-          "latitude": 1.2980188
+          "longitude": 197.2319663,
+          "latitude": 1.2980189
         },
         {
           "year": 1923,
-          "longitude": 223.2169652,
-          "latitude": 1.0903866
+          "longitude": 223.2169712,
+          "latitude": 1.0903863
         },
         {
           "year": 1924,
-          "longitude": 248.0992997,
-          "latitude": 0.6842024
+          "longitude": 248.0993041,
+          "latitude": 0.684202
         },
         {
           "year": 1925,
-          "longitude": 273.1497789,
-          "latitude": 0.1506181
+          "longitude": 273.1497821,
+          "latitude": 0.1506177
         },
         {
           "year": 1926,
-          "longitude": 298.836216,
-          "latitude": -0.4284436
+          "longitude": 298.8362093,
+          "latitude": -0.4284439
         },
         {
           "year": 1927,
-          "longitude": 326.2923458,
-          "latitude": -0.9509947
+          "longitude": 326.292337,
+          "latitude": -0.950995
         },
         {
           "year": 1928,
-          "longitude": 356.5296054,
-          "latitude": -1.2757149
+          "longitude": 356.5296029,
+          "latitude": -1.275715
         },
         {
           "year": 1929,
-          "longitude": 30.4946539,
-          "latitude": -1.2217496
+          "longitude": 30.4946574,
+          "latitude": -1.2217492
         },
         {
           "year": 1930,
-          "longitude": 67.8824991,
-          "latitude": -0.6903481
+          "longitude": 67.8824917,
+          "latitude": -0.6903475
         },
         {
           "year": 1931,
-          "longitude": 106.2397167,
-          "latitude": 0.1468098
+          "longitude": 106.2397022,
+          "latitude": 0.1468101
         },
         {
           "year": 1932,
-          "longitude": 141.8332489,
-          "latitude": 0.8743875
+          "longitude": 141.8332414,
+          "latitude": 0.8743878
         },
         {
           "year": 1933,
-          "longitude": 173.1868295,
-          "latitude": 1.2551989
+          "longitude": 173.1868286,
+          "latitude": 1.255199
         },
         {
           "year": 1934,
-          "longitude": 201.0994017,
+          "longitude": 201.0994039,
           "latitude": 1.2830485
         },
         {
           "year": 1935,
-          "longitude": 226.84697,
-          "latitude": 1.0433799
+          "longitude": 226.8469668,
+          "latitude": 1.04338
         },
         {
           "year": 1936,
-          "longitude": 251.6508301,
-          "latitude": 0.6158179
+          "longitude": 251.6508221,
+          "latitude": 0.615818
         },
         {
           "year": 1937,
-          "longitude": 276.7607326,
+          "longitude": 276.7607229,
           "latitude": 0.0709004
         },
         {
           "year": 1938,
-          "longitude": 302.637498,
+          "longitude": 302.6374953,
           "latitude": -0.5069228
         },
         {
           "year": 1939,
-          "longitude": 330.4278458,
-          "latitude": -1.0114489
+          "longitude": 330.4278532,
+          "latitude": -1.0114487
         },
         {
           "year": 1940,
-          "longitude": 1.1533732,
-          "latitude": -1.2950267
+          "longitude": 1.1533801,
+          "latitude": -1.2950265
         },
         {
           "year": 1941,
-          "longitude": 35.6774765,
+          "longitude": 35.6774726,
           "latitude": -1.1759536
         },
         {
           "year": 1942,
-          "longitude": 73.4275191,
-          "latitude": -0.5827087
+          "longitude": 73.4275157,
+          "latitude": -0.5827094
         },
         {
           "year": 1943,
-          "longitude": 111.5677201,
-          "latitude": 0.2630867
+          "longitude": 111.5677305,
+          "latitude": 0.2630861
         },
         {
           "year": 1944,
-          "longitude": 146.5326937,
-          "latitude": 0.9477399
+          "longitude": 146.5327085,
+          "latitude": 0.9477394
         },
         {
           "year": 1945,
-          "longitude": 177.2966104,
-          "latitude": 1.2766614
+          "longitude": 177.296618,
+          "latitude": 1.2766611
         },
         {
           "year": 1946,
-          "longitude": 204.8090491,
-          "latitude": 1.2632642
+          "longitude": 204.8090465,
+          "latitude": 1.263264
         },
         {
           "year": 1947,
-          "longitude": 230.3600274,
-          "latitude": 0.9941249
+          "longitude": 230.3600273,
+          "latitude": 0.9941251
         },
         {
           "year": 1948,
-          "longitude": 255.1376667,
-          "latitude": 0.5466547
+          "longitude": 255.1376758,
+          "latitude": 0.5466549
         },
         {
           "year": 1949,
-          "longitude": 280.372175,
-          "latitude": -0.0085798
+          "longitude": 280.3721881,
+          "latitude": -0.0085796
         },
         {
           "year": 1950,
-          "longitude": 306.5053249,
-          "latitude": -0.5839976
+          "longitude": 306.5053347,
+          "latitude": -0.5839974
         },
         {
           "year": 1951,
-          "longitude": 334.6916598,
+          "longitude": 334.6916566,
           "latitude": -1.0678916
         },
         {
           "year": 1952,
-          "longitude": 5.946929,
-          "latitude": -1.3058381
+          "longitude": 5.946923,
+          "latitude": -1.3058383
         },
         {
           "year": 1953,
-          "longitude": 41.0083974,
-          "latitude": -1.1186809
+          "longitude": 41.0084021,
+          "latitude": -1.1186812
         },
         {
           "year": 1954,
-          "longitude": 79.0169092,
-          "latitude": -0.4681148
+          "longitude": 79.0169195,
+          "latitude": -0.4681145
         },
         {
           "year": 1955,
-          "longitude": 116.8504918,
-          "latitude": 0.3772401
+          "longitude": 116.8504891,
+          "latitude": 0.3772405
         },
         {
           "year": 1956,
-          "longitude": 151.1971812,
-          "latitude": 1.0155122
+          "longitude": 151.1971692,
+          "latitude": 1.0155125
         },
         {
           "year": 1957,
-          "longitude": 181.4261636,
-          "latitude": 1.2929985
+          "longitude": 181.4261552,
+          "latitude": 1.2929988
         },
         {
           "year": 1958,
-          "longitude": 208.5864602,
+          "longitude": 208.5864609,
           "latitude": 1.2387001
         },
         {
           "year": 1959,
-          "longitude": 233.9723557,
-          "latitude": 0.9401161
+          "longitude": 233.9723566,
+          "latitude": 0.940116
         },
         {
           "year": 1960,
-          "longitude": 258.7384877,
-          "latitude": 0.4732072
+          "longitude": 258.7384824,
+          "latitude": 0.4732069
         },
         {
           "year": 1961,
-          "longitude": 284.0905575,
-          "latitude": -0.0908322
+          "longitude": 284.0905482,
+          "latitude": -0.0908326
         },
         {
           "year": 1962,
-          "longitude": 310.4599519,
-          "latitude": -0.6608025
+          "longitude": 310.4599399,
+          "latitude": -0.6608029
         },
         {
           "year": 1963,
-          "longitude": 339.0065911,
-          "latitude": -1.1198234
+          "longitude": 339.0065862,
+          "latitude": -1.1198236
         },
         {
           "year": 1964,
-          "longitude": 10.7368283,
-          "latitude": -1.3083449
+          "longitude": 10.7368315,
+          "latitude": -1.308345
         },
         {
           "year": 1965,
-          "longitude": 46.257348,
-          "latitude": -1.0531869
+          "longitude": 46.2573462,
+          "latitude": -1.0531866
         },
         {
           "year": 1966,
-          "longitude": 84.434298,
-          "latitude": -0.3528711
+          "longitude": 84.4342887,
+          "latitude": -0.352871
         },
         {
           "year": 1967,
-          "longitude": 121.9221012,
-          "latitude": 0.4838678
+          "longitude": 121.9220926,
+          "latitude": 0.4838679
         },
         {
           "year": 1968,
-          "longitude": 155.6914578,
-          "latitude": 1.0747094
+          "longitude": 155.6914611,
+          "latitude": 1.0747095
         },
         {
           "year": 1969,
-          "longitude": 185.4557296,
-          "latitude": 1.3026299
+          "longitude": 185.4557349,
+          "latitude": 1.30263
         },
         {
           "year": 1970,
-          "longitude": 212.3250046,
-          "latitude": 1.2092537
+          "longitude": 212.3250073,
+          "latitude": 1.2092536
         },
         {
           "year": 1971,
-          "longitude": 237.5831332,
-          "latitude": 0.8826037
+          "longitude": 237.583131,
+          "latitude": 0.8826036
         },
         {
           "year": 1972,
-          "longitude": 262.3497454,
-          "latitude": 0.397777
+          "longitude": 262.3497439,
+          "latitude": 0.3977773
         },
         {
           "year": 1973,
-          "longitude": 287.8166859,
-          "latitude": -0.17274
+          "longitude": 287.816686,
+          "latitude": -0.1727397
         },
         {
           "year": 1974,
-          "longitude": 314.4115993,
-          "latitude": -0.7345061
+          "longitude": 314.4116101,
+          "latitude": -0.7345057
         },
         {
           "year": 1975,
-          "longitude": 343.3148465,
-          "latitude": -1.1658106
+          "longitude": 343.3148575,
+          "latitude": -1.1658102
         },
         {
           "year": 1976,
-          "longitude": 15.5345533,
-          "latitude": -1.3023988
+          "longitude": 15.5345524,
+          "latitude": -1.3023985
         },
         {
           "year": 1977,
-          "longitude": 51.5325335,
-          "latitude": -0.979341
+          "longitude": 51.5325297,
+          "latitude": -0.9793413
         },
         {
           "year": 1978,
-          "longitude": 89.8670768,
-          "latitude": -0.2347162
+          "longitude": 89.8670831,
+          "latitude": -0.2347167
         },
         {
           "year": 1979,
-          "longitude": 126.9951303,
-          "latitude": 0.5867128
+          "longitude": 126.9951463,
+          "latitude": 0.5867123
         },
         {
           "year": 1980,
-          "longitude": 160.1980397,
-          "latitude": 1.1277468
+          "longitude": 160.1980447,
+          "latitude": 1.1277463
         },
         {
           "year": 1981,
-          "longitude": 189.5068142,
-          "latitude": 1.3065048
+          "longitude": 189.5068126,
+          "latitude": 1.3065043
         },
         {
           "year": 1982,
-          "longitude": 216.0736618,
+          "longitude": 216.0736586,
           "latitude": 1.1754226
         },
         {
           "year": 1983,
-          "longitude": 241.175392,
-          "latitude": 0.822826
+          "longitude": 241.175395,
+          "latitude": 0.8228261
         },
         {
           "year": 1984,
-          "longitude": 265.909785,
-          "latitude": 0.3228591
+          "longitude": 265.9097897,
+          "latitude": 0.3228589
         },
         {
           "year": 1985,
-          "longitude": 291.4572732,
+          "longitude": 291.4572804,
           "latitude": -0.2512628
         },
         {
           "year": 1986,
-          "longitude": 318.2545235,
-          "latitude": -0.8023841
+          "longitude": 318.2545183,
+          "latitude": -0.8023843
         },
         {
           "year": 1987,
-          "longitude": 347.5096541,
-          "latitude": -1.2043384
+          "longitude": 347.5096444,
+          "latitude": -1.2043386
         },
         {
           "year": 1988,
-          "longitude": 20.2346322,
-          "latitude": -1.2886994
+          "longitude": 20.2346296,
+          "latitude": -1.2886996
         },
         {
           "year": 1989,
-          "longitude": 56.7270148,
-          "latitude": -0.9001359
+          "longitude": 56.7270204,
+          "latitude": -0.9001356
         },
         {
           "year": 1990,
-          "longitude": 95.2160871,
-          "latitude": -0.1182131
+          "longitude": 95.2160863,
+          "latitude": -0.1182126
         },
         {
           "year": 1991,
-          "longitude": 131.9823934,
-          "latitude": 0.6817399
+          "longitude": 131.9823805,
+          "latitude": 0.6817403
         },
         {
           "year": 1992,
-          "longitude": 164.6272685,
-          "latitude": 1.172249
+          "longitude": 164.6272561,
+          "latitude": 1.1722496
         },
         {
           "year": 1993,
-          "longitude": 193.4847875,
-          "latitude": 1.3036522
+          "longitude": 193.4847832,
+          "latitude": 1.3036527
         },
         {
           "year": 1994,
-          "longitude": 219.7589932,
-          "latitude": 1.1371334
+          "longitude": 219.7589928,
+          "latitude": 1.1371336
         },
         {
           "year": 1995,
-          "longitude": 244.7318447,
-          "latitude": 0.7601842
+          "longitude": 244.7318435,
+          "latitude": 0.7601841
         },
         {
           "year": 1996,
-          "longitude": 269.477948,
-          "latitude": 0.2458632
+          "longitude": 269.4779435,
+          "latitude": 0.2458631
         },
         {
           "year": 1997,
-          "longitude": 295.1694825,
-          "latitude": -0.3311863
+          "longitude": 295.1694722,
+          "latitude": -0.3311865
         },
         {
           "year": 1998,
-          "longitude": 322.2480196,
-          "latitude": -0.8701239
+          "longitude": 322.248015,
+          "latitude": -0.870124
         },
         {
           "year": 1999,
-          "longitude": 351.9404015,
-          "latitude": -1.2388493
+          "longitude": 351.9404057,
+          "latitude": -1.2388495
         },
         {
           "year": 2000,
-          "longitude": 25.2331086,
-          "latitude": -1.2647766
+          "longitude": 25.2331157,
+          "latitude": -1.2647765
         },
         {
           "year": 2001,
-          "longitude": 62.1901487,
-          "latitude": -0.8083108
+          "longitude": 62.1901464,
+          "latitude": -0.8083109
         },
         {
           "year": 2002,
-          "longitude": 100.6666873,
-          "latitude": 0.0024081
+          "longitude": 100.6666797,
+          "latitude": 0.002408
         },
         {
           "year": 2003,
-          "longitude": 136.8889313,
-          "latitude": 0.7708662
+          "longitude": 136.8889359,
+          "latitude": 0.770866
         },
         {
           "year": 2004,
-          "longitude": 168.8892687,
-          "latitude": 1.208653
+          "longitude": 168.889285,
+          "latitude": 1.2086524
         },
         {
           "year": 2005,
-          "longitude": 197.2877455,
-          "latitude": 1.2949853
+          "longitude": 197.2877551,
+          "latitude": 1.2949849
         },
         {
           "year": 2006,
-          "longitude": 223.3013921,
-          "latitude": 1.0958444
+          "longitude": 223.3013952,
+          "latitude": 1.095844
         },
         {
           "year": 2007,
-          "longitude": 248.194274,
-          "latitude": 0.6965579
+          "longitude": 248.1942724,
+          "latitude": 0.696558
         },
         {
           "year": 2008,
-          "longitude": 273.0156323,
-          "latitude": 0.1691367
+          "longitude": 273.0156354,
+          "latitude": 0.169137
         },
         {
           "year": 2009,
-          "longitude": 298.923643,
-          "latitude": -0.4097951
+          "longitude": 298.9236533,
+          "latitude": -0.4097947
         },
         {
           "year": 2010,
-          "longitude": 326.3588373,
-          "latitude": -0.9346007
+          "longitude": 326.358849,
+          "latitude": -0.9346003
         },
         {
           "year": 2011,
-          "longitude": 356.5515513,
-          "latitude": -1.26631
+          "longitude": 356.5515527,
+          "latitude": -1.2663095
         },
         {
           "year": 2012,
-          "longitude": 30.428945,
-          "latitude": -1.229595
+          "longitude": 30.4289397,
+          "latitude": -1.2295949
         },
         {
           "year": 2013,
-          "longitude": 67.7731359,
-          "latitude": -0.7067465
+          "longitude": 67.7731365,
+          "latitude": -0.7067466
         },
         {
           "year": 2014,
-          "longitude": 106.1172912,
-          "latitude": 0.1236169
+          "longitude": 106.1173045,
+          "latitude": 0.1236168
         },
         {
           "year": 2015,
-          "longitude": 141.7588084,
-          "latitude": 0.8549085
+          "longitude": 141.758812,
+          "latitude": 0.8549084
         },
         {
           "year": 2016,
-          "longitude": 173.154668,
-          "latitude": 1.239855
+          "longitude": 173.1546566,
+          "latitude": 1.2398551
         },
         {
           "year": 2017,
-          "longitude": 201.1456607,
-          "latitude": 1.281651
+          "longitude": 201.1456521,
+          "latitude": 1.2816511
         },
         {
           "year": 2018,
-          "longitude": 226.9351777,
-          "latitude": 1.0499323
+          "longitude": 226.9351733,
+          "latitude": 1.0499326
         },
         {
           "year": 2019,
-          "longitude": 251.7693059,
-          "latitude": 0.6282996
+          "longitude": 251.7693066,
+          "latitude": 0.6282995
         },
         {
           "year": 2020,
-          "longitude": 276.6703386,
-          "latitude": 0.0885948
+          "longitude": 276.6703382,
+          "latitude": 0.0885945
         },
         {
           "year": 2021,
-          "longitude": 302.7829534,
-          "latitude": -0.4898527
+          "longitude": 302.7829476,
+          "latitude": -0.489853
         },
         {
           "year": 2022,
-          "longitude": 330.5459353,
-          "latitude": -0.9966443
+          "longitude": 330.5459245,
+          "latitude": -0.9966447
         },
         {
           "year": 2023,
-          "longitude": 1.1929622,
-          "latitude": -1.2868555
+          "longitude": 1.1929542,
+          "latitude": -1.2868561
         },
         {
           "year": 2024,
-          "longitude": 35.5823812,
-          "latitude": -1.1854765
+          "longitude": 35.58238,
+          "latitude": -1.1854771
         },
         {
           "year": 2025,
-          "longitude": 73.2154465,
-          "latitude": -0.6015672
+          "longitude": 73.2154473,
+          "latitude": -0.6015671
         },
         {
           "year": 2026,
-          "longitude": 111.3575894,
-          "latitude": 0.2391257
+          "longitude": 111.3575796,
+          "latitude": 0.2391259
         },
         {
           "year": 2027,
-          "longitude": 146.4422022,
-          "latitude": 0.9300718
+          "longitude": 146.4421909,
+          "latitude": 0.9300722
         },
         {
           "year": 2028,
-          "longitude": 177.307101,
-          "latitude": 1.2638503
+          "longitude": 177.3071012,
+          "latitude": 1.2638507
         },
         {
           "year": 2029,
-          "longitude": 204.9593839,
-          "latitude": 1.2631265
+          "longitude": 204.9593855,
+          "latitude": 1.2631269
         },
         {
           "year": 2030,
-          "longitude": 230.5745049,
-          "latitude": 1.0001398
+          "longitude": 230.5745104,
+          "latitude": 1.0001399
         },
         {
           "year": 2031,
-          "longitude": 255.3745218,
+          "longitude": 255.3745231,
           "latitude": 0.5574562
         },
         {
           "year": 2032,
-          "longitude": 280.3569961,
+          "longitude": 280.3569915,
           "latitude": 0.0074128
         },
         {
           "year": 2033,
-          "longitude": 306.6590928,
+          "longitude": 306.6590893,
           "latitude": -0.5678522
         },
         {
           "year": 2034,
-          "longitude": 334.7355618,
-          "latitude": -1.0535361
+          "longitude": 334.7355667,
+          "latitude": -1.0535362
         },
         {
           "year": 2035,
-          "longitude": 5.8320199,
-          "latitude": -1.2994555
+          "longitude": 5.8320324,
+          "latitude": -1.2994552
         },
         {
           "year": 2036,
-          "longitude": 40.7359671,
-          "latitude": -1.1324577
+          "longitude": 40.7359732,
+          "latitude": -1.1324571
         },
         {
           "year": 2037,
-          "longitude": 78.6455237,
-          "latitude": -0.4915965
+          "longitude": 78.6455196,
+          "latitude": -0.4915964
         },
         {
           "year": 2038,
-          "longitude": 116.567539,
-          "latitude": 0.3519392
+          "longitude": 116.5675429,
+          "latitude": 0.3519389
         },
         {
           "year": 2039,
-          "longitude": 151.1030003,
-          "latitude": 0.9990242
+          "longitude": 151.1030165,
+          "latitude": 0.9990236
         },
         {
           "year": 2040,
-          "longitude": 181.4555794,
-          "latitude": 1.2816781
+          "longitude": 181.4555882,
+          "latitude": 1.2816774
         },
         {
           "year": 2041,
-          "longitude": 208.7772438,
-          "latitude": 1.2395218
+          "longitude": 208.7772488,
+          "latitude": 1.2395212
         },
         {
           "year": 2042,
-          "longitude": 234.2067226,
-          "latitude": 0.9471757
+          "longitude": 234.2067179,
+          "latitude": 0.9471755
         },
         {
           "year": 2043,
-          "longitude": 258.9483521,
+          "longitude": 258.9483503,
           "latitude": 0.485944
         },
         {
           "year": 2044,
-          "longitude": 283.984952,
+          "longitude": 283.9849585,
           "latitude": -0.0715609
         },
         {
           "year": 2045,
-          "longitude": 310.4542297,
-          "latitude": -0.6408424
+          "longitude": 310.4542395,
+          "latitude": -0.6408421
         },
         {
           "year": 2046,
-          "longitude": 338.8311681,
-          "latitude": -1.1033948
+          "longitude": 338.83117,
+          "latitude": -1.1033944
         },
         {
           "year": 2047,
-          "longitude": 10.3821897,
-          "latitude": -1.3041022
+          "longitude": 10.3821808,
+          "latitude": -1.3041021
         },
         {
           "year": 2048,
-          "longitude": 45.8142817,
-          "latitude": -1.0728158
+          "longitude": 45.8142735,
+          "latitude": -1.0728161
         },
         {
           "year": 2049,
-          "longitude": 83.9987853,
-          "latitude": -0.381098
+          "longitude": 83.9987912,
+          "latitude": -0.3810981
         },
         {
           "year": 2050,
-          "longitude": 121.6915485,
-          "latitude": 0.4580707
+          "longitude": 121.6915494,
+          "latitude": 0.4580709
         },
         {
           "year": 2051,
-          "longitude": 155.6897065,
-          "latitude": 1.0591708
+          "longitude": 155.6896945,
+          "latitude": 1.0591711
         },
         {
           "year": 2052,
-          "longitude": 185.5401588,
-          "latitude": 1.2920982
+          "longitude": 185.5401463,
+          "latitude": 1.2920986
         },
         {
           "year": 2053,
-          "longitude": 212.5287486,
-          "latitude": 1.2108307
+          "longitude": 212.5287393,
+          "latitude": 1.2108311
         },
         {
           "year": 2054,
-          "longitude": 237.7784573,
-          "latitude": 0.8909959
+          "longitude": 237.7784567,
+          "latitude": 0.890996
         },
         {
           "year": 2055,
-          "longitude": 262.48746,
+          "longitude": 262.4874616,
           "latitude": 0.4124416
         },
         {
           "year": 2056,
-          "longitude": 287.6248317,
-          "latitude": -0.1517192
+          "longitude": 287.624828,
+          "latitude": -0.1517193
         },
         {
           "year": 2057,
-          "longitude": 314.3265717,
-          "latitude": -0.7138816
+          "longitude": 314.3265623,
+          "latitude": -0.713882
         },
         {
           "year": 2058,
-          "longitude": 343.0899548,
-          "latitude": -1.1503971
+          "longitude": 343.0899447,
+          "latitude": -1.1503977
         },
         {
           "year": 2059,
-          "longitude": 15.1794092,
-          "latitude": -1.3005347
+          "longitude": 15.1794079,
+          "latitude": -1.3005353
         },
         {
           "year": 2060,
-          "longitude": 51.1655949,
-          "latitude": -1.0004013
+          "longitude": 51.1656047,
+          "latitude": -1.0004015
         },
         {
           "year": 2061,
-          "longitude": 89.5220919,
-          "latitude": -0.2624541
+          "longitude": 89.5220899,
+          "latitude": -0.262454
         },
         {
           "year": 2062,
-          "longitude": 126.8127095,
-          "latitude": 0.5613179
+          "longitude": 126.8127038,
+          "latitude": 0.561318
         },
         {
           "year": 2063,
-          "longitude": 160.15603,
-          "latitude": 1.1115478
+          "longitude": 160.1560324,
+          "latitude": 1.1115479
         },
         {
           "year": 2064,
-          "longitude": 189.4653667,
+          "longitude": 189.4653791,
           "latitude": 1.295925
         },
         {
           "year": 2065,
-          "longitude": 216.1339985,
+          "longitude": 216.1340101,
           "latitude": 1.1782825
         },
         {
           "year": 2066,
-          "longitude": 241.2439734,
-          "latitude": 0.8335025
+          "longitude": 241.2439791,
+          "latitude": 0.8335023
         },
         {
           "year": 2067,
-          "longitude": 265.9734842,
-          "latitude": 0.3392664
+          "longitude": 265.9734814,
+          "latitude": 0.3392663
         },
         {
           "year": 2068,
           "longitude": 291.2772046,
-          "latitude": -0.2305268
+          "latitude": -0.2305267
         },
         {
           "year": 2069,
-          "longitude": 318.2891677,
-          "latitude": -0.7841191
+          "longitude": 318.2891724,
+          "latitude": -0.784119
         },
         {
           "year": 2070,
-          "longitude": 347.5119643,
-          "latitude": -1.1917535
+          "longitude": 347.5119794,
+          "latitude": -1.1917529
         },
         {
           "year": 2071,
-          "longitude": 20.184642,
-          "latitude": -1.2869059
+          "longitude": 20.1846515,
+          "latitude": -1.2869051
         },
         {
           "year": 2072,
-          "longitude": 56.6864647,
-          "latitude": -0.9164972
+          "longitude": 56.6864583,
+          "latitude": -0.9164969
         },
         {
           "year": 2073,
-          "longitude": 95.0899893,
-          "latitude": -0.1399615
+          "longitude": 95.0899886,
+          "latitude": -0.1399616
         },
         {
           "year": 2074,
-          "longitude": 131.890522,
-          "latitude": 0.6605842
+          "longitude": 131.8905317,
+          "latitude": 0.6605839
         },
         {
           "year": 2075,
-          "longitude": 164.5934665,
-          "latitude": 1.1586254
+          "longitude": 164.5934718,
+          "latitude": 1.1586249
         },
         {
           "year": 2076,
-          "longitude": 193.4176363,
-          "latitude": 1.2951092
+          "longitude": 193.4176295,
+          "latitude": 1.2951088
         },
         {
           "year": 2077,
-          "longitude": 219.8147228,
-          "latitude": 1.1412886
+          "longitude": 219.8147139,
+          "latitude": 1.1412883
         },
         {
           "year": 2078,
-          "longitude": 244.8166926,
+          "longitude": 244.8166861,
           "latitude": 0.7712137
         },
         {
           "year": 2079,
-          "longitude": 269.5860304,
+          "longitude": 269.586032,
           "latitude": 0.2615314
         },
         {
           "year": 2080,
-          "longitude": 295.0626171,
+          "longitude": 295.0626187,
           "latitude": -0.3122476
         },
         {
           "year": 2081,
-          "longitude": 322.3691192,
-          "latitude": -0.8539049
+          "longitude": 322.3691201,
+          "latitude": -0.8539048
         },
         {
           "year": 2082,
-          "longitude": 352.0184416,
-          "latitude": -1.2278733
+          "longitude": 352.0184302,
+          "latitude": -1.2278735
         },
         {
           "year": 2083,
-          "longitude": 25.2129405,
-          "latitude": -1.2643579
+          "longitude": 25.2129264,
+          "latitude": -1.2643585
         },
         {
           "year": 2084,
-          "longitude": 62.1279361,
-          "latitude": -0.826317
+          "longitude": 62.1279327,
+          "latitude": -0.8263174
         },
         {
           "year": 2085,
-          "longitude": 100.4761826,
+          "longitude": 100.476182,
           "latitude": -0.0206057
         },
         {
           "year": 2086,
-          "longitude": 136.7752122,
-          "latitude": 0.7509106
+          "longitude": 136.7752055,
+          "latitude": 0.7509108
         },
         {
           "year": 2087,
-          "longitude": 168.9012748,
-          "latitude": 1.19765
+          "longitude": 168.9012663,
+          "latitude": 1.1976503
         },
         {
           "year": 2088,
-          "longitude": 197.3104632,
-          "latitude": 1.2886328
+          "longitude": 197.3104598,
+          "latitude": 1.2886334
         },
         {
           "year": 2089,
-          "longitude": 223.4893874,
-          "latitude": 1.1001207
+          "longitude": 223.4893878,
+          "latitude": 1.1001211
         },
         {
           "year": 2090,
-          "longitude": 248.4176572,
-          "latitude": 0.7059762
+          "longitude": 248.4176619,
+          "latitude": 0.7059765
         },
         {
           "year": 2091,
-          "longitude": 273.2361789,
+          "longitude": 273.2361803,
           "latitude": 0.1824366
         },
         {
           "year": 2092,
-          "longitude": 298.8716253,
-          "latitude": -0.3929808
+          "longitude": 298.8716216,
+          "latitude": -0.3929809
         },
         {
           "year": 2093,
-          "longitude": 326.4519395,
-          "latitude": -0.9195141
+          "longitude": 326.4519312,
+          "latitude": -0.9195145
         },
         {
           "year": 2094,
-          "longitude": 356.5110882,
-          "latitude": -1.2567965
+          "longitude": 356.5110892,
+          "latitude": -1.2567969
         },
         {
           "year": 2095,
-          "longitude": 30.2192517,
+          "longitude": 30.2192672,
           "latitude": -1.2328556
         },
         {
           "year": 2096,
-          "longitude": 67.531312,
-          "latitude": -0.7296234
+          "longitude": 67.5313234,
+          "latitude": -0.7296231
         },
         {
           "year": 2097,
-          "longitude": 105.8065379,
+          "longitude": 105.8065392,
           "latitude": 0.0977322
         },
         {
           "year": 2098,
-          "longitude": 141.6098663,
+          "longitude": 141.6098669,
           "latitude": 0.8353441
         },
         {
           "year": 2099,
-          "longitude": 173.1868171,
-          "latitude": 1.2302885
+          "longitude": 173.1868267,
+          "latitude": 1.2302884
         },
         {
           "year": 2100,
-          "longitude": 201.2063172,
-          "latitude": 1.2766059
+          "longitude": 201.2063282,
+          "latitude": 1.2766053
         },
         {
           "year": 2101,
-          "longitude": 227.0073373,
-          "latitude": 1.0533646
+          "longitude": 227.0073395,
+          "latitude": 1.0533639
         },
         {
           "year": 2102,
-          "longitude": 251.8087031,
-          "latitude": 0.639323
+          "longitude": 251.8086977,
+          "latitude": 0.6393227
         },
         {
           "year": 2103,
-          "longitude": 276.6341662,
+          "longitude": 276.6341614,
           "latitude": 0.1057155
         },
         {
           "year": 2104,
-          "longitude": 302.4105507,
-          "latitude": -0.4688684
+          "longitude": 302.4105509,
+          "latitude": -0.4688685
         },
         {
           "year": 2105,
-          "longitude": 330.2754055,
-          "latitude": -0.9799082
+          "longitude": 330.2754116,
+          "latitude": -0.979908
         },
         {
           "year": 2106,
-          "longitude": 0.8080233,
-          "latitude": -1.2817146
+          "longitude": 0.8080196,
+          "latitude": -1.2817142
         },
         {
           "year": 2107,
-          "longitude": 35.1462005,
-          "latitude": -1.198723
+          "longitude": 35.1461876,
+          "latitude": -1.1987229
         },
         {
           "year": 2108,
-          "longitude": 72.9587198,
-          "latitude": -0.6333817
+          "longitude": 72.9587101,
+          "latitude": -0.633382
         },
         {
           "year": 2109,
-          "longitude": 111.1669902,
-          "latitude": 0.2086331
+          "longitude": 111.1669898,
+          "latitude": 0.208633
         },
         {
           "year": 2110,
-          "longitude": 146.4133821,
-          "latitude": 0.9069873
+          "longitude": 146.4133835,
+          "latitude": 0.9069872
         },
         {
           "year": 2111,
-          "longitude": 177.362146,
-          "latitude": 1.2501391
+          "longitude": 177.3621395,
+          "latitude": 1.2501392
         },
         {
           "year": 2112,
-          "longitude": 204.9104235,
-          "latitude": 1.2553134
+          "longitude": 204.9104128,
+          "latitude": 1.2553138
         },
         {
           "year": 2113,
-          "longitude": 230.6055846,
-          "latitude": 1.0047944
+          "longitude": 230.6055758,
+          "latitude": 1.0047949
         },
         {
           "year": 2114,
-          "longitude": 255.3354844,
-          "latitude": 0.5704024
+          "longitude": 255.3354821,
+          "latitude": 0.5704028
         },
         {
           "year": 2115,
-          "longitude": 280.2263109,
-          "latitude": 0.0266307
+          "longitude": 280.2263151,
+          "latitude": 0.0266309
         },
         {
           "year": 2116,
-          "longitude": 306.1991212,
-          "latitude": -0.5459497
+          "longitude": 306.1991237,
+          "latitude": -0.5459496
         },
         {
           "year": 2117,
-          "longitude": 334.4030005,
-          "latitude": -1.0374333
+          "longitude": 334.4029938,
+          "latitude": -1.0374334
         },
         {
           "year": 2118,
-          "longitude": 5.4385595,
-          "latitude": -1.2966263
+          "longitude": 5.4385526,
+          "latitude": -1.2966269
         },
         {
           "year": 2119,
-          "longitude": 40.3637608,
-          "latitude": -1.1478245
+          "longitude": 40.3637657,
+          "latitude": -1.1478253
         },
         {
           "year": 2120,
-          "longitude": 78.517524,
-          "latitude": -0.522805
+          "longitude": 78.5175389,
+          "latitude": -0.5228052
         },
         {
           "year": 2121,
-          "longitude": 116.4769895,
-          "latitude": 0.3225876
+          "longitude": 116.4769961,
+          "latitude": 0.3225874
         },
         {
           "year": 2122,
-          "longitude": 151.0921316,
-          "latitude": 0.9758195
+          "longitude": 151.0921275,
+          "latitude": 0.9758196
         },
         {
           "year": 2123,
-          "longitude": 181.4407069,
-          "latitude": 1.267709
+          "longitude": 181.4407081,
+          "latitude": 1.2677092
         },
         {
           "year": 2124,
-          "longitude": 208.587598,
-          "latitude": 1.2330617
+          "longitude": 208.5876106,
+          "latitude": 1.2330615
         },
         {
           "year": 2125,
-          "longitude": 234.0879816,
-          "latitude": 0.9543254
+          "longitude": 234.0879945,
+          "latitude": 0.9543252
         },
         {
           "year": 2126,
-          "longitude": 258.7816168,
-          "latitude": 0.501586
+          "longitude": 258.781625,
+          "latitude": 0.5015857
         },
         {
           "year": 2127,
-          "longitude": 283.7854858,
-          "latitude": -0.051167
+          "longitude": 283.7854836,
+          "latitude": -0.0511672
         },
         {
           "year": 2128,
-          "longitude": 310.0233361,
-          "latitude": -0.6204734
+          "longitude": 310.0233332,
+          "latitude": -0.6204735
         },
         {
           "year": 2129,
-          "longitude": 338.6435802,
-          "latitude": -1.0902783
+          "longitude": 338.6435859,
+          "latitude": -1.0902782
         },
         {
           "year": 2130,
-          "longitude": 10.2496104,
-          "latitude": -1.302817
+          "longitude": 10.2496232,
+          "latitude": -1.3028165
         },
         {
           "year": 2131,
-          "longitude": 45.7683258,
-          "latitude": -1.0847619
+          "longitude": 45.7683292,
+          "latitude": -1.084761
         },
         {
           "year": 2132,
-          "longitude": 84.1607533,
-          "latitude": -0.4049886
+          "longitude": 84.1607432,
+          "latitude": -0.4049881
         },
         {
           "year": 2133,
-          "longitude": 121.7531398,
-          "latitude": 0.434361
+          "longitude": 121.7531331,
+          "latitude": 0.4343612
         },
         {
           "year": 2134,
-          "longitude": 155.7188547,
-          "latitude": 1.0391971
+          "longitude": 155.7188594,
+          "latitude": 1.039197
         },
         {
           "year": 2135,
-          "longitude": 185.5181643,
-          "latitude": 1.2803409
+          "longitude": 185.5181668,
+          "latitude": 1.2803407
         },
         {
           "year": 2136,
-          "longitude": 212.3260275,
-          "latitude": 1.2063642
+          "longitude": 212.3260202,
+          "latitude": 1.206364
         },
         {
           "year": 2137,
-          "longitude": 237.6801814,
-          "latitude": 0.8990825
+          "longitude": 237.6801722,
+          "latitude": 0.8990823
         },
         {
           "year": 2138,
-          "longitude": 262.3732363,
+          "longitude": 262.3732262,
           "latitude": 0.4278406
         },
         {
           "year": 2139,
-          "longitude": 287.5136874,
+          "longitude": 287.5136841,
           "latitude": -0.1328847
         },
         {
           "year": 2140,
-          "longitude": 314.018826,
-          "latitude": -0.6963056
+          "longitude": 314.0188278,
+          "latitude": -0.6963055
         },
         {
           "year": 2141,
-          "longitude": 343.0322214,
-          "latitude": -1.139815
+          "longitude": 343.0322194,
+          "latitude": -1.1398149
         },
         {
           "year": 2142,
-          "longitude": 15.1541624,
-          "latitude": -1.3009659
+          "longitude": 15.1541523,
+          "latitude": -1.300966
         },
         {
           "year": 2143,
-          "longitude": 51.1636948,
-          "latitude": -1.0135538
+          "longitude": 51.1636821,
+          "latitude": -1.0135544
         },
         {
           "year": 2144,
-          "longitude": 89.6605085,
-          "latitude": -0.2873896
+          "longitude": 89.6605073,
+          "latitude": -0.2873902
         },
         {
           "year": 2145,
-          "longitude": 126.8274207,
-          "latitude": 0.5378277
+          "longitude": 126.8274244,
+          "latitude": 0.5378275
         },
         {
           "year": 2146,
-          "longitude": 160.1824651,
+          "longitude": 160.1824643,
           "latitude": 1.0938366
         },
         {
           "year": 2147,
-          "longitude": 189.5020546,
-          "latitude": 1.2867938
+          "longitude": 189.5020489,
+          "latitude": 1.286794
         },
         {
           "year": 2148,
-          "longitude": 216.0286286,
-          "latitude": 1.1753379
+          "longitude": 216.0286272,
+          "latitude": 1.1753383
         },
         {
           "year": 2149,
-          "longitude": 241.2775695,
-          "latitude": 0.8406722
+          "longitude": 241.2775697,
+          "latitude": 0.8406727
         },
         {
           "year": 2150,
-          "longitude": 265.9914832,
-          "latitude": 0.3520956
+          "longitude": 265.9914924,
+          "latitude": 0.3520959
         },
         {
           "year": 2151,
-          "longitude": 291.2672115,
-          "latitude": -0.2147258
+          "longitude": 291.2672192,
+          "latitude": -0.2147256
         },
         {
           "year": 2152,
-          "longitude": 318.0240683,
-          "latitude": -0.7693139
+          "longitude": 318.0240664,
+          "latitude": -0.7693138
         },
         {
           "year": 2153,
-          "longitude": 347.4114087,
-          "latitude": -1.1831149
+          "longitude": 347.4114039,
+          "latitude": -1.1831152
         },
         {
           "year": 2154,
-          "longitude": 20.0366217,
-          "latitude": -1.2902005
+          "longitude": 20.0366249,
+          "latitude": -1.2902009
         },
         {
           "year": 2155,
-          "longitude": 56.5171193,
-          "latitude": -0.9342528
+          "longitude": 56.517137,
+          "latitude": -0.9342526
         },
         {
           "year": 2156,
-          "longitude": 95.0901123,
-          "latitude": -0.1687115
+          "longitude": 95.090122,
+          "latitude": -0.1687111
         },
         {
           "year": 2157,
-          "longitude": 131.8360815,
+          "longitude": 131.8360803,
           "latitude": 0.6360296
         },
         {
           "year": 2158,
-          "longitude": 164.6175949,
+          "longitude": 164.6175938,
           "latitude": 1.1418254
         },
         {
           "year": 2159,
-          "longitude": 193.4927968,
-          "latitude": 1.2872548
+          "longitude": 193.4928047,
+          "latitude": 1.2872546
         },
         {
           "year": 2160,
-          "longitude": 219.7583818,
-          "latitude": 1.1395871
+          "longitude": 219.7583888,
+          "latitude": 1.1395866
         },
         {
           "year": 2161,
-          "longitude": 244.9011594,
-          "latitude": 0.779288
+          "longitude": 244.9011669,
+          "latitude": 0.7792876
         },
         {
           "year": 2162,
-          "longitude": 269.6177925,
-          "latitude": 0.2759152
+          "longitude": 269.6177879,
+          "latitude": 0.2759148
         },
         {
           "year": 2163,
-          "longitude": 295.0041124,
-          "latitude": -0.293952
+          "longitude": 295.0041056,
+          "latitude": -0.2939523
         },
         {
           "year": 2164,
-          "longitude": 321.9872946,
+          "longitude": 321.9872952,
           "latitude": -0.8367818
         },
         {
           "year": 2165,
-          "longitude": 351.7273982,
-          "latitude": -1.218575
+          "longitude": 351.7274062,
+          "latitude": -1.2185746
         },
         {
           "year": 2166,
-          "longitude": 24.8411984,
-          "latitude": -1.2709741
+          "longitude": 24.8412019,
+          "latitude": -1.2709734
         },
         {
           "year": 2167,
-          "longitude": 61.7742037,
-          "latitude": -0.8499092
+          "longitude": 61.7741917,
+          "latitude": -0.8499088
         },
         {
           "year": 2168,
-          "longitude": 100.3950675,
-          "latitude": -0.0530644
+          "longitude": 100.3950525,
+          "latitude": -0.0530643
         },
         {
           "year": 2169,
-          "longitude": 136.7233891,
-          "latitude": 0.7257147
+          "longitude": 136.7233865,
+          "latitude": 0.7257149
         },
         {
           "year": 2170,
-          "longitude": 168.9557296,
-          "latitude": 1.1812092
+          "longitude": 168.9557295,
+          "latitude": 1.1812093
         },
         {
           "year": 2171,
-          "longitude": 197.4026424,
+          "longitude": 197.4026377,
           "latitude": 1.2811587
         },
         {
           "year": 2172,
-          "longitude": 223.4071571,
-          "latitude": 1.0995282
+          "longitude": 223.4071494,
+          "latitude": 1.0995283
         },
         {
           "year": 2173,
-          "longitude": 248.4452146,
-          "latitude": 0.715585
+          "longitude": 248.4452036,
+          "latitude": 0.7155851
         },
         {
           "year": 2174,
-          "longitude": 273.1866141,
-          "latitude": 0.1988196
+          "longitude": 273.1866103,
+          "latitude": 0.1988197
         },
         {
           "year": 2175,
-          "longitude": 298.729318,
-          "latitude": -0.3730696
+          "longitude": 298.7293208,
+          "latitude": -0.3730694
         },
         {
           "year": 2176,
-          "longitude": 326.0104168,
+          "longitude": 326.0104192,
           "latitude": -0.902618
         },
         {
           "year": 2177,
-          "longitude": 356.1962271,
-          "latitude": -1.2492038
+          "longitude": 356.1962218,
+          "latitude": -1.249204
         },
         {
           "year": 2178,
-          "longitude": 29.8907018,
-          "latitude": -1.2417818
+          "longitude": 29.8906904,
+          "latitude": -1.2417824
         },
         {
           "year": 2179,
-          "longitude": 67.2925133,
-          "latitude": -0.7535672
+          "longitude": 67.2925127,
+          "latitude": -0.7535679
         },
         {
           "year": 2180,
-          "longitude": 105.8562345,
-          "latitude": 0.0669518
+          "longitude": 105.8562514,
+          "latitude": 0.0669513
         },
         {
           "year": 2181,
-          "longitude": 141.6281909,
-          "latitude": 0.8109501
+          "longitude": 141.6281987,
+          "latitude": 0.8109499
         },
         {
           "year": 2182,
-          "longitude": 173.2183,
-          "latitude": 1.2136051
+          "longitude": 173.2183008,
+          "latitude": 1.2136049
         },
         {
           "year": 2183,
-          "longitude": 201.1909652,
-          "latitude": 1.2696329
+          "longitude": 201.1909647,
+          "latitude": 1.2696331
         },
         {
           "year": 2184,
-          "longitude": 226.9242936,
-          "latitude": 1.0567486
+          "longitude": 226.9243001,
+          "latitude": 1.0567489
         },
         {
           "year": 2185,
-          "longitude": 251.8729169,
-          "latitude": 0.6515142
+          "longitude": 251.8729283,
+          "latitude": 0.6515145
         },
         {
           "year": 2186,
-          "longitude": 276.6738372,
+          "longitude": 276.6738473,
           "latitude": 0.1230666
         },
         {
           "year": 2187,
-          "longitude": 302.4269064,
+          "longitude": 302.4269072,
           "latitude": -0.4496044
         },
         {
           "year": 2188,
-          "longitude": 330.0793435,
-          "latitude": -0.9642579
+          "longitude": 330.0793408,
+          "latitude": -0.9642578
         },
         {
           "year": 2189,
-          "longitude": 0.7941537,
-          "latitude": -1.2723742
+          "longitude": 0.7941548,
+          "latitude": -1.2723744
         },
         {
           "year": 2190,
-          "longitude": 35.1199251,
-          "latitude": -1.2010826
+          "longitude": 35.1199408,
+          "latitude": -1.2010822
         },
         {
           "year": 2191,
-          "longitude": 72.9387981,
-          "latitude": -0.6473534
+          "longitude": 72.9388083,
+          "latitude": -0.6473527
         },
         {
           "year": 2192,
-          "longitude": 111.3179911,
-          "latitude": 0.1872256
+          "longitude": 111.3179808,
+          "latitude": 0.187226
         },
         {
           "year": 2193,
-          "longitude": 146.4828212,
-          "latitude": 0.8907442
+          "longitude": 146.4828143,
+          "latitude": 0.8907444
         },
         {
           "year": 2194,
-          "longitude": 177.4657807,
-          "latitude": 1.2406678
+          "longitude": 177.4657803,
+          "latitude": 1.2406679
         },
         {
           "year": 2195,
-          "longitude": 205.0304087,
-          "latitude": 1.253636
+          "longitude": 205.0304113,
+          "latitude": 1.2536357
         },
         {
           "year": 2196,
-          "longitude": 230.555702,
-          "latitude": 1.0093981
+          "longitude": 230.5557001,
+          "latitude": 1.0093977
         },
         {
           "year": 2197,
-          "longitude": 255.4634611,
-          "latitude": 0.5825217
+          "longitude": 255.4634546,
+          "latitude": 0.5825212
         },
         {
           "year": 2198,
-          "longitude": 280.3559465,
-          "latitude": 0.0426917
+          "longitude": 280.3559373,
+          "latitude": 0.0426915
         },
         {
           "year": 2199,
-          "longitude": 306.3348328,
-          "latitude": -0.5289381
+          "longitude": 306.334828,
+          "latitude": -0.5289382
         },
         {
           "year": 2200,
-          "longitude": 334.3509352,
-          "latitude": -1.0247024
+          "longitude": 334.3509342,
+          "latitude": -1.0247025
         },
         {
           "year": 2201,
-          "longitude": 5.4392057,
-          "latitude": -1.2934511
+          "longitude": 5.4392034,
+          "latitude": -1.2934512
         },
         {
           "year": 2202,
-          "longitude": 40.419208,
-          "latitude": -1.1562444
+          "longitude": 40.4191994,
+          "latitude": -1.1562445
         },
         {
           "year": 2203,
-          "longitude": 78.6077391,
-          "latitude": -0.5408918
+          "longitude": 78.6077309,
+          "latitude": -0.5408922
         },
         {
           "year": 2204,
-          "longitude": 116.6962916,
-          "latitude": 0.2982706
+          "longitude": 116.696299,
+          "latitude": 0.2982701
         },
         {
           "year": 2205,
-          "longitude": 151.1796935,
-          "latitude": 0.9572072
+          "longitude": 151.1797037,
+          "latitude": 0.957207
         },
         {
           "year": 2206,
-          "longitude": 181.5238743,
-          "latitude": 1.256191
+          "longitude": 181.5238813,
+          "latitude": 1.2561908
         },
         {
           "year": 2207,
-          "longitude": 208.668218,
+          "longitude": 208.6682149,
           "latitude": 1.2297557
         },
         {
           "year": 2208,
-          "longitude": 233.9804421,
-          "latitude": 0.9577001
+          "longitude": 233.9804404,
+          "latitude": 0.9577003
         },
         {
           "year": 2209,
-          "longitude": 258.8478581,
-          "latitude": 0.5119833
+          "longitude": 258.8478591,
+          "latitude": 0.5119838
         },
         {
           "year": 2210,
-          "longitude": 283.8366112,
-          "latitude": -0.0370453
+          "longitude": 283.8366224,
+          "latitude": -0.037045
         },
         {
           "year": 2211,
-          "longitude": 310.0496641,
-          "latitude": -0.6059789
+          "longitude": 310.0496755,
+          "latitude": -0.6059786
         },
         {
           "year": 2212,
-          "longitude": 338.4574901,
-          "latitude": -1.0819202
+          "longitude": 338.4574904,
+          "latitude": -1.0819201
         },
         {
           "year": 2213,
-          "longitude": 10.2074476,
-          "latitude": -1.3019379
+          "longitude": 10.2074458,
+          "latitude": -1.301938
         },
         {
           "year": 2214,
-          "longitude": 45.705853,
-          "latitude": -1.0970278
+          "longitude": 45.7058599,
+          "latitude": -1.0970282
         },
         {
           "year": 2215,
-          "longitude": 84.1125906,
-          "latitude": -0.4276294
+          "longitude": 84.1126051,
+          "latitude": -0.4276293
         },
         {
           "year": 2216,
-          "longitude": 121.8715909,
-          "latitude": 0.407476
+          "longitude": 121.8715923,
+          "latitude": 0.4074762
         },
         {
           "year": 2217,
-          "longitude": 155.7789351,
-          "latitude": 1.0206733
+          "longitude": 155.77893,
+          "latitude": 1.0206732
         },
         {
           "year": 2218,
-          "longitude": 185.621421,
+          "longitude": 185.6214149,
           "latitude": 1.2699757
         },
         {
           "year": 2219,
-          "longitude": 212.4505937,
-          "latitude": 1.2041092
+          "longitude": 212.4505967,
+          "latitude": 1.2041091
         },
         {
           "year": 2220,
-          "longitude": 237.6145284,
-          "latitude": 0.9034865
+          "longitude": 237.6145327,
+          "latitude": 0.9034862
         },
         {
           "year": 2221,
-          "longitude": 262.4664941,
-          "latitude": 0.4391859
+          "longitude": 262.4664993,
+          "latitude": 0.4391855
         },
         {
           "year": 2222,
-          "longitude": 287.540747,
-          "latitude": -0.117067
+          "longitude": 287.540742,
+          "latitude": -0.1170673
         },
         {
           "year": 2223,
-          "longitude": 313.9508303,
-          "latitude": -0.6794806
+          "longitude": 313.9508197,
+          "latitude": -0.6794809
         },
         {
           "year": 2224,
-          "longitude": 342.6885798,
-          "latitude": -1.1303698
+          "longitude": 342.6885737,
+          "latitude": -1.1303701
         },
         {
           "year": 2225,
-          "longitude": 14.8913744,
-          "latitude": -1.3017455
+          "longitude": 14.8913756,
+          "latitude": -1.3017454
         },
         {
           "year": 2226,
-          "longitude": 50.8824697,
-          "latitude": -1.0308851
+          "longitude": 50.8824673,
+          "latitude": -1.0308847
         },
         {
           "year": 2227,
-          "longitude": 89.4739642,
-          "latitude": -0.3147665
+          "longitude": 89.4739527,
+          "latitude": -0.3147662
         },
         {
           "year": 2228,
-          "longitude": 126.9025897,
-          "latitude": 0.5091037
+          "longitude": 126.9025782,
+          "latitude": 0.5091039
         },
         {
           "year": 2229,
-          "longitude": 160.2668622,
-          "latitude": 1.0753901
+          "longitude": 160.2668578,
+          "latitude": 1.0753904
         },
         {
           "year": 2230,
-          "longitude": 189.6392314,
-          "latitude": 1.2766
+          "longitude": 189.6392343,
+          "latitude": 1.2766002
         },
         {
           "year": 2231,
-          "longitude": 216.1678423,
-          "latitude": 1.1733877
+          "longitude": 216.1678427,
+          "latitude": 1.1733878
         },
         {
           "year": 2232,
-          "longitude": 241.1863201,
+          "longitude": 241.1863147,
           "latitude": 0.8463508
         },
         {
           "year": 2233,
-          "longitude": 266.0302727,
-          "latitude": 0.3651612
+          "longitude": 266.0302627,
+          "latitude": 0.3651613
         },
         {
           "year": 2234,
-          "longitude": 291.2222008,
+          "longitude": 291.222196,
           "latitude": -0.197007
         },
         {
           "year": 2235,
-          "longitude": 317.8869331,
-          "latitude": -0.7515199
+          "longitude": 317.8869399,
+          "latitude": -0.7515197
         },
         {
           "year": 2236,
-          "longitude": 347.0324609,
-          "latitude": -1.1749416
+          "longitude": 347.0324709,
+          "latitude": -1.1749413
         },
         {
           "year": 2237,
-          "longitude": 19.7779338,
-          "latitude": -1.2931492
+          "longitude": 19.7779347,
+          "latitude": -1.2931491
         },
         {
           "year": 2238,
-          "longitude": 56.3127295,
-          "latitude": -0.9527592
+          "longitude": 56.3127238,
+          "latitude": -0.9527596
         },
         {
           "year": 2239,
-          "longitude": 95.0287815,
-          "latitude": -0.1946668
+          "longitude": 95.0287862,
+          "latitude": -0.1946674
         },
         {
           "year": 2240,
-          "longitude": 131.9955944,
-          "latitude": 0.6086886
+          "longitude": 131.9956108,
+          "latitude": 0.6086882
         },
         {
           "year": 2241,
-          "longitude": 164.7127127,
-          "latitude": 1.1235846
+          "longitude": 164.7127244,
+          "latitude": 1.1235841
         },
         {
           "year": 2242,
-          "longitude": 193.5504468,
-          "latitude": 1.2772344
+          "longitude": 193.5504466,
+          "latitude": 1.2772341
         },
         {
           "year": 2243,
-          "longitude": 219.7450185,
+          "longitude": 219.7450168,
           "latitude": 1.1392081
         },
         {
           "year": 2244,
-          "longitude": 244.6128033,
-          "latitude": 0.7882774
+          "longitude": 244.6128092,
+          "latitude": 0.7882776
         },
         {
           "year": 2245,
-          "longitude": 269.4708213,
-          "latitude": 0.2923488
+          "longitude": 269.4708332,
+          "latitude": 0.292349
         },
         {
           "year": 2246,
-          "longitude": 294.8232075,
-          "latitude": -0.2743085
+          "longitude": 294.823219,
+          "latitude": -0.2743084
         },
         {
           "year": 2247,
-          "longitude": 321.8081967,
+          "longitude": 321.8081961,
           "latitude": -0.8196545
         },
         {
           "year": 2248,
-          "longitude": 351.4531731,
+          "longitude": 351.4531657,
           "latitude": -1.2131361
         },
         {
           "year": 2249,
-          "longitude": 24.8263887,
-          "latitude": -1.2743466
+          "longitude": 24.8263875,
+          "latitude": -1.2743468
         },
         {
           "year": 2250,
-          "longitude": 61.909558,
-          "latitude": -0.8633329
+          "longitude": 61.9095664,
+          "latitude": -0.8633326
         },
         {
           "year": 2251,
-          "longitude": 100.6400067,
-          "latitude": -0.0712314
+          "longitude": 100.640009,
+          "latitude": -0.0712309
         },
         {
           "year": 2252,
-          "longitude": 137.0596967,
-          "latitude": 0.7035229
+          "longitude": 137.0596861,
+          "latitude": 0.7035232
         },
         {
           "year": 2253,
-          "longitude": 169.1388809,
-          "latitude": 1.16599
+          "longitude": 169.1388703,
+          "latitude": 1.1659902
         },
         {
           "year": 2254,
-          "longitude": 197.4984777,
-          "latitude": 1.2731544
+          "longitude": 197.4984745,
+          "latitude": 1.2731547
         },
         {
           "year": 2255,
           "longitude": 223.4246346,
-          "latitude": 1.1005216
+          "latitude": 1.1005217
         },
         {
           "year": 2256,
-          "longitude": 248.1990681,
-          "latitude": 0.7253264
+          "longitude": 248.1990657,
+          "latitude": 0.7253263
         },
         {
           "year": 2257,
-          "longitude": 273.1094801,
-          "latitude": 0.2144655
+          "longitude": 273.1094733,
+          "latitude": 0.2144652
         },
         {
           "year": 2258,
-          "longitude": 298.6460593,
-          "latitude": -0.3555505
+          "longitude": 298.6460475,
+          "latitude": -0.3555508
         },
         {
           "year": 2259,
-          "longitude": 325.9581711,
-          "latitude": -0.8884173
+          "longitude": 325.9581633,
+          "latitude": -0.8884175
         },
         {
           "year": 2260,
-          "longitude": 356.0745584,
-          "latitude": -1.2467221
+          "longitude": 356.0745597,
+          "latitude": -1.2467223
         },
         {
           "year": 2261,
-          "longitude": 29.9907156,
-          "latitude": -1.2462312
+          "longitude": 29.9907171,
+          "latitude": -1.2462311
         },
         {
           "year": 2262,
-          "longitude": 67.4688853,
+          "longitude": 67.4688805,
           "latitude": -0.7672785
         },
         {
           "year": 2263,
-          "longitude": 106.0593161,
-          "latitude": 0.0481517
+          "longitude": 106.0593049,
+          "latitude": 0.0481516
         },
         {
           "year": 2264,
-          "longitude": 141.8901033,
+          "longitude": 141.8901027,
           "latitude": 0.7889989
         },
         {
           "year": 2265,
-          "longitude": 173.3841544,
-          "latitude": 1.2004357
+          "longitude": 173.384159,
+          "latitude": 1.2004359
         },
         {
           "year": 2266,
-          "longitude": 201.3414429,
-          "latitude": 1.2637199
+          "longitude": 201.3414494,
+          "latitude": 1.2637198
         },
         {
           "year": 2267,
-          "longitude": 227.064324,
-          "latitude": 1.0582577
+          "longitude": 227.0643253,
+          "latitude": 1.0582575
         },
         {
           "year": 2268,
-          "longitude": 251.7934562,
-          "latitude": 0.6597217
+          "longitude": 251.7934542,
+          "latitude": 0.6597219
         },
         {
           "year": 2269,
-          "longitude": 276.7918183,
-          "latitude": 0.135129
+          "longitude": 276.7918165,
+          "latitude": 0.1351293
         },
         {
           "year": 2270,
-          "longitude": 302.5288228,
-          "latitude": -0.4361672
+          "longitude": 302.5288317,
+          "latitude": -0.4361669
         },
         {
           "year": 2271,
-          "longitude": 330.1600196,
-          "latitude": -0.9533418
+          "longitude": 330.1600323,
+          "latitude": -0.9533414
         },
         {
           "year": 2272,
-          "longitude": 0.7300271,
-          "latitude": -1.272582
+          "longitude": 0.7300302,
+          "latitude": -1.2725816
         },
         {
           "year": 2273,
-          "longitude": 35.1649379,
+          "longitude": 35.1649343,
           "latitude": -1.2084151
         },
         {
           "year": 2274,
-          "longitude": 72.9914762,
-          "latitude": -0.6653571
+          "longitude": 72.9914767,
+          "latitude": -0.6653574
         },
         {
           "year": 2275,
-          "longitude": 111.3985599,
-          "latitude": 0.1650284
+          "longitude": 111.3985751,
+          "latitude": 0.1650282
         },
         {
           "year": 2276,
-          "longitude": 146.6586068,
-          "latitude": 0.8677325
+          "longitude": 146.6586157,
+          "latitude": 0.8677322
         },
         {
           "year": 2277,
-          "longitude": 177.6099335,
-          "latitude": 1.2283023
+          "longitude": 177.6099351,
+          "latitude": 1.2283018
         },
         {
           "year": 2278,
-          "longitude": 205.1918919,
-          "latitude": 1.2488095
+          "longitude": 205.1918872,
+          "latitude": 1.2488093
         },
         {
           "year": 2279,
-          "longitude": 230.7208133,
-          "latitude": 1.0116237
+          "longitude": 230.7208124,
+          "latitude": 1.0116238
         },
         {
           "year": 2280,
-          "longitude": 255.4015462,
-          "latitude": 0.5915016
+          "longitude": 255.4015491,
+          "latitude": 0.5915015
         },
         {
           "year": 2281,
-          "longitude": 280.4672132,
-          "latitude": 0.055717
+          "longitude": 280.4672208,
+          "latitude": 0.0557169
         },
         {
           "year": 2282,
-          "longitude": 306.3757933,
-          "latitude": -0.5137409
+          "longitude": 306.375791,
+          "latitude": -0.5137411
         },
         {
           "year": 2283,
-          "longitude": 334.3031592,
-          "latitude": -1.0119482
+          "longitude": 334.3031502,
+          "latitude": -1.0119484
         },
         {
           "year": 2284,
-          "longitude": 5.3084002,
-          "latitude": -1.2898065
+          "longitude": 5.3083932,
+          "latitude": -1.2898068
         },
         {
           "year": 2285,
-          "longitude": 40.238227,
-          "latitude": -1.1622307
+          "longitude": 40.2382291,
+          "latitude": -1.1622305
         },
         {
           "year": 2286,
-          "longitude": 78.3764724,
-          "latitude": -0.5609379
+          "longitude": 78.3764749,
+          "latitude": -0.5609376
         },
         {
           "year": 2287,
-          "longitude": 116.5874838,
-          "latitude": 0.2758762
+          "longitude": 116.5874739,
+          "latitude": 0.2758765
         },
         {
           "year": 2288,
-          "longitude": 151.3117279,
-          "latitude": 0.9375959
+          "longitude": 151.3117132,
+          "latitude": 0.9375964
         },
         {
           "year": 2289,
-          "longitude": 181.7645988,
-          "latitude": 1.2483643
+          "longitude": 181.7645904,
+          "latitude": 1.2483648
         },
         {
           "year": 2290,
-          "longitude": 208.9968915,
-          "latitude": 1.2280705
+          "longitude": 208.9968898,
+          "latitude": 1.2280709
         },
         {
           "year": 2291,
-          "longitude": 234.3379945,
+          "longitude": 234.3379963,
           "latitude": 0.961358
         },
         {
           "year": 2292,
-          "longitude": 258.9673347,
+          "longitude": 258.9673339,
           "latitude": 0.5216133
         },
         {
           "year": 2293,
-          "longitude": 284.1109491,
-          "latitude": -0.0236614
+          "longitude": 284.1109405,
+          "latitude": -0.0236615
         },
         {
           "year": 2294,
-          "longitude": 310.2270164,
-          "latitude": -0.5898408
+          "longitude": 310.2270097,
+          "latitude": -0.5898409
         },
         {
           "year": 2295,
-          "longitude": 338.5095384,
-          "latitude": -1.0672053
+          "longitude": 338.5095399,
+          "latitude": -1.0672055
         },
         {
           "year": 2296,
-          "longitude": 10.0302509,
+          "longitude": 10.0302601,
           "latitude": -1.3000718
         },
         {
           "year": 2297,
-          "longitude": 45.5233703,
-          "latitude": -1.1050236
+          "longitude": 45.5233727,
+          "latitude": -1.1050238
         },
         {
           "year": 2298,
-          "longitude": 83.9587722,
-          "latitude": -0.4473023
+          "longitude": 83.9587647,
+          "latitude": -0.4473024
         },
         {
           "year": 2299,
-          "longitude": 121.8692508,
-          "latitude": 0.3873069
+          "longitude": 121.869251,
+          "latitude": 0.3873067
         },
         {
           "year": 2300,
-          "longitude": 155.9531896,
-          "latitude": 1.002045
+          "longitude": 155.9532056,
+          "latitude": 1.0020445
         },
         {
           "year": 2301,
-          "longitude": 185.7730918,
-          "latitude": 1.257851
+          "longitude": 185.7731047,
+          "latitude": 1.2578504
         },
         {
           "year": 2302,
-          "longitude": 212.53547,
-          "latitude": 1.2003226
+          "longitude": 212.535469,
+          "latitude": 1.2003222
         },
         {
           "year": 2303,
-          "longitude": 237.6166674,
-          "latitude": 0.9088053
+          "longitude": 237.6166623,
+          "latitude": 0.9088052
         },
         {
           "year": 2304,
-          "longitude": 262.1721202,
-          "latitude": 0.4535464
+          "longitude": 262.1721217,
+          "latitude": 0.4535463
         },
         {
           "year": 2305,
-          "longitude": 287.4146495,
-          "latitude": -0.0989843
+          "longitude": 287.4146577,
+          "latitude": -0.0989842
         },
         {
           "year": 2306,
-          "longitude": 313.8069417,
-          "latitude": -0.6618033
+          "longitude": 313.8069508,
+          "latitude": -0.6618031
         },
         {
           "year": 2307,
-          "longitude": 342.5767536,
-          "latitude": -1.11916
+          "longitude": 342.5767524,
+          "latitude": -1.1191598
         },
         {
           "year": 2308,
-          "longitude": 14.8050948,
-          "latitude": -1.3063065
+          "longitude": 14.8050831,
+          "latitude": -1.3063066
         },
         {
           "year": 2309,
-          "longitude": 51.0361758,
-          "latitude": -1.0408861
+          "longitude": 51.036172,
+          "latitude": -1.0408862
         },
         {
           "year": 2310,
-          "longitude": 89.7848206,
-          "latitude": -0.3298177
+          "longitude": 89.7848218,
+          "latitude": -0.3298176
         },
         {
           "year": 2311,
-          "longitude": 127.2595301,
-          "latitude": 0.4926443
+          "longitude": 127.2595268,
+          "latitude": 0.4926446
         },
         {
           "year": 2312,
-          "longitude": 160.5824962,
-          "latitude": 1.0558537
+          "longitude": 160.5824862,
+          "latitude": 1.055854
         },
         {
           "year": 2313,
-          "longitude": 189.8405506,
-          "latitude": 1.2665332
+          "longitude": 189.8405372,
+          "latitude": 1.2665336
         },
         {
           "year": 2314,
-          "longitude": 216.2698517,
-          "latitude": 1.1711087
+          "longitude": 216.2698452,
+          "latitude": 1.171109
         },
         {
           "year": 2315,
-          "longitude": 241.2064019,
-          "latitude": 0.8524897
+          "longitude": 241.2064026,
+          "latitude": 0.85249
         },
         {
           "year": 2316,
-          "longitude": 265.7708229,
-          "latitude": 0.3794382
+          "longitude": 265.7708241,
+          "latitude": 0.3794383
         },
         {
           "year": 2317,
-          "longitude": 291.1612218,
-          "latitude": -0.1804936
+          "longitude": 291.1612183,
+          "latitude": -0.1804938
         },
         {
           "year": 2318,
-          "longitude": 317.8414909,
-          "latitude": -0.7365369
+          "longitude": 317.8414795,
+          "latitude": -0.7365372
         },
         {
           "year": 2319,
-          "longitude": 347.0525148,
-          "latitude": -1.1665592
+          "longitude": 347.0525049,
+          "latitude": -1.1665597
         },
         {
           "year": 2320,
-          "longitude": 19.8480908,
-          "latitude": -1.2994432
+          "longitude": 19.8480965,
+          "latitude": -1.2994436
         },
         {
           "year": 2321,
-          "longitude": 56.5589911,
-          "latitude": -0.9628648
+          "longitude": 56.5589953,
+          "latitude": -0.962865
         },
         {
           "year": 2322,
-          "longitude": 95.3416804,
-          "latitude": -0.2101348
+          "longitude": 95.3416811,
+          "latitude": -0.2101347
         },
         {
           "year": 2323,
-          "longitude": 132.3005659,
+          "longitude": 132.3005614,
           "latitude": 0.5917972
         },
         {
           "year": 2324,
-          "longitude": 164.9827342,
-          "latitude": 1.1051431
+          "longitude": 164.9827385,
+          "latitude": 1.1051432
         },
         {
           "year": 2325,
-          "longitude": 193.7835939,
-          "latitude": 1.2692421
+          "longitude": 193.7836039,
+          "latitude": 1.2692422
         },
         {
           "year": 2326,
-          "longitude": 219.9545791,
-          "latitude": 1.1380628
+          "longitude": 219.9545901,
+          "latitude": 1.1380627
         },
         {
           "year": 2327,
-          "longitude": 244.8055031,
-          "latitude": 0.7934293
+          "longitude": 244.8055052,
+          "latitude": 0.793429
         },
         {
           "year": 2328,
-          "longitude": 269.4225876,
+          "longitude": 269.4225857,
           "latitude": 0.3035102
         },
         {
           "year": 2329,
-          "longitude": 294.9864413,
-          "latitude": -0.2622846
+          "longitude": 294.9864393,
+          "latitude": -0.2622844
         },
         {
           "year": 2330,
-          "longitude": 321.9581266,
-          "latitude": -0.8087847
+          "longitude": 321.9581372,
+          "latitude": -0.8087844
         },
         {
           "year": 2331,
-          "longitude": 351.5921333,
-          "latitude": -1.2075056
+          "longitude": 351.5921488,
+          "latitude": -1.207505
         },
         {
           "year": 2332,
-          "longitude": 24.921214,
-          "latitude": -1.2828502
+          "longitude": 24.9212164,
+          "latitude": -1.2828496
         },
         {
           "year": 2333,
-          "longitude": 62.0567103,
-          "latitude": -0.8766927
+          "longitude": 62.0567083,
+          "latitude": -0.8766925
         },
         {
           "year": 2334,
-          "longitude": 100.8081817,
-          "latitude": -0.0905201
+          "longitude": 100.8081813,
+          "latitude": -0.0905202
         },
         {
           "year": 2335,
-          "longitude": 137.2445445,
-          "latitude": 0.6847962
+          "longitude": 137.2445512,
+          "latitude": 0.6847961
         },
         {
           "year": 2336,
-          "longitude": 169.3253847,
-          "latitude": 1.147679
+          "longitude": 169.3253866,
+          "latitude": 1.1476787
         },
         {
           "year": 2337,
-          "longitude": 197.7076703,
-          "latitude": 1.2660771
+          "longitude": 197.7076673,
+          "latitude": 1.2660767
         },
         {
           "year": 2338,
-          "longitude": 223.639797,
-          "latitude": 1.100164
+          "longitude": 223.639789,
+          "latitude": 1.1001638
         },
         {
           "year": 2339,
-          "longitude": 248.4107502,
+          "longitude": 248.4107462,
           "latitude": 0.7309077
         },
         {
           "year": 2340,
-          "longitude": 273.0734777,
+          "longitude": 273.0734772,
           "latitude": 0.2262486
         },
         {
           "year": 2341,
-          "longitude": 298.792909,
-          "latitude": -0.3423465
+          "longitude": 298.7929142,
+          "latitude": -0.3423466
         },
         {
           "year": 2342,
-          "longitude": 326.0351673,
-          "latitude": -0.8758421
+          "longitude": 326.0351638,
+          "latitude": -0.8758422
         },
         {
           "year": 2343,
-          "longitude": 356.075538,
-          "latitude": -1.2402349
+          "longitude": 356.0755249,
+          "latitude": -1.2402351
         },
         {
           "year": 2344,
-          "longitude": 29.9201426,
-          "latitude": -1.2568846
+          "longitude": 29.9201304,
+          "latitude": -1.256885
         },
         {
           "year": 2345,
-          "longitude": 67.4427995,
-          "latitude": -0.7854392
+          "longitude": 67.4427941,
+          "latitude": -0.7854394
         },
         {
           "year": 2346,
-          "longitude": 106.1301751,
-          "latitude": 0.0251573
+          "longitude": 106.1301759,
+          "latitude": 0.0251575
         },
         {
           "year": 2347,
-          "longitude": 142.06663,
-          "latitude": 0.7690866
+          "longitude": 142.0666263,
+          "latitude": 0.7690867
         },
         {
           "year": 2348,
-          "longitude": 173.5982835,
-          "latitude": 1.1819766
+          "longitude": 173.5982744,
+          "latitude": 1.181977
         },
         {
           "year": 2349,
-          "longitude": 201.5935263,
-          "latitude": 1.2565932
+          "longitude": 201.5935195,
+          "latitude": 1.2565937
         },
         {
           "year": 2350,
-          "longitude": 227.2950793,
-          "latitude": 1.0579964
+          "longitude": 227.2950804,
+          "latitude": 1.0579969
         },
         {
           "year": 2351,
-          "longitude": 251.9790028,
-          "latitude": 0.6661091
+          "longitude": 251.9790081,
+          "latitude": 0.6661093
         },
         {
           "year": 2352,
-          "longitude": 276.682423,
-          "latitude": 0.1486193
+          "longitude": 276.6824253,
+          "latitude": 0.1486192
         },
         {
           "year": 2353,
-          "longitude": 302.5693641,
-          "latitude": -0.4211853
+          "longitude": 302.5693572,
+          "latitude": -0.4211855
         },
         {
           "year": 2354,
-          "longitude": 330.1233618,
-          "latitude": -0.9399662
+          "longitude": 330.1233558,
+          "latitude": -0.9399664
         },
         {
           "year": 2355,
-          "longitude": 0.6392018,
-          "latitude": -1.2671575
+          "longitude": 0.6392094,
+          "latitude": -1.2671577
         },
         {
           "year": 2356,
-          "longitude": 35.0735605,
-          "latitude": -1.2211148
+          "longitude": 35.0735772,
+          "latitude": -1.2211146
         },
         {
           "year": 2357,
-          "longitude": 73.0043756,
-          "latitude": -0.6838457
+          "longitude": 73.0043863,
+          "latitude": -0.6838455
         },
         {
           "year": 2358,
-          "longitude": 111.56261,
+          "longitude": 111.5626072,
           "latitude": 0.1439617
         },
         {
           "year": 2359,
-          "longitude": 146.9133444,
+          "longitude": 146.913345,
           "latitude": 0.8494785
         },
         {
           "year": 2360,
-          "longitude": 177.8255465,
-          "latitude": 1.2104012
+          "longitude": 177.8255579,
+          "latitude": 1.2104008
         },
         {
           "year": 2361,
-          "longitude": 205.3851835,
-          "latitude": 1.2422953
+          "longitude": 205.385196,
+          "latitude": 1.2422949
         },
         {
           "year": 2362,
-          "longitude": 230.8275053,
-          "latitude": 1.0134247
+          "longitude": 230.8275099,
+          "latitude": 1.0134241
         },
         {
           "year": 2363,
-          "longitude": 255.4167823,
-          "latitude": 0.6014851
+          "longitude": 255.4167802,
+          "latitude": 0.6014849
         },
         {
           "year": 2364,
-          "longitude": 280.1760809,
-          "latitude": 0.0732186
+          "longitude": 280.1760796,
+          "latitude": 0.0732187
         },
         {
           "year": 2365,
-          "longitude": 306.2711581,
-          "latitude": -0.4962639
+          "longitude": 306.2711655,
+          "latitude": -0.4962636
         },
         {
           "year": 2366,
-          "longitude": 334.2027603,
-          "latitude": -0.9988731
+          "longitude": 334.2027712,
+          "latitude": -0.9988727
         },
         {
           "year": 2367,
-          "longitude": 5.2820196,
-          "latitude": -1.2864041
+          "longitude": 5.2820205,
+          "latitude": -1.2864037
         },
         {
           "year": 2368,
-          "longitude": 40.3828801,
-          "latitude": -1.1743877
+          "longitude": 40.3828692,
+          "latitude": -1.1743874
         },
         {
           "year": 2369,
-          "longitude": 78.7024549,
+          "longitude": 78.7024452,
           "latitude": -0.5737396
         },
         {
           "year": 2370,
-          "longitude": 117.0192878,
+          "longitude": 117.019288,
           "latitude": 0.2616591
         },
         {
           "year": 2371,
-          "longitude": 151.7152025,
-          "latitude": 0.923462
+          "longitude": 151.7152044,
+          "latitude": 0.9234619
         },
         {
           "year": 2372,
-          "longitude": 182.0228585,
-          "latitude": 1.2327107
+          "longitude": 182.0228525,
+          "latitude": 1.2327108
         },
         {
           "year": 2373,
-          "longitude": 209.1964567,
+          "longitude": 209.1964471,
           "latitude": 1.2231736
         },
         {
           "year": 2374,
-          "longitude": 234.4385048,
-          "latitude": 0.9643206
+          "longitude": 234.438496,
+          "latitude": 0.9643209
         },
         {
           "year": 2375,
-          "longitude": 258.9922347,
-          "latitude": 0.5319039
+          "longitude": 258.9922303,
+          "latitude": 0.5319042
         },
         {
           "year": 2376,
-          "longitude": 283.8605736,
+          "longitude": 283.8605745,
           "latitude": -0.0071055
         },
         {
           "year": 2377,
-          "longitude": 310.2023128,
-          "latitude": -0.5746446
+          "longitude": 310.2023096,
+          "latitude": -0.5746448
         },
         {
           "year": 2378,
-          "longitude": 338.5335061,
-          "latitude": -1.0570332
+          "longitude": 338.5334968,
+          "latitude": -1.0570335
         },
         {
           "year": 2379,
-          "longitude": 10.1629538,
-          "latitude": -1.2987525
+          "longitude": 10.1629432,
+          "latitude": -1.298753
         },
         {
           "year": 2380,
-          "longitude": 45.8326025,
-          "latitude": -1.1172704
+          "longitude": 45.8326036,
+          "latitude": -1.1172713
         },
         {
           "year": 2381,
-          "longitude": 84.3505538,
-          "latitude": -0.459975
+          "longitude": 84.3505601,
+          "latitude": -0.4599753
         },
         {
           "year": 2382,
-          "longitude": 122.2791558,
-          "latitude": 0.3722842
+          "longitude": 122.27916,
+          "latitude": 0.3722841
         },
         {
           "year": 2383,
-          "longitude": 156.3166239,
-          "latitude": 0.9880249
+          "longitude": 156.3166177,
+          "latitude": 0.9880251
         },
         {
           "year": 2384,
-          "longitude": 186.0824242,
-          "latitude": 1.2482763
+          "longitude": 186.0824222,
+          "latitude": 1.2482766
         },
         {
           "year": 2385,
-          "longitude": 212.9414218,
-          "latitude": 1.1997148
+          "longitude": 212.9414239,
+          "latitude": 1.1997154
         },
         {
           "year": 2386,
-          "longitude": 238.0465124,
+          "longitude": 238.0465226,
           "latitude": 0.9122318
         },
         {
           "year": 2387,
-          "longitude": 262.6127718,
-          "latitude": 0.4602411
+          "longitude": 262.6127801,
+          "latitude": 0.4602409
         },
         {
           "year": 2388,
-          "longitude": 287.6193025,
+          "longitude": 287.6193022,
           "latitude": -0.0883708
         },
         {
           "year": 2389,
-          "longitude": 314.220088,
+          "longitude": 314.2200856,
           "latitude": -0.6516206
         },
         {
           "year": 2390,
-          "longitude": 342.9404822,
-          "latitude": -1.110037
+          "longitude": 342.9404883,
+          "latitude": -1.1100369
         },
         {
           "year": 2391,
-          "longitude": 15.0847178,
-          "latitude": -1.3019799
+          "longitude": 15.0847328,
+          "latitude": -1.3019795
         },
         {
           "year": 2392,
-          "longitude": 51.2638033,
-          "latitude": -1.0503198
+          "longitude": 51.2638103,
+          "latitude": -1.0503189
         },
         {
           "year": 2393,
-          "longitude": 89.906542,
-          "latitude": -0.3434247
+          "longitude": 89.9065396,
+          "latitude": -0.3434243
         },
         {
           "year": 2394,
-          "longitude": 127.4172824,
-          "latitude": 0.4777961
+          "longitude": 127.4172777,
+          "latitude": 0.4777962
         },
         {
           "year": 2395,
-          "longitude": 160.829489,
-          "latitude": 1.0456887
+          "longitude": 160.829496,
+          "latitude": 1.0456885
         },
         {
           "year": 2396,
-          "longitude": 190.1030211,
-          "latitude": 1.2576415
+          "longitude": 190.1030277,
+          "latitude": 1.257641
         },
         {
           "year": 2397,
-          "longitude": 216.6822207,
-          "latitude": 1.1711095
+          "longitude": 216.6822254,
+          "latitude": 1.1711088
         },
         {
           "year": 2398,
-          "longitude": 241.6674802,
-          "latitude": 0.8561801
+          "longitude": 241.6674752,
+          "latitude": 0.8561798
         },
         {
           "year": 2399,
-          "longitude": 266.2501555,
+          "longitude": 266.250148,
           "latitude": 0.386293
         }
-      ]
+      ],
+      "targetName": "Jupiter Barycenter",
+      "targetEphemeris": "DE441"
     },
     "Saturn": {
       "target": "6",
@@ -15042,7 +15050,10 @@
           "longitude": 257.1983888,
           "latitude": 1.5238597
         }
-      ]
+      ],
+      "targetName": "Saturn Barycenter",
+      "targetEphemeris": "DE441"
     }
-  }
+  },
+  "referencePoint": "planetary-system barycentres"
 }
