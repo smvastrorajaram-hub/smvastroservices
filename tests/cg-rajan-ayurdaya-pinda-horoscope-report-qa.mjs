@@ -428,9 +428,16 @@ for(const [date,time] of births){
    eq(p.strength6.ishtaKashta?.available,false,'five-graha B.V. Raman Phala is withheld for mixed-frame Cheshta '+date+' '+p.name);
    ok(String(p.strength6.ishtaKashta?.reason||'').includes('mixed astronomical reference frames'),'five-graha Phala withholding exposes its frame blocker '+date+' '+p.name);
   }
-  ok(Number.isFinite(c.sthana?.total)&&Number.isFinite(c.dig)&&Number.isFinite(c.kala?.total)&&
-   Number.isFinite(c.cheshta)&&Number.isFinite(c.naisargika)&&Number.isFinite(c.drik),
-   'B.V. Raman six individual components remain available '+date+' '+p.name);
+  const otherFiveComponentsFinite=Number.isFinite(c.sthana?.total)&&Number.isFinite(c.dig)&&
+   Number.isFinite(c.kala?.total)&&Number.isFinite(c.naisargika)&&Number.isFinite(c.drik);
+  ok(otherFiveComponentsFinite,'B.V. Raman non-Cheshta components remain available '+date+' '+p.name);
+  if(['சூரியன்','சந்திரன்'].includes(p.name)){
+   eq(c.cheshta,0,'B.V. Raman luminary sixfold Cheshta retains its source-specific zero '+date+' '+p.name);
+  }else{
+   eq(c.cheshta,null,'B.V. Raman five-graha mixed-frame Cheshta is withheld '+date+' '+p.name);
+   eq(p.strength6.frameSafety?.status,'BLOCKED_MIXED_REFERENCE_FRAMES',
+    'B.V. Raman five-graha frame guard is visible '+date+' '+p.name);
+  }
   if(Number.isFinite(p.strength6.totalVirupa)){
    const sum=Number(c.sthana.total)+Number(c.dig)+Number(c.kala.total)+Number(c.cheshta)+Number(c.naisargika)+Number(c.drik);
    ok(Math.abs(sum-p.strength6.totalVirupa)<0.01,
