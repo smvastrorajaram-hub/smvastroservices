@@ -77,8 +77,9 @@ export function sauraFourPassTrueLongitude({planet,meanLongitude,mandocca,sheegh
       afterHalfSighra,afterHalfManda,afterFullManda
     }),
     trueLongitude:normalize(afterFullManda+fourth.degrees),
-    frame:'traditional-Saura-nirayana-unmodified',
+    frame:'traditional-Saura-nirayana',
     frameId:'surya-siddhanta-saura-nirayana',
+    frameVariant:'unmodified-Surya-Siddhanta-four-pass-manda-sighra',
     source:'Surya Siddhanta Ch II v29-45 four-pass manda/sighra',
     historicallyCertified:false,
     numericallyCertified:false,
