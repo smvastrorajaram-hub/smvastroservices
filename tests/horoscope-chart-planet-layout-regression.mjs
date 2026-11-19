@@ -55,16 +55,17 @@ assert.ok(chartStyleJs.includes("h.textContent=style==='north'?romanHouse(house)
 assert.ok(chartStyleJs.includes("const bhavaLabel=kind==='bhava'?bhavaHousesBySign[sign].map(romanHouse).join('/'):'';"), 'East does not substitute ordinary Lagna-based Rasi house numbers for Bhava numbers.');
 assert.ok(chartStyleJs.includes("h.textContent=house>=1&&house<=12?String(house):'';"), 'East Rasi, Navamsa and Transit retain their existing Lagna-derived house numbers unchanged.');
 
-for (let count=3;count<=12;count++) {
-  assert.ok(horoscopeCss.includes('.south-rasi-cell[data-chart-planet-count="' + count + '"]'));
-  assert.ok(chartStyleCss.includes('.smv-v342-cell[data-chart-planet-count="' + count + '"]'));
-}
-assert.ok(horoscopeCss.includes('--smv-chart-compact-font-size'));
-assert.ok(horoscopeCss.includes('--smv-chart-compact-white-space'));
+const horoscopeCountRules = [...horoscopeCss.matchAll(/\\.south-rasi-cell\\[data-chart-planet-count="\\d+"\\]\\{([^}]*)\\}/g)];
+assert.equal(horoscopeCountRules.length,20,'All 3–12 planet South-chart cells retain local wrapping rules at desktop and mobile widths.');
+assert.ok(horoscopeCountRules.every(([,body])=>!body.includes('--smv-chart-compact-font-size')),'Planet count must never set a smaller Horoscope font size.');
+assert.ok(horoscopeCountRules.every(([,body])=>body.includes('--smv-chart-compact-white-space:normal')),'Crowded cells continue wrapping text instead of extending beyond their boxes.');
+assert.doesNotMatch(chartStyleCss,/\\.smv-v342-cell\\[data-chart-planet-count="\\d+"\\]\\{[^}]*--smv-chart-compact-font-size/,'North/East chart cells no longer shrink fonts according to planet count.');
 assert.ok(horoscopeCss.includes('.south-rasi-cell.smv-chart-cell-compact .planet-line'));
 assert.ok(horoscopeCss.includes('.south-rasi-cell:not(.smv-chart-cell-compact) .planet-line'), 'The 701–900px baseline font-size rule must not override cells with 3+ planets.');
+assert.ok(horoscopeCss.includes('.south-rasi-cell{border:1px solid rgb(143, 112, 79);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;padding:7px 4px;min-width:0px;overflow:hidden;'),'The South-chart Rasi box remains clipped to its own boundary.');
 assert.ok(chartStyleCss.includes('.smv-v342-cell.smv-chart-cell-compact .smv-v342-planets'));
 assert.ok(chartStyleCss.includes('overflow:hidden;display:flex;flex-direction:column;'));
+assert.ok(chartStyleCss.includes('width:22%;max-height:26%;min-width:0;overflow:hidden;'),'North/East cells remain width/height constrained and cannot escape the chart box.');
 assert.ok(chartStyleCss.includes('.smv-v342-cell{font-size:var(--smv-chart-compact-font-size,'));
 
 assert.ok(horoscopeJs.includes('planetDisplayName(p,chartLang)'));
