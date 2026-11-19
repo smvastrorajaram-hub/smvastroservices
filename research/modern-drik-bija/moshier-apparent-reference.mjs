@@ -46,10 +46,11 @@ export async function createModernMoshierReference() {
     }
   }
 
-  function apparentTropicalLongitude(year, planet) {
+  function apparentTropicalLongitudeAtJd(jdEt, planet) {
     const bodyId = BODY_IDS[planet];
     if (!bodyId) throw new RangeError('Unsupported Moshier planet: ' + planet);
-    const jdEt = utcJanuaryFirstToEt(year);
+    if (!Number.isFinite(jdEt)) throw new TypeError('A finite TT/ET Julian day is required');
+    
     const valuesPointer = M._malloc(48);
     const errorPointer = M._malloc(256);
     if (!valuesPointer || !errorPointer) {
@@ -71,7 +72,7 @@ export async function createModernMoshierReference() {
         throw new Error('Moshier returned an invalid tropical longitude for ' + planet + ' ' + year);
       }
       return Object.freeze({
-        year,
+        jdEt,
         planet,
         longitude,
         ephemeris: 'MOSEPH',
@@ -84,10 +85,15 @@ export async function createModernMoshierReference() {
     }
   }
 
+  function apparentTropicalLongitude(year, planet) {
+    return apparentTropicalLongitudeAtJd(utcJanuaryFirstToEt(year), planet);
+  }
+
   return Object.freeze({
     provider: 'Swiss Ephemeris 2.10.03 Moshier',
     ephemeris: 'MOSEPH',
     apparentTropicalLongitude,
+    apparentTropicalLongitudeAtJd,
     close() {
       M.ccall('swe_close', 'void', [], []);
     }
