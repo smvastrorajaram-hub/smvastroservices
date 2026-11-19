@@ -67,7 +67,7 @@ test('Calendar table is inserted after transit with horizontal-only scrolling an
   assert.ok(calendarSource.includes('transitCard.after(card)'));
   assert.ok(calendarSource.includes('renderAnnualGrahaPeriods();updateHora()'));
   assert.ok(calendarSource.includes('day>=start&&day<end'));
-  assert.ok(calendarSource.includes('Scroll horizontally to view the full table'));
+  assert.doesNotMatch(calendarSource, /அட்டவணையை முழுமையாகப் பார்க்க கிடைமட்டமாக நகர்த்தவும்|Scroll horizontally to view the full table/);
   assert.doesNotMatch(calendarSource, /ராகு–கேது|Rahu–Ketu|Not in supplied data|மூலத் தரவில் இல்லை/);
   assert.equal(TAMIL_GRAHA_PLANETS.length, 5);
   assert.ok(TAMIL_GRAHA_YEAR_DATA.every(year => year[5].every(event => Number.isInteger(event[0]) && event[0] >= 0 && event[0] < TAMIL_GRAHA_PLANETS.length)));
