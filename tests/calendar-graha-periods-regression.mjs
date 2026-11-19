@@ -73,7 +73,7 @@ test('Calendar Graha periods render as one centered vertical list without tables
   assert.ok(calendarSource.includes('renderAnnualGrahaPeriods();updateHora()'));
   assert.ok(calendarSource.includes('day>=start&&day<end'));
   const rendererStart = calendarSource.indexOf('function renderAnnualGrahaPeriods(){');
-  const rendererEnd = calendarSource.indexOf('\\n function renderDaily()', rendererStart);
+  const rendererEnd = calendarSource.indexOf('function renderDaily()', rendererStart);
   const renderer = calendarSource.slice(rendererStart, rendererEnd);
   assert.doesNotMatch(calendarSource, /<(?:table|thead|tbody|tr|th|td)\\b|cal-graha-period-table|cal-graha-period-scroll/);
   assert.doesNotMatch(calendarSource, /அட்டவணையை முழுமையாகப் பார்க்க கிடைமட்டமாக நகர்த்தவும்|Scroll horizontally to view the full table/);
