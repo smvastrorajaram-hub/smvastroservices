@@ -43,6 +43,8 @@ assert.match(transitRenderer, /data-chart-planet-count="\$\{transitPlanetCount\}
 
 assert.ok(chartStyleJs.includes("const kind=chart.id==='bhavaChart'?'bhava':chart.id==='navamsaChart'?'d9':chart.id==='rasiChart'?'d1':'transit';"));
 assert.ok(chartStyleJs.includes('const planetCount=items.length;'));
+assert.ok(chartStyleJs.includes("const triangleCell=style==='north'?[2,3,5,6,8,9,11,12].includes(house):style==='east'?[2,3,5,6,8,9,11,12].includes(sign+1):false;"));
+assert.ok(chartStyleJs.includes("if(triangleCell)cell.classList.add('smv-v342-triangle-cell');"));
 assert.ok(chartStyleJs.includes('cell.dataset.chartPlanetCount=String(planetCount);'));
 assert.ok(chartStyleJs.includes("if(planetCount>=3)cell.classList.add('smv-chart-cell-compact')"));
 assert.match(chartStyleJs, /else if\(kind!=='d9'&&kind!=='bhava'\)\{/);
@@ -69,6 +71,10 @@ assert.ok(horoscopeCss.includes('.south-rasi-cell.smv-chart-cell-compact .planet
 assert.ok(horoscopeCss.includes('.south-rasi-cell:not(.smv-chart-cell-compact) .planet-line'), 'The 701–900px baseline font-size rule must not override cells with 3+ planets.');
 assert.ok(horoscopeCss.includes('.south-rasi-cell{border:1px solid rgb(143, 112, 79);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;padding:7px 4px;min-width:0px;overflow:hidden;'),'The South-chart Rasi box remains clipped to its own boundary.');
 assert.ok(chartStyleCss.includes('.smv-v342-cell.smv-chart-cell-compact .smv-v342-planets'));
+assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-triangle-cell{width:14%!important;max-height:16%!important}'));
+assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-triangle-cell{width:16%!important;max-height:16%!important}'));
+assert.ok(chartStyleCss.includes('.smv-v342-cell.smv-v342-triangle-cell.smv-chart-cell-compact .smv-v342-planets .planet-line{'));
+assert.ok(chartStyleCss.includes('.smv-v342-cell.smv-v342-triangle-cell.smv-chart-cell-compact .smv-v342-planets .planet-glyph{'));
 assert.ok(chartStyleCss.includes('overflow:hidden;display:flex;flex-direction:column;'));
 assert.ok(chartStyleCss.includes('width:22%;max-height:26%;min-width:0;overflow:hidden;'),'North/East cells remain width/height constrained and cannot escape the chart box.');
 assert.ok(chartStyleCss.includes('.smv-v342-cell{font-size:var(--smv-chart-compact-font-size,'));
