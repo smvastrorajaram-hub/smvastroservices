@@ -17,7 +17,7 @@ const EXPECTED_KALI={
   Venus:2*30+19+39/60,
   Mars:4*30+9+57/60+36/3600,
   Jupiter:5*30+21,
-  Saturn:7*30+26/60+36/3600
+  Saturn:7*30+26+36/60+36/3600
 };
 const EXPECTED_EPICYCLES={
   Mercury:{manda:[30,28],sighra:[133,132]},
