@@ -399,7 +399,7 @@ test('Calendar distinguishes Gazette government holidays from observances and do
   assert.equal(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .transit-card>.cal-centered-heading{color:#15564e'), false, 'The outer Transit Chart heading must not receive a new green override.');
   assert.ok(horoscopeRendererSource.includes("<th>${ta?'கிரகங்கள்':'Planets'}</th>"), 'The positions table labels the first column as Planets / கிரகங்கள்.');
   assert.ok(horoscopeRendererSource.includes("calendarPresentation?'':`<td>${esc2(r.status||'—')}</td>`"), 'Status is omitted from Calendar but retained for non-Calendar Horoscope output.');
-  assert.ok(horoscopeRendererSource.includes('class="hora-card" data-smv-screen-only="daily-hora"'), 'Daily Hora keeps its heading wrapper without an outer card.');
+  assert.ok(horoscopeRendererSource.includes("calendarPresentation?'hora-card':'card hora-card'"), 'Only Calendar removes the Daily Hora outer card; Horoscope retains its original card.');
   assert.ok(horoscopeRendererSource.includes("calendarPresentation?'transit-card':'card transit-card'"), 'Calendar Transit Chart has no outer card, while Horoscope retains its card.');
   assert.ok(horoscopeRendererSource.includes('<section class="transit-table-card">'), 'Transit Planetary Positions keeps its heading wrapper without an outer card.');
   assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar #calDaily .transit-card{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;outline:0!important}'), 'The Transit Chart remains without an outer card.');
