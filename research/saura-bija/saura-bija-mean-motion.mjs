@@ -123,7 +123,7 @@ export function sauraBijaCorrectedTrueLongitudeResearch(jdUt, planet) {
     planet: input.planet,
     meanLongitude: input.meanLongitude,
     mandocca: mandocca.mandocca,
-    sheeghrocca: input.sheeghrocca,
+    sheeghrocha: input.sheeghrocca,
     mandaKarṇaConvention: 'verse39-direct-jya'
   });
 
