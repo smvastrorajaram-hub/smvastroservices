@@ -89,6 +89,72 @@ try {
   }
   assert.ok(ready, 'Calendar source did not become ready: ' + (lastError?.message || 'unknown error'));
 
+  // Verify the annual Graha table at a phone-width viewport, including the CSS
+  // cascade that previously forced this table to shrink and wrap its labels.
+  const initialCalendarLanguage = await page.evaluate(() => document.documentElement.lang || 'en');
+  if (initialCalendarLanguage !== 'ta') {
+    await page.click('#calTamil');
+    await page.waitForFunction(() => document.documentElement.lang === 'ta', { timeout: 20000 });
+  }
+  await page.waitForSelector('#calGrahaPeriodCard .cal-graha-period-scroll', { timeout: 90000 });
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+  const grahaMobileLayout = await page.evaluate(() => {
+    const card = document.querySelector('#calGrahaPeriodCard');
+    const scroller = card?.querySelector('.cal-graha-period-scroll');
+    const table = scroller?.querySelector('table');
+    if (!card || !scroller || !table) return { found: false };
+    const textFits = element => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      const textWidth = range.getBoundingClientRect().width;
+      const style = getComputedStyle(element);
+      const contentWidth = element.getBoundingClientRect().width -
+        parseFloat(style.paddingLeft || '0') - parseFloat(style.paddingRight || '0');
+      return {
+        text: element.textContent.trim(),
+        whiteSpace: style.whiteSpace,
+        textWidth,
+        contentWidth,
+        fits: style.whiteSpace === 'nowrap' && textWidth <= contentWidth + 1
+      };
+    };
+    const planetNames = [...card.querySelectorAll('tbody th')].map(textFits);
+    const dateEntries = [...card.querySelectorAll('.cal-graha-period-list li span')].map(textFits);
+    const startLeft = scroller.scrollLeft;
+    scroller.scrollLeft = Math.min(160, scroller.scrollWidth - scroller.clientWidth);
+    const scrollMoved = scroller.scrollLeft > startLeft;
+    scroller.scrollLeft = 0;
+    return {
+      found: true,
+      viewportWidth: window.innerWidth,
+      wrapperWidth: scroller.clientWidth,
+      wrapperScrollWidth: scroller.scrollWidth,
+      tableWidth: table.getBoundingClientRect().width,
+      scrollMoved,
+      planetNames,
+      dateEntries,
+      footnoteText: card.querySelector('.cal-graha-period-note')?.textContent || ''
+    };
+  });
+  assert.equal(grahaMobileLayout.found, true, 'Annual Graha table must render in Calendar.');
+  assert.ok(grahaMobileLayout.tableWidth >= 1060, 'Annual Graha table must keep its full wide layout on mobile: ' + JSON.stringify(grahaMobileLayout));
+  assert.ok(grahaMobileLayout.wrapperScrollWidth > grahaMobileLayout.wrapperWidth, 'Annual Graha table must overflow inside its own horizontal scroll area: ' + JSON.stringify(grahaMobileLayout));
+  assert.equal(grahaMobileLayout.scrollMoved, true, 'The Graha table must respond to horizontal scrolling on mobile.');
+  assert.ok(grahaMobileLayout.planetNames.length === 5 && grahaMobileLayout.planetNames.every(item => item.fits), 'All five Tamil planet names must stay on one line without clipping: ' + JSON.stringify(grahaMobileLayout.planetNames));
+  assert.ok(grahaMobileLayout.dateEntries.length > 0 && grahaMobileLayout.dateEntries.every(item => item.fits), 'Every Graha date range must stay on one line without wrapping: ' + JSON.stringify(grahaMobileLayout.dateEntries));
+  assert.equal(grahaMobileLayout.footnoteText, '', 'The annual-boundary / IST explanatory paragraph must be completely absent.');
+  await page.$eval('#calGrahaPeriodCard', el => el.scrollIntoView({ block: 'center' }));
+  await page.screenshot({
+    path: new URL('calendar-graha-period-table-mobile.png', outputDir).pathname,
+    fullPage: false,
+    captureBeyondViewport: false
+  });
+  if (initialCalendarLanguage !== 'ta') {
+    await page.click('#calEnglish');
+    await page.waitForFunction(() => document.documentElement.lang === 'en', { timeout: 20000 });
+  }
+  await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
+
   const calendarHeader = await page.evaluate(() => {
     const header = document.querySelector('.calendar-topbar');
     const logo = document.querySelector('.calendar-brand-header img');
