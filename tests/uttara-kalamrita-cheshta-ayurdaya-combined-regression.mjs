@@ -101,18 +101,17 @@ for(const [planet,tamilName] of Object.entries(tamil)){
  near(independentlyPublishedOrbital.virupa,publishedInputsExpectedVirupa[planet],
    .0000015,planet+' IMD published source input Cheshta Virupa');
  const orbitalEvidence=s.evidence?.cheshtaSource;
- yes(orbitalEvidence?.method==='BV_RAMAN_FORMULA_EPHEMERIS_TRUE_LONGITUDE_RESEARCH_MEAN_SHEEGHROCCA'&&orbitalEvidence.numericallyCertified===false,
-   planet+' live uses B.V. Raman classical-formula candidate, not speed buckets');
+ yes(orbitalEvidence?.method==='BV_RAMAN_CHESHTA_BLOCKED_REFERENCE_FRAME_MISMATCH'&&orbitalEvidence.available===false&&orbitalEvidence.sameReferenceFrameVerified===false,
+   planet+' live refuses mixed Saura/Swiss frame inputs');
  const liveVirupa=s.components.cheshta;
- const discrepancy=Math.abs(liveVirupa-independentlyPublishedOrbital.virupa);
- yes(Number.isFinite(liveVirupa)&&orbitalEvidence?.trueLongitudeHistoricalCertified===false,
-    planet+' Raman Cheshta remains numerical candidate pending historical input certification');
+ yes(liveVirupa===null&&s.frameSafety?.status==='BLOCKED_MIXED_REFERENCE_FRAMES',
+    planet+' production emits no Cheshta number and exposes the frame guard');
  yes(s.classicalCertified===false&&s.provisional===true,
    planet+' shall NOT be classically certified');
  verifiedNoFusion.push({
   planet,liveDiscreteVirupa:liveVirupa,
   officialImdReferenceVirupa:+independentlyPublishedOrbital.virupa.toFixed(6),
-  absoluteDifferenceVirupa:+discrepancy.toFixed(6),
+  productionLiveCheshta:null,
   trueSource:'2026-03-22 official IMD printed Nirayana true',
   meanSource:'2026-03-22 official IMD Bija-corrected traditional mean',
   liveAstronomicalFrame:'Swiss Lahiri; not to be fused with IMD planetary mean',
@@ -666,7 +665,8 @@ for(const [date,time,referenceEt,means] of cases){
  ok(natal.ok,date+' natal calculations preserved');
  for(const body of natal.chart.planets.filter(x=>['செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி'].includes(x.name))){
    eq(body.strength6.classicalCertified,false,date+' '+body.name+' classical certification is not faked');
-   ok(Number.isFinite(body.strength6.components.cheshta),date+' '+body.name+' existing Cheshta finite');
+   eq(body.strength6.components.cheshta,null,date+' '+body.name+' mixed-frame Cheshta withheld');
+   eq(body.strength6.frameSafety?.status,'BLOCKED_MIXED_REFERENCE_FRAMES',date+' '+body.name+' frame guard active');
  }
  summaries.push({date,reference:row});
 }
@@ -708,7 +708,7 @@ for(const p of exploreOut.planets){
  eq(p.sourceFrames.trueLongitude,'Swiss geocentric Lahiri sidereal','Research trial '+p.planet+' true longitude frame');
 }
 await assert.rejects(explore({date:'invalid',time:'22:05',utcOffsetMinutes:330}),RangeError);n++;
-console.log(JSON.stringify({pass:true,assertions:n,method:'read-only modern Swiss orbital elements verified against independent Moshier five Perambalur births; book five-planet BPHS+UK input selection',comparison:summaries,shadbalaClassicalCertified:false,liveCheshtaSource:'unchanged speed-based provisional',notes:['Modern orbital elements not classical mean/Sheeghrocha','PyJHora uses a different Ujjain-1900 mean-motion model under AGPL-3.0 and is NOT copied','BPHS true full numerical certification requires independently validated classical sidereal mean positions']}));
+console.log(JSON.stringify({pass:true,assertions:n,method:'read-only modern Swiss orbital elements verified against independent Moshier five Perambalur births; book five-planet BPHS+UK input selection',comparison:summaries,shadbalaClassicalCertified:false,liveCheshtaSource:'withheld until independently verified same-frame natal triplets',notes:['Modern orbital elements not classical mean/Sheeghrocha','PyJHora uses a different Ujjain-1900 mean-motion model under AGPL-3.0 and is NOT copied','BPHS true full numerical certification requires independently validated classical sidereal mean positions']}));
 }
 
 async function runBundledOracle5() {
@@ -1147,8 +1147,12 @@ for(const [date,time] of births){
   A(!!p?.strength6,date+' Shadbala exists '+name);
   const b=p.strength6;
   A(!b.classicalCertified&&b.provisional,date+' seven-graha full numerical certificate remains correctly blocked '+name);
-  A(Number.isFinite(b.components.cheshta)&&((Number.isFinite(b.totalVirupa))||b.totalVirupa===null),
-    date+' B.V. Raman components are finite and unresolved totals fail closed '+name);
+  if(['சூரியன்','சந்திரன்'].includes(name)){
+   A(b.components.cheshta===0&&Number.isFinite(b.totalVirupa),date+' '+name+' source-defined luminary Cheshta stays separate');
+  }else{
+   A(b.components.cheshta===null&&b.frameSafety?.status==='BLOCKED_MIXED_REFERENCE_FRAMES'&&b.totalVirupa===null,
+     date+' '+name+' mixed-frame Cheshta and Shadbala total are both withheld');
+  }
   sample.fullSevenShadbala[name]={totalVirupa:b.totalVirupa,cheshta:b.components.cheshta,
        certified:false};
  }
