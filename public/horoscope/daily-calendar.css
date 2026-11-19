@@ -174,112 +174,95 @@
 #smvDailyCalendar .cal-date-time-fields{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;min-width:0}
 #smvDailyCalendar .cal-date-time-fields label{min-width:0!important}
 
-/* Annual Graha table: one three-column layout, with mobile-only horizontal overflow. */
+/* Annual Graha periods: one single vertical sequence, with existing Calendar colours. */
 #calGrahaPeriodCard{
   width:100%;
   max-width:100%;
   margin:18px 0 24px;
-  padding:12px;
-  border:1px solid #d9e5dc;
-  background:#fff;
+  padding:12px 0;
+  background:transparent;
 }
 #calGrahaPeriodCard h3{
-  margin:0 0 6px;
+  margin:0 0 5px;
   text-align:center;
-  font-size:clamp(15px,2vw,19px);
+  font-size:clamp(16px,2vw,20px);
   font-weight:800;
+  color:inherit;
 }
 #calGrahaPeriodCard .cal-graha-period-year{
-  margin:0 0 10px;
+  margin:0 0 12px;
   text-align:center;
   font-size:13px;
   font-weight:700;
 }
-#calGrahaPeriodCard .cal-graha-period-scroll{
+#calGrahaPeriodCard .cal-graha-period-planets{
+  display:block;
   width:100%;
-  max-width:100%;
-  overflow-x:auto;
-  overflow-y:hidden;
-  overscroll-behavior-x:contain;
-  -webkit-overflow-scrolling:touch;
 }
-#calGrahaPeriodCard .cal-graha-period-table{
-  width:680px;
-  min-width:680px;
-  border-collapse:collapse;
-  table-layout:fixed;
-  background:#fff;
-  font-size:13px;
+#calGrahaPeriodCard .cal-graha-planet{
+  display:block;
+  width:100%;
+  margin:0;
+  padding:12px 0;
+  border-bottom:1px solid var(--cal-line,#d9e5df);
 }
-#calGrahaPeriodCard .cal-graha-period-table th,
-#calGrahaPeriodCard .cal-graha-period-table td{
-  padding:9px 10px;
-  border:1px solid #d8e1d8;
-  text-align:left;
-  vertical-align:top;
-  line-height:1.5;
-  white-space:nowrap;
-  word-break:normal;
-  overflow-wrap:normal;
-  hyphens:none;
-}
-#calGrahaPeriodCard .cal-graha-period-table thead th{
-  background:#e6eee5;
+#calGrahaPeriodCard .cal-graha-planet-name{
+  margin:0 0 9px;
   text-align:center;
+  font-size:16px;
   font-weight:800;
+  color:inherit;
 }
-#calGrahaPeriodCard .cal-graha-period-table th:first-child,
-#calGrahaPeriodCard .cal-graha-period-table td:first-child{
-  width:120px;
+#calGrahaPeriodCard .cal-graha-planet-periods,
+#calGrahaPeriodCard .cal-graha-period-type{
+  display:block;
+  width:100%;
 }
-#calGrahaPeriodCard .cal-graha-period-table th:nth-child(2),
-#calGrahaPeriodCard .cal-graha-period-table td:nth-child(2),
-#calGrahaPeriodCard .cal-graha-period-table th:nth-child(3),
-#calGrahaPeriodCard .cal-graha-period-table td:nth-child(3){
-  width:280px;
+#calGrahaPeriodCard .cal-graha-period-type{
+  margin:0 0 9px;
 }
-#calGrahaPeriodCard .cal-graha-period-list{
+#calGrahaPeriodCard .cal-graha-period-type:last-child{
+  margin-bottom:0;
+}
+#calGrahaPeriodCard .cal-graha-period-type h5{
+  margin:0 0 4px;
+  font-size:13px;
+  font-weight:800;
+  color:inherit;
+}
+#calGrahaPeriodCard .cal-graha-period-events{
   margin:0;
   padding:0;
   list-style:none;
 }
-#calGrahaPeriodCard .cal-graha-period-list li{
-  margin:0;
-  padding:4px 0 6px;
-  border-bottom:1px solid #e3e9e3;
-}
-#calGrahaPeriodCard .cal-graha-period-list li:last-child{
-  padding-bottom:0;
-  border-bottom:0;
-}
-#calGrahaPeriodCard .cal-graha-period-date-start,
-#calGrahaPeriodCard .cal-graha-period-date-end{
+#calGrahaPeriodCard .cal-graha-period-event{
   display:block;
-  white-space:nowrap;
+  margin:0 0 5px;
+  padding:0;
 }
-#calGrahaPeriodCard .cal-graha-period-list small{
+#calGrahaPeriodCard .cal-graha-period-start,
+#calGrahaPeriodCard .cal-graha-period-end{
   display:block;
-  margin-top:3px;
-  font-size:10.5px;
-  line-height:1.4;
+  width:100%;
+  font-size:13px;
+  line-height:1.55;
   white-space:normal;
+  overflow-wrap:anywhere;
 }
 #calGrahaPeriodCard .cal-graha-period-empty{
-  color:inherit;
+  margin:0;
+  font-size:13px;
 }
 @media(max-width:680px){
   #calGrahaPeriodCard{
     margin:14px 0 20px;
-    padding:9px;
+    padding:10px 0;
   }
-  #calGrahaPeriodCard .cal-graha-period-table{
-    font-size:12px;
+  #calGrahaPeriodCard .cal-graha-planet{
+    padding:10px 0;
   }
-  #calGrahaPeriodCard .cal-graha-period-table th,
-  #calGrahaPeriodCard .cal-graha-period-table td{
-    padding:8px;
-  }
-  #calGrahaPeriodCard .cal-graha-period-list small{
-    font-size:9.5px;
+  #calGrahaPeriodCard .cal-graha-period-start,
+  #calGrahaPeriodCard .cal-graha-period-end{
+    font-size:12.5px;
   }
 }
