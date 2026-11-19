@@ -123,8 +123,8 @@ const report={
     apsisRevolutionsPerKalpa:EXPECTED_REVOLUTIONS,
     kaliEpochLongitudesDegrees:EXPECTED_KALI,
     kaliEpochSource:'Burgess 1860 table: positions at commencement of Iron Age 3102 BCE, Sūrya-Siddhānta column',
-    1850SourceComparison:BURGESS_1850,
-    1850Meaning:'Burgess printed Siddhanta-calculated apsis positions beside Biot true positions; these are source-model discrepancies already documented in 1860, not regression failures of this implementation.',
+    '1850SourceComparison':BURGESS_1850,
+    '1850Meaning':'Burgess printed Siddhanta-calculated apsis positions beside Biot true positions; these are source-model discrepancies already documented in 1860, not regression failures of this implementation.',
     epicycleSizes:EXPECTED_EPICYCLES,
     epicycleInterpolation:'Even quadrant size − (even − odd) × |sin(kendra)|, per Sūrya-Siddhānta II.38'
   },
