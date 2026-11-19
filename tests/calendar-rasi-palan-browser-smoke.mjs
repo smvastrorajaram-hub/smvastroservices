@@ -1893,7 +1893,7 @@ try {
       assert.ok(mobileState.normalPlanetCellCount > 0, language + ' ' + width + 'px: ordinary Rasi cells must keep their normal font sizing.');
       assert.ok(mobileState.compactPlanetCellCount > 0, language + ' ' + width + 'px: only the crowded Rasi cell must receive compact sizing.');
       assert.ok(mobileState.normalPlanetFontSize > mobileState.compactPlanetFontSize, language + ' ' + width + 'px: crowded-cell font size must be smaller than ordinary cells.');
-      assert.ok(mobileState.normalPlanetFontSize >= 14, language + ' ' + width + 'px: one-to-three planet names must be visibly larger (at least 14px).');
+      assert.ok(mobileState.normalPlanetFontSize >= 16, language + ' ' + width + 'px: one-to-three planet names, markers and degrees must remain readable at 16px or larger.');
       assert.equal(mobileState.planetCountClassMismatches, 0, language + ' ' + width + 'px: only cells with more than three planet names may be compacted.');
       assert.ok(mobileState.ordinaryPlanetCellCount > 0, language + ' ' + width + 'px: one-to-three item cells must be present for centring checks.');
       assert.equal(mobileState.ordinaryPlanetCellsCentered, true, language + ' ' + width + 'px: one-to-three item cells must be centred inside their boxes.');
@@ -1909,7 +1909,7 @@ try {
     await ensureTransitLanguage(language);
     const desktopState = await inspectTransitDate('2026-08-12', language);
     assert.ok(desktopState.normalPlanetFontSize > desktopState.compactPlanetFontSize, language + ' desktop: crowded cells alone must use smaller labels.');
-    assert.ok(desktopState.normalPlanetFontSize >= 18, language + ' desktop: one-to-three planet names must use the increased 18px size.');
+    assert.ok(desktopState.normalPlanetFontSize >= 21, language + ' desktop: one-to-three planet names, markers and degrees must use the increased 21px size.');
     assert.equal(desktopState.planetCountClassMismatches, 0, language + ' desktop: only cells with more than three planet names may be compacted.');
     assert.equal(desktopState.ordinaryPlanetCellsCentered, true, language + ' desktop: one-to-three item cells must be centred.');
     assert.equal(desktopState.markerFontSizeMismatches, 0, language + ' desktop: markers and degrees must match the planet font size.');
