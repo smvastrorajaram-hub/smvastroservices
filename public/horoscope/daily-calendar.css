@@ -174,30 +174,119 @@
 #smvDailyCalendar .cal-date-time-fields{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;min-width:0}
 #smvDailyCalendar .cal-date-time-fields label{min-width:0!important}
 
-
-/* Annual Graha vakra / asthamana reference table; precomputed data only. */
-#smvDailyCalendar .cal-graha-period-card{margin:18px 0;padding:14px;background:#fff;border:1px solid #9d9d9d;border-radius:0;color:#191919}
-#smvDailyCalendar .cal-graha-period-card h3{margin:0 0 6px;text-align:center;color:#202020;font-size:clamp(15px,2vw,19px);font-weight:800}
-#smvDailyCalendar .cal-graha-period-year{margin:0 0 12px;text-align:center;color:#303030;font-weight:700;font-size:13px}
-#smvDailyCalendar .cal-graha-period-scroll{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;max-height:none!important;overflow-x:auto!important;overflow-y:hidden!important;overscroll-behavior-x:contain!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-x!important;border:1px solid #929292}
-#smvDailyCalendar .cal-graha-period-card table{display:table!important;width:1060px!important;min-width:1060px!important;max-width:none!important;border-collapse:collapse!important;table-layout:fixed!important;font-size:13px!important}
-#smvDailyCalendar .cal-graha-period-card th,#smvDailyCalendar .cal-graha-period-card td{border:1px solid #929292!important;padding:10px 12px!important;vertical-align:top!important;color:#202020!important;text-align:left!important;line-height:1.6!important;white-space:nowrap!important;word-break:keep-all!important;overflow-wrap:normal!important;hyphens:none!important}
-#smvDailyCalendar .cal-graha-period-card thead th{background:#ededed;text-align:center;font-weight:800}
-#smvDailyCalendar .cal-graha-period-card thead th:first-child,#smvDailyCalendar .cal-graha-period-card tbody th{width:180px!important;min-width:180px!important;max-width:180px!important}
-#smvDailyCalendar .cal-graha-period-card thead th:nth-child(2),#smvDailyCalendar .cal-graha-period-card thead th:nth-child(3){width:440px!important;min-width:440px!important;max-width:440px!important}
-#smvDailyCalendar .cal-graha-period-card tbody th{background:#f6f6f6;font-weight:800;white-space:nowrap}
-#smvDailyCalendar .cal-graha-period-card thead th:first-child{left:0;z-index:3}
-#smvDailyCalendar .cal-graha-period-card tbody th{position:sticky;left:0;z-index:1}
-#smvDailyCalendar .cal-graha-period-list{list-style:none;margin:0;padding:0}
-#smvDailyCalendar .cal-graha-period-list,#smvDailyCalendar .cal-graha-period-list li,#smvDailyCalendar .cal-graha-period-list li span{white-space:nowrap!important;word-break:keep-all!important;overflow-wrap:normal!important;hyphens:none!important}
-#smvDailyCalendar .cal-graha-period-list li{margin:0;padding:3px 0 5px;border-bottom:1px solid #e3e3e3}
-#smvDailyCalendar .cal-graha-period-list li:last-child{border-bottom:0;padding-bottom:0}
-#smvDailyCalendar .cal-graha-period-list small{display:block;margin-top:2px;color:#555;font-size:10.5px;line-height:1.4}
-#smvDailyCalendar .cal-graha-period-empty{color:#555}
-
+/* Annual Graha reference table.
+   This section is a sibling of #calDaily, so the legacy daily-Panchang table
+   rules do not control its width or typography. */
+#calGrahaPeriodCard{
+  width:100%;
+  max-width:100%;
+  margin:18px 0 24px;
+  padding:14px;
+  overflow:hidden;
+  border:1px solid #9d9d9d;
+  border-radius:0;
+  background:#fff;
+  color:#191919;
+}
+#calGrahaPeriodCard h3{
+  margin:0 0 6px;
+  color:#202020;
+  text-align:center;
+  font-size:clamp(15px,2vw,19px);
+  font-weight:800;
+}
+#calGrahaPeriodCard .cal-graha-period-year{
+  margin:0 0 12px;
+  color:#303030;
+  text-align:center;
+  font-size:13px;
+  font-weight:700;
+}
+#calGrahaPeriodCard .cal-graha-period-scroll{
+  width:100%;
+  max-width:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+  overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
+  border:1px solid #929292;
+}
+#calGrahaPeriodCard .cal-graha-period-table{
+  width:1060px;
+  min-width:1060px;
+  border-collapse:collapse;
+  table-layout:fixed;
+  background:#fff;
+  font-size:13px;
+}
+#calGrahaPeriodCard .cal-graha-period-table th,
+#calGrahaPeriodCard .cal-graha-period-table td{
+  padding:10px 12px;
+  border:1px solid #929292;
+  color:#202020;
+  text-align:left;
+  vertical-align:top;
+  line-height:1.6;
+  white-space:nowrap;
+  word-break:normal;
+  overflow-wrap:normal;
+  hyphens:none;
+}
+#calGrahaPeriodCard .cal-graha-period-table thead th{
+  background:#edf3ef;
+  text-align:center;
+  font-weight:800;
+}
+#calGrahaPeriodCard .cal-graha-period-table th:first-child,
+#calGrahaPeriodCard .cal-graha-period-table td:first-child{
+  width:160px;
+}
+#calGrahaPeriodCard .cal-graha-period-table th:nth-child(2),
+#calGrahaPeriodCard .cal-graha-period-table td:nth-child(2),
+#calGrahaPeriodCard .cal-graha-period-table th:nth-child(3),
+#calGrahaPeriodCard .cal-graha-period-table td:nth-child(3){
+  width:450px;
+}
+#calGrahaPeriodCard .cal-graha-period-list{
+  margin:0;
+  padding:0;
+  list-style:none;
+}
+#calGrahaPeriodCard .cal-graha-period-list li{
+  margin:0;
+  padding:3px 0 5px;
+  border-bottom:1px solid #e3e3e3;
+}
+#calGrahaPeriodCard .cal-graha-period-list li:last-child{
+  padding-bottom:0;
+  border-bottom:0;
+}
+#calGrahaPeriodCard .cal-graha-period-list li span{
+  white-space:nowrap;
+}
+#calGrahaPeriodCard .cal-graha-period-list small{
+  display:block;
+  margin-top:2px;
+  color:#555;
+  font-size:10.5px;
+  line-height:1.4;
+}
+#calGrahaPeriodCard .cal-graha-period-empty{
+  color:#555;
+}
 @media(max-width:680px){
- #smvDailyCalendar .cal-graha-period-card{padding:9px}
- #smvDailyCalendar .cal-graha-period-card table{font-size:11.5px;min-width:1000px}
- #smvDailyCalendar .cal-graha-period-card th,#smvDailyCalendar .cal-graha-period-card td{padding:8px 10px}
- #smvDailyCalendar .cal-graha-period-list small{font-size:9.5px}
+  #calGrahaPeriodCard{
+    margin:14px 0 20px;
+    padding:9px;
+  }
+  #calGrahaPeriodCard .cal-graha-period-table{
+    font-size:12px;
+  }
+  #calGrahaPeriodCard .cal-graha-period-table th,
+  #calGrahaPeriodCard .cal-graha-period-table td{
+    padding:8px 10px;
+  }
+  #calGrahaPeriodCard .cal-graha-period-list small{
+    font-size:9.5px;
+  }
 }
