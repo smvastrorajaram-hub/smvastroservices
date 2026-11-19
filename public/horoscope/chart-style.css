@@ -134,3 +134,8 @@
  justify-content:center;align-items:baseline;box-sizing:border-box!important;
  white-space:normal!important;overflow-wrap:anywhere;word-break:break-word;
 }
+/* V345: recolour only black planet labels in North/East Rasi, Navamsa and Bhava. */
+.south-indian-chart.smv-v342-north .smv-v342-planets .planet-glyph.smv-v342-black-planet-text,
+.south-indian-chart.smv-v342-east .smv-v342-planets .planet-glyph.smv-v342-black-planet-text{
+ color:rgb(224,0,0)!important;-webkit-text-fill-color:rgb(224,0,0)!important;
+}
