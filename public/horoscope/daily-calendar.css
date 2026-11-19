@@ -10,7 +10,7 @@
 .calendar-only>header{flex-wrap:wrap!important;justify-content:space-between!important}.calendar-only>header nav{display:flex!important;width:auto!important;min-width:165px!important;gap:8px!important;position:static!important;flex-wrap:nowrap!important}.calendar-only>header nav button{width:auto!important;min-width:74px!important;max-width:none!important;height:auto!important;white-space:nowrap!important;padding:10px!important;background:#fff7dc!important;color:#155a52!important;font-family:'Noto Sans Tamil',Arial,sans-serif!important}
 
 
-/* V211: compact single-layer calendar + transit containment. */
+/* V211: three-plus planet Rasi cells scale names, markers, degrees, Lagna and house numbers together; contain all labels within the cell. */
 #smvDailyCalendar .transit-table-card{margin:12px 0 0}
 #smvDailyCalendar .transit-table-card:before,#smvDailyCalendar .transit-table-card:after{display:none!important}
 #smvDailyCalendar .transit-chart{overflow:hidden!important}
