@@ -83,7 +83,7 @@ test('Calendar Graha table is a clean standalone three-column component with int
   assert.ok(scrollRule.includes('overflow-x:auto'));
   assert.ok(scrollRule.includes('overflow-y:hidden'));
   assert.ok(!scrollRule.includes('!important'));
-  const compactGrahaCss = css.slice(css.indexOf('/* Annual Graha table:')).replace(/\\s+/g, '');
+  const compactGrahaCss = css.slice(css.indexOf('/* Annual Graha table:')).replace(/\s+/g, '');
   assert.ok(compactGrahaCss.includes('#calGrahaPeriodCard .cal-graha-period-table{width:680px;min-width:680px;'));
   assert.ok(css.includes('#calGrahaPeriodCard .cal-graha-period-table th:first-child'));
   assert.ok(compactGrahaCss.includes('#calGrahaPeriodCard .cal-graha-period-date-start,#calGrahaPeriodCard .cal-graha-period-date-end{display:block;white-space:nowrap;'));
