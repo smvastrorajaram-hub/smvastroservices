@@ -138,8 +138,9 @@ for(const [name,rank] of [
   ['சூரியன்',7],['சந்திரன்',6],['செவ்வாய்',2],['புதன்',3],
   ['குரு',4],['சுக்கிரன்',5],['சனி',1]
 ]){
-  near(result.planets[name].components.naisargika,60*rank/7,1e-12,
-    name+' exact BPHS Naisargika fraction');
+  near(result.planets[name].components.naisargika,
+    Math.round((60*rank/7+Number.EPSILON)*1000)/1000,1e-12,
+    name+' BPHS Naisargika fraction rounded to the engine Virupa precision');
 }
 
 // Frame mismatch is a hard failure, not a numeric result or a warning.
