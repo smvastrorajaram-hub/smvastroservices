@@ -69,7 +69,10 @@
   const contents=document.createElement('span');contents.className='smv-v342-planets';
   const items=planetEntries??[...source.out[sign].querySelectorAll('.planet-line')];
   if(items.length){for(const item of items){contents.append(item.cloneNode(true));}}
-  else {const m=document.createElement('span');m.className='smv-v342-empty';m.textContent='—';contents.append(m);}
+  else if(kind!=='d9'&&kind!=='bhava'){
+   // Rasi and Transit retain their existing empty-cell dash; Navamsa and Bhava stay blank.
+   const m=document.createElement('span');m.className='smv-v342-empty';m.textContent='—';contents.append(m);
+  }
   cell.append(contents);return cell;
  }
  // Bhava Chalit may have multiple bhava cusps in one sign. The source Bhava
