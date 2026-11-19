@@ -5,7 +5,7 @@ on:
     paths:
       - 'research/modern-drik-bija/**'
       - 'tests/modern-drik-bija-true-regression.mjs'
-      - 'tests/modern-drik-bija-inpop-daily-event-validation.mjs'
+      - 'tests/modern-drik-bija-inpop-monthly-event-validation.mjs'
       - 'tests/fixtures/modern-drik-bija-jpl-de441-apparent-annual-1800-2399.json'
       - '.github/workflows/modern-drik-bija-research-qa.yml'
   workflow_dispatch:
@@ -29,12 +29,12 @@ jobs:
           node --check research/modern-drik-bija/moshier-apparent-reference.mjs
           node --check research/modern-drik-bija/miriade-inpop-reference.mjs
           node --check tests/modern-drik-bija-true-regression.mjs
-          node --check tests/modern-drik-bija-inpop-daily-event-validation.mjs
+          node --check tests/modern-drik-bija-inpop-monthly-event-validation.mjs
       - name: Fit on central 400 years and verify both blind 100-year DE441 edge blocks
         run: node tests/modern-drik-bija-true-regression.mjs
       - name: Compare monthly epochs and dense event windows against independent IMCCE INPOP
-        run: node tests/modern-drik-bija-inpop-daily-event-validation.mjs
-      - name: Preserve full daily and event-focused INPOP report
+        run: node tests/modern-drik-bija-inpop-monthly-event-validation.mjs
+      - name: Preserve full monthly and event-focused INPOP report
         if: always()
         uses: actions/upload-artifact@v4
         with:
