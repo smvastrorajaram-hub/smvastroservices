@@ -146,7 +146,7 @@ yes(policy.includes('function syncHoroscopePaidEntry()'),'Horoscope has a pre-ca
 yes(html.includes('id="smvHoroscopePaidEntryEnglish"')&&html.includes('id="smvHoroscopePaidEntryTamil"'),'Both Horoscope language forms host the pre-login benefit panel');
 yes(html.includes('config.js?v=20261107-private-chat-selected-astrologer-v5'),'Access config uses its cache-busted URL');
 yes(html.includes('horoscope-form.js?v=20261117-english-report-language-consistency-v1'),'Horoscope form uses its cache-busted URL');
-yes(html.includes('horoscope.css?v=20261111-pages-horoscope-header-css-v1'),'Horoscope styles use their cache-busted URL');
+yes(html.includes('horoscope.css?v=20261119-horoscope-four-chart-planet-layout-v1'),'Horoscope styles use their cache-busted URL');
 yes(html.includes('marriage-matching.js?v=20261117-english-report-language-consistency-v1'),'Marriage Matching uses its cache-busted URL');
 
 // All three products share the marker. Existing offline/user data is not cleared.
