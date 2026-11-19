@@ -8,6 +8,10 @@ import {
   SAURA_BIJA_CORRECTED_METADATA as META
 } from '../research/saura-bija/saura-bija-mean-motion.mjs';
 import { getSwe } from '../public/horoscope/offline/wasm-provider.mjs';
+import {
+  sauraDe441ApparentTrueLongitude,
+  sauraSiderealOffsetFromLahiri
+} from '../research/saura-bija/saura-de441-apparent-true.mjs';
 
 const norm = x => ((x % 360) + 360) % 360;
 const signedAngle = (a,b) => ((a-b+540)%360)-180;
@@ -120,14 +124,23 @@ for(const body of ['Mercury','Venus','Mars','Jupiter','Saturn']){
     const at=jd(year);
     const model=sauraBijaCorrectedTrueLongitudeResearch(at,body);
     const lahiriAyanamsa=swe.ayanamsa(at);
-    const sauraAyanamsa=sauraAyanamsaAtEpoch+(lahiriAyanamsa-lahiriAtFrameEpoch);
-    const jplSauraLongitude=norm(reference.longitude-sauraAyanamsa);
+    const sauraAyanamsa=sauraSiderealOffsetFromLahiri(lahiriAyanamsa,lahiriAtFrameEpoch);
+    const de441Reference={
+      planet:body,target:source.target,jdUt:at,longitude:reference.longitude,latitude:reference.latitude,
+      ephemeris:fixture.ephemeris,quantity:fixture.quantity,centerBody:fixture.centerBody,
+      observerCenter:fixture.observerCenter,coordinateFrame:'JPL-IAU76/80-apparent-ecliptic-of-date',
+      interpolated:false
+    };
+    const de441=sauraDe441ApparentTrueLongitude(de441Reference,sauraAyanamsa);
+    const jplSauraLongitude=de441.trueLongitude;
     const error=signedAngle(model.trueLongitude,jplSauraLongitude);
     assert.ok(Number.isFinite(error),body+' '+year+' JPL residual finite');
     assert.ok(model.trueLongitude>=0 && model.trueLongitude<360,
       body+' '+year+' classical true longitude normalized');
     const row={body,year,jplTropicalLongitude:reference.longitude,
       transferredSauraLongitude:jplSauraLongitude,
+      classicalBijaTrueLongitude:model.trueLongitude,
+      de441ApparentTrueLongitude:de441.trueLongitude,
       modelTrueLongitude:model.trueLongitude,error};
     rows.push(row);
     allRows.push(row);
@@ -151,7 +164,9 @@ const report={
     B:{pass:true,source:'Surya Siddhanta I.41-42 and I.57-58 Kali-epoch apsis values and Kalpa revolution counts',checks:phaseBChecks,rows:phaseB},
     C:{completed:true,source:'NASA/JPL Horizons API, DE441, Earth geocentric, quantity 31',
       independentReferenceRows:allRows.length,
-      frameTransfer:'Burgess Saura zero-point at 1860-01-01 (18°05′08.25″), carried using Lahiri ayanamsa precession delta',
+      frameTransfer:'Shared adapter: Burgess Saura zero-point at 1860-01-01 plus the date-specific Lahiri precession delta',
+      outputSeparation:{classicalMean:'CLASSICAL_BIJA_MEAN',classicalTrue:'CLASSICAL_BIJA_TRUE',modernReference:'DE441_GEOCENTRIC_APPARENT_TRUE'},
+      annualFixtureIsNotInterpolated:true,
       accuracyThresholdDegrees,
       strictAccuracyGatePass,
       perPlanet:perPlanet,
