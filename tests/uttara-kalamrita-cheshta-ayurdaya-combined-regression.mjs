@@ -573,7 +573,12 @@ for(const [date,time,sunriseRef,sunsetRef] of refs){
  for(const p of actual){
    yes(p.strength6.evidence.solarTimeMethod.includes('Swiss Sun ephemeris'),date+' '+p.name+' Swiss-based Kala source');
    yes(Number.isFinite(p.strength6.evidence.birthApparentSolarHour),date+' '+p.name+' apparent hour valid');
-   yes(Number.isFinite(p.strength6.totalVirupa),date+' '+p.name+' finite Shadbala');
+   if(['செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி'].includes(p.name)){
+    yes(p.strength6.frameSafety?.status==='BLOCKED_MIXED_REFERENCE_FRAMES'&&p.strength6.totalVirupa===null,
+      date+' '+p.name+' mixed-frame live Shadbala total is correctly withheld');
+   }else{
+    yes(Number.isFinite(p.strength6.totalVirupa),date+' '+p.name+' finite luminary Shadbala');
+   }
    eq(p.strength6.classicalCertified,false,date+' five-planet Cheshta still not certified');
  }
 }
