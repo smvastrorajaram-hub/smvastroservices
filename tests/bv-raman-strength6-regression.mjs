@@ -36,6 +36,8 @@ const planets=standardPlanets.map(p=>p.name);
 // B.V. Raman, Graha and Bhava Balas, 13th ed., Ch. VI, Examples 49-51.
 // These are transcribed from the printed Standard Horoscope table and are
 // independent of the engine's astronomy path.
+const printedFixtureFrame='BV_RAMAN_PRINTED_STANDARD_HOROSCOPE';
+const printedFixtureProvenance='B.V. Raman, Graha and Bhava Balas, 13th ed., Chapter VI, Examples 49–51';
 const standardChestaInputs={
  'செவ்வாய்':{meanLongitude:266.34,trueLongitude:229.50,sheeghroccaLongitude:181.23},
  'புதன்':{meanLongitude:181.23,trueLongitude:181.52,sheeghroccaLongitude:174.49},
@@ -43,6 +45,10 @@ const standardChestaInputs={
  'சுக்கிரன்':{meanLongitude:181.23,trueLongitude:171.16,sheeghroccaLongitude:158.35},
  'சனி':{meanLongitude:111.23,trueLongitude:124.39,sheeghroccaLongitude:181.23}
 };
+for(const input of Object.values(standardChestaInputs)){
+ input.referenceFrames={mean:printedFixtureFrame,true:printedFixtureFrame,sheeghrocca:printedFixtureFrame};
+ input.sourceProvenance=printedFixtureProvenance;
+}
 const standard=calculateBVRamanShadbala({
  planets:standardPlanets,bhavas:[],
  ascendantLongitude:298+27/60,midheavenLongitude:216+30/60,
@@ -123,7 +129,8 @@ for(const name of planets){
  near(r.evidence.drikPinda,expectedDrishtiPinda[name],0.15,name+' Raman printed Drishti Pinda');
  if(Object.hasOwn(expectedCheshta,name)){
   near(r.components.cheshta,expectedCheshta[name],0.02,name+' Raman printed Chesta Bala worked example');
-  eq(r.evidence.cheshtaSource.method,'BV_RAMAN_CHAPTER_VI_VERIFIED_CLASSICAL_LONGITUDES',name+' uses independently transcribed Raman Chesta inputs');
+  eq(r.evidence.cheshtaSource.method,'BV_RAMAN_CHAPTER_VI_SAME_FRAME_SOURCE_INPUTS',name+' uses explicitly frame-matched Raman Chesta inputs');
+  eq(r.evidence.cheshtaSource.sameReferenceFrameVerified,true,name+' printed source triplet declares one shared frame');
  }
  near(r.components.naisargika,BV_RAMAN_SHADBALA_SOURCE.naturalBalaPrinted[name],0.001,name+' Raman printed Naisargika constant');
 }
@@ -157,10 +164,12 @@ for(const [date,time] of births){
    eq(p.strength6.totalVirupa,null,date+' '+p.name+' mixed-frame total remains withheld');
    eq(p.strength6.totalRupa,null,date+' '+p.name+' mixed-frame Rupa remains withheld');
   }
-  ok(Number.isFinite(c.sthana.total)&&Number.isFinite(c.dig)&&Number.isFinite(c.kala.total)&&Number.isFinite(c.cheshta)&&Number.isFinite(c.naisargika)&&Number.isFinite(c.drik),date+' '+p.name+' six Bala components present');
+  ok(Number.isFinite(c.sthana.total)&&Number.isFinite(c.dig)&&Number.isFinite(c.kala.total)&&(p.name==='சூரியன்'||p.name==='சந்திரன்'?c.cheshta===0:c.cheshta===null)&&Number.isFinite(c.naisargika)&&Number.isFinite(c.drik),date+' '+p.name+' components present; five-graha Cheshta is withheld without a verified same-frame triplet');
   if(p.name==='செவ்வாய்'||p.name==='புதன்'||p.name==='குரு'||p.name==='சுக்கிரன்'||p.name==='சனி'){
-   near(p.strength6.evidence.cheshtaSource.trueLongitude,p.longitude,1e-7,date+' '+p.name+' Cheshta uses actual ephemeris longitude');
-   eq(p.strength6.evidence.cheshtaSource.method,'BV_RAMAN_FORMULA_EPHEMERIS_TRUE_LONGITUDE_RESEARCH_MEAN_SHEEGHROCCA',date+' '+p.name+' exposes its unresolved mean/Sheeghrocca source gate');
+   eq(p.strength6.evidence.cheshtaSource.value,null,date+' '+p.name+' no mixed-frame Cheshta number is emitted');
+   eq(p.strength6.evidence.cheshtaSource.available,false,date+' '+p.name+' Cheshta remains unavailable until a same-frame triplet exists');
+   eq(p.strength6.evidence.cheshtaSource.method,'BV_RAMAN_CHESHTA_BLOCKED_REFERENCE_FRAME_MISMATCH',date+' '+p.name+' mixed-frame production guard is active');
+   eq(p.strength6.evidence.cheshtaSource.sameReferenceFrameVerified,false,date+' '+p.name+' same-frame proof is not fabricated');
   }
   if(Number.isFinite(p.strength6.totalVirupa)){
    const kalaSum=Object.entries(c.kala).filter(([k,v])=>!['total','warPreTotal','yuddhaTrace'].includes(k)&&Number.isFinite(v)).reduce((s,[,v])=>s+v,0);
