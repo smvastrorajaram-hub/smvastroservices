@@ -7,7 +7,7 @@ import {
   sauraBijaCorrectedTrueLongitudeResearch,
   SAURA_BIJA_CORRECTED_METADATA as META
 } from '../research/saura-bija/saura-bija-mean-motion.mjs';
-import { getSwe } from '../public/horoscope/offline/wasm-provider.mjs';
+import { getSwe, C } from '../public/horoscope/offline/wasm-provider.mjs';
 
 const norm = x => ((x % 360) + 360) % 360;
 const signedAngle = (a,b) => ((a-b+540)%360)-180;
@@ -110,7 +110,9 @@ const statsFor=rows=>{
     maxSignedDegrees:+sorted[sorted.length-1].toFixed(6)
   };
 };
-const allRows=[], perPlanet={}, perCentury={};
+const allRows=[], perPlanet={}, perCentury={}, swissFrameRows=[];
+const swissBody={Mercury:C.MERCURY,Venus:C.VENUS,Mars:C.MARS,Jupiter:C.JUPITER,Saturn:C.SATURN};
+const siderealFlags=swe.siderealSpeedFlags();
 for(const body of ['Mercury','Venus','Mars','Jupiter','Saturn']){
   const source=fixture.bodies[body];
   assert.equal(source.rows.length,600,body+' JPL annual reference rows');
@@ -121,7 +123,14 @@ for(const body of ['Mercury','Venus','Mars','Jupiter','Saturn']){
     const model=sauraBijaCorrectedTrueLongitudeResearch(at,body);
     const lahiriAyanamsa=swe.ayanamsa(at);
     const sauraAyanamsa=sauraAyanamsaAtEpoch+(lahiriAyanamsa-lahiriAtFrameEpoch);
+    const jplLahiriLongitude=norm(reference.longitude-lahiriAyanamsa);
     const jplSauraLongitude=norm(reference.longitude-sauraAyanamsa);
+    const utc=swe.utcToJd(year,1,1,0,0,0);
+    const swiss=swe.calc(utc.et,swissBody[body],siderealFlags);
+    if(!swiss || !Number.isFinite(swiss.longitude))
+      throw new Error(body+' '+year+' Swiss Lahiri comparison returned invalid longitude');
+    const swissVsJplError=signedAngle(swiss.longitude,jplLahiriLongitude);
+    swissFrameRows.push({body,year,error:swissVsJplError});
     const error=signedAngle(model.trueLongitude,jplSauraLongitude);
     assert.ok(Number.isFinite(error),body+' '+year+' JPL residual finite');
     assert.ok(model.trueLongitude>=0 && model.trueLongitude<360,
@@ -144,6 +153,11 @@ assert.equal(allRows.length,3000,'five planets × 600 years = 3,000 independent 
 const accuracyThresholdDegrees=0.05;
 const strictAccuracyGatePass=Object.values(perPlanet)
   .every(x=>x.maxAbsoluteDegrees<=accuracyThresholdDegrees);
+const swissFrameStats={};
+for(const body of ['Mercury','Venus','Mars','Jupiter','Saturn'])
+  swissFrameStats[body]=statsFor(swissFrameRows.filter(x=>x.body===body));
+const swissFrameTransferGatePass=Object.values(swissFrameStats)
+  .every(x=>x.maxAbsoluteDegrees<=accuracyThresholdDegrees);
 const report={
   pass:true,
   phases:{
@@ -154,6 +168,7 @@ const report={
       frameTransfer:'Burgess Saura zero-point at 1860-01-01 (18°05′08.25″), carried using Lahiri ayanamsa precession delta',
       accuracyThresholdDegrees,
       strictAccuracyGatePass,
+      jplVsSwissLahiriCrossCheck:{pass:swissFrameTransferGatePass,perPlanet:swissFrameStats},
       perPlanet:perPlanet,
       perCentury:perCentury}
   },
