@@ -20,8 +20,8 @@ includes(file('public/horoscope/report-print.js'),"return 'SMVHS-'+safePdfFilena
 includes(file('public/horoscope/horoscope.js'),'data-smv-screen-only="daily-panchang"');
 includes(file('public/horoscope/horoscope.js'),'data-smv-screen-only="daily-hora"');
 includes(file('public/horoscope/horoscope.js'),'card birth-time-panchang');
-includes(file('public/horoscope/horoscope.js'),'class="transit-card"');
-includes(file('public/horoscope/horoscope.js'),'class="hora-card"');
+includes(file('public/horoscope/horoscope.js'),'card transit-card');
+includes(file('public/horoscope/horoscope.js'),'card hora-card');
 includes(file('public/horoscope/report-print.css'),'#printReport .hora-card{display:none!important}');
 includes(file('public/horoscope/offline/places/place-search.mjs'),'Math.min(70,Number(limit)||12)');
 includes(file('public/horoscope/location-search-online-offline.js'),"Math.min(70,Number(limit)||70)");
