@@ -12,7 +12,8 @@ const BODY_IDS = Object.freeze({
   Venus: 3,
   Mars: 4,
   Jupiter: 5,
-  Saturn: 6
+  Saturn: 6,
+  Sun: 0
 });
 
 export async function createModernMoshierReference() {
@@ -48,7 +49,7 @@ export async function createModernMoshierReference() {
 
   function apparentTropicalLongitudeAtJd(jdEt, planet) {
     const bodyId = BODY_IDS[planet];
-    if (!bodyId) throw new RangeError('Unsupported Moshier planet: ' + planet);
+    if (!Object.prototype.hasOwnProperty.call(BODY_IDS, planet)) throw new RangeError('Unsupported Moshier body: ' + planet);
     if (!Number.isFinite(jdEt)) throw new TypeError('A finite TT/ET Julian day is required');
     
     const valuesPointer = M._malloc(48);
@@ -69,7 +70,7 @@ export async function createModernMoshierReference() {
       }
       const longitude = M.HEAPF64[valuesPointer >> 3];
       if (!Number.isFinite(longitude) || longitude < 0 || longitude >= 360) {
-        throw new Error('Moshier returned an invalid tropical longitude for ' + planet + ' ' + year);
+        throw new Error('Moshier returned an invalid tropical longitude for ' + planet + ' at JD ' + jdEt);
       }
       return Object.freeze({
         jdEt,
