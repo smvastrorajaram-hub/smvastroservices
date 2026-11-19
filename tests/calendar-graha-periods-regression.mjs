@@ -78,8 +78,15 @@ test('Calendar table is inserted after transit with readable two-axis scrolling 
   const scrollStart = css.indexOf('#smvDailyCalendar .cal-graha-period-scroll{');
   assert.notEqual(scrollStart, -1);
   const scrollRule = css.slice(scrollStart, css.indexOf('}', scrollStart));
-  assert.ok(scrollRule.includes('overflow:auto'));
-  assert.ok(scrollRule.includes('max-height:min(70vh,620px)'));
+  assert.ok(scrollRule.includes('overflow-x:auto'));
+  assert.ok(scrollRule.includes('overflow-y:hidden'));
+  assert.ok(scrollRule.includes('max-height:none'));
+  assert.ok(!scrollRule.includes('overflow:auto'));
+  const cellRule = css.slice(css.indexOf('#smvDailyCalendar .cal-graha-period-card th,#smvDailyCalendar .cal-graha-period-card td{'));
+  assert.ok(cellRule.includes('white-space:nowrap'));
+  assert.ok(cellRule.includes('word-break:keep-all'));
+  assert.ok(cellRule.includes('overflow-wrap:normal'));
+  assert.ok(cellRule.includes('hyphens:none'));
   assert.ok(css.includes('#smvDailyCalendar .cal-graha-period-card table{width:1000px;min-width:1000px'));
   assert.ok(css.includes('#smvDailyCalendar .cal-graha-period-card thead th{position:sticky;top:0'));
   assert.ok(css.includes('#smvDailyCalendar .cal-graha-period-card tbody th{position:sticky;left:0'));
