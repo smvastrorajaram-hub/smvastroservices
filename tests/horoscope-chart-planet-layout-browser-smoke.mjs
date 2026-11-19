@@ -163,6 +163,8 @@ try {
                 const colors = [...cell.querySelectorAll('.planet-glyph')].map(element=>getComputedStyle(element).color);
                 picked[target] = {
                   compact:cell.classList.contains('smv-chart-cell-compact'),
+                  cellCompactFont:getComputedStyle(cell).getPropertyValue('--smv-chart-compact-font-size').trim(),
+                  cellClasses:cell.className,
                   lineSize:px(line),
                   glyphSize:px(glyph),
                   numberSize:px(number),
@@ -214,6 +216,7 @@ try {
           const two = item.picked[2];
           const three = item.picked[3];
           const four = item.picked[4];
+          if(state.viewport===768&&language==='ta'&&item.rootId==='tamilHoroscopeResult'&&item.kind==='rasi'&&style==='south')console.log('SOUTH RASI COMPACT DIAGNOSTIC',JSON.stringify({two:{cellClasses:two.cellClasses,cellCompactFont:two.cellCompactFont,lineSize:two.lineSize},three:{cellClasses:three.cellClasses,cellCompactFont:three.cellCompactFont,lineSize:three.lineSize},four:{cellClasses:four.cellClasses,cellCompactFont:four.cellCompactFont,lineSize:four.lineSize}}));
           for (const entry of [[2,two],[3,three],[4,four]]) {
             const count = entry[0];
             const value = entry[1];
