@@ -236,15 +236,22 @@
   list-style:none;
 }
 #calGrahaPeriodCard .cal-graha-period-event{
-  display:block;
+  display:flex;
+  flex-flow:row nowrap;
+  align-items:baseline;
+  justify-content:center;
+  gap:clamp(6px,1vw,12px);
+  width:100%;
   margin:0 0 5px;
   padding:0;
+  white-space:nowrap;
 }
 #calGrahaPeriodCard .cal-graha-period-start,
 #calGrahaPeriodCard .cal-graha-period-end{
-  display:block;
-  width:100%;
-  font-size:13px;
+  display:inline;
+  flex:0 0 auto;
+  width:auto;
+  font-size:12px;
   line-height:1.55;
   white-space:nowrap;
   overflow-wrap:normal;
@@ -261,9 +268,12 @@
   #calGrahaPeriodCard .cal-graha-planet{
     padding:10px 0;
   }
+  #calGrahaPeriodCard .cal-graha-period-event{
+    gap:5px;
+  }
   #calGrahaPeriodCard .cal-graha-period-start,
   #calGrahaPeriodCard .cal-graha-period-end{
-    font-size:12.5px;
+    font-size:clamp(9.5px,2.65vw,10.5px);
   }
 }
 @media(min-width:681px){

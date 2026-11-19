@@ -97,7 +97,9 @@ test('Calendar Graha periods render as one centered vertical list without tables
   assert.ok(verticalCss.includes('display:block'));
   assert.ok(verticalCss.includes('width:100%'));
   assert.ok(!verticalCss.includes('!important'));
-  assert.doesNotMatch(verticalCss, /overflow-x|overflow:auto|display:grid|display:flex|grid-template-columns/i);
+  assert.match(verticalCss, /\.cal-graha-period-event\{\s*display:flex;\s*flex-flow:row nowrap/);
+  assert.match(verticalCss, /\.cal-graha-period-start,\s*#calGrahaPeriodCard \.cal-graha-period-end\{\s*display:inline/);
+  assert.doesNotMatch(verticalCss, /overflow-x|overflow:auto|display:grid|grid-template-columns/i);
   assert.doesNotMatch(verticalCss, /color:\s*(?:red|#f00|#ff0000|rgb\(255,\s*0,\s*0\))/i);
   assert.doesNotMatch(verticalCss, /cal-graha-period-table|cal-graha-period-scroll/);
   assert.ok(calendarSource.includes('smv-css-island'));
@@ -114,5 +116,5 @@ test('the three application service workers use one synchronized cache release',
     releases.push(match[1]);
   }
   assert.equal(new Set(releases).size, 1);
-  assert.equal(releases[0], '20261119-graha-period-table-v6');
+  assert.equal(releases[0], '20261119-graha-period-table-v7');
 });
