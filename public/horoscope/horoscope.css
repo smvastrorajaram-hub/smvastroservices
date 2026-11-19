@@ -932,8 +932,7 @@ table.data-table{width:100%;min-width:680px;border-collapse:separate;border-spac
 .dasha-table th:nth-child(3), .dasha-table td:nth-child(3){width:30%}
 .dasha-table th:nth-child(4), .dasha-table td:nth-child(4){width:30%}
 .south-rasi-cell{position:relative;box-sizing:border-box}
-.south-rasi-cell .planet-line{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;padding:2px 1px;border-bottom:1px dotted rgb(219, 201, 170);font-size:clamp(10px, 1.9vw, 13px);font-weight:800;color:rgb(107, 45, 22);line-height:1.3;white-space:nowrap}
-.south-rasi-cell .planet-line:last-child{border-bottom:0px}
+.south-rasi-cell .planet-line{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;padding:2px 1px;font-size:clamp(10px, 1.9vw, 13px);font-weight:800;color:rgb(107, 45, 22);line-height:1.3;white-space:nowrap}
 .south-rasi-cell .planet-glyph{font-weight:900;color:rgb(138, 75, 22)}
 .south-rasi-cell .planet-degree{font-weight:700;color:rgb(95, 83, 70)}
 .bhava-rasi-cell .bhava-cusp{font-size:9px;color:rgb(139, 91, 30);font-weight:800;border:1px dashed rgb(201, 168, 107);border-radius:4px;padding:2px 3px;margin:2px 0px;line-height:1.15}
