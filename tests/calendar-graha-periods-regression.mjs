@@ -62,14 +62,19 @@ test('year-boundary continuations remain clipped and explicitly marked', () => {
   assert.equal(year[5].every(event => event[2] >= year[3] && event[3] <= year[4]), true);
 });
 
-test('Calendar Graha table is a clean standalone three-column component with intact dates', async () => {
+test('Calendar Graha periods render as one centered vertical list without tables, columns or scrolling', async () => {
   assert.ok(calendarSource.includes("from './calendar-graha-periods-data.mjs'"));
   assert.ok(calendarSource.includes('root.after(card)'));
   assert.ok(calendarSource.includes("host.querySelector('#calGrahaPeriodCard')?.remove()"));
-  assert.ok(calendarSource.includes('cal-graha-period-table'));
+  assert.ok(calendarSource.includes("card.className='cal-graha-period-card smv-css-island'"));
+  assert.ok(calendarSource.includes('cal-graha-planet-name'));
+  assert.ok(calendarSource.includes('cal-graha-period-start'));
+  assert.ok(calendarSource.includes('cal-graha-period-end'));
   assert.ok(calendarSource.includes('renderAnnualGrahaPeriods();updateHora()'));
   assert.ok(calendarSource.includes('day>=start&&day<end'));
+  assert.doesNotMatch(calendarSource, /<table|<thead|<tbody|<tr|<th|<td|cal-graha-period-table|cal-graha-period-scroll/);
   assert.doesNotMatch(calendarSource, /அட்டவணையை முழுமையாகப் பார்க்க கிடைமட்டமாக நகர்த்தவும்|Scroll horizontally to view the full table/);
+  assert.doesNotMatch(calendarSource, /ஆண்டு எல்லையைத் தாண்டும் நிகழ்வுகள்|Periods crossing a Tamil-year boundary|நேரங்கள் IST|Times are IST/);
   assert.doesNotMatch(calendarSource, /ராகு–கேது|Rahu–Ketu|Not in supplied data|மூலத் தரவில் இல்லை/);
   assert.equal(TAMIL_GRAHA_PLANETS.length, 5);
   assert.ok(TAMIL_GRAHA_YEAR_DATA.every(year => year[5].every(event => Number.isInteger(event[0]) && event[0] >= 0 && event[0] < TAMIL_GRAHA_PLANETS.length)));
@@ -77,26 +82,16 @@ test('Calendar Graha table is a clean standalone three-column component with int
   assert.ok(calendarWorkerSource.includes("'../calendar-graha-periods-data.mjs'"));
   assert.ok(calendarWorkerSource.includes('calendar-graha-periods-data\\.mjs'));
   const css = await readFile(new URL('../public/horoscope/daily-calendar.css', import.meta.url), 'utf8');
-  const grahaScrollStart = css.indexOf('#calGrahaPeriodCard .cal-graha-period-scroll{');
-  assert.notEqual(grahaScrollStart, -1);
-  const scrollRule = css.slice(grahaScrollStart, css.indexOf('}', grahaScrollStart));
-  assert.ok(scrollRule.includes('overflow-x:auto'));
-  assert.ok(scrollRule.includes('overflow-y:hidden'));
-  assert.ok(!scrollRule.includes('!important'));
-  const compactGrahaCss = css.slice(css.indexOf('/* Annual Graha table:')).replace(/\s+/g, '');
-  assert.ok(compactGrahaCss.includes('#calGrahaPeriodCard.cal-graha-period-table{width:680px;min-width:680px;'));
-  assert.ok(css.includes('#calGrahaPeriodCard .cal-graha-period-table th:first-child'));
-  assert.ok(compactGrahaCss.includes('#calGrahaPeriodCard.cal-graha-period-date-start,#calGrahaPeriodCard.cal-graha-period-date-end{display:block;white-space:nowrap;'));
-  assert.ok(!css.includes('#smvDailyCalendar .cal-graha-period'));
-  const grahaCss = css.slice(css.indexOf('/* Annual Graha table:'));
-  assert.ok(!grahaCss.includes('!important'));
-  assert.doesNotMatch(grahaCss, /color:\s*(?:red|#f00|#ff0000|rgb\(255,\s*0,\s*0\))/i);
-  assert.ok(grahaCss.includes('width:120px;'));
-  assert.ok(grahaCss.includes('width:280px;'));
-  assert.ok(calendarSource.includes('cal-graha-period-date-start'));
-  assert.ok(calendarSource.includes('cal-graha-period-date-end'));
+  const verticalCss = css.slice(css.indexOf('/* Annual Graha periods:'));
+  assert.ok(verticalCss.includes('#calGrahaPeriodCard .cal-graha-period-planets{display:block'));
+  assert.ok(verticalCss.includes('#calGrahaPeriodCard .cal-graha-planet{display:block'));
+  assert.ok(verticalCss.includes('#calGrahaPeriodCard .cal-graha-planet-name{'));
+  assert.ok(!verticalCss.includes('!important'));
+  assert.doesNotMatch(verticalCss, /overflow-x|overflow:auto|display:grid|display:flex|grid-template-columns|color:\\s*(?:red|#f00|#ff0000)/i);
+  assert.ok(!verticalCss.includes('cal-graha-period-table'));
+  assert.ok(!verticalCss.includes('cal-graha-period-scroll'));
+  assert.ok(calendarSource.includes('smv-css-island'));
   assert.ok(!css.includes('cal-graha-period-note'));
-  assert.ok(calendarSource.includes('tabindex="0" role="region" aria-label="'));
 });
 
 test('the three application service workers use one synchronized cache release', async () => {
