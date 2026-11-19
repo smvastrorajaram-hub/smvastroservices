@@ -349,6 +349,8 @@ function ramanIshtaKashtaForPlanet({planet,sunRow,moonRow,ayanamsa,uchchaBala,si
   specialChestaMethod='BV_RAMAN_SPECIAL_CHESTA_FOR_ISHTA_KASHTA';
  }else{
   const source=sixfoldCheshtaSource||{};
+  if(source.available===false&&source.method==='BV_RAMAN_CHESHTA_BLOCKED_REFERENCE_FRAME_MISMATCH')
+   throw new Error('Blocked because mixed astronomical reference frames: Chapter VI Cheshta inputs are unavailable');
   const inputs=[source.meanLongitude,source.trueLongitude,source.sheeghroccaLongitude];
   if(!inputs.every(finite)||!finite(sixfoldCheshtaBala))throw new TypeError('B.V. Raman Ishta/Kashta must reuse the sixfold Chapter VI Cheshta inputs for '+planet);
   const mean=norm360(source.meanLongitude),actual=norm360(source.trueLongitude),sheeghrocca=norm360(source.sheeghroccaLongitude);
