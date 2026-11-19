@@ -1731,7 +1731,7 @@ try {
         combustionInStatus,
         retrogradeInChart,
         retrogradeInNames,
-        hasWrongLatinMarkersInTamil: language === 'ta' && (markerText.includes('(R)') || markerText.includes('(C)'),
+        hasWrongLatinMarkersInTamil: language === 'ta' && (markerText.includes('(R)') || markerText.includes('(C)')),
         hasWrongTamilMarkersInEnglish: language === 'en' && (markerText.includes('(வ)') || markerText.includes('(அ)'))
       };
     }, language);
