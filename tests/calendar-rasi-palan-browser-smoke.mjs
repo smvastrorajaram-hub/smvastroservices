@@ -126,6 +126,7 @@ try {
     scroller.scrollLeft = 0;
     return {
       found: true,
+      outsideLegacyDailyTableScope: !card.closest('#calDaily'),
       viewportWidth: window.innerWidth,
       wrapperWidth: scroller.clientWidth,
       wrapperScrollWidth: scroller.scrollWidth,
@@ -137,6 +138,7 @@ try {
     };
   });
   assert.equal(grahaMobileLayout.found, true, 'Annual Graha table must render in Calendar.');
+  assert.equal(grahaMobileLayout.outsideLegacyDailyTableScope, true, 'Graha table must not inherit the legacy daily Panchang table layout rules.');
   assert.ok(grahaMobileLayout.tableWidth >= 1060, 'Annual Graha table must keep its full wide layout on mobile: ' + JSON.stringify(grahaMobileLayout));
   assert.ok(grahaMobileLayout.wrapperScrollWidth > grahaMobileLayout.wrapperWidth, 'Annual Graha table must overflow inside its own horizontal scroll area: ' + JSON.stringify(grahaMobileLayout));
   assert.equal(grahaMobileLayout.scrollMoved, true, 'The Graha table must respond to horizontal scrolling on mobile.');
