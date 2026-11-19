@@ -386,7 +386,13 @@ test('Calendar distinguishes Gazette government holidays from observances and do
     'Transit/Panchang, Daily Hora, Transit Chart and Transit Planetary Positions use the dedicated centered-heading class.');
   assert.match(dailyCalendarCssSource, /h3:not\(\.cal-date-details-title\):not\(\.cal-section-title\):not\(\.cal-centered-heading\)/,
     'Generic left-aligned flex decoration must not target Calendar centered headings.');
-  assert.ok(horoscopeRendererSource.includes('class="card transit-card"><h3 class="cal-centered-heading">'), 'Transit Chart heading receives the centered-heading class.');
+  assert.ok(horoscopeRendererSource.includes('class="transit-card"><h3 class="cal-centered-heading">'), 'Transit Chart renders without an outer card/layer and keeps the centered heading.');
+  assert.ok(horoscopeRendererSource.includes("const planetLabel=calendarPresentation&&ta?String(x.name||enName):enName;"), 'Calendar Transit Planetary Positions uses full graha names instead of short glyph labels.');
+  assert.ok(horoscopeRendererSource.includes("const combustionMarker=isCombust?(calendarPresentation&&ta?'(அ)':'(C)'):'';"), 'Combustion marker is appended to the graha name in the active language.');
+  assert.ok(horoscopeRendererSource.includes("<th>${ta?'கிரகங்கள்':'Planets'}</th>"), 'The positions table labels the first column as Planets / கிரகங்கள்.');
+  assert.ok(!horoscopeRendererSource.includes('<th>Status</th>') && !horoscopeRendererSource.includes('r.status'), 'The Transit Planetary Positions table does not render a Status column.');
+  assert.ok(horoscopeRendererSource.includes('class="hora-card"') && !horoscopeRendererSource.includes('class="card hora-card"'), 'Daily Hora has no outer card layer.');
+  assert.ok(!horoscopeRendererSource.includes('class="card transit-card"'), 'Transit Chart has no outer card layer.');
    assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .cal-centered-heading{'),
     'The Calendar-specific centered-heading class must be centered within the Calendar scope.');
   assert.match(calendarThemeCssSource, /#smvDailyCalendar #calDaily \.cal-centered-heading,\s*#smvDailyCalendar \.cal-date-details-head h3\.cal-date-details-title\{\s*font-size:19px!important;\s*line-height:1\.35!important;\s*\}/, 'Calendar primary headings use the compact desktop size.');
