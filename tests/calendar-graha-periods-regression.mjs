@@ -87,6 +87,11 @@ test('Calendar Graha periods render as one centered vertical list without tables
   assert.ok(verticalCss.includes('#calGrahaPeriodCard .cal-graha-planet{display:block'));
   assert.ok(verticalCss.includes('#calGrahaPeriodCard .cal-graha-planet-name{'));
   assert.ok(!verticalCss.includes('!important'));
+  assert.ok(!verticalCss.includes('overflow-x'));
+  assert.ok(verticalCss.includes('white-space:nowrap'));
+  assert.ok(!/\\bred\\b|#f00|#ff0000|rgb\\(255,\\s*0,\\s*0\\)/i.test(verticalCss));
+  assert.ok(!verticalCss.includes('display:grid') && !verticalCss.includes('display:flex'));
+  assert.ok(!verticalCss.includes('!important'));
   assert.doesNotMatch(verticalCss, /overflow-x|overflow:auto|display:grid|display:flex|grid-template-columns|color:\\s*(?:red|#f00|#ff0000)/i);
   assert.ok(!verticalCss.includes('cal-graha-period-table'));
   assert.ok(!verticalCss.includes('cal-graha-period-scroll'));
