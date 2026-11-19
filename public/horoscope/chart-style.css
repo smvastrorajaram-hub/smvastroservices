@@ -119,7 +119,7 @@
 
 /* East corner triangle centres follow the fixed sign geometry. */
 .south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="2"]{left:24%!important;top:11%!important}
-.south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="3"]{left:11%!important;top:24%!important}
+.south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="3"]{left:9%!important;top:24%!important}
 .south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="5"]{left:11%!important;top:76%!important}
 .south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="6"]{left:24%!important;top:89%!important}
 .south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="8"]{left:76%!important;top:89%!important}
