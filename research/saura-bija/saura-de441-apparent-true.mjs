@@ -31,7 +31,113 @@ const TAMIL = Object.freeze({
 });
 const norm360 = value => ((value % 360) + 360) % 360;
 const signedAngle = (a, b) => ((a - b + 540) % 360) - 180;
+const ARCSEC_TO_RAD = Math.PI / (180 * 3600);
+const RAD_TO_DEG = 180 / Math.PI;
 const BURGESS_SAURA_ZERO_POINT_1860 = 18 + 5 / 60 + 8.25 / 3600;
+const BURGESS_FRAME_EPOCH_JD_UT = Date.UTC(1860, 0, 1) / 86400000 + 2440587.5;
+
+function meanObliquityIau76(jdUt) {
+  const T = (jdUt - 2451545) / 36525;
+  return (84381.448 - 46.8150 * T - 0.00059 * T * T + 0.001813 * T * T * T) * ARCSEC_TO_RAD;
+}
+
+function precessEquatorialIau76(vector, fromJdUt, toJdUt) {
+  if (![fromJdUt, toJdUt, ...vector].every(Number.isFinite)) {
+    throw new TypeError('Finite vector and Julian-day epochs are required for IAU76 precession');
+  }
+  const T = (fromJdUt - 2451545) / 36525;
+  const t = (toJdUt - fromJdUt) / 36525;
+  const zetaArcsec =
+    (2306.2181 + 1.39656 * T - 0.000139 * T * T) * t +
+    (0.30188 - 0.000344 * T) * t * t +
+    0.017998 * t * t * t;
+  const zArcsec =
+    (2306.2181 + 1.39656 * T - 0.000139 * T * T) * t +
+    (1.09468 + 0.000066 * T) * t * t +
+    0.018203 * t * t * t;
+  const thetaArcsec =
+    (2004.3109 - 0.85330 * T - 0.000217 * T * T) * t -
+    (0.42665 + 0.000217 * T) * t * t -
+    0.041833 * t * t * t;
+  const zeta = zetaArcsec * ARCSEC_TO_RAD;
+  const z = zArcsec * ARCSEC_TO_RAD;
+  const theta = thetaArcsec * ARCSEC_TO_RAD;
+  const [x, y, zz] = vector;
+  const radius = Math.hypot(x, y, zz);
+  const ra = Math.atan2(y, x);
+  const dec = Math.asin(zz / radius);
+  const A = Math.cos(dec) * Math.sin(ra + zeta);
+  const B = Math.cos(theta) * Math.cos(dec) * Math.cos(ra + zeta) - Math.sin(theta) * Math.sin(dec);
+  const C = Math.sin(theta) * Math.cos(dec) * Math.cos(ra + zeta) + Math.cos(theta) * Math.sin(dec);
+  const raDate = Math.atan2(A, B) + z;
+  const decDate = Math.asin(Math.max(-1, Math.min(1, C)));
+  return [
+    radius * Math.cos(decDate) * Math.cos(raDate),
+    radius * Math.cos(decDate) * Math.sin(raDate),
+    radius * Math.sin(decDate)
+  ];
+}
+
+function rotateEclipticToEquatorial(vector, jdUt) {
+  const epsilon = meanObliquityIau76(jdUt);
+  const [x, y, z] = vector;
+  return [
+    x,
+    y * Math.cos(epsilon) - z * Math.sin(epsilon),
+    y * Math.sin(epsilon) + z * Math.cos(epsilon)
+  ];
+}
+
+function rotateEquatorialToEcliptic(vector, jdUt) {
+  const epsilon = meanObliquityIau76(jdUt);
+  const [x, y, z] = vector;
+  return [
+    x,
+    y * Math.cos(epsilon) + z * Math.sin(epsilon),
+    -y * Math.sin(epsilon) + z * Math.cos(epsilon)
+  ];
+}
+
+/**
+ * Return the IAU76 precession-in-longitude of the 1860 vernal equinox
+ * measured in the mean ecliptic of the requested date.
+ */
+export function sauraIau76PrecessionLongitudeFromBurgessEpoch(jdUt) {
+  if (!Number.isFinite(jdUt)) throw new TypeError('A finite Julian day is required');
+  const oldEquinoxInDateEquatorial = precessEquatorialIau76(
+    [1, 0, 0], BURGESS_FRAME_EPOCH_JD_UT, jdUt
+  );
+  const oldEquinoxInDateEcliptic = rotateEquatorialToEcliptic(
+    oldEquinoxInDateEquatorial, jdUt
+  );
+  return Math.atan2(
+    oldEquinoxInDateEcliptic[1],
+    oldEquinoxInDateEcliptic[0]
+  ) * RAD_TO_DEG;
+}
+
+/** Source-anchored Saura offset propagated with the same IAU76 frame as JPL. */
+export function sauraSiderealOffsetFromBurgessIau76(jdUt) {
+  return norm360(
+    BURGESS_SAURA_ZERO_POINT_1860 +
+    sauraIau76PrecessionLongitudeFromBurgessEpoch(jdUt)
+  );
+}
+
+/** Convert a geometric JPL ecliptic-J2000 vector into mean ecliptic-of-date longitude. */
+export function jplEclipticJ2000VectorToMeanEclipticOfDateLongitude(vector, jdUt) {
+  if (!vector || ![vector.x, vector.y, vector.z, jdUt].every(Number.isFinite)) {
+    throw new TypeError('Finite JPL ecliptic-J2000 vector components and Julian day are required');
+  }
+  const equatorialJ2000 = rotateEclipticToEquatorial(
+    [vector.x, vector.y, vector.z], 2451545
+  );
+  const equatorialDate = precessEquatorialIau76(
+    equatorialJ2000, 2451545, jdUt
+  );
+  const eclipticDate = rotateEquatorialToEcliptic(equatorialDate, jdUt);
+  return norm360(Math.atan2(eclipticDate[1], eclipticDate[0]) * RAD_TO_DEG);
+}
 
 /** Carry the Burgess 1860 Saura zero point by the Lahiri precession delta. */
 export function sauraSiderealOffsetFromLahiri(lahiriAyanamsaAtDate, lahiriAyanamsaAt1860) {
