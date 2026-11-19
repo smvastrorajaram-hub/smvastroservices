@@ -51,9 +51,10 @@ function sexagesimalToDecimal(value) {
 }
 
 function longitudeFromRow(row, payload) {
-  const x = firstFinite(row, ['X', 'x', 'Xcoord', 'xcoord']);
-  const y = firstFinite(row, ['Y', 'y', 'Ycoord', 'ycoord']);
-  const z = firstFinite(row, ['Z', 'z', 'Zcoord', 'zcoord']);
+  // Miriade rectangular ephemcc JSON names the vector components px/py/pz.
+  const x = firstFinite(row, ['px', 'PX', 'X', 'x', 'Xcoord', 'xcoord']);
+  const y = firstFinite(row, ['py', 'PY', 'Y', 'y', 'Ycoord', 'ycoord']);
+  const z = firstFinite(row, ['pz', 'PZ', 'Z', 'z', 'Zcoord', 'zcoord']);
   if (x !== null && y !== null && z !== null) {
     return ((Math.atan2(y, x) * 180 / Math.PI) % 360 + 360) % 360;
   }
