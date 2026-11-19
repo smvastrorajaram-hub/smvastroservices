@@ -1828,6 +1828,46 @@ try {
         emptyCellPlaceholderCount,
         houseNumberFontMismatches,
         clippedStacks,
+        clippedStackDetails: cells.filter(cell => {
+          const cellRect = cell.getBoundingClientRect();
+          return [...cell.querySelectorAll('.transit-cell-planets .planet-line')].some(line => {
+            const rect = line.getBoundingClientRect();
+            return rect.height <= 0 || rect.top < cellRect.top - 1 || rect.bottom > cellRect.bottom + 1;
+          });
+        }).map(cell => {
+          const cellRect = cell.getBoundingClientRect();
+          return {
+            planetCount: cell.dataset.transitPlanetCount || '',
+            houseNumber: cell.querySelector('.dynamic-rasi-number')?.textContent.trim() || '',
+            cellRect: {top:cellRect.top,bottom:cellRect.bottom,left:cellRect.left,right:cellRect.right},
+            lines: [...cell.querySelectorAll('.transit-cell-planets .planet-line')].map(line => {
+              const rect=line.getBoundingClientRect();
+              const glyph=line.querySelector('.planet-glyph');
+              return {
+                label:line.textContent.trim(),
+                fontSize:glyph?getComputedStyle(glyph).fontSize:'',
+                rect:{top:rect.top,bottom:rect.bottom,left:rect.left,right:rect.right,height:rect.height}
+              };
+            })
+          };
+        }),
+        notFullyVisiblePlanets: planetElements.filter(el => {
+          const rect=el.getBoundingClientRect();
+          const cellRect=el.closest('.south-rasi-cell')?.getBoundingClientRect();
+          return !cellRect || rect.top < cellRect.top - 1 || rect.bottom > cellRect.bottom + 1 ||
+            rect.left < cellRect.left - 1 || rect.right > cellRect.right + 1;
+        }).map(el => {
+          const rect=el.getBoundingClientRect();
+          const cell=el.closest('.south-rasi-cell');
+          const cellRect=cell?.getBoundingClientRect();
+          return {
+            label:el.textContent.trim(),
+            planetCount:cell?.dataset.transitPlanetCount || '',
+            fontSize:getComputedStyle(el).fontSize,
+            rect:{top:rect.top,bottom:rect.bottom,left:rect.left,right:rect.right},
+            cellRect:cellRect?{top:cellRect.top,bottom:cellRect.bottom,left:cellRect.left,right:cellRect.right}:null
+          };
+        }),
         separatorLines,
         combustionInChart,
         combustionInNames,
