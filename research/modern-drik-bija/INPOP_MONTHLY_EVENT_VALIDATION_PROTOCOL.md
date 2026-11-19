@@ -1,7 +1,7 @@
 # Monthly and event-focused INPOP validation — protocol
 
 **Gate:** MODERN_DRIK_BIJA_MONTHLY_AND_EVENT_INPOP_0_05  
-**Status:** Implemented in the research branch; awaiting a complete passing CI execution.  
+**Status:** PASS — completed on 2026-11-19; repository-internal evidence certificate issued.  
 **Reference:** IMCCE Miriade, INPOP planetary theory.  
 **Candidate:** explicit Swiss Ephemeris Moshier plus the fixed DE441-trained v0.1 secular Dṛk correction.
 
@@ -35,9 +35,13 @@ The threshold is not relaxed. An API/metadata failure is not a numerical PASS. A
 
 Miriade is requested with INPOP theory, geocentre observer 500, apparent-of-date ephemeris, ecliptic reference plane, and TT. The response's rectangular apparent position vector px/py/pz is converted to longitude using atan2(py, px). Moshier is queried at the same TT calendar epoch and returns geocentric apparent tropical ecliptic-of-date longitude. Any frame-systematic discrepancy must be investigated, not fitted away on the INPOP data.
 
-## Full result
+## Full result — PASS
 
-The CI job writes the machine-readable per-planet report to modern-drik-bija-inpop-validation-output/INPOP_MONTHLY_AND_EVENT_REPORT.json and uploads it as the MODERN-DRIK-BIJA-INPOP-MONTHLY-EVENT-VALIDATION artifact. This protocol is not itself an accuracy certificate.
+The completed CI run #44606465328 passed all 36,000 monthly comparisons and 245,925 dense event-window comparisons. The corrected model's maximum absolute residual was 0.002284422° on the monthly grid and 0.002457605° on the event-window grid; both remain below the strict 0.05° limit for every planet.
+
+The CI job wrote the machine-readable per-planet report to `modern-drik-bija-inpop-validation-output/INPOP_MONTHLY_AND_EVENT_REPORT.json` and uploaded it as the `MODERN-DRIK-BIJA-INPOP-MONTHLY-EVENT-VALIDATION` artifact (artifact ID `14574515279`).
+
+See [MODERN_DRIK_BIJA_INPOP_0_05_ACCURACY_CERTIFICATE.md](./MODERN_DRIK_BIJA_INPOP_0_05_ACCURACY_CERTIFICATE.md) for the measured per-planet results, provenance, and explicit exclusions. This protocol defines the test procedure; the linked certificate records the completed result.
 
 ## Official reference documentation
 
