@@ -54,6 +54,11 @@
 #smvDailyCalendar #calDaily .transit-chart .planet-short{
   min-width:0;font-weight:700;color:#15564e;-webkit-text-fill-color:#15564e;
 }
+#smvDailyCalendar #calDaily .transit-chart .planet-status-slot{
+  display:inline-flex!important;flex:0 0 auto!important;align-items:baseline!important;
+  justify-content:center!important;margin:0!important;padding:0!important;
+  white-space:nowrap!important;font-size:inherit!important;line-height:inherit!important;
+}
 #smvDailyCalendar #calDaily .transit-chart .planet-glyph .rasi-status-marker,
 #smvDailyCalendar #calDaily .transit-chart .planet-glyph .transit-degree,
 #smvDailyCalendar #calDaily .transit-chart .planet-glyph .planet-short{
