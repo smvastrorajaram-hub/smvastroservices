@@ -144,7 +144,8 @@ try {
                 const glyph = cell.querySelector(style === 'south' ? '.planet-glyph' : '.smv-v342-planets .planet-glyph');
                 const number = cell.querySelector('.dynamic-rasi-number,.bhava-house-no,.smv-v342-house-number,.smv-v342-sign-number,.smv-v342-asc,.lagna');
                 const degree = cell.querySelector('.planet-degree,.rasi-degree,.transit-degree');
-                const marker = cell.querySelector('.rasi-status-marker,.status-c,.status-r');
+                const marker = cell.querySelector('.rasi-status-marker.status-c,.status-c');
+                const retroMarker = cell.querySelector('.rasi-status-marker.status-r,.status-r');
                 const px = element => element ? parseFloat(getComputedStyle(element).fontSize) : null;
                 const cellRect = cell.getBoundingClientRect();
                 const watched = [...cell.querySelectorAll('.planet-line,.planet-glyph,.rasi-status-marker,.planet-degree,.rasi-degree,.transit-degree,.dynamic-rasi-number,.bhava-house-no,.smv-v342-sign-number,.smv-v342-house-number,.smv-v342-asc')];
@@ -171,6 +172,11 @@ try {
                   numberSize:px(number),
                   degreeSize:px(degree),
                   markerSize:px(marker),
+                  retroMarkerSize:px(retroMarker),
+                  markerText:marker?.textContent.trim()||'',
+                  retroMarkerText:retroMarker?.textContent.trim()||'',
+                  degreeText:degree?.textContent.trim()||'',
+                  numberText:number?.textContent.trim()||'',
                   equalSizes:sizes.length < 2 || Math.max(...sizes)-Math.min(...sizes) < 0.6,
                   names:[...cell.querySelectorAll('.planet-glyph')].map(element=>element.textContent.trim()),
                   colors,
@@ -229,7 +235,14 @@ try {
           assert.ok(five.glyphSize<four.glyphSize,item.rootId+' '+item.kind+' '+style+': five-planet planet names reduce their font size.');
           if(five.numberSize!==null&&four.numberSize!==null)assert.ok(five.numberSize<four.numberSize,item.rootId+' '+item.kind+' '+style+': five-planet house/sign numbers reduce too.');
           if(five.degreeSize!==null&&four.degreeSize!==null)assert.ok(five.degreeSize<four.degreeSize,item.rootId+' '+item.kind+' '+style+': Degree labels reduce only at five planets.');
-          if(five.markerSize!==null&&four.markerSize!==null)assert.ok(five.markerSize<four.markerSize,item.rootId+' '+item.kind+' '+style+': C/R status markers reduce only at five planets.');
+          if(five.markerSize!==null&&four.markerSize!==null)assert.ok(five.markerSize<four.markerSize,item.rootId+' '+item.kind+' '+style+': combust marker (அ/C) reduces only at five planets.');
+          if(five.retroMarkerSize!==null&&four.retroMarkerSize!==null)assert.ok(five.retroMarkerSize<four.retroMarkerSize,item.rootId+' '+item.kind+' '+style+': retrograde marker (வ/R) reduces only at five planets.');
+          if(language==='ta'&&['rasi','transit'].includes(item.kind)){
+            assert.equal(five.markerText,'(அ)',item.rootId+' Tamil combust marker remains அ.');
+            assert.equal(five.retroMarkerText,'(வ)',item.rootId+' Tamil retrograde marker remains வ.');
+            assert.equal(five.degreeText,'18°',item.rootId+' Tamil test Degree remains present.');
+            assert.ok(five.numberText,item.rootId+' Tamil chart Number remains present.');
+          }
           assert.equal(item.cellBoundsOutside.length,0,item.rootId+' '+item.kind+' '+style+': every chart box remains inside the chart boundary: '+JSON.stringify(item.cellBoundsOutside));
           if (item.kind==='navamsa' || item.kind==='bhava') {
             assert.equal(item.emptyDash,false,item.rootId+' '+item.kind+' '+style+': empty planet cells stay blank.');
