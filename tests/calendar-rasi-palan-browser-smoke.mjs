@@ -1708,6 +1708,22 @@ try {
       const maxStack = Math.max(0, ...cells.map(cell => cell.querySelectorAll('.planet-line').length));
       const normalPlanetGlyphs = [...(chart?.querySelectorAll('.transit-cell-planets:not(.transit-cell-planets-compact) .planet-glyph') || [])];
       const compactPlanetGlyphs = [...(chart?.querySelectorAll('.transit-cell-planets.transit-cell-planets-compact .planet-glyph') || [])];
+      const ordinaryPlanetCells = cells.filter(cell => {
+        const count = cell.querySelectorAll('.transit-cell-planets .planet-line').length + (cell.querySelector('.lagna') ? 1 : 0);
+        return count > 0 && count <= 3;
+      });
+      const ordinaryCellGroupsCentered = ordinaryPlanetCells.every(cell => {
+        const cellRect = cell.getBoundingClientRect();
+        const children = [...cell.children].filter(child => ['dynamic-rasi-number','lagna','transit-cell-planets'].some(cls => child.classList.contains(cls)));
+        if (!children.length) return false;
+        const top = Math.min(...children.map(child => child.getBoundingClientRect().top));
+        const bottom = Math.max(...children.map(child => child.getBoundingClientRect().bottom));
+        return Math.abs((top + bottom) / 2 - (cellRect.top + cellRect.bottom) / 2) <= 2;
+      });
+      const markerFontSizeMismatches = [...(chart?.querySelectorAll('.planet-glyph') || [])].reduce((count, glyph) => {
+        const size = Number.parseFloat(getComputedStyle(glyph).fontSize);
+        return count + [...glyph.querySelectorAll('.rasi-status-marker,.transit-degree')].filter(child => Math.abs(Number.parseFloat(getComputedStyle(child).fontSize)-size)>.1).length;
+      },0);
       const clippedStacks = cells.filter(cell => {
         const lines = [...cell.querySelectorAll('.transit-cell-planets .planet-line')];
         if (!lines.length) return false;
@@ -1793,6 +1809,9 @@ try {
         compactPlanetCellCount: chart?.querySelectorAll('.transit-cell-planets.transit-cell-planets-compact').length || 0,
         normalPlanetFontSize: normalPlanetGlyphs[0] ? Number.parseFloat(getComputedStyle(normalPlanetGlyphs[0]).fontSize) : 0,
         compactPlanetFontSize: compactPlanetGlyphs[0] ? Number.parseFloat(getComputedStyle(compactPlanetGlyphs[0]).fontSize) : 0,
+        ordinaryPlanetCellsCentered: ordinaryCellGroupsCentered,
+        ordinaryPlanetCellCount: ordinaryPlanetCells.length,
+        markerFontSizeMismatches,
         clippedStacks,
         separatorLines,
         combustionInChart,
@@ -1859,9 +1878,20 @@ try {
       assert.ok(mobileState.normalPlanetCellCount > 0, language + ' ' + width + 'px: ordinary Rasi cells must keep their normal font sizing.');
       assert.ok(mobileState.compactPlanetCellCount > 0, language + ' ' + width + 'px: only the crowded Rasi cell must receive compact sizing.');
       assert.ok(mobileState.normalPlanetFontSize > mobileState.compactPlanetFontSize, language + ' ' + width + 'px: crowded-cell font size must be smaller than ordinary cells.');
+      assert.ok(mobileState.ordinaryPlanetCellCount > 0, language + ' ' + width + 'px: one-to-three item cells must be present for centring checks.');
+      assert.equal(mobileState.ordinaryPlanetCellsCentered, true, language + ' ' + width + 'px: one-to-three item cells must be centred inside their boxes.');
+      assert.equal(mobileState.markerFontSizeMismatches, 0, language + ' ' + width + 'px: (அ)/(வ)/(C)/(R) and degree must match the planet font size.');
       assert.equal(mobileState.clippedStacks, 0, language + ' ' + width + 'px: no planet line may be clipped by its Rasi cell.');
       assert.equal(mobileState.squareChart, true, language + ' ' + width + 'px: preserve the existing square chart dimensions.');
     }
+  }
+  for (const language of ['ta', 'en']) {
+    await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
+    await ensureTransitLanguage(language);
+    const desktopState = await inspectTransitDate('2026-08-12', language);
+    assert.ok(desktopState.normalPlanetFontSize > desktopState.compactPlanetFontSize, language + ' desktop: crowded cells alone must use smaller labels.');
+    assert.equal(desktopState.ordinaryPlanetCellsCentered, true, language + ' desktop: one-to-three item cells must be centred.');
+    assert.equal(desktopState.markerFontSizeMismatches, 0, language + ' desktop: markers and degrees must match the planet font size.');
   }
   await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
   await ensureTransitLanguage(transitOriginalLanguage);
