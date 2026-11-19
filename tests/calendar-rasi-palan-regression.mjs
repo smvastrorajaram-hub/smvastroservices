@@ -396,7 +396,12 @@ test('Calendar distinguishes Gazette government holidays from observances and do
   assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar .transit-cell-planets{width:100%;min-width:0;display:flex;flex:0 0 auto;'), 'The planet stack must keep its full intrinsic height.');
   assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar .transit-chart .planet-line{display:block!important;flex:0 0 auto;'), 'Individual planet rows must not shrink away inside the Rasi cell.');
   assert.ok(horoscopeRendererSource.includes('const compactPlanetCell=bySign[si].length+(isLagna?1:0)>3;'), 'Only the number of grahas plus Lagna determines whether a Rasi cell is compacted; markers and degrees do not add to the count.');
+  assert.ok(horoscopeRendererSource.includes('south-rasi-cell${compactPlanetCell?\' south-rasi-cell-compact\':\'\'}'), 'The Rasi cell carries its own compact class so house numbers follow that cell\'s planet size.');
+  assert.ok(horoscopeRendererSource.includes("(houseNo??'')"), 'An unavailable house number renders blank rather than a dash.');
+  assert.ok(horoscopeRendererSource.includes('${ps}</div></div>`);});'), 'Empty transit cells do not render a dash placeholder.');
   assert.ok(dailyCalendarCssSource.includes('justify-content:center!important;text-align:center!important;'), 'Transit cell content is centred horizontally and vertically inside each Rasi box.');
+  assert.ok(dailyCalendarCssSource.includes('.south-rasi-cell:not(.south-rasi-cell-compact) .dynamic-rasi-number'), 'House numbers 2–12 use the same normal size as planets in ordinary cells.');
+  assert.ok(dailyCalendarCssSource.includes('.south-rasi-cell-compact .dynamic-rasi-number'), 'House numbers use the same compact size as planets in crowded cells.');
   assert.ok(dailyCalendarCssSource.includes('.rasi-status-marker,\n#smvDailyCalendar #calDaily .transit-chart .transit-degree{\n  font-size:1em!important;'), 'Combustion, retrograde and degree labels use the same font size as their planet.');
   assert.ok(horoscopeRendererSource.includes("transit-cell-planets${compactPlanetCell?' transit-cell-planets-compact':''}"), 'Planet sizing is scoped to the individual Rasi cell.');
   assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar #calDaily .transit-chart .transit-cell-planets:not(.transit-cell-planets-compact) .planet-glyph{font-size:clamp(11px,2.4vw,15px)!important;'), 'Ordinary cells retain the original desktop planet font size.');
