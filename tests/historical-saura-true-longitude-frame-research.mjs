@@ -25,7 +25,7 @@ for(const [date,time] of births){
   const result=computeClassicalFiveNatalCheshta({date,time,utcOffsetMinutes:330});
   check(result.calculationAvailable===true,date+' research calculation completes');
   check(result.referenceFrame==='traditional-Saura-nirayana',date+' uses canonical Saura sidereal frame');
-  check(result.historicalTrueLongitudeEvidence?.meanTrueSheeghroocchaFrameConsistent===true,
+  check(result.historicalTrueLongitudeEvidence?.meanTrueSheeghrochaFrameConsistent===true,
     date+' mean/true/Sheeghrocccha frame metadata agrees');
   check(result.historicalTrueLongitudeEvidence?.historicalBijaCorrectionsVerified===false,
     date+' missing historical Bija is not hidden');
