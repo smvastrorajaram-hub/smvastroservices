@@ -200,7 +200,9 @@ export function evaluateNatalClassicalCertification({
   }
 
   const bala = evaluateBalaEvidenceMatrix(balaEvidenceRows);
-  if (!bala.certified) addBlocker(blockers, ...bala.blockers);
+  if (!bala.certified) {
+    for (const blocker of bala.blockers) addBlocker(blockers, blocker);
+  }
 
   if (!yuddhaEvidence || typeof yuddhaEvidence !== 'object') {
     addBlocker(blockers, 'Final Yuddha evidence is missing');
