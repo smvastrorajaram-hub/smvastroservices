@@ -1,25 +1,38 @@
-# SMV ASTRO — Full Natal Shadbala Numerical Certification Gap Register
+# SMV ASTRO — Natal Shadbala Numerical Certification Gap Register
 
 **Date:** 20 November 2026  
 **Active method:** B.V. Raman `strength6`  
-**Objective:** Extend the existing printed-example verification to complete source- and numerically-supported seven-graha natal calculations.
+**Current external longitude reference scope:** **2026 only**
 
 ## Current result
 
-- The existing B.V. Raman and C.G. Rajan certificates remain unchanged.
-- A new seven-graha Standard Horoscope test checks the six-component sum, Rupa, required-strength ratio, threshold decision and total-based ranking for the B.V. Raman printed worked example.
-- The printed worked example can produce a complete total because its five planetary Cheshta input triples are transcribed from that same source example.
-- The existing natal calculation path has no independent, date-specific same-frame input oracle for the five non-luminary planets. Its current path combines Saura traditional mean/Sheeghrocchea with a Swiss/Lahiri chart true longitude. Those values do not constitute one verified B.V. Raman Chapter VI input triple.
-- This PR is deliberately audit-only: it does not change the production calculation, customer display, report selection, cache versions or app behaviour.
+- The existing B.V. Raman and C.G. Rajan source-verification certificates remain unchanged.
+- The seven-graha Standard Horoscope worked-example arithmetic regression and certificate remain separate and unchanged.
+- The previous historical-year longitude sample set has been withdrawn. The only date-specific external planetary longitude sample maintained by this PR is now the Government of India PAC 2026 series.
+- The production calculation path remains unchanged. This PR is research and regression evidence only.
+
+## 2026 official PAC longitude reference
+
+The official Positional Astronomy Centre, Kolkata / India Meteorological Department publishes daily 2026 Nirayana longitude tables for Mercury, Venus, Mars, Jupiter and Saturn. The 2026 sample fixture and its scope are documented in:
+
+`audits/SMV_ASTRO_PAC_2026_FIVE_GRAHA_NIRAYANA_CROSSCHECK_2026-11-20.md`
+
+The regression currently compares 15 source values (three dates × five planets) with the bundled Swiss Ephemeris WASM 2.10.03 using its Lahiri sidereal mode and explicit SWIEPH data flags.
+
+- Maximum absolute difference: **0.000065502° = 0.235806 arc-second**.
+- RMS difference: **0.000028824° = 0.103767 arc-second**.
+- Per-point acceptance: **0.0001° = 0.36 arc-second**.
+- All 15 samples pass.
+
+**Metadata limitation:** The PAC daily PDF headings do not explicitly state the row epoch or name the ayanamsa. The comparison's 00:00 TT epoch and Lahiri sidereal convention are empirical inferences, not source metadata. PAC confirmation and denser annual sampling remain required.
 
 ## Mandatory blockers before arbitrary natal totals can be certified
 
-1. **Five-graha Cheshta source triplets:** Obtain date-specific mean, true and Sheeghrocchea longitudes for Mars, Mercury, Jupiter, Venus and Saturn, all in one explicit astronomical reference frame and epoch for each natal chart.
-2. **Independent historical true-longitude oracle:** Compare the selected same-frame model to independent historical source data. Agreement between two implementations of the same model is an internal arithmetic cross-check, not independent truth.
-3. **Historical Bija and apsis evolution:** Verify date-specific historical corrections and apsis positions. Current research candidates do not establish these for arbitrary 1800–2399 birth dates.
-4. **Full component provenance:** Retain source-linked validation for Sthana, Dig, Kala, Naisargika and Drig inputs, including planetary positions, tropical declinations, solar-time inputs and aspect geometry.
-5. **Graha Yuddha boundaries:** Independently verify source-specific eligibility, winner/loser and pre-war adjustments at conjunction boundaries. Unresolved wars must withhold affected totals.
-6. **Broader epoch coverage:** After the independent oracle inputs exist, run a predeclared multi-epoch and boundary-heavy natal matrix. One Standard Horoscope fixture is not an arbitrary-date certificate.
+1. **Coherent five-graha Cheshta inputs:** Obtain Mean, True and Sheeghroccheya longitudes for Mars, Mercury, Jupiter, Venus and Saturn from one documented model/frame/epoch. Do not combine a modern PAC/Swiss True longitude with traditional Saura Mean/Sheeghroccheya and call the resulting Cheshta classical.
+2. **Historical Saura method:** Verify the source-faithful four-pass True-longitude method, including date-specific Bīja and Mandocca/apsis inputs. The 2026 PAC sidereal samples do not certify that historical model.
+3. **Other Shadbala components:** Retain source-linked verification for Sthana, Dig, Kala, Naisargika and Drig inputs, including declinations, solar-time inputs and aspect geometry.
+4. **Graha Yuddha boundaries:** Independently verify source-specific eligibility, winner/loser and pre-war adjustments at conjunction boundaries. Unresolved cases must withhold affected totals.
+5. **Broader numerical coverage:** Expand the 2026 PAC sample across the full annual span, retrograde stations, conjunctions and sign transitions. Then validate the date/model contract before considering wider date ranges.
 
 ## Required safety rule for a future, separately approved production correction
 
@@ -30,39 +43,4 @@ For any graha whose required six-Bala component is unavailable, preserve verifie
 - No production merge or deployment is part of this research PR.
 - No production source, app Service Worker, cache release or customer-facing report is changed.
 - No origin-wide storage/cache clearing and no user-data deletion is introduced.
-- Full arbitrary natal `classicalCertified` remains false until all blockers and independent Actions evidence are satisfied.
-
-
-## New date-specific modern True-longitude evidence — 20 November 2026
-
-The gap register is refined by a separate reproducible audit:
-`audits/SMV_ASTRO_BV_RAMAN_NATAL_DE441_TRUE_LONGITUDE_25_POINT_AUDIT_2026-11-20.md`.
-
-- NASA/JPL Horizons DE441 exact-epoch apparent geocentric tropical longitudes were retrieved for the five existing Perambalur natal epochs and all five eligible planets (25 values).
-- Target and Earth-centre response headers both identify DE441; centre is Earth geocentre `500@399`; quantity 31 is apparent IAU76/80 ecliptic-of-date longitude.
-- The repository test obtains direct tropical Swiss Ephemeris values using explicit `SWIEPH | SPEED` flags and asserts the returned ephemeris data flag. Across all 25 comparisons, maximum absolute residual is **0.000014180°** and RMS is **0.000013323°**; CI run [#1195](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44758892194) passed 251 assertions.
-- A separate local Python Moshier binding cross-check has maximum absolute residual 0.000067825° across the same 25 values.
-- The chart's sidereal longitude plus displayed ayanāṃśa gives a separate ~0.00515° round-trip offset; it is explicitly diagnostic and is not used for the primary direct-tropical gate.
-
-**Interpretation:** This closes the *modern apparent True-longitude cross-check at the five sampled historical epochs*. It does not establish the historical Saura / Sūrya-Siddhānta true positions. NASA DE441 is a modern physical ephemeris evaluated backwards at historic epochs, not the historical printed almanac source for the old Saura model.
-
-**Cheshta remains withheld:** A modern DE441 True longitude must not be joined to traditional Saura Mean and Sheeghroccheya merely because all three can be represented in Lahiri sidereal degrees. BPHS Cheshta requires a coherent, documented triplet from one model/frame/epoch. The remaining work is to obtain and reconcile the date-specific historical IENA/IAE tables or another source-faithful coherent astronomical triplet, including the time-dependent Bīja/Mandocca inputs, before calculating the five natal Cheshta values as certified.
-
-No production source or customer output is changed. `historicalSauraTrueLongitudeCertified=false`, `classicalFiveGrahaCheshtaCertified=false` and `productionIntegrationAllowed=false` remain mandatory.
-
-
-## Additional Naelos DE440 cross-check — 20 November 2026
-
-A second implementation/data-format cross-check is now recorded in
-`audits/SMV_ASTRO_NAELOS_DE440_VS_DE441_FIVE_NATAL_CROSSCHECK_2026-11-20.md`.
-
-- The repository's 12 `naelos-ephemeris/*.bin` files all pass manifest byte-size and SHA-256 verification and parse with the pinned Naelos Ephemeris 0.1.3 runtime.
-- For the same five natal epochs × five planets, Naelos DE440 apparent tropical longitudes were compared with the independent exact-epoch Horizons DE441 fixture.
-- CI #1201 passes 208 assertions. Maximum absolute difference is **0.000016269° (0.0585684 arc-second)**; RMS is **0.000012655° (0.045558 arc-second)**. Every point passes the predeclared 0.0001° (0.36 arc-second) gate.
-- DE440 and DE441 are both NASA/JPL ephemeris versions. This is a separate implementation and data representation cross-check, **not** an independent institutional or historical observational oracle.
-- This narrows the modern-apparent-longitude gap for the five tested dates. It does not close the historical Saura true-longitude, time-dependent Bīja/Mandocca, coherent historical mean/true/Sheeghroccheya triplet or BPHS five-graha Cheshta blockers.
-
-The mandatory flags remain unchanged:
-`historicalSauraTrueLongitudeCertified=false`,
-`classicalFiveGrahaCheshtaCertified=false`,
-`productionIntegrationAllowed=false`.
+- `historicalSauraTrueLongitudeCertified=false`, `classicalFiveGrahaCheshtaCertified=false` and `productionIntegrationAllowed=false` remain mandatory.
