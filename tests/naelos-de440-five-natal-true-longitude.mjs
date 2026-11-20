@@ -17,6 +17,13 @@ import { sauraSiderealOffsetFromLahiri } from '../research/saura-bija/saura-de44
 
 const ROOT = new URL('../naelos-ephemeris/', import.meta.url);
 const manifest = JSON.parse(fs.readFileSync(new URL('manifest.json', ROOT), 'utf8'));
+const expectedFixture = JSON.parse(fs.readFileSync(
+  new URL('./fixtures/naelos-de440-five-natal-chesta.json', import.meta.url), 'utf8'
+));
+assert.equal(expectedFixture.certificateId,
+  'SMV-ASTRO-NAELOS-DE440-TRUE-LONGITUDE-25-2026-11-20',
+  'pinned Chesta fixture has the expected certificate identity');
+assert.equal(expectedFixture.births.length, 5, 'pinned fixture has five natal epochs');
 const requiredFiles = ['ne-1900.bin', 'ne-2000.bin'];
 const buffers = requiredFiles.map(name => {
   const entry = manifest.files.find(x => x.name === name);
@@ -102,6 +109,8 @@ for (const [date, time] of births) {
   const ayanamsa = swe.ayanamsa(jdUT);
   assert.ok(Number.isFinite(ayanamsa), date + ' Lahiri ayanamsa finite');
 
+  const expectedBirth = expectedFixture.births.find(x => x.date === date && x.time === time);
+  assert.ok(expectedBirth, date + ' ' + time + ' pinned Chesta fixture row exists');
   const chart = { date, time, jdUTC: civilDerivedJdUTC, jdUT, jdTT, ut1MinusUtcSeconds, ayanamsa, planets: {} };
   for (const [ta, en, naelosBody, swissBody] of bodies) {
     const naelos = eph.calc(jdTT, naelosBody, 0);
@@ -140,6 +149,17 @@ for (const [date, time] of births) {
     assert.ok(Number.isFinite(cheshta.virupa) &&
       cheshta.virupa >= 0 && cheshta.virupa <= 60,
       date + ' ' + en + ' BPHS Chesta formula valid');
+    const expected = expectedBirth.planets[en];
+    assert.ok(expected, date + ' ' + en + ' pinned Chesta fixture graha exists');
+    for (const [actual, wanted, label] of [
+      [trueLongitudeSaura, expected.trueLongitudeSaura, 'Saura-frame true longitude'],
+      [orbital.meanLongitude, expected.meanLongitudeSaura, 'Saura mean longitude'],
+      [orbital.sheeghrocha, expected.sheeghroccaSaura, 'Saura Sheeghrocca'],
+      [cheshta.virupa, expected.cheshtaVirupa, 'BPHS Chesta Virupa']
+    ]) {
+      assert.ok(Math.abs(actual - wanted) <= 1e-9,
+        date + ' ' + en + ' ' + label + ' matches pinned evidence fixture');
+    }
 
     // Feed the independently established three longitudes through the SAME
     // B.V. Raman Chapter VI input path used by Node and Browser engines.
