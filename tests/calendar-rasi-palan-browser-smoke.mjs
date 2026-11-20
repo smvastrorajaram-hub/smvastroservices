@@ -979,9 +979,13 @@ try {
   }, '2026-11-21');
   await page.waitForFunction(() => {
     const status = document.querySelector('#calStatus')?.textContent || '';
-    const window = document.querySelector('#calChandrashtamaPeriods .cal-chandra-window.is-selected-date');
-    // Use a date after the workflow's current day so the app correctly follows
-    // its future-selected-date path rather than the separate "active today" path.
+    // 2026-11-21 can be "today" in the calendar's configured local timezone,
+    // even while the GitHub runner is still on the prior UTC date. Accept the
+    // active-today window as well as the explicitly selected-date window.
+    const window = document.querySelector(
+      '#calChandrashtamaPeriods .cal-chandra-window.is-selected-date, ' +
+      '#calChandrashtamaPeriods .cal-chandra-window.is-active'
+    );
     return status.includes('2026-11-21') &&
       window?.querySelector('.cal-chandra-rasi-period strong')?.textContent === 'Pisces';
   }, { timeout: 120000 });
