@@ -32,6 +32,14 @@ eq(browserSource.yuddhaAdjustmentRule,
  'Raman Yuddha is booked as opposite adjustments in winner/loser Kala');
 eq(browserSource.productionCertification,false,
  'source metadata does not grant global production certification');
+eq(browserSource.printedStandardExampleCertificateId,
+ 'SMV-BVR-PRINTED-STANDARD-HOROSCOPE-SIX-BALA-YUDDHA-2026-11-20',
+ 'source metadata exposes the limited Standard Horoscope certificate ID');
+eq(browserSource.printedStandardExampleCertificationScope,
+ 'BV_RAMAN_PRINTED_STANDARD_HOROSCOPE_ONLY',
+ 'source metadata limits certification to the exact printed Standard Horoscope');
+eq(browserSource.arbitraryNatalCertificationDefault,false,
+ 'ordinary natal charts remain uncertified by default');
 
 // B.V. Raman, Graha and Bhava Balas, Ch. V §§76–78, pp.60–62.
 // Keep an independent copy of the printed disc diameters in this source oracle.
