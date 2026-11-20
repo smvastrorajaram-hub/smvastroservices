@@ -59,7 +59,7 @@ function parseDailyRows(filePath,planet){
  assert.equal(extracted.status,0,
   'pdftotext must read '+planet+' official PAC PDF: '+(extracted.stderr||''));
  const rows=[];
- const pattern=/^\\s*(\\d{1,3})\\s+(\\d{1,2})\\s+(\\d{1,2}(?:\\.\\d+)?)\\s+(2025|2026|2027)\\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\\s+(\\d{1,2})\\s*$/gm;
+ const pattern=/^\s*(\d{1,3})\s+(\d{1,2})\s+(\d{1,2}(?:\.\d+)?)\s+(2025|2026|2027)\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+(\d{1,2})\s*$/gm;
  for(const match of extracted.stdout.matchAll(pattern)){
   const year=Number(match[4]);
   if(year!==2026)continue;
