@@ -16,7 +16,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {mkdirSync,writeFileSync} from 'node:fs';
 import {getSwe} from '../public/horoscope/offline/wasm-provider.mjs';
-import offlineSwiss from '../public/horoscope/offline/swiss_vedic.browser.mjs';
+import * as offlineSwiss from '../public/horoscope/offline/swiss_vedic.browser.mjs';
 const require=createRequire(import.meta.url);
 const swe=require('sweph');
 const {calculateSwiss:unused,__test:nativeSwiss}=require('../swiss_vedic.js');
@@ -172,7 +172,7 @@ const summary={
   checks:{nativeWasmSripatiCusps:0,nativeWasmPorphyryCusps:0,sripatiPorphyryMidpointOracle:0,
     bhavaDetailRows:0,planetBhavaAssignments:0,houseBoundaryChecks:0,fullCircleChecks:0},
   rasiPacking:{chartsWithRepeatedMadhyaRasi:0,chartsWithEmptyRasiBoxes:0,chartsWithAdjacentBhavasInSameRasi:0,
-    repeatedSignGroups:0,emptySignBoxes:0,duplicateBhavaSurplus:0,maxBhavasInOneRasi:0,examples:[]},
+    repeatedSignGroups:0,emptySignBoxes:0,duplicateBhavaSurplus:0,maxBhavasInOneRasi:0,indiaRepeated:0,worldRepeated:0,highLatitudeRepeated:0,examples:[]},
   longitudeSamples:{},
   implementation:{native:'sweph 2.10.3-7 houses_ex2()',offline:'local Swiss Ephemeris WASM 2.10.03 houses()',houseSystem:'S / Sripati',boundaryOracle:'O / Porphyry',planetOracle:'native Moshier sidereal Lahiri'}
 };
