@@ -134,6 +134,8 @@ assert.equal(sourceValues.length,2555);
 
 const observations=[];
 const byPlanet=Object.fromEntries(names.map(name=>[name,[]]));
+const byPlanetEffectiveLahiri=Object.fromEntries(names.map(name=>[name,[]]));
+const ayanamsaCorrectionsByPlanet=Object.fromEntries(names.map(name=>[name,[]]));
 const residualsByPlanet=Object.fromEntries(names.map(name=>[name,{
  pacVsNaelos:[],pacVsSwissLahiri:[],naelosVsSwissTropical:[],naelosVsSwissLahiri:[]
 }]));
@@ -171,10 +173,25 @@ for(let dayOfYear=0;dayOfYear<365;dayOfYear++){
   const naelosVsSwissLahiriArcsec=Math.abs(signedDifference(
    naelos.trueLongitudeLahiri,swissLahiri.longitude
   ))*3600;
+  // PAC's published Nirayana value is compared in the effective sidereal
+  // frame applied by the Swiss calc routine at the same TT epoch. The direct
+  // swe_get_ayanamsa_ut value is the mean Lahiri anchor; the true sidereal
+  // result additionally carries the apparent nutation correction.
+  const effectiveLahiriAyanamsaDegrees=wrap(swissTropical.longitude-swissLahiri.longitude);
+  const naelosTrueLongitudeEffectiveLahiri=wrap(
+   naelos.tropicalApparentTrueLongitude-effectiveLahiriAyanamsaDegrees
+  );
+  const pacVsNaelosEffectiveLahiriArcsec=Math.abs(signedDifference(
+   naelosTrueLongitudeEffectiveLahiri,pac.nirayanaDegrees
+  ))*3600;
+  const effectiveVsMeanAyanamsaCorrectionArcsec=
+   signedDifference(effectiveLahiriAyanamsaDegrees,positions.lahiriAyanamsaDegrees)*3600;
   residualsByPlanet[name].pacVsNaelos.push(residualArcseconds);
   residualsByPlanet[name].pacVsSwissLahiri.push(pacVsSwissArcsec);
   residualsByPlanet[name].naelosVsSwissTropical.push(naelosVsSwissTropicalArcsec);
   residualsByPlanet[name].naelosVsSwissLahiri.push(naelosVsSwissLahiriArcsec);
+  byPlanetEffectiveLahiri[name].push(pacVsNaelosEffectiveLahiriArcsec);
+  ayanamsaCorrectionsByPlanet[name].push(effectiveVsMeanAyanamsaCorrectionArcsec);
   const observation={
    date:dateKey,planet:name,julianDayTT:jdTt,
    pacNirayanaDegrees:Number(pac.nirayanaDegrees.toFixed(10)),
@@ -187,7 +204,11 @@ for(let dayOfYear=0;dayOfYear<365;dayOfYear++){
    pacVsNaelosAbsoluteResidualArcseconds:Number(residualArcseconds.toFixed(9)),
    pacVsSwissLahiriAbsoluteResidualArcseconds:Number(pacVsSwissArcsec.toFixed(9)),
    naelosVsSwissTropicalAbsoluteResidualArcseconds:Number(naelosVsSwissTropicalArcsec.toFixed(9)),
-   naelosVsSwissLahiriAbsoluteResidualArcseconds:Number(naelosVsSwissLahiriArcsec.toFixed(9))
+   naelosVsSwissLahiriAbsoluteResidualArcseconds:Number(naelosVsSwissLahiriArcsec.toFixed(9)),
+   effectiveLahiriAyanamsaDegrees:Number(effectiveLahiriAyanamsaDegrees.toFixed(12)),
+   naelosTrueLongitudeEffectiveLahiri:Number(naelosTrueLongitudeEffectiveLahiri.toFixed(10)),
+   pacVsNaelosEffectiveLahiriAbsoluteResidualArcseconds:Number(pacVsNaelosEffectiveLahiriArcsec.toFixed(9)),
+   effectiveVsMeanAyanamsaCorrectionArcseconds:Number(effectiveVsMeanAyanamsaCorrectionArcsec.toFixed(9))
   };
   observations.push(observation);
   byPlanet[name].push(residualArcseconds);
@@ -200,41 +221,66 @@ const rmsResidualArcseconds=Math.sqrt(
 )*3600;
 const perGraha=Object.fromEntries(names.map(name=>{
  const values=byPlanet[name];
+ const effectiveValues=byPlanetEffectiveLahiri[name];
+ const correctionValues=ayanamsaCorrectionsByPlanet[name];
  const rows=observations.filter(row=>row.planet===name);
  const maxOf=key=>Math.max(...rows.map(row=>row[key]));
  const rmsOf=key=>Math.sqrt(rows.reduce((sum,row)=>sum+(row[key]/3600)**2,0)/rows.length)*3600;
- const worst=rows.reduce((a,b)=>
+ const worstSaura=rows.reduce((a,b)=>
   b.pacVsNaelosAbsoluteResidualArcseconds>a.pacVsNaelosAbsoluteResidualArcseconds?b:a);
  return [name,{
   samples:values.length,
-  pacVsNaelosMaximumAbsoluteResidualArcseconds:maxOf('pacVsNaelosAbsoluteResidualArcseconds'),
-  pacVsNaelosRmsResidualArcseconds:rmsOf('pacVsNaelosAbsoluteResidualArcseconds'),
+  pacVsNaelosSauraFrameMaximumAbsoluteResidualArcseconds:maxOf('pacVsNaelosAbsoluteResidualArcseconds'),
+  pacVsNaelosSauraFrameRmsResidualArcseconds:rmsOf('pacVsNaelosAbsoluteResidualArcseconds'),
+  pacVsNaelosEffectiveLahiriMaximumAbsoluteResidualArcseconds:Math.max(...effectiveValues),
+  pacVsNaelosEffectiveLahiriRmsResidualArcseconds:Math.sqrt(
+   effectiveValues.reduce((sum,value)=>sum+(value/3600)**2,0)/effectiveValues.length
+  )*3600,
+  effectiveVsMeanAyanamsaCorrectionMinArcseconds:Math.min(...correctionValues),
+  effectiveVsMeanAyanamsaCorrectionMaxArcseconds:Math.max(...correctionValues),
   pacVsSwissLahiriMaximumAbsoluteResidualArcseconds:maxOf('pacVsSwissLahiriAbsoluteResidualArcseconds'),
   pacVsSwissLahiriRmsResidualArcseconds:rmsOf('pacVsSwissLahiriAbsoluteResidualArcseconds'),
   naelosVsSwissTropicalMaximumAbsoluteResidualArcseconds:maxOf('naelosVsSwissTropicalAbsoluteResidualArcseconds'),
   naelosVsSwissTropicalRmsResidualArcseconds:rmsOf('naelosVsSwissTropicalAbsoluteResidualArcseconds'),
-  naelosVsSwissLahiriMaximumAbsoluteResidualArcseconds:maxOf('naelosVsSwissLahiriAbsoluteResidualArcseconds'),
-  worstDate:worst.date,
-  worstPacVsNaelosResidualArcseconds:worst.pacVsNaelosAbsoluteResidualArcseconds
+  naelosVsSwissLahiriMeanOffsetMaximumAbsoluteResidualArcseconds:maxOf('naelosVsSwissLahiriAbsoluteResidualArcseconds'),
+  worstDate:worstSaura.date,
+  worstPacVsNaelosSauraFrameResidualArcseconds:worstSaura.pacVsNaelosAbsoluteResidualArcseconds
  }];
 }));
-const fiveClassicalNames=['Mercury','Venus','Mars','Jupiter','Saturn'];
-const fiveClassicalPlanetGatePass=fiveClassicalNames.every(name=>
- perGraha[name].pacVsNaelosMaximumAbsoluteResidualArcseconds<=manifest.comparisonContract.gateArcseconds
+const allSevenEffectiveLahiriGatePass=names.every(name=>
+ perGraha[name].pacVsNaelosEffectiveLahiriMaximumAbsoluteResidualArcseconds<=manifest.comparisonContract.gateArcseconds
+);
+const effectiveLahiriGateFailures=names.filter(name=>
+ perGraha[name].pacVsNaelosEffectiveLahiriMaximumAbsoluteResidualArcseconds>manifest.comparisonContract.gateArcseconds
+);
+const allSevenSauraTransferGatePass=names.every(name=>
+ perGraha[name].pacVsNaelosSauraFrameMaximumAbsoluteResidualArcseconds<=manifest.comparisonContract.gateArcseconds
 );
 const luminaryDiagnostics=['Sun','Moon'].every(name=>
  Number.isFinite(perGraha[name].pacVsSwissLahiriMaximumAbsoluteResidualArcseconds)&&
  Number.isFinite(perGraha[name].naelosVsSwissTropicalMaximumAbsoluteResidualArcseconds)
 );
 assert.ok(luminaryDiagnostics,'Sun and Moon must report PAC / Swiss and NAELOS / Swiss diagnostics');
-const fiveClassicalPlanetGateFailures=fiveClassicalNames.filter(name=>
- perGraha[name].pacVsNaelosMaximumAbsoluteResidualArcseconds>manifest.comparisonContract.gateArcseconds
+assert.ok(allSevenEffectiveLahiriGatePass,
+ 'all seven PAC / NAELOS comparisons must pass in the effective PAC Lahiri frame');
+const maximumSauraFrameResidualArcseconds=Math.max(
+ ...observations.map(row=>row.pacVsNaelosAbsoluteResidualArcseconds)
 );
+const rmsSauraFrameResidualArcseconds=Math.sqrt(
+ observations.reduce((sum,row)=>sum+(row.pacVsNaelosAbsoluteResidualArcseconds/3600)**2,0)/observations.length
+)*3600;
+const maximumEffectiveLahiriResidualArcseconds=Math.max(
+ ...observations.map(row=>row.pacVsNaelosEffectiveLahiriAbsoluteResidualArcseconds)
+);
+const rmsEffectiveLahiriResidualArcseconds=Math.sqrt(
+ observations.reduce((sum,row)=>sum+(row.pacVsNaelosEffectiveLahiriAbsoluteResidualArcseconds/3600)**2,0)/observations.length
+)*3600;
 const report={
- pass:true,status:'PASS_PAC_7_GRAHA_DOWNLOAD_PARSE_AND_SOURCE_DIAGNOSTIC_2555',
+ pass:true,status:'PASS_PAC_NAELOS_SEVEN_GRAHA_EFFECTIVE_LAHIRI_2555',
  allSevenGrahasCompared:true,
- fiveClassicalPlanetGatePass,
- fiveClassicalPlanetGateFailures,
+ allSevenEffectiveLahiriGatePass,
+ effectiveLahiriGateFailures,
+ allSevenSauraTransferGatePass,
  sunMoonDiagnosticComplete:luminaryDiagnostics,
  certificateId:'SMV-ASTRO-PAC-NAELOS-SEVEN-GRAHA-2026',
  publisher:manifest.publisher,
@@ -251,9 +297,22 @@ const report={
  candidate:'NAELOS Ephemeris 0.1.3 / NASA-JPL DE440 apparent geocentric True Longitude',
  comparisonFrame:'SAURA_NIRAYANA_NAELOS_TRUE_ECLIPTIC_OF_DATE_BURGESS1860_LAHIRI_DELTA_V1',
  gateArcseconds:manifest.comparisonContract.gateArcseconds,
- maximumAbsoluteResidualArcseconds,
- rmsResidualArcseconds,
- fiveClassicalPlanetGatePass,
+ maximumSauraFrameResidualArcseconds,
+ rmsSauraFrameResidualArcseconds,
+ effectiveLahiriComparison:{
+  method:'At the identical TT epoch, effective Lahiri offset = Swiss tropical Sun longitude minus Swiss Lahiri sidereal Sun longitude; NAELOS remains the True Longitude provider.',
+  maximumAbsoluteResidualArcseconds:maximumEffectiveLahiriResidualArcseconds,
+  rmsResidualArcseconds:rmsEffectiveLahiriResidualArcseconds,
+  gatePass:allSevenEffectiveLahiriGatePass,
+  failedGrahas:effectiveLahiriGateFailures
+ },
+ currentSauraFrameComparison:{
+  method:'Existing Burgess 1860 zero point + date-specific swe_get_ayanamsa_ut Lahiri mean-precession delta.',
+  maximumAbsoluteResidualArcseconds:maximumSauraFrameResidualArcseconds,
+  rmsResidualArcseconds:rmsSauraFrameResidualArcseconds,
+  gatePass:allSevenSauraTransferGatePass,
+  note:'The current mean-Lahiri Saura transfer differs from the apparent PAC/Swiss effective sidereal frame; do not claim this Saura-frame path is PAC-certified until the mean/true offset convention is resolved.'
+ },
  perGraha,
  observations,
  historicalSauraFourPassCertified:false,
@@ -266,7 +325,8 @@ const report={
   'The 00:00 TT comparison epoch uses the project owner-confirmed TT-only policy; it is not stated on the daily PDF headings.',
   'Lahiri is the inferred PAC comparison convention supported by the numerical match; written PAC specification is still needed to make the ayanamsa metadata explicit.',
   'This modern PAC/NAELOS validation does not prove the underlying PAC and JPL numerical integrations are independent.',
-  'The 0.36 arcsecond PAC / NAELOS gate is reported per planet and not used to suppress diagnostics. A false gate is a research finding, not a passing accuracy certificate.',
+  'PAC / NAELOS seven-graha agreement is gated in the effective PAC Lahiri frame, derived at the identical TT epoch from Swiss tropical minus Swiss Lahiri-sidereal Sun longitude. NAELOS remains the planetary True Longitude source.',
+  'The current Burgess/mean-Lahiri Saura frame transfer remains diagnostically separate and does not pass the 0.36 arcsecond PAC gate; this frame mismatch must be resolved before claiming PAC certification of the BPHS Saura-frame inputs.',
   'A 2026 daily cross-check is not a certificate for all possible natal instants or any date outside 2026.',
   'This does not certify the historical Saura four-pass True Longitude theory or BPHS Cheshta arithmetic.'
  ]
