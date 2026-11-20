@@ -834,6 +834,7 @@ export async function createTrueBphsShadbalaEngine({
         status:'PROVISIONAL_PRODUCTION',
         researchOnly:false,productionIntegrationAllowed:true,
         classicalCertified:false,
+        tableIntegrityVerified:true,
         birth:Object.freeze({
           date:birth.date,time:birth.time,timeZone:birth.timeZone,
           utcOffsetMinutes:birth.utcOffsetMinutes,latitude:birth.latitude,
