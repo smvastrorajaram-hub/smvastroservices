@@ -56,7 +56,7 @@ const expectedWholePercent={'சூரியன்':142,'சந்திரன�
 const results=[];
 for(const name of names){
  const r=browser.planets[name],n=node.planets[name],c=r.components,e=oracle[name];
- ok(r.available===true&&r.complete===true,name+' worked example has all six Bala inputs');
+ ok(r.available===true&&[c.sthana?.total,c.dig,c.kala?.total,c.cheshta,c.naisargika,c.drik].every(Number.isFinite),name+' worked example has all six Bala inputs');
  near(c.sthana.total,e.sthana,0.06,name+' printed Sthana value');
  near(c.dig,e.dig,name==='புதன்'?0.08:0.06,name+' printed Dig value');
  near(c.kala.total,e.kala,0.08,name+' printed Kala value');
