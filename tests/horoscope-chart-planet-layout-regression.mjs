@@ -46,6 +46,7 @@ assert.ok(chartStyleJs.includes("if(house===1&&kind!=='transit')"),'Alternate la
 
 assert.ok(chartStyleJs.includes("const kind=chart.id==='bhavaChart'?'bhava':chart.id==='navamsaChart'?'d9':chart.id==='rasiChart'?'d1':'transit';"));
 assert.ok(chartStyleJs.includes("const houseNumber=value=>"),'Bhava house parsing accepts both 1–12 and I–XII source labels.');
+assert.ok(chartStyleJs.includes("if(/^\\d{1,2}$/.test(raw))"),'Numeric Bhava labels 1–12 are recognized before Roman conversion.');
 assert.ok(chartStyleJs.includes("normalizeSouthBhavaHouseLabels(chart)"),'South Bhava display normalizes Arabic house values to Roman numerals without changing source calculations.');
 assert.ok(chartStyleJs.includes("map(n=>houseNumber(n.textContent))"),'North/East fallback mapping recognizes every displayed Bhava house label.');
 assert.ok(chartStyleJs.includes("const mapped=new Set(from.cusp.flat())"),'North Bhava validates complete source house coverage rather than requiring one cusp per Rasi.');
