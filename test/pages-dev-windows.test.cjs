@@ -155,13 +155,13 @@ test('Pages.dev HOROSCOPE reuses the existing header CSS without requesting a mi
   const calendarHtml = read('public/horoscope/calendar/index.html');
 
   assert.doesNotMatch(html, /header-layout\.css/i);
-  assert.match(html, /horoscope\.css\?v=20261120-subha-janana-transit-lagna-v2/);
+  assert.match(html, /horoscope\.css\?v=20261120-subha-janana-transit-lagna-v3/);
   assert.match(html, /class="smv-horoscope-brand-header"/);
   assert.match(html, /class="smv-horoscope-controls-row"/);
   assert.match(css, /\.smv-horoscope-brand-header\{/);
   assert.match(css, /\.smv-horoscope-controls-row/);
   assert.match(worker, /['"]\.\/horoscope\.css['"]/);
-  assert.match(calendarHtml, /\.\.\/horoscope\.css\?v=20261120-subha-janana-transit-lagna-v2/);
+  assert.match(calendarHtml, /\.\.\/horoscope\.css\?v=20261120-subha-janana-transit-lagna-v3/);
 });
 
 test('all three PWA cache releases are synchronized for Pages.dev and .in content updates', () => {
@@ -176,14 +176,14 @@ test('all three PWA cache releases are synchronized for Pages.dev and .in conten
     return { pages: match[1], legacy: match[2] };
   });
   assert.deepEqual(releases.map(item => item.pages), [
-    '20261120-subha-janana-transit-lagna-v2',
-    '20261120-subha-janana-transit-lagna-v2',
-    '20261120-subha-janana-transit-lagna-v2'
+    '20261120-subha-janana-transit-lagna-v3',
+    '20261120-subha-janana-transit-lagna-v3',
+    '20261120-subha-janana-transit-lagna-v3'
   ]);
   assert.deepEqual(releases.map(item => item.legacy), [
-    '20261120-subha-janana-transit-lagna-v2',
-    '20261120-subha-janana-transit-lagna-v2',
-    '20261120-subha-janana-transit-lagna-v2'
+    '20261120-subha-janana-transit-lagna-v3',
+    '20261120-subha-janana-transit-lagna-v3',
+    '20261120-subha-janana-transit-lagna-v3'
   ]);
 });
 test('each installer creates its own 256x256 Windows icon', () => {
