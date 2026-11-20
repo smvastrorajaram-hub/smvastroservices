@@ -8,8 +8,11 @@
  *
  * The source PDFs identify daily Nirayana longitudes and dates. Their
  * headers do not explicitly identify the row epoch or named ayanamsa.
- * This comparison therefore uses 00:00 TT and Lahiri as empirically
- * inferred conventions, pending written PAC confirmation.
+ * This comparison fixes each PAC civil-date row at 00:00:00 UTC as the
+ * project comparison convention, per the requested audit decision. PAC
+ * has not explicitly confirmed this epoch in the PDF metadata. UTC is
+ * converted to TT through Swiss Ephemeris utcToJd() before swe.calc().
+ * Lahiri remains the separately inferred sidereal comparison convention.
  *
  * This is an audit/regression only. It does not certify historical Saura
  * Mean/True/Sheeghroccheya triplets, BPHS Cheshta or production calculations.
@@ -48,8 +51,6 @@ const monthNames = Object.freeze([
 ]);
 const isoDate = (year, month, day) =>
   year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-const julianDayAtMidnightTt = (year, month, day) =>
-  Date.UTC(year, month - 1, day) / 86_400_000 + 2_440_587.5;
 const wrap = value => ((value % 360) + 360) % 360;
 const signedDifference = (candidate, reference) =>
   ((candidate - reference + 540) % 360) - 180;
@@ -126,19 +127,24 @@ const datesByMonth = new Map();
 for (const planet of Object.keys(planets)) {
   byPlanetAndDate[planet] = new Map();
   for (const row of sourceRows[planet]) {
-    const jdTt = julianDayAtMidnightTt(row.year, row.month, row.day);
-    const actual = swe.calc(jdTt, planets[planet].body, flags);
+    const utcJd = swe.utcToJd(row.year, row.month, row.day, 0, 0, 0);
+    assert.ok(Number.isFinite(utcJd?.ut) && Number.isFinite(utcJd?.et),
+      row.date + ' UTC midnight converts to valid UT and TT Julian days');
+    const expectedJdUt = Date.UTC(row.year, row.month - 1, row.day) / 86_400_000 + 2_440_587.5;
+    assert.ok(Math.abs(utcJd.ut - expectedJdUt) < 1e-9,
+      row.date + ' UTC instant is exactly 00:00:00 UTC');
+    const actual = swe.calc(utcJd.et, planets[planet].body, flags);
     assert.ok(Number.isFinite(actual.longitude),
       row.date + ' ' + planet + ' Swiss longitude is finite');
     assert.equal(actual.retFlag & 2, 2,
       row.date + ' ' + planet + ' calculation returned Swiss data flag');
     const delta = signedDifference(wrap(actual.longitude), row.decimalDegrees);
     const residualArcseconds = Math.abs(delta) * 3600;
-    assert.ok(residualArcseconds <= 0.36,
-      row.date + ' ' + planet + ' PAC-vs-Swiss residual <= 0.36 arcsec; got ' +
-        residualArcseconds.toFixed(6));
     const observed = {
       date: row.date,
+      utcEpoch: row.date + 'T00:00:00Z',
+      julianDayUT: utcJd.ut,
+      julianDayTT: utcJd.et,
       planet,
       pacNirayanaDegrees: row.decimalDegrees,
       swissLahiriSiderealDegrees: wrap(actual.longitude),
@@ -291,11 +297,14 @@ console.log(JSON.stringify({
   assertions: 'dynamic; includes all 1,825 finite/flag/residual checks plus exact daily coverage',
   sourceHashes,
   assumptions: {
-    dailyEpoch: '00:00 TT (empirically inferred; not explicit in the daily PDF headings)',
+    dailyEpoch: '00:00:00 UTC (fixed project comparison convention; not confirmed in the daily PDF headings)',
+    SwissCalculationTimeScale: 'UTC is converted to TT using Swiss Ephemeris utcToJd(); swe.calc receives the returned TT Julian Day',
     ayanamsa: 'Lahiri (empirically inferred; PDF headings say Nirayana but do not name the ayanamsa)',
     sourceUnderlyingEphemerisIndependence: 'not established from the public PDF metadata'
   },
   acceptanceGateArcseconds: 0.36,
+  comparisonGatePass: maxAbsResidualArcseconds <= 0.36,
+  comparisonGateMeaning: 'This strict sub-arcsecond gate is retained unchanged; a failure is reported rather than hidden by widening the tolerance.',
   maximumAbsoluteResidualArcseconds: maxAbsResidualArcseconds,
   rmsResidualArcseconds,
   perPlanet,
@@ -316,4 +325,9 @@ console.log(JSON.stringify({
   classicalFiveGrahaCheshtaCertified: false,
   productionIntegrationAllowed: false
 }, null, 2));
-console.log('PASS: all 1,825 PAC 2026 daily values parse and match the Swiss Lahiri sidereal calculation within 0.36 arc-second.');
+if (maxAbsResidualArcseconds > 0.36) {
+  console.error('FAIL: UTC-midnight PAC comparison exceeds the unchanged 0.36 arc-second gate.');
+  process.exitCode = 1;
+} else {
+  console.log('PASS: all 1,825 PAC 2026 daily values parse and match the Swiss Lahiri sidereal calculation within 0.36 arc-second at the fixed 00:00:00 UTC convention.');
+}
