@@ -2120,10 +2120,13 @@ html body.smv-v12-theme #englishHoroscopeResult#englishHoroscopeResult#englishHo
 .birth-gender-option span{display:inline-flex;min-width:76px;min-height:38px;align-items:center;justify-content:center;padding:7px 15px;border:1px solid #cdbd9b;border-radius:9px;background:#fffdf8;color:#41372c;font-weight:700;box-sizing:border-box}
 .birth-gender-option input:checked+span{border-color:#8d1717;background:#fff1ed;color:#8d1717;box-shadow:inset 0 0 0 1px #8d1717}
 .birth-gender-option input:focus-visible+span{outline:2px solid #205f9a;outline-offset:2px}
-.smv-subha-janana{border:1px solid rgb(221, 207, 170);border-radius:16px;background:rgb(255, 255, 255);padding:14px;margin:0px 0px 14px;box-sizing:border-box}
-.smv-subha-janana h3{margin:0px 0px 10px;color:rgb(141, 23, 23);font-size:17px;line-height:1.5}
-.smv-subha-janana p{margin:0px;line-height:1.85;text-align:justify;overflow-wrap:anywhere;word-break:normal}
-@media(max-width:640px){.smv-subha-janana{padding:12px}.smv-subha-janana p{font-size:14px;line-height:1.85;text-align:start}}
+.smv-subha-janana{width:100%;max-width:100%;margin:0px 0px 9px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;box-sizing:border-box}
+.smv-subha-janana h3{display:flex;align-items:center;justify-content:center;gap:clamp(8px,1.6vw,16px);margin:0px 0px 5px;color:#8b1e2d;font-size:clamp(16px,1.8vw,18px);font-weight:800;line-height:1.25;text-align:center;letter-spacing:.015em}
+.smv-subha-janana .smv-sj-symbol{flex:0 0 auto;color:#b18a36;font-size:1.16em;line-height:1;font-weight:900}
+.smv-subha-janana p{margin:0;color:#5b3b2b;font-size:15px;line-height:1.52;text-align:justify;text-justify:inter-word;overflow-wrap:break-word;word-break:normal}
+.smv-subha-janana .smv-sj-result{color:#28634b;font-weight:700}
+.smv-subha-janana .smv-sj-time{color:#28518a;font-weight:700;white-space:nowrap}
+@media(max-width:640px){.smv-subha-janana{margin-bottom:8px}.smv-subha-janana h3{gap:8px;margin-bottom:4px;font-size:16px}.smv-subha-janana p{font-size:13.5px;line-height:1.48;text-align:justify}}
 .smv-year-reckoning, .smv-birth-summary{border:1px solid rgb(221, 207, 170);border-radius:16px;background:rgb(255, 255, 255);padding:14px;margin:0px 0px 14px;box-sizing:border-box}
 .smv-year-reckoning h3, .smv-birth-summary h3{margin:0px 0px 10px}
 .smv-year-grid, .smv-summary-grid{display:grid;grid-template-columns:repeat(2, minmax(0px, 1fr));gap:8px}
