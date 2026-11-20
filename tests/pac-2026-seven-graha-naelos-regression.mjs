@@ -219,7 +219,7 @@ const perGraha=Object.fromEntries(names.map(name=>{
  }];
 }));
 const fiveClassicalNames=['Mercury','Venus','Mars','Jupiter','Saturn'];
-const fivePlanetGatePass=fiveClassicalNames.every(name=>
+const fiveClassicalPlanetGatePass=fiveClassicalNames.every(name=>
  perGraha[name].pacVsNaelosMaximumAbsoluteResidualArcseconds<=manifest.comparisonContract.gateArcseconds
 );
 const luminaryDiagnostics=['Sun','Moon'].every(name=>
