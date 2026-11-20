@@ -1073,7 +1073,8 @@ test('Calendar Daily Panchang values are integrated before Nakshatra Thyajyam wi
   assert.match(dailyCalendarSource, /row\.cells\?\.\[0\]\?\.textContent\?\.trim\(\)!==L\('Date','தேதி'\)/);
   assert.match(horoscopeRendererSource, /const calendarPanchangSlot=calendarPresentation\?document\.getElementById\('calPanchangSource'\):null/);
   assert.match(horoscopeRendererSource, /if\(calendarPanchangSlot\)calendarPanchangSlot\.innerHTML=dailyTable/);
-  assert.match(horoscopeRendererSource, /let h=calendarPanchangSlot\?'':/);
+  assert.match(horoscopeRendererSource, /let h='';\s*if\(calendarPresentation\)h\+=/);
+  assert.match(horoscopeRendererSource, /data-smv-screen-only="daily-hora"/);
   assert.match(calendarThemeCssSource, /\.cal-panchang-detail-grid/);
   assert.match(calendarThemeCssSource, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(calendarThemeCssSource, /\.cal-panchang-detail-item>small/);
