@@ -251,24 +251,27 @@
  flex:0 1 auto!important;min-height:0!important;max-height:100%!important;
 }
 
-/* North Indian D1/D9/Transit Rasi labels: fixed-size Devanagari digits.
-   Triangle compartments keep the existing corner placement; diamond cells use a
-   small in-flow row so the label never floats over a planet name. */
-.south-indian-chart.smv-v342-north .smv-v342-cell:not(.smv-v342-bhava-cell) .smv-v342-sign-number{
- display:block!important;flex:0 0 auto!important;align-self:center!important;
- min-width:1.25em;box-sizing:border-box!important;text-align:center!important;
- margin:0 0 1px!important;padding:0 2px!important;border-radius:2px!important;
+/* North Indian D1/D9/Transit sign labels are independent overlays.
+   Their fixed positions sit inside the clear outer tip of each compartment;
+   planet cells and their flow/layout are not changed. */
+.south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay{
+ position:absolute!important;display:block!important;z-index:3!important;
+ box-sizing:border-box!important;min-width:1.25em!important;width:auto!important;
+ margin:0!important;padding:0 2px!important;border-radius:2px!important;
  background:#fffdf7!important;color:#853323!important;
  font-family:'Noto Sans Devanagari','Noto Sans',sans-serif!important;
  font-size:11px!important;font-weight:900!important;line-height:1!important;
+ text-align:center!important;white-space:nowrap!important;pointer-events:none!important;
 }
-.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-triangle-cell .smv-v342-sign-number{
- z-index:4!important;
-}
-
-
-/* North Indian corner-sign labels: preserve a real cell box even when empty,
-   then tuck the fixed-size digit into the free outer corner, away from graha rows. */
-.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-triangle-cell:not(.smv-v342-bhava-cell){
- min-height:12px!important;padding-top:11px!important;max-height:calc(18% + 11px)!important;
-}
+.south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="1"]{left:50%!important;top:4%!important;transform:translate(-50%,0)!important}
+.south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="2"]{left:25%!important;top:3%!important;transform:translate(-50%,0)!important}
+.south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="3"]{left:.5%!important;top:25%!important;transform:translate(0,-50%)!important}
+.south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="4"]{left:3%!important;top:50%!important;transform:translate(0,-50%)!important}
+.south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="5"]{left:.5%!important;top:75%!important;transform:translate(0,-50%)!important}
+.south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="6"]{left:25%!important;top:97%!important;transform:translate(-50%,-100%)!important}
+.south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="7"]{left:50%!important;top:97%!important;transform:translate(-50%,-100%)!important}
+.south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="8"]{left:75%!important;top:97%!important;transform:translate(-50%,-100%)!important}
+.south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="9"]{left:99.5%!important;top:75%!important;transform:translate(-100%,-50%)!important}
+.south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="10"]{left:96.5%!important;top:50%!important;transform:translate(-100%,-50%)!important}
+.south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="11"]{left:99.5%!important;top:25%!important;transform:translate(-100%,-50%)!important}
+.south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="12"]{left:75%!important;top:3%!important;transform:translate(-50%,0)!important}
