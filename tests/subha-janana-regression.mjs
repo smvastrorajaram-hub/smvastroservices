@@ -163,6 +163,13 @@ assert.ok(html.indexOf('id="tamilBirthGender"')<html.indexOf('id="tamilDob"'),'T
 
 has(form,"if(!['male','female'].includes(gender))","Payment/report context rejects missing gender");
 has(form,"if(!['male','female'].includes(birthGender))","English generation rejects missing gender");
+has(form,"const {localizeTamilText}=await import('./offline/places/tamil-transliteration.mjs')",'English form uses the offline proper-name transliteration module.');
+has(form,"copy('englishBirthVillage','tamilBirthVillage','ta')",'English village is transliterated into the Tamil mirror field.');
+has(form,"copy('englishMotherName','tamilMotherName','ta')",'English mother name is transliterated into the Tamil mirror field.');
+has(form,"copy('englishFatherName','tamilFatherName','ta')",'English father name is transliterated into the Tamil mirror field.');
+has(horoscope,"['tamilBirthVillage','englishBirthVillage']",'Tamil village is transliterated into the English mirror field.');
+has(horoscope,"['tamilMotherName','englishMotherName']",'Tamil mother name is transliterated into the English mirror field.');
+has(horoscope,"['tamilFatherName','englishFatherName']",'Tamil father name is transliterated into the English mirror field.');
 has(horoscope,"if(!['male','female'].includes(birthGender))","Tamil generation rejects missing gender");
 for(const key of ['gender','village','motherName','fatherName','district','state','country','timezone'])
   has(form,key+':','Form context carries '+key);
