@@ -19,10 +19,10 @@ The official Positional Astronomy Centre, Kolkata / India Meteorological Departm
 
 The regression currently compares 15 source values (three dates × five planets) with the bundled Swiss Ephemeris WASM 2.10.03 using its Lahiri sidereal mode and explicit SWIEPH data flags.
 
-- Maximum absolute difference: **0.000065502° = 0.235806 arc-second**.
-- RMS difference: **0.000028824° = 0.103767 arc-second**.
+- Maximum absolute difference: **0.000069523° = 0.250283 arc-second**.
+- RMS difference: **0.0000386412° = 0.139108 arc-second**.
 - Per-point acceptance: **0.0001° = 0.36 arc-second**.
-- All 15 samples pass.
+- All 15 samples pass. CI run #1207: https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44769611357 (135 PAC-regression assertions).
 
 **Metadata limitation:** The PAC daily PDF headings do not explicitly state the row epoch or name the ayanamsa. The comparison's 00:00 TT epoch and Lahiri sidereal convention are empirical inferences, not source metadata. PAC confirmation and denser annual sampling remain required.
 
