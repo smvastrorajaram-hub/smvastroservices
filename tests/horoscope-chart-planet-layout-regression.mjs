@@ -51,6 +51,11 @@ assert.ok(chartStyleJs.includes("const kind=chart.id==='bhavaChart'?'bhava':char
 assert.ok(chartStyleJs.includes("const houseNumber=value=>"),'Bhava house parsing accepts both 1–12 and I–XII source labels.');
 assert.ok(chartStyleJs.includes("if(/^\\d{1,2}$/.test(raw))"),'Numeric Bhava labels 1–12 are recognized before Roman conversion.');
 assert.ok(chartStyleJs.includes("normalizeSouthBhavaHouseLabels(chart)"),'South Bhava display normalizes Arabic house values to Roman numerals without changing source calculations.');
+assert.ok(chartStyleJs.includes('function observeTamilBhavaLabels(root){'),'Tamil Bhava labels have a DOM-boundary guard for reports restored after page startup.');
+assert.ok(chartStyleJs.includes("observer.observe(root,{subtree:true,childList:true,characterData:true});"),'Late saved-report DOM insertion and text replacement are watched without changing calculation data.');
+assert.ok(chartStyleJs.includes('observeTamilBhavaLabels(r);'),'The Tamil/English result roots install the label guard when the chart presentation module starts.');
+assert.ok(chartStyleJs.includes('if(label.textContent.trim()!==roman)label.textContent=roman;'),'The Roman normalizer avoids writing unchanged labels and cannot self-trigger indefinitely.');
+
 assert.ok(chartStyleJs.includes("houseNumber(label.dataset.bhavaHouse)||houseNumber(label.textContent)"),'North/East mapping recognizes the original calculated house ID and legacy Roman labels.');
 assert.ok(chartStyleJs.includes("const explicitSign=Number(label.dataset.bhavaSign);"),'North/East mapping reads the original calculated Sphuta Rasi for each house.');
 assert.ok(chartStyleJs.includes("const bhavaLabel=kind==='bhava'?bhavaHousesBySign[sign].map(romanHouse).join(' / '):'';"),'Every East Bhava house label is grouped by its Sphuta Rasi.');
@@ -58,7 +63,7 @@ assert.ok(chartStyleJs.includes("const mapped=new Set(from.cusp.flat())"),'North
 assert.ok(chartStyleJs.includes("line.hasAttribute('data-bhava-house')"),'North Bhava fallback preserves each source planet’s already-calculated Bhava assignment.');
 assert.ok(horoscopeJs.includes('data-bhava-house="${n}" data-bhava-sign="${si+1}"'),'Bhava rendering preserves its already-calculated house and Sphuta Rasi as display metadata only.');
 assert.match(chartStyleJs,/kind==='bhava'\s*\?\s*signByBhavaHouse\.get\(house\)/,'North Bhava sign numbers come from the calculated Sphuta Rasi in each house cell, not from Lagna-relative numbering.');
-assert.ok(chartStyleJs.includes("roots().forEach(r=>apply(r,choice));"),'Existing saved result markup is presented when the chart module starts.');
+assert.ok(chartStyleJs.includes("roots().forEach(r=>{")&&chartStyleJs.includes("apply(r,choice);")&&chartStyleJs.includes("observeTamilBhavaLabels(r);"),'Existing saved result markup is presented and Tamil Bhava Roman protection is installed when the chart module starts.');
 assert.ok(/render\(d\);[\s\S]{0,500}?window\.SMVChartPresentationV342\?\.apply\(resultBox\);/.test(horoscopeJs),'Every core/basic horoscope render immediately applies chart presentation; comments between the render and apply calls do not weaken this requirement.');
 assert.ok(chartStyleJs.includes("chart.classList.contains('transit-chart')"),'Transit detection also covers production charts without a fixture ID.');
 assert.ok(chartStyleJs.includes("arr.out[si]?.querySelector('[data-transit-lagna]')"),'North/East chart conversion locates Transit Lagna from its source graha-flow row.');

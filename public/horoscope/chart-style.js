@@ -26,8 +26,33 @@
   if(!chart.closest('#tamilHoroscopeResult'))return;
   for(const label of chart.querySelectorAll('.bhava-house-no')){
    const house=houseNumber(label.dataset.bhavaHouse)||houseNumber(label.textContent);
-   if(house){label.dataset.bhavaHouse=String(house);label.dataset.bhavaRoman=romanHouse(house);label.textContent=romanHouse(house);}
+   if(!house)continue;
+   const roman=romanHouse(house);
+   if(label.dataset.bhavaHouse!==String(house))label.dataset.bhavaHouse=String(house);
+   if(label.dataset.bhavaRoman!==roman)label.dataset.bhavaRoman=roman;
+   // Avoid no-op text writes: this normalizer also runs for late restored HTML.
+   if(label.textContent.trim()!==roman)label.textContent=roman;
   }
+ }
+ function observeTamilBhavaLabels(root){
+  if(!root||root.__smvBhavaRomanObserver||typeof MutationObserver!=='function')return;
+  const observer=new MutationObserver(records=>{
+   const changed=records.some(record=>{
+    const target=record.target?.nodeType===1?record.target:record.target?.parentElement;
+    if(target?.closest?.('#bhavaChart'))return true;
+    return [...(record.addedNodes||[])].some(node=>node.nodeType===1&&(
+     node.matches?.('#bhavaChart,.bhava-house-no')||
+     node.querySelector?.('#bhavaChart .bhava-house-no,.bhava-house-no')
+    ));
+   });
+   if(!changed)return;
+   const chart=root.querySelector('#bhavaChart');
+   if(chart)normalizeSouthBhavaHouseLabels(chart);
+  });
+  observer.observe(root,{subtree:true,childList:true,characterData:true});
+  root.__smvBhavaRomanObserver=observer;
+  const chart=root.querySelector('#bhavaChart');
+  if(chart)normalizeSouthBhavaHouseLabels(chart);
  }
  function restoreRomanBhavaLabels(root){
   const chart=root?.querySelector('#bhavaChart');if(!chart)return;
@@ -300,7 +325,12 @@
   styleChoice(choice);
   for(const el of forms())el.addEventListener('change',e=>updateAll(e.currentTarget.value));
   // Saved/restored result HTML may already exist when this module starts.
-  roots().forEach(r=>apply(r,choice));
+  roots().forEach(r=>{
+   apply(r,choice);
+   // Saved reports and later language/render passes can replace the Bhava DOM
+   // after startup. Keep the Tamil South labels I–XII at the DOM boundary.
+   observeTamilBhavaLabels(r);
+  });
   // Run synchronously before Saved Reports takes its HTML snapshot.
   window.addEventListener('smv:report-ready',e=>{if(e.detail?.feature==='advanced_analysis')apply(e.detail?.root,choice);});
   window.addEventListener('smv-language',()=>{
