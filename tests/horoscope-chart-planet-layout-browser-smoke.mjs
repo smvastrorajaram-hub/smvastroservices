@@ -220,6 +220,8 @@ try {
                   retroMarkerText:retroMarker?.textContent.trim()||'',
                   degreeText:degree?.textContent.trim()||'',
                   numberText:number?.textContent.trim()||'',
+                  numberBackgroundColor:number?getComputedStyle(number).backgroundColor:null,
+                  numberZIndex:number?getComputedStyle(number).zIndex:null,
                   equalSizes:sizes.length < 2 || Math.max(...sizes)-Math.min(...sizes) < 0.6,
                   names:[...cell.querySelectorAll('.planet-glyph')].map(element=>element.textContent.trim()),
                   colors,
@@ -270,6 +272,10 @@ try {
             assert.equal(value.names.length,count,item.rootId+' '+item.kind+' '+style+': planet rows/names remain intact for '+count+' planets.');
             assert.ok(value.colors.every(color=>color && color!=='rgba(0, 0, 0, 0)'),item.rootId+' '+item.kind+' '+style+': planet colours remain visible.');
             assert.equal(value.outside.length,0,item.rootId+' '+item.kind+' '+style+': chart text stays inside its box: '+JSON.stringify(value.outside));
+            if(style!=='south'&&count>=3&&value.numberText){
+              assert.equal(value.numberBackgroundColor,'rgb(255, 253, 247)',item.rootId+' '+item.kind+' '+style+': crowded-cell house/sign number has an opaque chart-colour backing.');
+              assert.ok(Number(value.numberZIndex)>=4,item.rootId+' '+item.kind+' '+style+': crowded-cell house/sign number stays above planet labels.');
+            }
           }
           assert.equal(two.compact,false,item.rootId+' '+item.kind+' '+style+': a two-planet cell keeps normal sizing.');
           assert.equal(three.compact,true,item.rootId+' '+item.kind+' '+style+': a three-planet cell compacts locally.');
