@@ -23,6 +23,13 @@ eq(lon.exactNatalEpochModernDe440Parity.status,'PASS_3000_EXACT_RANDOM_NATAL_EPO
 eq(lon.exactNatalEpochModernDe440Parity.comparisons,3000,'all 600 exact natal epochs × five planets are checked');
 eq(lon.exactNatalEpochModernDe440Parity.independentHistoricalOracleVerifiedRows,0,'modern parity is not mislabeled historical printed-table evidence');
 eq(lon.exactNatalEpochModernDe440Parity.maxAbsResidualArcsec,0.008523965379936271,'3,000-row measured maximum residual is pinned');
+eq(lon.coherentClassicalChainValidation.status,'PASS_3000_SAME_EPOCH_SAME_FRAME_CLASSICAL_INPUT_CHAINS_RESEARCH_ONLY','3,000 classical input chains share exact epoch and frame');
+eq(lon.coherentClassicalChainValidation.comparisons,3000,'600 exact natal epochs × five classical planets are verified');
+eq(lon.coherentClassicalChainValidation.commonFrame,'traditional-Saura-nirayana','all classical input chains share the declared Saura frame');
+eq(lon.coherentClassicalChainValidation.independentHistoricalOracleVerifiedRows,0,'same-model arithmetic is not mislabeled an independent historical oracle');
+eq(lon.coherentClassicalChainValidation.secondary24JyaCrossCheck.rowsOverTolerance,1,'one 24-Jya comparison above the 0.05 degree diagnostic limit is disclosed');
+eq(lon.coherentClassicalChainValidation.secondary24JyaCrossCheck.tabularNumericalGatePass,false,'24-Jya numerical gate remains explicitly not passed');
+eq(lon.coherentClassicalChainValidation.secondary24JyaCrossCheck.maxAbsDifferenceDegrees,0.053231899421462,'maximum 24-Jya difference is pinned');
 for(const p of lon.scope.visiblePlanets) for(const q of ['mean','true','sheeghroccheya'])
  ok(lon.rows.some(r=>r.planet===p&&r.quantity===q),p+' '+q+' row present');
 eq(bala.rows.length,42,'42 Bala rows');
@@ -47,4 +54,8 @@ eq(bala.rows.find(r=>r.graha==='Mercury'&&r.component==='dig').status,'SOURCE_EX
 eq(bala.rows.find(r=>r.graha==='Mercury'&&r.component==='dig').formulaDerivedVirupa,21.025,'Mercury Dig exact-input formula result is recorded');
 eq(bala.rows.find(r=>r.graha==='Mercury'&&r.component==='dig').formulaDerivedDisplayVirupa,21.03,'Mercury Dig formula display is rounded to 21.03');
 eq(bala.rows.find(r=>r.graha==='Jupiter'&&r.component==='drik').status,'SOURCE_DISCREPANCY','Jupiter Drik remains the sole open component conflict');
+eq(bala.rows.find(r=>r.graha==='Mercury'&&r.component==='dig').formulaDerivedVirupa,21.025,'Mercury Dig exact-input formula value is pinned');
+eq(bala.sourceDiscrepancies.find(r=>r.id==='BVR_JUPITER_DRIK').sourcePrintedSubtotalsNet,-63.44,'printed Jupiter subha/asubha subtotal inconsistency is preserved');
+eq(bala.sourceDiscrepancies.find(r=>r.id==='BVR_JUPITER_DRIK').exactInputEnginePinda,-64.096,'exact-input Jupiter Drik Pinda diagnostic is preserved');
+eq(bala.sourceDiscrepancies.find(r=>r.id==='BVR_JUPITER_DRIK').sourcePindaQuarter,-16.035,'printed Jupiter Pinda quarter is preserved');
 console.log(JSON.stringify({pass:true,longitudeRows:lon.rows.length,balaRows:bala.rows.length,balaCounts:bala.counts,ordinaryNatalClassicalCertified:false}));
