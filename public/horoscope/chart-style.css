@@ -265,3 +265,13 @@
 .south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-triangle-cell .smv-v342-sign-number{
  z-index:4!important;
 }
+
+
+/* North Indian corner-sign labels: preserve a real cell box even when empty,
+   then tuck the fixed-size digit into the free outer corner, away from graha rows. */
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-triangle-cell:not(.smv-v342-bhava-cell){
+ min-height:12px!important;
+}
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-triangle-cell:not(.smv-v342-bhava-cell) .smv-v342-sign-number{
+ transform:translateX(-45%)!important;
+}
