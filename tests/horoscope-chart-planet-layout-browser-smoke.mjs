@@ -414,6 +414,7 @@ try {
           if(style==='north'&&['rasi','navamsa','transit'].includes(item.kind)){
             assert.equal(item.signNumberLabels.length,12,item.rootId+' '+item.kind+': every sign has one Devanagari label.');
             const sortedSignLabels=[...item.signNumberLabels].sort((a,b)=>a.sign-b.sign);
+            console.log('NORTH SIGN LABEL GEOMETRY',JSON.stringify({rootId:item.rootId,kind:item.kind,viewport:width,language,labels:sortedSignLabels}));
             assert.deepEqual(sortedSignLabels.map(label=>label.text),devanagari,item.rootId+' '+item.kind+': sign digits follow the actual Rasi numbers 1–12.');
             assert.ok(sortedSignLabels.every(label=>!label.missing&&label.visible&&label.insideCell&&label.insideChart&&!label.overlapsPlanet),item.rootId+' '+item.kind+': sign numbers remain visible, inside their cells and clear of all planet names.');
             const sizes=sortedSignLabels.map(label=>label.fontSize);
