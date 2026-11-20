@@ -165,12 +165,18 @@ function midpointArc(a,b) {
 }
 function housePlacement(longitude,arambhaCusps) {
   const x=norm360(longitude);
+  // Exact Sripati Arambha boundary is Bhava Sandhi. Do not silently assign
+  // that graha to either house: the positional Sthana calculation must stop.
+  for(let i=0;i<12;i++) {
+    const distance=circularDistance(x,arambhaCusps[i]);
+    if(distance<=1e-7) return null;
+  }
   for(let i=0;i<12;i++) {
     const start=arambhaCusps[i], end=arambhaCusps[(i+1)%12];
     const span=norm360(end-start), position=norm360(x-start);
     if(position < (span < 1e-10 ? 360 : span)) return i+1;
   }
-  return 12;
+  return null;
 }
 function createSripatiCusps(madhyaCusps) {
   if(!Array.isArray(madhyaCusps)||madhyaCusps.length!==12||
@@ -373,30 +379,32 @@ export function resolveBphsGrahaYuddha(planetRows) {
   }
   const counts=new Map();
   for(const row of candidates) for(const name of [row.planetA,row.planetB]) counts.set(name,(counts.get(name)||0)+1);
-  const ambiguousNames=new Set();
-  for(const row of ambiguous) {ambiguousNames.add(row.planetA);ambiguousNames.add(row.planetB);}
+  const pairKey=row=>[row.planetA,row.planetB].sort().join('|');
+  const unresolvedByPair=new Map(ambiguous.map(row=>[pairKey(row),row]));
   for(const row of candidates) if(counts.get(row.planetA)>1||counts.get(row.planetB)>1) {
-    ambiguous.push({
+    unresolvedByPair.set(pairKey(row),{
       planetA:row.planetA,planetB:row.planetB,separationDegrees:row.separationDegrees,
       reason:'overlapping-graha-yuddha-candidates'
     });
-    ambiguousNames.add(row.planetA);ambiguousNames.add(row.planetB);
   }
-  const resolved=[];
-  for(const row of candidates) {
-    if(ambiguousNames.has(row.planetA)||ambiguousNames.has(row.planetB)) continue;
-    resolved.push(row);
-  }
+  const unresolvedRows=[...unresolvedByPair.values()];
+  const ambiguousNames=new Set();
+  for(const row of unresolvedRows) {ambiguousNames.add(row.planetA);ambiguousNames.add(row.planetB);}
+  const resolved=candidates.filter(row=>
+    !ambiguousNames.has(row.planetA)&&!ambiguousNames.has(row.planetB)
+  );
+  // Every one of the ten candidate pairs appears exactly once: NO_WAR,
+  // UNRESOLVED or WAR. Never duplicate a candidate while withholding overlap.
   const allPairs=[
     ...noWar.map(row=>({...row,status:'NO_WAR',winner:null,loser:null})),
-    ...ambiguous.map(row=>({...row,status:'UNRESOLVED',winner:null,loser:null})),
+    ...unresolvedRows.map(row=>({...row,status:'UNRESOLVED',winner:null,loser:null})),
     ...resolved.map(row=>({...row,status:'WAR'}))
   ];
   return Object.freeze({
     reviewed:true,
-    resolved:ambiguous.length===0,
+    resolved:unresolvedRows.length===0,
     encounters:Object.freeze(resolved.map(({winner,loser})=>Object.freeze({winner,loser}))),
-    unresolved:Object.freeze(ambiguous),
+    unresolved:Object.freeze(unresolvedRows),
     unresolvedGrahas:Object.freeze([...ambiguousNames]),
     pairs:Object.freeze(allPairs),
     evaluatedPairs:allPairs.length,
@@ -652,7 +660,12 @@ export async function createTrueBphsShadbalaEngine({
       // Swiss S/O relationship; no Swiss planetary longitude enters here.
       const porphyry=eph.houses(birth.jdUt,birth.latitude,birth.longitude,'O');
       const sripati=createSripatiCusps(porphyry.cusps.map(value=>norm360(value-siderealOffset)));
-      for(const row of planetRows) row.bhava=housePlacement(row.longitude,sripati.arambha);
+      for(const row of planetRows) {
+        if(!BPHS_PLANETS.includes(row.name)) {row.bhava=null;continue;}
+        row.bhava=housePlacement(row.longitude,sripati.arambha);
+        if(!Number.isInteger(row.bhava))
+          fail(row.name+' is exactly on a Sripati Arambha/Bhava Sandhi boundary; Sthana Bala is withheld');
+      }
       const bhavas=sripati.madhya.map((longitude,index)=>({
         house:index+1,longitude,referenceFrameId:FRAME_ID,epochJdUt:birth.jdUt,
         cuspKind:'SRIPATI_BHAVA_MADHYA_FROM_NAELOS_PORPHYRY'
