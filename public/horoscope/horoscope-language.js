@@ -13,6 +13,10 @@
  'Married':'திருமணமானவர்','Separated':'பிரிந்து வாழ்பவர்','Divorced':'மணவிலக்கு பெற்றவர்',
  'Widowed':'வாழ்க்கைத்துணையை இழந்தவர்','Prefer not to say':'தெரிவிக்க விருப்பமில்லை',
  'City, State, Country':'நகரம், மாநிலம், நாடு',
+  'Gender':'பாலினம்','Male':'ஆண்','Female':'பெண்',
+  'Village':'கிராமம்','Optional village':'விருப்பக் கிராமம்',
+  "Mother's Name":'தாயார் பெயர்',"Father's Name":'தந்தையார் பெயர்',
+  'Optional':'விருப்பம்','Select':'தேர்வு செய்யவும்',
 
 'SMV HOROSCOPE':'SMV ஜாதகம்','Sri Maduraveerayah Horoscope':'ஸ்ரீ மதுரை வீரையா ஜாதகம்','Horoscope interpretations are for reflection and personal guidance.':'ஜாதக விளக்கங்கள் சிந்தனைக்கும் தனிப்பட்ட வழிகாட்டலுக்கும் உரியவை.','Birth Time Zone (IANA)':'பிறந்த இட நேர மண்டலம் (IANA)',
  'Calculated UTC Offset (hours)':'கணக்கிடப்பட்ட UTC நேர வேறுபாடு (மணி)',
