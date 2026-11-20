@@ -32,10 +32,9 @@
  function restoreRomanBhavaLabels(root){
   const chart=root?.querySelector('#bhavaChart');if(!chart)return;
   normalizeSouthBhavaHouseLabels(chart);
-  const tamil=isTa();
   for(const label of chart.querySelectorAll('.smv-v342-house-number[data-bhava-houses]')){
    const houses=label.dataset.bhavaHouses.split(',').map(houseNumber).filter(Boolean);
-   label.textContent=bhavaNumberListText(houses,tamil);
+   label.textContent=houses.join(' / ');
   }
  }
  let choice='south';
@@ -109,11 +108,10 @@
   }
   // East Bhava groups distinct Bhava IDs under the actual Sphuta Rasi.
   if(kind==='bhava'&&style==='east'&&String(bhavaHouseLabel||'').trim()){
-   const tamil=ta;
    const houses=String(bhavaHouseLabel).split(/[\\/,]/).map(houseNumber).filter(Boolean);
    const label=document.createElement('span');label.className='smv-v342-house-number';
    label.dataset.bhavaHouses=houses.join(',');
-   label.textContent=bhavaNumberListText(houses,tamil);
+   label.textContent=houses.join(' / ');
    label.setAttribute('aria-label','Bhava '+label.textContent);
    cell.append(label);
   }
