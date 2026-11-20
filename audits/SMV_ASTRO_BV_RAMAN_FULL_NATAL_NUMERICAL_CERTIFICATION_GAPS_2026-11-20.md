@@ -35,13 +35,14 @@ For any graha whose required six-Bala component is unavailable, preserve verifie
 
 ## New date-specific modern True-longitude evidence — 20 November 2026
 
-The gap register is refined by a new separate audit:
+The gap register is refined by a separate reproducible audit:
 `audits/SMV_ASTRO_BV_RAMAN_NATAL_DE441_TRUE_LONGITUDE_25_POINT_AUDIT_2026-11-20.md`.
 
 - NASA/JPL Horizons DE441 exact-epoch apparent geocentric tropical longitudes were retrieved for the five existing Perambalur natal epochs and all five eligible planets (25 values).
 - Target and Earth-centre response headers both identify DE441; centre is Earth geocentre `500@399`; quantity 31 is apparent IAU76/80 ecliptic-of-date longitude.
-- The local Swiss Ephemeris 2.10.03 Moshier comparison has a maximum absolute residual of 0.000067825° across these 25 values.
-- A new repository regression reruns the comparisons through the bundled Moshier/WASM runtime with the predeclared 0.05° maximum per point.
+- The repository test obtains direct tropical Swiss Ephemeris values using explicit `SWIEPH | SPEED` flags and asserts the returned ephemeris data flag. Across all 25 comparisons, maximum absolute residual is **0.000014180°** and RMS is **0.000013323°**; CI run [#1195](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44758892194) passed 251 assertions.
+- A separate local Python Moshier binding cross-check has maximum absolute residual 0.000067825° across the same 25 values.
+- The chart's sidereal longitude plus displayed ayanāṃśa gives a separate ~0.00515° round-trip offset; it is explicitly diagnostic and is not used for the primary direct-tropical gate.
 
 **Interpretation:** This closes the *modern apparent True-longitude cross-check at the five sampled historical epochs*. It does not establish the historical Saura / Sūrya-Siddhānta true positions. NASA DE441 is a modern physical ephemeris evaluated backwards at historic epochs, not the historical printed almanac source for the old Saura model.
 
