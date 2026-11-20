@@ -236,7 +236,7 @@
  white-space:nowrap!important;max-width:none!important;
 }
 
-/* East Bhava keeps grouped Arabic house IDs as the first in-cell row. North uses its Rasi sign number instead. */
+/* East Bhava keeps grouped Roman house IDs as the first in-cell row. North has a fixed Roman slot for each Bhava. */
 .south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-bhava-cell{
  justify-content:flex-start!important;
  padding-top:2px!important;
