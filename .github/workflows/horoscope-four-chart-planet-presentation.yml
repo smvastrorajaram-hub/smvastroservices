@@ -11,6 +11,7 @@ on:
       - 'public/horoscope/calendar/index.html'
       - 'tests/horoscope-chart-planet-layout-regression.mjs'
       - 'tests/horoscope-chart-planet-layout-browser-smoke.mjs'
+      - 'tests/horoscope-bhava-house-numbering-audit-10k.mjs'
       - '.github/workflows/horoscope-four-chart-planet-presentation.yml'
   pull_request:
     branches: [main]
@@ -40,6 +41,8 @@ jobs:
         run: npm install --no-save --package-lock=false --no-audit --no-fund
       - name: Verify source-level four-chart rendering rules
         run: node tests/horoscope-chart-planet-layout-regression.mjs
+      - name: Audit 10,000 real Swiss Ephemeris Bhava house mappings
+        run: node tests/horoscope-bhava-house-numbering-audit-10k.mjs
       - name: Verify four-chart layout in Chromium across viewport widths
         run: node tests/horoscope-chart-planet-layout-browser-smoke.mjs
       - name: Preserve four-chart preview screenshots
