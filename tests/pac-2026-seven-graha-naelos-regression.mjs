@@ -120,8 +120,8 @@ const swe=await getSwe();
 swe.setSiderealLahiri();
 const swissSiderealFlags=swe.siderealSpeedFlags();
 const bodyIds={
- Sun:C.SE_SUN,Moon:C.SE_MOON,Mercury:C.SE_MERCURY,Venus:C.SE_VENUS,
- Mars:C.SE_MARS,Jupiter:C.SE_JUPITER,Saturn:C.SE_SATURN
+ Sun:C.SUN,Moon:C.MOON,Mercury:C.MERCURY,Venus:C.VENUS,
+ Mars:C.MARS,Jupiter:C.JUPITER,Saturn:C.SATURN
 };
 assert.equal(engine.engine,'TRUE_BPHS_SHADBALA_NAELOS_DE440');
 assert.equal(engine.sourceEphemeris,'JPL DE440');
@@ -156,13 +156,13 @@ for(let dayOfYear=0;dayOfYear<365;dayOfYear++){
   const candidate=naelos.trueLongitudeSaura;
   const delta=signedDifference(candidate,pacSaura);
   const residualArcseconds=Math.abs(delta)*3600;
-  const swissTropical=swe.calc(jdTt,bodyIds[name],C.SEFLG_SWIEPH|C.SEFLG_SPEED);
+  const swissTropical=swe.calc(jdTt,bodyIds[name],2|256);
   const swissLahiri=swe.calc(jdTt,bodyIds[name],swissSiderealFlags);
   assert.ok(Number.isFinite(swissTropical.longitude),dateKey+' '+name+' Swiss tropical longitude finite');
   assert.ok(Number.isFinite(swissLahiri.longitude),dateKey+' '+name+' Swiss Lahiri longitude finite');
-  assert.equal(swissTropical.retFlag&C.SEFLG_SWIEPH,C.SEFLG_SWIEPH,
+  assert.equal(swissTropical.retFlag&2,2,
    dateKey+' '+name+' Swiss tropical source is Swiss Ephemeris data');
-  assert.equal(swissLahiri.retFlag&C.SEFLG_SWIEPH,C.SEFLG_SWIEPH,
+  assert.equal(swissLahiri.retFlag&2,2,
    dateKey+' '+name+' Swiss Lahiri source is Swiss Ephemeris data');
   const pacVsSwissArcsec=Math.abs(signedDifference(pac.nirayanaDegrees,swissLahiri.longitude))*3600;
   const naelosVsSwissTropicalArcsec=Math.abs(signedDifference(
