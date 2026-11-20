@@ -33,6 +33,7 @@ jobs:
           node --check research/natal-classical-certification/annual-random-natal-charts.mjs
           node --check tests/natal-classical-certification-pipeline.mjs
           node --check tests/natal-classical-remaining-evidence-audit.mjs
+          node --check tests/bv-raman-source-precision-diagnostic.mjs
           node --check tests/naelos-de440-600-random-natal-true-longitude.mjs
           node --check tests/saura-bija-coherent-mean-true-sheeghroccheya-600-epochs.mjs
       - name: Inspect checked-in NAELOS binary headers
@@ -51,6 +52,8 @@ jobs:
         run: node tests/natal-classical-certification-pipeline.mjs
       - name: Audit historical longitude and 42-row Bala source ledgers without certifying arbitrary natal charts
         run: node tests/natal-classical-remaining-evidence-audit.mjs
+      - name: Diagnose B.V. Raman Mercury Dig and Jupiter Drik page-precision discrepancies (1918 sample only)
+        run: node tests/bv-raman-source-precision-diagnostic.mjs
       - name: Calculate 600 seeded-random full natal charts (one random DOB, time and Indian place per year)
         run: node research/natal-classical-certification/annual-random-natal-charts.mjs
       - name: Verify same-epoch same-frame classical Bīja Mean, Mandocca, Sheeghroccheya, True and BPHS Chesta for 600 natal epochs (3,000 rows)
