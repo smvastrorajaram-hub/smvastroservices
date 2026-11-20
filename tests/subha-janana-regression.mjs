@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { formatOfflineIndiaAdministrativeAreas } from '../public/horoscope/offline/places/place-display.mjs';
 import { buildSubhaJanana, getTamilRitu, getBirthTimeAmirthadiYoga } from '../public/horoscope/subha-janana.mjs';
-import { localizeTamilText } from '../public/horoscope/offline/places/tamil-transliteration.mjs';
+import { localizeTamilText, latinToTamil, tamilToLatin } from '../public/horoscope/offline/places/tamil-transliteration.mjs';
 import { solarNoaa, tamilSolarDate, nakshatraIntervalsForLocalDay, thyajyamIntervalsForLocalDay, calculateAhasRatriPramana } from '../public/horoscope/offline/transit_panchang.browser.mjs';
-import { getTamilDayYoga } from '../public/horoscope/tamil-day-classifications.mjs';
+import { getTamilDayYoga, TAMIL_DAY_YOGA_TABLE } from '../public/horoscope/tamil-day-classifications.mjs';
 import { offsetMinutesAt } from '../public/horoscope/offline/places/timezone.mjs';
 
 const read=path=>fs.readFileSync(new URL('../'+path,import.meta.url),'utf8');
 let checks=0;
-for(const [name,fn] of Object.entries({buildSubhaJanana,solarNoaa,tamilSolarDate,nakshatraIntervalsForLocalDay,thyajyamIntervalsForLocalDay,calculateAhasRatriPramana,getTamilDayYoga,offsetMinutesAt})){
+for(const [name,fn] of Object.entries({buildSubhaJanana,solarNoaa,tamilSolarDate,nakshatraIntervalsForLocalDay,thyajyamIntervalsForLocalDay,calculateAhasRatriPramana,getTamilDayYoga,offsetMinutesAt,latinToTamil,tamilToLatin,localizeTamilText,getTamilRitu,getBirthTimeAmirthadiYoga})){
   assert.equal(typeof fn,'function','Runtime module export is available: '+name);checks++;
 }
 const has=(source,part,message)=>{assert.ok(source.includes(part),message||part);checks++;};
@@ -39,6 +39,23 @@ for(let index=0;index<12;index++){
   equal(getTamilRitu(solarMonth,'en'),expectedRituEn[index],'English Ritu is derived from '+monthNamesEn[index]);
 }
 equal(getTamilRitu({index:2,monthTa:'தை',monthEn:'Thai'},'ta'),'ருது கணிக்க இயலவில்லை','A mismatched solar month cannot display a stale fixed Ritu');
+const yogaClasses=new Map();
+for(let weekday=0;weekday<TAMIL_DAY_YOGA_TABLE.length;weekday++){
+  for(let star=1;star<=27;star++){
+    const yoga=getTamilDayYoga(weekday,star);
+    yogaClasses.set(yoga.key,yoga);
+  }
+}
+for(const [key,labelTa,labelEn] of [
+  ['siddha','சித்த யோகம்','Siddha Yogam'],
+  ['amirtha','அமிர்த யோகம்','Amirtha Yogam'],
+  ['marana','மரண யோகம்','Marana Yogam'],
+  ['prabalarishta','பிரபலாரிஷ்ட யோகம்','Prabalarishta Yogam']
+]){
+  assert.ok(yogaClasses.has(key),'The existing Amirthadi lookup contains '+key);checks++;
+  equal(yogaClasses.get(key).ta,labelTa,'Tamil Amirthadi label for '+key);
+  equal(yogaClasses.get(key).en,labelEn,'English Amirthadi label for '+key);
+}
 const intervalYoga=getBirthTimeAmirthadiYoga([
   {startTimestamp:0,endTimestamp:100,yoga:{key:'marana',ta:'மரண யோகம்',en:'Marana Yogam'}},
   {startTimestamp:100,endTimestamp:200,yoga:{key:'siddha',ta:'சித்த யோகம்',en:'Siddha Yogam'}}
