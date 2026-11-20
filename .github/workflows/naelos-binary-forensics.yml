@@ -27,10 +27,13 @@ jobs:
           node --check bv-raman-shadbala.cjs
           node --check public/horoscope/offline/bv-raman-shadbala.browser.mjs
           node --check tests/naelos-de440-five-natal-true-longitude.mjs
+          node --check tests/bv-raman-yuddha-regression.mjs
       - name: Inspect checked-in NAELOS binary headers
         run: node research/naelos-de440/naelos-binary-forensics.mjs
       - name: Preserve existing B.V. Raman Strength6 regression
         run: node tests/bv-raman-strength6-regression.mjs
+      - name: Verify B.V. Raman source-based Yuddha and final Kala adjustments
+        run: node tests/bv-raman-yuddha-regression.mjs
       - name: Preserve existing B.V. Raman Ishta/Kashta regression
         run: node tests/bv-raman-ishta-kashta-regression.mjs
       - name: Verify NAELOS DE440 true longitude and certified Chesta path at five natal epochs
