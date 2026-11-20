@@ -44,9 +44,11 @@ for (const graha of CLASSICAL_NATAL_SCOPE.grahas) {
   }
 }
 const matrixPass = evaluateBalaEvidenceMatrix(completeRows);
-eq(matrixPass.certified, true,
-  'synthetic policy fixture proves that a fully populated 42-row matrix can pass');
+eq(matrixPass.certified, false,
+  'synthetic fixture rows are explicitly forbidden as historical source evidence');
 eq(matrixPass.acceptedRows, 42, 'all 42 synthetic fixture rows are accounted for');
+ok(matrixPass.blockers.some(x => x.includes('test-fixture value is not source evidence')),
+  'test-fixture provenance is rejected even when all 42 rows are present');
 
 // Missing one item must block the whole matrix.
 const missingOne = completeRows.map(row => ({...row}));
@@ -67,8 +69,8 @@ eq(residualResult.certified, false, 'residual outside tolerance blocks certifica
 const duplicateResult = evaluateBalaEvidenceMatrix([...completeRows, completeRows[0]]);
 eq(duplicateResult.certified, false, 'duplicate component evidence blocks certification');
 
-// The production gate is only policy-tested with synthetic inputs. These are
-// explicitly test-fixture IDs, not genuine source records or a real certificate.
+// The policy is tested with marked synthetic values. The gates must reject
+// every TEST_FIXTURE_ONLY marker; test fixtures can never create a certificate.
 const syntheticLongitude = {
   status: 'PASS',
   allFivePlanets: true,
@@ -148,9 +150,12 @@ const syntheticPass = evaluateNatalClassicalCertification({
   nodeBrowserParity: syntheticParity,
   fallbackUsed: false
 });
-eq(syntheticPass.classicalCertified, true,
-  'synthetic fixture proves final gate requires and accepts every completed proof');
-eq(syntheticPass.provisional, false, 'synthetic complete fixture is not provisional');
+eq(syntheticPass.classicalCertified, false,
+  'synthetic inputs can never create a classical certificate');
+eq(syntheticPass.provisional, true,
+  'synthetic-only evidence remains provisional');
+ok(syntheticPass.blockers.some(x => x.includes('test-fixture')),
+  'final natal gate reports synthetic fixture provenance as a blocker');
 
 const annualOnlyResult = evaluateNatalClassicalCertification({
   birthYear: 1994,
