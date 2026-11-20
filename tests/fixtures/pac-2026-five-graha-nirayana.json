@@ -37,7 +37,7 @@
   "samples": [
     {
       "date": "2026-01-01",
-      "julianDayUT": 2461041.5,
+      "julianDayUTC": 2461041.5,
       "nirayanaDms": {
         "Mercury": {
           "degree": 244,
@@ -73,7 +73,7 @@
     },
     {
       "date": "2026-07-01",
-      "julianDayUT": 2461222.5,
+      "julianDayUTC": 2461222.5,
       "nirayanaDms": {
         "Mercury": {
           "degree": 91,
@@ -109,7 +109,7 @@
     },
     {
       "date": "2026-12-31",
-      "julianDayUT": 2461405.5,
+      "julianDayUTC": 2461405.5,
       "nirayanaDms": {
         "Mercury": {
           "degree": 254,
