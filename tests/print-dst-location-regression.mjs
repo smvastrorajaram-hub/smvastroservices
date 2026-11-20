@@ -17,11 +17,17 @@ assert.throws(()=>offsetMinutesAt('Invalid/Timezone','2026-10-16','12:00'),Range
 const file=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
 includes(file('public/horoscope/report-print.js'),"root.querySelectorAll('[data-smv-screen-only^=\"daily-\"],.panchang-card,.hora-card,.smv-birth-summary')");
 includes(file('public/horoscope/report-print.js'),"return 'SMVHS-'+safePdfFilenamePart");
-includes(file('public/horoscope/horoscope.js'),'data-smv-screen-only="daily-panchang"');
-includes(file('public/horoscope/horoscope.js'),'data-smv-screen-only="daily-hora"');
-includes(file('public/horoscope/horoscope.js'),'card birth-time-panchang');
-includes(file('public/horoscope/horoscope.js'),'card transit-card');
-includes(file('public/horoscope/horoscope.js'),'card hora-card');
+const horoscopeSource=file('public/horoscope/horoscope.js');
+assert.ok(!horoscopeSource.includes('data-smv-screen-only="daily-panchang"'),'Horoscope must not render its separate Daily Panchang card');checks++;
+includes(horoscopeSource,"if(calendarPresentation)h+=");
+includes(horoscopeSource,'data-smv-screen-only="daily-hora"');
+includes(horoscopeSource,'card birth-time-panchang');
+includes(horoscopeSource,'card transit-card');
+includes(horoscopeSource,'if(calendarPanchangSlot)calendarPanchangSlot.innerHTML=dailyTable;');
+assert.ok(!horoscopeSource.includes('smv-birth-summary'),'Duplicate Birth Panchang summary card must not be rendered');checks++;
+includes(horoscopeSource,'smv-year-reckoning');
+includes(horoscopeSource,'\${subhaJananaHtml||');
+
 includes(file('public/horoscope/report-print.css'),'#printReport .hora-card{display:none!important}');
 includes(file('public/horoscope/offline/places/place-search.mjs'),'Math.min(70,Number(limit)||12)');
 includes(file('public/horoscope/location-search-online-offline.js'),"Math.min(70,Number(limit)||70)");
