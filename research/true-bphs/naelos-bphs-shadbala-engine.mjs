@@ -200,7 +200,7 @@ function apparentSolarAltitudeDegrees(jdUt,latitude,naelos) {
     naelos.eph.calc(jdTt,SE_SUN,SEFLG_EQUATORIAL),
     'Sun equatorial position at JDUT '+jdUt
   );
-  const houses=naelos.eph.houses(jdUt,deltaTSeconds,latitude,naelos.longitude,'O');
+  const houses=naelos.eph.houses(jdUt,latitude,naelos.longitude,'O');
   const hourAngle=localHourAngleDegrees(houses.armc,sun.longitude)*RAD;
   const phi=latitude*RAD, declination=sun.latitude*RAD;
   const sine=Math.sin(phi)*Math.sin(declination) +
@@ -278,7 +278,7 @@ function calculateTemporalContext(birth,naelos) {
     'Sun equatorial birth position'
   );
   const localHouses=naelos.eph.houses(
-    birth.jdUt,deltaTSeconds,birth.latitude,birth.longitude,'O'
+    birth.jdUt,birth.latitude,birth.longitude,'O'
   );
   const apparentSolarHour=norm24(
     12+localHourAngleDegrees(localHouses.armc,sunEq.longitude)/15
@@ -650,7 +650,7 @@ export async function createTrueBphsShadbalaEngine({
       // the existing SMV Sripati construction. The Sripati Arambha boundaries
       // are the midpoints between adjacent Madhya cusps, as in the audited
       // Swiss S/O relationship; no Swiss planetary longitude enters here.
-      const porphyry=eph.houses(birth.jdUt,deltaTSeconds,birth.latitude,birth.longitude,'O');
+      const porphyry=eph.houses(birth.jdUt,birth.latitude,birth.longitude,'O');
       const sripati=createSripatiCusps(porphyry.cusps.map(value=>norm360(value-siderealOffset)));
       for(const row of planetRows) row.bhava=housePlacement(row.longitude,sripati.arambha);
       const bhavas=sripati.madhya.map((longitude,index)=>({
