@@ -342,13 +342,13 @@ try {
           for (const value of [three,four]) {
             assert.ok(Math.abs(value.lineSize-two.lineSize)<0.6,item.rootId+' '+item.kind+' '+style+': three- and four-planet rows keep normal font size.');
             assert.ok(Math.abs(value.glyphSize-two.glyphSize)<0.6,item.rootId+' '+item.kind+' '+style+': three- and four-planet names are not reduced.');
-            if(style!=='south'&&value.numberSize!==null&&value.cellFontSize!==null)assert.ok(Math.abs(value.numberSize-value.cellFontSize)<0.6,item.rootId+' '+item.kind+' '+style+': house/sign label follows its own normal-size 3/4-planet cell without an additional reduction.');
+            if(style!=='south'&&value.numberSize!==null)assert.ok(value.numberSize>=9&&value.numberSize<=12,item.rootId+' '+item.kind+' '+style+': in-cell house label retains its dedicated readable 9–12px size.');
           }
           assert.ok(five.lineSize<four.lineSize,item.rootId+' '+item.kind+' '+style+': five-planet rows reduce their font size.');
           assert.ok(five.glyphSize<four.glyphSize,item.rootId+' '+item.kind+' '+style+': five-planet planet names reduce their font size.');
-          if(style!=='south'&&five.numberSize!==null&&five.cellFontSize!==null&&four.cellFontSize!==null){
-            assert.ok(Math.abs(five.numberSize-five.cellFontSize)<0.6,item.rootId+' '+item.kind+' '+style+': five-planet house/sign label follows the compact cell font size.');
-            assert.ok(five.cellFontSize<four.cellFontSize,item.rootId+' '+item.kind+' '+style+': five-planet cell and its house/sign number reduce together.');
+          if(style!=='south'&&five.numberSize!==null&&four.numberSize!==null){
+            assert.ok(five.numberSize>=9&&five.numberSize<=12,item.rootId+' '+item.kind+' '+style+': five-planet house label remains readable at its dedicated 9–12px size.');
+            assert.ok(Math.abs(five.numberSize-four.numberSize)<0.6,item.rootId+' '+item.kind+' '+style+': house label size is independent of planet-density compaction.');
           }
           if(five.degreeSize!==null&&four.degreeSize!==null)assert.ok(five.degreeSize<four.degreeSize,item.rootId+' '+item.kind+' '+style+': Degree labels reduce only at five planets.');
           if(five.markerSize!==null&&four.markerSize!==null)assert.ok(five.markerSize<four.markerSize,item.rootId+' '+item.kind+' '+style+': combust marker (அ/C) reduces only at five planets.');
