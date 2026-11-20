@@ -139,7 +139,12 @@
  function render(chart,style){
   if(style==='south'){
    const src=chart.querySelector(':scope > template.smv-v342-south-original');
-   if(src){chart.innerHTML=src.innerHTML;normalizeSouthBhavaHouseLabels(chart);chart.classList.remove('smv-v342-north','smv-v342-east');chart.dataset.smvChartStyle='south';}
+   if(src)chart.innerHTML=src.innerHTML;
+   // Apply the Roman display labels even on the first/default South render,
+   // when no alternate-layout source template has been created yet.
+   normalizeSouthBhavaHouseLabels(chart);
+   chart.classList.remove('smv-v342-north','smv-v342-east');
+   chart.dataset.smvChartStyle='south';
    return;
   }
   if(chart.dataset.smvChartStyle===style&&chart.querySelector(':scope > template.smv-v342-south-original')&&chart.querySelector(':scope > .smv-v342-geometry'))return;
