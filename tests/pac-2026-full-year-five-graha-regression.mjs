@@ -131,8 +131,10 @@ for (const planet of Object.keys(planets)) {
     assert.ok(Number.isFinite(utcJd?.ut) && Number.isFinite(utcJd?.et),
       row.date + ' UTC midnight converts to valid UT and TT Julian days');
     const expectedJdUt = Date.UTC(row.year, row.month - 1, row.day) / 86_400_000 + 2_440_587.5;
-    assert.ok(Math.abs(utcJd.ut - expectedJdUt) < 1e-9,
-      row.date + ' UTC instant is exactly 00:00:00 UTC');
+    assert.ok(Math.abs(utcJd.ut - expectedJdUt) < 1 / 86_400,
+      row.date + ' UTC midnight maps to UT1 within one second (DUT1 allowance)');
+    assert.ok(utcJd.et > utcJd.ut,
+      row.date + ' TT/ET is later than UT1 for this UTC input');
     const actual = swe.calc(utcJd.et, planets[planet].body, flags);
     assert.ok(Number.isFinite(actual.longitude),
       row.date + ' ' + planet + ' Swiss longitude is finite');
@@ -143,7 +145,8 @@ for (const planet of Object.keys(planets)) {
     const observed = {
       date: row.date,
       utcEpoch: row.date + 'T00:00:00Z',
-      julianDayUT: utcJd.ut,
+      julianDayUTC: expectedJdUt,
+      julianDayUT1: utcJd.ut,
       julianDayTT: utcJd.et,
       planet,
       pacNirayanaDegrees: row.decimalDegrees,
