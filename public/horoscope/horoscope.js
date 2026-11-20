@@ -2991,6 +2991,9 @@ if(lat===''||lon===''){
       await window.SMVEngineReady;const core=await window.SMVOffline.full({date,time:normalizedTime,lat:Number(lat),lon:Number(lon),height:0,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60,houseSystem:'S',language:'ta',name:($('tamilAstroName')?.value||'').trim(),basicOnly:true});const d=core.chart;if(!d)throw new Error(core?.error||'Calculation failed');
       // Render the core horoscope into the hidden result container first.
       render(d);
+      // Apply the selected chart layout and Tamil Roman Bhava labels to every
+      // generated result, including basic-only reports without smv:report-ready.
+      window.SMVChartPresentationV342?.apply(resultBox);
       if(resultBox)resultBox.__smvBirthChart=d;
       const advRoot=$('tamilAdvancedAstrology');
       if(loadAdvanced && advRoot && typeof window.__smvLoadAdvancedAstrology==='function'){
