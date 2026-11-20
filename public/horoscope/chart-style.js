@@ -81,16 +81,9 @@
   // V343: No inline CSS coordinates — report-print.html CSP blocks style attributes.
   // Fixed [data-house] (North) / [data-sign] (East) positions live in external CSS.
   // This preserves placement in saved HTML and offline Android PDF prints.
-  // Alternate Rasi, Navamsa and Transit charts intentionally show no numeric
-  // sign/house labels. Only Bhava charts carry the calculated Bhava Roman label.
-  if(kind==='bhava'){
-   const houseLabel=style==='north'?romanHouse(house):String(bhavaHouseLabel||'');
-   if(houseLabel){
-    const h=document.createElement('span');h.className='smv-v342-house-number';
-    h.textContent=houseLabel;
-    cell.append(h);
-   }
-  }
+  // North/East Rasi, Navamsa and Transit charts intentionally show no
+  // numeric sign/house labels. Bhava Roman labels are rendered as chart-level
+  // overlays after all planet cells exist, so overflow cannot hide them.
   if(house===1&&kind!=='transit'){const mark=document.createElement('span');mark.className='smv-v342-asc';mark.textContent=ta?'ல':'As';cell.append(mark);}
   const contents=document.createElement('span');contents.className='smv-v342-planets';
   const items=planetEntries??[...source.out[sign].querySelectorAll('.planet-line')];
@@ -134,6 +127,37 @@
    byHouse[h]={sign,planets};
   }
   return byHouse.slice(1).every(Boolean)?byHouse:null;
+ }
+ function appendBhavaHouseLabels(chart,style,housesBySign){
+  if(style==='north'){
+   const signByHouse=Array(13).fill(-1);
+   for(let sign=0;sign<12;sign++)for(const house of housesBySign[sign]||[])signByHouse[house]=sign;
+   for(let house=1;house<=12;house++){
+    const sign=signByHouse[house];
+    if(sign<0)continue;
+    const label=document.createElement('span');
+    label.className='smv-v342-bhava-house-label';
+    label.dataset.house=String(house);
+    label.dataset.sign=String(sign+1);
+    label.textContent=romanHouse(house);
+    label.setAttribute('aria-label','Bhava '+romanHouse(house));
+    chart.append(label);
+   }
+   return;
+  }
+  if(style==='east'){
+   for(let sign=0;sign<12;sign++){
+    const houses=housesBySign[sign]||[];
+    if(!houses.length)continue;
+    const text=houses.map(romanHouse).join('/');
+    const label=document.createElement('span');
+    label.className='smv-v342-bhava-house-label';
+    label.dataset.sign=String(sign+1);
+    label.textContent=text;
+    label.setAttribute('aria-label','Bhava '+text);
+    chart.append(label);
+   }
+  }
  }
  function render(chart,style){
   if(style==='south'){
@@ -223,6 +247,7 @@
    title.textContent=kind==='d9'?(ta?'நவாம்சம்':'Navamsa'):kind==='bhava'?(ta?'பாவம்':'Bhava'):kind==='transit'?(ta?'கோச்சாரம்':'Transit'):(ta?'ராசி':'Rasi');
    chart.append(title);
   }
+  if(kind==='bhava')appendBhavaHouseLabels(chart,style,bhavaHousesBySign);
   markBlackPlanetText(chart,style,kind);
  }
  function markBlackPlanetText(chart,style,kind){
