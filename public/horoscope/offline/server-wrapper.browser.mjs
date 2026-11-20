@@ -225,6 +225,7 @@ function trueBphsStrength6(row,frameId){
     method:'TRUE_BPHS_SHADBALA_NAELOS_DE440',
     source:'Brihat Parashara Hora Shastra I, Chapter 27; Chapter 26 Sputa Drishti',
     components:row.components,
+    evidence:row.evidence,
     totalVirupa:row.totalVirupa,
     totalRupa:row.totalRupa,
     requiredVirupa:row.requiredVirupa,

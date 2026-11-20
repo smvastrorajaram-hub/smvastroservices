@@ -536,6 +536,15 @@ function assembleBphsShadbala({planetRows,bhavas,temporal,declinations,cheshtaIn
     rows[name]={
       available:true,planet:name,method:'TRUE_BPHS_SHADBALA_NAELOS_DE440',
       components:{sthana,dig,kala,cheshta:round3(cheshta),naisargika:round3(naisargika),drik:round3(drik)},
+      evidence:Object.freeze({
+        solarTimeMethod:temporal.solarTimeMethod,
+        solarTimeFrameId:temporal.solarTimeFrameId,
+        birthApparentSolarHour:temporal.apparentSolarHour,
+        sunriseJdUt:temporal.sunriseJdUt,
+        sunsetJdUt:temporal.sunsetJdUt,
+        epochJdUt:temporal.epochJdUt,
+        source:temporal.source
+      }),
       ishtaKashta,
       preWarTotalVirupa:round3(preWarTotal),classicalCertified:false,provisional:true
     };

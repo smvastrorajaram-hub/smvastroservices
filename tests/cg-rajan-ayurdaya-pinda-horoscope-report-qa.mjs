@@ -1,3 +1,4 @@
+import './helpers/naelos-node-fetch-bridge.mjs';
 /** C.G. Rajan Part I Pindayurdaya printed-example and browser report QA.
  * Source: user supplied Jathaka Kanitham I printed pp.249–254.
  * NEVER predict an actual lifespan or death age.

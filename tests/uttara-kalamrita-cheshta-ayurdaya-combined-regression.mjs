@@ -572,8 +572,8 @@ for(const [date,time,sunriseRef,sunsetRef] of refs){
  const actual=r.chart.planets.filter(x=>['சூரியன்','சந்திரன்','செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி'].includes(x.name));
  eq(actual.length,7,'seven natal planets');
  for(const p of actual){
-   yes(p.strength6.evidence.solarTimeMethod.includes('Swiss Sun ephemeris'),date+' '+p.name+' Swiss-based Kala source');
-   yes(Number.isFinite(p.strength6.evidence.birthApparentSolarHour),date+' '+p.name+' apparent hour valid');
+   yes(p.strength6?.evidence?.solarTimeMethod.includes('NAELOS DE440'),date+' '+p.name+' NAELOS DE440-based Kala source');
+   yes(Number.isFinite(p.strength6?.evidence?.birthApparentSolarHour),date+' '+p.name+' apparent hour valid');
    yes(Number.isFinite(p.strength6.totalVirupa),date+' '+p.name+' finite Shadbala');
    eq(p.strength6.classicalCertified,false,date+' five-planet Cheshta still not certified');
  }
