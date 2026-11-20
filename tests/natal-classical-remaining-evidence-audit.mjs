@@ -13,6 +13,12 @@ eq(lon.annualCoverage.independentHistoricalOracleVerifiedRows,0,'random coverage
 eq(lon.meanSourceAudit.maxResidualArcsec,0.9674,'Burgess anchor residual retained');
 eq(lon.trueLongitudeAudit.strictModernAccuracyGatePass,false,'modern 0.05 degree gate fails');
 eq(lon.sheeghroccheyaAudit.status,'LIMITED_SOURCE_EXAMPLE_WITH_SATURN_CONFLICT','Saturn table conflict retained');
+eq(lon.officialGovernmentPAC2026Benchmark.status,'PASS_EXISTING_CERTIFICATE','existing Government PAC 2026 certificate is reused');
+eq(lon.officialGovernmentPAC2026Benchmark.scope.comparisons,1825,'PAC 2026 full-year 1,825-row certificate is recorded');
+eq(lon.officialGovernmentPAC2026Benchmark.scope.timeScale,'TT','PAC 2026 comparison remains TT-only');
+eq(lon.officialGovernmentPAC2026Benchmark.requiredAgain,false,'PAC 2026 certificate is not needlessly repeated');
+eq(Object.hasOwn(lon,'independentEphemerisAcquisition'),false,'no unwanted IENA/IAE edition hunt remains');
+eq(lon.acquisitionPolicy.status,'NO_ADDITIONAL_ANNUAL_GOVERNMENT_EPHEMERIS_EDITIONS_REQUIRED','no extra annual editions are requested');
 for(const p of lon.scope.visiblePlanets) for(const q of ['mean','true','sheeghroccheya'])
  ok(lon.rows.some(r=>r.planet===p&&r.quantity===q),p+' '+q+' row present');
 eq(bala.rows.length,42,'42 Bala rows');
