@@ -88,6 +88,16 @@ The machine-readable shadbala-source-evidence-42.json retains all seven issues, 
 
 **Phase 2 verdict:** all 42 source-example rows enumerated; 36 chapter-example matches, two luminary Chesta N/A and four component-level source conflicts. These rows apply to one 1918 horoscope, not arbitrary natal dates, and are not inserted into the per-natal certification gate.
 
+## Final integrated CI after PAC / Shadbala evidence corrections
+
+The latest PR head commit `82681f14b01da0f6d5f28158e8bbaea8cf74e8fa` passed the complete research workflow:
+
+- [Actions run #44806565994 — SUCCESS](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44806565994).
+- All 19 job steps completed successfully, including the existing B.V. Raman regressions, the Government PAC 2026 evidence-ledger assertions, seven printed Shadbala discrepancy assertions, 600 annual random charts, and 3,000 exact-natal-epoch DE440 comparisons.
+- Latest consolidated research artifact: [artifact #14664255587](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44806565994/artifacts/14664255587) (600 DOB/time/place records, 25,200 six-Bala values, 3,000 DE440 exact-epoch comparisons).
+
+This CI PASS confirms the research code and evidence ledger regressions. It does not elevate the incomplete classical historical longitude or per-natal six-Bala source evidence into a universal certificate.
+
 ## Automated gate
 
 `tests/natal-classical-remaining-evidence-audit.mjs` checks all 15 longitude rows, 42 Bala rows, unique graha/component keys, sources, explicit discrepancy statuses, annual coverage and that generic `classicalCertified` remains false.
