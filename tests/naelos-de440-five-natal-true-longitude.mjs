@@ -8,6 +8,7 @@ import {
 import { getSwe, C } from '../public/horoscope/offline/wasm-provider.mjs';
 import { sauraFivePlanetCheshtaInputs } from '../public/horoscope/offline/saura-classical-mean-motion.browser.mjs';
 import { bphsCheshtaFromOrbitalElements } from '../public/horoscope/offline/bphs-swiss-solar-cheshta.browser.mjs';
+import { sauraSiderealOffsetFromLahiri } from '../research/saura-bija/saura-de441-apparent-true.mjs';
 
 const ROOT = new URL('../naelos-ephemeris/', import.meta.url);
 const manifest = JSON.parse(fs.readFileSync(new URL('manifest.json', ROOT), 'utf8'));
@@ -49,6 +50,8 @@ const signedArcsec = (a, b) => {
   const d = ((a - b + 540) % 360) - 180;
   return d * 3600;
 };
+const lahiriAyanamsaAt1860 = swe.ayanamsa(julday(1860, 1, 1, 0));
+assert.ok(Number.isFinite(lahiriAyanamsaAt1860), 'Lahiri 1860 epoch ayanamsa finite');
 const rows = [];
 let maxAbsResidualArcsec = 0;
 let sumSquares = 0;
@@ -98,8 +101,16 @@ for (const [date, time] of births) {
     // Preserve the already-audited mean-longitude / Sheeghrocca input selector;
     // only the true geocentric input is independently replaced for this audit.
     const orbital = sauraFivePlanetCheshtaInputs(jdUT, en);
+    // The already-certified Saura mean/Sheeghrocca pair is NOT Lahiri.
+    // Transfer the DE440 apparent tropical true longitude into that same
+    // Saura nirayana frame using the source-audited Burgess 1860 zero-point
+    // carried by the date-specific Lahiri precession delta.
+    const sauraSiderealOffset = sauraSiderealOffsetFromLahiri(
+      ayanamsa, lahiriAyanamsaAt1860
+    );
+    const trueLongitudeSaura = norm(naelos.longitude - sauraSiderealOffset);
     const cheshta = bphsCheshtaFromOrbitalElements(
-      orbital.meanLongitude, naelosLahiri, orbital.sheeghrocha
+      orbital.meanLongitude, trueLongitudeSaura, orbital.sheeghrocha
     );
     assert.ok(Number.isFinite(cheshta.virupa) &&
       cheshta.virupa >= 0 && cheshta.virupa <= 60,
@@ -110,6 +121,8 @@ for (const [date, time] of births) {
       lahiriAyanamsa: ayanamsa,
       trueLongitudeLahiri: naelosLahiri,
       swissLahiriReference: swiss.longitude,
+      sauraSiderealOffset,
+      trueLongitudeSaura,
       signedResidualArcsec: residualArcsec,
       meanLongitudeSaura: orbital.meanLongitude,
       sheeghroccaSaura: orbital.sheeghrocha,
@@ -136,8 +149,10 @@ console.log(JSON.stringify({
     return { name, bytes: x.bytes, sha256: x.sha256 };
   }),
   timeConvention: 'Birth civil time converted to UT JD; NAELOS ΔT converts to TT; all DE440 positions evaluated with calc(jdTT)',
-  positionDefinition: 'apparent geocentric longitude on true ecliptic of date; converted to Lahiri sidereal with the same Swiss Lahiri ayanamsa',
-  reference: 'SMV local Swiss Ephemeris Lahiri sidereal calc at the same UT birth instant',
+  positionDefinition: 'NAELOS apparent geocentric tropical true longitude on true ecliptic of date; same-instant NAELOS/Swiss Lahiri parity check; Chesta input separately transferred into the source-audited Saura sidereal frame using the Burgess 1860 zero point plus date-specific Lahiri precession delta',
+  frameTransfer: 'sauraSiderealOffsetFromLahiri(lahiriAyanamsaAtDate, lahiriAyanamsaAt1860)',
+  lahiriAyanamsaAt1860,
+  reference: 'SMV local Swiss Ephemeris Lahiri sidereal calc at the exact same TT/ET instant',
   comparisonCount: comparisons,
   maxAbsResidualArcsec,
   rmsResidualArcsec: Math.sqrt(sumSquares / comparisons),
