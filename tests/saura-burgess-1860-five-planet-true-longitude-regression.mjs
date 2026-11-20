@@ -86,6 +86,7 @@ const planetRows = [];
 const stageResiduals = [[], [], [], []];
 const finalResiduals = { continuous: [], tabular: [] };
 const internalResiduals = [];
+const selectedNatalConventionResiduals = { continuous: [], tabular: [] };
 for (const [planet, row] of Object.entries(source)) {
   const input = {
     planet,
@@ -97,6 +98,10 @@ for (const [planet, row] of Object.entries(source)) {
   };
   const exact = continuous(input);
   const printedJya = tabular(input);
+  // The existing natal research wrapper selects absolute-koti-minus. Run that
+  // same source input through it as a diagnostic, without changing the wrapper.
+  const selectedNatalContinuous = continuous({ ...input, mandaKarṇaConvention: 'absolute-koti-minus' });
+  const selectedNatalTabular = tabular({ ...input, mandaKarṇaConvention: 'absolute-koti-minus' });
 
   assert.equal(exact.planet, planet, planet + ' continuous model identity');
   assert.equal(printedJya.planet, planet, planet + ' printed-Jya model identity');
@@ -162,6 +167,12 @@ for (const [planet, row] of Object.entries(source)) {
     printedJya.trueLongitude, exact.trueLongitude, 0.02,
     planet + ' independent continuous versus tabular arithmetic'
   );
+  const selectedNatalContinuousError = signedDifference(selectedNatalContinuous.trueLongitude, row.true);
+  const selectedNatalTabularError = signedDifference(selectedNatalTabular.trueLongitude, row.true);
+  assert.equal(selectedNatalContinuous.historicallyCertified, false);
+  assert.equal(selectedNatalTabular.historicallyCertified, false);
+  selectedNatalConventionResiduals.continuous.push(selectedNatalContinuousError);
+  selectedNatalConventionResiduals.tabular.push(selectedNatalTabularError);
   finalResiduals.continuous.push(exactFinalError);
   finalResiduals.tabular.push(jyaFinalError);
   internalResiduals.push(internalError);
@@ -177,7 +188,12 @@ for (const [planet, row] of Object.entries(source)) {
     tabularTrueErrorDegrees: +jyaFinalError.toFixed(9),
     continuousStageErrorsDegrees: exactStageErrors.map(x => +x.toFixed(9)),
     tabularStageErrorsDegrees: jyaStageErrors.map(x => +x.toFixed(9)),
-    continuousVsTabularDegrees: +internalError.toFixed(9)
+    continuousVsTabularDegrees: +internalError.toFixed(9),
+    existingNatalResearchConvention: 'absolute-koti-minus',
+    existingNatalContinuousTrueLongitude: +selectedNatalContinuous.trueLongitude.toFixed(9),
+    existingNatalContinuousErrorDegrees: +selectedNatalContinuousError.toFixed(9),
+    existingNatalTabularTrueLongitude: +selectedNatalTabular.trueLongitude.toFixed(9),
+    existingNatalTabularErrorDegrees: +selectedNatalTabularError.toFixed(9)
   });
 }
 
@@ -193,7 +209,9 @@ const summary = {
   maxAbsFirstStageErrorDegrees: +maxAbs(stageResiduals[0]).toFixed(9),
   maxAbsSecondStageErrorDegrees: +maxAbs(stageResiduals[1]).toFixed(9),
   maxAbsThirdStageErrorDegrees: +maxAbs(stageResiduals[2]).toFixed(9),
-  maxAbsFourthStageErrorDegrees: +maxAbs(stageResiduals[3]).toFixed(9)
+  maxAbsFourthStageErrorDegrees: +maxAbs(stageResiduals[3]).toFixed(9),
+  maxAbsExistingNatalAbsoluteKotiContinuousErrorDegrees: +maxAbs(selectedNatalConventionResiduals.continuous).toFixed(9),
+  maxAbsExistingNatalAbsoluteKotiTabularErrorDegrees: +maxAbs(selectedNatalConventionResiduals.tabular).toFixed(9)
 };
 
 assert.equal(planetRows.length, 5, 'five independent Burgess planetary examples');
@@ -204,6 +222,11 @@ assert.ok(summary.maxAbsFirstStageErrorDegrees < 0.15);
 assert.ok(summary.maxAbsSecondStageErrorDegrees < 0.03);
 assert.ok(summary.maxAbsThirdStageErrorDegrees < 0.03);
 assert.ok(summary.maxAbsFourthStageErrorDegrees < 0.03);
+// Keep the selected natal-wrapper convention discrepancy explicit. It is a
+// different source convention, not a reason to change the wrapper implicitly.
+assert.ok(Math.abs(planetRows.find(row => row.planet === 'Mars').existingNatalContinuousErrorDegrees) > 0.70);
+assert.ok(Math.abs(planetRows.find(row => row.planet === 'Saturn').existingNatalContinuousErrorDegrees) > 0.50);
+assert.ok(summary.maxAbsExistingNatalAbsoluteKotiContinuousErrorDegrees > 0.70);
 
 console.log(JSON.stringify({
   pass: true,
@@ -217,6 +240,9 @@ console.log(JSON.stringify({
   arbitraryNatalHistoricalCertification: false,
   classicalCheshtaCertification: false,
   productionEligible: false,
+  existingNatalResearchConvention: 'absolute-koti-minus',
+  existingNatalResearchConventionMatchesBurgess: false,
+  sourceConformanceConvention: 'verse39-direct-jya',
   summary,
   planets: planetRows
 }));
