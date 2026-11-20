@@ -134,6 +134,7 @@ export function localizeTamilText(value,language='ta'){
   if(LATIN_RE.test(input)&&!TAMIL_RE.test(input))return input;
   const phrases=replaceKnownPhrases(input,COMMON_TA_TO_EN);
   const words=phrases.split(/([^\p{L}\p{M}]+)/u);
-  return words.map(word=>TAMIL_RE.test(word)?tamilToLatin(word):word).join('');
+  const romanized=words.map(word=>TAMIL_RE.test(word)?tamilToLatin(word):word).join('');
+  return romanized.replace(/[A-Za-z]+/g,word=>word[0].toUpperCase()+word.slice(1).toLowerCase());
 }
 export function hasTamilScript(value){return TAMIL_RE.test(String(value??''));}
