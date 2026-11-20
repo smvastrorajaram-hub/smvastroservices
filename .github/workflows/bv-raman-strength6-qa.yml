@@ -13,6 +13,8 @@ on:
       - 'tests/bv-raman-strength6-regression.mjs'
       - 'tests/bv-raman-seven-graha-numerical-certification.mjs'
       - 'tests/bv-raman-natal-de441-true-longitude-regression.mjs'
+      - 'tests/bv-raman-natal-naelos-de440-crosscheck.mjs'
+      - 'naelos-ephemeris/**'
       - 'tests/fixtures/bv-raman-natal-de441-apparent-true-2026-11-20.json'
       - 'tests/bv-raman-ishta-kashta-regression.mjs'
       - 'tests/cg-rajan-ayurdaya-pinda-horoscope-report-qa.mjs'
@@ -31,6 +33,8 @@ on:
       - 'tests/bv-raman-strength6-regression.mjs'
       - 'tests/bv-raman-seven-graha-numerical-certification.mjs'
       - 'tests/bv-raman-natal-de441-true-longitude-regression.mjs'
+      - 'tests/bv-raman-natal-naelos-de440-crosscheck.mjs'
+      - 'naelos-ephemeris/**'
       - 'tests/fixtures/bv-raman-natal-de441-apparent-true-2026-11-20.json'
       - 'tests/bv-raman-ishta-kashta-regression.mjs'
       - 'tests/cg-rajan-ayurdaya-pinda-horoscope-report-qa.mjs'
@@ -70,6 +74,7 @@ jobs:
           node --check tests/bv-raman-strength6-regression.mjs
           node --check tests/bv-raman-seven-graha-numerical-certification.mjs
           node --check tests/bv-raman-natal-de441-true-longitude-regression.mjs
+          node --check tests/bv-raman-natal-naelos-de440-crosscheck.mjs
       - name: Verify B.V. Raman printed standard-horoscope component oracle and five natal charts
         run: node tests/bv-raman-strength6-regression.mjs
       - name: Certify seven-graha B.V. Raman totals, Rupa, ratios and ranking for the printed Standard Horoscope
