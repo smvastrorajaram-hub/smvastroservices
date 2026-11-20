@@ -19,18 +19,24 @@ eq(lon.officialGovernmentPAC2026Benchmark.scope.timeScale,'TT','PAC 2026 compari
 eq(lon.officialGovernmentPAC2026Benchmark.requiredAgain,false,'PAC 2026 certificate is not needlessly repeated');
 eq(Object.hasOwn(lon,'independentEphemerisAcquisition'),false,'no unwanted IENA/IAE edition hunt remains');
 eq(lon.acquisitionPolicy.status,'NO_ADDITIONAL_ANNUAL_GOVERNMENT_EPHEMERIS_EDITIONS_REQUIRED','no extra annual editions are requested');
+eq(lon.exactNatalEpochModernDe440Parity.status,'PASS_3000_EXACT_RANDOM_NATAL_EPOCH_MODERN_PARITY','3,000 exact-epoch DE440 parity is recorded');
+eq(lon.exactNatalEpochModernDe440Parity.comparisons,3000,'all 600 exact natal epochs × five planets are checked');
+eq(lon.exactNatalEpochModernDe440Parity.independentHistoricalOracleVerifiedRows,0,'modern parity is not mislabeled historical printed-table evidence');
+eq(lon.exactNatalEpochModernDe440Parity.maxAbsResidualArcsec,0.008523965379936271,'3,000-row measured maximum residual is pinned');
 for(const p of lon.scope.visiblePlanets) for(const q of ['mean','true','sheeghroccheya'])
  ok(lon.rows.some(r=>r.planet===p&&r.quantity===q),p+' '+q+' row present');
 eq(bala.rows.length,42,'42 Bala rows');
 eq(bala.counts.sourceExamplePass,36,'36 source example matches');
 eq(bala.counts.notApplicableSourceEllipsis,2,'2 Chesta N/A');
 eq(bala.counts.sourceDiscrepancy,4,'4 component discrepancies');
+eq(bala.primaryPrintedSource.pageImageReviewed,true,'B.V. Raman primary printed page images were reviewed');
+ok(bala.primaryPrintedSource.pagesReviewed.includes(32)&&bala.primaryPrintedSource.pagesReviewed.includes(90),'source page locators include raw and summary pages');
 eq(bala.genericCertification.classicalCertified,false,'generic natal remains uncertified');
 eq(bala.genericCertification.evidenceGateEligibleRows,0,'sample rows not per-natal proof');
 const keys=new Set(bala.rows.map(r=>r.graha+':'+r.component)); eq(keys.size,42,'all component pairs unique');
 for(const g of ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'])
  for(const c of ['sthana','dig','kala','cheshta','naisargika','drik']) ok(keys.has(g+':'+c),g+' '+c);
 for(const row of bala.rows){ok(row.sourceBook.includes('B. V. Raman'),row.graha+' source book');ok(row.sourcePage.length>0,row.graha+' page locator');}
-for(const id of ['BVR_MARS_KALA_SUMMARY','BVR_SATURN_SHEEGHROCCHEYA','BVR_SUN_TOTAL_ARITHMETIC'])
- ok(bala.sourceDiscrepancies.some(r=>r.id===id),id+' recorded');
+for(const id of ['BVR_MERCURY_DIG','BVR_SATURN_SHEEGHROCCHEYA','BVR_SATURN_NAISARGIKA','BVR_JUPITER_DRIK','BVR_SUN_TOTAL_ARITHMETIC','BVR_MARS_KALA_SUMMARY','BVR_MERCURY_RUPA'])
+ ok(bala.sourceDiscrepancies.some(r=>r.id===id),id+' has a primary-page adjudication');
 console.log(JSON.stringify({pass:true,longitudeRows:lon.rows.length,balaRows:bala.rows.length,balaCounts:bala.counts,ordinaryNatalClassicalCertified:false}));
