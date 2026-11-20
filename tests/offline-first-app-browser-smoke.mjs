@@ -1,10 +1,20 @@
 // Browser-level offline smoke for the three production app scopes.
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 
 const origin = process.env.SMV_OFFLINE_PREVIEW_ORIGIN || 'http://127.0.0.1:4173';
-const release = '20261120-subha-janana-transit-lagna-v3';
+const workerSources = [
+  readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8'),
+  readFileSync(new URL('../public/horoscope/sw.js', import.meta.url), 'utf8'),
+  readFileSync(new URL('../public/horoscope/calendar/sw.js', import.meta.url), 'utf8')
+];
+const releases = workerSources.map(source => /const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(source));
+assert.ok(releases.every(Boolean), 'All three app workers must declare generated host cache release IDs.');
+assert.equal(new Set(releases.map(match => match[1])).size, 1, 'All three Pages.dev cache releases must be synchronized.');
+assert.equal(new Set(releases.map(match => match[2])).size, 1, 'All three production cache releases must be synchronized.');
+const release = releases[0][1];
 const apps = [
   {
     name: 'SMV ASTRO',
