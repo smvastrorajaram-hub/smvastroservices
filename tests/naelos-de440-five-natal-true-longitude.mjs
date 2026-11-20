@@ -73,6 +73,25 @@ const signedArcsec = (a, b) => {
   const d = ((a - b + 540) % 360) - 180;
   return d * 3600;
 };
+const unauthenticatedInputs={meanLongitude:10,trueLongitude:11,sheeghroccaLongitude:12};
+for(const [runtime,result] of [
+  ['Browser',browserRamanChesta('செவ்வாய்',unauthenticatedInputs)],
+  ['Node',nodeRaman.calculateBVRamanChestaFromInputs('செவ்வாய்',unauthenticatedInputs)]
+]){
+  assert.equal(result.trueLongitudeHistoricalCertified,false,
+    runtime+' explicit Chesta values without row-scoped source evidence remain historically uncertified');
+  assert.equal(result.numericallyCertified,false,
+    runtime+' explicit Chesta values without row-scoped source evidence remain numerically uncertified');
+  assert.equal(result.method,'BV_RAMAN_CHAPTER_VI_UNCERTIFIED_EXPLICIT_INPUTS',
+    runtime+' unverified explicit inputs are labelled honestly');
+}
+const invalidScopeInputs={...unauthenticatedInputs,trueLongitudeEvidence:{
+  ...NAELOS_EVIDENCE,planet:'செவ்வாய்',natalEpochKey:'1900-01-01 00:00 IST'
+}};
+assert.equal(browserRamanChesta('செவ்வாய்',invalidScopeInputs).numericallyCertified,false,
+  'out-of-scope epoch cannot borrow a five-natal NAELOS certificate');
+assert.equal(nodeRaman.calculateBVRamanChestaFromInputs('செவ்வாய்',invalidScopeInputs).numericallyCertified,false,
+  'Node rejects an out-of-scope epoch for the five-natal NAELOS certificate');
 const lahiriAyanamsaAt1860 = swe.ayanamsa(julday(1860, 1, 1, 0));
 assert.ok(Number.isFinite(lahiriAyanamsaAt1860), 'Lahiri 1860 epoch ayanamsa finite');
 const rows = [];
@@ -167,7 +186,7 @@ for (const [date, time] of births) {
       meanLongitude: orbital.meanLongitude,
       trueLongitude: trueLongitudeSaura,
       sheeghroccaLongitude: orbital.sheeghrocha,
-      trueLongitudeEvidence: NAELOS_EVIDENCE
+      trueLongitudeEvidence: Object.freeze({ ...NAELOS_EVIDENCE, planet: en, natalEpochKey: `${date} ${time} IST` })
     };
     const browserChesta = browserRamanChesta(ta, ramanInputs);
     const nodeChesta = nodeRaman.calculateBVRamanChestaFromInputs(ta, ramanInputs);
