@@ -54,9 +54,7 @@ import {
 import {
   bphsGrahaYuddhaFromBaselines
 } from '../../public/horoscope/offline/bphs-shadbala-rectification.browser.mjs';
-import {
-  sauraSiderealOffsetFromLahiri
-} from '../../research/saura-bija/saura-de441-apparent-true.mjs';
+import { sauraSiderealOffsetFromLahiri } from './saura-frame-transfer.mjs';
 
 const DAY_MS = 86400000;
 const JD_UNIX_EPOCH = 2440587.5;
