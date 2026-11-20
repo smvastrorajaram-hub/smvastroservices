@@ -12,23 +12,24 @@ const workers = [
   'public/horoscope/calendar/sw.js'
 ];
 const publicSourceChanged = [...changed].some(path => path.startsWith('public/'));
-const inHostSourceChanged = changed.has('public/index.html')
-  || changed.has('public/smvastro.mjs')
-  || changed.has('public/dashboard-typography.css')
-  || changed.has('public/sitemap.xml')
-  || changed.has('public/sitemap.html')
-  || [
-    'public/horoscope/index.html',
-    'public/horoscope/horoscope.css',
-    'public/horoscope/chart-style.css',
-    'public/horoscope/calendar/index.html',
-    'public/horoscope/daily-calendar.css',
-    'public/horoscope/daily-calendar.mjs',
-    'public/horoscope/calendar-theme.css',
-    'public/horoscope/calendar-worker.mjs',
-    'public/horoscope/offline/transit_panchang.browser.mjs'
-  ].some(path => changed.has(path))
-  || [...changed].some(path => path.startsWith('public/astrology-guides/'))
+const changedPublicFiles = [...changed].filter(path => path.startsWith('public/'));
+function isPagesDevOnly(path) {
+  return path.startsWith('public/pages-dev-') || path.split('/').pop().startsWith('pages-dev-');
+}
+function normalizeWorkerRelease(source) {
+  return source.replace(
+    /(const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*)'[^']+'(\s*:\s*)'[^']+'/,
+    '$1__PAGES_DEV_RELEASE__$2__PRODUCTION_RELEASE__'
+  );
+}
+const inHostSourceChanged = changedPublicFiles.some(path =>
+  !workers.includes(path) && !isPagesDevOnly(path)
+) || workers.some(path => {
+  if (!changed.has(path)) return false;
+  const current = readFileSync(path, 'utf8');
+  const previous = execFileSync('git', ['show', baseRef + ':' + path], { encoding: 'utf8' });
+  return normalizeWorkerRelease(current) !== normalizeWorkerRelease(previous);
+});
 if (!publicSourceChanged) {
   console.log('PASS: No public website/PWA source changed; no cache-version bump is required.');
   process.exit(0);
