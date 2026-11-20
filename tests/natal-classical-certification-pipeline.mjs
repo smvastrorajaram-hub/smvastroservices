@@ -80,19 +80,52 @@ const syntheticLongitude = {
 };
 const syntheticNatalEpoch = {
   status: 'PASS',
+  birthYear: 1994,
   exactBirthInstantUsed: true,
+  birthInstant: '1994-06-15T13:03:00+05:30',
   julianDay: 2449520.5,
-  allFivePlanets: true,
+  epochId: 'TEST_FIXTURE_ONLY_BIRTH_EPOCH',
   meanTrueSheeghroccheyaSameFrame: true,
   frame: 'traditional-Saura-nirayana',
   certifiedModelApplied: true,
   modelCertificateId: 'TEST_FIXTURE_ONLY_VALIDATED_MODEL',
-  fallbackOrUnverifiedInterpolationUsed: false
+  fallbackOrUnverifiedInterpolationUsed: false,
+  planetInputs: CLASSICAL_NATAL_SCOPE.visiblePlanets.map((planet, index) => ({
+    planet,
+    status: 'PASS',
+    meanLongitude: 10 + index,
+    trueLongitude: 11 + index,
+    sheeghroccheya: 12 + index,
+    mandocca: 13 + index,
+    frame: 'traditional-Saura-nirayana',
+    sourceId: 'TEST_FIXTURE_ONLY_' + planet,
+    sourceLocator: 'TEST_FIXTURE_ONLY',
+    algorithmId: 'TEST_FIXTURE_ONLY',
+    independentReferenceId: 'TEST_FIXTURE_ONLY',
+    fallbackUsed: false
+  }))
 };
+const syntheticYuddhaPairs = [];
+for (let i = 0; i < CLASSICAL_NATAL_SCOPE.visiblePlanets.length; i++) {
+  for (let j = i + 1; j < CLASSICAL_NATAL_SCOPE.visiblePlanets.length; j++) {
+    syntheticYuddhaPairs.push({
+      planetA: CLASSICAL_NATAL_SCOPE.visiblePlanets[i],
+      planetB: CLASSICAL_NATAL_SCOPE.visiblePlanets[j],
+      status: 'PASS',
+      sourceEvidenceId: 'TEST_FIXTURE_ONLY_YUDDHA_PAIR_' + i + '_' + j,
+      war: false,
+      outcome: 'NO_WAR',
+      winner: null,
+      loser: null,
+      finalKalaAdjustmentApplied: false
+    });
+  }
+}
 const syntheticYuddha = {
   status: 'PASS',
   eligiblePlanets: [...CLASSICAL_NATAL_SCOPE.visiblePlanets],
   evaluatedEligiblePairs: 10,
+  pairs: syntheticYuddhaPairs,
   unresolvedPairs: 0,
   finalKalaRecompositionPassed: true,
   independentReferenceVerified: true,
@@ -174,7 +207,7 @@ console.log(JSON.stringify({
   phases: {
     historicalLongitudeAnnualCoverage: '600 yearly epochs only; independent oracle pending',
     sixBalaMatrix: '42 independent evidence rows required',
-    finalNatalGate: 'exact natal epoch + all evidence + Yuddha + parity + no fallback'
+    finalNatalGate: 'exact five-planet natal epoch + ten Yuddha pair records + all six Bala + parity + no fallback'
   },
   classicalCertifiedForRealCharts: false,
   syntheticFixturesAreNotCertificates: true
