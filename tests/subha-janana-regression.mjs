@@ -209,7 +209,7 @@ has(prose,'sjTime(ahas)','Ahas duration uses the dedicated time colour');
 has(prose,'sjTime(ratri)','Ratri duration uses the dedicated time colour');
 has(prose,':father?(','Father-only input is rendered without an empty mother placeholder');
 has(prose,':mother?(','Mother-only input is rendered without an empty father placeholder');
-has(prose,"birthTimeGhati+'க்கு (சரியாக '+birthClockTa+' மணிக்கு)",'Tamil birth time is grammatically formatted after sunrise');
+has(prose,"sjTime(birthTimeGhati)+'க்கு (சரியாக '+sjTime(birthClockTa)+' மணிக்கு)",'Tamil birth time is grammatically formatted and uses the dedicated time colour');
 
 has(css,'.smv-subha-janana{','Narrative has its own report styling');
 const statementStyle=css.slice(css.indexOf('.smv-subha-janana{'),css.indexOf('.smv-year-reckoning'));
