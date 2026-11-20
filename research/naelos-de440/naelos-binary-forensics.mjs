@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = 'naelos-ephemeris';
-const files = fs.readdirSync(root).filter(x => /^ne-\\d+\\.bin$/.test(x)).sort();
+const files = fs.readdirSync(root).filter(x => x.startsWith('ne-') && x.endsWith('.bin')).sort();
 if (files.length !== 12) throw new Error('Expected 12 NAELOS century binaries; found ' + files.length);
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'));
 console.log(JSON.stringify({
@@ -19,7 +19,7 @@ console.log(JSON.stringify({
       u32.push(b.readUInt32LE(i));
     }
     const ascii = [];
-    for (const m of b.toString('latin1').matchAll(/[\\x20-\\x7e]{4,}/g)) {
+    for (const m of b.toString('latin1').matchAll(/[ -~]{4,}/g)) {
       if (ascii.length < 24) ascii.push({ offset: m.index, text: m[0].slice(0, 120) });
     }
     const stats = {};
