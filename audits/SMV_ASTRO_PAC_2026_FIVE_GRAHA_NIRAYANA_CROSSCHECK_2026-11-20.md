@@ -53,11 +53,11 @@ The candidate is the repository's bundled Swiss Ephemeris WASM 2.10.03:
 
 These assumptions are deliberately exposed in the machine-readable test output. They are not claimed as text copied from the PAC PDF. PAC confirmation of the row epoch and named ayanamsa remains desirable.
 
-## 3. Full-year numerical result
+## 3. Historical numerical result under the retired 00:00 TT convention — superseded
 
 **Historical run #1214 (superseded epoch):** https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44771494887 completed SUCCESS for the earlier 00:00 TT comparison. It does **not** validate the corrected 00:00 UTC convention and must not be cited as the UTC result. A new Actions run is required.
 
-The full-year regression verified:
+The earlier full-year run #1214 used the retired 00:00 TT input assumption. Its data extraction and monthly/event analysis remain useful for the PAC source rows, but its residual figures are **not** the result for the now-fixed 00:00:00 UTC comparison epoch. The old regression verified:
 
 - Five official PAC PDFs fetched successfully and matched the pinned byte-length/SHA-256 manifest.
 - Each planet has all 365 daily rows from 1 January through 31 December 2026, with no missing or duplicate date.
@@ -169,9 +169,15 @@ https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44769611357
 
 This anchor test complements—not replaces—the full-year PDF parser test.
 
-## 6. Interpretation and limits
+## 6. UTC epoch revalidation — current status
 
-This is a full-calendar-year comparison against an official Government of India PAC-published five-planet Nirayana-longitude series, using all 365 daily rows for each planet. The measured residuals are sub-arcsecond and the complete sample passes the selected comparison gate.
+The current tests now use 00:00:00 UTC as the project-fixed daily epoch. Each input is passed to Swiss Ephemeris `utcToJd()`, which returns UT1 and TT/ET Julian Days; the TT/ET result is supplied to `swe.calc`. UTC is not treated as TT, and the UT1 result is allowed to differ from nominal UTC Julian Day by less than one second to account for DUT1.
+
+The first observed anchor (Mercury, 2026-01-01) differs from the Swiss Lahiri result by **0.001220148692° = 4.392535″**, exceeding the unchanged 0.36″ target. This is a real comparison mismatch under the fixed UTC convention, not a reason to widen the tolerance. Full-year UTC metrics are being emitted by the new diagnostic regression. Until that result is recorded, no sub-arcsecond PAC/Swiss accuracy certificate is granted under 00:00 UTC.
+
+## 7. Interpretation and limits
+
+This is a full-calendar-year comparison against an official Government of India PAC-published five-planet Nirayana-longitude series, using all 365 daily rows for each planet. Under the retired 00:00 TT assumption, the measured residuals were sub-arcsecond. This numerical result is superseded and must not be attributed to the 00:00 UTC comparison.
 
 However, this does **not** establish that PAC and Swiss Ephemeris use independent underlying dynamical integrations. The public daily PDFs do not disclose enough computational provenance to prove that.
 
@@ -185,7 +191,7 @@ It also does **not**:
 
 A modern PAC/Swiss Nirayana longitude must not be combined with traditional Saura Mean or Sheeghroccheya values and labelled a classical Cheshta input. Before any BPHS Cheshta certification, the same-model Mean/True/Sheeghroccheya chain and the date-dependent classical inputs must be established from source-backed evidence.
 
-## 7. Next evidence still required
+## 8. Next evidence still required
 
 1. Obtain written PAC confirmation of the daily row's exact time argument and named ayanamsa.
 2. If an exact-instant station/conjunction certification is required, use a finer-than-daily official source or a separately identified high-resolution oracle; daily brackets alone do not provide exact station times.
@@ -193,7 +199,7 @@ A modern PAC/Swiss Nirayana longitude must not be combined with traditional Saur
 4. Verify Graha Yuddha eligibility/winner/loser boundaries and all other Shadbala component provenance.
 5. Only then derive and certify the five BPHS Cheshta calculations.
 
-## 8. Release boundary
+## 9. Release boundary
 
 - Research/regression only.
 - No production calculation, Horoscope renderer, Marriage Matching report, customer output, cache, service worker, APK, Firebase, Render, Cloudflare or customer data is changed.
