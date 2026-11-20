@@ -63,6 +63,19 @@ function birthAt(index){
  const offsets=[-720,-660,-600,-570,-540,-480,-420,-360,-300,-240,-210,-180,-120,-60,0,60,120,180,210,240,300,330,345,360,420,480,525,540,570,600,630,660,720,765,780,840];
  return {date,time,lat:Number(between(-75,75).toFixed(6)),lon:Number(between(-180,180).toFixed(6)),timezone:'UTC',utcOffsetMinutes:offsets[Math.floor(rnd()*offsets.length)],region:'Global'};
 }
+function exactUtcJd(birth){
+ const [year,month,day]=birth.date.split('-').map(Number);
+ const [hour,minute]=birth.time.split(':').map(Number);
+ const localTotal=hour*60+minute;
+ const utcTotal=localTotal-Number(birth.utcOffsetMinutes);
+ const dayShift=Math.floor(utcTotal/1440);
+ const normalized=((utcTotal%1440)+1440)%1440;
+ const utcDate=new Date(Date.UTC(year,month-1,day));
+ utcDate.setUTCDate(utcDate.getUTCDate()+dayShift);
+ const row=offlineSwe.utcToJd(utcDate.getUTCFullYear(),utcDate.getUTCMonth()+1,
+  utcDate.getUTCDate(),Math.floor(normalized/60),normalized%60,0);
+ return Number(row.ut);
+}
 const stats={seed:SEED,total:TOTAL,india:INDIA,global:TOTAL-INDIA,nativeParityCharts:0,
  repeatedMadhyaSignCharts:0,emptyMadhyaSignCharts:0,examples:[],dateRange:'1800-01-01..2399-12-31'};
 function verify(chart,birth,index,S,O){
@@ -104,8 +117,11 @@ for(let index=0;index<TOTAL;index++){
  const birth=birthAt(index);
  const input={date:birth.date,time:birth.time,lat:birth.lat,lon:birth.lon,timezone:birth.timezone,utcOffsetMinutes:birth.utcOffsetMinutes,houseSystem:'S'};
  const chart=await calculateOffline(input);
- const jd=Number(chart?.birth?.utc_jd);
- assert.ok(Number.isFinite(jd),'chart '+index+' UTC Julian day');
+ const reportedJd=Number(chart?.birth?.utc_jd);
+ assert.ok(Number.isFinite(reportedJd),'chart '+index+' UTC Julian day');
+ const jd=exactUtcJd(birth);
+ assert.ok(Number.isFinite(jd),'chart '+index+' exact oracle UTC Julian day');
+ close(reportedJd,jd,0.00001,'chart '+index+' displayed Julian day rounding');
  const rawS=offlineSwe.houses(jd,birth.lat,birth.lon,'S');
  const rawO=offlineSwe.houses(jd,birth.lat,birth.lon,'O');
  assert.equal(rawS?.cusps?.length,12,'independent offline Sripati oracle '+index);
