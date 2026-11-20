@@ -239,9 +239,12 @@ test('Each PWA uses synchronized Pages.dev and .in cache releases for public con
     read('public/horoscope/sw.js'),
     read('public/horoscope/calendar/sw.js')
   ];
+  const releases = workers.map(source => /const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(source));
+  assert.ok(releases.every(Boolean), 'Each PWA must declare host-specific cache releases.');
+  assert.equal(new Set(releases.map(match => match[1])).size, 1, 'Pages.dev cache release is synchronized.');
+  assert.equal(new Set(releases.map(match => match[2])).size, 1, 'Production cache release is synchronized.');
   for (const source of workers) {
     assert.match(source, /const IS_PAGES_DEV_HOST\s*=/);
-    assert.ok(source.includes("'20261119-horoscope-four-chart-planet-layout-v1' : '20261119-horoscope-four-chart-planet-layout-v1'"));
     assert.match(source, /PAGES_DEV_HELPER_FILES\s*=\s*IS_PAGES_DEV_HOST/);
   }
   const horoscope = workers[1];

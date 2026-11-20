@@ -13,6 +13,10 @@
  'Married':'திருமணமானவர்','Separated':'பிரிந்து வாழ்பவர்','Divorced':'மணவிலக்கு பெற்றவர்',
  'Widowed':'வாழ்க்கைத்துணையை இழந்தவர்','Prefer not to say':'தெரிவிக்க விருப்பமில்லை',
  'City, State, Country':'நகரம், மாநிலம், நாடு',
+  'Gender':'பாலினம்','Male':'ஆண்','Female':'பெண்',
+  'Village':'கிராமம்','Optional village':'விருப்பக் கிராமம்',
+  "Mother's Name":'தாயார் பெயர்',"Father's Name":'தந்தையார் பெயர்',
+  'Optional':'விருப்பம்','Select':'தேர்வு செய்யவும்',
 
 'SMV HOROSCOPE':'SMV ஜாதகம்','Sri Maduraveerayah Horoscope':'ஸ்ரீ மதுரை வீரையா ஜாதகம்','Horoscope interpretations are for reflection and personal guidance.':'ஜாதக விளக்கங்கள் சிந்தனைக்கும் தனிப்பட்ட வழிகாட்டலுக்கும் உரியவை.','Birth Time Zone (IANA)':'பிறந்த இட நேர மண்டலம் (IANA)',
  'Calculated UTC Offset (hours)':'கணக்கிடப்பட்ட UTC நேர வேறுபாடு (மணி)',
@@ -83,6 +87,11 @@
   document.querySelectorAll('#english-horoscope input[placeholder]').forEach(n=>{if(!n.dataset.englishPlaceholder)n.dataset.englishPlaceholder=n.placeholder;n.placeholder=lang==='ta'?(labels[n.dataset.englishPlaceholder]||n.dataset.englishPlaceholder):n.dataset.englishPlaceholder;});
  }
  window.__smvLocalizeTamilResult=(root,lang)=>{
+  const personName=root?.querySelector('.smv-horoscope-person-name');
+  if(personName){
+   const localized=lang==='ta'?personName.dataset.nameTa:personName.dataset.nameEn;
+   if(localized)personName.textContent=localized;
+  }
   if(lang!=='ta'){
    const map={'இளம்நீலம்':'Light Blue','காபிகலர்':'Coffee Brown','ஆகமன':'Aagamana','ஆகம':'Aagama','உபவேசன':'Upavesana','கமன':'Gamana','கௌதுக':'Kautuka','சபா':'Sabhaa','சயன':'Sayana','நித்ரா':'Nidraa','நேத்ரபாணி':'Netrapaani','ந்ருத்யலிப்ஸா':'Nrityalipsaa','பிரகாசன':'Prakaasana','போஜன':'Bhojana'};
    const walk=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=walk.nextNode()){if(n.parentElement.closest('script,style'))continue;for(const [ta,en]of Object.entries(map))n.nodeValue=n.nodeValue.split(ta).join(en);}return;

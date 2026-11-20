@@ -40,9 +40,23 @@ const transitRenderer = horoscopeJs.slice(transitStart, transitEnd);
 assert.match(transitRenderer, /const transitPlanetCount=bySign\[si\]\.length;/);
 assert.match(transitRenderer, /transitPlanetCount>=3/);
 assert.match(transitRenderer, /data-chart-planet-count="\$\{transitPlanetCount\}"/);
+assert.ok(transitRenderer.includes('planet-line transit-lagna-line'),'Transit Lagna is emitted inside the same planet-flow as the scaled planet rows.');
+assert.ok(transitRenderer.includes('data-transit-lagna="true"'),'Transit Lagna is rendered as a normal planet-short label instead of a fixed-size standalone node.');
+assert.ok(chartStyleJs.includes("if(house===1&&kind!=='transit')"),'Alternate layouts must not add a second Lagna outside the source Transit planet-flow.');
 
 assert.ok(chartStyleJs.includes("const kind=chart.id==='bhavaChart'?'bhava':chart.id==='navamsaChart'?'d9':chart.id==='rasiChart'?'d1':'transit';"));
-assert.ok(chartStyleJs.includes('const planetCount=items.length;'));
+assert.ok(chartStyleJs.includes("const houseNumber=value=>"),'Bhava house parsing accepts both 1–12 and I–XII source labels.');
+assert.ok(chartStyleJs.includes("if(/^\\d{1,2}$/.test(raw))"),'Numeric Bhava labels 1–12 are recognized before Roman conversion.');
+assert.ok(chartStyleJs.includes("normalizeSouthBhavaHouseLabels(chart)"),'South Bhava display normalizes Arabic house values to Roman numerals without changing source calculations.');
+assert.ok(chartStyleJs.includes("houseNumber(label.dataset.bhavaHouse)||houseNumber(label.textContent)"),'North/East mapping recognizes the original calculated house ID and legacy Roman labels.');
+assert.ok(chartStyleJs.includes("const explicitSign=Number(label.dataset.bhavaSign);"),'North/East mapping reads the original calculated Sphuta Rasi for each house.');
+assert.ok(chartStyleJs.includes("const bhavaLabel=kind==='bhava'?bhavaHousesBySign[sign].map(romanHouse).join(' / '):'';"),'Every East Bhava house label is grouped by its Sphuta Rasi.');
+assert.ok(chartStyleJs.includes("const mapped=new Set(from.cusp.flat())"),'North Bhava validates complete source house coverage rather than requiring one cusp per Rasi.');
+assert.ok(chartStyleJs.includes("line.hasAttribute('data-bhava-house')"),'North Bhava fallback preserves each source planet’s already-calculated Bhava assignment.');
+assert.ok(horoscopeJs.includes('data-bhava-house="${n}" data-bhava-sign="${si+1}"'),'Bhava rendering preserves its already-calculated house and Sphuta Rasi as display metadata only.');
+assert.ok(chartStyleJs.includes("chart.classList.contains('transit-chart')"),'Transit detection also covers production charts without a fixture ID.');
+assert.ok(chartStyleJs.includes("arr.out[si]?.querySelector('[data-transit-lagna]')"),'North/East chart conversion locates Transit Lagna from its source graha-flow row.');
+assert.ok(chartStyleJs.includes("const planetCount=kind==='transit'?items.filter(item=>!item.querySelector('[data-transit-lagna]')).length:items.length;"),'Transit Lagna is excluded from the graha count used for density thresholds.');
 assert.ok(chartStyleJs.includes("const triangleCell=style==='north'?[2,3,5,6,8,9,11,12].includes(house):style==='east'?[2,3,5,6,8,9,11,12].includes(sign+1):false;"));
 assert.ok(chartStyleJs.includes("if(triangleCell)cell.classList.add('smv-v342-triangle-cell');"));
 assert.ok(chartStyleJs.includes("if(!['north','east'].includes(style)||!['d1','d9','bhava'].includes(kind))return;"));
@@ -53,15 +67,31 @@ assert.ok(chartStyleCss.includes('color:rgb(224,0,0)!important;'));
 assert.doesNotMatch(chartStyleCss,/smv-v342-black-planet-text[^{]*\{[^}]*-webkit-text-fill-color/s,'Explicit child planet colours must remain intact.');
 assert.ok(chartStyleJs.includes('cell.dataset.chartPlanetCount=String(planetCount);'));
 assert.ok(chartStyleJs.includes("if(planetCount>=3)cell.classList.add('smv-chart-cell-compact')"));
-assert.match(chartStyleJs, /else if\(kind!=='d9'&&kind!=='bhava'\)\{/);
+assert.ok(chartStyleJs.includes("else if(kind==='transit'){"), 'Only North/East Transit empty cells keep the dash; Rasi cells stay blank.');
 assert.ok(chartStyleJs.includes("m.className='smv-v342-empty';m.textContent='—'"));
-assert.ok(chartStyleJs.includes("if(kind!=='bhava'&&style!=='east')cell.append(number);"), 'East Rasi, Navamsa and Transit suppress fixed zodiac-sign numbers; South and North retain their existing numbering.');
+assert.ok(chartStyleJs.includes("if(kind==='bhava'){"), 'Only Bhava alternate layouts render house labels.');
+assert.ok(!chartStyleJs.includes("function appendBhavaHouseLabels(chart,style,housesBySign){"), 'Bhava house numbers are not chart-level floating overlays.');
+assert.ok(!chartStyleJs.includes("smv-v342-bhava-house-label"), 'No floating label layer can cover a planet name.');
+assert.ok(chartStyleJs.includes("if(kind==='bhava')cell.classList.add('smv-v342-bhava-cell');"), 'North/East Bhava cells carry a presentation-only label class.');
+assert.ok(chartStyleJs.includes("if(kind==='bhava'&&String(bhavaHouseLabel||'').trim()){"), 'Each Bhava house label is inserted inside its own chart cell.');
+assert.ok(chartStyleJs.includes("label.className='smv-v342-house-number';"), 'Roman house labels use the normal in-cell number row.');
+assert.ok(chartStyleJs.includes("label.dataset.bhavaRoman=label.textContent;"), 'Original Roman labels are stored before the translation dictionary runs.');
+assert.ok(chartStyleJs.includes('roots().forEach(restoreRomanBhavaLabels);'), 'Original Roman labels are restored after a result-language toggle.');
+assert.ok(chartStyleJs.includes('function restoreRomanBhavaLabels(root){'), 'Live and saved Bhava labels have a dedicated language-safe restore path.');
+assert.ok(chartStyleJs.includes("const bhavaLabel=kind==='bhava'?bhavaHousesBySign[sign].map(romanHouse).join(' / '):'';"), 'East Bhava renders every house mapped to a Sphuta Rasi inside that sign cell.');
+assert.ok(chartStyleCss.includes('.smv-v342-cell.smv-v342-bhava-cell.smv-v342-triangle-cell .smv-v342-house-number{'));
+assert.ok(chartStyleCss.includes('position:static!important;transform:none!important;'), 'Bhava Roman labels stay in normal cell flow and cannot float over planet rows.');
+assert.ok(chartStyleCss.includes('color:#6f4d2c!important;'), 'Bhava Roman labels use readable high-contrast text.');
+assert.ok(chartStyleJs.includes("const lagna=kind==='bhava'?-1:ascSign(chart,from);"), 'Bhava alternate layouts do not depend on a Lagna lookup to render.');
+assert.ok(chartStyleJs.includes("const sign=kind==='bhava'?(bhavaSignByHouse[house]>=0?bhavaSignByHouse[house]:(bhava?.sign??-1)):(lagna+house-1)%12;"), 'North Bhava maps all twelve house slots through the already-calculated Sphuta Rasi metadata.');
+assert.ok(chartStyleJs.includes("const explicit=from.bhavaSignByHouse?.[house];"), 'North/East layout prioritizes the source Bhava-house-to-Rasi mapping.');
+assert.ok(chartStyleJs.includes("const bhavaSignByHouse=Array(13).fill(-1);"), 'The mapping retains one explicit destination sign for every Bhava house.');
+assert.ok(chartStyleJs.includes("const house=kind==='bhava'?0:(sign-lagna+12)%12+1;"), 'East Bhava positioning is independent of Lagna.');
+assert.ok(!chartStyleJs.includes("if(kind!=='bhava'&&style!=='east')cell.append(number);"), 'North/East Rasi, Navamsa and Transit do not render numeric sign labels.');
 assert.ok(chartStyleJs.includes("const bhavaRows=kind==='bhava'?readBhavaTable(chart,isTa()):null;"), 'North and East both read the same authoritative Bhava Table mapping.');
 assert.ok(chartStyleJs.includes('const bhavaHousesBySign=Array.from({length:12},()=>[]);'));
-assert.ok(chartStyleJs.includes('bhavaHousesBySign[row.sign].push(h);'), 'Each Bhava house is placed under its Bhava Madhya/Sphuta Rasi.');
-assert.ok(chartStyleJs.includes("h.textContent=style==='north'?romanHouse(house):String(bhavaHouseLabel||'');"), 'North displays its actual house number and East groups the mapped house labels by sign.');
-assert.ok(chartStyleJs.includes("const bhavaLabel=kind==='bhava'?bhavaHousesBySign[sign].map(romanHouse).join('/'):'';"), 'East does not substitute ordinary Lagna-based Rasi house numbers for Bhava numbers.');
-assert.ok(chartStyleJs.includes("h.textContent=house>=1&&house<=12?String(house):'';"), 'East Rasi, Navamsa and Transit retain their existing Lagna-derived house numbers unchanged.');
+assert.ok(chartStyleJs.includes('bhavaHousesBySign[mapped].push(house);'), 'Each Bhava Roman numeral is placed in its mapped Sphuta Rasi cell.');
+assert.ok(!chartStyleJs.includes("h.textContent=house>=1&&house<=12?String(house):'';"), 'East Rasi, Navamsa and Transit do not render numeric house labels.');
 
 const horoscopeCountRules = horoscopeCss.split('\n').filter(line=>/^#tamilHoroscopeResult \.south-rasi-cell\[data-chart-planet-count="\d+"\],#englishHoroscopeResult \.south-rasi-cell\[data-chart-planet-count="\d+"\]\{/.test(line.trim()));
 assert.equal(horoscopeCountRules.length,20,'South-chart count rules exist at desktop and mobile widths for each 3–12 planet stack.');
@@ -108,15 +138,14 @@ assert.ok(!navamsaRenderer.includes('navamsaPlanetCount>=2'));
 assert.ok(!bhavaRenderer.includes('bhavaPlanetCount>=2'));
 assert.ok(!transitRenderer.includes('transitPlanetCount>=2'));
 
-const crowdedNumberRule = chartStyleCss.slice(
-  chartStyleCss.indexOf('/* Keep the house/sign label readable when a compact North/East cell is crowded. */'),
-  chartStyleCss.indexOf('/* One planet per compact row prevents the glyph, marker and Degree from spilling. */')
+const inCellBhavaLabels = chartStyleCss.slice(
+  chartStyleCss.indexOf('/* Bhava-only Roman labels are the first in-cell row'),
 );
-assert.ok(crowdedNumberRule.includes('.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-triangle-cell.smv-chart-cell-compact .smv-v342-sign-number'));
-assert.ok(crowdedNumberRule.includes('.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-triangle-cell.smv-chart-cell-compact .smv-v342-house-number'));
-assert.ok(crowdedNumberRule.includes('.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-triangle-cell.smv-chart-cell-compact .smv-v342-sign-number'));
-assert.ok(crowdedNumberRule.includes('.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-triangle-cell.smv-chart-cell-compact .smv-v342-house-number'));
-assert.ok(crowdedNumberRule.includes('z-index:4!important;background-color:#fffdf7;padding:0 2px;border-radius:2px;'),
-  'Crowded North/East house/sign numbers keep an opaque chart-colour backing above planets.');
-
+assert.ok(inCellBhavaLabels.includes('.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-bhava-cell.smv-v342-triangle-cell .smv-v342-house-number'));
+assert.ok(inCellBhavaLabels.includes('.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-bhava-cell.smv-v342-triangle-cell .smv-v342-house-number'));
+assert.ok(inCellBhavaLabels.includes('position:static!important;transform:none!important;'),
+  'Bhava labels stay in the normal cell flow and cannot overlap planet names.');
+assert.ok(inCellBhavaLabels.includes('color:#6f4d2c!important;background:#fffdf7!important;'),
+  'Roman labels keep high contrast and a readable background inside the Bhava cell.');
+assert.ok(inCellBhavaLabels.includes('font-weight:900!important;line-height:1.05!important;'));
 console.log('Horoscope four-chart, three-plus planet sizing and empty-cell regression: PASS');

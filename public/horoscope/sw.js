@@ -4,7 +4,7 @@
    Location lookup keeps its existing GeoNames + India-offline behavior.
 */
 const IS_PAGES_DEV_HOST = self.location.hostname === 'smvastroservices.pages.dev' || self.location.hostname.endsWith('.smvastroservices.pages.dev') || self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
-const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261120-north-east-chart-containment-v1' : '20261120-north-east-chart-containment-v1';
+const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? 'smv-0b1408d2b309428a' : 'smv-dc7c3c159c6b5b91';
 const OFFLINE_CACHE='smv-horoscope-offline';
 const LOCATION_CACHE='smv-shared-india-places';
 const SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE;
@@ -28,9 +28,9 @@ const CORE=[
   './report-print.js','./report-print.css','./report-cover-dynamic.js','./report-cover-professional.css',
   './saved-compat.mjs','./prediction-rules-published.js','./prediction-rule-engine.js',
   './prediction-rules-sync.mjs','./prediction-admin.mjs','./prediction-admin-workbench.mjs',
-  './horoscope.js','./prediction-online.js','./horoscope-translations.js',
+  './horoscope.js','./prediction-online.js','./horoscope-translations.js','./tamil-day-classifications.mjs',
   './horoscope-language.js','./location-search-online-offline.js',
-  './horoscope-details.js','./horoscope-form.js','./birth-offset-live.mjs',
+  './horoscope-details.js','./horoscope-form.js','./birth-offset-live.mjs','./subha-janana.mjs',
   './android-apk-download.mjs','./pwa.js',
   './horoscope-life-engine.js','./horoscope-judgement-engine.js',
   './integrated.js','./d1-time-reading.js','./prediction-synthesis.js',
@@ -52,7 +52,7 @@ const CORE=[
   './offline/vendor/smv-swisseph-local.mjs',
   './offline/vendor/wasm/swisseph.mjs','./offline/vendor/wasm/swisseph.js',
   './offline/vendor/wasm/swisseph.wasm','./offline/vendor/wasm/swisseph.data',
-  './offline/places/place-search.mjs','./offline/places/place-display.mjs',
+  './offline/places/place-search.mjs','./offline/places/place-display.mjs','./offline/places/tamil-transliteration.mjs',
   './offline/places/india-manifest.json'
 ];
 
@@ -81,7 +81,7 @@ const REQUIRED_CORE=new Set([
   './offline/saura-natal-five-cheshta.browser.mjs','./offline/uttara-kalamrita-ayurdaya.browser.mjs',
   './offline/uttara-kalamrita-shadbala.browser.mjs','./offline/uttara-kalamrita-six-bala.browser.mjs',
   './offline/places/timezone.mjs','./offline/places/tz-boundary-lookup.mjs',
-  './location-search-online-offline.js','./offline/places/place-search.mjs','./offline/places/place-display.mjs','./offline/places/india-manifest.json',
+  './location-search-online-offline.js','./offline/places/place-search.mjs','./offline/places/place-display.mjs','./offline/places/tamil-transliteration.mjs','./offline/places/india-manifest.json',
   './offline/vendor/smv-swisseph-local.mjs',
   './offline/vendor/wasm/swisseph.mjs','./offline/vendor/wasm/swisseph.wasm',
   './offline/vendor/wasm/swisseph.data'

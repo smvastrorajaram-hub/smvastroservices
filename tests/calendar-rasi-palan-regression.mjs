@@ -17,7 +17,6 @@ import { calculateSwiss, calculateSunMoonSync } from '../public/horoscope/offlin
 import { panchang, solarNoaa, nakshatraIntervalsForLocalDay, thyajyamIntervalsForLocalDay, calculateAhasNazhigai, calculateRatriNazhigai, calculateAhasRatriPramana, calculateDinantham, NAKSHATRA_THYAJYAM_START_GHATIS } from '../public/horoscope/offline/transit_panchang.browser.mjs';
 import { calculateRasiManaForLocation, calculateSolarSignRasiMana, calculateRemainingRasiMana, calculateRemainingSolarSignRasiMana, meanObliquityAtJulianDay } from '../public/horoscope/offline/rasi-mana.browser.mjs';
 import { TAMIL_DAY_YOGA_TABLE, getTamilDayYoga, getTamilCalendarDayFlags, getThaniyaNaalDates, getNakshatraDirection, getNethiramJeevan } from '../public/horoscope/tamil-day-classifications.mjs';
-
 const dailyCalendarSource = await readFile(new URL('../public/horoscope/daily-calendar.mjs', import.meta.url), 'utf8');
 const calendarDataSource = await readFile(new URL('../public/horoscope/calendar-data.mjs', import.meta.url), 'utf8');
 const horoscopeRendererSource = await readFile(new URL('../public/horoscope/horoscope.js', import.meta.url), 'utf8');
@@ -46,7 +45,6 @@ const rasiPalanCss = await readFile(new URL('../public/horoscope/calendar-rasi-p
 const horoscopeIndexSource = await readFile(new URL('../public/horoscope/index.html', import.meta.url), 'utf8');
 const horoscopeLanguageSource = await readFile(new URL('../public/horoscope/horoscope-language.js', import.meta.url), 'utf8');
 const publicHeadersSource = await readFile(new URL('../public/_headers', import.meta.url), 'utf8');
-
 test('Place-based Rasi Mana uses Oblique Ascension consistently for Indian and worldwide latitudes', () => {
   const places = [
     ['Perambalur', 11.2342], ['Chennai', 13.0827], ['Tiruchirappalli', 10.79],
@@ -95,7 +93,6 @@ test('Place-based Rasi Mana uses Oblique Ascension consistently for Indian and w
     assert.equal(balance.rasiMana.rows.reduce((sum, row) => sum + row.totalVighati, 0), 3600);
   }
 });
-
 test('Polar Rasi Mana explicitly reports signs that do not rise instead of fabricating durations', () => {
   const result = calculateRasiManaForLocation({
     latitude: 75, ayanamsaDegrees: 24.25, obliquityDegrees: 23.436
@@ -105,12 +102,10 @@ test('Polar Rasi Mana explicitly reports signs that do not rise instead of fabri
     'Circumpolar signs must be marked unavailable');
   assert.ok(result.rows.some(row => row.reason === 'circumpolar-or-invalid-rising-arc'));
 });
-
 test('Mean obliquity is calculated from the selected UT Julian Day', () => {
   const value = meanObliquityAtJulianDay(2461360.0);
   assert.ok(value > 23.4 && value < 23.5);
 });
-
 test('Solar-sign Rasi Mana starts full at local sunrise and counts down by elapsed local time', () => {
   const atSunrise = calculateRemainingRasiMana({
     totalVighati: 329, sunrise: '06:00', selectedTime: '06:00'
@@ -119,13 +114,11 @@ test('Solar-sign Rasi Mana starts full at local sunrise and counts down by elaps
   assert.equal(atSunrise.balanceVinazhigai, 29);
   assert.equal(atSunrise.elapsedSeconds, 0);
   assert.equal(atSunrise.balanceSeconds, 329 * 24);
-
   const beforeSunrise = calculateRemainingRasiMana({
     totalVighati: 329, sunrise: '06:00', selectedTime: '05:30'
   });
   assert.equal(beforeSunrise.balanceSeconds, atSunrise.fullBalanceSeconds,
     'Before sunrise the new day has not consumed any of its Rasi Mana.');
-
   const oneHourLater = calculateRemainingRasiMana({
     totalVighati: 329, sunrise: '06:00', selectedTime: '07:00'
   });
@@ -134,7 +127,6 @@ test('Solar-sign Rasi Mana starts full at local sunrise and counts down by elaps
     'One elapsed hour must subtract exactly 150 vighati (one hour / 24 seconds).');
   assert.equal(oneHourLater.balanceNazhigai, 2);
   assert.equal(oneHourLater.balanceVinazhigai, 59);
-
   const exhausted = calculateRemainingRasiMana({
     totalVighati: 329, sunrise: '06:00', selectedTime: '08:30'
   });
@@ -143,7 +135,6 @@ test('Solar-sign Rasi Mana starts full at local sunrise and counts down by elaps
   assert.equal(exhausted.balanceVinazhigai, 0,
     'An exhausted balance must clamp to zero, never become negative.');
 });
-
 test('Sunrise Rasi Mana uses only the untraversed sidereal solar arc', () => {
   const atMonthStart = calculateRemainingSolarSignRasiMana({
     solarLongitude:210, solarSignIndex:7, latitude:11.2342,
@@ -154,7 +145,6 @@ test('Sunrise Rasi Mana uses only the untraversed sidereal solar arc', () => {
   assert.equal(atMonthStart.remainingSignDegrees,30);
   assert.equal(atMonthStart.remainingVighati,329,
     'At 0° Scorpio, the remaining Rasi Mana equals the complete 30° value (5 na 29 vi).');
-
   const atMonthEnd = calculateRemainingSolarSignRasiMana({
     solarLongitude:239 + 59/60 + 59/3600, solarSignIndex:7, latitude:11.2342,
     ayanamsaDegrees:24.25, obliquityDegrees:23.436, fullBalanceVighati:329
@@ -163,7 +153,6 @@ test('Sunrise Rasi Mana uses only the untraversed sidereal solar arc', () => {
   assert.ok(atMonthEnd.remainingSignDegrees < 0.0003);
   assert.equal(atMonthEnd.remainingVighati,0,
     'At approximately 29°59\'59\", the remaining Rasi Mana rounds to zero, not 5 na 29 vi.');
-
   const on25November = calculateRemainingSolarSignRasiMana({
     solarLongitude:218.5, solarSignIndex:7, latitude:11.2342,
     ayanamsaDegrees:24.25, obliquityDegrees:23.436, fullBalanceVighati:329
@@ -172,7 +161,6 @@ test('Sunrise Rasi Mana uses only the untraversed sidereal solar arc', () => {
   assert.ok(on25November.remainingVighati>0&&on25November.remainingVighati<329,
     'A progressed Sun on 25 November must show only the residual OA arc, smaller than the complete Scorpio value.');
 });
-
 test('Calendar Rasi Mana selects the complete OA duration for the local solar-ingress sign, independently of current Lagna', () => {
   assert.match(calendarCalculationWorkerSource, /calculateSolarSignRasiMana/);
   assert.match(calendarCalculationWorkerSource, /calculateLahiriContextAt/);
@@ -205,12 +193,9 @@ test('Calendar Rasi Mana selects the complete OA duration for the local solar-in
   assert.match(dailyCalendarSource, /அடுத்த சூ\.உதயம் வரை மாறாது/);
   assert.doesNotMatch(dailyCalendarSource, /calculateRemainingRasiMana|balance counts down from sunrise/,
     'Daily UI must display the worker-computed sunrise remainder, without a live clock countdown.');
-
   assert.match(dailyCalendarSource, /renderMuhurtaLagna\(\)\}/,
     'The current-day balance must refresh using the existing minute timer.');
 });;
-
-
 test('Date Details displays three separate results and uses only the concise negative Muhurtham value', () => {
   assert.match(dailyCalendarSource, /L\('No','இல்லை'\)/);
   assert.match(dailyCalendarSource, /ராசி மான லக்ன இருப்பு/);
@@ -222,7 +207,6 @@ test('The Horoscope Matching navigation label uses the requested concise Tamil w
   assert.match(horoscopeLanguageSource, /'Matching':'பொருத்தம்'/);
   assert.doesNotMatch(horoscopeLanguageSource, /'Matching':'திருமணப் பொருத்தம்'/);
 });
-
 test('Horoscope Admin Rules and Calendar use the existing login without a separate header Admin button', () => {
   assert.equal(horoscopeIndexSource.includes('id="smvAdminRulesAccess"'), false, 'The fixed/header Admin button must be removed');
   assert.ok(horoscopeIndexSource.includes('id="smvAdminToolsEntry" hidden'), 'Admin tools stay hidden until the Horoscope login validates an Admin account');
@@ -239,12 +223,10 @@ test('Horoscope Admin Rules and Calendar use the existing login without a separa
   assert.match(calendarForecastAdminSource, /smv-horoscope-local/);
   assert.doesNotMatch(calendarForecastAdminSource, /smv-prediction-admin-auth/);
 });
-
 test('The forecast registry keeps eight non-Moon planets separate from the dedicated Moon transit card', () => {
   assert.deepEqual(RASI_PALAN_PLANETS.map(p => p.key), ['Sun','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu']);
   assert.equal(RASI_PALAN_PLANETS.some(p => p.key === 'Moon'), false);
 });
-
 test('Sidereal longitudes normalize and house counting from the selected Rasi is 1-based', () => {
   assert.equal(signIndex(0), 0);
   assert.equal(signIndex(359.999), 11);
@@ -253,7 +235,6 @@ test('Sidereal longitudes normalize and house counting from the selected Rasi is
   assert.equal(houseFromRasi(0, 11), 2);
   assert.equal(houseFromRasi(11, 0), 12);
 });
-
 test('Daily is fixed to the supplied current date; weekly uses the current Sunday–Saturday and monthly uses the full current month', () => {
   assert.deepEqual(periodReference('daily', '2026-10-24'), {date:'2026-10-24',key:'2026-10-24',start:'2026-10-24',end:'2026-10-24'});
   assert.equal(mondayOf('2026-10-24'), '2026-10-19');
@@ -264,7 +245,6 @@ test('Daily is fixed to the supplied current date; weekly uses the current Sunda
   assert.deepEqual(periodReference('weekly', '2026-10-25'), {date:'2026-10-25',key:'2026-10-25',start:'2026-10-25',end:'2026-11-01'});
   assert.deepEqual(periodReference('monthly', '2026-10-24'), {date:'2026-10-01',key:'2026-10',start:'2026-10-01',end:'2026-10-31'});
 });
-
 test('Published bilingual text is keyed separately, and Hybrid prefers published manual then automatic fallback', () => {
   const ta = readingKey('daily', '2026-10-24', 0, 'Sun', 'ta');
   const en = readingKey('daily', '2026-10-24', 0, 'Sun', 'en');
@@ -275,7 +255,6 @@ test('Published bilingual text is keyed separately, and Hybrid prefers published
   assert.deepEqual(selectReading('manual', 'auto', '', ''), {text:'',source:'missing'});
   assert.deepEqual(selectReading('automatic', 'auto', 'published', 'draft'), {text:'auto',source:'automatic'});
 });
-
 test('New Year labels are the exact requested names and avoid an annual-transit label', () => {
   assert.equal(RASI_PALAN_TITLES.tamilNewYear.ta, 'தமிழ் வருடப் பிறப்பு ராசி பலன்கள்');
   assert.equal(RASI_PALAN_TITLES.englishNewYear.ta, 'ஆங்கில வருடப் பிறப்பு ராசி பலன்கள்');
@@ -283,7 +262,6 @@ test('New Year labels are the exact requested names and avoid an annual-transit 
   assert.match(RASI_PALAN_TITLES.englishNewYear.en, /English New Year Rasi Palan/);
   assert.doesNotMatch(RASI_PALAN_TITLES.tamilNewYear.en, /Annual Transit/i);
 });
-
 test('Moon transit appears first, the eight other planets remain separate, and old duplicate forecast blocks are removed', () => {
   assert.match(publicRasiPalanSource, /function renderMoonTransit/);
   assert.ok(publicRasiPalanSource.includes('renderMoonTransit(result, rasiIndex) + cards'));
@@ -353,7 +331,6 @@ test('Moon transit appears first, the eight other planets remain separate, and o
   assert.doesNotMatch(dailyCalendarSource, /Daily Rasi Palan/);
   assert.doesNotMatch(dailyCalendarSource, /All eight transit planets/);
 });
-
 test('Calendar distinguishes Gazette government holidays from observances and does not add Sundays', () => {
   assert.ok(dailyCalendarSource.includes("L('Government holiday','அரசு விடுமுறை')"),
     'Official Tamil Nadu holidays must be explicitly identified as Government Holidays.');
@@ -389,7 +366,7 @@ test('Calendar distinguishes Gazette government holidays from observances and do
   assert.ok(horoscopeRendererSource.includes("calendarPresentation?'transit-card':'card transit-card'"), 'Only Calendar removes the Transit Chart card layer; Horoscope retains it.');
   assert.ok(horoscopeRendererSource.includes("const fullPlanetTamil={Sun:'சூரியன்',Moon:'சந்திரன்',Mars:'செவ்வாய்',Mercury:'புதன்',Jupiter:'குரு',Venus:'சுக்கிரன்',Saturn:'சனி',Rahu:'ராகு',Ketu:'கேது'};"), 'Calendar Transit Planetary Positions maps full Tamil graha names instead of short glyph labels.');
   assert.ok(horoscopeRendererSource.includes("const combustionMarker=calendarPresentation&&isCombust?(ta?'(அ)':'(C)'):'';"), 'Combustion marker is appended to the graha name in the active language.');
-  assert.ok(horoscopeRendererSource.includes('<div class="south-chart-center">${calendarPresentation?(ta?\'கோச்சாரம்\':\'Transit\'):\'Transit Chart\'}</div>'), 'Only the label inside the Calendar transit chart is shortened to கோச்சாரம் / Transit.');
+  assert.ok(horoscopeRendererSource.includes('<div class="south-chart-center">${ta?\'கோச்சாரம்\':\'Transit\'}</div>'), 'Horoscope and Calendar transit chart centres use the concise localized கோச்சாரம் / Transit label.');
   assert.ok(horoscopeRendererSource.includes('<h3 class="cal-centered-heading">🪐 ${ta?\'Transit Chart\':\'Transit Chart\'}</h3>'), 'The outer Transit Chart heading keeps its pre-existing wording.');
   assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .transit-chart .planet-short,#smvDailyCalendar #calDaily .transit-chart .south-chart-center{color:#15564e!important;-webkit-text-fill-color:#15564e!important}'), 'Only short planet names and the chart centre label receive the Calendar theme green.');
   assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar #calDaily .transit-chart .south-rasi-cell{'), 'Transit cell sizing is defined in the primary V211 source rules.');
@@ -421,7 +398,7 @@ test('Calendar distinguishes Gazette government holidays from observances and do
   assert.equal(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .transit-card>.cal-centered-heading{color:#15564e'), false, 'The outer Transit Chart heading must not receive a new green override.');
   assert.ok(horoscopeRendererSource.includes("<th>${ta?'கிரகங்கள்':'Planets'}</th>"), 'The positions table labels the first column as Planets / கிரகங்கள்.');
   assert.ok(horoscopeRendererSource.includes("calendarPresentation?'':`<td>${esc2(r.status||'—')}</td>`"), 'Status is omitted from Calendar but retained for non-Calendar Horoscope output.');
-  assert.ok(horoscopeRendererSource.includes("calendarPresentation?'hora-card':'card hora-card'"), 'Only Calendar removes the Daily Hora outer card; Horoscope retains its original card.');
+  assert.ok(horoscopeRendererSource.includes("if(calendarPresentation)h+="), 'Daily Hora markup is rendered only for Calendar; Horoscope omits it.');
   assert.ok(horoscopeRendererSource.includes("calendarPresentation?'transit-card':'card transit-card'"), 'Calendar Transit Chart has no outer card, while Horoscope retains its card.');
   assert.ok(horoscopeRendererSource.includes('<section class="transit-table-card">'), 'Transit Planetary Positions keeps its heading wrapper without an outer card.');
   assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar #calDaily .transit-card{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;outline:0!important}'), 'The Transit Chart remains without an outer card.');
@@ -438,7 +415,6 @@ test('Calendar distinguishes Gazette government holidays from observances and do
    assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .cal-centered-heading::after{'),
     'Centered Calendar headings must not display inherited trailing ornaments.');
 });
-
 test('Public Rasi Palan uses the current local date automatically and calculates weekly windows', () => {
   assert.doesNotMatch(publicRasiPalanSource, /rpDate/);
   assert.match(publicRasiPalanSource, /state\.date = defaultDate\(\)/);
@@ -464,7 +440,6 @@ test('Public Calendar does not expose prediction mode, editor/export, or the rem
   assert.doesNotMatch(dailyCalendarSource, /cal-engine-note|Calculation & prediction method|கணக்கீடு & பலன் முறை/);
   assert.doesNotMatch(publicRasiPalanSource, /rp-mode-chip|rp-manual-editor/);
 });
-
 test('Calendar manual predictions are managed inside the existing Horoscope Admin session', () => {
   assert.match(calendarIndexSource, /calendar-rasi-palan\.mjs/);
   assert.doesNotMatch(calendarIndexSource, /calendar-admin\.mjs/);
@@ -500,7 +475,6 @@ test('Planetary ingress section computes only the latest past transit per planet
   assert.match(publicRasiPalanSource, /Showing only the latest past ingress for each group/);
   assert.doesNotMatch(publicRasiPalanSource, /events\.filter\(e => e\.date >= start/);
 });
-
 test('Selecting the already-active public section does not rebuild the entire Calendar UI', () => {
   assert.match(publicRasiPalanSource, /const nextSection = button\.dataset\.section;\s+if \(state\.section === nextSection\) return;/);
 })
@@ -514,7 +488,6 @@ test('Selected Rasi controls all forecast periods and is preserved across sectio
    assert.ok(publicRasiPalanSource.includes("calendarHost.insertAdjacentElement('afterend', root)"));
    assert.ok(publicRasiPalanSource.includes("document.getElementById('calRasi')"));
 });
-
 test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horoscope Admin and remains safely cached', () => {
    assert.ok(calendarIndexSource.includes('<a href="https://smvastroservices.in/" target="_blank" rel="noopener" data-en="Services" data-ta="சேவைகள்">Services</a>'));
    assert.ok(calendarIndexSource.includes('<a href="https://horoscope.smvastroservices.in/" target="_blank" rel="noopener" data-en="Horoscope" data-ta="ஜாதகம்">Horoscope</a>'));
@@ -529,7 +502,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261119-horoscope-four-chart-planet-layout-v1' : '20261119-horoscope-four-chart-planet-layout-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.match(calendarWorkerSource, /const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '[^']+' : '[^']+';/, 'Calendar declares its host-specific cache release marker');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
@@ -539,10 +512,10 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261119-horoscope-four-chart-planet-layout-v1'));
-   assert.ok(calendarIndexSource.includes('20261119-horoscope-four-chart-planet-layout-v1'));
+   assert.match(calendarIndexSource, /\?v=[^"']+/, 'Calendar retains cache-busted app asset URLs');
+   assert.match(calendarIndexSource, /\?v=[^"']+/, 'Calendar retains cache-busted app asset URLs');
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
-   assert.ok(calendarIndexSource.includes('20261119-horoscope-four-chart-planet-layout-v1'));
+   assert.match(calendarIndexSource, /\?v=[^"']+/, 'Calendar retains cache-busted app asset URLs');
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'runPeriodForecast\')'));
    assert.ok(calendarIndexSource.includes('The deployed forecast assets could not be loaded from this Calendar host.'));
@@ -572,7 +545,6 @@ test('The lightweight Sun/Moon path accepts ordinary Calendar date/time formats 
   assert.ok(validation.includes('if(!/^' + slash + 'd{4}-' + slash + 'd{2}-' + slash + 'd{2}$/.test(ds)||!m)'));
   assert.doesNotMatch(validation, /\\\\d/, 'Regexes must not match literal backslash-d sequences');
 });
-
 test('Fast Sun longitude for Tamil ingress search matches the full Swiss Lahiri chart', async () => {
   const input = { date: '2026-11-16', time: '06:10', lat: 11.2342, lon: 78.8808, utcOffsetMinutes: 330 };
   const chart = await calculateSwiss(input);
@@ -582,7 +554,6 @@ test('Fast Sun longitude for Tamil ingress search matches the full Swiss Lahiri 
   const difference = Math.abs(((fast.sunLongitude - Number(fullSun.longitude) + 540) % 360) - 180);
   assert.ok(difference < 1e-6, 'Lightweight and full chart Sun longitudes must be equivalent');
 });
-
 test('Panchang boundary searches use cached lightweight Sun/Moon calculations and share one full daily chart', () => {
   assert.match(swissCalculationSource, /export function calculateSunMoonSync/);
   assert.match(transitPanchangSource, /calculateSunMoonSync/);
@@ -591,7 +562,6 @@ test('Panchang boundary searches use cached lightweight Sun/Moon calculations an
   assert.match(calendarCalculationWorkerSource, /calculateSunMoon/);
   assert.match(calendarCalculationWorkerSource, /const chart=await calculateSwiss\(input\);const p=panchang\(input,chart\),t=transit\(input,chart\)/);
 });
-
 test('Rasi Palan uses the lightweight local Swiss WASM transit path rather than the full natal-report engine', () => {
   assert.match(publicRasiPalanSource, /getSwe, C as SWE.*wasm-provider\.mjs/);
   assert.match(publicRasiPalanSource, /async function chartAtLocalTime\(date, time, cfg\)/);
@@ -599,13 +569,11 @@ test('Rasi Palan uses the lightweight local Swiss WASM transit path rather than 
   assert.match(publicRasiPalanSource, /transitChartCache/);
   assert.doesNotMatch(publicRasiPalanSource, /calculateSwiss\(/);
 });
-
 test('Public forecast rendering does not block on the asynchronous Admin content read', () => {
   assert.doesNotMatch(publicRasiPalanSource, /await publishedManualReady/);
   assert.match(publicRasiPalanSource, /publishedManualReady = loadPublishedManual\(\)\.then\(\(\) => \{/);
   assert.match(publicRasiPalanSource, /else renderLastResult\(\)/);
 });
-
 test('Public calendar takes published mode/data from Firestore online and uses bundled JSON offline', () => {
   assert.match(publicRasiPalanSource, /smv_content', 'calendar_rasi_palan_v1'/);
   assert.match(publicRasiPalanSource, /if \(navigator\.onLine\)/);
@@ -615,26 +583,21 @@ test('Public calendar takes published mode/data from Firestore online and uses b
   assert.match(publicRasiPalanSource, /selectReading\(supportsPublishedManual \? publishedMode : 'automatic'/);
   assert.match(publicRasiPalanSource, /Swiss Ephemeris · programmed rules/);
 });
-
 test('Weekly and monthly date ranges use valid digit classes for DD/MM/YYYY formatting', () => {
   const dateMatcher = String.raw`match(/^(\d{4})-(\d{2})-(\d{2})$/)`;
   assert.ok(publicRasiPalanSource.includes(dateMatcher), 'ISO dates must parse before formatting weekly/monthly period ranges');
   assert.doesNotMatch(publicRasiPalanSource, /match\(\/\^\(\\\\d\{4\}\)/, 'Date-range regex must not match literal backslash-d');
 });
-
-
 test('Missing Tamil solar dates render only an em dash in daily and birth Panchang', () => {
   assert.match(horoscopeResultSource, /const dailyTamilDate=\(\(\)=>[\s\S]*?return '—';\}\)\(\);/);
   assert.match(horoscopeResultSource, /else \{\s*text='—';\s*\}/);
   assert.doesNotMatch(horoscopeResultSource, /தமிழ் தேதி|Tamil date/);
 });
-
 test('Same-day solar ingress after sunset starts the Tamil month on the next sunrise', () => {
   const expected = /if\(nextDate===referenceDate\)\{\s*const nextIngressTime=localTimeStringFromTs\(nextIngressTs,offset\);\s*\/\/ An ingress at or after local sunset belongs to the next sunrise interval\.\s*if\(nextIngressTime < refSunset\)\{/;
   assert.match(transitPanchangSource, expected);
   assert.match(rootTransitPanchangSource, expected);
 });
-
 test('16 November 2026 is Aippasi 30 and 17 November begins Karthigai 1', async () => {
   const input = {
     time: '12:00',
@@ -652,7 +615,6 @@ test('16 November 2026 is Aippasi 30 and 17 November begins Karthigai 1', async 
   assert.equal(karthigaiStart?.monthTa, 'கார்த்திகை');
   assert.equal(karthigaiStart?.day, 1);
 });
-
 test('Calendar dual-date grid, direct navigation and Date Details are UI-only extensions', () => {
   assert.match(dailyCalendarSource, /min="1800-01-01" max="2399-12-31"/);
   assert.match(dailyCalendarSource, /class="cal-day-tamil"/);
@@ -702,7 +664,6 @@ test('Calendar dual-date grid, direct navigation and Date Details are UI-only ex
   assert.doesNotMatch(transitPanchangSource, /for\(let j=0;j<(42|55);j\+\+\)/, 'Long redundant bisection loops are removed');
   assert.doesNotMatch(dailyCalendarSource, /solarNoaa\(/, 'Daily UI must reuse worker-provided sunrise and sunset rather than invent separate calculations');
 });
-
 test('TTD Tirukanitha Amirthadi matrix covers 7 weekdays x 27 Nakshatras and the expected reference cells', () => {
   assert.equal(TAMIL_DAY_YOGA_TABLE.length, 7);
   assert.ok(TAMIL_DAY_YOGA_TABLE.every(row => row.length === 27));
@@ -729,7 +690,6 @@ test('TTD Tirukanitha Amirthadi matrix covers 7 weekdays x 27 Nakshatras and the
   assert.match(dailyCalendarSource, /daily\.amirthadiYogaSegments/);
   assert.doesNotMatch(dailyCalendarSource, /getTamilDayYoga\\(weekday,dayStar\\)/);
 });
-
 test('Amirthadi timeline uses Panchang Nakshatra boundaries from local sunrise to following sunrise', () => {
   const input = { lat: 11.2342, lon: 78.8808, utcOffsetMinutes: 330, date: '2026-11-16', time: '12:00' };
   const timeline = nakshatraIntervalsForLocalDay(input);
@@ -752,7 +712,6 @@ test('Amirthadi timeline uses Panchang Nakshatra boundaries from local sunrise t
   assert.ok(dailyCalendarSource.includes('cal-yoga-segment-time'));
   assert.ok(calendarCalculationWorkerSource.includes('amirthadiYogaSegments'));
 });
-
 test('Ahas Pramana converts local sunrise-to-sunset duration to Nazhigai and Vinazhigai', () => {
   assert.deepEqual(calculateAhasNazhigai('06:00','18:00'), {
     available:true,sunrise:'06:00',sunset:'18:00',daylightMinutes:720,totalVighati:1800,nazhigai:30,vinazhigai:0
@@ -763,7 +722,6 @@ test('Ahas Pramana converts local sunrise-to-sunset duration to Nazhigai and Vin
   assert.equal(calculateAhasNazhigai('06:00','17:00').vinazhigai,30);
   assert.equal(calculateAhasNazhigai('—','18:00').available,false);
 });
-
 test('Ahas and Ratri Pramana exactly partition sunrise-to-next-sunrise into 60 ghatis down to Tharparai', () => {
   const equal = calculateAhasRatriPramana('06:00','18:00','06:00',12*3600,12*3600);
   assert.equal(equal.available,true);
@@ -772,25 +730,21 @@ test('Ahas and Ratri Pramana exactly partition sunrise-to-next-sunrise into 60 g
   assert.equal(equal.totalTharparai,216000);
   assert.deepEqual([equal.ahasNazhigai.nazhigai,equal.ahasNazhigai.vinazhigai,equal.ahasNazhigai.tharparai],[30,0,0]);
   assert.deepEqual([equal.ratriNazhigai.nazhigai,equal.ratriNazhigai.vinazhigai,equal.ratriNazhigai.tharparai],[30,0,0]);
-
   const unequal = calculateAhasRatriPramana('06:00','19:00','06:00',13*3600,11*3600);
   assert.deepEqual([unequal.ahasNazhigai.nazhigai,unequal.ahasNazhigai.vinazhigai,unequal.ahasNazhigai.tharparai],[32,30,0]);
   assert.deepEqual([unequal.ratriNazhigai.nazhigai,unequal.ratriNazhigai.vinazhigai,unequal.ratriNazhigai.tharparai],[27,30,0]);
-
   const subsecond = calculateAhasRatriPramana('06:00','18:00','06:00',43200.4,43199.6);
   assert.deepEqual([subsecond.ahasNazhigai.nazhigai,subsecond.ahasNazhigai.vinazhigai,subsecond.ahasNazhigai.tharparai],[30,0,1]);
   assert.deepEqual([subsecond.ratriNazhigai.nazhigai,subsecond.ratriNazhigai.vinazhigai,subsecond.ratriNazhigai.tharparai],[29,59,59]);
   assert.equal(subsecond.ahasNazhigai.totalTharparai+subsecond.ratriNazhigai.totalTharparai,216000,
     'Day and night must add to exactly 60 Nazhigai even after rounding to Tharparai');
 });
-
 test('Calendar Date Details use the requested Ahas day/night labels and show Tharparai', () => {
   assert.ok(dailyCalendarSource.includes("L('Ahas : Day length','அகஸ் :- பகல் மானம்')"));
   assert.ok(dailyCalendarSource.includes("L('Ahas : Night length','அகஸ் :- இரவு மானம்')"));
   assert.ok(dailyCalendarSource.includes("L('Tharparai','தற்பரை')"));
   assert.ok(calendarCalculationWorkerSource.includes('calculateAhasRatriPramana(p.sunrise,p.sunset,nextSunrise,actualDaySeconds,actualNightSeconds)'));
 });
-
 test('Nakshatra Thyajyam uses the 27-star table, four ghatis, and carries Mula beyond the 60th ghati', async () => {
   assert.equal(NAKSHATRA_THYAJYAM_START_GHATIS.length,27);
   assert.deepEqual(NAKSHATRA_THYAJYAM_START_GHATIS.slice(0,5),[51,25,31,41,15]);
@@ -818,7 +772,6 @@ test('Nakshatra Thyajyam uses the 27-star table, four ghatis, and carries Mula b
   assert.match(transitPanchangSource,/monthDays,/);
   assert.match(dailyCalendarSource,/dayFlags\.thaniyaAvailable/);
 });
-
 test('16 November 2026 sunrise weekday and Thiruvonam produce Amirtha, not the Siddha fallback', async () => {
   const input = { lat: 11.2342, lon: 78.8808, utcOffsetMinutes: 330, language: 'en', houseSystem: 'S' };
   const date = '2026-11-16';
@@ -829,7 +782,6 @@ test('16 November 2026 sunrise weekday and Thiruvonam produce Amirtha, not the S
   assert.equal(p.nakshatra?.number, 22, 'Thiruvonam is the sunrise Nakshatra on this date');
   assert.equal(getTamilDayYoga(new Date(date + 'T12:00:00Z').getUTCDay(), p.nakshatra.number).key, 'amirtha');
 });
-
 test('Sri Thanigai 2026-27 Thaniya dates use Dhruva, weekday and Kollam-year remainders', () => {
   // Month starts and month lengths below are taken from the published
   // Parabhava 2026-27 Sri Thanigai Tirukanitha Panchangam.
@@ -856,7 +808,6 @@ test('Sri Thanigai 2026-27 Thaniya dates use Dhruva, weekday and Kollam-year rem
   assert.equal(margazhi.kollamYear, 1202);
   assert.equal(margazhi.yearRemainder, 3);
 });
-
 test('Sri Thanigai 2025-26 Margazhi example applies the special seven-day adjustment to both dates', () => {
   // The source PDF's worked example: Dhruva 8/26 + weekday remainder 5
   // + Kollam-year remainder 2 => 15/33; after the month-overflow rule => 8/26.
@@ -866,7 +817,6 @@ test('Sri Thanigai 2025-26 Margazhi example applies the special seven-day adjust
   assert.equal(result.yearRemainder, 2);
   assert.deepEqual(result.dates, [8, 26]);
 });
-
 test('Sri Thanigai Kari Naal remains a separate monthly Tyajyam list with a six-ghati sunrise window', () => {
   const aippasiKariOnly = getTamilCalendarDayFlags({
     index: 6, day: 20, monthStartDate: '2026-10-18', monthDays: 30
@@ -888,27 +838,22 @@ test('Sri Thanigai Kari Naal remains a separate monthly Tyajyam list with a six-
     available: false, kari: false, thaniya: false, thaniyaAvailable: false
   });
 });
-
 test('Monthly Tamil solar labels safely handle more than one boundary inside a Gregorian month', () => {
   assert.match(calendarCalculationWorkerSource, /const probeIndexes=\[\.\.\.new Set\(\[0,Math\.floor\(\(entries\.length-1\)\/2\),entries\.length-1\]/);
   assert.match(calendarCalculationWorkerSource, /while\(lo<hi\)/);
   assert.match(calendarCalculationWorkerSource, /boundaries\.push\(\{index:lo,state\}\)/);
   assert.match(calendarCalculationWorkerSource, /day:state\.offset\+dateDistance\(entries\[i\]\.date,firstDate\)/);
 });
-
-
 test('Night Ahas and Dinantham use the sunset-to-next-sunrise interval', () => {
   const ratri = calculateRatriNazhigai('18:00', '06:00');
   assert.equal(ratri.available, true);
   assert.equal(ratri.nightMinutes, 720);
   assert.equal(ratri.nazhigai, 30);
   assert.equal(ratri.vinazhigai, 0);
-
   const dinantham = calculateDinantham('18:00', '06:00');
   assert.equal(dinantham.available, true);
   assert.equal(dinantham.time, '01:30');
   assert.equal(dinantham.thirdYamaFraction, 5 / 8);
-
   const shortNight = calculateRatriNazhigai('18:30', '06:15');
   assert.equal(shortNight.available, true);
   assert.equal(shortNight.nightMinutes, 705);
@@ -916,7 +861,6 @@ test('Night Ahas and Dinantham use the sunset-to-next-sunrise interval', () => {
   assert.equal(shortNight.vinazhigai, 23);
   assert.equal(calculateRatriNazhigai('18:00', '18:00').available, false);
 });
-
 test('Nethiram and Jeevan are derived from the Sun and sunrise Nakshatras', () => {
   const sameStar = getNethiramJeevan(27, 27);
   assert.deepEqual(
@@ -932,7 +876,6 @@ test('Nethiram and Jeevan are derived from the Sun and sunrise Nakshatras', () =
   assert.equal(getNethiramJeevan(27, 10).jeevan, 1);
   assert.equal(getNethiramJeevan(0, 10).available, false);
 });
-
 test('All 27 Nakshatras map exactly once to upward, downward or equal-facing days', () => {
   const counts = { upper: 0, lower: 0, equal: 0 };
   for (let nakshatra = 1; nakshatra <= 27; nakshatra++) {
@@ -946,7 +889,6 @@ test('All 27 Nakshatras map exactly once to upward, downward or equal-facing day
   assert.equal(getNakshatraDirection(1).symbol, '↔');
   assert.equal(getNakshatraDirection(28).available, false);
 });
-
 test('Calendar Date Details render sunrise Nethiram/Jeevan, direction, Dinantham and Ratri Pramana', () => {
   assert.ok(dailyCalendarSource.includes('getNethiramJeevan(sunStar,dayStar)'));
   assert.ok(dailyCalendarSource.includes('அகஸ் :- இரவு மானம்'));
@@ -958,8 +900,6 @@ test('Calendar Date Details render sunrise Nethiram/Jeevan, direction, Dinantham
   assert.ok(calendarCalculationWorkerSource.includes('calculateAhasRatriPramana(p.sunrise,p.sunset,nextSunrise,actualDaySeconds,actualNightSeconds)'));
   assert.ok(calendarCalculationWorkerSource.includes("offsetMinutesAt(input.timezone,nextDate,'12:00')"));
 });
-
-
 test('Calendar Date Details uses one green hierarchy with paired Panchang values and balanced lower cards', () => {
   assert.match(calendarThemeCssSource, /\.cal-details-summary\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:10px/);
   assert.match(calendarThemeCssSource, /\.cal-details-summary>article\{[^}]*justify-content:center;[^}]*text-align:left/);
@@ -989,7 +929,6 @@ test('Calendar Date Details uses one green hierarchy with paired Panchang values
   assert.ok(calendarThemeCssSource.includes('smv-calendar-event-date{color:#52645a;font-weight:400}'), 'Date values remain regular-weight neutral text.');
   assert.ok(calendarThemeCssSource.includes('nalla-neram-time{color:#00c853;font-weight:700}'), 'Nalla Neram time alone uses bright green in bold.');
 });
-
 test('Calendar date/time selection defaults to local sunrise and recalculates using the chosen time', () => {
   assert.ok(dailyCalendarSource.includes('class="cal-date-time-fields"'), 'Date and Time must share one grouped control with Time directly below Date.');
   assert.ok(dailyCalendarSource.includes("L('Time','நேரம்')"), 'The separate Time label must be localized.');
@@ -999,7 +938,6 @@ test('Calendar date/time selection defaults to local sunrise and recalculates us
   assert.ok(calendarCalculationWorkerSource.includes("if(kind==='sunrise'){result=solarNoaa(input.date,input.lat,input.lon,input.utcOffsetMinutes,true);}"), 'The worker must calculate sunrise from the selected date and location.');
   assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar .cal-date-time-fields{display:grid;grid-template-columns:minmax(0,1fr)'), 'The time control must remain directly below the date on desktop and mobile.');
 });
-
 test('SMV CALENDAR daily Panchang and Hora follow the green result hierarchy', () => {
   assert.match(horoscopeRendererSource, /const calendarPresentation = rootId === 'calDaily';/);
   assert.ok(horoscopeRendererSource.includes("const raw=String(v??'—').trim();const m=raw.match(/^(\\d{4})-(\\d{2})-(\\d{2})[ T](\\d{2}):(\\d{2})/);"), 'Daily Panchang event ranges accept ISO 8601 T separators as well as date-space-time values.');
@@ -1030,18 +968,15 @@ test('SMV CALENDAR daily Panchang and Hora follow the green result hierarchy', (
   assert.match(sharedHoroscopeCssSource, /event-time:not\(\.smv-calendar-neutral-date-time\)/);
   assert.match(sharedHoroscopeCssSource, /hora-time:not\(\.smv-calendar-neutral-time\)/);
   assert.match(sharedHoroscopeCssSource, /transit-table-degree:not\(\.smv-calendar-degree-normal\)/);
-  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261119-horoscope-four-chart-planet-layout-v1/);
-  assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261119-horoscope-four-chart-planet-layout-v1/);
+  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261119-horoscope-four-chart-planet-layout-v2/);
+  assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261119-horoscope-four-chart-planet-layout-v2/);
   const releases = [astroServiceWorkerSource, horoscopeServiceWorkerSource, calendarWorkerSource]
     .map(source => source.match(/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '([^']+)' : '([^']+)';/));
   assert.ok(releases.every(Boolean), 'All three service workers must define the synchronized release marker.');
   assert.equal(new Set(releases.map(match => match[1])).size, 1);
   assert.equal(new Set(releases.map(match => match[2])).size, 1);
-  assert.equal(releases[0][1], '20261119-horoscope-four-chart-planet-layout-v1');
-  assert.equal(releases[0][2], '20261119-horoscope-four-chart-planet-layout-v1');
+   assert.ok(releases[0][1] && releases[0][2], 'Generated Pages.dev and production cache release IDs are present.');
 });
-
-
 test('Amirthadi Yoga results each occupy a natural left/right card beside the Tamil date', () => {
   assert.match(dailyCalendarSource, /const yogaCardsHtml=yogaSegments\.length\?yogaSegments\.map/);
   assert.ok(dailyCalendarSource.includes("class=\"cal-day-yoga-cards\" data-yoga-count=\"'+yogaSegments.length+'\">'+yogaCardsHtml+'</div>'"), 'The Yoga count container renders only real Yoga cards.');
@@ -1051,7 +986,6 @@ test('Amirthadi Yoga results each occupy a natural left/right card beside the Ta
   assert.doesNotMatch(dailyCalendarSource, /cal-empty-yoga-card|cal-empty-yoga-slot/);
   assert.match(dailyCalendarSource, /class="cal-day-yoga-card cal-thyajyam-card is-inauspicious"/);
 });
-
 test('Amirthadi Yoga and Thyajyam keep a compact visual rhythm without verbose notes', () => {
   assert.match(calendarThemeCssSource, /cal-amirthadi-yoga-card\{gap:2px;padding:8px 10px;border-top/);
   assert.match(calendarThemeCssSource, /cal-yoga-segment\{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:2px/);
@@ -1064,7 +998,6 @@ test('Amirthadi Yoga and Thyajyam keep a compact visual rhythm without verbose n
   assert.ok(calendarThemeCssSource.includes('#smvDailyCalendar .cal-chandrashtama{'), 'The main Chandrashtama layer has a flat, borderless presentation rule.');
   assert.equal(dailyCalendarCssSource.split('.cal-summary article:not(.cal-chandrashtama):not(.cal-chandra-window),.cal-planets article').length - 1,3, 'Chandrashtama is excluded from every generic summary-card border/padding rule.');
 });
-
 test('Calendar Daily Panchang values are integrated before Nakshatra Thyajyam without a date-only card', () => {
   assert.match(dailyCalendarSource, /L\('Daily Panchang','தினசரி பஞ்சாங்கம்'\)/);
   assert.match(dailyCalendarSource, /id="calPanchangSource" hidden aria-hidden="true"/);
@@ -1073,7 +1006,8 @@ test('Calendar Daily Panchang values are integrated before Nakshatra Thyajyam wi
   assert.match(dailyCalendarSource, /row\.cells\?\.\[0\]\?\.textContent\?\.trim\(\)!==L\('Date','தேதி'\)/);
   assert.match(horoscopeRendererSource, /const calendarPanchangSlot=calendarPresentation\?document\.getElementById\('calPanchangSource'\):null/);
   assert.match(horoscopeRendererSource, /if\(calendarPanchangSlot\)calendarPanchangSlot\.innerHTML=dailyTable/);
-  assert.match(horoscopeRendererSource, /let h=calendarPanchangSlot\?'':/);
+  assert.match(horoscopeRendererSource, /let h='';\s*if\(calendarPresentation\)h\+=/);
+  assert.match(horoscopeRendererSource, /data-smv-screen-only="daily-hora"/);
   assert.match(calendarThemeCssSource, /\.cal-panchang-detail-grid/);
   assert.match(calendarThemeCssSource, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(calendarThemeCssSource, /\.cal-panchang-detail-item>small/);

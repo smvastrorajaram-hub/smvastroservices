@@ -3,7 +3,7 @@
    Authentication, account data, APIs, payments and consultation operations stay network-only.
    Location search keeps its existing independent online/offline cache. */
 const IS_PAGES_DEV_HOST = self.location.hostname === 'smvastroservices.pages.dev' || self.location.hostname.endsWith('.smvastroservices.pages.dev') || self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
-const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261120-north-east-chart-containment-v1' : '20261120-north-east-chart-containment-v1';
+const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? 'smv-0b1408d2b309428a' : 'smv-dc7c3c159c6b5b91';
 const SMV_LOCATION_CACHE='smv-shared-india-places';
 const APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE;
 const PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['./pages-dev-host-independence.js','./pages-dev-apk-pwa-icons.js']:[];
@@ -23,7 +23,7 @@ const APP_SHELL_FILES=[
   ...PAGES_DEV_HELPER_FILES,
   ...WALLET_OFFER_SVG_ASSETS,
   './main-location-search.js','./question-place-search.mjs',
-  './horoscope/offline/places/place-search.mjs','./horoscope/offline/places/india-manifest.json','./horoscope/offline/places/place-display.mjs',
+  './horoscope/offline/places/place-search.mjs','./horoscope/offline/places/india-manifest.json','./horoscope/offline/places/place-display.mjs','./horoscope/offline/places/tamil-transliteration.mjs',
   './assets/pwa-astro-192.svg','./assets/pwa-astro-512.png','./assets/pwa-astro-maskable-192.svg','./assets/pwa-astro-maskable.svg',
   './assets/android-app-icon-astro.svg','./assets/android-app-icon-astro-source.png',
   './assets/favicon-astro.png','./assets/favicon-astro.ico',

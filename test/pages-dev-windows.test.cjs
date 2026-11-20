@@ -155,13 +155,13 @@ test('Pages.dev HOROSCOPE reuses the existing header CSS without requesting a mi
   const calendarHtml = read('public/horoscope/calendar/index.html');
 
   assert.doesNotMatch(html, /header-layout\.css/i);
-  assert.match(html, /horoscope\.css\?v=20261119-horoscope-four-chart-planet-layout-v1/);
+  assert.match(html, /horoscope\.css\?v=[^"']+/);
   assert.match(html, /class="smv-horoscope-brand-header"/);
   assert.match(html, /class="smv-horoscope-controls-row"/);
   assert.match(css, /\.smv-horoscope-brand-header\{/);
   assert.match(css, /\.smv-horoscope-controls-row/);
   assert.match(worker, /['"]\.\/horoscope\.css['"]/);
-  assert.match(calendarHtml, /\.\.\/horoscope\.css\?v=20261119-horoscope-four-chart-planet-layout-v1/);
+  assert.match(calendarHtml, /\.\.\/horoscope\.css\?v=[^"']+/);
 });
 
 test('all three PWA cache releases are synchronized for Pages.dev and .in content updates', () => {
@@ -175,16 +175,9 @@ test('all three PWA cache releases are synchronized for Pages.dev and .in conten
     assert.ok(match, 'every app service worker must select a host-specific cache release');
     return { pages: match[1], legacy: match[2] };
   });
-  assert.deepEqual(releases.map(item => item.pages), [
-    '20261119-horoscope-four-chart-planet-layout-v1',
-    '20261119-horoscope-four-chart-planet-layout-v1',
-    '20261119-horoscope-four-chart-planet-layout-v1'
-  ]);
-  assert.deepEqual(releases.map(item => item.legacy), [
-    '20261119-horoscope-four-chart-planet-layout-v1',
-    '20261119-horoscope-four-chart-planet-layout-v1',
-    '20261119-horoscope-four-chart-planet-layout-v1'
-  ]);
+  assert.equal(new Set(releases.map(item => item.pages)).size, 1, 'All three Pages.dev cache releases must match.');
+  assert.equal(new Set(releases.map(item => item.legacy)).size, 1, 'All three production cache releases must match.');
+  assert.ok(releases.every(item => item.pages && item.legacy), 'Both cache release IDs must be present.');
 });
 test('each installer creates its own 256x256 Windows icon', () => {
   for (const app of APPS) {

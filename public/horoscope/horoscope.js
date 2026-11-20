@@ -577,7 +577,7 @@
     }).join('');
     result.innerHTML=`<div class="card" style="background:linear-gradient(180deg,#fffaf0,#fff)">
       <div class="home-rule"><span>☾</span><span>தமிழ் ஜாதக கணக்கீடு</span><span>☀</span></div>
-      <h2 style="text-align:center">${esc(name)}</h2>
+      <h2 class="smv-horoscope-person-name" style="text-align:center" data-name-ta="${esc(name)}" data-name-en="${esc($('englishAstroName')?.value||name)}">${esc(name)}</h2>
       <p class="small" style="text-align:center">பிறந்த தேதி: ${esc(fmtDate(d.birth.date))} · நேரம்: ${esc(d.birth.time)} · பிறந்த இடம்: ${esc($('tamilBirthPlace')?.value||d.birth?.place||'—')}</p>
       <div class="grid" style="margin-top:15px">
         <div class="stat"><span class="small">🔱 லக்னம்</span><p><b>${esc(d.lagna.rasi)}</b> · ${esc(d.lagna.degree)}</p><p class="small">${esc(d.lagna.nakshatra)} · பாதம் ${d.lagna.pada}<br>நெடுவரை: ${Number(d.lagna.longitude).toFixed(4)}°</p></div>
@@ -715,8 +715,8 @@
       bhOrder.forEach((si,pos)=>{
         if(si===null){ if(pos===5) h+=`<div class="south-chart-center">Bhava</div>`; return; }
         const chartLang=getHoroscopeLang();
-        const houseLabels=bhavaHouseBySign[si].map(n=>`<div class="bhava-cusp"><span class="bhava-house-no">${romanHouse(n)}</span></div>`).join('');
-        const ps=planetsByBhavaSign[si].map(p=>`<div class="planet-line"><span class="planet-glyph">${esc(shortPlanetName(p.name,chartLang))}</span></div>`).join('');
+        const houseLabels=bhavaHouseBySign[si].map(n=>`<div class="bhava-cusp"><span class="bhava-house-no" data-bhava-house="${n}" data-bhava-sign="${si+1}">${romanHouse(n)}</span></div>`).join('');
+        const ps=planetsByBhavaSign[si].map(p=>`<div class="planet-line" data-bhava-house="${Number(p.bhava)}"><span class="planet-glyph">${esc(shortPlanetName(p.name,chartLang))}</span></div>`).join('');
         const bhavaPlanetCount=planetsByBhavaSign[si].length;
         const bhavaCompactClass=bhavaPlanetCount>=3?' smv-chart-cell-compact':'';
         h+=`<div class="south-rasi-cell bhava-rasi-cell${bhavaCompactClass}" data-chart-planet-count="${bhavaPlanetCount}">${houseLabels}${ps}</div>`;
@@ -1907,7 +1907,9 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
     let reportContext={};try{reportContext=window.__smvGetReportContext?.('advanced_analysis')||{}}catch(_e){}
     const useEnglish=rootId==='englishAdvancedAstrology',dom=id=>document.getElementById((useEnglish?'english':'tamil')+id);
     const contextWork=String(currentWork||reportContext.currentWork||dom('CurrentWork')?.value||'').trim(),contextMarital=String(maritalStatus||reportContext.maritalStatus||dom('MaritalStatus')?.value||'').trim(),contextResidence=String(currentResidence||reportContext.currentResidence||dom('CurrentResidence')?.value||'').trim(),contextBirthPlace=String(birthPlace||reportContext.birthPlace||dom('BirthPlace')?.value||'').trim();
-    const payload={date,time,lat:Number(lat),lon:Number(lon),height:0,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60,houseSystem:'S',language:lang,name:String(name||''),birthPlace:contextBirthPlace,currentWork:contextWork,maritalStatus:contextMarital,currentResidence:contextResidence};
+    const placeField=dom('BirthPlace');
+    const birthMetadata={gender:String(reportContext.gender||document.querySelector('input[name="tamilBirthGender"]:checked')?.value||''),name:String(reportContext.name||name||'').trim(),village:String(reportContext.village||dom('BirthVillage')?.value||'').trim(),motherName:String(reportContext.motherName||dom('MotherName')?.value||'').trim(),fatherName:String(reportContext.fatherName||dom('FatherName')?.value||'').trim(),placeName:String(reportContext.placeName||placeField?.dataset?.name||''),district:String(reportContext.district||placeField?.dataset?.admin2||''),state:String(reportContext.state||placeField?.dataset?.admin1||''),country:String(reportContext.country||placeField?.dataset?.country||''),timezone:String(reportContext.timezone||placeField?.dataset?.timezone||dom('BirthTimezone')?.value||'Asia/Kolkata'),birthPlace:contextBirthPlace};
+    const payload={date,time,lat:Number(lat),lon:Number(lon),height:0,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60,houseSystem:'S',language:lang,name:String(name||''),birthPlace:contextBirthPlace,currentWork:contextWork,maritalStatus:contextMarital,currentResidence:contextResidence,timezone:birthMetadata.timezone};
     // Keep the Advanced host hidden until the first advanced response is ready.
     // This prevents an old/partial module from flashing below the fresh horoscope.
     root.classList.add('hidden');
@@ -2009,7 +2011,9 @@ try{
       if(!isCurrent()) return;
 
       // Prepare every section first; do not reveal any individual result.
-      if(birthSlot) birthSlot.innerHTML=renderBirthTimePanchang(bp||{requested:{date,time}},lang,date,time);
+      const {buildSubhaJanana}=await import('./subha-janana.mjs');
+      const subhaJanana=await buildSubhaJanana(bp||{requested:{date,time}},fullChart,{...birthMetadata,date,time,lat:Number(lat),lon:Number(lon)},lang);
+      if(birthSlot) birthSlot.innerHTML=renderBirthTimePanchang(bp||{requested:{date,time}},lang,date,time,subhaJanana);
       if(bp) mountBhavaSpecialFeatures({...((chart&&typeof chart==='object')?chart:{}), ...((bp&&typeof bp==='object')?bp:{})},bp,rootId);
 
       window.__smvAdvancedDataByRoot=window.__smvAdvancedDataByRoot||{};
@@ -2198,11 +2202,14 @@ try{
   window.__smvLoadBasicPanchang=async function(payload,root){
     const now=new Date(),offset=Number(payload.utcOffsetMinutes??330),local=new Date(now.getTime()+offset*60000),dailyDate=local.toISOString().slice(0,10),dailyTime=local.toISOString().slice(11,16),daily={...payload,date:dailyDate,time:dailyTime};
     await window.SMVEngineReady;const bp=window.SMVOffline.panchang(payload);const dp=window.SMVOffline.panchang(daily),trans=window.SMVOffline.transit(daily);
-    const slot=root.querySelector('#birthTimePanchangSlot');if(slot)slot.innerHTML=renderBirthTimePanchang(bp,payload.language,payload.date,payload.time);
+    const {buildSubhaJanana}=await import('./subha-janana.mjs');
+    const birthMetadata=window.__smvGetReportContext?.('advanced_analysis')||{};
+    const subhaJanana=await buildSubhaJanana(bp,root.__smvBirthChart||{},{...payload,...birthMetadata,date:payload.date,time:payload.time,lat:payload.lat,lon:payload.lon,timezone:birthMetadata.timezone||payload.timezone},payload.language);
+    const slot=root.querySelector('#birthTimePanchangSlot');if(slot)slot.innerHTML=renderBirthTimePanchang(bp,payload.language,payload.date,payload.time,subhaJanana);
     const transitSlot=root.querySelector('.daily-transit-panchang-slot');if(transitSlot)renderTransitPanchang(trans,dp,payload.language,transitSlot.id);
-    root.__smvBasicData={birthPanchang:bp,dailyPanchang:dp,transit:trans,referenceDate:dailyDate,referenceTime:dailyTime,language:payload.language==='en'?'en':'ta'};
+    root.__smvBasicData={birthPanchang:bp,dailyPanchang:dp,transit:trans,subhaJanana,referenceDate:dailyDate,referenceTime:dailyTime,language:payload.language==='en'?'en':'ta'};
   };
-function renderBirthTimePanchang(p,lang,fallbackDate='',fallbackTime=''){
+function renderBirthTimePanchang(p,lang,fallbackDate='',fallbackTime='',subhaJananaHtml=''){
     const ta=lang==='ta',
       enM=['January','February','March','April','May','June','July','August','September','October','November','December'],
       taM=['ஜனவரி','பிப்ரவரி','மார்ச்','ஏப்ரல்','மே','ஜூன்','ஜூலை','ஆகஸ்ட்','செப்டம்பர்','அக்டோபர்','நவம்பர்','டிசம்பர்'];
@@ -2299,9 +2306,6 @@ function renderBirthTimePanchang(p,lang,fallbackDate='',fallbackTime=''){
 
     const invocation=ta?'ஓம் ஸ்ரீ மதுரை வீரன் துணை':'Om Sri Madurai Veeran Thunai';
 
-    const summarySentence=ta
-      ?`${e(tamilDate)} (${e(text)}) அன்று ${e(tm||'—')} மணிக்கு, ${e(vara)} வாரத்தில், ${e(tithi)} ${e(paksha)} திதி, ${e(nak)} நட்சத்திரம் ${e(pada)}-ஆம் பாதம், ${e(yoga)} யோகம், ${e(karana)} கரணம், ${e(sunSign)} சூரிய ராசி மற்றும் ${e(moonSign)} சந்திர ராசி நிலையில் பிறப்பு பஞ்சாங்கம் அமைந்துள்ளது.`
-      :`For ${e(tamilDate)} (${e(text)}) at ${e(tm||'—')}, the birth Panchang falls on ${e(vara)}, with ${e(tithi)} ${e(paksha)} Tithi, ${e(nak)} Nakshatra Pada ${e(pada)}, ${e(yoga)} Yoga, ${e(karana)} Karana, Sun in ${e(sunSign)} and Moon in ${e(moonSign)}.`;
 
     const prelude=`<div class="smv-birth-prelude">
       <div class="smv-ganesha-prayer">
@@ -2312,28 +2316,12 @@ function renderBirthTimePanchang(p,lang,fallbackDate='',fallbackTime=''){
         <div class="smv-prayer-meaning"><b>Meaning:</b> O Lord Ganesha, with the curved trunk and mighty form, shining like a crore suns, remove all obstacles from all our endeavors and bless us with success always.</div>
       </div>
       <div class="smv-invocation">${e(invocation)}</div>
+      ${subhaJananaHtml||''}
       <div class="smv-year-reckoning">
         <h3>📜 ${ta?'வருட-வர்த்தமானங்கள்':'Traditional Year Reckoning'}</h3>
         <div class="smv-year-grid">${eraRows.map(r=>`<div><b>${e(r[0])}</b><span>${e(r[1])}</span></div>`).join('')}</div>
       </div>
-      <div class="smv-birth-summary">
-        <h3>🕉️ ${ta?'பிறப்பு பஞ்சாங்கச் சுருக்கம்':'Birth Panchang Summary'}</h3>
-        <div class="smv-summary-grid">
-          <div><b>${ta?'தமிழ் நாள்':'Tamil Date'}</b><span>${e(tamilDate)}</span></div>
-          <div><b>${ta?'பிறந்த நேரம்':'Birth Time'}</b><span>${e(tm||'—')}</span></div>
-          <div><b>${ta?'வாரம்':'Vara'}</b><span>${e(vara)}</span></div>
-          <div><b>${ta?'திதி / பக்ஷம்':'Tithi / Paksha'}</b><span>${e(tithi)} · ${e(paksha)}</span></div>
-          <div><b>${ta?'நட்சத்திரம் / பாதம்':'Nakshatra / Pada'}</b><span>${e(nak)} · ${e(pada)}</span></div>
-          <div><b>${ta?'யோகம்':'Yoga'}</b><span>${e(yoga)}</span></div>
-          <div><b>${ta?'கரணம்':'Karana'}</b><span>${e(karana)}</span></div>
-          <div><b>${ta?'சூரிய ராசி':'Sun Sign'}</b><span>${e(sunSign)}</span></div>
-          <div><b>${ta?'சந்திர ராசி':'Moon Sign'}</b><span>${e(moonSign)}</span></div>
-          <div><b>${ta?'சூரிய உதயம்':'Sunrise'}</b><span class="panchang-time-result">${e(p?.sunrise)}</span></div>
-          <div><b>${ta?'சூரிய அஸ்தமனம்':'Sunset'}</b><span class="panchang-time-result">${e(p?.sunset)}</span></div>
-          <div><b>${ta?'அயனாம்சம்':'Ayanamsa'}</b><span>${e(formatAyanamsa(p?.ayanamsa))}</span></div>
-        </div>
-        <p class="smv-panchang-sentence">${summarySentence}</p>
-      </div>
+
     </div>`;
 
     const birthRows=[
@@ -2421,8 +2409,8 @@ function renderTransitPanchang(t,p,lang,rootId,horaOverride=null){
     const dailyTable=`<div class="adv-table-wrap"><table class="data-table panchang-data-table"><thead><tr><th>${ta?'விவரம்':'Details'}</th><th>${ta?'முடிவு':'Result'}</th></tr></thead><tbody>${dailyRows.map((r,i)=>`<tr${rootId==='calDaily'&&i<=7?' class="smv-calendar-primary-result-row"':''}><td><b>${r[0]}</b></td><td>${r[1]}</td></tr>`).join('')}</tbody></table></div>`;
     const calendarPanchangSlot=calendarPresentation?document.getElementById('calPanchangSource'):null;
     if(calendarPanchangSlot)calendarPanchangSlot.innerHTML=dailyTable;
-    let h=calendarPanchangSlot?'':`<div class="transit-panchang-grid"><div class="card panchang-card" data-smv-screen-only="daily-panchang"><h3>📅 ${ta?'தினசரி பஞ்சாங்கம்':'Daily Panchang'}</h3><div class="small">${ta?'திருக்கணித பஞ்சாங்க கணிப்பு':'Thirukanitha Panchang calculation'}</div>${dailyTable}</div></div>`;
-    h+=`<div class="${calendarPresentation?'hora-card':'card hora-card'}" data-smv-screen-only="daily-hora"><h3 class="cal-centered-heading">🕐 ${ta?'தினசரி ஹோரா':'Daily Hora'}</h3><div class="hora-section">${horaHtml}</div></div>`;
+    let h='';
+    if(calendarPresentation)h+='<div class="hora-card" data-smv-screen-only="daily-hora"><h3 class="cal-centered-heading">🕐 '+(ta?'தினசரி ஹோரா':'Daily Hora')+'</h3><div class="hora-section">'+horaHtml+'</div></div>';
     const signIndex=v=>{const en=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];const taR=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];let i=en.indexOf(String(v));return i>=0?i:taR.indexOf(String(v));};
     const short={Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa',Rahu:'Ra',Ketu:'Ke','சூரியன்':'சூ','சந்திரன்':'சந்','செவ்வாய்':'செ','புதன்':'பு','குரு':'கு','சுக்கிரன்':'சு','சனி':'ச','ராகு':'ரா','கேது':'கே'};
     const bySign=Array.from({length:12},()=>[]); planets.forEach(x=>{const i=signIndex(x.rasi);if(i>=0)bySign[i].push(x);});
@@ -2431,7 +2419,7 @@ function renderTransitPanchang(t,p,lang,rootId,horaOverride=null){
     const maxPlanetsPerSign=Math.max(0,...bySign.map(list=>list.length));
     const transitChartDensity=maxPlanetsPerSign>=4?' transit-chart-dense transit-chart-dense-4plus':maxPlanetsPerSign>=3?' transit-chart-dense':'';
     const lagnaIndex=signIndex(t?.lagna?.rasi); const order=[11,0,1,2,10,null,null,3,9,null,null,4,8,7,6,5];
-    let transitChart=''; order.forEach((si,pos)=>{if(si===null){if(pos===5)transitChart+=`<div class="south-chart-center">${calendarPresentation?(ta?'கோச்சாரம்':'Transit'):'Transit Chart'}</div>`;return;}const isLagna=si===lagnaIndex;const houseNo=lagnaIndex>=0?((si-lagnaIndex+12)%12)+1:null;const ps=bySign[si].map(x=>{const enName=transitPlanetEn(x.name);const nm=ta?(short[x.name]||short[fmt(x.name)]||esc2(fmt(x.name))):(short[enName]||esc2(enName));const isCombust=Boolean(x?.combustion??x?.strength?.combustion);const c=isCombust?`<span class="rasi-status-marker status-c">(${calendarPresentation&&ta?'அ':'C'})</span>`:'';const isNode=['Rahu','Ketu'].includes(enName);const isRetrograde=Boolean(x.retrograde||isNode);const r=isRetrograde?`<span class="rasi-status-marker status-r">(${calendarPresentation&&ta?'வ':'R'})</span>`:'';const lon=Number(x.longitude??x.lon??x.degreeLongitude);let deg='';if(Number.isFinite(lon)){const d=((lon%30)+30)%30,dd=Math.floor(d);deg=`<span class="rasi-degree transit-degree">${dd}°</span>`;}else if(x.degree!=null&&String(x.degree).trim()){deg=`<span class="rasi-degree transit-degree">${esc2(x.degree)}</span>`;}return `<div class="planet-line"><span class="planet-glyph"><span class="planet-short">${nm}</span>${c?'<span class="planet-status-slot">'+c+'</span>':''}${r?'<span class="planet-status-slot">'+r+'</span>':''}${deg}</span></div>`;}).join('');const transitPlanetCount=bySign[si].length;const compactPlanetCell=transitPlanetCount>=3;transitChart+=`<div class="south-rasi-cell${compactPlanetCell?' south-rasi-cell-compact smv-chart-cell-compact':''}" data-transit-planet-count="${transitPlanetCount}" data-chart-planet-count="${transitPlanetCount}"><div class="dynamic-rasi-number">${isLagna?'':(houseNo??'')}</div>${isLagna?'<div class="lagna">'+(document.documentElement.lang==='ta'?'ல':'As')+'</div>':''}<div class="transit-cell-planets${compactPlanetCell?' transit-cell-planets-compact':''}">${ps}</div></div>`;});
+    let transitChart=''; order.forEach((si,pos)=>{if(si===null){if(pos===5)transitChart+=`<div class="south-chart-center">${ta?'கோச்சாரம்':'Transit'}</div>`;return;}const isLagna=si===lagnaIndex;const houseNo=lagnaIndex>=0?((si-lagnaIndex+12)%12)+1:null;const ps=bySign[si].map(x=>{const enName=transitPlanetEn(x.name);const nm=ta?(short[x.name]||short[fmt(x.name)]||esc2(fmt(x.name))):(short[enName]||esc2(enName));const isCombust=Boolean(x?.combustion??x?.strength?.combustion);const c=isCombust?`<span class="rasi-status-marker status-c">(${calendarPresentation&&ta?'அ':'C'})</span>`:'';const isNode=['Rahu','Ketu'].includes(enName);const isRetrograde=Boolean(x.retrograde||isNode);const r=isRetrograde?`<span class="rasi-status-marker status-r">(${calendarPresentation&&ta?'வ':'R'})</span>`:'';const lon=Number(x.longitude??x.lon??x.degreeLongitude);let deg='';if(Number.isFinite(lon)){const d=((lon%30)+30)%30,dd=Math.floor(d);deg=`<span class="rasi-degree transit-degree">${dd}°</span>`;}else if(x.degree!=null&&String(x.degree).trim()){deg=`<span class="rasi-degree transit-degree">${esc2(x.degree)}</span>`;}return `<div class="planet-line"><span class="planet-glyph"><span class="planet-short">${nm}</span>${c?'<span class="planet-status-slot">'+c+'</span>':''}${r?'<span class="planet-status-slot">'+r+'</span>':''}${deg}</span></div>`;}).join('');const transitPlanetCount=bySign[si].length;const compactPlanetCell=transitPlanetCount>=3;transitChart+=`<div class="south-rasi-cell${compactPlanetCell?' south-rasi-cell-compact smv-chart-cell-compact':''}" data-transit-planet-count="${transitPlanetCount}" data-chart-planet-count="${transitPlanetCount}"><div class="dynamic-rasi-number">${isLagna?'':(houseNo??'')}</div><div class="transit-cell-planets${compactPlanetCell?' transit-cell-planets-compact':''}">${isLagna?'<div class="planet-line transit-lagna-line"><span class="planet-glyph"><span class="planet-short" data-transit-lagna="true">'+(document.documentElement.lang==='ta'?'ல':'As')+'</span></span></div>':''}${ps}</div></div>`;});
     const dms=v=>{const n=Number(v);if(!Number.isFinite(n))return esc2(v??'—');let d=((n%30)+30)%30,dd=Math.floor(d),mf=(d-dd)*60,mm=Math.floor(mf),ss=Math.round((mf-mm)*60);if(ss>=60){ss=0;mm+=1}if(mm>=60){mm=0;dd=(dd+1)%30}return `${String(dd).padStart(2,'0')}° ${String(mm).padStart(2,'0')}′ ${String(ss).padStart(2,'0')}″`;};
     const transitRows=[];
     if(t?.lagna){const ll=Number(t.lagna.longitude??t.lagna.lon??t.lagna.degreeLongitude??t.lagna.degree);transitRows.push({rank:-1,name:calendarPresentation?(ta?'லக்னம்':'Ascendant'):'Asc',rasi:transitRasiEn(t.lagna.rasi),degree:dms(ll),nak:transitNakEn(t.lagna.nakshatra?.name||t.lagna.nakshatra),pada:t.lagna.nakshatra?.pada||t.lagna.pada||'—'});}
@@ -2445,8 +2433,8 @@ function renderTransitPanchang(t,p,lang,rootId,horaOverride=null){
     // response can arrive before Transit; appending both versions created
     // duplicate Daily Panchang / Planetary Transit cards on mobile.
     box.innerHTML=h;
-    // Keep Daily Panchang + Daily Hora in their original slot, but place
-    // Transit Chart + Transit Planetary Positions immediately before Vimsottari Dasa.
+    // Calendar Daily Panchang is integrated from its hidden source slot; Daily Hora
+    // is rendered only for Calendar. Keep Transit before Vimsottari Dasa in both reports.
     const reportHost=box.closest('.horoscope-result')||box.parentElement;
     const transitTarget=reportHost?.querySelector?.('.transit-before-vimsottari');
     const transitCard=box.querySelector('.transit-card');
@@ -2941,6 +2929,8 @@ function renderTransitPanchang(t,p,lang,rootId,horaOverride=null){
     const lat=$('tamilLat')?.value||'', lon=$('tamilLon')?.value||'';
     if(!date||!time){alert('பிறந்த தேதி மற்றும் பிறந்த நேரத்தை உள்ளிடவும்.');return;}
    const placeValue=String($('tamilBirthPlace')?.value||'').trim(),currentWork=String($('tamilCurrentWork')?.value||'').trim(),maritalStatus=String($('tamilMaritalStatus')?.value||'').trim(),currentResidence=String($('tamilCurrentResidence')?.value||'').trim();
+   const birthGender=String(document.querySelector('input[name="tamilBirthGender"]:checked')?.value||'').trim();
+   if(!['male','female'].includes(birthGender)){alert('பாலினத்தைத் தேர்வு செய்யவும்.');return;}
 
 if(!placeValue){
   alert('பிறந்த இடத்தை உள்ளிடவும்.');
@@ -2988,12 +2978,20 @@ if(lat===''||lon===''){
       if(!zone){zone=await approximateTimezoneAt(lat,lon);if($('tamilBirthTimezone'))$('tamilBirthTimezone').value=zone;}
       const historicalOffset=offsetMinutesAt(zone,date,normalizedTime);
       if($('birthUtcOffset'))$('birthUtcOffset').value=String(historicalOffset/60);
-      window.__smvSetReportContext?.('advanced_analysis',{date,time:normalizedTime,lat,lon,birthPlace:placeValue,currentWork,maritalStatus,currentResidence,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60,language:getHoroscopeLang()});
+      if($('tamilBirthUtcOffsetDisplay'))$('tamilBirthUtcOffsetDisplay').value=String(historicalOffset/60);
+      const {localizeTamilText}=await import('./offline/places/tamil-transliteration.mjs');
+      for(const [sourceId,targetId] of [['tamilAstroName','englishAstroName'],['tamilBirthVillage','englishBirthVillage'],['tamilMotherName','englishMotherName'],['tamilFatherName','englishFatherName']]){
+        const source=document.getElementById(sourceId),target=document.getElementById(targetId);
+        if(source&&target)target.value=localizeTamilText(source.value,'en');
+      }
+      const tamilPlace=$('tamilBirthPlace');
+      window.__smvSetReportContext?.('advanced_analysis',{date,time:normalizedTime,lat,lon,birthPlace:placeValue,currentWork,maritalStatus,currentResidence,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60,language:getHoroscopeLang(),gender:birthGender,name:String($('tamilAstroName')?.value||'').trim(),village:String($('tamilBirthVillage')?.value||'').trim(),motherName:String($('tamilMotherName')?.value||'').trim(),fatherName:String($('tamilFatherName')?.value||'').trim(),placeName:String(tamilPlace?.dataset?.name||''),district:String(tamilPlace?.dataset?.admin2||''),state:String(tamilPlace?.dataset?.admin1||''),country:String(tamilPlace?.dataset?.country||''),timezone:zone});
       // Core pass needs only the natal chart. Advanced/Tajaka/Panchang/Transit/Dasa
       // are calculated once later, after access/gating is resolved.
       await window.SMVEngineReady;const core=await window.SMVOffline.full({date,time:normalizedTime,lat:Number(lat),lon:Number(lon),height:0,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60,houseSystem:'S',language:'ta',name:($('tamilAstroName')?.value||'').trim(),basicOnly:true});const d=core.chart;if(!d)throw new Error(core?.error||'Calculation failed');
       // Render the core horoscope into the hidden result container first.
       render(d);
+      if(resultBox)resultBox.__smvBirthChart=d;
       const advRoot=$('tamilAdvancedAstrology');
       if(loadAdvanced && advRoot && typeof window.__smvLoadAdvancedAstrology==='function'){
         const runAdvancedAfterAccess=async()=>{
@@ -3046,7 +3044,7 @@ if(lat===''||lon===''){
     if($('englishHoroscopeResult'))$('englishHoroscopeResult').innerHTML='';
     generate(true,fullReportLaunch);
   });
-  $('clearTamilHoroscope')?.addEventListener('click',()=>{['tamilAstroName','tamilDob','tamilTob','tamilBirthPlace','tamilNakshatra','tamilLat','tamilLon','tamilCurrentResidence'].forEach(id=>{if($(id))$(id).value='';});if($('tamilBirthPlace')){$('tamilBirthPlace').dataset.locationSelected='0';$('tamilBirthPlace').dataset.latitude='';$('tamilBirthPlace').dataset.longitude='';}if($('tamilRasi'))$('tamilRasi').value='மேஷம்';if($('tamilCurrentWork'))$('tamilCurrentWork').value='';if($('tamilMaritalStatus'))$('tamilMaritalStatus').value='';if($('tamilHoroscopeResult')){$('tamilHoroscopeResult').classList.add('hidden');$('tamilHoroscopeResult').innerHTML='';}if($('englishHoroscopeResult')){$('englishHoroscopeResult').classList.add('hidden');$('englishHoroscopeResult').innerHTML='';}});
+  $('clearTamilHoroscope')?.addEventListener('click',()=>{['tamilAstroName','tamilBirthVillage','tamilMotherName','tamilFatherName','tamilBirthUtcOffsetDisplay','tamilDob','tamilTob','tamilBirthPlace','tamilBirthTimezone','tamilNakshatra','tamilLat','tamilLon','tamilCurrentResidence'].forEach(id=>{if($(id))$(id).value='';});document.querySelectorAll('input[name="tamilBirthGender"]').forEach(input=>{input.checked=false;});if($('tamilBirthPlace')){const p=$('tamilBirthPlace');p.dataset.locationSelected='0';p.dataset.latitude='';p.dataset.longitude='';p.dataset.name='';p.dataset.admin2='';p.dataset.admin1='';p.dataset.country='';p.dataset.timezone='';p.dataset.timezoneSource='';}if($('tamilRasi'))$('tamilRasi').value='மேஷம்';if($('tamilCurrentWork'))$('tamilCurrentWork').value='';if($('tamilMaritalStatus'))$('tamilMaritalStatus').value='';if($('tamilHoroscopeResult')){$('tamilHoroscopeResult').classList.add('hidden');$('tamilHoroscopeResult').innerHTML='';}if($('englishHoroscopeResult')){$('englishHoroscopeResult').classList.add('hidden');$('englishHoroscopeResult').innerHTML='';}});
   // V149: expose horoscope helpers so the separate English section can safely
   // reuse the renderer without relying on JavaScript lexical scope from another IIFE.
   window.__smvHoroscopeEnglishDictionary = EN;
@@ -3054,5 +3052,5 @@ if(lat===''||lon===''){
   window.__smvBindHoroscopeInteractions = bindHoroscopeInteractions;
   window.__smvGenerateHoroscopeEngine=generate;
   window.__smvRenderCachedCore=render;
-  window.__smvRenderBasicSnapshot=(data,root,lang,birth)=>{const slot=root.querySelector('#birthTimePanchangSlot');if(slot)slot.innerHTML=renderBirthTimePanchang(data.birthPanchang,lang,birth.date,birth.time);const tr=root.querySelector('.daily-transit-panchang-slot');if(tr)renderTransitPanchang(data.transit,data.dailyPanchang,lang,tr.id);};
+  window.__smvRenderBasicSnapshot=async(data,root,lang,birth)=>{const {buildSubhaJanana}=await import('./subha-janana.mjs');const birthMetadata=window.__smvGetReportContext?.('advanced_analysis')||{};const subha=await buildSubhaJanana(data.birthPanchang,root.__smvBirthChart||{},{...birthMetadata,...birth},lang);const slot=root.querySelector('#birthTimePanchangSlot');if(slot)slot.innerHTML=renderBirthTimePanchang(data.birthPanchang,lang,birth.date,birth.time,subha);const tr=root.querySelector('.daily-transit-panchang-slot');if(tr)renderTransitPanchang(data.transit,data.dailyPanchang,lang,tr.id);};
 })();

@@ -118,7 +118,7 @@
 .south-indian-chart.smv-v342-north .smv-v342-cell[data-house="12"]{left:75%!important;top:9%!important}
 
 /* East corner triangle centres follow the fixed sign geometry. */
-.south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="2"]{left:24%!important;top:11%!important}
+.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-triangle-cell[data-sign="2"]{left:25.3%!important;top:8%!important;width:15%!important;max-height:16%!important}
 .south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-triangle-cell[data-sign="3"]{left:8.5%!important;top:24%!important;width:17%!important}
 .south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-triangle-cell[data-sign="3"] .smv-v342-planets{transform:scaleX(.94)!important}
 .south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="5"]{left:11%!important;top:76%!important}
@@ -221,4 +221,32 @@
 .south-indian-chart.smv-v342-north .smv-v342-cell.smv-chart-cell-compact .smv-v342-planets .planet-glyph *,
 .south-indian-chart.smv-v342-east .smv-v342-cell.smv-chart-cell-compact .smv-v342-planets .planet-glyph *{
  white-space:nowrap!important;max-width:none!important;
+}
+
+/* Bhava-only Roman labels are the first in-cell row, never floating above grahas. */
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-bhava-cell,
+.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-bhava-cell{
+ justify-content:flex-start!important;
+ padding-top:2px!important;
+ gap:1px!important;
+}
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-bhava-cell .smv-v342-house-number,
+.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-bhava-cell .smv-v342-house-number,
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-bhava-cell.smv-v342-triangle-cell .smv-v342-house-number,
+.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-bhava-cell.smv-v342-triangle-cell .smv-v342-house-number{
+ position:static!important;transform:none!important;
+ top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;
+ display:block!important;align-self:center!important;flex:0 0 auto!important;
+ width:auto!important;max-width:100%!important;min-width:0!important;
+ margin:0 0 2px!important;padding:0 2px!important;
+ color:#6f4d2c!important;background:#fffdf7!important;
+ border-radius:2px!important;text-align:center!important;
+ font-size:clamp(9px,1.7vw,11px)!important;
+ font-weight:900!important;line-height:1.05!important;
+ white-space:normal!important;overflow-wrap:anywhere!important;
+ z-index:auto!important;pointer-events:none!important;
+}
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-bhava-cell .smv-v342-planets,
+.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-bhava-cell .smv-v342-planets{
+ flex:0 1 auto!important;min-height:0!important;max-height:100%!important;
 }

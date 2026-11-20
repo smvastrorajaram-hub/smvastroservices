@@ -13,6 +13,25 @@
  const safe=x=>['south','north','east'].includes(x)?x:'south';
  const isTa=()=>document.documentElement.lang==='ta'||document.body.classList.contains('tamil-mode');
  const roman=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+ const houseNumber=value=>{
+  const raw=String(value??'').trim().toUpperCase();
+  if(/^\d{1,2}$/.test(raw)){const n=Number(raw);return n>=1&&n<=12?n:0;}
+  const index=roman.indexOf(raw);return index>=0?index+1:0;
+ };
+ const romanHouse=house=>roman[Number(house)-1]||'—';
+ function normalizeSouthBhavaHouseLabels(chart){
+  for(const label of chart.querySelectorAll('.bhava-house-no')){
+   const house=houseNumber(label.dataset.bhavaHouse)||houseNumber(label.textContent);
+   if(house){label.dataset.bhavaHouse=String(house);label.dataset.bhavaRoman=romanHouse(house);label.textContent=romanHouse(house);}
+  }
+ }
+ function restoreRomanBhavaLabels(root){
+  const chart=root?.querySelector('#bhavaChart');if(!chart)return;
+  normalizeSouthBhavaHouseLabels(chart);
+  for(const label of chart.querySelectorAll('.smv-v342-house-number[data-bhava-roman]')){
+   label.textContent=label.dataset.bhavaRoman;
+  }
+ }
  let choice='south';
  try{choice=safe(sessionStorage.getItem(STYLE_KEY));}catch(_){choice='south';}
  const forms=()=>[document.getElementById('englishChartStyle'),document.getElementById('tamilChartStyle')].filter(Boolean);
@@ -34,15 +53,28 @@
   const d=document.createElement('div');d.innerHTML=src.innerHTML;
   const cells=[...d.children].filter(e=>e.classList.contains('south-rasi-cell'));
   if(cells.length!==12)return null;
-  const out=Array(12),houses=Array(12),cusp=Array(12);
+  const out=Array(12),houses=Array(12),cusp=Array(12),bhavaSignByHouse=Array(13).fill(-1);
   let i=0;
   for(const si of ORDER){if(si==null)continue;const el=cells[i++];out[si]=el;
    houses[si]=el.querySelector('.dynamic-rasi-number')?.textContent?.trim()||'';
-   cusp[si]=[...el.querySelectorAll('.bhava-house-no')].map(n=>roman.indexOf(n.textContent.trim())+1).filter(n=>n>0);
+   const labels=[...el.querySelectorAll('.bhava-house-no')];
+   cusp[si]=labels.map(label=>houseNumber(label.dataset.bhavaHouse)||houseNumber(label.textContent)).filter(n=>n>0);
+   for(const label of labels){
+    const house=houseNumber(label.dataset.bhavaHouse)||houseNumber(label.textContent);
+    const explicitSign=Number(label.dataset.bhavaSign);
+    if(house)bhavaSignByHouse[house]=Number.isInteger(explicitSign)&&explicitSign>=1&&explicitSign<=12?explicitSign-1:si;
+   }
   }
-  return {out,houses,cusp};
+  return {out,houses,cusp,bhavaSignByHouse};
  }
+
  function ascSign(chart,arr){
+  if(chart.id==='transitChart'||chart.classList.contains('transit-chart')){
+   // Transit Lagna is a rendered planet-flow glyph, not the natal .lagna node.
+   // Read its source sign so North/East presentation can place the Transit chart.
+   for(let si=0;si<12;si++)if(arr.out[si]?.querySelector('[data-transit-lagna]'))return si;
+   return -1;
+  }
   if(chart.id==='bhavaChart'){
    const i=arr.cusp.findIndex(c=>c.includes(1));if(i!==-1)return i;
    const d=chart.closest('#englishHoroscopeResult,#tamilHoroscopeResult');
@@ -54,40 +86,36 @@
   for(let si=0;si<12;si++)if(arr.out[si]?.querySelector('.lagna'))return si;
   return -1;
  }
- const romanHouse=house=>['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][Number(house)-1]||'—';
  function pointCell(x,y,sign,house,source,style,kind,ta,planetEntries=null,bhavaHouseLabel=''){
   const cell=document.createElement('div');cell.className='smv-v342-cell';cell.dataset.sign=String(sign+1);
   const triangleCell=style==='north'?[2,3,5,6,8,9,11,12].includes(house):style==='east'?[2,3,5,6,8,9,11,12].includes(sign+1):false;
   if(triangleCell)cell.classList.add('smv-v342-triangle-cell');
+  if(kind==='bhava')cell.classList.add('smv-v342-bhava-cell');
   if(house>=1&&house<=12)cell.dataset.house=String(house);
-  // V343: No inline CSS coordinates — report-print.html CSP blocks style attributes.
-  // Fixed [data-house] (North) / [data-sign] (East) positions live in external CSS.
-  // This preserves placement in saved HTML and offline Android PDF prints.
-  const number=document.createElement('span');number.className='smv-v342-sign-number';number.textContent=String(sign+1);
-  // Bhava labels must come from the Bhava Table's house -> Sphuta Rasi map.
-  // North is house-positioned; East is sign-positioned and may group cusps.
-  if(kind!=='bhava'&&style!=='east')cell.append(number);
-  if(kind==='bhava'){
-   const h=document.createElement('span');h.className='smv-v342-house-number';
-   h.textContent=style==='north'?romanHouse(house):String(bhavaHouseLabel||'');
-   cell.append(h);
-  }else if(style==='east'){
-   const h=document.createElement('span');h.className='smv-v342-house-number';h.textContent=house>=1&&house<=12?String(house):'';
-   cell.append(h);
+  // House labels are a normal first row inside the Bhava cell, never a
+  // chart-level overlay. This reserves space and prevents labels covering grahas.
+  if(kind==='bhava'&&String(bhavaHouseLabel||'').trim()){
+   const label=document.createElement('span');label.className='smv-v342-house-number';
+   label.textContent=String(bhavaHouseLabel).trim();
+   label.dataset.bhavaRoman=label.textContent;
+   label.setAttribute('aria-label','Bhava '+label.textContent);
+   cell.append(label);
   }
-  if(house===1){const mark=document.createElement('span');mark.className='smv-v342-asc';mark.textContent=ta?'ல':'As';cell.append(mark);}
+  // The Lagna marker remains a separate display marker; no calculation changes.
+  if(house===1&&kind!=='transit'){const mark=document.createElement('span');mark.className='smv-v342-asc';mark.textContent=ta?'ல':'As';cell.append(mark);}
   const contents=document.createElement('span');contents.className='smv-v342-planets';
   const items=planetEntries??[...source.out[sign].querySelectorAll('.planet-line')];
-  const planetCount=items.length;
+  const planetCount=kind==='transit'?items.filter(item=>!item.querySelector('[data-transit-lagna]')).length:items.length;
   cell.dataset.chartPlanetCount=String(planetCount);
   if(planetCount>=3)cell.classList.add('smv-chart-cell-compact');
   if(items.length){for(const item of items){contents.append(item.cloneNode(true));}}
-  else if(kind!=='d9'&&kind!=='bhava'){
-   // Rasi and Transit retain their existing empty-cell dash; Navamsa and Bhava stay blank.
+  else if(kind==='transit'){
+   // Keep the Transit empty-cell dash; Rasi/Navamsa/Bhava remain blank.
    const m=document.createElement('span');m.className='smv-v342-empty';m.textContent='—';contents.append(m);
   }
   cell.append(contents);return cell;
  }
+
  // Bhava Chalit may have multiple bhava cusps in one sign. The source Bhava
  // TABLE is the only reliable per-house assignment; never infer this from a
  // merged South sign cell. This is a read-only presentation conversion.
@@ -102,7 +130,7 @@
   const byHouse=Array(13).fill(null);
   for(const row of rows){
    const td=row.querySelectorAll('td');if(td.length<6)return null;
-   const h=Number(td[0].textContent.trim());if(!Number.isInteger(h)||h<1||h>12||byHouse[h])return null;
+   const h=houseNumber(td[0].textContent);if(!h||byHouse[h])return null;
    const text=td[4].textContent.trim(),z=ZODIAC_TA.findIndex(s=>text.includes(s));
    const sign=z>=0?z:ZODIAC_EN.findIndex(s=>text.toLowerCase().includes(s.toLowerCase()));
    if(sign<0)return null;
@@ -117,40 +145,67 @@
   }
   return byHouse.slice(1).every(Boolean)?byHouse:null;
  }
+ 
  function render(chart,style){
   if(style==='south'){
    const src=chart.querySelector(':scope > template.smv-v342-south-original');
-   if(src){chart.innerHTML=src.innerHTML;chart.classList.remove('smv-v342-north','smv-v342-east');chart.dataset.smvChartStyle='south';}
+   if(src)chart.innerHTML=src.innerHTML;
+   // Apply the Roman display labels even on the first/default South render,
+   // when no alternate-layout source template has been created yet.
+   normalizeSouthBhavaHouseLabels(chart);
+   chart.classList.remove('smv-v342-north','smv-v342-east');
+   chart.dataset.smvChartStyle='south';
    return;
   }
   if(chart.dataset.smvChartStyle===style&&chart.querySelector(':scope > template.smv-v342-south-original')&&chart.querySelector(':scope > .smv-v342-geometry'))return;
   const src=sourceNode(chart);if(!src)return;
   const from=southCells(src);if(!from)return;
-  const lagna=ascSign(chart,from);if(lagna<0)return; // Never infer an unknown Lagna.
   const kind=chart.id==='bhavaChart'?'bhava':chart.id==='navamsaChart'?'d9':chart.id==='rasiChart'?'d1':'transit';
   const bhavaRows=kind==='bhava'?readBhavaTable(chart,isTa()):null;
+  // Bhava house placement comes from Bhava Table / cusp mappings, never from
+  // Lagna. Requiring a Lagna here made North/East silently remain South.
+  const lagna=kind==='bhava'?-1:ascSign(chart,from);
+  if(kind!=='bhava'&&lagna<0)return; // Never infer an unknown Rasi/Navamsa/Transit Lagna.
   if(kind==='bhava'&&style==='north'&&!bhavaRows){
-   // On old saved charts without a Bhava table, only convert when the original
-   // 12 house-to-sign cusp mapping is one-to-one. Never silently reassign planets.
-   if(from.cusp.some(v=>v.length!==1)){
-    chart.dataset.smvV343BhavaFallback='missing-table';
+   // The source Bhava chart already contains each house label beside its
+   // calculated Sphuta Rasi. Multiple houses may share one Rasi; retain all
+   // twelve North positions instead of abandoning the requested chart style.
+   const mapped=new Set(from.cusp.flat());
+   if(roman.some((_,index)=>!mapped.has(index+1))){
+    chart.dataset.smvV343BhavaFallback='incomplete-source-house-map';
     if(chart.querySelector(':scope > template.smv-v342-south-original'))render(chart,'south');
     return;
    }
   }
   const bhavaHousesBySign=Array.from({length:12},()=>[]);
   const bhavaPlanetsBySign=Array.from({length:12},()=>[]);
+  const bhavaSignByHouse=Array(13).fill(-1);
   if(kind==='bhava'){
-   if(bhavaRows){
-    for(let h=1;h<=12;h++){
-     const row=bhavaRows[h];
-     bhavaHousesBySign[row.sign].push(h);
-     bhavaPlanetsBySign[row.sign].push(...row.planets);
+   // Use the calculated Bhava-to-Sphuta-Rasi metadata carried by the original
+   // source labels. The Bhava Table fills only missing values in older snapshots.
+   for(let sign=0;sign<12;sign++){
+    for(const house of from.cusp[sign]||[]){
+     const explicit=from.bhavaSignByHouse?.[house];
+     const mapped=Number.isInteger(explicit)&&explicit>=0&&explicit<12?explicit:sign;
+     if(bhavaSignByHouse[house]===-1){
+      bhavaSignByHouse[house]=mapped;
+      bhavaHousesBySign[mapped].push(house);
+     }
     }
-   }else{
+    bhavaPlanetsBySign[sign]=[...(from.out[sign]?.querySelectorAll('.planet-line')||[])];
+   }
+   if(bhavaRows){
+    for(let house=1;house<=12;house++){
+     const row=bhavaRows[house];
+     if(bhavaSignByHouse[house]===-1){
+      bhavaSignByHouse[house]=row.sign;
+      bhavaHousesBySign[row.sign].push(house);
+     }
+    }
     for(let sign=0;sign<12;sign++){
-     bhavaHousesBySign[sign]=[...(from.cusp[sign]||[])];
-     bhavaPlanetsBySign[sign]=[...(from.out[sign]?.querySelectorAll('.planet-line')||[])];
+     if(!bhavaPlanetsBySign[sign].length&&bhavaHousesBySign[sign].length){
+      bhavaPlanetsBySign[sign]=bhavaHousesBySign[sign].flatMap(house=>bhavaRows[house]?.planets||[]);
+     }
     }
    }
   }
@@ -162,18 +217,27 @@
   chart.setAttribute('aria-label',`${kind.toUpperCase()} — ${style==='north'?'North Indian':'East Indian'} chart`);
   if(style==='east'){
    for(let sign=0;sign<12;sign++){
-    const house=(sign-lagna+12)%12+1;
+    const house=kind==='bhava'?0:(sign-lagna+12)%12+1;
     const [x,y]=EAST[sign];
-    const bhavaLabel=kind==='bhava'?bhavaHousesBySign[sign].map(romanHouse).join('/'):'';
-    const planets=kind==='bhava'&&bhavaRows?bhavaPlanetsBySign[sign]:null;
+    const planets=kind==='bhava'?bhavaPlanetsBySign[sign]:null;
+    const bhavaLabel=kind==='bhava'?bhavaHousesBySign[sign].map(romanHouse).join(' / '):'';
     chart.append(pointCell(x,y,sign,house,from,style,kind,ta,planets,bhavaLabel));
    }
   }else{
    for(let house=1;house<=12;house++){
     const bhava=kind==='bhava'?bhavaRows?.[house]:null;
-    const sign=bhava?bhava.sign:(kind==='bhava'?from.cusp.findIndex(c=>c.includes(house)):(lagna+house-1)%12);
+    const sign=kind==='bhava'?(bhavaSignByHouse[house]>=0?bhavaSignByHouse[house]:(bhava?.sign??-1)):(lagna+house-1)%12;
     if(sign<0)continue;
-    const [x,y]=NORTH[house];chart.append(pointCell(x,y,sign,house,from,style,kind,ta,bhava?.planets||null));
+    let planetEntries=null;
+    if(kind==='bhava'){
+     const sourceLines=[...(from.out[sign]?.querySelectorAll('.planet-line')||[])];
+     const hasHouseAssignments=sourceLines.some(line=>line.hasAttribute('data-bhava-house'));
+     planetEntries=hasHouseAssignments
+      ?sourceLines.filter(line=>houseNumber(line.dataset.bhavaHouse)===house)
+      :(bhava?.planets||((from.cusp[sign]?.length===1)?sourceLines:[]));
+    }
+    const [x,y]=NORTH[house];
+    chart.append(pointCell(x,y,sign,house,from,style,kind,ta,planetEntries,kind==='bhava'?romanHouse(house):''));
    }
   }
   if(style==='east'){
@@ -206,7 +270,10 @@
   for(const el of forms())el.addEventListener('change',e=>updateAll(e.currentTarget.value));
   // Run synchronously before Saved Reports takes its HTML snapshot.
   window.addEventListener('smv:report-ready',e=>{if(e.detail?.feature==='advanced_analysis')apply(e.detail?.root,choice);});
-  window.addEventListener('smv-language',()=>{forms().forEach(x=>x.value=choice);});
+  window.addEventListener('smv-language',()=>{
+   forms().forEach(x=>x.value=choice);
+   roots().forEach(restoreRomanBhavaLabels);
+  });
   // Apply chosen layout to saved V342 snapshots as well; source chart HTML
   // is preserved inside the template, and Bhava uses the printed Bhava Table.
   const preparePrint=root=>{

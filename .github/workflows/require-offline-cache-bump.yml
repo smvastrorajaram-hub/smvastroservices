@@ -5,44 +5,75 @@ on:
     branches: [main]
     paths:
       - 'public/**'
-      - 'scripts/verify-offline-cache-bump.mjs'
+      - 'scripts/**'
       - '.github/workflows/require-offline-cache-bump.yml'
   push:
     branches: [main]
     paths:
       - 'public/**'
-      - 'scripts/verify-offline-cache-bump.mjs'
+      - 'scripts/**'
       - '.github/workflows/require-offline-cache-bump.yml'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   synchronized-cache-release:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Validate AdSense ownership wiring and public guide content
-        run: node --test test/adsense-site-readiness.test.mjs
-      - name: Verify all three cache namespaces are bumped together
+      - name: Fetch the target branch for deterministic release generation
+        id: cache-base
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref || 'main' }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          TARGET_REPOSITORY: ${{ github.repository }}
           EVENT_BEFORE: ${{ github.event.before }}
         run: |
           set -euo pipefail
+          if [[ "$EVENT_NAME" == "pull_request" && "$HEAD_REPOSITORY" != "$TARGET_REPOSITORY" ]]; then
+            echo "Automatic cache-release commits require a same-repository PR branch."
+            exit 1
+          fi
           if [[ "$EVENT_NAME" == "push" && -n "$EVENT_BEFORE" && "$EVENT_BEFORE" != "0000000000000000000000000000000000000000" ]]; then
             git fetch origin "$EVENT_BEFORE" --depth=1
             base_ref="$EVENT_BEFORE"
           else
-            git fetch origin main --depth=1
-            base_ref="origin/main"
+            git fetch origin "$BASE_BRANCH" --depth=1
+            base_ref="origin/$BASE_BRANCH"
           fi
-          node scripts/verify-offline-cache-bump.mjs "$base_ref"
+          echo "ref=$base_ref" >> "$GITHUB_OUTPUT"
+      - name: Generate synchronized Pages.dev and production cache release IDs
+        if: github.event_name == 'pull_request'
+        run: node scripts/sync-offline-cache-release.mjs "${{ steps.cache-base.outputs.ref }}"
+      - name: Commit generated cache releases to the PR branch
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          PR_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- public/sw.js public/horoscope/sw.js public/horoscope/calendar/sw.js; then
+            echo "Cache release markers are already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/sw.js public/horoscope/sw.js public/horoscope/calendar/sw.js
+          git commit -m "chore(pwa): auto-sync three-app cache releases"
+          git push origin "HEAD:$PR_BRANCH"
+      - name: Validate AdSense ownership wiring and public guide content
+        run: node --test test/adsense-site-readiness.test.mjs
+      - name: Verify all three cache namespaces are bumped together
+        run: node scripts/verify-offline-cache-bump.mjs "${{ steps.cache-base.outputs.ref }}"
