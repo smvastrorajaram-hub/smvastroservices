@@ -123,6 +123,9 @@ for(let year=YEAR_START;year<=YEAR_END;year++){
  assert.equal(Object.keys(result.cheshtaInputs).length,5,birth.date+' five same-frame Cheshta triples');
  assert.equal(result.yuddhaEvidence.pairs.length,10,birth.date+' ten Yuddha pairs classified');
  assert.equal(result.frame.noAbsoluteKotiMinus,true,birth.date+' rejected True Longitude method excluded');
+ assert.equal(result.frame.effectiveLahiriOnly,true,birth.date+' effective Lahiri is the only BPHS sidereal frame');
+ assert.equal(result.frame.noSauraFrame,true,birth.date+' no Saura coordinate frame is used');
+ assert.ok(result.frame.id.includes('EFFECTIVE_LAHIRI'),birth.date+' explicit effective Lahiri frame ID');
  assert.equal(result.researchOnly,true,birth.date+' research-only result');
  stats.charts++;
  const chartRows=[];
@@ -230,8 +233,8 @@ const report={
  classicalCertified:false,productionIntegrationAllowed:false,
  limitations:[
   '600 seeded-random charts are coverage evidence, not all possible birth instants.',
-  'NAELOS supplies modern DE440 apparent True Longitude; this does not certify a historical Saura True Longitude theory.',
-  'The combined Mean / True / Sheeghroccheya frame transfer is explicitly modelled, not an archival certificate for each natal epoch.',
+  'NAELOS supplies modern DE440 apparent True Longitude; this does not certify a historical classical four-pass True Longitude theory.',
+  'Every NAELOS True Longitude, V365 Mean / Sheeghroccheya input, planetary position and Bhava cusp is expressed in one effective Lahiri frame; this is not an archival certificate for each natal epoch.',
   'All results remain research-only; no production calculation path or cache is changed.'
  ],
  records
