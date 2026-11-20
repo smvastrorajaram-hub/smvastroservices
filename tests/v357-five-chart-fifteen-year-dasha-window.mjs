@@ -1,3 +1,4 @@
+import './helpers/naelos-node-fetch-bridge.mjs';
 // V357: real offline Vimshottari MD/AD 15-year report-window invariant.
 // Five sample births; does not generate 15 years of Swiss transit forecasts
 // and does not certify textual predictions.
