@@ -42,10 +42,12 @@ bhavaHouseSigns.forEach((sign,index)=>{
   bhavaPlanetCountsBySign[sign] += bhavaPlanetCounts[index];
 });
 function countForSign(sign) {
-  if (sign === 0) return 2;
-  if (sign === 1) return 3;
-  if (sign === 2) return 4;
-  if (sign === 3) return 5;
+  // Put the five-planet fixture in Lagna so the Transit "ல" marker is
+  // exercised against the exact same five-plus cell font scale.
+  if (sign === 0) return 5;
+  if (sign === 1) return 2;
+  if (sign === 2) return 3;
+  if (sign === 3) return 4;
   return 0;
 }
 function planetRow(index, withState) {
@@ -75,10 +77,12 @@ function cell(sign, kind) {
     label = '<div class="dynamic-rasi-number">' + (sign === 0 ? '' : String(sign + 1)) + '</div>';
   }
   const lagna = !bhava && sign === 0 ? '<div class="lagna">ல</div>' : '';
+  const transitLagna = transit && sign === 0
+    ? '<div class="planet-line transit-lagna-line"><span class="planet-glyph"><span class="planet-short" data-transit-lagna="true">ல</span></span></div>'
+    : '';
   const rows = Array.from({length:count}, (_,i)=>planetRow(i,kind === 'rasi' || transit)).join('');
   return '<div class="' + classes.join(' ') + '" data-chart-planet-count="' + count +
-    '" data-transit-planet-count="' + count + '">' + label + lagna +
-    (transit ? '<div class="transit-cell-planets">' + rows + '</div>' : rows) + '</div>';
+    '" data-transit-planet-count="' + count + '">' + label + (transit ? '<div class="transit-cell-planets">' + transitLagna + rows + '</div>' : lagna + rows) + '</div>';
 }
 function chart(id, kind) {
   const classes = kind === 'transit' ? 'south-indian-chart transit-chart' : 'south-indian-chart';
@@ -185,7 +189,7 @@ try {
                 }
                 const line = cell.querySelector(style === 'south' ? '.planet-line' : '.smv-v342-planets .planet-line');
                 const glyph = cell.querySelector(style === 'south' ? '.planet-glyph' : '.smv-v342-planets .planet-glyph');
-                const number = cell.querySelector('.dynamic-rasi-number,.bhava-house-no,.smv-v342-house-number,.smv-v342-sign-number,.smv-v342-asc,.lagna');
+                const number = kind==='transit' ? cell.querySelector('[data-transit-lagna]') : cell.querySelector('.lagna,.smv-v342-asc,.dynamic-rasi-number,.bhava-house-no,.smv-v342-house-number,.smv-v342-sign-number');
                 const degree = cell.querySelector('.planet-degree,.rasi-degree,.transit-degree');
                 const marker = cell.querySelector('.status-combust,.rasi-status-marker.status-c,.status-c');
                 const retroMarker = cell.querySelector('.status-retro,.rasi-status-marker.status-r,.status-r');
@@ -223,7 +227,7 @@ try {
                   numberBackgroundColor:number?getComputedStyle(number).backgroundColor:null,
                   numberZIndex:number?getComputedStyle(number).zIndex:null,
                   equalSizes:sizes.length < 2 || Math.max(...sizes)-Math.min(...sizes) < 0.6,
-                  names:[...cell.querySelectorAll('.planet-glyph')].map(element=>element.textContent.trim()),
+                  names:[...cell.querySelectorAll('.planet-glyph')].filter(element=>!element.querySelector('[data-transit-lagna]')).map(element=>element.textContent.trim()),
                   colors,
                   outside,
                   scrollWidth:cell.scrollWidth,
@@ -299,6 +303,11 @@ try {
           if(five.degreeSize!==null&&four.degreeSize!==null)assert.ok(five.degreeSize<four.degreeSize,item.rootId+' '+item.kind+' '+style+': Degree labels reduce only at five planets.');
           if(five.markerSize!==null&&four.markerSize!==null)assert.ok(five.markerSize<four.markerSize,item.rootId+' '+item.kind+' '+style+': combust marker (அ/C) reduces only at five planets.');
           if(five.retroMarkerSize!==null&&four.retroMarkerSize!==null)assert.ok(five.retroMarkerSize<four.retroMarkerSize,item.rootId+' '+item.kind+' '+style+': retrograde marker (வ/R) reduces only at five planets.');
+          if(item.kind==='transit'){
+            assert.ok(five.numberText==='ல'||five.numberText==='As',item.rootId+' Transit five-planet Lagna cell exposes its Lagna marker.');
+            assert.ok(Math.abs(five.numberSize-five.glyphSize)<0.6,item.rootId+' '+style+' Transit Lagna marker uses exactly the same font-size as the planet glyph.');
+            assert.ok(five.glyphSize<four.glyphSize,item.rootId+' '+style+' Transit Lagna glyph uses the five-plus planet-flow font size.');
+          }
           if(language==='ta'&&['rasi','transit'].includes(item.kind)){
             assert.equal(five.markerText,'(அ)',item.rootId+' Tamil combust marker remains அ.');
             assert.equal(five.retroMarkerText,'(வ)',item.rootId+' Tamil retrograde marker remains வ.');
