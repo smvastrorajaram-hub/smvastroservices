@@ -70,7 +70,21 @@ Source sections of B.V. Raman, *Graha and Bhava Balas*, 13th ed.:
 - Naisargika: Ch.VII §108, pp.80–81.
 - Drik: Ch.VIII §§109–120, pp.82–88.
 
-Errata retained: Mercury Dig 63°05′ / 3 versus 21.09; Saturn Sheeghroccheya 151.23° versus 181.23°; Saturn Naisargika 8.57 versus 8.37 in final summary; Jupiter Drik −16.04 versus −16.03; Sun total 424.24 versus component sum 424.94; Mars Kala summary 33.06 versus detailed 30.06; Mercury Rupa 537.02/60 = 8.9503 versus 8.85.
+### Primary-page review of the seven printed discrepancies
+
+The 13th-edition page images were rechecked directly ([full scanned book](https://astrojyotish.info/pdf/graha-bhava-balas.pdf)); no values were silently overwritten.
+
+| Item | Printed evidence | Arithmetic / source disposition |
+|---|---|---|
+| Mercury Dig | Example 14 p.32: 63°05′; Example 15 p.33 and summary p.90: 21.09 | 63°05′ ÷ 3 = 21°01′40″ = 21.02778 virupas (~21.03 decimal). The book repeats 21.09; **open arithmetic conflict**. |
+| Saturn Chesta | §104 p.77: 151.23°; Example 49 p.78: 181.23°; final Chesta 21.14 | 181.23° − (111.23° + 124.39°)/2 = 63.42°; reduced Kendra / 3 = 21.14. **181.23° is the evidenced input for this 1918 worked example**; the §104 table cell remains a source typo. |
+| Saturn Naisargika | Chapter VII table and Example 52 p.81: 8.57; summary p.90: 8.37 | The summary total 389.21 recomposes with 8.57, not 8.37. **Use 8.57 for this example**; 8.37 is a summary typo. |
+| Jupiter Drik | Example 55 p.88: −64.14 ÷ 4 = −16.04; summary p.90: −16.03 | Exact quarter is −16.035 before display rounding. **Open 0.01 rounding conflict**; retain both printed values. |
+| Sun total | Summary p.89: total 424.24; Rupa 7.08 | Displayed components sum to 424.94; 424.94/60 = 7.0823, matching 7.08. **424.24 is a total typo**. |
+| Mars Kala | Example 35 p.62: 30.060; summary p.89: 33.06 | 11.68 + 16.54 + 1.84 = 30.06; total 298.14 / Rupa 4.97 also reconcile with 30.06. **Use 30.06 for the example**; 33.06 is a summary typo. |
+| Mercury Rupa | Summary p.90: total 537.02; Rupa 8.85 | 537.02/60 = 8.95033..., which rounds to 8.95. **8.85 is a Rupa typo**. |
+
+The machine-readable shadbala-source-evidence-42.json retains all seven issues, page locators, classification and disposition. The four component-level rows remain marked as source discrepancies in the 42-row ledger; only the two source-example cases above with a clearly reconciled intended value are annotated as such. This is one 1918 printed worked example, not independent evidence for arbitrary natal birth dates.
 
 **Phase 2 verdict:** all 42 source-example rows enumerated; 36 chapter-example matches, two luminary Chesta N/A and four component-level source conflicts. These rows apply to one 1918 horoscope, not arbitrary natal dates, and are not inserted into the per-natal certification gate.
 
