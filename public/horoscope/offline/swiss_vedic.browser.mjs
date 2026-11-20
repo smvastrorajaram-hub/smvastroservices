@@ -135,6 +135,9 @@ const PHASE2_FULL_ASPECTS=Object.freeze({
 });
 function phase2Strength(name, lon, house, speed, state, planets, jdUt){
   if(name==='ராகு'||name==='கேது') return {available:false,reason:'Nodes excluded from the seven-planet strength score'};
+  if(!Number.isInteger(Number(house))||Number(house)<1||Number(house)>12){
+    return {available:false,reason:'Bhava-dependent Phase-2 indicators are not assigned at an exact Bhava-Sandhi'};
+  }
   const ideal=DIG_IDEAL_HOUSE[name]||1;
   const dig=Math.max(0,Math.min(60,60*(1-circularHouseDistance(house,ideal)/6)));
   const dignity=state?.exalted?60:state?.moolatrikona?50:state?.ownSign?45:state?.debilitated?10:30;
@@ -605,14 +608,37 @@ function houseCuspsFromResult(result,label='house calculation'){
   if(cusps.some(value=>!Number.isFinite(value)))throw new Error(`${label}: Swiss Ephemeris returned invalid house cusps`);
   return {data,cusps};
 }
-function houseFromCusps(lon,cusps){
-  const x=norm360(lon);
-  for(let i=0;i<12;i++){
-    const a=norm360(cusps[i]), b=norm360(cusps[(i+1)%12]);
-    const span=norm360(b-a), pos=norm360(x-a);
-    if(pos < (span===0?360:span)) return i+1;
+// Sripati Bhava-sandhi is an exact boundary, not the start of the next Bhava
+// for phala assignment. This tolerance only absorbs 8-decimal numeric rounding;
+// it is not an astrological orb.
+const BHAVA_SANDHI_TOLERANCE_DEGREES = 1e-7;
+function housePlacementFromCusps(lon,cusps){
+  const value=Number(lon);
+  if(!Number.isFinite(value)||!Array.isArray(cusps)||cusps.length!==12||
+     cusps.some(c=>!Number.isFinite(Number(c)))){
+    return {house:null,bhavaSandhi:null};
   }
-  return 12;
+  const x=norm360(value);
+  for(let i=0;i<12;i++){
+    const a=norm360(Number(cusps[i])), b=norm360(Number(cusps[(i+1)%12]));
+    const span=norm360(b-a), pos=norm360(x-a);
+    if(Math.min(pos,360-pos)<=BHAVA_SANDHI_TOLERANCE_DEGREES){
+      return {
+        house:null,
+        bhavaSandhi:{
+          cuspIndex:i+1,
+          longitude:Number(a.toFixed(8)),
+          precedingHouse:i===0?12:i,
+          followingHouse:i+1
+        }
+      };
+    }
+    if(pos < (span===0?360:span)) return {house:i+1,bhavaSandhi:null};
+  }
+  return {house:12,bhavaSandhi:null};
+}
+function houseFromCusps(lon,cusps){
+  return housePlacementFromCusps(lon,cusps).house;
 }
 function midpointArc(a,b){
   return norm360(a + norm360(b-a)/2);
@@ -814,7 +840,10 @@ function calculateSwissReady({date,time,lat,lon,height=0,houseSystem,timezone='A
   const bhavas=bhavaDetails(cusps,madhyaCusps);
   const bookUpagraha=bookUpagrahas(date,time,latitude,longitude,offsetMinutes,hs);
   const specialLagnaReference=specialLagnaSunriseReference(date,time,latitude,longitude,offsetMinutes,flags,moshierFlags,useSwissFiles);
-  const enriched0=enrichPlanetaryStates(planets.map(p=>({...p,bhava:houseFromCusps(p.longitude,cusps)})));
+  const enriched0=enrichPlanetaryStates(planets.map(p=>{
+    const placement=housePlacementFromCusps(p.longitude,cusps);
+    return {...p,bhava:placement.house,bhavaSandhi:placement.bhavaSandhi};
+  }));
   const enriched2=enrichPhase2(enriched0,jdUt);
   const enriched=enrichStrength6(enriched2,jdUt,jdEt,bhavas,longitude,flags,{date,time,lat:latitude,lon:longitude,utcOffsetMinutes:offsetMinutes,ascendantLongitude:ascLon,midheavenLongitude:Number.isFinite(mc)?norm360(mc):null});
   const d9Lagna=navamsa(ascLon);
@@ -837,7 +866,7 @@ function calculateSwissReady({date,time,lat,lon,height=0,houseSystem,timezone='A
 
 export async function calculateSwiss(input){ await ensureSwe(); return calculateSwissReady(input); }
 export function calculateSwissSync(input){ return calculateSwissReady(input); }
-export const __test=Object.freeze({houseFromCusps,bhavaDetails,midpointArc});
+export const __test=Object.freeze({houseFromCusps,housePlacementFromCusps,bhavaDetails,midpointArc,bhavaSandhiToleranceDegrees:BHAVA_SANDHI_TOLERANCE_DEGREES});
 
 // Lightweight Lahiri epoch context for the Calendar's solar-ingress Rasi Mana.
 // The Rasi Mana selection is the Sun's ingress sign; it does not need a local
