@@ -118,7 +118,7 @@
 .south-indian-chart.smv-v342-north .smv-v342-cell[data-house="12"]{left:75%!important;top:9%!important}
 
 /* East corner triangle centres follow the fixed sign geometry. */
-.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-triangle-cell[data-sign="2"]{left:26%!important;top:8%!important;width:15%!important;max-height:16%!important}
+.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-triangle-cell[data-sign="2"]{left:25.3%!important;top:8%!important;width:15%!important;max-height:16%!important}
 .south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-triangle-cell[data-sign="3"]{left:8.5%!important;top:24%!important;width:17%!important}
 .south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-triangle-cell[data-sign="3"] .smv-v342-planets{transform:scaleX(.94)!important}
 .south-indian-chart.smv-v342-east .smv-v342-cell[data-sign="5"]{left:11%!important;top:76%!important}
