@@ -5,12 +5,13 @@ import { formatOfflineIndiaAdministrativeAreas } from '../public/horoscope/offli
 import { buildSubhaJanana, getTamilRitu, getBirthTimeAmirthadiYoga } from '../public/horoscope/subha-janana.mjs';
 import { localizeTamilText, latinToTamil, tamilToLatin } from '../public/horoscope/offline/places/tamil-transliteration.mjs';
 import { solarNoaa, tamilSolarDate, nakshatraIntervalsForLocalDay, thyajyamIntervalsForLocalDay, calculateAhasRatriPramana } from '../public/horoscope/offline/transit_panchang.browser.mjs';
+import { calculateSunMoon } from '../public/horoscope/offline/swiss_vedic.browser.mjs';
 import { getTamilDayYoga, TAMIL_DAY_YOGA_TABLE } from '../public/horoscope/tamil-day-classifications.mjs';
 import { offsetMinutesAt } from '../public/horoscope/offline/places/timezone.mjs';
 
 const read=path=>fs.readFileSync(new URL('../'+path,import.meta.url),'utf8');
 let checks=0;
-for(const [name,fn] of Object.entries({buildSubhaJanana,solarNoaa,tamilSolarDate,nakshatraIntervalsForLocalDay,thyajyamIntervalsForLocalDay,calculateAhasRatriPramana,getTamilDayYoga,offsetMinutesAt,latinToTamil,tamilToLatin,localizeTamilText,getTamilRitu,getBirthTimeAmirthadiYoga})){
+for(const [name,fn] of Object.entries({buildSubhaJanana,solarNoaa,tamilSolarDate,nakshatraIntervalsForLocalDay,thyajyamIntervalsForLocalDay,calculateAhasRatriPramana,calculateSunMoon,getTamilDayYoga,offsetMinutesAt,latinToTamil,tamilToLatin,localizeTamilText,getTamilRitu,getBirthTimeAmirthadiYoga})){
   assert.equal(typeof fn,'function','Runtime module export is available: '+name);checks++;
 }
 const has=(source,part,message)=>{assert.ok(source.includes(part),message||part);checks++;};
@@ -61,6 +62,8 @@ const intervalYoga=getBirthTimeAmirthadiYoga([
   {startTimestamp:100,endTimestamp:200,yoga:{key:'siddha',ta:'சித்த யோகம்',en:'Siddha Yogam'}}
 ],150);
 equal(intervalYoga.key,'siddha','The birth timestamp selects its active Amirthadi interval, not the first day interval');
+
+await calculateSunMoon({date:'2026-04-25',time:'12:00',lat:11.23,lon:78.88,utcOffsetMinutes:330});
 
 const seasonSamples=[
   ['2026-04-25',0,'வசந்த'],
