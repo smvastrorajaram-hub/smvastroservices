@@ -129,8 +129,9 @@ if(lat===''||lon===''){
 }
     // The existing, tested Swiss-Ephemeris renderer is reused as the calculation engine.
     // Its output is then translated into English; no second astronomical engine is introduced.
-    const copy=(a,b)=>{if($(a)&&$(b))$(b).value=$(a).value;};
-    copy('englishAstroName','tamilAstroName');copy('englishDob','tamilDob');copy('englishTob','tamilTob');copy('englishBirthPlace','tamilBirthPlace');copy('englishLat','tamilLat');copy('englishLon','tamilLon');document.querySelectorAll('input[name="tamilBirthGender"]').forEach(input=>{input.checked=input.value===birthGender;});copy('englishBirthVillage','tamilBirthVillage');copy('englishMotherName','tamilMotherName');copy('englishFatherName','tamilFatherName');
+    const {localizeTamilText}=await import('./offline/places/tamil-transliteration.mjs');
+    const copy=(a,b,language=null)=>{if($(a)&&$(b))$(b).value=language?localizeTamilText($(a).value,language):$(a).value;};
+    copy('englishAstroName','tamilAstroName');copy('englishDob','tamilDob');copy('englishTob','tamilTob');copy('englishBirthPlace','tamilBirthPlace');copy('englishLat','tamilLat');copy('englishLon','tamilLon');document.querySelectorAll('input[name="tamilBirthGender"]').forEach(input=>{input.checked=input.value===birthGender;});copy('englishBirthVillage','tamilBirthVillage','ta');copy('englishMotherName','tamilMotherName','ta');copy('englishFatherName','tamilFatherName','ta');
     const tplace=$('tamilBirthPlace'),eplace=$('englishBirthPlace');tplace.dataset.locationSelected='1';tplace.dataset.latitude=$('englishLat').value;tplace.dataset.longitude=$('englishLon').value;tplace.dataset.name=eplace.dataset.name||'';tplace.dataset.admin2=eplace.dataset.admin2||'';tplace.dataset.admin1=eplace.dataset.admin1||'';tplace.dataset.country=eplace.dataset.country||'';tplace.dataset.timezone=$('englishBirthTimezone')?.value||'';if($('tamilBirthTimezone'))$('tamilBirthTimezone').value=tplace.dataset.timezone;
     try{localStorage.setItem('smvLanguage',lang);}catch(_e){}
     busy=true;
