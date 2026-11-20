@@ -60,6 +60,13 @@ jobs:
         run: node tests/naelos-de440-600-random-natal-true-longitude.mjs
       - name: Reproduce Burgess 1860 True example and derive historical Mean / Sheeghroccheya / True for the same 600 natal epochs
         run: node tests/burgess-1860-historical-source-oracle-600-epochs.mjs
+      - name: Upload Burgess historical longitude source-number report
+        uses: actions/upload-artifact@v4
+        with
+          name: burgess-1860-source-derived-longitudes-600-epochs
+          path: artifacts/burgess-1860-source-derived-longitudes-600-epochs.json
+          if-no-files-found: error
+          retention-days: 30
       - name: Upload 600-chart DOB/place, DE440 true-longitude and six-Bala evidence ledger
         uses: actions/upload-artifact@v4
         with:
