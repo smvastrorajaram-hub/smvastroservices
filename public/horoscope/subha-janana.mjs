@@ -10,6 +10,7 @@ const MONTH_EN = ['Chithirai','Vaikasi','Aani','Aadi','Avani','Purattasi','Aippa
 const VARA_TA = ['ஞாயிறு','திங்கள்','செவ்வாய்','புதன்','வியாழன்','வெள்ளி','சனி'];
 const VARA_EN = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const VARA_SA = ['சூரியவாரம்','சோமவாரம்','செவ்வாய்வாரம்','புதன்வாரம்','குருவாரம்','சுக்ரவாரம்','சனிவாரம்'];
+const VARA_TA_DAY = ['ஞாயிற்றுக்கிழமை','திங்கட்கிழமை','செவ்வாய்க்கிழமை','புதன்கிழமை','வியாழக்கிழமை','வெள்ளிக்கிழமை','சனிக்கிழமை'];
 const VARA_SA_EN = ['Ravivara','Somavara','Mangalavara','Budhavara','Guruvara','Shukravara','Shanivara'];
 const RITU_TA = ['வசந்த','வசந்த','கிரீஷ்ம','கிரீஷ்ம','வர்ஷ','வர்ஷ','சரத்','சரத்','ஹேமந்த','ஹேமந்த','சிசிர','சிசிர'];
 const RITU_EN = ['Vasanta','Vasanta','Grishma','Grishma','Varsha','Varsha','Sharad','Sharad','Hemanta','Hemanta','Shishira','Shishira'];
@@ -62,10 +63,11 @@ export async function buildSubhaJanana(p,chart,meta={},lang='ta'){
   const segments=timeline.available?timeline.intervals.map(x=>({...x,yoga:getTamilDayYoga(weekday,x.nakshatraNumber)})):[];
   const birthTs=stamp(date,time,zone),dayYoga=segments[0]?.yoga||null,birthYoga=segments.find(x=>birthTs>=x.startTimestamp&&birthTs<x.endTimestamp)?.yoga||null;
   const solarDateInfo=tamilSolarDate({date,time,lat,lon,utcOffsetMinutes:offsetMinutesAt(zone,date,time),timezone:zone,mode:'birth'})||p?.tamilSolar||{};
-  const monthIndex=Number(solarDateInfo.index),gYear=Number(solarDate.slice(0,4));
-  // Tamil solar months Thai–Panguni (indices 9–11) belong to the previous
-  // Gregorian start year; Chithirai–Margazhi belong to the current one.
-  const startYear=monthIndex>=9?gYear-1:gYear;
+  const monthIndex=Number(solarDateInfo.index);
+  // Keep the exact same April 14 Tamil-year boundary used by the existing
+  // Traditional Year Reckoning table in renderBirthTimePanchang().
+  const birthYear=Number(date.slice(0,4)),birthMonth=Number(date.slice(5,7)),birthDay=Number(date.slice(8,10));
+  const startYear=(birthMonth>4||(birthMonth===4&&birthDay>=14))?birthYear:birthYear-1;
   const cycleIndex=((startYear-1987)%60+60)%60,samvatsara=(ta?TA_CYCLE:EN_CYCLE)[cycleIndex]||'—';
   const monthName=(ta?solarDateInfo.monthTa:solarDateInfo.monthEn)||(ta?MONTH_TA:MONTH_EN)[monthIndex]||'—';
   const monthDay=solarDateInfo.day||'—',ayana=(ta?AYANA_TA:AYANA_EN)[monthIndex]||'—',ritu=(ta?RITU_TA:RITU_EN)[monthIndex]||'—';
@@ -84,6 +86,8 @@ export async function buildSubhaJanana(p,chart,meta={},lang='ta'){
   const tyajyamText=thyajyam.map(w=>pointText(w.start,solarDate,lat,lon,zone,ta)+' '+(ta?'முதல்':'to')+' '+pointText(w.end,solarDate,lat,lon,zone,ta)).filter(Boolean).join('; ');
   const placeParts=[];
   const administrativeAreas=formatOfflineIndiaAdministrativeAreas(meta.state,meta.district,ta?'ta':'en');
+  const placeName=String(meta.placeName||'').trim();
+  if(placeName&&placeName.toLocaleLowerCase()!==String(administrativeAreas.admin2||'').toLocaleLowerCase())placeParts.push(placeName);
   if(administrativeAreas.admin2)placeParts.push(ta?administrativeAreas.admin2+' மாவட்டம்':administrativeAreas.admin2+' District');
   if(meta.village)placeParts.push(ta?meta.village+' கிராமம்':meta.village+' Village');
   if(administrativeAreas.admin1)placeParts.push(ta?administrativeAreas.admin1+' மாநிலம்':administrativeAreas.admin1+' State');
@@ -97,7 +101,7 @@ export async function buildSubhaJanana(p,chart,meta={},lang='ta'){
   const dayYogaName=yogaName(dayYoga,ta),birthYogaName=yogaName(birthYoga,ta);
   const amirthadi=ta?dayYogaName+' (பிறந்த நேர அமிர்தாதி யோகம்: '+birthYogaName+')':dayYogaName+' (Amirthadi Yoga at birth: '+birthYogaName+')';
   const ranges=[rangeText(p?.tithi,date,lat,lon,zone,ta),rangeText(p?.nakshatra,date,lat,lon,zone,ta),rangeText(p?.yoga,date,lat,lon,zone,ta),rangeText(p?.karana,date,lat,lon,zone,ta)];
-  const dayLabel=ta?VARA_TA[weekday]+'க்கிழமை ('+VARA_SA[weekday]+')':VARA_EN[weekday]+' ('+VARA_SA_EN[weekday]+')';
+  const dayLabel=ta?VARA_TA_DAY[weekday]+' ('+VARA_SA[weekday]+')':VARA_EN[weekday]+' ('+VARA_SA_EN[weekday]+')';
   const sunRise=ta?solar.rise:time12(solar.rise),sunSet=ta?solar.set:time12(solar.set),ahas=ghati(pramana?.ahasNazhigai?.totalVighati,ta),ratri=ghati(pramana?.ratriNazhigai?.totalVighati,ta);
   const tyaLine=tyajyamText?(ta?'தியாஜ்யம்: '+tyajyamText+' ':'Thyajyam: '+tyajyamText+' '):'';
   const auspicious=inTyajyam?(ta?'(பிறந்த நேரம் தியாஜ்ய காலத்துடன் பொருந்துகிறது)':'(birth time overlaps Thyajyam)'):(ta?'(தியாஜ்யம் நீங்கிய சுப வேளையில்)':'(outside the Thyajyam interval)');
