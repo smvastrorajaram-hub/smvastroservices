@@ -20,7 +20,7 @@ ok(css.includes('@media(max-width:600px)')&&css.includes('#smvSavedReports .smv-
 ok(css.includes('background:#8b1717!important;color:#fff!important;-webkit-text-fill-color:#fff!important'),'Saved-list buttons use high-contrast red boxes with white text');
 ok(css.includes('overflow-wrap:anywhere!important'),'Long saved report names wrap instead of collapsing into individual letters');
 ok(html.includes('20261106-saved-list-full-width-red-v1'),'Horoscope stylesheet URL has a new cache-busting version');
-const cacheReleases=workers.map(source=>/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \\? '([^']+)' : '([^']+)';/.exec(source));
+const cacheReleases=workers.map(source=>/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '([^']+)' : '([^']+)';/.exec(source));
 ok(cacheReleases.every(Boolean),'All three application service workers declare both host cache release IDs');
 ok(new Set(cacheReleases.map(match=>match[1])).size===1&&new Set(cacheReleases.map(match=>match[2])).size===1,'Both host-specific cache releases are synchronized across all three apps for this shared public UI change');
 ok(sw.includes("const RUNTIME_REVISION = IS_PAGES_DEV_HOST ? 'v284-pages-dev-tamil-solar-20261116' : 'v278-in-navigation-20261115';"),'Horoscope runtime revision is bumped for both primary .in content and Pages.dev preview.');
