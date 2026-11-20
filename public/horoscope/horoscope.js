@@ -2203,7 +2203,8 @@ try{
     const now=new Date(),offset=Number(payload.utcOffsetMinutes??330),local=new Date(now.getTime()+offset*60000),dailyDate=local.toISOString().slice(0,10),dailyTime=local.toISOString().slice(11,16),daily={...payload,date:dailyDate,time:dailyTime};
     await window.SMVEngineReady;const bp=window.SMVOffline.panchang(payload);const dp=window.SMVOffline.panchang(daily),trans=window.SMVOffline.transit(daily);
     const {buildSubhaJanana}=await import('./subha-janana.mjs');
-    const subhaJanana=await buildSubhaJanana(bp,root.__smvBirthChart||{},payload,payload.language);
+    const birthMetadata=window.__smvGetReportContext?.('advanced_analysis')||{};
+    const subhaJanana=await buildSubhaJanana(bp,root.__smvBirthChart||{},{...payload,...birthMetadata,date:payload.date,time:payload.time,lat:payload.lat,lon:payload.lon,timezone:birthMetadata.timezone||payload.timezone},payload.language);
     const slot=root.querySelector('#birthTimePanchangSlot');if(slot)slot.innerHTML=renderBirthTimePanchang(bp,payload.language,payload.date,payload.time,subhaJanana);
     const transitSlot=root.querySelector('.daily-transit-panchang-slot');if(transitSlot)renderTransitPanchang(trans,dp,payload.language,transitSlot.id);
     root.__smvBasicData={birthPanchang:bp,dailyPanchang:dp,transit:trans,subhaJanana,referenceDate:dailyDate,referenceTime:dailyTime,language:payload.language==='en'?'en':'ta'};
@@ -3046,5 +3047,5 @@ if(lat===''||lon===''){
   window.__smvBindHoroscopeInteractions = bindHoroscopeInteractions;
   window.__smvGenerateHoroscopeEngine=generate;
   window.__smvRenderCachedCore=render;
-  window.__smvRenderBasicSnapshot=async(data,root,lang,birth)=>{const {buildSubhaJanana}=await import('./subha-janana.mjs');const subha=await buildSubhaJanana(data.birthPanchang,root.__smvBirthChart||{},birth,lang);const slot=root.querySelector('#birthTimePanchangSlot');if(slot)slot.innerHTML=renderBirthTimePanchang(data.birthPanchang,lang,birth.date,birth.time,subha);const tr=root.querySelector('.daily-transit-panchang-slot');if(tr)renderTransitPanchang(data.transit,data.dailyPanchang,lang,tr.id);};
+  window.__smvRenderBasicSnapshot=async(data,root,lang,birth)=>{const {buildSubhaJanana}=await import('./subha-janana.mjs');const birthMetadata=window.__smvGetReportContext?.('advanced_analysis')||{};const subha=await buildSubhaJanana(data.birthPanchang,root.__smvBirthChart||{},{...birthMetadata,...birth},lang);const slot=root.querySelector('#birthTimePanchangSlot');if(slot)slot.innerHTML=renderBirthTimePanchang(data.birthPanchang,lang,birth.date,birth.time,subha);const tr=root.querySelector('.daily-transit-panchang-slot');if(tr)renderTransitPanchang(data.transit,data.dailyPanchang,lang,tr.id);};
 })();
