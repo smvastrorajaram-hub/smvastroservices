@@ -220,8 +220,10 @@ let maxMeanInputSourceResidualArcseconds=0;
 let maxMandoccaSourceResidualArcseconds=0;
 for(const planet of PLANETS){
   const raw=sourceInputs(JD_TRUE_SOURCE_EPOCH,planet,'original');
+  const expectedMean=INNER.has(planet)
+    ?dms(SOURCE_INPUT_1860.Sun):dms(SOURCE_INPUT_1860[planet]);
   const meanResidual=assertWithinArcseconds(
-    raw.meanLongitude,dms(SOURCE_INPUT_1860.Sun),1,
+    raw.meanLongitude,expectedMean,1,
     planet+' 1860 source mean input'
   );
   const expectedSheeghroccheya=INNER.has(planet)
