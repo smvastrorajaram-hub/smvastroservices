@@ -28,8 +28,8 @@ for(const p of lon.scope.visiblePlanets) for(const q of ['mean','true','sheeghro
 eq(bala.rows.length,42,'42 Bala rows');
 eq(bala.counts.sourceExamplePass,36,'36 source example matches');
 eq(bala.counts.notApplicableSourceEllipsis,2,'2 Chesta N/A');
-eq(bala.counts.sourceExampleAdjudicated,2,'two Saturn components adjudicated for the 1918 worked example only');
-eq(bala.counts.sourceDiscrepancy,2,'Mercury Dig and Jupiter Drik remain open component conflicts');
+eq(bala.counts.sourceExampleAdjudicated,3,'Mercury Dig formula and two Saturn components are adjudicated for the 1918 worked example only');
+eq(bala.counts.sourceDiscrepancy,1,'only Jupiter Drik remains an open component conflict');
 eq(bala.counts.printedComponentDiscrepanciesIdentified,4,'all four original printed component discrepancies remain traceable');
 eq(bala.primaryPrintedSource.pageImageReviewed,true,'B.V. Raman primary printed page images were reviewed');
 ok(bala.primaryPrintedSource.pagesReviewed.includes(32)&&bala.primaryPrintedSource.pagesReviewed.includes(90),'source page locators include raw and summary pages');
@@ -43,6 +43,8 @@ for(const id of ['BVR_MERCURY_DIG','BVR_SATURN_SHEEGHROCCHEYA','BVR_SATURN_NAISA
  ok(bala.sourceDiscrepancies.some(r=>r.id===id),id+' has a primary-page adjudication');
 eq(bala.rows.find(r=>r.graha==='Saturn'&&r.component==='cheshta').status,'SOURCE_EXAMPLE_ADJUDICATED','Saturn Chesta 181.23° only reconciles the 1918 worked example');
 eq(bala.rows.find(r=>r.graha==='Saturn'&&r.component==='naisargika').status,'SOURCE_EXAMPLE_ADJUDICATED','Saturn Naisargika 8.57 is resolved for the 1918 worked example');
-eq(bala.rows.find(r=>r.graha==='Mercury'&&r.component==='dig').status,'SOURCE_DISCREPANCY','Mercury Dig arithmetic conflict remains open');
-eq(bala.rows.find(r=>r.graha==='Jupiter'&&r.component==='drik').status,'SOURCE_DISCREPANCY','Jupiter Drik rounding conflict remains open');
+eq(bala.rows.find(r=>r.graha==='Mercury'&&r.component==='dig').status,'SOURCE_EXAMPLE_ADJUDICATED','Mercury Dig is adjudicated as a 1918 printed arithmetic error');
+eq(bala.rows.find(r=>r.graha==='Mercury'&&r.component==='dig').formulaDerivedVirupa,21.025,'Mercury Dig exact-input formula result is recorded');
+eq(bala.rows.find(r=>r.graha==='Mercury'&&r.component==='dig').formulaDerivedDisplayVirupa,21.03,'Mercury Dig formula display is rounded to 21.03');
+eq(bala.rows.find(r=>r.graha==='Jupiter'&&r.component==='drik').status,'SOURCE_DISCREPANCY','Jupiter Drik remains the sole open component conflict');
 console.log(JSON.stringify({pass:true,longitudeRows:lon.rows.length,balaRows:bala.rows.length,balaCounts:bala.counts,ordinaryNatalClassicalCertified:false}));
