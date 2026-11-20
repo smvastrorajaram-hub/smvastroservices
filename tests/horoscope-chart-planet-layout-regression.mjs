@@ -150,14 +150,19 @@ assert.ok(!navamsaRenderer.includes('navamsaPlanetCount>=2'));
 assert.ok(!bhavaRenderer.includes('bhavaPlanetCount>=2'));
 assert.ok(!transitRenderer.includes('transitPlanetCount>=2'));
 
-const inCellBhavaLabels = chartStyleCss.slice(
-  chartStyleCss.indexOf('/* East Bhava keeps grouped Arabic house IDs'),
+const eastBhavaLabels = chartStyleCss.slice(
+  chartStyleCss.indexOf('/* East Bhava keeps grouped Roman house IDs'),
+  chartStyleCss.indexOf('/* North Bhava uses fixed house slots'),
 );
-assert.ok(inCellBhavaLabels.includes('.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-bhava-cell.smv-v342-triangle-cell .smv-v342-house-number'));
-assert.ok(!inCellBhavaLabels.includes('.south-indian-chart.smv-v342-north'));
-assert.ok(inCellBhavaLabels.includes('position:static!important;transform:none!important;'),
-  'Bhava labels stay in the normal cell flow and cannot overlap planet names.');
-assert.ok(inCellBhavaLabels.includes('color:#6f4d2c!important;background:#fffdf7!important;'),
-  'East Bhava grouped IDs keep high contrast and a readable background inside the chart cell.');
-assert.ok(inCellBhavaLabels.includes('font-weight:900!important;line-height:1.05!important;'));
+const northBhavaLabels = chartStyleCss.slice(
+  chartStyleCss.indexOf('/* North Bhava uses fixed house slots'),
+);
+assert.ok(eastBhavaLabels.includes('.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-bhava-cell.smv-v342-triangle-cell .smv-v342-house-number'));
+assert.ok(eastBhavaLabels.includes('position:static!important;transform:none!important;'));
+assert.ok(eastBhavaLabels.includes('color:#6f4d2c!important;background:#fffdf7!important;'));
+assert.ok(northBhavaLabels.includes('.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-bhava-cell .smv-v342-house-number,'));
+assert.ok(northBhavaLabels.includes('position:static!important;transform:none!important;'));
+assert.ok(northBhavaLabels.includes('color:#6f4d2c!important;background:#fffdf7!important;'),
+  'North and East Bhava Roman labels keep high contrast and a readable background in their own cells.');
+assert.ok(northBhavaLabels.includes('font-weight:900!important;line-height:1.05!important;'));
 console.log('Horoscope four-chart, three-plus planet sizing and empty-cell regression: PASS');
