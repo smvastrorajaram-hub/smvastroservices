@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 const require=createRequire(import.meta.url);
 const nodeRaman=require('../bv-raman-shadbala.cjs');
-import {calculateBVRamanShadbala as browserRaman}
+import {calculateBVRamanShadbala as browserRaman,BV_RAMAN_SHADBALA_SOURCE as browserSource}
   from '../public/horoscope/offline/bv-raman-shadbala.browser.mjs';
 
 let checks=0;
@@ -16,6 +16,22 @@ const near=(actual,expected,tolerance,label)=>{
 const norm=x=>((x%360)+360)%360;
 const separation=(a,b)=>{const d=Math.abs(norm(a)-norm(b));return Math.min(d,360-d);};
 const round3=x=>Math.round((x+Number.EPSILON)*1000)/1000;
+eq(browserSource.yuddhaConjunctionThresholdDegrees,1,
+ 'Raman source contract uses a strict one-degree conjunction boundary');
+eq(browserSource.yuddhaEligibleGrahas,['Mars','Mercury','Jupiter','Venus','Saturn'],
+ 'Raman source contract excludes Sun and Moon from Yuddha');
+eq(browserSource.yuddhaDiscDiameterArcsec,
+ { 'செவ்வாய்':9.4,'புதன்':6.6,'குரு':190.4,'சுக்கிரன்':16.6,'சனி':158.0 },
+ 'Raman source contract exposes all five printed disc diameters');
+eq(browserSource.yuddhaPreWarComponents,['Sthana','Dig','Kala through Hora'],
+ 'Raman pre-war comparison excludes Ayana and prior Yuddha');
+eq(browserSource.yuddhaWinnerRule,'lesser normalized nirayana longitude',
+ 'Raman source winner is the lesser normalized nirayana longitude');
+eq(browserSource.yuddhaAdjustmentRule,
+ 'add the absolute pre-war difference divided by disc-diameter difference to winner Kala; subtract the same from loser Kala',
+ 'Raman Yuddha is booked as opposite adjustments in winner/loser Kala');
+eq(browserSource.productionCertification,false,
+ 'source metadata does not grant global production certification');
 
 // B.V. Raman, Graha and Bhava Balas, Ch. V §§76–78, pp.60–62.
 // Keep an independent copy of the printed disc diameters in this source oracle.
