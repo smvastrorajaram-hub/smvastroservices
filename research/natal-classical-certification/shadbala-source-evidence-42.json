@@ -19,37 +19,65 @@
     {
       "id": "BVR_MERCURY_DIG",
       "pages": "32–33",
-      "detail": "Mercury Dig arc 63°05′ does not divide to printed 21.09."
+      "detail": "Mercury Dig arc 63°05′ does not divide to printed 21.09.",
+      "classification": "OPEN_PRINTED_ARITHMETIC_CONFLICT",
+      "printedEvidence": "Example 14 p.32 gives Mercury Digbala arc 63°05′. Example 15 p.33 prints 21.09 and the p.90 final summary repeats 21.09.",
+      "recomputation": "63°05′ ÷ 3 = 21°01′40″ = 21.0277778 virupas (about 21.03 as a decimal quantity).",
+      "disposition": "Do not silently treat 21.09 as formula-derived. The book's final summary and current 1918 worked-example totals use 21.09; the explicit printed arc divided by three yields about 21.03. Keep the historical example conflict open."
     },
     {
       "id": "BVR_SATURN_SHEEGHROCCHEYA",
       "pages": "77–78",
-      "detail": "§104 table 151.23° versus Example 49 181.23°."
+      "detail": "§104 table 151.23° versus Example 49 181.23°.",
+      "classification": "WORKED_EXAMPLE_INPUT_IDENTIFIED_TABLE_TYPO_RETAINED",
+      "printedEvidence": "§104 p.77 table lists Saturn 151.23°. Example 49 p.78 substitutes 181.23° and obtains Chesta Kendra 63.42° / Chesta Bala 21.14; p.90 summary also gives 21.14.",
+      "recomputation": "181.23° − (111.23° + 124.39°)/2 = 63.42°; reduced Chesta Kendra / 3 gives 21.14.",
+      "disposition": "For the 1918 Standard Horoscope worked example, 181.23° is the reproducible input that matches the printed Chesta result and final summary. The conflicting §104 table cell remains recorded as a source misprint; this is not a universal longitude rule."
     },
     {
       "id": "BVR_SATURN_NAISARGIKA",
       "pages": "81,90",
-      "detail": "Chapter VII constant 8.57 versus final summary appears 8.37."
+      "detail": "Chapter VII constant 8.57 versus final summary appears 8.37.",
+      "classification": "SUMMARY_CELL_TYPO_COMPONENT_SOURCE_RECONCILED",
+      "printedEvidence": "Chapter VII table p.81 and Example 52 p.81 both print 8.57; Example 56 final summary p.90 prints 8.37.",
+      "recomputation": "The p.90 total 389.21 recomposes with 8.57: 177.30 + 58.02 + 116.97 + 21.14 + 8.57 + 7.21 = 389.21. Using 8.37 would give 389.01.",
+      "disposition": "Use the component table / Example 52 value 8.57 for the 1918 sample. Preserve 8.37 as a final-summary printing error."
     },
     {
       "id": "BVR_JUPITER_DRIK",
       "pages": "88,90",
-      "detail": "Example 55 Drik −16.04 versus final summary −16.03."
+      "detail": "Example 55 Drik −16.04 versus final summary −16.03.",
+      "classification": "OPEN_TWO_DECIMAL_ROUNDING_CONFLICT",
+      "printedEvidence": "Example 55 p.88 gives Drishti Pinda −64.14 and Drik Bala −16.04; Example 56 final summary p.90 prints −16.03.",
+      "recomputation": "−64.14 ÷ 4 = −16.035 before two-decimal display rounding.",
+      "disposition": "The chapter formula and Example 55 support −16.04 under conventional half-away-from-zero rounding; the final summary uses −16.03. Retain the 0.01 source discrepancy until the author's intermediate precision/rounding convention is independently established."
     },
     {
       "id": "BVR_SUN_TOTAL_ARITHMETIC",
       "pages": "89",
-      "detail": "Sun printed total 424.24 conflicts with component sum 424.94; Rupa 7.08 supports 424.94."
+      "detail": "Sun printed total 424.24 conflicts with component sum 424.94; Rupa 7.08 supports 424.94.",
+      "classification": "SUMMARY_TOTAL_ARITHMETIC_TYPO",
+      "printedEvidence": "Example 56 p.89 prints Sun total 424.24 and Rupa 7.08.",
+      "recomputation": "The displayed components sum to 424.94; 424.94 ÷ 60 = 7.0823, which rounds to the printed 7.08. 424.24 ÷ 60 would not produce 7.08.",
+      "disposition": "The Rupa and component sum support 424.94; 424.24 is retained as the summary total misprint."
     },
     {
       "id": "BVR_MARS_KALA_SUMMARY",
       "pages": "62,89",
-      "detail": "Example 35 detailed Kala 30.06 versus final summary 33.06; total 298.14/Rupa4.97 reconcile with 30.06."
+      "detail": "Example 35 detailed Kala 30.06 versus final summary 33.06; total 298.14/Rupa4.97 reconcile with 30.06.",
+      "classification": "SUMMARY_COMPONENT_TYPO_RECONCILED",
+      "printedEvidence": "Example 35 p.62 prints Mars Kala Bala 30.060; Example 56 p.89 prints 33.06.",
+      "recomputation": "11.68 Natonnatha + 16.54 Paksha + 1.84 Ayana = 30.06. The six-Bala total 298.14 and Rupa 4.97 also reconcile with 30.06.",
+      "disposition": "Use 30.06 as the component supported by Example 35 and total recomposition; retain 33.06 as a summary-table misprint."
     },
     {
       "id": "BVR_MERCURY_RUPA",
       "pages": "90",
-      "detail": "537.02/60=8.9503; final summary appears to print 8.85."
+      "detail": "537.02/60=8.9503; final summary appears to print 8.85.",
+      "classification": "SUMMARY_RUPA_ARITHMETIC_TYPO",
+      "printedEvidence": "Example 56 p.90 prints Mercury total 537.02 and Rupa 8.85.",
+      "recomputation": "537.02 ÷ 60 = 8.950333..., which rounds to 8.95, not 8.85.",
+      "disposition": "The displayed Virupa total mathematically gives 8.95; keep 8.85 flagged as a printed Rupa error."
     }
   ],
   "genericCertification": {
@@ -456,7 +484,7 @@
       },
       "scope": "One printed Standard Horoscope worked example only",
       "arbitraryNatalSourceEvidence": false,
-      "notes": "Example 14 p.32 prints arc 63°05′; dividing by 3 gives about 21.03, while Example 15/final component is 21.09."
+      "notes": "Printed Example 14 p.32 arc = 63°05′; Example 15 p.33 prints 21.09. Exact arc/3 = 21°01′40″ = 21.0277778 virupas (~21.03 decimal). Final summary repeats 21.09; unresolved source arithmetic conflict."
     },
     {
       "graha": "Mercury",
@@ -656,7 +684,7 @@
       },
       "scope": "One printed Standard Horoscope worked example only",
       "arbitraryNatalSourceEvidence": false,
-      "notes": "Example 55 p.88 gives −16.04; Example 56 final summary p.90 appears to print −16.03."
+      "notes": "Example 55 p.88: Drishti Pinda −64.14 / 4 = −16.035, printed −16.04. Example 56 p.90 prints −16.03; retain the 0.01 rounding discrepancy."
     },
     {
       "graha": "Venus",
@@ -856,7 +884,7 @@
       },
       "scope": "One printed Standard Horoscope worked example only",
       "arbitraryNatalSourceEvidence": false,
-      "notes": "§104 p.77 prints Saturn śīghroccheya 151.23°, while Example 49 p.78 uses 181.23° to obtain 63.42° Kendra / 21.14 Chesta."
+      "notes": "§104 p.77 table lists 151.23°, but Example 49 p.78 uses 181.23° and derives 63.42° Kendra / 21.14 Chesta. The p.90 summary also uses 21.14. For this one Standard Horoscope, 181.23° reproduces the example; table-cell conflict retained."
     },
     {
       "graha": "Saturn",
@@ -876,7 +904,7 @@
       },
       "scope": "One printed Standard Horoscope worked example only",
       "arbitraryNatalSourceEvidence": false,
-      "notes": "Chapter VII table p.81 gives 8.57; Example 56 final summary p.90 appears to print 8.37."
+      "notes": "Chapter VII p.81 table and Example 52 both give 8.57; Example 56 p.90 prints 8.37. The p.90 total 389.21 recomposes with 8.57, not 8.37; treat 8.37 as summary misprint."
     },
     {
       "graha": "Saturn",
@@ -898,5 +926,23 @@
       "arbitraryNatalSourceEvidence": false,
       "notes": ""
     }
-  ]
+  ],
+  "primaryPrintedSource": {
+    "book": "B. V. Raman, Graha and Bhava Balas, 13th edition",
+    "editionYear": 1992,
+    "sourceType": "Primary printed worked-example source for Shadbala; this is not an IENA/IAE ephemeris edition",
+    "fullScan": "https://astrojyotish.info/pdf/graha-bhava-balas.pdf",
+    "pageImageReviewed": true,
+    "pagesReviewed": [
+      32,
+      33,
+      62,
+      77,
+      78,
+      81,
+      88,
+      89,
+      90
+    ]
+  }
 }
