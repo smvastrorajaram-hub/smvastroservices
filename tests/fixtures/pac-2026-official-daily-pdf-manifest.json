@@ -1,0 +1,32 @@
+{
+  "schema": "SMV_ASTRO_PAC_2026_OFFICIAL_DAILY_NIRAYANA_PDF_SHA256_V1",
+  "publisher": "Positional Astronomy Centre, Kolkata — India Meteorological Department, Government of India",
+  "calendarScope": "2026-01-01 through 2026-12-31 inclusive; 365 daily entries per planet",
+  "files": {
+    "Mercury": {
+      "url": "https://packolkata.imd.gov.in/download/nirlon/Mercury.pdf",
+      "bytes": 68167,
+      "sha256": "52985afbd43e944949ebd863c14810b1e632682bc24a1603c4a8afd66158fd2c"
+    },
+    "Venus": {
+      "url": "https://packolkata.imd.gov.in/download/nirlon/Venus.pdf",
+      "bytes": 67773,
+      "sha256": "ba012448354079180cfefdfa002adbb19191c1645fb78f508e9c7b19bec25c17"
+    },
+    "Mars": {
+      "url": "https://packolkata.imd.gov.in/download/nirlon/Mars.pdf",
+      "bytes": 66458,
+      "sha256": "5878c1275a8b9f5db43d3f5a996612f6446d92da8d8e6ea5f3960c53ad43d93e"
+    },
+    "Jupiter": {
+      "url": "https://packolkata.imd.gov.in/download/nirlon/Jupiter.pdf",
+      "bytes": 67337,
+      "sha256": "2a64a64539ae2223a1833fac028fe91cf1f3335fa21ad1b116b860caade8480f"
+    },
+    "Saturn": {
+      "url": "https://packolkata.imd.gov.in/download/nirlon/Saturn.pdf",
+      "bytes": 67315,
+      "sha256": "15b547d9b8cd20a82b4c645ed6d696c3a858efff6b601828f3a16a406425b2c8"
+    }
+  }
+}
