@@ -586,6 +586,25 @@ function extractPoint(points, keyNames, index){
   if(Array.isArray(points) && Number.isFinite(points[index])) return points[index];
   return null;
 }
+function houseCuspsFromResult(result,label='house calculation'){
+  if(!result)throw new Error(`${label}: Swiss Ephemeris returned no result`);
+  if(result.error)throw new Error(`${label}: ${result.error}`);
+  if(result.flag!==undefined&&Number(result.flag)<0)throw new Error(`${label}: Swiss Ephemeris house calculation failed (flag ${result.flag})`);
+  const data=result.data||{};
+  if(!data||typeof data!=='object')throw new Error(`${label}: Swiss Ephemeris returned invalid house data`);
+  const raw=data.houses||data.cusps||[];
+  let values=[];
+  if(Array.isArray(raw))values=raw;
+  else if(raw&&typeof raw==='object'){
+    if(Array.isArray(raw.houses))values=raw.houses;
+    else if(Array.isArray(raw.cusps))values=raw.cusps;
+    else values=Array.from({length:13},(_,i)=>raw[i]??raw[String(i)]);
+  }
+  const oneBased=values.length>=13;
+  const cusps=Array.from({length:12},(_,i)=>norm360(Number(values[oneBased?i+1:i])));
+  if(cusps.some(value=>!Number.isFinite(value)))throw new Error(`${label}: Swiss Ephemeris returned invalid house cusps`);
+  return {data,cusps};
+}
 function houseFromCusps(lon,cusps){
   const x=norm360(lon);
   for(let i=0;i<12;i++){
@@ -598,16 +617,25 @@ function houseFromCusps(lon,cusps){
 function midpointArc(a,b){
   return norm360(a + norm360(b-a)/2);
 }
-function bhavaDetails(cusps){
-  // Swiss Ephemeris 'S' returns Sripati cusp boundaries: each is formed by
-  // shifting the corresponding Porphyry cusp to the midpoint of the previous
-  // Porphyry sector. These S cusps are the Bhava Arambha points; the midpoint
-  // from this boundary to the next S boundary is the Bhava Madhya/Sphuta,
-  // and the next boundary is Antya. Do not treat the S cusp itself as Madhya.
-  return cusps.map((c,i)=>{
-    const next=cusps[(i+1)%12];
-    const madhya=midpointArc(c,next);
+function bhavaDetails(arambhaCusps,madhyaCusps){
+  if(!Array.isArray(arambhaCusps)||arambhaCusps.length!==12||
+     !Array.isArray(madhyaCusps)||madhyaCusps.length!==12||
+     [...arambhaCusps,...madhyaCusps].some(value=>!Number.isFinite(value))){
+    throw new TypeError('Twelve finite Arambha and Madhya cusps are required');
+  }
+  // Swiss Ephemeris Sripati ('S') cusps are the shifted house boundaries:
+  // S_i is the midpoint between Porphyry P_(i-1) and P_i.  Therefore P_i,
+  // not midpoint(S_i,S_(i+1)), is the actual Bhava Madhya/Sphuta.
+  // The next Sripati boundary remains this house's Antya.
+  return arambhaCusps.map((c,i)=>{
+    const next=arambhaCusps[(i+1)%12];
+    const madhya=norm360(madhyaCusps[i]);
     const antya=next;
+    const span=norm360(next-c);
+    const offset=norm360(madhya-c);
+    if(!(span>1e-8&&offset>1e-8&&offset<span-1e-8)){
+      throw new RangeError(`Invalid Sripati Bhava geometry in house ${i+1}`);
+    }
     const mz=zodiac(madhya);
     return {
       house:i+1,
@@ -617,7 +645,7 @@ function bhavaDetails(cusps){
       degree:degText(c),
       madhyaLongitude:Number(madhya.toFixed(8)),
       madhya:degText(madhya),
-      // Bhava/Sphuta Rasi is the sign containing the Madhya (Sphuta).
+      // Bhava/Sphuta Rasi is the sign containing the Porphyry Madhya.
       rasi:mz.sign,
       rasiIndex:mz.index,
       nakshatra:nakshatra(madhya).name,
@@ -773,30 +801,17 @@ function calculateSwissReady({date,time,lat,lon,height=0,houseSystem,timezone='A
   }
   const hs=houseSystem || 'S';
   const hres=swe.houses_ex2(jdUt, C.SEFLG_SIDEREAL, latitude, longitude, hs);
-  // houses_ex2() returns data as an object { houses, points }, unlike calc()/utc_to_jd()
-  // which return data as an array. Do NOT pass a house result through the generic
-  // array validator; that was the cause of the current "returned invalid data" error.
-  if(!hres) throw new Error('பாவ/லக்னம்: Swiss Ephemeris returned no result');
-  if(hres.error) throw new Error(`பாவ/லக்னம்: ${hres.error}`);
-  if(hres.flag !== undefined && Number(hres.flag) < 0) throw new Error(`பாவ/லக்னம்: Swiss Ephemeris house calculation failed (flag ${hres.flag})`);
-  const hd=hres.data||{};
-  if(!hd || typeof hd !== 'object') throw new Error('பாவ/லக்னம்: Swiss Ephemeris returned invalid house data');
-  const rawCusps=hd.houses || hd.cusps || [];
-  let sourceCusps=[];
-  if(Array.isArray(rawCusps)) sourceCusps=rawCusps;
-  else if(rawCusps && typeof rawCusps==='object'){
-    if(Array.isArray(rawCusps.houses)) sourceCusps=rawCusps.houses;
-    else if(Array.isArray(rawCusps.cusps)) sourceCusps=rawCusps.cusps;
-    else sourceCusps=Array.from({length:13},(_,i)=>rawCusps[i] ?? rawCusps[String(i)]);
-  }
-  const oneBased=sourceCusps.length>=13;
-  const cusps=Array.from({length:12},(_,i)=>norm360(Number(sourceCusps[oneBased?i+1:i])));
-  if(cusps.some(x=>!Number.isFinite(x))) throw new Error('பாவ/லக்னம்: Swiss Ephemeris returned invalid house cusps.');
-  if(cusps.some(x=>!Number.isFinite(x))) throw new Error('Swiss Ephemeris returned invalid house cusps.');
+  const {data:hd,cusps}=houseCuspsFromResult(hres,'பாவ/லக்னம்');
+  // Sripati ('S') returns the shifted Arambha boundaries.  Swiss Ephemeris
+  // defines each Bhava Madhya as the corresponding original Porphyry ('O')
+  // cusp.  Calculate it independently at the exact same UT and coordinates.
+  const madhyaCusps=hs==='S'
+    ?houseCuspsFromResult(swe.houses_ex2(jdUt,C.SEFLG_SIDEREAL,latitude,longitude,'O'),'Sripati Porphyry Bhava Madhya').cusps
+    :cusps.map((c,i)=>midpointArc(c,cusps[(i+1)%12]));
   const points=hd.points||hd.ascmc||{}; const asc=extractPoint(points,['ascendant','ASC','asc'],0); const mc=extractPoint(points,['mc','MC','mediumCoeli'],1);
   const ascLon=Number.isFinite(asc)?norm360(asc):cusps[0];
   const ascZ=zodiac(ascLon), ascNk=nakshatra(ascLon);
-  const bhavas=bhavaDetails(cusps);
+  const bhavas=bhavaDetails(cusps,madhyaCusps);
   const bookUpagraha=bookUpagrahas(date,time,latitude,longitude,offsetMinutes,hs);
   const specialLagnaReference=specialLagnaSunriseReference(date,time,latitude,longitude,offsetMinutes,flags,moshierFlags,useSwissFiles);
   const enriched0=enrichPlanetaryStates(planets.map(p=>({...p,bhava:houseFromCusps(p.longitude,cusps)})));
