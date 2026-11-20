@@ -22,7 +22,14 @@
  function normalizeSouthBhavaHouseLabels(chart){
   for(const label of chart.querySelectorAll('.bhava-house-no')){
    const house=houseNumber(label.dataset.bhavaHouse)||houseNumber(label.textContent);
-   if(house){label.dataset.bhavaHouse=String(house);label.textContent=romanHouse(house);}
+   if(house){label.dataset.bhavaHouse=String(house);label.dataset.bhavaRoman=romanHouse(house);label.textContent=romanHouse(house);}
+  }
+ }
+ function restoreRomanBhavaLabels(root){
+  const chart=root?.querySelector('#bhavaChart');if(!chart)return;
+  normalizeSouthBhavaHouseLabels(chart);
+  for(const label of chart.querySelectorAll('.smv-v342-house-number[data-bhava-roman]')){
+   label.textContent=label.dataset.bhavaRoman;
   }
  }
  let choice='south';
@@ -90,6 +97,7 @@
   if(kind==='bhava'&&String(bhavaHouseLabel||'').trim()){
    const label=document.createElement('span');label.className='smv-v342-house-number';
    label.textContent=String(bhavaHouseLabel).trim();
+   label.dataset.bhavaRoman=label.textContent;
    label.setAttribute('aria-label','Bhava '+label.textContent);
    cell.append(label);
   }
@@ -262,7 +270,10 @@
   for(const el of forms())el.addEventListener('change',e=>updateAll(e.currentTarget.value));
   // Run synchronously before Saved Reports takes its HTML snapshot.
   window.addEventListener('smv:report-ready',e=>{if(e.detail?.feature==='advanced_analysis')apply(e.detail?.root,choice);});
-  window.addEventListener('smv-language',()=>{forms().forEach(x=>x.value=choice);});
+  window.addEventListener('smv-language',()=>{
+   forms().forEach(x=>x.value=choice);
+   roots().forEach(restoreRomanBhavaLabels);
+  });
   // Apply chosen layout to saved V342 snapshots as well; source chart HTML
   // is preserved inside the template, and Bhava uses the printed Bhava Table.
   const preparePrint=root=>{
