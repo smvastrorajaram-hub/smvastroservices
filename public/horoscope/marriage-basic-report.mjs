@@ -200,8 +200,9 @@ function shadbala(c,ta){
   rankByName.set(p.name,rank);last=total;
  });
  const status=p=>{
-  const r=p.strength6,req=Number(r.requiredVirupa),total=Number(r.totalVirupa);
-  if(!Number.isFinite(req)||req<=0||!Number.isFinite(total))return ta?'கணக்கீடு இல்லை':'Not available';
+  const r=p.strength6,req=finite(r.requiredVirupa)?Number(r.requiredVirupa):null,
+   total=finite(r.totalVirupa)?Number(r.totalVirupa):null;
+  if(req===null||req<=0||total===null)return ta?'கணக்கீடு இல்லை':'Not available';
   const pct=Math.round(total/req*100);
   return (total>=req?(ta?'தேவையான அளவு அடைந்தது':'Meets minimum'):(ta?'தேவையான அளவுக்கு குறைவு':'Below minimum'))+' ('+pct+'%)';
  };
