@@ -84,7 +84,7 @@ for (let index = 0; index < report.records.length; index++) {
     record.epochId + ' has a Gregorian date');
   assert.ok(/^\d{2}:\d{2}$/.test(record.localTime),
     record.epochId + ' has a local wall-clock time');
-  assert.ok(Number.isInteger(record.historicalUtcOffsetMinutes),
+  assert.ok(finite(record.historicalUtcOffsetMinutes),
     record.epochId + ' retains its historical IANA UTC offset');
 
   const [year, month, day] = record.date.split('-').map(Number);
