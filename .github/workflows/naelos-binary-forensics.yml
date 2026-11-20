@@ -1,0 +1,24 @@
+name: NAELOS DE440 Binary Forensics (Research Only)
+
+on:
+  push:
+    branches:
+      - research/naelos-de440-true-longitude-20261120
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-binary-format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout research branch
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Inspect checked-in NAELOS binaries without modifying them
+        run: node research/naelos-de440/naelos-binary-forensics.mjs
