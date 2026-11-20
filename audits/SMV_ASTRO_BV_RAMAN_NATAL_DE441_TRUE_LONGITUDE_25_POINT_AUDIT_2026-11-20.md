@@ -19,7 +19,7 @@ The fixture preserves every exact epoch and all 25 JPL values. Each planet's res
 
 ## 2. Numerical result
 
-The independent local Python Swiss Ephemeris 2.10.03 Moshier binding was compared against the 25 exact JPL values. The regression test repeats the check through the repository's bundled browser-compatible Moshier/WASM runtime and requires each point to be within 0.05°.
+The independent local Python Swiss Ephemeris 2.10.03 Moshier binding was compared separately against the 25 exact JPL values. The repository regression executes the chart calculation through its bundled browser-compatible runtime and requires each point to be within 0.05°.
 
 | Planet | Samples | RMS absolute residual (degrees) | Maximum absolute residual (degrees) |
 |---|---:|---:|---:|
@@ -30,13 +30,15 @@ The independent local Python Swiss Ephemeris 2.10.03 Moshier binding was compare
 | Saturn | 5 | 0.00003722 | 0.00006783 |
 | **All planets** | **25** | **0.00002528** | **0.00006783** |
 
-The largest observed Python-binding difference is Saturn at the 1992-07-31 22:05 IST birth epoch: 0.000067825° (about 0.244 arcsecond). This is approximately 737 times smaller than the 0.05° acceptance ceiling. The Node/WASM Actions test is the executable repository release gate; its measured output is reported by the workflow run.
+The largest observed Python Moshier-binding difference is Saturn at the 1992-07-31 22:05 IST birth epoch: 0.000067825° (about 0.244 arcsecond). This supplemental Moshier result is approximately 737 times smaller than the 0.05° acceptance ceiling.
+
+**Actual repository CI result:** B.V. Raman Integrated Strength6 QA run [#1189](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44757492656) completed SUCCESS. The bundled runtime reported `SWIEPH`; across all 25 points the maximum absolute residual was **0.005151651°**, and RMS residual was **0.003861270°**. This is approximately 9.71 times below the 0.05° ceiling. The same workflow also passed the existing Raman 695-check regression, the printed-example 132-assertion certificate test, Ishta/Kashta 39 assertions, Ayurdaya report 669 assertions, and Marriage Matching/report 132 assertions.
 
 ## 3. What this proves
 
 This adds an independent, date-specific modern geocentric apparent True-longitude reference for every one of the five natal epochs and all five eligible planets. It is stronger than comparing the candidate against a second implementation of the same four-pass Saura equations: NASA/JPL DE441 and Swiss Moshier are independent ephemeris solutions.
 
-It can validate the modern apparent True longitude used by the Swiss/Moshier calculation at these historical epochs. It also gives a precise baseline for any subsequent comparison against official yearly Indian ephemeris tables.
+It validates the repository's modern apparent True-longitude calculation at these five historical epochs against an independent DE441 solution. It also gives a precise baseline for subsequent comparison against official yearly Indian ephemeris tables.
 
 ## 4. What this does not prove
 
@@ -44,7 +46,9 @@ This is **not** a certification of the historical Saura / Sūrya-Siddhānta four
 
 It also does **not** certify B.V. Raman / BPHS five-graha Cheshta. The BPHS input triplet must remain coherent: Mean Longitude, True Longitude and Sheeghroccheya must belong to one documented model/frame/epoch. Combining the already-validated traditional Saura Mean and Sheeghroccheya with a modern DE441 True position—even after a coordinate-frame conversion—would still mix two distinct astronomical models. This audit deliberately does not calculate or certify Cheshta from such a hybrid.
 
-The earlier PR #14 evidence for Saura Mean and Sheeghroccheya remains valid within its recorded scope and is not repeated here. The remaining research target is a source-supported, internally coherent historical triplet for each natal epoch, including its time-dependent Bīja/Mandocca inputs, followed by the five BPHS Cheshta calculations. Official yearly Indian Ephemeris and Nautical Almanac / Indian Astronomical Ephemeris copies are bibliographically confirmed, but the exact historical table pages are not currently exposed in the public Google Books snippets used in this audit.
+The earlier PR #14 evidence for Saura Mean and Sheeghroccheya remains valid within its recorded scope and is not repeated here. The remaining research target is a source-supported, internally coherent historical triplet for each natal epoch, including its time-dependent Bīja/Mandocca inputs, followed by the five BPHS Cheshta calculations.
+
+The official IMD IAE page describes Part I as TIME, SUN, MOON and PLANETS, states its reference frame (J2000.5) and time argument (TT), and links the latest annual PDF. It also explicitly provides a historical-data enquiry contact. The yearly sources are bibliographically identifiable: 1971 and 1974 IENA, 1992 and 1994 IAE, and 2015 IAE. However, the specific historical daily table pages are not exposed by the current public download link or Google Books snippets. They must be acquired from the official IMD / Positional Astronomy Centre or the listed holding libraries before they can serve as the historical table oracle. [Official IMD IAE and historical-data enquiry page](https://mausam.imd.gov.in/responsive/indianAstronomicalEphemeris.php).
 
 ## 5. Safety / release boundary
 
