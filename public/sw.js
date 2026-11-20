@@ -23,7 +23,7 @@ const APP_SHELL_FILES=[
   ...PAGES_DEV_HELPER_FILES,
   ...WALLET_OFFER_SVG_ASSETS,
   './main-location-search.js','./question-place-search.mjs',
-  './horoscope/offline/places/place-search.mjs','./horoscope/offline/places/india-manifest.json','./horoscope/offline/places/place-display.mjs',
+  './horoscope/offline/places/place-search.mjs','./horoscope/offline/places/india-manifest.json','./horoscope/offline/places/place-display.mjs','./horoscope/offline/places/tamil-transliteration.mjs',
   './assets/pwa-astro-192.svg','./assets/pwa-astro-512.png','./assets/pwa-astro-maskable-192.svg','./assets/pwa-astro-maskable.svg',
   './assets/android-app-icon-astro.svg','./assets/android-app-icon-astro-source.png',
   './assets/favicon-astro.png','./assets/favicon-astro.ico',
