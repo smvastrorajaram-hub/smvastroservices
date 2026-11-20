@@ -48,7 +48,6 @@ export const BALA_EVIDENCE_REQUIREMENTS = Object.freeze({
 const REQUIRED_FIVE = new Set(CLASSICAL_NATAL_SCOPE.visiblePlanets);
 const REQUIRED_GRAHAS = new Set(CLASSICAL_NATAL_SCOPE.grahas);
 const REQUIRED_COMPONENTS = new Set(CLASSICAL_NATAL_SCOPE.balaComponents);
-const own = (value, key) => Object.prototype.hasOwnProperty.call(value ?? {}, key);
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const nonEmpty = value => typeof value === 'string' && value.trim().length > 0;
 
@@ -158,6 +157,7 @@ export function evaluateBalaEvidenceMatrix(rows) {
 export function evaluateNatalClassicalCertification({
   birthYear,
   longitudeEvidence,
+  natalEpochEvidence,
   balaEvidenceRows,
   yuddhaEvidence,
   nodeBrowserParity,
