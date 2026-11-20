@@ -317,14 +317,14 @@ ok(shadbalaUi.includes('💪 ஷட்பலம்')&&!shadbalaUi.includes('💪
 ok(!shadbalaUi.includes('strengthJathakaKanitham')&&!shadbalaUi.includes('partialSubtotalExcludingCheshtaAndDrig')&&!shadbalaUi.includes('இடைமொத்தம் (சேஷ்டா/த்ரிக்/யுத்தம் சேராது)')&&!shadbalaUi.includes('யுத்த பலம்')&&!shadbalaUi.includes('Yuddha (UK)'),
  'primary Shadbala template does not show Rajan partial subtotal or separate war column');
 ok(src.includes('smvShadbalaDisplayRows(d.planets)')&&src.includes('p?.strength6?.available===true'),
- 'primary Shadbala values are calculated from B.V. Raman strength6');
+ 'primary Shadbala values are calculated from TRUE BPHS NAELOS strength6');
 for(const heading of ['ஸ்தான பலம்','திக் பலம்','கால பலம்','சேஷ்டா பலம்','நைசர்கிக பலம்','த்ரிக் பலம்','மொத்த ஷட்பலம் (விரூபம்)','மொத்த ரூபா','தேவையான ரூபா','தரவரிசை','வலிமை நிலை'])ok(src.includes(heading),'primary Shadbala defines '+heading);
 for(const heading of ['Planet','Sthana Bala','Dig Bala','Kala Bala','Cheshta Bala','Naisargika Bala','Drig Bala','Total Shadbala (Virupa)','Total Rupa','Required Rupa','Rank','Strength status'])ok(src.includes(heading),'primary Shadbala defines English '+heading);
 
 eq(shadbalaUi.includes('smv-shadbala-method-note'),false,'primary Shadbala hides the internal validation note');
 ok(shadbalaUi.includes('smv-shadbala-table'),'primary Shadbala table has a stable UI regression hook');
 ok(src.includes('smvShadbalaDisplayRows(d.planets)')&&src.includes('p?.strength6?.available===true'),
- 'primary customer Shadbala rows come from the B.V. Raman six-Bala result');
+ 'primary customer Shadbala rows come from the TRUE BPHS six-Bala result');
 eq(shadbalaUi.includes('சரிபார்க்கப்படாததால்')||shadbalaUi.includes('இறுதிச் சான்றிதழ் அல்ல'),false,
  'primary Shadbala has no indication message');
 const analysisShadbalaStart=src.indexOf('const shadbalaDisplayRows=smvShadbalaDisplayRows(caPlanets);');
@@ -332,7 +332,7 @@ const analysisShadbalaEnd=src.indexOf('if(shadbalaRows)',analysisShadbalaStart);
 const analysisShadbalaUi=src.slice(analysisShadbalaStart,analysisShadbalaEnd);
 eq(analysisShadbalaUi.includes('smv-shadbala-method-note'),false,'Chart Analysis hides the internal validation note');
 ok(analysisShadbalaUi.includes('smvShadbalaDisplayRows(caPlanets)')&&src.includes('p?.strength6?.available===true'),
- 'Chart Analysis Shadbala uses B.V. Raman strength6 components');
+ 'Chart Analysis Shadbala uses TRUE BPHS strength6 components');
 eq(analysisShadbalaUi.includes('strengthJathakaKanitham'),false,'Chart Analysis does not substitute Rajan partial components');
 const analysisShadbalaSectionStart=src.indexOf('if(shadbalaRows)',analysisShadbalaStart);
 const analysisShadbalaSectionEnd=src.indexOf('part1-natural-karakas',analysisShadbalaSectionStart);
@@ -345,10 +345,11 @@ eq(analysisShadbalaSection.includes('partialSubtotalExcludingCheshtaAndDrig'),fa
  'Chart Analysis does not present an incomplete subtotal as Shadbala');
 ok(analysisShadbalaSection.includes('smv-shadbala-table')&&analysisShadbalaSection.includes("caTitle('Shadbala','ஷட்பலம்')"),
  'Chart Analysis heading is only Shadbala / ஷட்பலம் and shows individual Bala components');
-const ramanShadbalaSrc=fs.readFileSync(new URL('../public/horoscope/offline/bv-raman-shadbala.browser.mjs',import.meta.url),'utf8');
-ok(src.includes('data-smv-ishta-kashta="1"')&&src.includes('p.strength6?.ishtaKashta')&&src.includes('data-engine-source="BV_RAMAN_INTEGRATED_SIX_BALA"')&&
- ramanShadbalaSrc.includes('bvRamanIshtaKashta')&&ramanShadbalaSrc.includes('bvRamanChestaForPhala'),
- 'Chart Analysis renders the unified B.V. Raman Ishta/Kashta output calculated by the Shadbala engine');
+const trueBphsEngineSrc=fs.readFileSync(new URL('../public/horoscope/offline/true-bphs-naelos-engine.browser.mjs',import.meta.url),'utf8');
+ok(src.includes('function mountTrueBphsIshtaKashta')&&src.includes('data-smv-ishta-kashta="1"')&&
+ src.includes('p.strength6?.ishtaKashta')&&src.includes('TRUE_BPHS_CH28_RASMI_ISHTA_KASHTA')&&
+ trueBphsEngineSrc.includes('calculateBphsIshtaKashta'),
+ 'Chart Analysis renders BPHS Chapter 28 Ishta/Kashta from the TRUE BPHS NAELOS engine');
 ok(!src.includes('B.V. Raman சதுரவேர் முறை. ஐந்து கிரகங்களின் சிறப்பு சேஷ்டா-பல உள்ளீடுகள்'), 'No Ishta/Kashta research note is displayed to Horoscope users');
 const horoscopeCss=fs.readFileSync(new URL('../public/horoscope/horoscope.css',import.meta.url),'utf8');
 ok(horoscopeCss.includes('.smv-ayurdaya-scroll')&&horoscopeCss.includes('overflow-x:auto!important')&&horoscopeCss.includes('width:358px;min-width:358px;max-width:none;table-layout:fixed')&&horoscopeCss.includes('white-space:normal;word-break:normal;overflow-wrap:anywhere'), 'Horoscope Ayurdaya table uses horizontal scroll with readable fixed-width wrapped columns');
