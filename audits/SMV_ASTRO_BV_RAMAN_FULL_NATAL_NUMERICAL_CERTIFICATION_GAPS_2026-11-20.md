@@ -49,3 +49,20 @@ The gap register is refined by a separate reproducible audit:
 **Cheshta remains withheld:** A modern DE441 True longitude must not be joined to traditional Saura Mean and Sheeghroccheya merely because all three can be represented in Lahiri sidereal degrees. BPHS Cheshta requires a coherent, documented triplet from one model/frame/epoch. The remaining work is to obtain and reconcile the date-specific historical IENA/IAE tables or another source-faithful coherent astronomical triplet, including the time-dependent Bīja/Mandocca inputs, before calculating the five natal Cheshta values as certified.
 
 No production source or customer output is changed. `historicalSauraTrueLongitudeCertified=false`, `classicalFiveGrahaCheshtaCertified=false` and `productionIntegrationAllowed=false` remain mandatory.
+
+
+## Additional Naelos DE440 cross-check — 20 November 2026
+
+A second implementation/data-format cross-check is now recorded in
+`audits/SMV_ASTRO_NAELOS_DE440_VS_DE441_FIVE_NATAL_CROSSCHECK_2026-11-20.md`.
+
+- The repository's 12 `naelos-ephemeris/*.bin` files all pass manifest byte-size and SHA-256 verification and parse with the pinned Naelos Ephemeris 0.1.3 runtime.
+- For the same five natal epochs × five planets, Naelos DE440 apparent tropical longitudes were compared with the independent exact-epoch Horizons DE441 fixture.
+- CI #1201 passes 208 assertions. Maximum absolute difference is **0.000016269° (0.0585684 arc-second)**; RMS is **0.000012655° (0.045558 arc-second)**. Every point passes the predeclared 0.0001° (0.36 arc-second) gate.
+- DE440 and DE441 are both NASA/JPL ephemeris versions. This is a separate implementation and data representation cross-check, **not** an independent institutional or historical observational oracle.
+- This narrows the modern-apparent-longitude gap for the five tested dates. It does not close the historical Saura true-longitude, time-dependent Bīja/Mandocca, coherent historical mean/true/Sheeghroccheya triplet or BPHS five-graha Cheshta blockers.
+
+The mandatory flags remain unchanged:
+`historicalSauraTrueLongitudeCertified=false`,
+`classicalFiveGrahaCheshtaCertified=false`,
+`productionIntegrationAllowed=false`.
