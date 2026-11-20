@@ -64,7 +64,7 @@ A separate, stricter repository-internal certificate now exists for the **exact 
 - Certificate: `SMV-BVR-PRINTED-STANDARD-HOROSCOPE-SIX-BALA-YUDDHA-2026-11-20`
 - Scope: `BV_RAMAN_PRINTED_STANDARD_HOROSCOPE_ONLY`
 - Document: [Printed Standard Horoscope Six-Bala / Yuddha Certificate](SMV_ASTRO_BV_RAMAN_PRINTED_STANDARD_HOROSCOPE_SIX_BALA_YUDDHA_CERTIFICATE_2026-11-20.md)
-- Integrated validation: [GitHub Actions run #44790430570 — SUCCESS](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44790430570)
+- Integrated validation: [GitHub Actions run #44790590414 — SUCCESS](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44790590414); B.V. Raman six-Bala Standard Horoscope **164 assertions PASS**, Yuddha **95 checks PASS**, existing strength6 **705 checks PASS**, Ishta/Kashta **39 assertions PASS**.
 
 The new source-scoped gate sets `classicalCertified:true` only when the exact printed Standard Horoscope planetary longitudes, angular inputs, time-lord inputs, declinations, Julian epoch, five printed Chesta triplets and source/frame provenance all match, all six Bala output checks pass within declared printed-rounding tolerances, and the final Yuddha stage resolves with no eligible war. A matching set of numbers without the source provenance does not pass.
 
