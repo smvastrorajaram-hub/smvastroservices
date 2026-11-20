@@ -88,6 +88,29 @@ for(const name of planets){
 eq(standard.classicalCertified,false,'standard fixture never overclaims full certification');
 eq(Object.keys(standard.planets).length,7,'exactly seven classical grahas');
 eq(Object.keys(nodeStandard.planets).length,7,'Node engine also returns seven classical grahas');
+// Exact Bhava-Sandhi removes only the Bhava assignment. Raman's Kendradi
+// Sthana term is computed from the D1 sign relative to Lagna, so it must remain
+// available and numerically unchanged when one row has no Bhava number.
+const sandhiPlanets=standardPlanets.map((p,i)=>i===0
+ ?{...p,bhava:null,bhavaSandhi:{precedingHouse:12,followingHouse:1}}
+ :{...p});
+const sandhiOptions={
+ planets:sandhiPlanets,bhavas:[],
+ ascendantLongitude:298+27/60,midheavenLongitude:216+30/60,
+ apparentSolarHour:14.336,
+ temporal:{abdaLord:'சனி',masaLord:'புதன்',dinaLord:'புதன்',horaLord:'சந்திரன்',tribhagaLord:'சனி',solarTimeMethod:'independent standard-chart fixture'},
+ declinations:{'சூரியன்':-8.75,'சந்திரன்':-10.75,'செவ்வாய்':-22.528,'புதன்':-9,'குரு':23.5,'சுக்கிரன்':-4.96,'சனி':13.0},
+ jdUt:jd,ayanamsa:(202+10/60)-(180+53/60+55/3600),classicalChestaInputs:standardChestaInputs
+};
+const browserSandhi=calculateBVRamanShadbala(sandhiOptions);
+const nodeSandhi=nodeRaman.calculateBVRamanShadbala(sandhiOptions);
+for(const name of planets){
+ eq(browserSandhi.planets[name].available,true,name+' B.V. Raman remains available with a Sandhi row');
+ eq(nodeSandhi.planets[name].available,true,name+' Node B.V. Raman remains available with a Sandhi row');
+ near(browserSandhi.planets[name].components.sthana.total,standard.planets[name].components.sthana.total,0.001,name+' Sandhi does not alter independent Raman Sthana Bala');
+ near(nodeSandhi.planets[name].components.sthana.total,standard.planets[name].components.sthana.total,0.001,name+' Node Sandhi does not alter Raman Sthana Bala');
+}
+
 const expectedSthana={
  'சூரியன்':198,'சந்திரன்':126.5,'செவ்வாய்':172.06,
  'புதன்':279.5,'குரு':157.58,'சுக்கிரன்':178.2,'சனி':177.3

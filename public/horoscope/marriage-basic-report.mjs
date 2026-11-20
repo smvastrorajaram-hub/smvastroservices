@@ -142,6 +142,11 @@ function markedPlanetName(p,ta){
  const suffix=[retro?(ta?'வ':'R'):null,combust?(ta?'அ':'C'):null].filter(Boolean);
  return suffix.length?base+' ('+suffix.join(',')+')':base;
 }
+function bhavaPositionLabel(p,ta){
+ const sandhi=p?.bhavaSandhi;
+ if(sandhi)return (ta?'பாவசந்தி':'Sandhi')+' ('+sandhi.precedingHouse+'/'+sandhi.followingHouse+')';
+ return p?.bhava??'—';
+}
 function tablePlanetRows(ps,ta,lagna){
  const out=[];
  if(finite(lagna))out.push(tr([ta?'லக்னம்':'Ascendant',sign(signIndex(lagna),ta),val((lagna%30+30)%30,4),nak({longitude:lagna},ta),pada({longitude:lagna}),1]));
@@ -149,7 +154,7 @@ function tablePlanetRows(ps,ta,lagna){
   out.push(tr([markedPlanetName(p,ta),
     finite(p.longitude)?sign(signIndex(p.longitude),ta):localizedSign(p.rasi,ta),
     p.degree||(finite(p.longitude)?val((Number(p.longitude)%30+30)%30,4):'—'),
-    nak(p,ta),pada(p),p.bhava??'—']));
+    nak(p,ta),pada(p),bhavaPositionLabel(p,ta)]));
  }
  return out;
 }

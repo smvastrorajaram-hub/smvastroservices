@@ -141,6 +141,34 @@ function validateGeometry(cusps,madhyaCusps,bhavas,label){
     adjacentSameRasiPairs:adjacent
   };
 }
+// Sripati Paddhati Adhyaya I, Sloka 8: a planet exactly on Bhava-Sandhi
+// has no Bhava phala; just before it belongs to the preceding Bhava and just
+// after it to the following Bhava. Exercise all twelve boundaries, including 12/1.
+const sandhiCusps=Array.from({length:12},(_,i)=>norm(350+i*30));
+const sandhiTolerance=nativeSwiss.bhavaSandhiToleranceDegrees;
+assert.equal(sandhiTolerance,offlineGeometry.bhavaSandhiToleranceDegrees,
+  'Native and offline Bhava-Sandhi rounding tolerances must match');
+assert.ok(sandhiTolerance>0&&sandhiTolerance<=1e-7,
+  'Bhava-Sandhi tolerance remains a floating-point rounding allowance, not an astrological orb');
+for(let i=0;i<12;i++){
+  const cusp=sandhiCusps[i],before=i===0?12:i,after=i+1;
+  const nativeExact=nativeSwiss.housePlacementFromCusps(cusp,sandhiCusps);
+  const offlineExact=offlineGeometry.housePlacementFromCusps(cusp,sandhiCusps);
+  assert.deepEqual(nativeExact,offlineExact,'Native/offline exact Bhava-Sandhi placement '+(i+1));
+  assert.equal(nativeExact.house,null,'Exact cusp '+(i+1)+' must not be assigned to either Bhava');
+  assert.equal(nativeExact.bhavaSandhi.precedingHouse,before,'Exact cusp '+(i+1)+' records preceding Bhava');
+  assert.equal(nativeExact.bhavaSandhi.followingHouse,after,'Exact cusp '+(i+1)+' records following Bhava');
+  assert.equal(nativeSwiss.houseFromCusps(cusp,sandhiCusps),null,'Native houseFromCusps returns no Bhava at exact Sandhi '+(i+1));
+  assert.equal(offlineGeometry.houseFromCusps(cusp,sandhiCusps),null,'Offline houseFromCusps returns no Bhava at exact Sandhi '+(i+1));
+  const roundingOnly=sandhiTolerance/2;
+  assert.equal(nativeSwiss.houseFromCusps(norm(cusp-roundingOnly),sandhiCusps),null,'Tiny pre-cusp floating-point delta '+(i+1)+' remains Sandhi');
+  assert.equal(nativeSwiss.houseFromCusps(norm(cusp+roundingOnly),sandhiCusps),null,'Tiny post-cusp floating-point delta '+(i+1)+' remains Sandhi');
+  const outside=sandhiTolerance*5;
+  assert.equal(nativeSwiss.houseFromCusps(norm(cusp-outside),sandhiCusps),before,'Planet just before Sandhi '+(i+1)+' belongs to preceding Bhava');
+  assert.equal(nativeSwiss.houseFromCusps(norm(cusp+outside),sandhiCusps),after,'Planet just after Sandhi '+(i+1)+' belongs to following Bhava');
+  assert.equal(offlineGeometry.houseFromCusps(norm(cusp-outside),sandhiCusps),before,'Offline pre-Sandhi assignment '+(i+1));
+  assert.equal(offlineGeometry.houseFromCusps(norm(cusp+outside),sandhiCusps),after,'Offline post-Sandhi assignment '+(i+1));
+}
 function checkPlanetPositions(jdEt,cusps,label){
   const flags=C.SEFLG_MOSEPH|C.SEFLG_SIDEREAL|C.SEFLG_SPEED;
   const bodies=[

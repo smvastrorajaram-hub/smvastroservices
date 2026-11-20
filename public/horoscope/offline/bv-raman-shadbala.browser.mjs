@@ -109,7 +109,10 @@ function vargaDignity(planet,division,sign,rasiPositions,longitude){
 }
 function sthanaBala(planet,row,lagnaSign,rasiPositions){
  const longitude=Number(row.longitude);
- if(!finite(longitude)||!Number.isInteger(row.bhava)||row.bhava<1||row.bhava>12)throw new TypeError('Sthana Bala needs finite longitude and house for '+planet);
+ // Kendradi is derived from the D1 sign relative to Lagna below; it does
+ // not require a house number. A graha exactly on Bhava-Sandhi has no assigned
+ // Bhava, but its independent Sthana Bala inputs remain valid.
+ if(!finite(longitude))throw new TypeError('Sthana Bala needs finite longitude for '+planet);
  // Raman Ch. III §20: shortest angular distance from exact debilitation point / 3.
  const uccha=round3(Math.max(0,Math.min(60,angleDistance(longitude,DEBILITATION[planet])/3)));
  const divisions=[1,2,3,7,9,12,30];

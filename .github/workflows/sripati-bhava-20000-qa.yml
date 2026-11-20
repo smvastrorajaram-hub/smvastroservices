@@ -4,10 +4,14 @@ on:
     branches: [main]
     paths:
       - 'swiss_vedic.js'
+      - 'bv-raman-shadbala.cjs'
+      - 'public/horoscope/offline/bv-raman-shadbala.browser.mjs'
       - 'public/horoscope/offline/swiss_vedic.browser.mjs'
+      - 'public/horoscope/horoscope.js'
+      - 'public/horoscope/marriage-basic-report.mjs'
+      - 'tests/bv-raman-strength6-regression.mjs'
       - 'public/horoscope/offline/wasm-provider.mjs'
       - 'public/horoscope/offline/vendor/smv-swisseph-local.mjs'
-      - 'public/horoscope/horoscope.js'
       - 'public/horoscope/chart-style.js'
       - 'tests/horoscope-chart-planet-layout-regression.mjs'
       - 'tests/perambalur-sripati-bhava-golden-browser-smoke.mjs'
@@ -17,7 +21,12 @@ on:
     branches: [main]
     paths:
       - 'swiss_vedic.js'
+      - 'bv-raman-shadbala.cjs'
+      - 'public/horoscope/offline/bv-raman-shadbala.browser.mjs'
       - 'public/horoscope/offline/swiss_vedic.browser.mjs'
+      - 'public/horoscope/horoscope.js'
+      - 'public/horoscope/marriage-basic-report.mjs'
+      - 'tests/bv-raman-strength6-regression.mjs'
       - 'public/horoscope/offline/wasm-provider.mjs'
       - 'public/horoscope/offline/vendor/smv-swisseph-local.mjs'
       - 'tests/sripati-bhava-20k-regression.mjs'
@@ -48,6 +57,8 @@ jobs:
           node --check tests/perambalur-sripati-bhava-golden-browser-smoke.mjs
       - name: Run 20,000 India and global horoscope Sripati regression
         run: node tests/sripati-bhava-20k-regression.mjs
+      - name: Verify exact Bhava-Sandhi behaviour and B.V. Raman coexistence
+        run: node tests/bv-raman-strength6-regression.mjs
       - name: Verify Perambalur 20 November 2026 in the actual production Bhava renderer
         run: node tests/perambalur-sripati-bhava-golden-browser-smoke.mjs
       - name: Preserve 20,000-chart numerical evidence
