@@ -52,7 +52,7 @@ const CORE=[
   './offline/vendor/smv-swisseph-local.mjs',
   './offline/vendor/wasm/swisseph.mjs','./offline/vendor/wasm/swisseph.js',
   './offline/vendor/wasm/swisseph.wasm','./offline/vendor/wasm/swisseph.data',
-  './offline/places/place-search.mjs','./offline/places/place-display.mjs',
+  './offline/places/place-search.mjs','./offline/places/place-display.mjs','./offline/places/tamil-transliteration.mjs',
   './offline/places/india-manifest.json'
 ];
 
@@ -81,7 +81,7 @@ const REQUIRED_CORE=new Set([
   './offline/saura-natal-five-cheshta.browser.mjs','./offline/uttara-kalamrita-ayurdaya.browser.mjs',
   './offline/uttara-kalamrita-shadbala.browser.mjs','./offline/uttara-kalamrita-six-bala.browser.mjs',
   './offline/places/timezone.mjs','./offline/places/tz-boundary-lookup.mjs',
-  './location-search-online-offline.js','./offline/places/place-search.mjs','./offline/places/place-display.mjs','./offline/places/india-manifest.json',
+  './location-search-online-offline.js','./offline/places/place-search.mjs','./offline/places/place-display.mjs','./offline/places/tamil-transliteration.mjs','./offline/places/india-manifest.json',
   './offline/vendor/smv-swisseph-local.mjs',
   './offline/vendor/wasm/swisseph.mjs','./offline/vendor/wasm/swisseph.wasm',
   './offline/vendor/wasm/swisseph.data'
