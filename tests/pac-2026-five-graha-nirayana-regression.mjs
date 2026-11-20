@@ -54,7 +54,10 @@ for (const sample of fixture.samples) {
   const jd = swe.utcToJd(year, month, day, 0, 0, 0);
   assert.ok(Number.isFinite(jd?.ut) && Number.isFinite(jd?.et),
     sample.date + ' UTC midnight converts to UT and TT Julian days');
-  assert.equal(jd.ut, sample.julianDayUT, sample.date + ' exact 00:00:00 UTC Julian Day');
+  const nominalJdUtc = Date.UTC(year, month - 1, day) / 86_400_000 + 2_440_587.5;
+  assert.ok(Math.abs(jd.ut - nominalJdUtc) < 1 / 86_400,
+    sample.date + ' UTC midnight maps to UT1 within one second (DUT1 allowance)');
+  assert.ok(jd.et > jd.ut, sample.date + ' TT/ET is later than UT1');
   assert.equal(Object.keys(sample.nirayanaDms).length, 5,
     sample.date + ' five PAC graha values');
   assertions += 2;
