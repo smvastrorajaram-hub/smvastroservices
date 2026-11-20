@@ -2,8 +2,8 @@
 
 **Date:** 20 November 2026  
 **Scope:** 2026-01-01 through 2026-12-31; Mercury, Venus, Mars, Jupiter and Saturn  
-**Status:** **PASS — all 1,825 daily PAC values parsed and compared against the bundled Swiss Ephemeris Lahiri-sidereal calculation within the 0.36 arc-second gate.**  
-**Qualification:** This is a full-year official PAC table cross-check under an empirically inferred time/ayanamsa convention. It is not a historical Saura or BPHS Cheshta certificate.
+**Status:** **UTC-EPOCH REVALIDATION IN PROGRESS — source parsing and coverage remain established; the numerical comparison is being rerun at the fixed 00:00:00 UTC epoch.**  
+**Qualification:** The fixed epoch is the project comparison convention requested for this audit, not yet a PAC-confirmed statement. Lahiri remains an inferred sidereal comparison convention. This is not a historical Saura or BPHS Cheshta certificate.
 
 ## 1. Official reference source
 
@@ -43,19 +43,19 @@ The candidate is the repository's bundled Swiss Ephemeris WASM 2.10.03:
 - Calculate with explicit `SWIEPH | SPEED | SIDEREAL` flags.
 - Assert the returned Swiss Ephemeris data flag; a Moshier fallback cannot pass.
 - Convert each daily PAC DMS longitude into decimal degrees.
-- Calculate at the civil date's 00:00 TT Julian Day and compare normalized sidereal longitudes with a circular signed difference.
+- Calculate at the civil date's 00:00:00 UTC instant, converted to TT through Swiss Ephemeris `utcToJd()` before `swe.calc` and compare normalized sidereal longitudes with a circular signed difference.
 
 **Important metadata limitation:** The daily PAC PDF row headers identify the date and Nirayana longitude, but do **not** explicitly identify the row's time of day or name the ayanamsa. Therefore:
 
-- **00:00 TT** is an empirically inferred daily epoch used for comparison.
-- **Lahiri** is an empirically inferred sidereal convention used for comparison.
+- **00:00:00 UTC** is the fixed project comparison epoch; it is not claimed as PAC-confirmed metadata. Swiss `utcToJd()` converts it to the TT/ET Julian Day required by `swe.calc`.
+- **Lahiri** remains an empirically inferred sidereal convention used for comparison, not a confirmed PAC source label.
 - The public PAC PDF metadata does not establish whether the underlying dynamical ephemeris is independent of Swiss Ephemeris.
 
 These assumptions are deliberately exposed in the machine-readable test output. They are not claimed as text copied from the PAC PDF. PAC confirmation of the row epoch and named ayanamsa remains desirable.
 
 ## 3. Full-year numerical result
 
-**GitHub Actions run #1214:** https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44771494887 — completed SUCCESS.
+**Historical run #1214 (superseded epoch):** https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44771494887 completed SUCCESS for the earlier 00:00 TT comparison. It does **not** validate the corrected 00:00 UTC convention and must not be cited as the UTC result. A new Actions run is required.
 
 The full-year regression verified:
 
@@ -163,7 +163,7 @@ These are candidate dates for additional high-resolution sampling. They are not 
 
 ## 5. Three-date hard-coded anchor fixture
 
-The separate hard-coded DMS regression remains in place to provide an independently reviewed, fixed transcription of 15 entries on 1 January, 1 July and 31 December 2026. It passed 135 assertions in run #1207:
+The separate hard-coded DMS regression remains in place to provide an independently reviewed, fixed transcription of 15 entries on 1 January, 1 July and 31 December 2026. It passed 135 assertions in run #1207 under the now-retired 00:00 TT convention; that run is not evidence for the revised UTC epoch:
 
 https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44769611357
 
