@@ -164,6 +164,37 @@ eq(annualOnlyResult.classicalCertified, false,
 ok(annualOnlyResult.blockers.includes('Exact natal birth-epoch evidence is missing'),
   'missing exact natal-epoch evidence is reported explicitly');
 
+const missingNatalPlanet = evaluateNatalClassicalCertification({
+  birthYear: 1994,
+  longitudeEvidence: syntheticLongitude,
+  natalEpochEvidence: {
+    ...syntheticNatalEpoch,
+    planetInputs: syntheticNatalEpoch.planetInputs.slice(1)
+  },
+  balaEvidenceRows: completeRows,
+  yuddhaEvidence: syntheticYuddha,
+  nodeBrowserParity: syntheticParity,
+  fallbackUsed: false
+});
+eq(missingNatalPlanet.classicalCertified, false,
+  'missing exact natal-epoch planet blocks chart certification');
+
+const missingYuddhaPair = evaluateNatalClassicalCertification({
+  birthYear: 1994,
+  longitudeEvidence: syntheticLongitude,
+  natalEpochEvidence: syntheticNatalEpoch,
+  balaEvidenceRows: completeRows,
+  yuddhaEvidence: {
+    ...syntheticYuddha,
+    evaluatedEligiblePairs: 9,
+    pairs: syntheticYuddha.pairs.slice(1)
+  },
+  nodeBrowserParity: syntheticParity,
+  fallbackUsed: false
+});
+eq(missingYuddhaPair.classicalCertified, false,
+  'missing one explicit Yuddha pair blocks chart certification');
+
 // Real current Saura research coverage must not pass the final historic gate.
 const currentCoverage = {
   status: 'PASS',
