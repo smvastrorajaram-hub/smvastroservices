@@ -49,8 +49,9 @@ function registerGeoNamesRoutes(app, { username=process.env.GEONAMES_USERNAME, f
     if(!validCoords(latitude,longitude))return null;
     const name=String(p.name||p.toponymName||'').slice(0,180);
     const admin1=String(p.adminName1||'').slice(0,140);
+    const admin2=String(p.adminName2||'').slice(0,140);
     const country=String(p.countryName||'').slice(0,140);
-    return {place:[name,admin1,country].filter(Boolean).join(', '),name,admin1,country,latitude,longitude,
+    return {place:[name,admin2,admin1,country].filter(Boolean).join(', '),name,admin1,admin2,country,latitude,longitude,
      countryCode:String(p.countryCode||'').slice(0,2),geonameId:Number(p.geonameId)||null,timezone:'',timezoneSource:'geonames-pending'};
    }).filter(Boolean).slice(0,limit);
    res.set('Cache-Control','public, max-age=120').json({ok:true,provider:'GeoNames',rows});
