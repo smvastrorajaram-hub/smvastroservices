@@ -204,7 +204,7 @@
  top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;
  display:block!important;align-self:center!important;flex:0 0 auto!important;
  width:auto!important;max-width:100%!important;min-width:0!important;
- margin:0 0 2px!important;padding:0 2px!important;
+ margin:0!important;padding:0 2px!important;
  font-size:clamp(9px,1.7vw,12px)!important;line-height:1!important;
  z-index:auto!important;pointer-events:none!important;
 }
