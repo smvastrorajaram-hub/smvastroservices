@@ -3020,3 +3020,8 @@ details>*{display:block!important}
 @media(max-width:420px){
   .smv-horoscope-controls-row{column-gap:6px!important;row-gap:0!important}
 }
+/* Transit-chart Lagna marker uses the same compact text scale as its short graha labels. */
+html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-card .transit-chart .transit-chart-lagna{
+  font-size:var(--smv-chart-compact-font-size,12px)!important;
+  line-height:1.15!important;
+}
