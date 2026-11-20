@@ -11,6 +11,8 @@ on:
       - "public/horoscope/horoscope.js"
       - "public/horoscope/sw.js"
       - "tests/true-bphs-naelos-production-browser-runtime.mjs"
+      - "tests/bv-raman-ishta-kashta-regression.mjs"
+      - "tests/bv-raman-strength6-regression.mjs"
       - "public/horoscope/offline/true-bphs-components.browser.mjs"
       - "public/horoscope/offline/effective-lahiri-frame.browser.mjs"
       - "public/horoscope/offline/bphs-*.browser.mjs"
@@ -80,6 +82,12 @@ jobs:
 
       - name: Verify production Browser chart adapter end-to-end with actual DE440 tables
         run: node tests/true-bphs-naelos-production-browser-runtime.mjs
+
+      - name: Verify Ishta/Kashta formula provenance and customer BPHS renderer
+        run: node tests/bv-raman-ishta-kashta-regression.mjs
+
+      - name: Verify live Horoscope six-Bala and Ishta/Kashta across five Perambalur natal charts
+        run: node tests/bv-raman-strength6-regression.mjs
 
       - name: Commit generated browser bundle and offline DE440 assets
         shell: bash
