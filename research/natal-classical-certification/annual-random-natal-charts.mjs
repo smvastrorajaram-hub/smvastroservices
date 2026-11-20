@@ -247,7 +247,7 @@ for (let year = CLASSICAL_NATAL_SCOPE.startYear;
         aggregateYuddha.noWarPairs++;
       } else {
         assert.ok(candidate,
-          birth.epochId+' '+a+'/'+b+' below 1° appears in Raman's war candidate evidence');
+          birth.epochId+' '+a+'/'+b+' below 1° appears in the Raman war-candidate evidence');
         if(unresolved) {
           outcome='UNRESOLVED';
           aggregateYuddha.unresolvedPairs++;
