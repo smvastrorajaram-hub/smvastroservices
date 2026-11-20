@@ -8,7 +8,7 @@ const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? 'smv-763e7ae32f8bfd1d' : 'smv-1927
 const OFFLINE_CACHE='smv-horoscope-offline';
 const LOCATION_CACHE='smv-shared-india-places';
 const SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE;
-const RUNTIME_REVISION = IS_PAGES_DEV_HOST ? 'v284-pages-dev-tamil-solar-20261116' : 'v278-in-navigation-20261115';
+const RUNTIME_REVISION = IS_PAGES_DEV_HOST ? 'v285-naelos-bphs-effective-lahiri-20261121' : 'v279-naelos-bphs-effective-lahiri-20261121';
 const PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['../pages-dev-host-independence.js','../pages-dev-apk-pwa-icons.js']:[];
 
 const CORE=[
@@ -35,6 +35,18 @@ const CORE=[
   './horoscope-life-engine.js','./horoscope-judgement-engine.js',
   './integrated.js','./d1-time-reading.js','./prediction-synthesis.js',
   './offline/offline-engine.mjs','./offline/server-wrapper.browser.mjs',
+  './offline/true-bphs-naelos-engine.browser.bundle.mjs',
+  './offline/naelos-data/manifest.json',
+  './offline/naelos-data/ne-1700.bin','./offline/naelos-data/ne-1800.bin',
+  './offline/naelos-data/ne-1900.bin','./offline/naelos-data/ne-2000.bin',
+  './offline/naelos-data/ne-2100.bin','./offline/naelos-data/ne-2200.bin',
+  './offline/naelos-data/ne-2300.bin','./offline/naelos-data/ne-2400.bin',
+  './offline/true-bphs-naelos-engine.browser.bundle.mjs',
+  './offline/naelos-data/manifest.json',
+  './offline/naelos-data/ne-1700.bin','./offline/naelos-data/ne-1800.bin',
+  './offline/naelos-data/ne-1900.bin','./offline/naelos-data/ne-2000.bin',
+  './offline/naelos-data/ne-2100.bin','./offline/naelos-data/ne-2200.bin',
+  './offline/naelos-data/ne-2300.bin','./offline/naelos-data/ne-2400.bin',
   './offline/swiss_vedic.browser.mjs','./offline/wasm-provider.mjs',
   './offline/transit_panchang.browser.mjs','./offline/astro_advanced.browser.mjs',
   './offline/dasa_engine.browser.mjs','./offline/pvr-longevity-sodhya-timing.browser.mjs',
