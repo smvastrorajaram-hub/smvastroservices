@@ -12,6 +12,7 @@ await mkdir(outputDir, {recursive:true});
 const signOrder = [11,0,1,2,10,3,9,4,8,7,6,5];
 const zodiac = ['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
 const roman = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+const devanagari = ['१','२','३','४','५','६','७','८','९','१०','११','१२'];
 const compartmentPolygons = {
   north: {
     1:[[50,0],[75,25],[50,50],[25,25]], 2:[[0,0],[50,0],[25,25]], 3:[[0,0],[0,50],[25,25]],
@@ -61,7 +62,7 @@ function planetRow(index, withState, bhavaHouse = null) {
   return '<div class="planet-line"' + houseAttribute + '><span class="planet-glyph"><span class="planet-short"' + (index === 4 ? ' style="color:rgb(0, 0, 200)"' : '') + '>' +
     shortNames[index % shortNames.length] + '</span>' + state + '</span></div>';
 }
-function cell(sign, kind) {
+function cell(sign, kind, rootId) {
   const bhava = kind === 'bhava';
   const count = bhava ? bhavaPlanetCountsBySign[sign] : countForSign(sign);
   const transit = kind === 'transit';
@@ -72,7 +73,7 @@ function cell(sign, kind) {
   let label = '';
   if (bhava) {
     label = bhavaHousesBySign[sign].map(house=>
-      '<div class="bhava-cusp"><span class="bhava-house-no" data-bhava-house="' + house + '">' + String(house) + '</span></div>'
+      '<div class="bhava-cusp"><span class="bhava-house-no" data-bhava-house="' + house + '">' + (rootId === 'tamilHoroscopeResult' ? String(house) : roman[house-1]) + '</span></div>'
     ).join('');
   } else {
     label = '<div class="dynamic-rasi-number">' + (sign === 0 ? '' : String(sign + 1)) + '</div>';
@@ -91,12 +92,12 @@ function cell(sign, kind) {
   return '<div class="' + classes.join(' ') + '" data-chart-planet-count="' + count +
     '" data-transit-planet-count="' + count + '">' + label + (transit ? '<div class="transit-cell-planets">' + transitLagna + rows + '</div>' : lagna + rows) + '</div>';
 }
-function chart(id, kind) {
+function chart(id, kind, rootId) {
   const classes = kind === 'transit' ? 'south-indian-chart transit-chart' : 'south-indian-chart';
   const wrapper = kind === 'transit' ? 'transit-card' : '';
   return '<section class="' + wrapper + '">' +
     '<div id="' + id + '" class="' + classes + '">' +
-    signOrder.map(sign=>cell(sign,kind)).join('') +
+    signOrder.map(sign=>cell(sign,kind,rootId)).join('') +
     '</div></section>';
 }
 function bhavaTable() {
@@ -162,7 +163,7 @@ try {
               const chartRect = chart.getBoundingClientRect();
               const cellBoundsOutside = cells.filter(cell=>{const rect=cell.getBoundingClientRect();return rect.left<chartRect.left-1||rect.right>chartRect.right+1||rect.top<chartRect.top-1||rect.bottom>chartRect.bottom+1;}).map(cell=>{const rect=cell.getBoundingClientRect();return {className:cell.className,house:cell.dataset.house||'',sign:cell.dataset.sign||'',left:Math.round(rect.left*10)/10,right:Math.round(rect.right*10)/10,top:Math.round(rect.top*10)/10,bottom:Math.round(rect.bottom*10)/10,chartLeft:Math.round(chartRect.left*10)/10,chartRight:Math.round(chartRect.right*10)/10,chartTop:Math.round(chartRect.top*10)/10,chartBottom:Math.round(chartRect.bottom*10)/10,chartWidth:Math.round(chartRect.width*10)/10,chartHeight:Math.round(chartRect.height*10)/10};});
 
-              const compartmentOutside = style==='south' ? [] : cells.flatMap(cell=>{
+              let compartmentOutside = style==='south' ? [] : cells.flatMap(cell=>{
                 const compartment=style==='north'?Number(cell.dataset.house||0):Number(cell.dataset.sign||0);
                 const polygon=compartmentPolygons[style]?.[compartment];
                 if(!polygon)return [{compartment,reason:'missing polygon'}];
@@ -186,6 +187,29 @@ try {
                 });
               });
 
+              if(style==='north'){
+                const overlayOutside=[...chart.querySelectorAll(':scope > .smv-v342-sign-number-overlay')].flatMap(element=>{
+                  const house=Number(element.dataset.house||0),polygon=compartmentPolygons.north?.[house];
+                  if(!polygon)return [{compartment:house,reason:'missing North overlay polygon'}];
+                  const area=polygon.reduce((sum,[x1,y1],index)=>{
+                    const [x2,y2]=polygon[(index+1)%polygon.length];return sum+x1*y2-x2*y1;
+                  },0);
+                  const orientation=Math.sign(area)||1;
+                  const inside=point=>polygon.every(([x1,y1],index)=>{
+                    const [x2,y2]=polygon[(index+1)%polygon.length];
+                    const cross=(x2-x1)*(point[1]-y1)-(y2-y1)*(point[0]-x1);
+                    return orientation>0?cross>=-0.8:cross<=0.8;
+                  });
+                  const rect=element.getBoundingClientRect();
+                  if(!rect.width||!rect.height)return [{compartment:house,reason:'North overlay has no visible box'}];
+                  const corners=[[rect.left,rect.top],[rect.right,rect.top],[rect.left,rect.bottom],[rect.right,rect.bottom]]
+                    .map(([x,y])=>[(x-chartRect.left)/chartRect.width*100,(y-chartRect.top)/chartRect.height*100]);
+                  const outside=corners.filter(point=>!inside(point));
+                  return outside.length?[{compartment:house,tag:element.tagName,text:element.textContent.trim(),outsideCorners:outside.map(p=>p.map(v=>Math.round(v*10)/10))}]:[];
+                });
+                compartmentOutside=compartmentOutside.concat(overlayOutside);
+              }
+
               const cellCount = node => Number(node.getAttribute('data-chart-planet-count') || 0);
               const picked = {};
               for (const target of [2,3,4,5]) {
@@ -196,7 +220,7 @@ try {
                 }
                 const line = cell.querySelector(style === 'south' ? '.planet-line' : '.smv-v342-planets .planet-line');
                 const glyph = cell.querySelector(style === 'south' ? '.planet-glyph' : '.smv-v342-planets .planet-glyph');
-                const number = kind==='transit' ? cell.querySelector('[data-transit-lagna]') : (cell.querySelector('.lagna,.smv-v342-asc') || cell.querySelector('.dynamic-rasi-number,.bhava-house-no,.smv-v342-house-number,.smv-v342-sign-number'));
+                const number = kind==='transit' ? cell.querySelector('[data-transit-lagna]') : style==='north' ? chart.querySelector('.smv-v342-sign-number-overlay[data-house="'+(cell.dataset.house||'')+'"]') : (cell.querySelector('.lagna,.smv-v342-asc') || cell.querySelector('.dynamic-rasi-number,.bhava-house-no'));
                 const degree = cell.querySelector('.planet-degree,.rasi-degree,.transit-degree');
                 const marker = cell.querySelector('.status-combust,.rasi-status-marker.status-c,.status-c');
                 const retroMarker = cell.querySelector('.status-retro,.rasi-status-marker.status-r,.status-r');
@@ -252,7 +276,7 @@ try {
               }));
               const crowdedLabelNodes = cells
                 .filter(cell=>cell.classList.contains('smv-v342-triangle-cell')&&cell.classList.contains('smv-chart-cell-compact'))
-                .map(cell=>cell.querySelector('.smv-v342-sign-number,.smv-v342-house-number')).filter(Boolean);
+                .map(cell=>cell.querySelector('.smv-v342-house-number')).filter(Boolean);
               const crowdedTriangleNumbers = crowdedLabelNodes.map(number=>{
                 const rect=number.getBoundingClientRect();
                 const overlapsPlanet=[...(number.closest('.smv-v342-cell')?.querySelectorAll('.smv-v342-planets .planet-glyph')||[])].some(glyph=>{
@@ -273,7 +297,18 @@ try {
               });
               const emptyCells = cells.filter(cell=>cellCount(cell) === 0);
               const emptyDash = emptyCells.some(cell=>!!cell.querySelector('.smv-v342-empty'));
-              const numericLabels = cells.reduce((count,cell)=>count+cell.querySelectorAll('.smv-v342-sign-number,.smv-v342-house-number').length,0);
+              const numericLabels = style==='north'&&kind!=='bhava' ? chart.querySelectorAll(':scope > .smv-v342-sign-number-overlay').length : cells.reduce((count,cell)=>count+cell.querySelectorAll('.smv-v342-sign-number,.smv-v342-house-number').length,0);
+              const signNumberLabels = style==='north'&&kind!=='bhava' ? [...chart.querySelectorAll(':scope > .smv-v342-sign-number-overlay')].map(el=>{
+                const house=Number(el.dataset.house||0),cell=chart.querySelector('.smv-v342-cell[data-house="'+house+'"]');
+                const rect=el.getBoundingClientRect(),chartRect=chart.getBoundingClientRect();
+                const overlapsPlanet=[...(cell?.querySelectorAll('.smv-v342-planets .planet-glyph')||[])].some(glyph=>{
+                  const other=glyph.getBoundingClientRect();
+                  return rect.width>0&&rect.height>0&&other.width>0&&other.height>0&&rect.left<other.right-0.5&&rect.right>other.left+0.5&&rect.top<other.bottom-0.5&&rect.bottom>other.top+0.5;
+                });
+                const computed=getComputedStyle(el);
+                const bounds=r=>({left:Math.round(r.left*10)/10,top:Math.round(r.top*10)/10,right:Math.round(r.right*10)/10,bottom:Math.round(r.bottom*10)/10,width:Math.round(r.width*10)/10,height:Math.round(r.height*10)/10});
+                return {sign:Number(el.dataset.sign||0),house,text:el.textContent.trim(),fontSize:parseFloat(computed.fontSize),visible:rect.width>0&&rect.height>0&&computed.display!=='none'&&computed.visibility!=='hidden'&&Number(computed.opacity)>0,insideChart:rect.left>=chartRect.left-1&&rect.right<=chartRect.right+1&&rect.top>=chartRect.top-1&&rect.bottom<=chartRect.bottom+1,overlapsPlanet,labelBounds:bounds(rect),planetBounds:[...(cell?.querySelectorAll('.smv-v342-planets .planet-glyph')||[])].map(g=>bounds(g.getBoundingClientRect()))};
+              }) : [];
               const describeBhavaLabel=(el,sign,house=0)=>{
                 if(!el)return {sign,house,labels:[],labelDetails:[]};
                 const rect=el.getBoundingClientRect(),computed=getComputedStyle(el);
@@ -313,7 +348,7 @@ try {
                     Number(cell.dataset.sign||0)-1,
                     Number(cell.dataset.house||0)
                   ));
-              reports.push({rootId,kind,cells:cells.length,chartClass:chart.className,numericLabels,picked,emptyDash,bhavaHouseLabels,cellBoundsOutside,compartmentOutside,triangleCells:cells.filter(cell=>cell.classList.contains('smv-v342-triangle-cell')).length,planetGlyphColors,crowdedTriangleNumbers});
+              reports.push({rootId,kind,cells:cells.length,chartClass:chart.className,numericLabels,picked,emptyDash,bhavaHouseLabels,cellBoundsOutside,compartmentOutside,triangleCells:cells.filter(cell=>cell.classList.contains('smv-v342-triangle-cell')).length,planetGlyphColors,crowdedTriangleNumbers,signNumberLabels});
 
             }
           }
@@ -387,7 +422,7 @@ try {
               assert.equal(number.overlapsPlanet,false,item.rootId+' Bhava '+style+': Roman label never covers a planet name ('+number.text+').');
             }
           }else if(style!=='south'){
-            assert.equal(item.crowdedTriangleNumbers.length,0,item.rootId+' '+item.kind+' '+style+': Rasi, Navamsa and Transit have no numeric labels.');
+            assert.equal(item.crowdedTriangleNumbers.length,0,item.rootId+' '+item.kind+' '+style+': Rasi, Navamsa and Transit have no Bhava-house labels.');
           }
             assert.equal(item.compartmentOutside.length,0,item.rootId+' '+item.kind+' '+style+': planet names, markers, Degrees and numbers remain inside their actual compartment polygons: '+JSON.stringify(item.compartmentOutside));
           }
@@ -398,7 +433,16 @@ try {
           }
           if(style!=='south'){
             assert.ok(item.chartClass.includes('smv-v342-'+style),item.rootId+' '+item.kind+' '+style+': requested alternate layout is actually rendered, not left in South geometry.');
-            if(['rasi','navamsa','transit'].includes(item.kind))assert.equal(item.numericLabels,0,item.rootId+' '+item.kind+' '+style+': numeric sign and house labels are removed.');
+          if(style==='north'&&['rasi','navamsa','transit'].includes(item.kind)){
+            assert.equal(item.signNumberLabels.length,12,item.rootId+' '+item.kind+': every sign has one Devanagari label.');
+            const sortedSignLabels=[...item.signNumberLabels].sort((a,b)=>a.sign-b.sign);
+            assert.deepEqual(sortedSignLabels.map(label=>label.text),devanagari,item.rootId+' '+item.kind+': sign digits follow the actual Rasi numbers 1–12.');
+            const badSignLabels=sortedSignLabels.filter(label=>label.missing||!label.visible||!label.insideChart||label.overlapsPlanet);
+            assert.equal(badSignLabels.length,0,item.rootId+' '+item.kind+': sign numbers remain visible in their chart compartments and clear of all planet names: '+JSON.stringify(badSignLabels));
+            const sizes=sortedSignLabels.map(label=>label.fontSize);
+            assert.ok(Math.max(...sizes)-Math.min(...sizes)<0.6,item.rootId+' '+item.kind+': all twelve Hindi sign numbers use one consistent font size.');
+          }
+            if(['rasi','navamsa','transit'].includes(item.kind))assert.equal(item.numericLabels,style==='north'?12:0,item.rootId+' '+item.kind+' '+style+': North has exactly twelve sign labels and East has none.');
           }
           if(item.kind==='bhava'){
             const labels=item.bhavaHouseLabels;

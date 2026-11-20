@@ -13,6 +13,7 @@
  const safe=x=>['south','north','east'].includes(x)?x:'south';
  const isTa=()=>document.documentElement.lang==='ta'||document.body.classList.contains('tamil-mode');
  const roman=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+ const DEVANAGARI_SIGNS=['१','२','३','४','५','६','७','८','९','१०','११','१२'];
  const houseNumber=value=>{
   const raw=String(value??'').trim().toUpperCase();
   if(/^\d{1,2}$/.test(raw)){const n=Number(raw);return n>=1&&n<=12?n:0;}
@@ -20,6 +21,9 @@
  };
  const romanHouse=house=>roman[Number(house)-1]||'—';
  function normalizeSouthBhavaHouseLabels(chart){
+  // Only the Tamil result needs this legacy Arabic-to-Roman display conversion.
+  // Keep the already-correct English Bhava labels untouched.
+  if(!chart.closest('#tamilHoroscopeResult'))return;
   for(const label of chart.querySelectorAll('.bhava-house-no')){
    const house=houseNumber(label.dataset.bhavaHouse)||houseNumber(label.textContent);
    if(house){label.dataset.bhavaHouse=String(house);label.dataset.bhavaRoman=romanHouse(house);label.textContent=romanHouse(house);}
@@ -85,6 +89,22 @@
   }
   for(let si=0;si<12;si++)if(arr.out[si]?.querySelector('.lagna'))return si;
   return -1;
+ }
+ function addNorthSignNumbers(chart,lagna){
+  // Labels are chart-level overlays, deliberately separate from each house's
+  // planet stack. Their positions are the clear outer corners of the fixed
+  // North Indian compartments, so no graha row is moved or clipped.
+  for(let house=1;house<=12;house++){
+   const sign=(lagna+house-1)%12;
+   const label=document.createElement('span');
+   label.className='smv-v342-sign-number-overlay';
+   label.dataset.house=String(house);
+   label.dataset.sign=String(sign+1);
+   label.textContent=DEVANAGARI_SIGNS[sign]||'';
+   label.setAttribute('aria-label','Rasi '+String(sign+1));
+   label.setAttribute('aria-hidden','true');
+   chart.append(label);
+  }
  }
  function pointCell(x,y,sign,house,source,style,kind,ta,planetEntries=null,bhavaHouseLabel=''){
   const cell=document.createElement('div');cell.className='smv-v342-cell';cell.dataset.sign=String(sign+1);
@@ -240,6 +260,7 @@
     chart.append(pointCell(x,y,sign,house,from,style,kind,ta,planetEntries,kind==='bhava'?romanHouse(house):''));
    }
   }
+  if(style==='north'&&['d1','d9','transit'].includes(kind))addNorthSignNumbers(chart,lagna);
   if(style==='east'){
    const title=document.createElement('div');title.className='smv-v342-east-center';
    title.textContent=kind==='d9'?(ta?'நவாம்சம்':'Navamsa'):kind==='bhava'?(ta?'பாவம்':'Bhava'):kind==='transit'?(ta?'கோச்சாரம்':'Transit'):(ta?'ராசி':'Rasi');
