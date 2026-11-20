@@ -173,6 +173,14 @@
  top:0!important;left:20%!important;right:auto!important;
 }
 
+/* Keep the house/sign label readable when a compact North/East cell is crowded. */
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-triangle-cell.smv-chart-cell-compact .smv-v342-sign-number,
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-triangle-cell.smv-chart-cell-compact .smv-v342-house-number,
+.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-triangle-cell.smv-chart-cell-compact .smv-v342-sign-number,
+.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-triangle-cell.smv-chart-cell-compact .smv-v342-house-number{
+ z-index:4!important;background-color:#fffdf7;padding:0 2px;border-radius:2px;
+}
+
 /* One planet per compact row prevents the glyph, marker and Degree from spilling. */
 .smv-v342-cell.smv-v342-triangle-cell .smv-v342-planets{
  display:flex!important;flex-direction:column!important;flex-wrap:nowrap!important;
