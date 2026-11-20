@@ -1,3 +1,4 @@
+import './helpers/naelos-node-fetch-bridge.mjs';
 // V357: independent Kakshya-owner -> BAV contributor mapping verification.
 // Classical 8 Kakshya sectors (each 3°45'): Saturn,Jupiter,Mars,Sun,
 // Venus,Mercury,Moon,Ascendant. Prastara columns follow a DIFFERENT order.
