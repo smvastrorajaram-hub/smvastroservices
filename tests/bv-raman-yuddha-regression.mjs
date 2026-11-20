@@ -121,6 +121,8 @@ const calculate=planets=>both(planets);
  eq(browser.warEvidence.resolved,true,'standard horoscope Yuddha is resolved');
  eq(browser.warEvidence.pairs,[],'standard horoscope has no qualifying Yuddha pair');
  eq(browser.warEvidence.unresolved,[],'standard horoscope has no unresolved Yuddha pair');
+ eq(browser.classicalCertified,false,'same numeric inputs without the exact source provenance remain uncertified');
+ eq(node.classicalCertified,false,'Node also fails closed without the source provenance marker');
  for(const name of Object.keys(discArcsec)){
   eq(browser.planets[name].components.kala.yuddha,0,name+' standard horoscope has zero Yuddha');
   near(browser.planets[name].components.kala.total,
