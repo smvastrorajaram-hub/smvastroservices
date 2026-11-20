@@ -21,7 +21,7 @@ Detailed source contract, pinned source-file hashes, all residuals, monthly cove
 
 The full-year test downloads the five official PDFs, verifies their exact byte lengths and SHA-256 digests against `tests/fixtures/pac-2026-official-daily-pdf-manifest.json`, extracts daily selectable text, and requires complete 2026 coverage without a missing or duplicate date.
 
-**GitHub Actions run #1214:** https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44771494887 — complete workflow SUCCESS using the 00:00 TT comparison convention.
+**Latest TT-only GitHub Actions run #1229:** https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44778196616 — complete integrated workflow SUCCESS using 00:00 TT. Both the 15-value anchor check and all 1,825 full-year values passed.
 
 - Five grahas × 365 daily rows: **1,825 / 1,825** comparisons.
 - Maximum absolute difference: **0.253273″**, Jupiter on 2026-01-06.
@@ -31,7 +31,7 @@ The full-year test downloads the five official PDFs, verifies their exact byte l
 - All 12 months have exact expected daily coverage.
 - 12 daily station brackets, 36 sign-boundary crossings and 13 close pairwise conjunction minima were enumerated from the PAC daily rows.
 
-The separate hard-coded 15-value three-date anchor regression passed 135 assertions at 00:00 TT in run #1207: https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44769611357.
+The separate hard-coded 15-value three-date anchor regression passed 135 assertions at 00:00 TT in the latest integrated run #1229: https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44778196616.
 
 **Epoch decision:** Keep **00:00:00 TT** as the sole time-scale convention for PAC daily comparisons. The project owner reports receiving email confirmation that TT is the intended time scale. The email itself is not attached to this repository; this records the owner's confirmation. No UTC input, UT1 conversion or UTC-to-TT conversion is used in the tests.
 
