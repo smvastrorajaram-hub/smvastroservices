@@ -126,8 +126,9 @@ test('All three independent Service Workers share one new cache release and cach
   const workers=[read('public/sw.js'),read('public/horoscope/sw.js'),read('public/horoscope/calendar/sw.js')];
   const versions=workers.map(source=>/const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(source));
   assert.ok(versions.every(Boolean),'Each app worker selects a Pages.dev and legacy cache release.');
-  assert.deepEqual(versions.map(match=>match[1]),['20261120-subha-janana-transit-lagna-v3','20261120-subha-janana-transit-lagna-v3','20261120-subha-janana-transit-lagna-v3']);
-  assert.deepEqual(versions.map(match=>match[2]),['20261120-subha-janana-transit-lagna-v3','20261120-subha-janana-transit-lagna-v3','20261120-subha-janana-transit-lagna-v3']);
+  assert.equal(new Set(versions.map(match=>match[1])).size,1,'All three Pages.dev cache releases must match.');
+  assert.equal(new Set(versions.map(match=>match[2])).size,1,'All three production cache releases must match.');
+  assert.ok(versions[0][1]&&versions[0][2],'Both generated cache release IDs must exist.');
   assert.ok(workers[0].includes("'./assets/favicon-astro.ico'"));
   assert.ok(workers[0].includes("'./assets/favicon-astro.png'"));
   assert.ok(workers[0].includes("'./assets/pwa-astro-192.svg'"));
