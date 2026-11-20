@@ -715,7 +715,7 @@
       bhOrder.forEach((si,pos)=>{
         if(si===null){ if(pos===5) h+=`<div class="south-chart-center">Bhava</div>`; return; }
         const chartLang=getHoroscopeLang();
-        const houseLabels=bhavaHouseBySign[si].map(n=>`<div class="bhava-cusp"><span class="bhava-house-no" data-bhava-house="${n}">${romanHouse(n)}</span></div>`).join('');
+        const houseLabels=bhavaHouseBySign[si].map(n=>`<div class="bhava-cusp"><span class="bhava-house-no" data-bhava-house="${n}" data-bhava-sign="${si+1}">${romanHouse(n)}</span></div>`).join('');
         const ps=planetsByBhavaSign[si].map(p=>`<div class="planet-line" data-bhava-house="${Number(p.bhava)}"><span class="planet-glyph">${esc(shortPlanetName(p.name,chartLang))}</span></div>`).join('');
         const bhavaPlanetCount=planetsByBhavaSign[si].length;
         const bhavaCompactClass=bhavaPlanetCount>=3?' smv-chart-cell-compact':'';
