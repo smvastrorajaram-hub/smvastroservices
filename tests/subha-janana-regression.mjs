@@ -181,6 +181,9 @@ has(horoscope,'subhaJananaHtml','Birth statement is an explicit renderer paramet
 lacks(horoscope,'data-smv-screen-only="daily-panchang"','Horoscope no longer renders the Daily Panchang card');
 has(horoscope,'if(calendarPresentation)h+=','Daily Hora markup is gated to Calendar presentation');
 has(horoscope,"${ta?'கோச்சாரம்':'Transit'}","Transit chart centre displays கோச்சாரம் in Tamil");
+has(horoscope,'class="lagna transit-chart-lagna"','Transit chart has a specifically scoped Lagna marker');
+has(css,'html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-card .transit-chart .transit-chart-lagna','Transit chart Lagna size rule is scoped to Horoscope result');
+has(css,'font-size:var(--smv-chart-compact-font-size,12px)!important;','Transit chart Lagna uses the same 12px compact scale as short graha labels');
 has(horoscope,'if(calendarPanchangSlot)calendarPanchangSlot.innerHTML=dailyTable;','Calendar Daily Panchang source remains populated');
 has(horoscope,'data-smv-screen-only="daily-hora"','Calendar Daily Hora markup remains available');
 has(horoscope,'window.__smvRenderBasicSnapshot=async','Language switches regenerate the statement in the selected language');
