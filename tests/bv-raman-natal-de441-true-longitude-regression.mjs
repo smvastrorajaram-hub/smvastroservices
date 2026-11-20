@@ -68,13 +68,13 @@ for (const birth of fixture.births) {
     const candidateTropical = wrap(Number(local.longitude) + Number(chart.ayanamsa));
     const delta = signedDifference(candidateTropical, referenceTropical);
     assert.ok(Math.abs(delta) <= 0.05,
-      birth.id + ' ' + planet + ' Moshier vs independent DE441 <= 0.05 degrees; got ' + delta);
+      birth.id + ' ' + planet + ' local Swiss ephemeris vs independent DE441 <= 0.05 degrees; got ' + delta);
     assertions += 3;
     observations.push({
       birth: birth.id,
       planet,
       de441ApparentTropicalDegrees: referenceTropical,
-      localMoshierTropicalDegrees: Number(candidateTropical.toFixed(9)),
+      localApparentTropicalDegrees: Number(candidateTropical.toFixed(9)),
       signedDifferenceDegrees: Number(delta.toFixed(9)),
       runtimeMode: chart.ephemerisMode
     });
