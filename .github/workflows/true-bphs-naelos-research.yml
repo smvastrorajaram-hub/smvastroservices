@@ -26,7 +26,10 @@ jobs:
         run: |
           node --check research/true-bphs/naelos-bphs-shadbala-engine.mjs
           node --check tests/true-bphs-naelos-engine-regression.mjs
+          node --check tests/true-bphs-component-source-parity.mjs
           node --check tests/true-bphs-naelos-600y-research.mjs
+      - name: Verify the isolated BPHS helpers match the repository BPHS source helpers
+        run: node tests/true-bphs-component-source-parity.mjs
       - name: Verify NAELOS table hashes, five natal source parity and BPHS component integration
         run: node tests/true-bphs-naelos-engine-regression.mjs
       - name: Calculate one seeded-random full BPHS natal chart for every year 1800–2399
