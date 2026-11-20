@@ -50,9 +50,11 @@ test('Website, Horoscope and Calendar receive one synchronized cache release wit
     read('public/horoscope/sw.js'),
     read('public/horoscope/calendar/sw.js')
   ];
+  const releases = serviceWorkers.map(source => /const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(source));
+  assert.ok(releases.every(Boolean), 'All three app workers declare their cache releases.');
+  assert.equal(new Set(releases.map(match => match[1])).size, 1, 'Pages.dev cache release is synchronized across the three apps.');
+  assert.equal(new Set(releases.map(match => match[2])).size, 1, 'Production cache release is synchronized across the three apps.');
   for (const source of serviceWorkers) {
-    assert.match(source, /20261120-subha-janana-transit-lagna-v3/);
-    assert.match(source, /20261120-subha-janana-transit-lagna-v3/);
     assert.doesNotMatch(source, /localStorage\.clear\(|sessionStorage\.clear\(|indexedDB\.deleteDatabase\(/);
   }
   assert.match(serviceWorkers[1], /v284-pages-dev-tamil-solar-20261116/);
