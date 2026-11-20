@@ -1,0 +1,87 @@
+name: Build TRUE BPHS NAELOS browser runtime and offline tables
+
+on:
+  push:
+    branches:
+      - production/true-bphs-naelos-effective-lahiri
+    paths:
+      - "public/horoscope/offline/true-bphs-naelos-engine.browser.mjs"
+      - "public/horoscope/offline/true-bphs-components.browser.mjs"
+      - "public/horoscope/offline/effective-lahiri-frame.browser.mjs"
+      - "public/horoscope/offline/bphs-*.browser.mjs"
+      - "public/horoscope/offline/wasm-provider.mjs"
+      - "public/horoscope/offline/places/timezone.mjs"
+      - "naelos-ephemeris/**"
+      - ".github/workflows/true-bphs-production-browser-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: true-bphs-production-browser-build
+  cancel-in-progress: true
+
+jobs:
+  build-browser-engine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout integration branch
+        uses: actions/checkout@v4
+        with:
+          ref: production/true-bphs-naelos-effective-lahiri
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install pinned NAELOS reader and esbuild without changing package manifests
+        run: npm install --no-save --no-package-lock --ignore-scripts naelos-ephemeris@0.1.3 esbuild@0.25.11
+
+      - name: Copy only the DE440 centuries needed for 1800–2399 and verify manifest coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p public/horoscope/offline/naelos-data
+          cp naelos-ephemeris/manifest.json public/horoscope/offline/naelos-data/manifest.json
+          for century in 1700 1800 1900 2000 2100 2200 2300 2400; do
+            test -s "naelos-ephemeris/ne-${century}.bin"
+            cp "naelos-ephemeris/ne-${century}.bin" "public/horoscope/offline/naelos-data/ne-${century}.bin"
+          done
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const manifest=JSON.parse(fs.readFileSync('public/horoscope/offline/naelos-data/manifest.json','utf8'));
+          const required=[1700,1800,1900,2000,2100,2200,2300,2400];
+          for(const century of required){
+            const name=`ne-${century}.bin`;
+            const item=manifest.files.find(x=>x.name===name);
+            if(!item)throw new Error('Manifest missing '+name);
+            const stat=fs.statSync('public/horoscope/offline/naelos-data/'+name);
+            if(stat.size!==item.bytes)throw new Error(name+' byte count differs from manifest');
+          }
+          console.log('PASS: 8 DE440 tables copied; manifest lengths verified.');
+          NODE
+
+      - name: Bundle the same NAELOS BPHS engine for Browser/PWA/Android WebView
+        run: |
+          npx esbuild public/horoscope/offline/true-bphs-naelos-engine.browser.mjs \
+            --bundle --format=esm --platform=browser --target=es2022 \
+            --outfile=public/horoscope/offline/true-bphs-naelos-engine.browser.bundle.mjs
+          node --check public/horoscope/offline/true-bphs-naelos-engine.browser.bundle.mjs
+
+      - name: Commit generated browser bundle and offline DE440 assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/horoscope/offline/true-bphs-naelos-engine.browser.bundle.mjs public/horoscope/offline/naelos-data
+          if git diff --cached --quiet; then
+            echo "Generated browser engine and DE440 assets are already current."
+            exit 0
+          fi
+          git commit -m "Build offline NAELOS TRUE BPHS browser engine and DE440 assets"
+          git push origin HEAD:production/true-bphs-naelos-effective-lahiri
