@@ -7408,6 +7408,7 @@ async function createTrueBphsShadbalaEngine({
         researchOnly: false,
         productionIntegrationAllowed: true,
         classicalCertified: false,
+        tableIntegrityVerified: true,
         birth: Object.freeze({
           date: birth.date,
           time: birth.time,
