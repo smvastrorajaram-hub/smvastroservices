@@ -37,6 +37,7 @@ on:
       - 'tests/marriage-basic-report-regression.mjs'
       - 'tests/bv-raman-ayurdaya-report-regression.mjs'
       - 'tests/print-dst-location-regression.mjs'
+      - 'tests/subha-janana-regression.mjs'
       - 'tests/geonames-location-regression.cjs'
       - 'tests/horoscope-birth-offset-ui-regression.mjs'
       - 'tests/dst-seasonal-regression.mjs'
@@ -87,6 +88,7 @@ on:
       - 'tests/marriage-basic-report-regression.mjs'
       - 'tests/bv-raman-ayurdaya-report-regression.mjs'
       - 'tests/print-dst-location-regression.mjs'
+      - 'tests/subha-janana-regression.mjs'
       - 'tests/geonames-location-regression.cjs'
       - 'tests/horoscope-birth-offset-ui-regression.mjs'
       - 'tests/dst-seasonal-regression.mjs'
@@ -176,6 +178,8 @@ jobs:
         run: node tests/bv-raman-ayurdaya-report-regression.mjs
       - name: Report, print, timezone input regression
         run: node tests/print-dst-location-regression.mjs
+      - name: Sri Math Subha Janana narrative and Horoscope/Calendar display regression
+        run: node tests/subha-janana-regression.mjs
       - name: GeoNames search and authoritative timezoneId regression
         run: node tests/geonames-location-regression.cjs
       - name: Live Horoscope birth UTC-offset UI regression
