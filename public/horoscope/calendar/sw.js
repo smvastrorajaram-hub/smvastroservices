@@ -21,7 +21,7 @@ const CORE=[
  '../offline/uttara-kalamrita-shadbala.browser.mjs',
  '../offline/vendor/smv-swisseph-local.mjs','../offline/vendor/wasm/swisseph.mjs',
  '../offline/vendor/wasm/swisseph.js','../offline/vendor/wasm/swisseph.wasm','../offline/vendor/wasm/swisseph.data',
- '../offline/places/place-search.mjs','../offline/places/place-display.mjs','../offline/places/timezone.mjs','../offline/places/tz-boundary-lookup.mjs','../offline/places/india-manifest.json',
+ '../offline/places/place-search.mjs','../offline/places/place-display.mjs','../offline/places/tamil-transliteration.mjs','../offline/places/timezone.mjs','../offline/places/tz-boundary-lookup.mjs','../offline/places/india-manifest.json',
 ];
 function fixed(url,r){const h=new Headers(r.headers),p=new URL(url,self.location.origin).pathname.toLowerCase();if(/\.m?js$/.test(p))h.set('Content-Type','text/javascript; charset=utf-8');if(/\.webmanifest$/.test(p))h.set('Content-Type','application/manifest+json; charset=utf-8');if(/\.json$/.test(p))h.set('Content-Type','application/json; charset=utf-8');if(/\.wasm$/.test(p))h.set('Content-Type','application/wasm');if(/\.data$/.test(p))h.set('Content-Type','application/octet-stream');return new Response(r.clone().body,{status:r.status,statusText:r.statusText,headers:h});}
 const REQUIRED_CORE = new Set([
@@ -41,7 +41,7 @@ const REQUIRED_CORE = new Set([
  '../offline/bphs-swiss-solar-cheshta.browser.mjs','../offline/saura-classical-mean-motion.browser.mjs',
  '../offline/bv-raman-ishta-kashta.browser.mjs','../offline/uttara-kalamrita-shadbala.browser.mjs',
  '../offline/places/timezone.mjs','../offline/places/tz-boundary-lookup.mjs',
- '../offline/places/place-search.mjs','../offline/places/place-display.mjs','../offline/places/india-manifest.json',
+ '../offline/places/place-search.mjs','../offline/places/place-display.mjs','../offline/places/tamil-transliteration.mjs','../offline/places/india-manifest.json',
  '../offline/vendor/smv-swisseph-local.mjs','../offline/vendor/wasm/swisseph.mjs',
  '../offline/vendor/wasm/swisseph.js','../offline/vendor/wasm/swisseph.wasm','../offline/vendor/wasm/swisseph.data',
  '../location-search-online-offline.js'
