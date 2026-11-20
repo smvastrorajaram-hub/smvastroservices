@@ -25,6 +25,7 @@ jobs:
       - name: Syntax-check isolated engine and tests
         run: |
           node --check research/true-bphs/naelos-bphs-shadbala-engine.mjs
+          node --check research/true-bphs/saura-frame-transfer.mjs
           node --check tests/true-bphs-naelos-engine-regression.mjs
           node --check tests/true-bphs-component-source-parity.mjs
           node --check tests/true-bphs-naelos-600y-research.mjs
