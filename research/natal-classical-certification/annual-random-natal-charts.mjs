@@ -151,6 +151,14 @@ const aggregate = {
   sauraInputs:0,
   uniquePlaces:0
 };
+const aggregateYuddha = {
+  evaluatedPairs:0,
+  noWarPairs:0,
+  resolvedWars:0,
+  unresolvedPairs:0,
+  chartsWithYuddha:0,
+  chartsWithUnresolvedYuddha:0
+};
 
 function finite(value) {
   return typeof value === 'number' && Number.isFinite(value);
@@ -183,6 +191,123 @@ for (let year = CLASSICAL_NATAL_SCOPE.startYear;
   assert.ok(chart && Array.isArray(chart.planets),'chart planets are present for '+birth.epochId);
   const chartGrahas = chart.planets.filter(planet => GRAHAS.includes(planet.name));
   assert.equal(chartGrahas.length,7,'seven classical grahas for '+birth.epochId);
+
+  // Audit every one of the ten possible eligible five-planet pairs. The
+  // engine's warEvidence.pairs contains only pairs inside the strict <1°
+  // threshold; every remaining pair must therefore be explicitly NO_WAR.
+  const eligibleTamil = ['செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி'];
+  const grahaByName = new Map(chartGrahas.map(planet => [planet.name,planet]));
+  const warEvidence = chartGrahas[0]?.strength6?.warEvidence;
+  assert.ok(warEvidence && typeof warEvidence.resolved === 'boolean',
+    birth.epochId+' Raman Yuddha evidence object is present');
+  assert.ok(Array.isArray(warEvidence.pairs) && Array.isArray(warEvidence.unresolved),
+    birth.epochId+' Raman Yuddha pair and unresolved arrays are present');
+  assert.ok(warEvidence.diameterArcsec && typeof warEvidence.diameterArcsec === 'object',
+    birth.epochId+' Raman planetary disc diameters are present');
+  assert.ok(typeof warEvidence.source === 'string' && warEvidence.source.includes('B.V. Raman'),
+    birth.epochId+' Raman Yuddha source provenance is present');
+
+  const normalizedPair = (a,b) => [a,b].sort().join('|');
+  const warCandidates = new Map(warEvidence.pairs.map(pair =>
+    [normalizedPair(pair.a,pair.b),pair]));
+  const unresolvedPairs = new Map(warEvidence.unresolved.map(pair =>
+    [normalizedPair(pair.a,pair.b),pair]));
+  assert.equal(warCandidates.size,warEvidence.pairs.length,
+    birth.epochId+' Yuddha candidate pairs are unique');
+  assert.equal(unresolvedPairs.size,warEvidence.unresolved.length,
+    birth.epochId+' Yuddha unresolved pairs are unique');
+
+  const angleDistance = (a,b) => {
+    const x=((a%360)+360)%360,y=((b%360)+360)%360;
+    const d=Math.abs(x-y);
+    return Math.min(d,360-d);
+  };
+  const natalYuddhaPairs = [];
+  const unresolvedGrahas = new Set();
+  for (const pair of warEvidence.unresolved) {
+    unresolvedGrahas.add(pair.a);
+    unresolvedGrahas.add(pair.b);
+  }
+  for (let i=0;i<eligibleTamil.length;i++) {
+    for (let j=i+1;j<eligibleTamil.length;j++) {
+      const a=eligibleTamil[i],b=eligibleTamil[j];
+      const first=grahaByName.get(a),second=grahaByName.get(b);
+      assert.ok(first&&second,birth.epochId+' both Yuddha grahas are present: '+a+'/'+b);
+      const separation=angleDistance(first.longitude,second.longitude);
+      const key=normalizedPair(a,b);
+      const candidate=warCandidates.get(key);
+      const unresolved=unresolvedPairs.get(key);
+      let outcome='NO_WAR',winner=null,loser=null,magnitude=null,diameterDifferenceArcsec=null;
+
+      if(separation>=1) {
+        assert.equal(candidate,undefined,
+          birth.epochId+' '+a+'/'+b+' at or above 1° is not a Yuddha candidate');
+        assert.equal(unresolved,undefined,
+          birth.epochId+' '+a+'/'+b+' at or above 1° is not unresolved');
+        aggregateYuddha.noWarPairs++;
+      } else {
+        assert.ok(candidate,
+          birth.epochId+' '+a+'/'+b+' below 1° appears in Raman's war candidate evidence');
+        if(unresolved) {
+          outcome='UNRESOLVED';
+          aggregateYuddha.unresolvedPairs++;
+        } else {
+          outcome='WAR';
+          const firstLongitude=((first.longitude%360)+360)%360;
+          const secondLongitude=((second.longitude%360)+360)%360;
+          winner=firstLongitude<secondLongitude?a:b;
+          loser=winner===a?b:a;
+          const winnerGraha=grahaByName.get(winner);
+          const loserGraha=grahaByName.get(loser);
+          const winnerTrace=winnerGraha.strength6.components.kala.yuddhaTrace||[];
+          const loserTrace=loserGraha.strength6.components.kala.yuddhaTrace||[];
+          const win=winnerTrace.find(row=>row.against===loser&&row.result==='winner');
+          const lose=loserTrace.find(row=>row.against===winner&&row.result==='loser');
+          assert.ok(win&&lose,birth.epochId+' '+a+'/'+b+' winner and loser Kala traces exist');
+          assert.ok(finite(win.magnitude)&&finite(lose.magnitude),
+            birth.epochId+' '+a+'/'+b+' both Yuddha adjustment magnitudes are finite');
+          assert.ok(Math.abs(win.magnitude-lose.magnitude)<=0.001,
+            birth.epochId+' '+a+'/'+b+' winner/loser adjustment magnitudes are equal');
+          magnitude=win.magnitude;
+          const da=warEvidence.diameterArcsec[a],db=warEvidence.diameterArcsec[b];
+          diameterDifferenceArcsec=Math.abs(da-db);
+          assert.ok(finite(da)&&finite(db)&&diameterDifferenceArcsec>0,
+            birth.epochId+' '+a+'/'+b+' source disc-diameter difference is positive');
+          assert.ok(Math.abs(win.diameterDifferenceArcsec-diameterDifferenceArcsec)<1e-9,
+            birth.epochId+' '+a+'/'+b+' applied adjustment uses the source disc-diameter difference');
+          assert.ok(Math.abs(lose.diameterDifferenceArcsec-diameterDifferenceArcsec)<1e-9,
+            birth.epochId+' '+a+'/'+b+' loser uses the same disc-diameter difference');
+          aggregateYuddha.resolvedWars++;
+        }
+      }
+      natalYuddhaPairs.push({
+        planetA:a,planetB:b,separationDegrees:separation,outcome,
+        winner,loser,magnitude,diameterDifferenceArcsec,
+        source:warEvidence.source
+      });
+    }
+  }
+  assert.equal(natalYuddhaPairs.length,10,
+    birth.epochId+' all ten eligible five-planet Yuddha pairs are classified');
+  if(warEvidence.resolved) {
+    assert.equal(warEvidence.unresolved.length,0,
+      birth.epochId+' resolved Yuddha evidence has no unresolved pair');
+  } else {
+    assert.ok(warEvidence.unresolved.length>0,
+      birth.epochId+' unresolved Yuddha state carries explicit unresolved pairs');
+    aggregateYuddha.chartsWithUnresolvedYuddha++;
+  }
+  for(const grahaName of eligibleTamil) {
+    const row=grahaByName.get(grahaName);
+    if(unresolvedGrahas.has(grahaName)) {
+      assert.equal(row.strength6.totalVirupa,null,
+        birth.epochId+' '+grahaName+' aggregate withheld because its Yuddha pair is unresolved');
+      assert.equal(row.strength6.totalRupa,null,
+        birth.epochId+' '+grahaName+' Rupa withheld because its Yuddha pair is unresolved');
+    }
+  }
+  aggregateYuddha.evaluatedPairs+=natalYuddhaPairs.length;
+  aggregateYuddha.chartsWithYuddha+=natalYuddhaPairs.some(pair=>pair.outcome==='WAR')?1:0;
   successfulCharts++;
   aggregate.charts++;
 
@@ -310,6 +435,7 @@ for (let year = CLASSICAL_NATAL_SCOPE.startYear;
     chartOk:true,
     classicalCertified:false,
     grahas:grahaRows,
+    yuddha:{resolved:warEvidence.resolved,pairs:natalYuddhaPairs,unresolved:warEvidence.unresolved},
     fivePlanetHistoricalLongitudeResearch:fivePlanetResearch
   });
 }
@@ -317,6 +443,7 @@ for (let year = CLASSICAL_NATAL_SCOPE.startYear;
 assert.equal(records.length,EXPECTED_CHARTS,'one natal chart per year from 1800–2399');
 assert.equal(successfulCharts,600,'all 600 random natal charts calculate');
 assert.equal(aggregate.grahas,600*7,'all 4,200 graha rows inspected');
+assert.equal(aggregateYuddha.evaluatedPairs,600*10,'all 6,000 eligible Yuddha pair outcomes are classified');
 assert.equal(sauraResearchRows,600*5,'all 3,000 five-planet historical candidate rows inspected');
 assert.equal(missingGrahaRows,0,'no missing graha rows');
 assert.equal(unavailableStrength6Rows,0,'all 4,200 strength6 objects available');
@@ -340,6 +467,7 @@ const report = {
   timeZone:'Asia/Kolkata; historical IANA offset resolved for each exact local date/time',
   totals:{
     ...aggregate,
+    yuddha:aggregateYuddha,
     expectedCharts:600,
     expectedGrahaRows:4200,
     expectedBalaComponentValues:25200,
