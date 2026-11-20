@@ -7081,6 +7081,17 @@ function assembleBphsShadbala({ planetRows, bhavas, temporal, declinations, ches
         sunriseJdUt: temporal.sunriseJdUt,
         sunsetJdUt: temporal.sunsetJdUt,
         epochJdUt: temporal.epochJdUt,
+        cheshtaSource: name === "\u0B9A\u0BC2\u0BB0\u0BBF\u0BAF\u0BA9\u0BCD" ? Object.freeze({ method: "BPHS_CH27_SUN_AYANA_BALA", source: "BPHS I Chapter 27: Sun sixfold Cheshta is Ayana Bala", referenceFrameId: FRAME_ID, epochJdUt: temporal.epochJdUt }) : name === "\u0B9A\u0BA8\u0BCD\u0BA4\u0BBF\u0BB0\u0BA9\u0BCD" ? Object.freeze({ method: "BPHS_CH27_MOON_PAKSHA_BALA", source: "BPHS I Chapter 27: Moon sixfold Cheshta is Paksha Bala", referenceFrameId: FRAME_ID, epochJdUt: temporal.epochJdUt }) : Object.freeze({
+          method: "TRUE_BPHS_CH27_V365_MEAN_NAELOS_TRUE_LONGITUDE",
+          source: cheshtaInputs[name].source,
+          referenceFrameId: FRAME_ID,
+          epochJdUt: temporal.epochJdUt,
+          meanSunFrameId: cheshtaInputs[name].meanSunFrameId,
+          meanPlanetFrameId: cheshtaInputs[name].meanPlanetFrameId,
+          truePlanetFrameId: cheshtaInputs[name].truePlanetFrameId,
+          sheeghroccaFrameId: cheshtaInputs[name].sheeghroccaFrameId,
+          trueLongitudeHistoricalCertified: false
+        }),
         source: temporal.source
       }),
       ishtaKashta,
