@@ -1,3 +1,4 @@
+import './helpers/naelos-node-fetch-bridge.mjs';
 /**
  * Five Perambalur birth charts: live Swiss engine integration guard.
  * This verifies source-specific PARTIAL components are attached without

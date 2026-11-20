@@ -1,3 +1,4 @@
+import './helpers/naelos-node-fetch-bridge.mjs';
 // Browser and A4 Print QA: all 3 styles, real two-person Swiss/Varga/BAV data.
 import assert from 'node:assert/strict';
 import {mkdir,writeFile,stat,readFile} from 'node:fs/promises';

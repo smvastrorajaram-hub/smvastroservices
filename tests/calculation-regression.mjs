@@ -1,3 +1,4 @@
+import './helpers/naelos-node-fetch-bridge.mjs';
 // SMV ASTRO — deterministic horoscope/matching calculation regression.
 // Run from repository root: node tests/calculation-regression.mjs
 import assert from 'node:assert/strict';

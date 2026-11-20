@@ -1,3 +1,4 @@
+import './helpers/naelos-node-fetch-bridge.mjs';
 import assert from 'node:assert/strict';
 import {full} from '../public/horoscope/offline/offline-engine.mjs';
 import {cgRajanSevenNaturalResearch as natural} from '../public/horoscope/offline/cg-rajan-ayurdaya-research.browser.mjs';

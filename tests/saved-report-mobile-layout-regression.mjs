@@ -23,6 +23,6 @@ ok(html.includes('20261106-saved-list-full-width-red-v1'),'Horoscope stylesheet 
 const cacheReleases=workers.map(source=>/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '([^']+)' : '([^']+)';/.exec(source));
 ok(cacheReleases.every(Boolean),'All three application service workers declare both host cache release IDs');
 ok(new Set(cacheReleases.map(match=>match[1])).size===1&&new Set(cacheReleases.map(match=>match[2])).size===1,'Both host-specific cache releases are synchronized across all three apps for this shared public UI change');
-ok(sw.includes("const RUNTIME_REVISION = IS_PAGES_DEV_HOST ? 'v284-pages-dev-tamil-solar-20261116' : 'v278-in-navigation-20261115';"),'Horoscope runtime revision is bumped for both primary .in content and Pages.dev preview.');
+ok(sw.includes("const RUNTIME_REVISION = IS_PAGES_DEV_HOST ? 'v286-naelos-bphs-effective-lahiri-20261121' : 'v280-naelos-bphs-effective-lahiri-20261121';"),'Horoscope runtime revision is bumped for both primary .in content and Pages.dev preview.');
 ok(store.includes("const DB='smv-reports-v2',STORE='reports',DB_VERSION=3;"),'Saved report database schema is unchanged');
 console.log(JSON.stringify({pass:true,assertions:n,scope:'Saved Reports placement, responsive layout, contrast and cache-version source checks; no saved data migration or deletion'}));
