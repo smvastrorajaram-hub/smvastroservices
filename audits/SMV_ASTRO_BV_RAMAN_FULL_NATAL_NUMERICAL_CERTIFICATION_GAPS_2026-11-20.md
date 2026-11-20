@@ -8,23 +8,32 @@
 
 - The existing B.V. Raman and C.G. Rajan source-verification certificates remain unchanged.
 - The seven-graha Standard Horoscope worked-example arithmetic regression and certificate remain separate and unchanged.
-- The previous historical-year longitude sample set has been withdrawn. The only date-specific external planetary longitude sample maintained by this PR is now the Government of India PAC 2026 series.
+- The previously included historical-year longitude sample set was withdrawn. The only external planetary-longitude comparison maintained by this PR is now the official Government of India PAC 2026 daily Nirayana series.
 - The production calculation path remains unchanged. This PR is research and regression evidence only.
 
-## 2026 official PAC longitude reference
+## 2026 official PAC full-year longitude reference
 
-The official Positional Astronomy Centre, Kolkata / India Meteorological Department publishes daily 2026 Nirayana longitude tables for Mercury, Venus, Mars, Jupiter and Saturn. The 2026 sample fixture and its scope are documented in:
+The Positional Astronomy Centre, Kolkata / India Meteorological Department publishes daily 2026 Nirayana longitude tables for Mercury, Venus, Mars, Jupiter and Saturn.
+
+Detailed source contract, pinned source-file hashes, all residuals, monthly coverage, station brackets, sign transitions and conjunction minima are documented in:
 
 `audits/SMV_ASTRO_PAC_2026_FIVE_GRAHA_NIRAYANA_CROSSCHECK_2026-11-20.md`
 
-The regression currently compares 15 source values (three dates × five planets) with the bundled Swiss Ephemeris WASM 2.10.03 using its Lahiri sidereal mode and explicit SWIEPH data flags.
+The full-year test downloads the five official PDFs, verifies their exact byte lengths and SHA-256 digests against `tests/fixtures/pac-2026-official-daily-pdf-manifest.json`, extracts daily selectable text, and requires complete 2026 coverage without a missing or duplicate date.
 
-- Maximum absolute difference: **0.000069523° = 0.250283 arc-second**.
-- RMS difference: **0.0000386412° = 0.139108 arc-second**.
-- Per-point acceptance: **0.0001° = 0.36 arc-second**.
-- All 15 samples pass. CI run #1207: https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44769611357 (135 PAC-regression assertions).
+**GitHub Actions run #1214:** https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44771494887 — full workflow SUCCESS.
 
-**Metadata limitation:** The PAC daily PDF headings do not explicitly state the row epoch or name the ayanamsa. The comparison's 00:00 TT epoch and Lahiri sidereal convention are empirical inferences, not source metadata. PAC confirmation and denser annual sampling remain required.
+- Five grahas × 365 daily rows: **1,825 / 1,825** comparisons.
+- Maximum absolute difference: **0.253273″**, Jupiter on 2026-01-06.
+- Overall RMS difference: **0.128957″**.
+- Per-point acceptance gate: **0.36″**; all points pass.
+- Per-planet maximum residuals: Mercury 0.032790″; Venus 0.024843″; Mars 0.028122″; Jupiter 0.253273″; Saturn 0.234244″.
+- All 12 months have exact expected daily coverage.
+- 12 daily station brackets, 36 sign-boundary crossings and 13 close pairwise conjunction minima were enumerated from the PAC daily rows.
+
+The separate hard-coded 15-value three-date anchor regression also remains and passed run #1207 (135 assertions): https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44769611357.
+
+**Metadata limitation:** The PAC daily PDF headings do not explicitly identify the daily intraday epoch or name the ayanamsa. The comparison uses 00:00 TT and Lahiri as empirically inferred conventions, not source metadata. PAC confirmation remains outstanding. The public PDFs also do not establish independent underlying ephemeris provenance relative to Swiss Ephemeris.
 
 ## Mandatory blockers before arbitrary natal totals can be certified
 
@@ -32,7 +41,8 @@ The regression currently compares 15 source values (three dates × five planets)
 2. **Historical Saura method:** Verify the source-faithful four-pass True-longitude method, including date-specific Bīja and Mandocca/apsis inputs. The 2026 PAC sidereal samples do not certify that historical model.
 3. **Other Shadbala components:** Retain source-linked verification for Sthana, Dig, Kala, Naisargika and Drig inputs, including declinations, solar-time inputs and aspect geometry.
 4. **Graha Yuddha boundaries:** Independently verify source-specific eligibility, winner/loser and pre-war adjustments at conjunction boundaries. Unresolved cases must withhold affected totals.
-5. **Broader numerical coverage:** Expand the 2026 PAC sample across the full annual span, retrograde stations, conjunctions and sign transitions. Then validate the date/model contract before considering wider date ranges.
+5. **High-resolution event validation:** Daily PAC rows identify station brackets and daily conjunction minima, not exact instants. Use a finer-resolution source to establish exact station/conjunction timings where the rule requires it.
+6. **Scope boundary:** The 2026 comparison is limited to 2026. It does not create an arbitrary-date 1800–2399 certificate.
 
 ## Required safety rule for a future, separately approved production correction
 
