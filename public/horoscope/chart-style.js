@@ -15,7 +15,6 @@
  const hindiNumber=value=>String(value).replace(/[0-9]/g,d=>'०१२३४५६७८९'[Number(d)]);
  const roman=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
  const bhavaNumberText=(house,tamil)=>tamil?romanHouse(house):String(house);
- const bhavaNumberListText=(houses,tamil)=>houses.map(h=>bhavaNumberText(h,tamil)).join(' / ');
  const houseNumber=value=>{
   const raw=String(value??'').trim().toUpperCase();
   if(/^\d{1,2}$/.test(raw)){const n=Number(raw);return n>=1&&n<=12?n:0;}
