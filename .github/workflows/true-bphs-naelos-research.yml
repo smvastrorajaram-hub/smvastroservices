@@ -31,12 +31,36 @@ jobs:
           node --check research/true-bphs/naelos-bphs-shadbala-engine.mjs
           node --check research/true-bphs/saura-frame-transfer.mjs
           node --check tests/true-bphs-naelos-engine-regression.mjs
+          node --check tests/pac-2026-seven-graha-naelos-regression.mjs
           node --check tests/true-bphs-component-source-parity.mjs
           node --check tests/true-bphs-naelos-600y-research.mjs
       - name: Verify the isolated BPHS helpers match the repository BPHS source helpers
         run: node tests/true-bphs-component-source-parity.mjs
       - name: Verify NAELOS table hashes, five natal source parity and BPHS component integration
         run: node tests/true-bphs-naelos-engine-regression.mjs
+      - name: Download all seven official PAC 2026 Nirayana longitude PDFs
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+          mkdir -p "$RUNNER_TEMP/pac2026-seven"
+          for graha in Sun Moon Mercury Venus Mars Jupiter Saturn; do
+            curl --fail --location --retry 3 --retry-delay 2 \
+              "https://packolkata.imd.gov.in/download/nirlon/$graha.pdf" \
+              --output "$RUNNER_TEMP/pac2026-seven/$graha.pdf"
+          done
+          echo "PAC_PDF_DIR=$RUNNER_TEMP/pac2026-seven" >> "$GITHUB_ENV"
+          sha256sum "$RUNNER_TEMP"/pac2026-seven/*.pdf
+      - name: Compare all 2,555 PAC daily Nirayana values for seven grahas against NAELOS DE440 at 00:00 TT
+        run: node tests/pac-2026-seven-graha-naelos-regression.mjs
+      - name: Upload original PAC seven-graha PDFs and NAELOS comparison evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: pac-2026-seven-graha-official-pdfs-and-naelos-validation
+          path: |
+            \${{ runner.temp }}/pac2026-seven/*.pdf
+            artifacts/pac-2026-seven-graha-naelos-validation.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Calculate one seeded-random full BPHS natal chart for every year 1800–2399
         run: node tests/true-bphs-naelos-600y-research.mjs
       - name: Upload 600-year True BPHS natal evidence ledger
