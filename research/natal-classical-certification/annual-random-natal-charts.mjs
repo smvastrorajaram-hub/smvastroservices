@@ -457,6 +457,7 @@ assert.equal(totalReconciliationFailures,0,'all finite Kala/total/Rupa recomposi
 assert.equal(minSampleYear,1800,'first sample year');
 assert.equal(maxSampleYear,2399,'last sample year');
 
+aggregate.sauraInputs = sauraResearchRows;
 aggregate.uniquePlaces = placeCounts.size;
 const report = {
   pass:true,
