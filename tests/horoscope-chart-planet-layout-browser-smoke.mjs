@@ -250,27 +250,48 @@ try {
                 glyphColor:getComputedStyle(glyph).color,
                 visibleTextColor:getComputedStyle(glyph.querySelector('.planet-short')||glyph).color
               }));
-              const crowdedLabelNodes = kind==='bhava'&&style!=='south'
-                ? [...chart.querySelectorAll(':scope > .smv-v342-bhava-house-label')]
-                : cells.filter(cell=>cell.classList.contains('smv-v342-triangle-cell')&&cell.classList.contains('smv-chart-cell-compact'))
-                    .map(cell=>cell.querySelector('.smv-v342-sign-number,.smv-v342-house-number')).filter(Boolean);
-              const crowdedTriangleNumbers = crowdedLabelNodes.map(number=>({
-                text:number.textContent.trim(),
-                backgroundColor:getComputedStyle(number).backgroundColor,
-                zIndex:getComputedStyle(number).zIndex
-              }));
+              const crowdedLabelNodes = cells
+                .filter(cell=>cell.classList.contains('smv-v342-triangle-cell')&&cell.classList.contains('smv-chart-cell-compact'))
+                .map(cell=>cell.querySelector('.smv-v342-sign-number,.smv-v342-house-number')).filter(Boolean);
+              const crowdedTriangleNumbers = crowdedLabelNodes.map(number=>{
+                const rect=number.getBoundingClientRect();
+                const overlapsPlanet=[...(number.closest('.smv-v342-cell')?.querySelectorAll('.smv-v342-planets .planet-glyph')||[])].some(glyph=>{
+                  const other=glyph.getBoundingClientRect();
+                  return rect.width>0&&rect.height>0&&other.width>0&&other.height>0&&
+                    rect.left<other.right-0.5&&rect.right>other.left+0.5&&
+                    rect.top<other.bottom-0.5&&rect.bottom>other.top+0.5;
+                });
+                const computed=getComputedStyle(number);
+                return {
+                  text:number.textContent.trim(),
+                  backgroundColor:computed.backgroundColor,
+                  zIndex:computed.zIndex,
+                  position:computed.position,
+                  color:computed.color,
+                  overlapsPlanet
+                };
+              });
               const emptyCells = cells.filter(cell=>cellCount(cell) === 0);
               const emptyDash = emptyCells.some(cell=>!!cell.querySelector('.smv-v342-empty'));
               const numericLabels = cells.reduce((count,cell)=>count+cell.querySelectorAll('.smv-v342-sign-number,.smv-v342-house-number').length,0);
               const describeBhavaLabel=(el,sign,house=0)=>{
+                if(!el)return {sign,house,labels:[],labelDetails:[]};
                 const rect=el.getBoundingClientRect(),computed=getComputedStyle(el);
                 const chartRect=chart.getBoundingClientRect();
+                const cell=el.closest('.smv-v342-cell');
+                const overlapsPlanet=[...(cell?.querySelectorAll('.smv-v342-planets .planet-glyph')||[])].some(glyph=>{
+                  const other=glyph.getBoundingClientRect();
+                  return rect.width>0&&rect.height>0&&other.width>0&&other.height>0&&
+                    rect.left<other.right-0.5&&rect.right>other.left+0.5&&
+                    rect.top<other.bottom-0.5&&rect.bottom>other.top+0.5;
+                });
                 return {
                   sign,house,labels:el.textContent.trim().split('/').map(label=>label.trim()).filter(Boolean),
                   labelDetails:[{
                     text:el.textContent.trim(),width:rect.width,height:rect.height,
                     visible:rect.width>0&&rect.height>0&&computed.display!=='none'&&computed.visibility!=='hidden'&&Number(computed.opacity)>0,
                     color:computed.color,zIndex:computed.zIndex,backgroundColor:computed.backgroundColor,
+                    position:computed.position,overlapsPlanet,
                     insideChart:rect.left>=chartRect.left-1&&rect.right<=chartRect.right+1&&rect.top>=chartRect.top-1&&rect.bottom<=chartRect.bottom+1,
                     left:Math.round(rect.left*10)/10,right:Math.round(rect.right*10)/10,
                     top:Math.round(rect.top*10)/10,bottom:Math.round(rect.bottom*10)/10
@@ -287,9 +308,11 @@ try {
                       labelDetails:nodes.flatMap(el=>describeBhavaLabel(el,signOrder[index]).labelDetails)
                     };
                   })
-                : [...chart.querySelectorAll(':scope > .smv-v342-bhava-house-label')].map(el=>
-                    describeBhavaLabel(el,Number(el.dataset.sign||0)-1,Number(el.dataset.house||0))
-                  );
+                : cells.map(cell=>describeBhavaLabel(
+                    cell.querySelector('.smv-v342-house-number'),
+                    Number(cell.dataset.sign||0)-1,
+                    Number(cell.dataset.house||0)
+                  ));
               reports.push({rootId,kind,cells:cells.length,chartClass:chart.className,numericLabels,picked,emptyDash,bhavaHouseLabels,cellBoundsOutside,compartmentOutside,triangleCells:cells.filter(cell=>cell.classList.contains('smv-v342-triangle-cell')).length,planetGlyphColors,crowdedTriangleNumbers});
 
             }
@@ -359,17 +382,19 @@ try {
             assert.ok(item.crowdedTriangleNumbers.length>0,item.rootId+' Bhava '+style+': crowded triangle fixtures include a Roman house label.');
             for(const number of item.crowdedTriangleNumbers){
               assert.equal(number.backgroundColor,'rgb(255, 253, 247)',item.rootId+' Bhava '+style+': crowded triangle label has an opaque chart-colour backing ('+number.text+').');
-              assert.ok(Number(number.zIndex)>=4,item.rootId+' Bhava '+style+': crowded triangle label stays above planets ('+number.text+').');
+              assert.equal(number.position,'static',item.rootId+' Bhava '+style+': Roman label is an in-cell row, not a floating overlay ('+number.text+').');
+              assert.equal(number.color,'rgb(111, 77, 44)',item.rootId+' Bhava '+style+': Roman label keeps high contrast ('+number.text+').');
+              assert.equal(number.overlapsPlanet,false,item.rootId+' Bhava '+style+': Roman label never covers a planet name ('+number.text+').');
             }
           }else if(style!=='south'){
             assert.equal(item.crowdedTriangleNumbers.length,0,item.rootId+' '+item.kind+' '+style+': Rasi, Navamsa and Transit have no numeric labels.');
           }
             assert.equal(item.compartmentOutside.length,0,item.rootId+' '+item.kind+' '+style+': planet names, markers, Degrees and numbers remain inside their actual compartment polygons: '+JSON.stringify(item.compartmentOutside));
           }
-          if (item.kind==='navamsa' || item.kind==='bhava') {
+          if (item.kind==='navamsa' || item.kind==='bhava' || (style!=='south'&&item.kind==='rasi')) {
             assert.equal(item.emptyDash,false,item.rootId+' '+item.kind+' '+style+': empty planet cells stay blank.');
-          } else if (style!=='south') {
-            assert.equal(item.emptyDash,true,item.rootId+' '+item.kind+' '+style+': Rasi and Transit retain their alternate-layout empty dash.');
+          } else if (style!=='south'&&item.kind==='transit') {
+            assert.equal(item.emptyDash,true,item.rootId+' Transit '+style+': existing alternate-layout empty dash is retained.');
           }
           if(style!=='south'){
             assert.ok(item.chartClass.includes('smv-v342-'+style),item.rootId+' '+item.kind+' '+style+': requested alternate layout is actually rendered, not left in South geometry.');
@@ -387,7 +412,8 @@ try {
                 if(style!=='south'){
                   assert.equal(detail.color,'rgb(111, 77, 44)',item.rootId+' '+style+' Bhava Roman label '+detail.text+' uses the high-contrast house-label colour.');
                   assert.equal(detail.backgroundColor,'rgb(255, 253, 247)',item.rootId+' '+style+' Bhava Roman label '+detail.text+' has an opaque backing.');
-                  assert.ok(Number(detail.zIndex)>=20,item.rootId+' '+style+' Bhava Roman label '+detail.text+' stays above planet cells.');
+                  assert.equal(detail.position,'static',item.rootId+' '+style+' Bhava Roman label '+detail.text+' remains in normal cell flow.');
+                  assert.equal(detail.overlapsPlanet,false,item.rootId+' '+style+' Bhava Roman label '+detail.text+' does not cover a planet short-name.');
                   assert.ok(detail.insideChart,item.rootId+' '+style+' Bhava Roman label '+detail.text+' remains inside chart bounds.');
                 }
               }
@@ -398,7 +424,7 @@ try {
                 assert.deepEqual(entry.labels,expected,item.rootId+' South Bhava converts displayed 1–12 house values to Roman numerals without changing the Rasi mapping.');
               }
             }else if(style==='north'){
-              assert.equal(labels.length,12,item.rootId+' North Bhava keeps twelve chart-level Roman house labels.');
+              assert.equal(labels.length,12,item.rootId+' North Bhava keeps twelve in-cell Roman house labels.');
               for(const entry of labels){
                 assert.ok(entry.house>=1&&entry.house<=12,item.rootId+' North Bhava cell must retain its actual house slot.');
                 assert.deepEqual(entry.labels,[roman[entry.house-1]],item.rootId+' North Bhava labels must follow the Bhava Table house number.');
