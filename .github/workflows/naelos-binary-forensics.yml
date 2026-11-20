@@ -34,6 +34,7 @@ jobs:
           node --check tests/natal-classical-certification-pipeline.mjs
           node --check tests/natal-classical-remaining-evidence-audit.mjs
           node --check tests/naelos-de440-600-random-natal-true-longitude.mjs
+          node --check tests/saura-bija-coherent-mean-true-sheeghroccheya-600-epochs.mjs
       - name: Inspect checked-in NAELOS binary headers
         run: node research/naelos-de440/naelos-binary-forensics.mjs
       - name: Preserve existing B.V. Raman Strength6 regression
@@ -52,6 +53,8 @@ jobs:
         run: node tests/natal-classical-remaining-evidence-audit.mjs
       - name: Calculate 600 seeded-random full natal charts (one random DOB, time and Indian place per year)
         run: node research/natal-classical-certification/annual-random-natal-charts.mjs
+      - name: Verify same-epoch same-frame classical Bīja Mean, Mandocca, Sheeghroccheya, True and BPHS Chesta for 600 natal epochs (3,000 rows)
+        run: node tests/saura-bija-coherent-mean-true-sheeghroccheya-600-epochs.mjs
       - name: Cross-check DE440 true longitudes at the exact 600 random natal epochs (3,000 rows)
         run: node tests/naelos-de440-600-random-natal-true-longitude.mjs
       - name: Upload 600-chart DOB/place, DE440 true-longitude and six-Bala evidence ledger
