@@ -87,6 +87,11 @@
   document.querySelectorAll('#english-horoscope input[placeholder]').forEach(n=>{if(!n.dataset.englishPlaceholder)n.dataset.englishPlaceholder=n.placeholder;n.placeholder=lang==='ta'?(labels[n.dataset.englishPlaceholder]||n.dataset.englishPlaceholder):n.dataset.englishPlaceholder;});
  }
  window.__smvLocalizeTamilResult=(root,lang)=>{
+  const personName=root?.querySelector('.smv-horoscope-person-name');
+  if(personName){
+   const localized=lang==='ta'?personName.dataset.nameTa:personName.dataset.nameEn;
+   if(localized)personName.textContent=localized;
+  }
   if(lang!=='ta'){
    const map={'இளம்நீலம்':'Light Blue','காபிகலர்':'Coffee Brown','ஆகமன':'Aagamana','ஆகம':'Aagama','உபவேசன':'Upavesana','கமன':'Gamana','கௌதுக':'Kautuka','சபா':'Sabhaa','சயன':'Sayana','நித்ரா':'Nidraa','நேத்ரபாணி':'Netrapaani','ந்ருத்யலிப்ஸா':'Nrityalipsaa','பிரகாசன':'Prakaasana','போஜன':'Bhojana'};
    const walk=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=walk.nextNode()){if(n.parentElement.closest('script,style'))continue;for(const [ta,en]of Object.entries(map))n.nodeValue=n.nodeValue.split(ta).join(en);}return;
