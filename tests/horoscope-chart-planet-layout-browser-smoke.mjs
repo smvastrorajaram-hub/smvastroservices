@@ -196,7 +196,8 @@ try {
                 }
                 const line = cell.querySelector(style === 'south' ? '.planet-line' : '.smv-v342-planets .planet-line');
                 const glyph = cell.querySelector(style === 'south' ? '.planet-glyph' : '.smv-v342-planets .planet-glyph');
-                const number = style==='north' ? null : (kind==='transit' ? cell.querySelector('[data-transit-lagna]') : (cell.querySelector('.lagna,.smv-v342-asc') || cell.querySelector('.dynamic-rasi-number,.bhava-house-no,.smv-v342-house-number')));
+                const number = kind==='transit' ? cell.querySelector('[data-transit-lagna]') : (style==='north' ? null : (cell.querySelector('.lagna,.smv-v342-asc') || cell.querySelector('.dynamic-rasi-number,.bhava-house-no,.smv-v342-house-number')));
+                const displayNumber = number || (style==='north' ? cell.querySelector('.smv-v342-sign-number') : null);
                 const degree = cell.querySelector('.planet-degree,.rasi-degree,.transit-degree');
                 const marker = cell.querySelector('.status-combust,.rasi-status-marker.status-c,.status-c');
                 const retroMarker = cell.querySelector('.status-retro,.rasi-status-marker.status-r,.status-r');
@@ -231,9 +232,9 @@ try {
                   markerText:marker?.textContent.trim()||'',
                   retroMarkerText:retroMarker?.textContent.trim()||'',
                   degreeText:degree?.textContent.trim()||'',
-                  numberText:number?.textContent.trim()||'',
-                  numberBackgroundColor:number?getComputedStyle(number).backgroundColor:null,
-                  numberZIndex:number?getComputedStyle(number).zIndex:null,
+                  numberText:displayNumber?.textContent.trim()||'',
+                  numberBackgroundColor:displayNumber?getComputedStyle(displayNumber).backgroundColor:null,
+                  numberZIndex:displayNumber?getComputedStyle(displayNumber).zIndex:null,
                   equalSizes:sizes.length < 2 || Math.max(...sizes)-Math.min(...sizes) < 0.6,
                   names:[...cell.querySelectorAll('.planet-glyph')].filter(element=>!element.querySelector('[data-transit-lagna]')).map(element=>element.textContent.trim()),
                   colors,
