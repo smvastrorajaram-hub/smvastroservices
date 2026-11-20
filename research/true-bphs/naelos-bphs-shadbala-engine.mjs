@@ -337,7 +337,7 @@ function calculateDigBala(planet,longitude,madhyaCusps) {
   const idealLongitude=madhyaCusps[idealHouse-1];
   return round3(Math.max(0,Math.min(60,60-circularDistance(longitude,idealLongitude)/3)));
 }
-function resolveBphsGrahaYuddha(planetRows) {
+export function resolveBphsGrahaYuddha(planetRows) {
   const eligible=planetRows.filter(row=>FIVE_ROWS.some(([ta])=>ta===row.name));
   if(eligible.length!==5) fail('All five eligible grahas are required for Graha Yuddha review');
   const minuteIndex=value=>Math.floor(norm360(value)*60+1e-9)%21600;
