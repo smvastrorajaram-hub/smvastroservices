@@ -107,7 +107,12 @@ const JD_UNIX_EPOCH = 2440587.5;
 function makeBirth(year) {
   const month = Math.floor(random() * 12);
   const daysInMonth = new Date(Date.UTC(year,month+1,0)).getUTCDate();
-  const day = 1 + Math.floor(random() * daysInMonth);
+  // The India local-mean-time offset can place 1800-01-01 local births
+  // just before the Saura research module's 1800-01-01 UTC lower bound.
+  // Keep the first 1800 sample random while avoiding only that boundary day.
+  const firstAllowedDay = year === 1800 && month === 0 ? 2 : 1;
+  const day = firstAllowedDay +
+    Math.floor(random() * (daysInMonth - firstAllowedDay + 1));
   const hour = Math.floor(random() * 24);
   const minute = Math.floor(random() * 60);
   const date = year + '-' + pad2(month+1) + '-' + pad2(day);
@@ -143,7 +148,7 @@ const aggregate = {
   finiteTotals:0,withheldTotals:0,
   grahasMeetingRupaMinimum:0,
   classicalCertifiedTrue:0,
-  sa uraInputs:0,
+  sauraInputs:0,
   uniquePlaces:0
 };
 
