@@ -59,11 +59,12 @@ let sumSquares = 0;
 for (const [date, time] of births) {
   const [y, m, d] = date.split('-').map(Number);
   const [hh, mm] = time.split(':').map(Number);
-  // Convert the recorded Indian civil time to a UT Julian Day, then obtain
-  // TT using the NAELOS ΔT model. All planetary positions are evaluated by
-  // calc(jdTT), never by calc_ut(), and no UTC→TT shortcut is introduced.
+  // Independently convert the recorded Indian civil time into UTC JD.
+  // Swiss utcToJd returns UT1 and ET; the small UTC↔UT1 difference is expected
+  // and is bounded separately below. Both ephemerides are then evaluated at
+  // the exact same ET/TT epoch.
   const localDecimalHour = hh + mm / 60;
-  const civilDerivedJdUT = julday(y, m, d, localDecimalHour - UTC_OFFSET_MINUTES / 60);
+  const civilDerivedJdUTC = julday(y, m, d, localDecimalHour - UTC_OFFSET_MINUTES / 60);
   const utcDate = new Date(Date.UTC(y, m - 1, d, hh, mm) - UTC_OFFSET_MINUTES * 60_000);
   const swissJD = swe.utcToJd(
     utcDate.getUTCFullYear(), utcDate.getUTCMonth() + 1, utcDate.getUTCDate(),
@@ -71,8 +72,9 @@ for (const [date, time] of births) {
   );
   assert.ok(Number.isFinite(swissJD?.ut) && Number.isFinite(swissJD?.et),
     date + ' Swiss UTC-to-UT/ET conversion available');
-  assert.ok(Math.abs(swissJD.ut - civilDerivedJdUT) < 1e-8,
-    date + ' independent civil→UT Julian-day conversion reconciles');
+  const ut1MinusUtcSeconds = (swissJD.ut - civilDerivedJdUTC) * 86400;
+  assert.ok(Math.abs(ut1MinusUtcSeconds) < 2,
+    date + ' Swiss UT1 versus civil UTC stays within the 2-second rotation-time allowance');
   // NAELOS calc() and Swiss swe_calc() both accept TT/ET Julian Day. Use
   // Swiss's UTC conversion result so both engines evaluate the exact same
   // dynamical instant; never pass UT to the direct calc() interface.
@@ -82,7 +84,7 @@ for (const [date, time] of births) {
   const ayanamsa = swe.ayanamsa(jdUT);
   assert.ok(Number.isFinite(ayanamsa), date + ' Lahiri ayanamsa finite');
 
-  const chart = { date, time, jdUT, jdTT, ayanamsa, planets: {} };
+  const chart = { date, time, jdUTC: civilDerivedJdUTC, jdUT, jdTT, ut1MinusUtcSeconds, ayanamsa, planets: {} };
   for (const [ta, en, naelosBody, swissBody] of bodies) {
     const naelos = eph.calc(jdTT, naelosBody, 0);
     assert.ok(!('error' in naelos), date + ' ' + en + ' NAELOS DE440 position available');
@@ -148,7 +150,7 @@ console.log(JSON.stringify({
     const x = manifest.files.find(f => f.name === name);
     return { name, bytes: x.bytes, sha256: x.sha256 };
   }),
-  timeConvention: 'Birth civil time converted to UT JD; NAELOS ΔT converts to TT; all DE440 positions evaluated with calc(jdTT)',
+  timeConvention: 'Birth IST converted to UTC JD; Swiss utcToJd supplies UT1/ET; UTC−UT1 is independently bounded to 2 seconds; NAELOS and Swiss calc are both evaluated at the same ET/TT instant',
   positionDefinition: 'NAELOS apparent geocentric tropical true longitude on true ecliptic of date; same-instant NAELOS/Swiss Lahiri parity check; Chesta input separately transferred into the source-audited Saura sidereal frame using the Burgess 1860 zero point plus date-specific Lahiri precession delta',
   frameTransfer: 'sauraSiderealOffsetFromLahiri(lahiriAyanamsaAtDate, lahiriAyanamsaAt1860)',
   lahiriAyanamsaAt1860,
