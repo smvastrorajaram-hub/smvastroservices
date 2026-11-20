@@ -2306,7 +2306,7 @@ function renderBirthTimePanchang(p,lang,fallbackDate='',fallbackTime='',statemen
     const ts=p?.tamilSolar||{};
     const tamilDate=(ts?.monthTa&&Number.isFinite(Number(ts?.day)))
       ?`${ta?ts.monthTa:(ts.monthEn||ts.monthTa)} ${ts.day}`:'—';
-    const vara=valueOf(p?.vara)||'—',
+    const vara=valueOf((ta?statementData?.varaTa:statementData?.varaEn)||p?.vara)||'—',
           tithi=valueOf(p?.tithi?.name||p?.tithi?.group)||'—',
           paksha=valueOf(p?.tithi?.half)||'—',
           nak=valueOf(p?.nakshatra?.name)||'—',
@@ -2325,7 +2325,6 @@ function renderBirthTimePanchang(p,lang,fallbackDate='',fallbackTime='',statemen
     const rituEn=['Vasanta','Vasanta','Grishma','Grishma','Varsha','Varsha','Sharad','Sharad','Hemanta','Hemanta','Shishira','Shishira'];
     const ayanaTa=((monthIndex>=0&&monthIndex<=2)||monthIndex>=9)?'உத்தராயண':'தட்சிணாயண';
     const ayanaEn=((monthIndex>=0&&monthIndex<=2)||monthIndex>=9)?'Uttarayana':'Dakshinayana';
-    const vara=valueOf((ta?statementData?.varaTa:statementData?.varaEn)||p?.vara)||'—';
     const weekdayTa={ஞாயிறு:'ஞாயிற்றுக்கிழமை (ரவிவாரம்)',திங்கள்:'திங்கட்கிழமை (சோமவாரம்)',செவ்வாய்:'செவ்வாய்க்கிழமை (மங்களவாரம்)',புதன்:'புதன்கிழமை (புதவாரம்)',வியாழன்:'வியாழக்கிழமை (குருவாரம்)',வெள்ளி:'வெள்ளிக்கிழமை (சுக்ரவாரம்)',சனி:'சனிக்கிழமை (சனிவாரம்)'};
     const weekdayEn={Sunday:'Sunday (Ravivaram)',Monday:'Monday (Somavaram)',Tuesday:'Tuesday (Mangalavaram)',Wednesday:'Wednesday (Budhavaram)',Thursday:'Thursday (Guruvaram)',Friday:'Friday (Shukravaram)',Saturday:'Saturday (Shanivaram)'};
     const birthGender=String(person?.birthGender||'').toLowerCase(),male=birthGender==='male',female=birthGender==='female';
