@@ -78,7 +78,7 @@ assert.ok(!chartStyleJs.includes("if(kind!=='bhava'&&style!=='east')cell.append(
 assert.ok(chartStyleJs.includes("const bhavaRows=kind==='bhava'?readBhavaTable(chart,isTa()):null;"), 'North and East both read the same authoritative Bhava Table mapping.');
 assert.ok(chartStyleJs.includes('const bhavaHousesBySign=Array.from({length:12},()=>[]);'));
 assert.ok(chartStyleJs.includes('bhavaHousesBySign[row.sign].push(h);'), 'Each Bhava house is placed under its Bhava Madhya/Sphuta Rasi.');
-assert.ok(chartStyleJs.includes("h.textContent=style==='north'?romanHouse(house):String(bhavaHouseLabel||'');"), 'North displays its actual house number and East groups the mapped house labels by sign.');
+assert.ok(chartStyleJs.includes("const houseLabel=style==='north'?romanHouse(house):String(bhavaHouseLabel||'');")&&chartStyleJs.includes("if(houseLabel){"), 'North displays each actual house and East groups only mapped Roman labels without empty placeholders.');
 assert.ok(chartStyleJs.includes("const bhavaLabel=kind==='bhava'?bhavaHousesBySign[sign].map(romanHouse).join('/'):'';"), 'East does not substitute ordinary Lagna-based Rasi house numbers for Bhava numbers.');
 assert.ok(!chartStyleJs.includes("h.textContent=house>=1&&house<=12?String(house):'';"), 'East Rasi, Navamsa and Transit do not render numeric house labels.');
 
