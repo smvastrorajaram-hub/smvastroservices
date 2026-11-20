@@ -150,7 +150,9 @@ for(const name of planets){
  }
  near(r.components.naisargika,BV_RAMAN_SHADBALA_SOURCE.naturalBalaPrinted[name],0.001,name+' Raman printed Naisargika constant');
 }
-// Five real Perambalur dates: the live chart must now expose strength6 and must not re-create strength3.
+// Five real Perambalur dates: the customer Horoscope now uses TRUE BPHS/N A E L O S
+// for seven-graha Shadbala and Chapter 28 Ishta/Kashta; the independent B.V. Raman
+// arithmetic fixtures above remain isolated formula tests only.
 const births=[
  ['1992-07-31','22:05'],
  ['1994-06-15','13:03'],
@@ -158,47 +160,66 @@ const births=[
  ['1974-01-11','16:04'],
  ['2015-09-06','09:30']
 ];
+const TRUE_BPHS_FRAME='NAELOS_TRUE_ECLIPTIC_OF_DATE_EFFECTIVE_LAHIRI_V1';
 for(const [date,time] of births){
- const r=await full({date,time,lat:11.232,lon:78.88,utcOffsetMinutes:330,referenceDate:'2026-10-17',name:'B.V. Raman strength6 audit'});
+ const r=await full({date,time,lat:11.232,lon:78.88,utcOffsetMinutes:330,referenceDate:'2026-10-17',name:'TRUE BPHS strength6 audit'});
  ok(r.ok,'chart generated '+date);
+ eq(r.chart.engine,'NAELOS Ephemeris 0.1.3 / NASA-JPL DE440',date+' NAELOS is the planetary source');
+ eq(r.chart.referenceFrameId,TRUE_BPHS_FRAME,date+' one Effective Lahiri frame');
+ eq(r.chart.classicalCertified,false,date+' never overclaims classical certification');
+ eq(r.chart.naelosValidation?.tableIntegrityVerified,true,date+' DE440 tables are hash-verified');
+ eq(r.chart.bhavas.length,12,date+' full Sripati Bhava result');
  const classical=r.chart.planets.filter(p=>planets.includes(p.name));
- eq(classical.length,7,date+' seven grahas');
+ eq(classical.length,7,date+' seven classical grahas');
  for(const p of classical){
-  ok(p.strength6?.available===true,date+' '+p.name+' strength6 attached');
-  eq(Object.hasOwn(p,'strength3'),false,date+' '+p.name+' old BPHS strength3 field removed');
-  eq(p.strength6.classicalCertified,false,date+' '+p.name+' inputs remain honestly provisional');
-  ok(p.strength6.ishtaKashta?.available===true,date+' '+p.name+' Ishta/Kashta is attached to B.V. Raman engine');
-  eq(p.strength6.ishtaKashta.classicalCertified,false,date+' '+p.name+' Ishta/Kashta remains uncertified');
-  near(p.strength6.ishtaKashta.sixfoldShadbalaCheshtaBala,p.strength6.components.cheshta,0.001,date+' '+p.name+' Phala input never replaces sixfold Cheshta');
+  ok(p.strength6?.available===true,date+' '+p.name+' BPHS strength6 attached');
+  eq(p.strength6.method,'TRUE_BPHS_SHADBALA_NAELOS_DE440',date+' '+p.name+' exact BPHS engine identity');
+  eq(p.strength6.referenceFrameId,TRUE_BPHS_FRAME,date+' '+p.name+' Shadbala frame');
+  eq(Object.hasOwn(p,'strength3'),false,date+' '+p.name+' old BPHS strength3 field absent');
+  eq(p.strength6.classicalCertified,false,date+' '+p.name+' stays honestly provisional');
+  ok(p.strength6.ishtaKashta?.available===true,date+' '+p.name+' Chapter 28 Ishta/Kashta attached');
+  eq(p.strength6.ishtaKashta.method,'TRUE_BPHS_CH28_RASMI_ISHTA_KASHTA',date+' '+p.name+' Chapter 28 formula identity');
+  eq(p.strength6.ishtaKashta.referenceFrameId,TRUE_BPHS_FRAME,date+' '+p.name+' Ishta/Kashta frame');
+  eq(p.strength6.ishtaKashta.classicalCertified,false,date+' '+p.name+' Ishta/Kashta stays provisional');
+  near(p.strength6.ishtaKashta.ishtaPhala+p.strength6.ishtaKashta.kashtaPhala,60,0.002,date+' '+p.name+' Ishta + Kashta = 60');
+  near(p.strength6.ishtaKashta.ishtaPhala,
+    (p.strength6.ishtaKashta.uchchaBala+p.strength6.ishtaKashta.cheshtaForPhala)/2,
+    0.002,date+' '+p.name+' BPHS Ch28 verse 6 Rasmi mean');
   const c=p.strength6.components;
-  if(p.name==='சூரியன்'||p.name==='சந்திரன்'){
-   eq(c.cheshta,0,date+' '+p.name+' sixfold Shadbala Cheshta stays zero by Raman Chapter VI');
-   ok(p.strength6.ishtaKashta.cheshtaForPhala>0,date+' '+p.name+' separate Chapter X Chesta-for-Phala remains non-zero');
+  ok(Number.isFinite(c.sthana?.total)&&Number.isFinite(c.dig)&&Number.isFinite(c.kala?.total)&&
+    Number.isFinite(c.cheshta)&&Number.isFinite(c.naisargika)&&Number.isFinite(c.drik),
+    date+' '+p.name+' six BPHS Bala components present');
+  if(p.name==='சூரியன்'){
+    near(p.strength6.ishtaKashta.cheshtaForPhala,30,0.002,date+' Sun BPHS Ch28 90-degree rule');
+  }else if(p.name==='சந்திரன்'){
+    const sun=r.chart.planets.find(x=>x.name==='சூரியன்');
+    const separation=((p.longitude-sun.longitude)%360+360)%360;
+    near(p.strength6.ishtaKashta.cheshtaForPhala,Math.min(separation,360-separation)/3,0.002,
+      date+' Moon BPHS Ch28 Moon-minus-effective-Lahiri-Sun rule');
   }else{
-   near(p.strength6.ishtaKashta.cheshtaForPhala,c.cheshta,0.001,date+' '+p.name+' Ishta/Kashta Chesta-for-Phala equals sixfold Cheshta');
-  }
-  ok(Number.isFinite(c.sthana.total)&&Number.isFinite(c.dig)&&Number.isFinite(c.kala.total)&&Number.isFinite(c.cheshta)&&Number.isFinite(c.naisargika)&&Number.isFinite(c.drik),date+' '+p.name+' six Bala components present');
-  if(p.name==='செவ்வாய்'||p.name==='புதன்'||p.name==='குரு'||p.name==='சுக்கிரன்'||p.name==='சனி'){
-   near(p.strength6.evidence.cheshtaSource.trueLongitude,p.longitude,1e-7,date+' '+p.name+' Cheshta uses actual ephemeris longitude');
-   eq(p.strength6.evidence.cheshtaSource.method,'BV_RAMAN_FORMULA_EPHEMERIS_TRUE_LONGITUDE_RESEARCH_MEAN_SHEEGHROCCA',date+' '+p.name+' exposes its unresolved mean/Sheeghrocca source gate');
+    near(p.strength6.ishtaKashta.cheshtaForPhala,c.cheshta,0.002,
+      date+' '+p.name+' BPHS Ch27 Cheshta reused as Ch28 Phala input');
   }
   if(Number.isFinite(p.strength6.totalVirupa)){
-   const kalaSum=Object.entries(c.kala).filter(([k,v])=>!['total','warPreTotal','yuddhaTrace'].includes(k)&&Number.isFinite(v)).reduce((s,[,v])=>s+v,0);
+   const kalaSum=Object.entries(c.kala)
+     .filter(([k,v])=>!['total','warPreTotal','yuddhaTrace'].includes(k)&&Number.isFinite(v))
+     .reduce((s,[,v])=>s+v,0);
    near(kalaSum,c.kala.total,.005,date+' '+p.name+' Kala subtotal reconciles');
-   near(c.sthana.total+c.dig+c.kala.total+c.cheshta+c.naisargika+c.drik,p.strength6.totalVirupa,.01,date+' '+p.name+' strength6 total reconciles');
+   near(c.sthana.total+c.dig+c.kala.total+c.cheshta+c.naisargika+c.drik,
+     p.strength6.totalVirupa,.01,date+' '+p.name+' six-Bala total reconciles');
    near(p.strength6.totalRupa,p.strength6.totalVirupa/60,.002,date+' '+p.name+' Rupa conversion');
   }else{
-   eq(p.strength6.totalRupa,null,date+' '+p.name+' total and Rupa both withheld when unresolved');
+   eq(p.strength6.totalRupa,null,date+' '+p.name+' total/Rupa withheld with unresolved Yuddha');
   }
  }
 }
 // The Ayurdaya integration consumes only strength6 as its ranking candidate.
 const ayu=fs.readFileSync(new URL('../public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs',import.meta.url),'utf8');
-ok(ayu.includes('p?.strength6?.totalVirupa'),'C.G. Rajan Ayurdaya reads the B.V. Raman strength6 candidate');
+ok(ayu.includes('p?.strength6?.totalVirupa'),'C.G. Rajan Ayurdaya reads the sole seven-graha BPHS strength6 candidate');
 ok(!ayu.includes('p?.strength3?.totalVirupa'),'C.G. Rajan Ayurdaya has no BPHS strength3 dependency');
 const browserEngine=fs.readFileSync(new URL('../public/horoscope/offline/swiss_vedic.browser.mjs',import.meta.url),'utf8');
 const nodeEngine=fs.readFileSync(new URL('../swiss_vedic.js',import.meta.url),'utf8');
 ok(!browserEngine.includes('strength3:' )&&!browserEngine.includes('function phase3Strength('),'browser production engine has no BPHS strength3 calculation path');
 ok(!nodeEngine.includes('strength3:' )&&!nodeEngine.includes('function phase3Strength('),'Node production engine has no BPHS strength3 calculation path');
 
-console.log(JSON.stringify({pass:true,checks,method:'B.V. Raman Graha and Bhava Balas',standardHoroscopeSthanaAndDigOracle:true,natalCharts:births.length,sevenGrahaStrength6:true,ayurdayaUsesStrength6:true,oldStrength3Removed:true,classicalCertified:false}));
+console.log(JSON.stringify({pass:true,checks,method:'TRUE BPHS Shadbala on NAELOS DE440; separate legacy B.V. Raman formula oracle retained',standardHoroscopeSthanaAndDigOracle:true,natalCharts:births.length,sevenGrahaStrength6:true,ayurdayaUsesStrength6:true,oldStrength3Removed:true,classicalCertified:false}));
