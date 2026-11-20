@@ -11,6 +11,7 @@ on:
       - 'public/horoscope/marriage-basic-report.mjs'
       - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
       - 'tests/bv-raman-strength6-regression.mjs'
+      - 'tests/bv-raman-seven-graha-numerical-certification.mjs'
       - 'tests/bv-raman-yuddha-regression.mjs'
       - 'tests/bv-raman-ishta-kashta-regression.mjs'
       - 'tests/cg-rajan-ayurdaya-pinda-horoscope-report-qa.mjs'
@@ -27,6 +28,7 @@ on:
       - 'public/horoscope/marriage-basic-report.mjs'
       - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
       - 'tests/bv-raman-strength6-regression.mjs'
+      - 'tests/bv-raman-seven-graha-numerical-certification.mjs'
       - 'tests/bv-raman-yuddha-regression.mjs'
       - 'tests/bv-raman-ishta-kashta-regression.mjs'
       - 'tests/cg-rajan-ayurdaya-pinda-horoscope-report-qa.mjs'
@@ -58,8 +60,11 @@ jobs:
           node --check public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs
           node --check tests/bv-raman-strength6-regression.mjs
           node --check tests/bv-raman-yuddha-regression.mjs
+          node --check tests/bv-raman-seven-graha-numerical-certification.mjs
       - name: Verify B.V. Raman printed standard-horoscope component oracle and five natal charts
         run: node tests/bv-raman-strength6-regression.mjs
+      - name: Verify all six Bala components, Standard Horoscope totals and ranking
+        run: node tests/bv-raman-seven-graha-numerical-certification.mjs
       - name: Verify B.V. Raman source-based Yuddha winner, disc-diameter adjustment and unresolved boundaries
         run: node tests/bv-raman-yuddha-regression.mjs
       - name: Verify B.V. Raman Ishta/Kashta remains separate from sixfold Shadbala
