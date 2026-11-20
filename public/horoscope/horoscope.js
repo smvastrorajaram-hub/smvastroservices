@@ -2409,7 +2409,7 @@ function renderTransitPanchang(t,p,lang,rootId,horaOverride=null){
     const dailyTable=`<div class="adv-table-wrap"><table class="data-table panchang-data-table"><thead><tr><th>${ta?'விவரம்':'Details'}</th><th>${ta?'முடிவு':'Result'}</th></tr></thead><tbody>${dailyRows.map((r,i)=>`<tr${rootId==='calDaily'&&i<=7?' class="smv-calendar-primary-result-row"':''}><td><b>${r[0]}</b></td><td>${r[1]}</td></tr>`).join('')}</tbody></table></div>`;
     const calendarPanchangSlot=calendarPresentation?document.getElementById('calPanchangSource'):null;
     if(calendarPanchangSlot)calendarPanchangSlot.innerHTML=dailyTable;
-    let h=calendarPanchangSlot?'':'';
+    let h='';
     if(calendarPresentation)h+='<div class="hora-card" data-smv-screen-only="daily-hora"><h3 class="cal-centered-heading">🕐 '+(ta?'தினசரி ஹோரா':'Daily Hora')+'</h3><div class="hora-section">'+horaHtml+'</div></div>';
     const signIndex=v=>{const en=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];const taR=['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];let i=en.indexOf(String(v));return i>=0?i:taR.indexOf(String(v));};
     const short={Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa',Rahu:'Ra',Ketu:'Ke','சூரியன்':'சூ','சந்திரன்':'சந்','செவ்வாய்':'செ','புதன்':'பு','குரு':'கு','சுக்கிரன்':'சு','சனி':'ச','ராகு':'ரா','கேது':'கே'};
@@ -2433,8 +2433,8 @@ function renderTransitPanchang(t,p,lang,rootId,horaOverride=null){
     // response can arrive before Transit; appending both versions created
     // duplicate Daily Panchang / Planetary Transit cards on mobile.
     box.innerHTML=h;
-    // Keep Daily Panchang + Daily Hora in their original slot, but place
-    // Transit Chart + Transit Planetary Positions immediately before Vimsottari Dasa.
+    // Calendar Daily Panchang is integrated from its hidden source slot; Daily Hora
+    // is rendered only for Calendar. Keep Transit before Vimsottari Dasa in both reports.
     const reportHost=box.closest('.horoscope-result')||box.parentElement;
     const transitTarget=reportHost?.querySelector?.('.transit-before-vimsottari');
     const transitCard=box.querySelector('.transit-card');
