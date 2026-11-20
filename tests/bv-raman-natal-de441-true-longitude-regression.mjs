@@ -10,6 +10,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { full } from '../public/horoscope/offline/offline-engine.mjs';
+import { getSwe } from '../public/horoscope/offline/wasm-provider.mjs';
 
 const fixture = JSON.parse(await readFile(
   new URL('./fixtures/bv-raman-natal-de441-apparent-true-2026-11-20.json', import.meta.url),
@@ -45,6 +46,8 @@ assert.equal(fixture.births.length, 5);
 
 let assertions = 8;
 const observations = [];
+const swe = await getSwe();
+const targetBodyIds = Object.freeze({ Mercury: 2, Venus: 3, Mars: 4, Jupiter: 5, Saturn: 6 });
 for (const birth of fixture.births) {
   assert.equal(Object.keys(birth.longitudes).length, 5, birth.id + ' five JPL values');
   assertions++;
@@ -61,6 +64,11 @@ for (const birth of fixture.births) {
     birth.id + ' discrete Horizons JD matches the natal instant');
   assertions++;
 
+  const [year, month, day] = birth.utcDateTime.slice(0, 10).split('-').map(Number);
+  const [hour, minute, second] = birth.utcDateTime.slice(11).split(':').map(Number);
+  const jd = swe.utcToJd(year, month, day, hour, minute, second);
+  assert.ok(Math.abs(jd.ut - birth.jdUt) < 1e-8, birth.id + ' WASM UTC-to-JD agrees with Horizons JD');
+  assertions++;
   const result = await full({
     date: birth.localDate,
     time: birth.localTime,
@@ -91,15 +99,23 @@ for (const birth of fixture.births) {
     assert.ok(Number.isFinite(local.longitude), birth.id + ' ' + planet + ' sidereal longitude finite');
     const candidateTropical = wrap(Number(local.longitude) + Number(chart.ayanamsa));
     const delta = signedDifference(candidateTropical, referenceTropical);
+    const directTropical = swe.calc(jd.et, targetBodyIds[planet], 2 | 256);
+    assert.ok(Number.isFinite(directTropical.longitude), birth.id + ' ' + planet + ' direct tropical longitude finite');
+    const directDelta = signedDifference(Number(directTropical.longitude), referenceTropical);
+    assert.ok(Math.abs(directDelta) <= 0.05,
+      birth.id + ' ' + planet + ' direct SWIEPH tropical vs DE441 <= 0.05 degrees; got ' + directDelta);
     assert.ok(Math.abs(delta) <= 0.05,
       birth.id + ' ' + planet + ' local ephemeris vs independent DE441 <= 0.05 degrees; got ' + delta);
-    assertions += 5;
+    assertions += 7;
     observations.push({
       birth: birth.id,
       planet,
       de441ApparentTropicalDegrees: referenceTropical,
       localApparentTropicalDegrees: Number(candidateTropical.toFixed(9)),
       signedDifferenceDegrees: Number(delta.toFixed(9)),
+      directTropicalDegrees: Number(directTropical.longitude.toFixed(9)),
+      directSignedDifferenceDegrees: Number(directDelta.toFixed(9)),
+      directRetFlag: directTropical.retFlag,
       runtimeMode: chart.ephemerisMode
     });
   }
@@ -108,8 +124,12 @@ for (const birth of fixture.births) {
 assert.equal(observations.length, 25, 'five natal epochs x five planets');
 assertions++;
 const maxAbsResidual = Math.max(...observations.map(x => Math.abs(x.signedDifferenceDegrees)));
+const maxDirectAbsResidual = Math.max(...observations.map(x => Math.abs(x.directSignedDifferenceDegrees)));
 const rmsResidual = Math.sqrt(
   observations.reduce((sum, x) => sum + x.signedDifferenceDegrees ** 2, 0) / observations.length
+);
+const directRmsResidual = Math.sqrt(
+  observations.reduce((sum, x) => sum + x.directSignedDifferenceDegrees ** 2, 0) / observations.length
 );
 assert.ok(maxAbsResidual <= 0.05, 'all 25 independent modern true-longitude comparisons pass');
 assertions++;
@@ -120,7 +140,9 @@ const perPlanet = Object.fromEntries(Object.keys(expectedTargetIds).map(planet =
   return [planet, {
     samples: sample.length,
     rmsResidualDegrees: Number(Math.sqrt(values.reduce((sum, x) => sum + x * x, 0) / values.length).toFixed(9)),
-    maxAbsResidualDegrees: Number(Math.max(...values.map(Math.abs)).toFixed(9))
+    maxAbsResidualDegrees: Number(Math.max(...values.map(Math.abs)).toFixed(9)),
+    directTropicalRmsResidualDegrees: Number(Math.sqrt(sample.reduce((sum, x) => sum + x.directSignedDifferenceDegrees ** 2, 0) / sample.length).toFixed(9)),
+    directTropicalMaxAbsResidualDegrees: Number(Math.max(...sample.map(x => Math.abs(x.directSignedDifferenceDegrees))).toFixed(9))
   }];
 }));
 
@@ -134,6 +156,8 @@ console.log(JSON.stringify({
   perPlanet,
   maxAbsResidualDegrees: Number(maxAbsResidual.toFixed(9)),
   rmsResidualDegrees: Number(rmsResidual.toFixed(9)),
+  directTropicalMaxAbsResidualDegrees: Number(maxDirectAbsResidual.toFixed(9)),
+  directTropicalRmsResidualDegrees: Number(directRmsResidual.toFixed(9)),
   modernHistoricalEpochTrueLongitudeGate: true,
   historicalSauraTrueLongitudeCertified: false,
   classicalFiveGrahaCheshtaCertified: false,
