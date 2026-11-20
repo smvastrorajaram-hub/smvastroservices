@@ -197,7 +197,7 @@ try {
                 }
                 const line = cell.querySelector(style === 'south' ? '.planet-line' : '.smv-v342-planets .planet-line');
                 const glyph = cell.querySelector(style === 'south' ? '.planet-glyph' : '.smv-v342-planets .planet-glyph');
-                const number = kind==='transit' ? cell.querySelector('[data-transit-lagna]') : (cell.querySelector('.smv-v342-sign-number,.smv-v342-house-number') || cell.querySelector('.lagna,.smv-v342-asc,.dynamic-rasi-number,.bhava-house-no'));
+                const number = kind==='transit' ? cell.querySelector('[data-transit-lagna]') : style==='north' ? (cell.querySelector('.smv-v342-sign-number,.smv-v342-house-number') || cell.querySelector('.lagna,.smv-v342-asc,.dynamic-rasi-number,.bhava-house-no')) : (cell.querySelector('.lagna,.smv-v342-asc') || cell.querySelector('.dynamic-rasi-number,.bhava-house-no'));
                 const degree = cell.querySelector('.planet-degree,.rasi-degree,.transit-degree');
                 const marker = cell.querySelector('.status-combust,.rasi-status-marker.status-c,.status-c');
                 const retroMarker = cell.querySelector('.status-retro,.rasi-status-marker.status-r,.status-r');
