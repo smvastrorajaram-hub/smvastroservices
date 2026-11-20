@@ -223,16 +223,13 @@
  white-space:nowrap!important;max-width:none!important;
 }
 
-/* Bhava-only Roman labels are the first in-cell row, never floating above grahas. */
-.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-bhava-cell,
+/* East Bhava keeps grouped Arabic house IDs as the first in-cell row. North uses its Rasi sign number instead. */
 .south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-bhava-cell{
  justify-content:flex-start!important;
  padding-top:2px!important;
  gap:1px!important;
 }
-.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-bhava-cell .smv-v342-house-number,
 .south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-bhava-cell .smv-v342-house-number,
-.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-bhava-cell.smv-v342-triangle-cell .smv-v342-house-number,
 .south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-bhava-cell.smv-v342-triangle-cell .smv-v342-house-number{
  position:static!important;transform:none!important;
  top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;
@@ -246,7 +243,6 @@
  white-space:normal!important;overflow-wrap:anywhere!important;
  z-index:auto!important;pointer-events:none!important;
 }
-.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-bhava-cell .smv-v342-planets,
 .south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-bhava-cell .smv-v342-planets{
  flex:0 1 auto!important;min-height:0!important;max-height:100%!important;
 }
