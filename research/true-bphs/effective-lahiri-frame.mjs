@@ -6,23 +6,23 @@
  * tropical apparent Sun longitude minus Lahiri sidereal apparent Sun longitude.
  *
  * V365 Mean / Sheeghroccheya retain their already-audited source model. Their
- * native epoch-zero coordinates are rotated into the same effective Lahiri
+ * native reference-epoch coordinates are rotated into the same effective Lahiri
  * frame before they enter BPHS Cheshta. No Saura frame is used as the BPHS
  * output/calculation frame.
  */
 const RADIAN_FLAGS = 2 | 256; // Swiss Ephemeris data + speed
-const V365_REFERENCE_ZERO_POINT_1860_DEGREES = 18 + 5 / 60 + 8.25 / 3600;
+const V365_MEAN_SOURCE_REFERENCE_ZERO_POINT_DEGREES = 18 + 5 / 60 + 8.25 / 3600;
 const norm360 = value => ((value % 360) + 360) % 360;
 
 export const TRUE_BPHS_LAHIRI_FRAME_ID =
   'NAELOS_TRUE_ECLIPTIC_OF_DATE_EFFECTIVE_LAHIRI_V1';
 
-export function v365SourceNativeOffsetDegrees(lahiriAyanamsaAtDate, lahiriAyanamsaAt1860) {
-  if (!Number.isFinite(lahiriAyanamsaAtDate) || !Number.isFinite(lahiriAyanamsaAt1860)) {
+export function v365MeanSourceNativeOffsetDegrees(lahiriAyanamsaAtDate, v365ReferenceAyanamsaAt1860) {
+  if (!Number.isFinite(lahiriAyanamsaAtDate) || !Number.isFinite(v365ReferenceAyanamsaAt1860)) {
     throw new TypeError('Finite date-specific and 1860 Lahiri ayanamsa values are required');
   }
-  return V365_REFERENCE_ZERO_POINT_1860_DEGREES +
-    (lahiriAyanamsaAtDate - lahiriAyanamsaAt1860);
+  return V365_MEAN_SOURCE_REFERENCE_ZERO_POINT_DEGREES +
+    (lahiriAyanamsaAtDate - v365ReferenceAyanamsaAt1860);
 }
 
 export function effectiveLahiriSiderealOffsetDegrees(swe, jdTt) {
