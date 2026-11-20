@@ -17,6 +17,12 @@ const chesta={
   'சுக்கிரன்':{meanLongitude:181.23,trueLongitude:171.16,sheeghroccaLongitude:158.35},
   'சனி':{meanLongitude:111.23,trueLongitude:124.39,sheeghroccaLongitude:181.23}
 };
+const frame='BV_RAMAN_PRINTED_STANDARD_HOROSCOPE_CHAPTER_VI';
+const provenance='B.V. Raman, Graha and Bhava Balas, 13th ed., Chapter VI, Examples 49–51, printed Standard Horoscope';
+for(const input of Object.values(chesta)){
+  input.referenceFrames={mean:frame,true:frame,sheeghrocca:frame};
+  input.sourceProvenance=provenance;
+}
 const args={
   planets,bhavas:[],ascendantLongitude:298+27/60,midheavenLongitude:216+30/60,
   apparentSolarHour:14.336,
