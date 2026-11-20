@@ -289,6 +289,7 @@ try {
           return {viewport:innerWidth,language,reports};
         },{style,language,signOrder,compartmentPolygons});
         for (const item of state.reports) {
+          if(item.kind==='bhava')console.log('BHAVA ROMAN DISPLAY',JSON.stringify({rootId:item.rootId,style,labels:item.bhavaHouseLabels}));
           assert.equal(item.cells,12,item.rootId+' '+item.kind+' '+style+': all twelve chart boxes must remain present.');
           const two = item.picked[2];
           const three = item.picked[3];
