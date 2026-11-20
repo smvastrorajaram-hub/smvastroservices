@@ -10,7 +10,7 @@ This is not an offline conversion of backend services. It is a static UI and det
 
 ## Current synchronized cache release
 
-The three app workers select a synchronized release marker by hostname. The Pages.dev host uses `SMV_CACHE_RELEASE=20261120-north-east-chart-containment-v1`; the main `.in` host uses `SMV_CACHE_RELEASE=20261120-north-east-chart-containment-v1`. The three application cache namespaces remain independent. Pages.dev UI changes bump the Pages.dev marker across all three workers. Shared production dashboard JavaScript, public `.in` content, or homepage changes also bump the `.in` marker across all three workers. Shared Horoscope chart stylesheet and page changes rotate both markers together.
+The three app workers select a synchronized release marker by hostname. The Pages.dev host uses `SMV_CACHE_RELEASE=20261120-subha-janana-v1`; the main `.in` host uses `SMV_CACHE_RELEASE=20261120-subha-janana-v1`. The three application cache namespaces remain independent. Pages.dev UI changes bump the Pages.dev marker across all three workers. Shared production dashboard JavaScript, public `.in` content, or homepage changes also bump the `.in` marker across all three workers. Shared Horoscope chart stylesheet and page changes rotate both markers together.
 
 The production Android apps are remote-site WebViews, not bundled offline HTML packages. All three native WebViews now explicitly use `WebSettings.LOAD_DEFAULT` and configure Android's Service Worker runtime with `LOAD_DEFAULT` and network loads enabled. The hosted Service Worker then refreshes static UI files on successful online requests and serves the last cached UI/calculation assets offline. A web-only UI change is therefore delivered to the installed Android apps through their respective origin's updated Service Worker; an APK rebuild is needed when native Android code itself changes.
 
@@ -49,3 +49,8 @@ A user must open each app online after deployment and let the one-time India loc
 - For future public website/PWA source changes, bump the Pages.dev `SMV_CACHE_RELEASE` across all three workers together. When a change also updates the `.in` homepage, sitemap or public content, bump the `.in` marker across all three workers too. Keep Pages.dev-only changes from needlessly changing the `.in` marker. The required CI guard enforces this separation.
 - Keep every non-GET request outside the cache path.
 - Bypass same-origin online-only API/account/financial routes even when they use GET.
+
+
+## Subha Janana statement (20 November 2026)
+
+The Horoscope birth report renders the Srimath Subha Janana Vakyam directly below the Madurai Veeran invocation. A dedicated offline presentation helper uses the existing Thirukanitha / Swiss-Lahiri Panchang output and existing sunrise, Ghati/Vighati, Ahas/Ratri, Nakshatra Thyajyam and Amirthadi Yoga classification routines. Horoscope-only Daily Panchang and Daily Hora cards are suppressed; Calendar daily views remain unchanged. Birth Panchang and Traditional Year Reckoning remain visible. Gender is required for generation but the Tamil label is only பாலினம்; village and parent names are optional. Structured GeoNames admin2/admin1 metadata is retained for district/state prose. All three service workers use the synchronized `20261120-subha-janana-v1` release; no origin-wide storage is cleared.
