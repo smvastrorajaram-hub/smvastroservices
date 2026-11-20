@@ -35,6 +35,8 @@ The separate hard-coded 15-value three-date anchor regression now uses 00:00:00 
 
 **Epoch decision:** The PAC daily comparison now uses the fixed project convention **00:00:00 UTC**. Swiss `utcToJd()` converts the UTC input to UT1 and TT/ET before the Swiss calculation. This is not being described as PAC-confirmed metadata.
 
+**Current UTC validation — Actions run #1225:** https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44777225071 completed successfully as a diagnostic workflow. All 1,825 rows were parsed and compared. The retained 0.36″ numerical gate did **not** pass: maximum residual **6.312165″** (Mercury, 2026-05-16), RMS **2.363192″**. Per-planet maximums: Mercury 6.312165″; Venus 3.615318″; Mars 2.256814″; Jupiter 0.642222″; Saturn 0.460897″. The 15-anchor UTC diagnostic maximum is 4.581862″. The earlier 0.253273″ maximum belongs to the now-retired 00:00 TT comparison and is not valid for the fixed UTC convention.
+
 **Metadata limitation:** The PAC daily PDF headings do not explicitly identify the daily intraday epoch or name the ayanamsa. Lahiri remains an inferred sidereal comparison convention, not source metadata. PAC confirmation of both exact row epoch and exact ayanamsa name/definition remains outstanding. The public PDFs also do not establish independent underlying ephemeris provenance relative to Swiss Ephemeris.
 
 **UTC recheck finding:** The first anchor, Mercury on 2026-01-01, differs by 4.392535 arcseconds at 00:00 UTC, exceeding the unchanged 0.36 arcsecond numerical target. The earlier sub-arcsecond comparison was at 00:00 TT and is not transferable to UTC. Full-year UTC metrics must be recorded before any new accuracy claim.
