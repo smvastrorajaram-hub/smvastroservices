@@ -76,6 +76,7 @@
   const cell=document.createElement('div');cell.className='smv-v342-cell';cell.dataset.sign=String(sign+1);
   const triangleCell=style==='north'?[2,3,5,6,8,9,11,12].includes(house):style==='east'?[2,3,5,6,8,9,11,12].includes(sign+1):false;
   if(triangleCell)cell.classList.add('smv-v342-triangle-cell');
+  if(kind==='bhava')cell.classList.add('smv-v342-bhava-cell');
   if(house>=1&&house<=12)cell.dataset.house=String(house);
   // V343: No inline CSS coordinates — report-print.html CSP blocks style attributes.
   // Fixed [data-house] (North) / [data-sign] (East) positions live in external CSS.
