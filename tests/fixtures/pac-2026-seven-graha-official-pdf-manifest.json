@@ -21,12 +21,12 @@
     "Sun": {
       "url": "https://packolkata.imd.gov.in/download/nirlon/Sun.pdf",
       "bytes": 65645,
-      "sha256": "c64aa2bd43d50c8c204130fd8128a66c5a7ebde57cec16d441bdc32accea57dd"
+      "sha256": "865c2b4fbafc510bfde0b4c0a96a6e135415392f475fc91eda72bdf0a9bfbc32"
     },
     "Moon": {
       "url": "https://packolkata.imd.gov.in/download/nirlon/Moon.pdf",
       "bytes": 67463,
-      "sha256": "865c2b4fbafc510bfde0b4c0a96a6e135415392f475fc91eda72bdf0a9bfbc32"
+      "sha256": "c64aa2bd43d50c8c204130fd8128a66c5a7ebde57cec16d441bdc32accea57dd"
     },
     "Mercury": {
       "url": "https://packolkata.imd.gov.in/download/nirlon/Mercury.pdf",
