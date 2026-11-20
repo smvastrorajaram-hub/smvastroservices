@@ -2979,6 +2979,11 @@ if(lat===''||lon===''){
       const historicalOffset=offsetMinutesAt(zone,date,normalizedTime);
       if($('birthUtcOffset'))$('birthUtcOffset').value=String(historicalOffset/60);
       if($('tamilBirthUtcOffsetDisplay'))$('tamilBirthUtcOffsetDisplay').value=String(historicalOffset/60);
+      const {localizeTamilText}=await import('./offline/places/tamil-transliteration.mjs');
+      for(const [sourceId,targetId] of [['tamilBirthVillage','englishBirthVillage'],['tamilMotherName','englishMotherName'],['tamilFatherName','englishFatherName']]){
+        const source=document.getElementById(sourceId),target=document.getElementById(targetId);
+        if(source&&target)target.value=localizeTamilText(source.value,'en');
+      }
       const tamilPlace=$('tamilBirthPlace');
       window.__smvSetReportContext?.('advanced_analysis',{date,time:normalizedTime,lat,lon,birthPlace:placeValue,currentWork,maritalStatus,currentResidence,utcOffsetMinutes:Number(document.getElementById('birthUtcOffset')?.value??5.5)*60,language:getHoroscopeLang(),gender:birthGender,name:String($('tamilAstroName')?.value||'').trim(),village:String($('tamilBirthVillage')?.value||'').trim(),motherName:String($('tamilMotherName')?.value||'').trim(),fatherName:String($('tamilFatherName')?.value||'').trim(),placeName:String(tamilPlace?.dataset?.name||''),district:String(tamilPlace?.dataset?.admin2||''),state:String(tamilPlace?.dataset?.admin1||''),country:String(tamilPlace?.dataset?.country||''),timezone:zone});
       // Core pass needs only the natal chart. Advanced/Tajaka/Panchang/Transit/Dasa
