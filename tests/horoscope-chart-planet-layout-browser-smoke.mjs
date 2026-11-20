@@ -445,7 +445,7 @@ try {
           if(style==='north'&&item.kind==='bhava'){
             assert.equal(item.signNumberLabels.length,12,item.rootId+' North Bhava: every Bhava compartment has its Sphuta Rasi Devanagari digit.');
             const byHouse=[...item.signNumberLabels].sort((a,b)=>a.house-b.house);
-            assert.deepEqual(byHouse.map(label=>label.sign),bhavaHouseSigns.map(sign=>sign+1),item.rootId+' North Bhava: sign digits follow each house's actual Bhava Madhya Rasi.');
+            assert.deepEqual(byHouse.map(label=>label.sign),bhavaHouseSigns.map(sign=>sign+1),item.rootId+' North Bhava: sign digits follow the actual Bhava Madhya Rasi assigned to each house.');
             assert.deepEqual(byHouse.map(label=>label.text),bhavaHouseSigns.map(sign=>devanagari[sign]),item.rootId+' North Bhava: repeated Sphuta Rasis repeat the same Hindi sign digit; empty Rasis do not receive fabricated digits.');
             const bad=byHouse.filter(label=>!label.visible||!label.insideChart||label.overlapsPlanet);
             assert.equal(bad.length,0,item.rootId+' North Bhava: every Rasi digit is visible, inside its own compartment and clear of planet text: '+JSON.stringify(bad));
