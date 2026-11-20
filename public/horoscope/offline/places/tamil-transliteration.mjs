@@ -5,6 +5,8 @@ const TAMIL_RE=/[\u0B80-\u0BFF]/u;
 const LATIN_RE=/[A-Za-z]/u;
 const COMMON_EN_TO_TA=Object.freeze({
   'rajaram':'ராஜாராம்','raja ram':'ராஜா ராம்','raja':'ராஜா','raj':'ராஜ்',
+  'rajendran':'ராஜேந்திரன்','annapoorani':'அன்னபூரணி','annapoorna':'அன்னபூர்ணா',
+  'rajesh':'ராஜேஷ்','balaji':'பாலாஜி','raman':'ராமன்','ram':'ராம்',
   'siva':'சிவா','shiva':'சிவா','sivakumar':'சிவகுமார்','sivaram':'சிவராம்',
   'kumar':'குமார்','kumaran':'குமரன்','ramesh':'ரமேஷ்','suresh':'சுரேஷ்',
   'mahesh':'மகேஷ்','ganesh':'கணேஷ்','ganesan':'கணேசன்','murugan':'முருகன்',
