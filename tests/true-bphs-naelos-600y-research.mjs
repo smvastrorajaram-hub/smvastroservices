@@ -147,10 +147,11 @@ for(let year=YEAR_START;year<=YEAR_END;year++){
    stats.componentValues++;
   }
   const kalaParts=Object.entries(components.kala)
-   .filter(([key,value])=>key!=='total'&&key!=='yuddha'&&finite(value))
+   .filter(([key,value])=>key!=='total'&&finite(value))
    .reduce((sum,[,value])=>sum+value,0);
-  assert.ok(Math.abs(kalaParts-components.kala.total)<=0.005,
-   birth.date+' '+name+' Kala subcomponents reconcile');
+  const kalaResidual=Math.abs(kalaParts-components.kala.total);
+  assert.ok(kalaResidual<=0.005,
+   birth.date+' '+name+' Kala subcomponents reconcile; residual='+kalaResidual);
   if(Math.abs(kalaParts-components.kala.total)>0.005)stats.kalaReconciliationFailures++;
   let sum=values.sthana+values.dig+values.kala+values.cheshta+values.naisargika+values.drik;
   if(finite(row.totalVirupa)){
