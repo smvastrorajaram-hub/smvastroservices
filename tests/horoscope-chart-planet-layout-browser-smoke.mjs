@@ -386,7 +386,9 @@ try {
                 assert.ok(detail.visible,item.rootId+' '+style+' Bhava Roman label '+detail.text+' has a visible, non-zero display box.');
                 if(style!=='south'){
                   assert.equal(detail.color,'rgb(111, 77, 44)',item.rootId+' '+style+' Bhava Roman label '+detail.text+' uses the high-contrast house-label colour.');
-                  assert.ok(Number(detail.zIndex)>=4,item.rootId+' '+style+' Bhava Roman label '+detail.text+' stays above planet rows.');
+                  assert.equal(detail.backgroundColor,'rgb(255, 253, 247)',item.rootId+' '+style+' Bhava Roman label '+detail.text+' has an opaque backing.');
+                  assert.ok(Number(detail.zIndex)>=20,item.rootId+' '+style+' Bhava Roman label '+detail.text+' stays above planet cells.');
+                  assert.ok(detail.insideChart,item.rootId+' '+style+' Bhava Roman label '+detail.text+' remains inside chart bounds.');
                 }
               }
             }
@@ -396,7 +398,7 @@ try {
                 assert.deepEqual(entry.labels,expected,item.rootId+' South Bhava converts displayed 1–12 house values to Roman numerals without changing the Rasi mapping.');
               }
             }else if(style==='north'){
-              assert.equal(labels.length,12,item.rootId+' North Bhava keeps twelve house-position cells.');
+              assert.equal(labels.length,12,item.rootId+' North Bhava keeps twelve chart-level Roman house labels.');
               for(const entry of labels){
                 assert.ok(entry.house>=1&&entry.house<=12,item.rootId+' North Bhava cell must retain its actual house slot.');
                 assert.deepEqual(entry.labels,[roman[entry.house-1]],item.rootId+' North Bhava labels must follow the Bhava Table house number.');
