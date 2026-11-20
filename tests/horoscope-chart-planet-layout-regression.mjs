@@ -47,7 +47,7 @@ assert.ok(chartStyleJs.includes("if(house===1&&kind!=='transit')"),'Alternate la
 assert.ok(chartStyleJs.includes("const kind=chart.id==='bhavaChart'?'bhava':chart.id==='navamsaChart'?'d9':chart.id==='rasiChart'?'d1':'transit';"));
 assert.ok(chartStyleJs.includes("const houseNumber=value=>"),'Bhava house parsing accepts both 1–12 and I–XII source labels.');
 assert.ok(chartStyleJs.includes("if(/^\\d{1,2}$/.test(raw))"),'Bhava source house IDs accept both Arabic 1–12 and legacy Roman source labels.');
-assert.ok(chartStyleJs.includes("normalizeSouthBhavaHouseLabels(chart)"),'South Bhava labels are normalized in the active report language without changing source calculations.');
+assert.ok(chartStyleJs.includes("normalizeSouthBhavaHouseLabels(chart)"),'South Bhava labels are always Roman I–XII, independent of report language.');
 assert.ok(chartStyleJs.includes("label.textContent=romanHouse(house);"),'South Bhava always displays Roman I–XII in both Tamil and English reports.');
 assert.ok(chartStyleJs.includes("houseNumber(label.dataset.bhavaHouse)||houseNumber(label.textContent)"),'North/East mapping reads the original calculated Bhava house ID and source Rasi metadata.');
 assert.ok(chartStyleJs.includes("const explicitSign=Number(label.dataset.bhavaSign);"),'North/East mapping reads the original calculated Sphuta Rasi for each house.');
@@ -94,7 +94,7 @@ assert.ok(chartStyleJs.includes("chart.append(pointCell(x,y,sign,house,from,styl
 assert.ok(chartStyleJs.includes("const explicit=from.bhavaSignByHouse?.[house];"), 'North/East layout prioritizes the source Bhava-house-to-Rasi mapping.');
 assert.ok(chartStyleJs.includes("const bhavaSignByHouse=Array(13).fill(-1);"), 'The mapping retains one explicit destination sign for every Bhava house.');
 assert.ok(chartStyleJs.includes("const house=kind==='bhava'?0:(sign-lagna+12)%12+1;"), 'East Bhava positioning is independent of Lagna.');
-assert.ok(chartStyleJs.includes("if(style==='north'){"),'All North Indian chart kinds display their Rasi number in the traditional fixed house slot.');
+assert.ok(chartStyleJs.includes("if(style==='north'&&kind==='bhava'){"),'North Bhava uses fixed Roman house numbers instead of sign numerals.');
 assert.ok(chartStyleJs.includes("number.textContent=hindiNumber(sign+1);"),'North Rasi, Navamsa and Transit use Devanagari digits; Bhava is excluded.');
 assert.ok(chartStyleJs.includes("number.className='smv-v342-sign-number';"),'North sign numbers are separate display-only labels and do not alter planet rows.');
 assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-triangle-cell .smv-v342-sign-number{'),'North triangle sign numerals have a dedicated non-overlapping flow row.');
