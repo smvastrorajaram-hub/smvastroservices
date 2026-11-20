@@ -51,6 +51,30 @@ This is a distinct modern numerical parity test. The outputs are additionally tr
 
 This PASS is a **modern DE440-vs-Swiss numerical parity** check at the exact sampled instants. It is not an independent historical printed-table oracle, does not certify the Sūrya-Siddhānta four-pass True Longitude model, and leaves every ordinary natal chart `classicalCertified:false`.
 
+### Classical Saura Mean / True / Sheeghroccheya — same-epoch, same-frame chain PASS
+
+The new research regression reuses the exact same deterministic 600 DOB/time/place records (one for each year 1800–2399) and verifies five planets at each birth epoch. For all **3,000** rows, it independently recomputes:
+
+- Bīja-corrected Mean longitude from Burgess/Bentley corrected Mahāyuga revolutions.
+- Mandocca from Sūrya-Siddhānta I.41–42 apsis revolution counts and I.57–58 Kali-epoch locations.
+- Sheeghroccheya from the BPHS/Uttara Kalamrita inner/outer-planet selector applied to the same Bīja Mean model.
+- Four-pass True longitude using Sūrya-Siddhānta II.39–45 and the declared `verse39-direct-jya` Manda convention.
+- BPHS Chesta Kendra / Virupa from those same-model Mean, True and Sheeghroccheya values.
+
+Each calculation uses the exact record `julianDayUT`, and every classical input declares the common `traditional-Saura-nirayana` frame. The regression checks all 3,000 rows and recomputes BPHS Chesta independently from the returned three inputs. The modern DE440 True-longitude test is now separate: it no longer feeds a modern apparent longitude into a classical Chesta result using a different classical mean/Sheeghroccheya selector.
+
+**Result:** 600/600 exact natal epochs and 3,000/3,000 classical same-epoch/same-frame input chains PASS. This proves the current research model is internally coherent across the selected epochs; it is not an independent printed historical astronomical oracle, so historical-oracle coverage remains 0 and all natal `classicalCertified` flags remain false.
+
+#### Secondary 24-Jya table interpolation comparison
+
+The printed 24-Jya implementation was also run with identical inputs alongside the continuous trigonometric four-pass implementation. This is an implementation diagnostic, not an independent source observation:
+
+- 3,000 comparisons; RMS difference **0.0090840551°**.
+- 2,999 rows are within the 0.05° diagnostic threshold.
+- One Venus row (1875-01-12, Kochi) is **0.0532318994°** different, slightly over the 0.05° threshold.
+- Therefore `tabularNumericalGatePass:false` is retained. The difference is not removed by widening the threshold or planet-specific tuning.
+
+Full row-level results are included in the 600-chart artifact; the chain remains research-only.
 ## Phase 2 — 42 Bala source rows
 
 Ledger: `shadbala-source-evidence-42.json`.
@@ -80,7 +104,7 @@ The 13th-edition page images were rechecked directly ([full scanned book](https:
 | Mercury Dig | Example 14 p.32: 63°05′; Example 15 p.33 and summary p.90: 21.09 | 63°05′ ÷ 3 = 21.02778 Virupas (~21.03). The exact 1918 input engine returns 21.025. **Adjudicated:** 21.09 is a printed arithmetic error; preserve it as printed, use ~21.03 only for formula-derived reconstruction of this example. |
 | Saturn Chesta | §104 p.77: 151.23°; Example 49 p.78: 181.23°; final Chesta 21.14 | 181.23° − (111.23° + 124.39°)/2 = 63.42°; reduced Kendra / 3 = 21.14. **181.23° is the evidenced input for this 1918 worked example**; the §104 table cell remains a source typo. |
 | Saturn Naisargika | Chapter VII table and Example 52 p.81: 8.57; summary p.90: 8.37 | The summary total 389.21 recomposes with 8.57, not 8.37. **Use 8.57 for this example**; 8.37 is a summary typo. |
-| Jupiter Drik | Example 55 p.88: −64.14 ÷ 4 = −16.04; summary p.90: −16.03 | Exact quarter is −16.035 before display rounding. **Open 0.01 rounding conflict**; retain both printed values. |
+| Jupiter Drik | Example 54 p.88 net Pinda −64.14; Example 55 p.88 Drik −16.04; summary p.90 −16.03 | The p.88 individual signed aspects add to −64.14, but printed Subha +30.79 and Asubha −94.23 sum to −63.44; −94.93 would be needed to reconcile the net. Exact-input engine: Pinda −64.096 / Drik −16.024. **Open detail + rounding conflict**; retain both source and engine results. |
 | Sun total | Summary p.89: total 424.24; Rupa 7.08 | Displayed components sum to 424.94; 424.94/60 = 7.0823, matching 7.08. **424.24 is a total typo**. |
 | Mars Kala | Example 35 p.62: 30.060; summary p.89: 33.06 | 11.68 + 16.54 + 1.84 = 30.06; total 298.14 / Rupa 4.97 also reconcile with 30.06. **Use 30.06 for the example**; 33.06 is a summary typo. |
 | Mercury Rupa | Summary p.90: total 537.02; Rupa 8.85 | 537.02/60 = 8.95033..., which rounds to 8.95. **8.85 is a Rupa typo**. |
