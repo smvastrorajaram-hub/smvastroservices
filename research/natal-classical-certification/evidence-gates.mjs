@@ -204,16 +204,59 @@ export function evaluateNatalClassicalCertification({
     if (natalEpochEvidence.status !== 'PASS') {
       addBlocker(blockers, 'Exact natal birth-epoch evidence is not PASS');
     }
-    if (natalEpochEvidence.exactBirthInstantUsed !== true ||
-        !finite(natalEpochEvidence.julianDay)) {
-      addBlocker(blockers, 'Exact natal birth instant / Julian day is not verified');
+    if (natalEpochEvidence.birthYear !== birthYear) {
+      addBlocker(blockers, 'Exact natal-epoch year does not match chart birthYear');
     }
-    if (natalEpochEvidence.allFivePlanets !== true) {
-      addBlocker(blockers, 'Exact natal-epoch inputs for all five eligible planets are missing');
+    if (natalEpochEvidence.exactBirthInstantUsed !== true ||
+        !finite(natalEpochEvidence.julianDay) ||
+        !nonEmpty(natalEpochEvidence.birthInstant) ||
+        !nonEmpty(natalEpochEvidence.epochId)) {
+      addBlocker(blockers, 'Exact natal birth instant / Julian day / epoch ID is not verified');
     }
     if (natalEpochEvidence.meanTrueSheeghroccheyaSameFrame !== true ||
         !nonEmpty(natalEpochEvidence.frame)) {
       addBlocker(blockers, 'Exact natal-epoch Mean/True/Sheeghroccheya frame is not verified');
+    }
+    const planetRows = Array.isArray(natalEpochEvidence.planetInputs)
+      ? natalEpochEvidence.planetInputs : [];
+    const planetMap = new Map();
+    for (const row of planetRows) {
+      if (!row || !REQUIRED_FIVE.has(row.planet)) {
+        addBlocker(blockers, 'Exact natal-epoch input contains an unknown planet');
+        continue;
+      }
+      if (planetMap.has(row.planet)) {
+        addBlocker(blockers, 'Exact natal-epoch input has duplicate planet ' + row.planet);
+        continue;
+      }
+      planetMap.set(row.planet, row);
+      if (row.status !== 'PASS') {
+        addBlocker(blockers, row.planet + ': exact natal-epoch longitude status is not PASS');
+      }
+      for (const field of ['meanLongitude', 'trueLongitude', 'sheeghroccheya', 'mandocca']) {
+        if (!finite(row[field]) || row[field] < 0 || row[field] >= 360) {
+          addBlocker(blockers, row.planet + ': invalid exact-epoch ' + field);
+        }
+      }
+      if (row.frame !== natalEpochEvidence.frame) {
+        addBlocker(blockers, row.planet + ': exact-epoch frame mismatch');
+      }
+      for (const field of ['sourceId', 'sourceLocator', 'algorithmId', 'independentReferenceId']) {
+        if (!nonEmpty(row[field])) {
+          addBlocker(blockers, row.planet + ': missing exact-epoch ' + field);
+        }
+      }
+      if (row.fallbackUsed !== false) {
+        addBlocker(blockers, row.planet + ': fallback used for exact-epoch longitude');
+      }
+    }
+    for (const planet of REQUIRED_FIVE) {
+      if (!planetMap.has(planet)) {
+        addBlocker(blockers, 'Exact natal-epoch input missing for ' + planet);
+      }
+    }
+    if (planetRows.length !== REQUIRED_FIVE.size) {
+      addBlocker(blockers, 'Exact natal-epoch input must contain exactly five unique planets');
     }
     if (natalEpochEvidence.certifiedModelApplied !== true ||
         !nonEmpty(natalEpochEvidence.modelCertificateId)) {
@@ -241,6 +284,42 @@ export function evaluateNatalClassicalCertification({
     if (yuddhaEvidence.evaluatedEligiblePairs !==
         CLASSICAL_NATAL_SCOPE.expectedYuddhaEligiblePairs) {
       addBlocker(blockers, 'All 10 eligible Yuddha pairs were not evaluated');
+    }
+    const pairRows = Array.isArray(yuddhaEvidence.pairs) ? yuddhaEvidence.pairs : [];
+    const pairKeys = new Set();
+    for (const pair of pairRows) {
+      if (!pair || !REQUIRED_FIVE.has(pair.planetA) ||
+          !REQUIRED_FIVE.has(pair.planetB) || pair.planetA === pair.planetB) {
+        addBlocker(blockers, 'Yuddha pair evidence has invalid planet identifiers');
+        continue;
+      }
+      const key = [pair.planetA, pair.planetB].sort().join(':');
+      if (pairKeys.has(key)) {
+        addBlocker(blockers, 'Duplicate Yuddha pair evidence: ' + key);
+        continue;
+      }
+      pairKeys.add(key);
+      if (pair.status !== 'PASS' || !nonEmpty(pair.sourceEvidenceId)) {
+        addBlocker(blockers, 'Yuddha pair ' + key + ' lacks PASS/source evidence');
+      }
+      if (pair.war === true) {
+        if (![pair.planetA, pair.planetB].includes(pair.winner) ||
+            ![pair.planetA, pair.planetB].includes(pair.loser) ||
+            pair.winner === pair.loser ||
+            pair.finalKalaAdjustmentApplied !== true) {
+          addBlocker(blockers, 'Yuddha pair ' + key + ' has invalid winner/loser/final Kala record');
+        }
+      } else if (pair.war === false) {
+        if (pair.outcome !== 'NO_WAR' || pair.winner != null || pair.loser != null) {
+          addBlocker(blockers, 'Non-war pair ' + key + ' must record NO_WAR without a winner');
+        }
+      } else {
+        addBlocker(blockers, 'Yuddha pair ' + key + ' must explicitly state war true/false');
+      }
+    }
+    if (pairRows.length !== CLASSICAL_NATAL_SCOPE.expectedYuddhaEligiblePairs ||
+        pairKeys.size !== CLASSICAL_NATAL_SCOPE.expectedYuddhaEligiblePairs) {
+      addBlocker(blockers, 'Final Yuddha evidence must contain exactly ten unique eligible pairs');
     }
     if (yuddhaEvidence.unresolvedPairs !== 0) {
       addBlocker(blockers, 'One or more Yuddha pairs remain unresolved');
