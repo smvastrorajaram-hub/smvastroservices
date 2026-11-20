@@ -14,6 +14,7 @@ const COMMON_EN_TO_TA=Object.freeze({
   'anitha':'அனிதா','anitha':'அனிதா','selvi':'செல்வி','malar':'மலர்',
   'perambalur':'பெரம்பலூர்','perambur':'பெரம்பூர்','madurai':'மதுரை',
   'chennai':'சென்னை','karur':'கரூர்','coimbatore':'கோயம்புத்தூர்',
+  'tiruchirappalli':'திருச்சிராப்பள்ளி','trichy':'திருச்சி','thanjavur':'தஞ்சாவூர்','tanjore':'தஞ்சாவூர்','erode':'ஈரோடு','salem':'சேலம்','vellore':'வேலூர்','dindigul':'திண்டுக்கல்','theni':'தேனி','tiruppur':'திருப்பூர்','tirunelveli':'திருநெல்வேலி','kanyakumari':'கன்னியாகுமரி','rameswaram':'இராமேஸ்வரம்',
   'tiruchirappalli':'திருச்சிராப்பள்ளி','trichy':'திருச்சி',
   'thanjavur':'தஞ்சாவூர்','tanjore':'தஞ்சாவூர்','erode':'ஈரோடு',
   'salem':'சேலம்','vellore':'வேலூர்','dindigul':'திண்டுக்கல்',
@@ -104,15 +105,22 @@ function latinWordToTamil(word){
   }
   return out;
 }
+const escapeRegExp=value=>String(value).replace(/[.*+?^\${}()|[\]\\]/g,'\\$&');
+function replaceKnownPhrases(value,dictionary){
+  let result=String(value);
+  const entries=Object.entries(dictionary).sort((a,b)=>b[0].length-a[0].length);
+  for(const [source,target] of entries){
+    const re=new RegExp('(?<![\\p{L}\\p{M}])'+escapeRegExp(source)+'(?![\\p{L}\\p{M}])','giu');
+    result=result.replace(re,target);
+  }
+  return result;
+}
 export function latinToTamil(value){
   const input=String(value??'').normalize('NFC').trim();
   if(!input||TAMIL_RE.test(input)&&!LATIN_RE.test(input))return input;
-  const words=input.split(/([^\p{L}\p{M}]+)/u);
-  return words.map(word=>{
-    if(!/[A-Za-z]/u.test(word))return word;
-    const known=COMMON_EN_TO_TA[word.toLowerCase()];
-    return known||latinWordToTamil(word);
-  }).join('');
+  const phrases=replaceKnownPhrases(input,COMMON_EN_TO_TA);
+  const words=phrases.split(/([^\\p{L}\\p{M}]+)/u);
+  return words.map(word=>/[A-Za-z]/u.test(word)?latinWordToTamil(word):word).join('');
 }
 export function localizeTamilText(value,language='ta'){
   const input=String(value??'').normalize('NFC');
@@ -122,11 +130,8 @@ export function localizeTamilText(value,language='ta'){
     return latinToTamil(input);
   }
   if(LATIN_RE.test(input)&&!TAMIL_RE.test(input))return input;
-  const words=input.split(/([^\p{L}\p{M}]+)/u);
-  return words.map(word=>{
-    if(!TAMIL_RE.test(word))return word;
-    const known=COMMON_TA_TO_EN[word];
-    return known||tamilToLatin(word);
-  }).join('');
+  const phrases=replaceKnownPhrases(input,COMMON_TA_TO_EN);
+  const words=phrases.split(/([^\\p{L}\\p{M}]+)/u);
+  return words.map(word=>TAMIL_RE.test(word)?tamilToLatin(word):word).join('');
 }
 export function hasTamilScript(value){return TAMIL_RE.test(String(value??''));}
