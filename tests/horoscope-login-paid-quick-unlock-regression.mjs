@@ -133,23 +133,42 @@ test("Verified full Horoscope report continues through existing Save and PDF/Pri
   assert.match(store, /function attach\(detail\)[\s\S]{0,700}data-print/);
 });
 
-test("All three apps use one synchronized cache release; Horoscope runtime revision is bumped", () => {
+test("All three apps use one synchronized cache release; Horoscope runtime revision remains intact", () => {
   const versions = workers.map(source => /const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(source));
   assert.ok(versions.every(Boolean));
   assert.deepEqual(versions.map(match => match[1]), [
-    "20261119-horoscope-four-chart-planet-layout-v1",
-    "20261119-horoscope-four-chart-planet-layout-v1",
-    "20261119-horoscope-four-chart-planet-layout-v1"
+    "20261120-horoscope-language-result-preserve-v1",
+    "20261120-horoscope-language-result-preserve-v1",
+    "20261120-horoscope-language-result-preserve-v1"
   ]);
   assert.deepEqual(versions.map(match => match[2]), [
-    "20261119-horoscope-four-chart-planet-layout-v1",
-    "20261119-horoscope-four-chart-planet-layout-v1",
-    "20261119-horoscope-four-chart-planet-layout-v1"
+    "20261120-horoscope-language-result-preserve-v1",
+    "20261120-horoscope-language-result-preserve-v1",
+    "20261120-horoscope-language-result-preserve-v1"
   ]);
   const runtime = /const RUNTIME_REVISION\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(workers[1]);
   assert.ok(runtime);
   assert.equal(runtime[1], "v284-pages-dev-tamil-solar-20261116");
   assert.equal(runtime[2], "v278-in-navigation-20261115");
+});
+
+test("Language changes preserve the generated report; only authentication remounts clear it", () => {
+  const languageStart = policy.indexOf("window.addEventListener('smv-language'");
+  const languageEnd = policy.indexOf("document.addEventListener('DOMContentLoaded'", languageStart);
+  assert.ok(languageStart >= 0 && languageEnd > languageStart, "The Horoscope language listener must exist.");
+  const languageListener = policy.slice(languageStart, languageEnd);
+  assert.doesNotMatch(languageListener, /clearAfterAuthRemount|clearCurrentResults/,
+    "A presentation-only language switch must never clear generated Horoscope results.");
+  assert.match(languageListener, /syncAllPaidButtons/);
+  assert.match(languageListener, /syncHoroscopePaidEntry/);
+
+  const authStart = policy.indexOf("window.addEventListener('smv:horoscope-local-auth'");
+  assert.ok(authStart >= 0 && authStart < languageStart);
+  const authListener = policy.slice(authStart, languageStart);
+  assert.match(authListener, /clearAfterAuthRemount\(\)/,
+    "Actual logout/auth remount cleanup must remain in place.");
+  assert.match(html, /config\\.js\\?v=20261120-horoscope-language-result-preserve-v1/,
+    "The changed access-policy script must have a fresh asset URL.");
 });
 
 test("No origin-wide local storage, Cache API or IndexedDB deletion is introduced", () => {
