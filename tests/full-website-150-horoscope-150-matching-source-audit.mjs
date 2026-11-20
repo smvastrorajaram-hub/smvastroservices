@@ -1,3 +1,4 @@
+import './helpers/naelos-node-fetch-bridge.mjs';
 /**
  * 150-Horoscope / 150-Marriage-Matching full-site source-level calculation audit.
  *

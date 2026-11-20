@@ -1,3 +1,4 @@
+import './helpers/naelos-node-fetch-bridge.mjs';
 // V360 source-to-book independent Shodhana oracle.
 // P.V.R. Narasimha Rao, Vedic Astrology: An Integrated Approach,
 // book pp 157–160, PDF pp 169–172, §12.7.1–12.7.3,
