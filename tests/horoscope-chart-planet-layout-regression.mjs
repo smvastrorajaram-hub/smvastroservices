@@ -42,6 +42,9 @@ assert.match(transitRenderer, /transitPlanetCount>=3/);
 assert.match(transitRenderer, /data-chart-planet-count="\$\{transitPlanetCount\}"/);
 assert.ok(transitRenderer.includes('planet-line transit-lagna-line'),'Transit Lagna is emitted inside the same planet-flow as the scaled planet rows.');
 assert.ok(transitRenderer.includes('data-transit-lagna="true"'),'Transit Lagna is rendered as a normal planet-short label instead of a fixed-size standalone node.');
+assert.ok(chartStyleJs.includes("const DEVANAGARI_SIGNS=['१','२','३','४','५','६','७','८','९','१०','११','१२'];"),'North Indian charts use a complete Devanagari 1–12 sign sequence.');
+assert.ok(chartStyleJs.includes("if(style==='north'&&['d1','d9','transit'].includes(kind))"),'North Indian Rasi, Navamsa and Transit display sign numbers; Bhava does not.');
+assert.ok(chartStyleJs.includes("if(!chart.closest('#tamilHoroscopeResult'))return;"),'Only the Tamil South Bhava result normalizes legacy house labels; English remains untouched.');
 assert.ok(chartStyleJs.includes("if(house===1&&kind!=='transit')"),'Alternate layouts must not add a second Lagna outside the source Transit planet-flow.');
 
 assert.ok(chartStyleJs.includes("const kind=chart.id==='bhavaChart'?'bhava':chart.id==='navamsaChart'?'d9':chart.id==='rasiChart'?'d1':'transit';"));
