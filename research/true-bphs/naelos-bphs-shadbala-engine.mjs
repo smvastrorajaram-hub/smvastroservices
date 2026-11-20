@@ -42,7 +42,7 @@ import {
   ayanaBala,
   drikBalaClassical,
   traditionalAharganaLords
-} from '../../public/horoscope/offline/swiss_vedic.browser.mjs';
+} from './bphs-components.mjs';
 import { getSwe } from '../../public/horoscope/offline/wasm-provider.mjs';
 import { offsetMinutesAt } from '../../public/horoscope/offline/places/timezone.mjs';
 import {
