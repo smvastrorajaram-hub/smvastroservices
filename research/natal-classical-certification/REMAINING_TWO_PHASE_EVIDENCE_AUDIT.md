@@ -58,9 +58,9 @@ Ledger: `shadbala-source-evidence-42.json`.
 | Status | Count |
 |---|---:|
 | Direct source-example matches | 36 |
-| Saturn rows adjudicated for the 1918 example only | 2 |
+| Component values adjudicated for the 1918 example only | 3 |
 | Luminary Chesta source ellipses / N/A | 2 |
-| Open component-level source discrepancies (Mercury Dig, Jupiter Drik) | 2 |
+| Open component-level source discrepancy (Jupiter Drik) | 1 |
 | **Total rows** | **42** |
 
 Source sections of B.V. Raman, *Graha and Bhava Balas*, 13th ed.:
@@ -77,7 +77,7 @@ The 13th-edition page images were rechecked directly ([full scanned book](https:
 
 | Item | Printed evidence | Arithmetic / source disposition |
 |---|---|---|
-| Mercury Dig | Example 14 p.32: 63°05′; Example 15 p.33 and summary p.90: 21.09 | 63°05′ ÷ 3 = 21°01′40″ = 21.02778 virupas (~21.03 decimal). The book repeats 21.09; **open arithmetic conflict**. |
+| Mercury Dig | Example 14 p.32: 63°05′; Example 15 p.33 and summary p.90: 21.09 | 63°05′ ÷ 3 = 21.02778 Virupas (~21.03). The exact 1918 input engine returns 21.025. **Adjudicated:** 21.09 is a printed arithmetic error; preserve it as printed, use ~21.03 only for formula-derived reconstruction of this example. |
 | Saturn Chesta | §104 p.77: 151.23°; Example 49 p.78: 181.23°; final Chesta 21.14 | 181.23° − (111.23° + 124.39°)/2 = 63.42°; reduced Kendra / 3 = 21.14. **181.23° is the evidenced input for this 1918 worked example**; the §104 table cell remains a source typo. |
 | Saturn Naisargika | Chapter VII table and Example 52 p.81: 8.57; summary p.90: 8.37 | The summary total 389.21 recomposes with 8.57, not 8.37. **Use 8.57 for this example**; 8.37 is a summary typo. |
 | Jupiter Drik | Example 55 p.88: −64.14 ÷ 4 = −16.04; summary p.90: −16.03 | Exact quarter is −16.035 before display rounding. **Open 0.01 rounding conflict**; retain both printed values. |
@@ -85,9 +85,9 @@ The 13th-edition page images were rechecked directly ([full scanned book](https:
 | Mars Kala | Example 35 p.62: 30.060; summary p.89: 33.06 | 11.68 + 16.54 + 1.84 = 30.06; total 298.14 / Rupa 4.97 also reconcile with 30.06. **Use 30.06 for the example**; 33.06 is a summary typo. |
 | Mercury Rupa | Summary p.90: total 537.02; Rupa 8.85 | 537.02/60 = 8.95033..., which rounds to 8.95. **8.85 is a Rupa typo**. |
 
-The machine-readable shadbala-source-evidence-42.json retains all seven printed issues, page locators, classification and disposition. Of the four component-level conflicts first identified, Saturn Chesta and Saturn Naisargika are now adjudicated for the 1918 worked example only; Mercury Dig and Jupiter Drik remain open. The other three are final-summary arithmetic typos. These are findings about one 1918 printed worked horoscope, not independent evidence for arbitrary natal birth dates.
+The machine-readable shadbala-source-evidence-42.json retains all seven printed issues, page locators, classification and disposition. Of the four component-level conflicts first identified, Mercury Dig is adjudicated as a formula/print arithmetic error for the 1918 example; Saturn Chesta and Saturn Naisargika are adjudicated from the worked example and total recomposition. Jupiter Drik is now the sole open component-level discrepancy. The other three are final-summary arithmetic typos. These are findings about one 1918 printed worked horoscope, not independent evidence for arbitrary natal birth dates.
 
-**Phase 2 verdict:** all 42 rows are enumerated: 36 direct source-example matches, two Saturn rows adjudicated for the 1918 example only, two luminary Chesta N/A and two open component arithmetic/rounding conflicts. These rows apply to one 1918 horoscope, not arbitrary natal dates, and are not inserted into the per-natal certification gate.
+**Phase 2 verdict:** all 42 rows are enumerated: 36 direct source-example matches, three components adjudicated for the 1918 example only (Mercury Dig formula error plus two Saturn source-table corrections), two luminary Chesta N/A and one open component discrepancy (Jupiter Drik). These rows apply to one 1918 horoscope, not arbitrary natal dates, and are not inserted into the per-natal certification gate.
 
 ## Final integrated CI after PAC / Shadbala evidence corrections
 
