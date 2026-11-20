@@ -113,6 +113,8 @@ const englishStatement=await buildSubhaJanana(panchangFixture,chartFixture,tamil
 const expectedTamilYoga=fixtureBirthYoga.ta.replace(/\s*யோகம்$/u,'')+' யோகமும் கூடிய சுப தினத்தில்';
 const expectedEnglishYoga=fixtureBirthYoga.en.replace(/\s*Yogam$/i,'')+' Yogam on this auspicious day';
 has(tamilStatement,expectedTamilYoga,'Tamil statement displays only the Amirthadi Yoga active at birth time');
+has(tamilStatement,'>'+expectedTamilYoga+'</span> சூரிய உதயாதி','Siddha/Amirthadi phrase flows directly into Surya Udhayadhi without a final dot');
+lacks(tamilStatement,'>'+expectedTamilYoga+'</span>. சூரிய உதயாதி','No full stop appears after the Tamil auspicious Yoga phrase');
 has(englishStatement,expectedEnglishYoga,'English statement displays only the Amirthadi Yoga active at birth time');
 lacks(tamilStatement,'பிறந்த நேர அமிர்தாதி யோகம்:','Tamil statement does not append a second birth-time Yoga label');
 has(tamilStatement,'class="smv-sj-result">கிரீஷ்ம</span> ருதுவும்','June Tamil solar month derives Grishma Ritu with result styling');
@@ -181,9 +183,11 @@ has(horoscope,'subhaJananaHtml','Birth statement is an explicit renderer paramet
 lacks(horoscope,'data-smv-screen-only="daily-panchang"','Horoscope no longer renders the Daily Panchang card');
 has(horoscope,'if(calendarPresentation)h+=','Daily Hora markup is gated to Calendar presentation');
 has(horoscope,"${ta?'கோச்சாரம்':'Transit'}","Transit chart centre displays கோச்சாரம் in Tamil");
-has(horoscope,'class="lagna transit-chart-lagna"','Transit chart has a specifically scoped Lagna marker');
-has(css,'html body.smv-v12-theme :is(#tamilHoroscopeResult, #englishHoroscopeResult) .transit-card .transit-chart .transit-chart-lagna','Transit chart Lagna size rule is scoped to Horoscope result');
-has(css,'font-size:var(--smv-chart-compact-font-size,12px)!important;','Transit chart Lagna uses the same 12px compact scale as short graha labels');
+has(horoscope,'class="planet-line transit-lagna-line"','Transit Lagna is emitted in the planet text row');
+has(horoscope,'class="planet-short" data-transit-lagna="true"','Transit Lagna uses the same source label span as a planet short name');
+lacks(horoscope,'transit-chart-lagna','Transit Lagna does not use a fixed-size CSS-special label');
+const chartStyleSource=read('public/horoscope/chart-style.js');
+has(chartStyleSource,"if(house===1&&kind!=='transit')",'Alternate chart layouts do not add a second Transit Lagna marker outside the source planet row');
 has(horoscope,'if(calendarPanchangSlot)calendarPanchangSlot.innerHTML=dailyTable;','Calendar Daily Panchang source remains populated');
 has(horoscope,'data-smv-screen-only="daily-hora"','Calendar Daily Hora markup remains available');
 has(horoscope,'window.__smvRenderBasicSnapshot=async','Language switches regenerate the statement in the selected language');
@@ -206,13 +210,20 @@ has(prose,"'வியாழக்கிழமை'",'Thursday uses the grammatica
 lacks(prose,'வியாழன்க்கிழமை','Do not render an extra nasal consonant in Thursday');
 for(const marker of ['smv-sj-result','smv-sj-time','sjValue(samvatsara)','sjValue(ritu)','sjValue(tithi)','sjValue(nak)','sjValue(karana)','sjSafeValue(parentText)','sjSafeValue(place)'])
   has(prose,marker,'Statement distinguishes Panchang and personal result values: '+marker);
-has(prose,'sjTime(sunRise)','Sunrise uses the dedicated time colour');
-has(prose,'sjTime(sunSet)','Sunset uses the dedicated time colour');
-has(prose,'sjTime(ahas)','Ahas duration uses the dedicated time colour');
-has(prose,'sjTime(ratri)','Ratri duration uses the dedicated time colour');
+has(prose,'sjTime(time12(solar.rise))','Sunrise digits use the numeric time colour in railway time');
+has(prose,'sjTime(time12(solar.set))','Sunset digits use the numeric time colour in railway time');
+has(prose,'ghatiMarkup(pramana?.ahasNazhigai?.totalVighati,ta)','Ahas digits are coloured separately from the plain Nazhigai/Vinazhigai words');
+has(prose,'ghatiMarkup(pramana?.ratriNazhigai?.totalVighati,ta)','Ratri digits are coloured separately from the plain Nazhigai/Vinazhigai words');
+has(prose,'String(Number(m[1])).padStart(2,\'0\')+\':\'+m[2]','Clock values are formatted as zero-padded 24-hour railway time');
+lacks(prose,'AM','No AM suffix appears anywhere in the statement builder');
+lacks(prose,'PM','No PM suffix appears anywhere in the statement builder');
+lacks(prose,'சூரிய உதயம் காலை','Sunrise has no morning word before 24-hour time');
+lacks(prose,'அஸ்தமனம் மாலை','Sunset has no evening word before 24-hour time');
+lacks(prose,'const t=mins(point.time),part=','Event boundaries have no morning/afternoon/evening prefix');
 has(prose,':father?(','Father-only input is rendered without an empty mother placeholder');
 has(prose,':mother?(','Mother-only input is rendered without an empty father placeholder');
-has(prose,"sjTime(birthTimeGhati)+'க்கு (சரியாக '+sjTime(birthClockTa)+' மணிக்கு)",'Tamil birth time is grammatically formatted and uses the dedicated time colour');
+has(prose,"const birthTimeGhati=ghatiMarkup(birthVighati,ta),birthClockMarkup=sjTime(time12(time))",'Birth time uses separate Ghati number and 24-hour clock markup');
+has(prose,"சூரிய உதயாதி '+birthTimeGhati+'க்கு (சரியாக '+birthClockMarkup+' மணிக்கு)",'Tamil birth time is displayed in railway time with no AM/PM or day-part label');
 
 has(css,'.smv-subha-janana{','Narrative has its own report styling');
 const statementStyleStart=css.indexOf('.smv-subha-janana{');
@@ -220,7 +231,9 @@ assert.ok(statementStyleStart>=0,'Compact Subha Janana style block exists');chec
 const statementStyle=css.slice(statementStyleStart,statementStyleStart+1400);
 has(statementStyle,'border:0','Subha Janana does not add a separate card or panel layer');
 has(statementStyle,'background:transparent','Subha Janana uses the existing report surface');
-has(statementStyle,'text-align:justify','Statement text expands horizontally to reduce vertical space');
+has(statementStyle,'text-align:start','Statement text keeps natural word spacing and does not justify each line');
+lacks(statementStyle,'text-align:justify','Statement text does not stretch word gaps'); 
+has(statementStyle,'overflow-wrap:anywhere','Long content wraps within the available width');
 has(css,'color:#8b1e2d','Heading uses an auspicious traditional maroon');
 has(css,'color:#28634b','Panchang and personal result values use a distinct traditional green');
 has(css,'color:#28518a','Time values use a separate deep blue');
