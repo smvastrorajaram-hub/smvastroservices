@@ -65,7 +65,42 @@ It also does **not** certify B.V. Raman / BPHS five-graha Cheshta. The BPHS inpu
 
 The earlier PR #14 evidence for Saura Mean and Sheeghroccheya remains valid within its recorded scope and is not repeated here. The remaining research target is a source-supported, internally coherent historical triplet for each natal epoch, including its time-dependent Bīja/Mandocca inputs, followed by the five BPHS Cheshta calculations.
 
-The official IMD IAE page describes Part I as TIME, SUN, MOON and PLANETS, states its reference frame (J2000.5) and time argument (TT), and links the latest annual PDF. It also explicitly provides a historical-data enquiry contact. The yearly sources are bibliographically identifiable: 1971 and 1974 IENA, 1992 and 1994 IAE, and 2015 IAE. However, the specific historical daily table pages are not exposed by the current public download link or Google Books snippets. They must be acquired from the official IMD / Positional Astronomy Centre or the listed holding libraries before they can serve as the historical table oracle. [Official IMD IAE and historical-data enquiry page](https://mausam.imd.gov.in/responsive/indianAstronomicalEphemeris.php).
+## 5. Historical official IENA / IAE source acquisition
+
+The official IMD describes IAE Part I as TIME, SUN, MOON and PLANETS and specifies the modern standard reference system epoch as J2000.5 with ephemeris argument TT. It is an annual publication of the Positional Astronomy Centre. [Official IMD IAE description and reference-system definition](https://mausam.imd.gov.in/imd_latest/contents/indian_astronomical_ephemeris.php).
+
+The exact yearly volumes are bibliographically identifiable:
+
+| Natal year | Official source volume | Public access found |
+|---|---|---|
+| 1971 | Indian Ephemeris and Nautical Almanac (IENA) | Google Books record, snippet-only: https://books.google.com/books?id=bV47AQAAIAAJ |
+| 1974 | Indian Ephemeris and Nautical Almanac (IENA) | Google Books record, snippet-only: https://books.google.com/books?id=1187AQAAIAAJ |
+| 1992 | Indian Astronomical Ephemeris (IAE) | Google Books record (Ephemerides of Planets section starts at p.200); National Science Library reference copy is not for loan; IIA Bangalore catalog also lists a copy: https://books.google.com/books?id=00tGAAAAYAAJ and https://library.iiap.res.in/cgi-bin/koha/opac-detail.pl?biblionumber=10283 |
+| 1994 | Indian Astronomical Ephemeris (IAE) | IIA Kavalur library catalog lists a copy as Available, call no. 059:52/IAE-94: https://library.iiap.res.in/cgi-bin/koha/opac-detail.pl?biblionumber=10285 |
+| 2015 | Indian Astronomical Ephemeris (IAE) | Google Books bibliographic record, 474 pages: https://books.google.com/books?id=o23_rQEACAAJ; IMD 2014 annual report confirms publication for 2015: https://metnet.imd.gov.in/docs/imdnews/ANNUAL_REPORT2014English.pdf |
+
+The 1971/1974/1992 Google Books previews expose only limited snippets and page-hit counts, not readable daily planetary table values. Therefore no historical numeric entries have been transcribed from them. The IIA catalogue records establish that 1992/1994 physical volumes exist at the listed libraries, but do not provide page scans.
+
+### Exact source pages needed
+
+The required birth instants are:
+
+| Birth (IST) | Corresponding UTC |
+|---|---|
+| 1971-05-04 05:05 | 1971-05-03 23:35 UTC |
+| 1974-01-11 16:04 | 1974-01-11 10:34 UTC |
+| 1992-07-31 22:05 | 1992-07-31 16:35 UTC |
+| 1994-06-15 13:03 | 1994-06-15 07:33 UTC |
+| 2015-09-06 09:30 | 2015-09-06 04:00 UTC |
+
+For each yearly volume, obtain:
+1. the full planetary ephemeris table pages covering the birth date and adjacent tabular epoch(s), with Mercury, Venus, Mars, Jupiter and Saturn columns;
+2. the book's definitions for apparent/geometric longitude, geocentric/heliocentric centre, ecliptic/equinox, epoch, time argument and interpolation/correction convention;
+3. any separate mean-longitude, mean-motion or apsis/apside tables that the volume actually provides.
+
+The source's J2000.5 / TT frame must be retained in metadata. A coordinate transformation alone does not make its modern ephemeris physically identical to the historical Saura model. These government tables may provide a strong historical-date independent reference for modern apparent True positions; they must not be blended with Saura Mean/Sheeghroccheya as a classical Cheshta triplet without a separately proven same-model relationship.
+
+**Acquisition status:** source volumes and library holdings located; the daily numerical table pages themselves have not yet been acquired. Historical Saura True-longitude and classical five-graha Cheshta certification therefore remain open.
 
 ## 5. Safety / release boundary
 
