@@ -90,12 +90,22 @@
   for(let si=0;si<12;si++)if(arr.out[si]?.querySelector('.lagna'))return si;
   return -1;
  }
- function addNorthSignNumbers(chart,lagna){
-  // Labels are chart-level overlays, deliberately separate from each house's
-  // planet stack. Their positions are the clear outer corners of the fixed
-  // North Indian compartments, so no graha row is moved or clipped.
+ function addNorthSignNumbers(chart,lagna,kind){
+  // For Bhava, the North compartment stays in its Bhava house position, but
+  // its Devanagari digit comes from the calculated Sphuta Rasi of that house.
+  // For D1/D9/Transit, retain the existing Lagna-relative sign sequence.
+  const signByBhavaHouse=kind==='bhava'
+   ?new Map([...chart.querySelectorAll(':scope > .smv-v342-cell[data-house][data-sign]')]
+      .map(cell=>[Number(cell.dataset.house),Number(cell.dataset.sign)-1]))
+   :null;
+  // Keep these labels separate from the planet stack; do not move or cover grahas.
   for(let house=1;house<=12;house++){
-   const sign=(lagna+house-1)%12;
+   const sign=kind==='bhava'
+    ?signByBhavaHouse.get(house)
+    :(lagna+house-1)%12;
+   if(!Number.isInteger(sign)||sign<0||sign>11){
+    throw new Error('North chart is missing the calculated Rasi for compartment '+house);
+   }
    const label=document.createElement('span');
    label.className='smv-v342-sign-number-overlay';
    label.dataset.house=String(house);
@@ -260,7 +270,7 @@
     chart.append(pointCell(x,y,sign,house,from,style,kind,ta,planetEntries,kind==='bhava'?romanHouse(house):''));
    }
   }
-  if(style==='north'&&['d1','d9','transit'].includes(kind))addNorthSignNumbers(chart,lagna);
+  if(style==='north'&&['d1','d9','transit','bhava'].includes(kind))addNorthSignNumbers(chart,lagna,kind);
   if(style==='east'){
    const title=document.createElement('div');title.className='smv-v342-east-center';
    title.textContent=kind==='d9'?(ta?'நவாம்சம்':'Navamsa'):kind==='bhava'?(ta?'பாவம்':'Bhava'):kind==='transit'?(ta?'கோச்சாரம்':'Transit'):(ta?'ராசி':'Rasi');
@@ -289,6 +299,8 @@
  function start(){
   styleChoice(choice);
   for(const el of forms())el.addEventListener('change',e=>updateAll(e.currentTarget.value));
+  // Saved/restored result HTML may already exist when this module starts.
+  roots().forEach(r=>apply(r,choice));
   // Run synchronously before Saved Reports takes its HTML snapshot.
   window.addEventListener('smv:report-ready',e=>{if(e.detail?.feature==='advanced_analysis')apply(e.detail?.root,choice);});
   window.addEventListener('smv-language',()=>{
