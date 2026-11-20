@@ -67,7 +67,7 @@ jobs:
         run: node tests/bv-raman-strength6-regression.mjs
       - name: Certify seven-graha B.V. Raman totals, Rupa, ratios and ranking for the printed Standard Horoscope
         run: node tests/bv-raman-seven-graha-numerical-certification.mjs
-      - name: Verify five natal epochs x five grahas against independent NASA/JPL DE441 apparent True longitudes
+      - name: Validate five natal epochs x five grahas against NASA/JPL DE441 apparent True longitudes (independent modern oracle)
         run: node tests/bv-raman-natal-de441-true-longitude-regression.mjs
       - name: Verify B.V. Raman Ishta/Kashta remains separate from sixfold Shadbala
         run: node tests/bv-raman-ishta-kashta-regression.mjs
