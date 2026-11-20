@@ -4,7 +4,7 @@
    Location lookup keeps its existing GeoNames + India-offline behavior.
 */
 const IS_PAGES_DEV_HOST = self.location.hostname === 'smvastroservices.pages.dev' || self.location.hostname.endsWith('.smvastroservices.pages.dev') || self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
-const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? 'smv-763e7ae32f8bfd1d' : 'smv-1927742b3871077d';
+const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? 'smv-9d6be2c451f08a73' : 'smv-6cbe1a3f9d74520d';
 const OFFLINE_CACHE='smv-horoscope-offline';
 const LOCATION_CACHE='smv-shared-india-places';
 const SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE;
@@ -35,12 +35,6 @@ const CORE=[
   './horoscope-life-engine.js','./horoscope-judgement-engine.js',
   './integrated.js','./d1-time-reading.js','./prediction-synthesis.js',
   './offline/offline-engine.mjs','./offline/server-wrapper.browser.mjs',
-  './offline/true-bphs-naelos-engine.browser.bundle.mjs',
-  './offline/naelos-data/manifest.json',
-  './offline/naelos-data/ne-1700.bin','./offline/naelos-data/ne-1800.bin',
-  './offline/naelos-data/ne-1900.bin','./offline/naelos-data/ne-2000.bin',
-  './offline/naelos-data/ne-2100.bin','./offline/naelos-data/ne-2200.bin',
-  './offline/naelos-data/ne-2300.bin','./offline/naelos-data/ne-2400.bin',
   './offline/true-bphs-naelos-engine.browser.bundle.mjs',
   './offline/naelos-data/manifest.json',
   './offline/naelos-data/ne-1700.bin','./offline/naelos-data/ne-1800.bin',
@@ -79,6 +73,12 @@ const REQUIRED_CORE=new Set([
   './marriage-matching.js','./marriage-basic-report.mjs','./matching-timeline.mjs',
   './d1-15-year-reading.mjs',
   './offline/offline-engine.mjs','./offline/server-wrapper.browser.mjs',
+  './offline/true-bphs-naelos-engine.browser.bundle.mjs',
+  './offline/naelos-data/manifest.json',
+  './offline/naelos-data/ne-1700.bin','./offline/naelos-data/ne-1800.bin',
+  './offline/naelos-data/ne-1900.bin','./offline/naelos-data/ne-2000.bin',
+  './offline/naelos-data/ne-2100.bin','./offline/naelos-data/ne-2200.bin',
+  './offline/naelos-data/ne-2300.bin','./offline/naelos-data/ne-2400.bin',
   './offline/swiss_vedic.browser.mjs','./offline/wasm-provider.mjs',
   './offline/transit_panchang.browser.mjs','./offline/astro_advanced.browser.mjs',
   './offline/dasa_engine.browser.mjs','./offline/pvr-longevity-sodhya-timing.browser.mjs',
