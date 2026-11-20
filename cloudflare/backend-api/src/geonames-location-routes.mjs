@@ -122,13 +122,15 @@ export function registerGeoNamesRoutes({ app, env = {}, fetchImpl = globalThis.f
         if (!validCoordinates(latitude, longitude)) return null;
 
         const name = String(place.name || place.toponymName || '').slice(0, 180);
+        const admin2 = String(place.adminName2 || '').slice(0, 140);
         const admin1 = String(place.adminName1 || '').slice(0, 140);
         const country = String(place.countryName || '').slice(0, 140);
         if (!name) return null;
 
         return {
-          place: [name, admin1, country].filter(Boolean).join(', '),
+          place: [name, admin2 && admin2.toLowerCase() !== name.toLowerCase() ? admin2 : '', admin1, country].filter(Boolean).join(', '),
           name,
+          admin2,
           admin1,
           country,
           latitude,
