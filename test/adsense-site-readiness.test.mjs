@@ -108,14 +108,13 @@ test('All three app service workers use synchronized new cache releases without 
     read('public/horoscope/calendar/sw.js')
   ];
   for (const source of workers) {
-    assert.match(source, /20261120-subha-janana-transit-lagna-v3/);
-    assert.match(source, /20261120-subha-janana-transit-lagna-v3/);
     assert.doesNotMatch(source, /localStorage\.clear\(|sessionStorage\.clear\(|WebView\.clearCache\(/);
   }
   const releases = workers.map(source => source.match(/SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/));
-  assert.ok(releases.every(Boolean));
-  assert.deepEqual(releases.map(match => match[1]), Array(3).fill('20261120-subha-janana-transit-lagna-v3'));
-  assert.deepEqual(releases.map(match => match[2]), Array(3).fill('20261120-subha-janana-transit-lagna-v3'));
+  assert.ok(releases.every(Boolean), 'All three app workers declare host-specific cache releases.');
+  assert.equal(new Set(releases.map(match => match[1])).size, 1, 'Pages.dev release is synchronized.');
+  assert.equal(new Set(releases.map(match => match[2])).size, 1, 'Production release is synchronized.');
+  assert.ok(releases[0][1] && releases[0][2], 'Both generated release IDs must be present.');
 });
 
 
