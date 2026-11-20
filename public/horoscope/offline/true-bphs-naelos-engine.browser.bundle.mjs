@@ -7074,6 +7074,15 @@ function assembleBphsShadbala({ planetRows, bhavas, temporal, declinations, ches
       planet: name,
       method: "TRUE_BPHS_SHADBALA_NAELOS_DE440",
       components: { sthana, dig, kala, cheshta: round32(cheshta), naisargika: round32(naisargika), drik: round32(drik) },
+      evidence: Object.freeze({
+        solarTimeMethod: temporal.solarTimeMethod,
+        solarTimeFrameId: temporal.solarTimeFrameId,
+        birthApparentSolarHour: temporal.apparentSolarHour,
+        sunriseJdUt: temporal.sunriseJdUt,
+        sunsetJdUt: temporal.sunsetJdUt,
+        epochJdUt: temporal.epochJdUt,
+        source: temporal.source
+      }),
       ishtaKashta,
       preWarTotalVirupa: round32(preWarTotal),
       classicalCertified: false,
