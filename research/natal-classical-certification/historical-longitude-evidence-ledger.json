@@ -366,6 +366,88 @@
     "independentHistoricalOracleVerifiedRows": 0,
     "historicalClassicalTrueLongitudeCertified": false,
     "productionEligible": false,
-    "interpretation": "A modern JPL DE440 numerical parity cross-check at these 3,000 exact natal-epoch planet rows. It is not a printed historical Saura table oracle and does not certify the classical four-pass True Longitude or the all-natal Mean/True/Sheeghroccheya chain."
+    "interpretation": "A modern JPL DE440 numerical parity cross-check at these 3,000 exact natal-epoch planet rows. It is not a printed historical Saura table oracle and does not certify the classical four-pass True Longitude or the all-natal Mean/True/Sheeghroccheya chain.",
+    "classicalComparisonSeparation": "The DE440 apparent True longitude is reported as a separate modern-model result. It is not substituted into the same-model Bīja Mean/Sheeghroccheya BPHS Chesta chain.",
+    "modernDe440TrueLongitudeUsedForClassicalCheshta": false
+  },
+  "coherentClassicalChainValidation": {
+    "status": "PASS_3000_SAME_EPOCH_SAME_FRAME_CLASSICAL_INPUT_CHAINS_RESEARCH_ONLY",
+    "model": "BURGESS_BENTLEY_BIJA_CORRECTED_SAURA_PAKSHA",
+    "years": [
+      1800,
+      2399
+    ],
+    "exactNatalEpochs": 600,
+    "planets": [
+      "Mercury",
+      "Venus",
+      "Mars",
+      "Jupiter",
+      "Saturn"
+    ],
+    "comparisons": 3000,
+    "rowsPerPlanet": 600,
+    "inputChain": [
+      "Bija-corrected Mean longitude",
+      "Kali-epoch Mandocca",
+      "Bija-corrected Sheeghroccheya",
+      "Sūrya Siddhānta II.39–45 four-pass True longitude",
+      "BPHS I Ch.27 vv.24–25 Chesta Kendra/Virupa"
+    ],
+    "commonJulianEpoch": true,
+    "commonFrame": "traditional-Saura-nirayana",
+    "sameDynamicModelForClassicalInputs": true,
+    "allResearchOnly": true,
+    "internalAssertions": "Every exact JD and frame field is equal across Mean, Mandocca, Sheeghroccheya and the four-pass True model; BPHS Chesta is recomputed only from these three same-model longitudes.",
+    "secondary24JyaCrossCheck": {
+      "status": "DIAGNOSTIC_COMPLETED_WITH_ONE_ROW_OVER_0_05_DEGREE",
+      "method": "Printed 24-Jya interpolation versus continuous trigonometric four-pass, supplied identical classical inputs",
+      "toleranceDegrees": 0.05,
+      "comparisons": 3000,
+      "rowsWithinTolerance": 2999,
+      "rowsOverTolerance": 1,
+      "maxAbsDifferenceDegrees": 0.053231899421462,
+      "rmsDifferenceDegrees": 0.009084055099703763,
+      "tabularNumericalGatePass": false,
+      "perPlanet": {
+        "Mercury": {
+          "samples": 600,
+          "maxAbsDifferenceDegrees": 0.021663712376721378,
+          "rmsDifferenceDegrees": 0.007409416288697341,
+          "rowsOverTolerance": 0
+        },
+        "Venus": {
+          "samples": 600,
+          "maxAbsDifferenceDegrees": 0.053231899421462,
+          "rmsDifferenceDegrees": 0.012780444927437918,
+          "rowsOverTolerance": 1
+        },
+        "Mars": {
+          "samples": 600,
+          "maxAbsDifferenceDegrees": 0.046506134026344625,
+          "rmsDifferenceDegrees": 0.012016697002317014,
+          "rowsOverTolerance": 0
+        },
+        "Jupiter": {
+          "samples": 600,
+          "maxAbsDifferenceDegrees": 0.013224922248923576,
+          "rmsDifferenceDegrees": 0.005438531815058602,
+          "rowsOverTolerance": 0
+        },
+        "Saturn": {
+          "samples": 600,
+          "maxAbsDifferenceDegrees": 0.013561606810526428,
+          "rmsDifferenceDegrees": 0.004514690226458906,
+          "rowsOverTolerance": 0
+        }
+      },
+      "interpretation": "The one 0.0532319-degree difference is retained as a table-interpolation diagnostic; it is not normalized away. The full same-epoch/same-frame input-chain and BPHS arithmetic audit completed across all 3,000 rows."
+    },
+    "independentHistoricalOracleVerifiedRows": 0,
+    "historicalClassicalTrueLongitudeCertified": false,
+    "classicalNatalCertified": false,
+    "productionEligible": false,
+    "relevantWorkflowRun": "https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44808715342",
+    "artifact": "The result is appended to the 600-chart artifact by the research test."
   }
 }
