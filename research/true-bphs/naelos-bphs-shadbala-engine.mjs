@@ -566,6 +566,57 @@ export async function createTrueBphsShadbalaEngine({
     tableIntegrityVerified:true,
     productionIntegrationAllowed:false,
     researchOnly:true,
+    governmentReferenceCertificate:Object.freeze({
+      certificateId:'SMV_ASTRO_PAC_2026_OFFICIAL_FIVE_GRAHA_NIRAYANA_LONGITUDE',
+      publisher:'Positional Astronomy Centre, Kolkata — India Meteorological Department, Government of India',
+      sourcePdfManifest:'tests/fixtures/pac-2026-official-daily-pdf-manifest.json',
+      auditPath:'audits/SMV_ASTRO_PAC_2026_FIVE_GRAHA_NIRAYANA_CROSSCHECK_2026-11-20.md',
+      scope:'2026-01-01 through 2026-12-31; 365 published daily Nirayana values each for Mercury, Venus, Mars, Jupiter and Saturn; 1,825 values total',
+      comparisonEpoch:'00:00:00 TT',
+      siderealConvention:'Lahiri comparison convention; inferred from numeric match, not explicitly named in the PAC PDF headings',
+      priorComparisonCandidate:'Bundled Swiss Ephemeris Lahiri sidereal',
+      priorComparisonMaximumResidualArcseconds:0.253273,
+      priorComparisonRmsResidualArcseconds:0.128957,
+      acceptanceGateArcseconds:0.36,
+      status:'PASS_PAC_VS_SWISS_LAHIRI_1825_OF_1825',
+      independentUnderlyingEphemerisProvenanceEstablished:false,
+      arbitraryHistoricalEpochsCertified:false,
+      historicalSauraFourPassCertified:false,
+      classicalCheshtaCertified:false
+    }),
+    async trueLongitudesAtTt(jdTt) {
+      if(!finite(jdTt)||jdTt<julday(YEAR_MIN,1,1,0)||jdTt>=julday(YEAR_MAX+1,1,1,0))
+        throw new RangeError('A TT Julian Day within calendar years 1800–2399 is required');
+      const lahiriAyanamsaDegrees=naelos.swe.ayanamsa(jdTt);
+      if(!finite(lahiriAyanamsaDegrees)) fail('Lahiri ayanamsa at the PAC TT epoch is unavailable');
+      const siderealOffsetDegrees=sauraSiderealOffsetFromLahiri(
+        lahiriAyanamsaDegrees,naelos.lahiriAyanamsaAt1860
+      );
+      const planets={};
+      for(const [tamil,english,body] of BODY_ROWS) {
+        const position=requiredPosition(
+          eph.calc(jdTt,body,SEFLG_SPEED),
+          'NAELOS PAC validation '+english+' at TT JD '+jdTt
+        );
+        planets[english]=Object.freeze({
+          tropicalApparentTrueLongitude:position.longitude,
+          trueLongitudeSaura: norm360(position.longitude-siderealOffsetDegrees),
+          pacLahiriToSauraOffsetDegrees:lahiriAyanamsaDegrees-siderealOffsetDegrees,
+          eclipticLatitude:position.latitude,
+          longitudeSpeed:position.longitudeSpeed,
+          referenceFrameId:FRAME_ID,
+          epochJdTt:jdTt,
+          source:'NAELOS Ephemeris 0.1.3 / NASA-JPL DE440'
+        });
+      }
+      return Object.freeze({
+        epochJdTt:jdTt,lahiriAyanamsaDegrees,siderealOffsetDegrees,
+        referenceFrameId:FRAME_ID,
+        pacLahiriToSauraOffsetDegrees:lahiriAyanamsaDegrees-siderealOffsetDegrees,
+        planets:Object.freeze(planets),
+        sourceCertificate:'SMV_ASTRO_PAC_2026_OFFICIAL_FIVE_GRAHA_NIRAYANA_LONGITUDE'
+      });
+    },
     async calculate(input={}) {
       const civilBirth=validateCivilInput(input);
       // Match the earlier NAELOS numerical-validation pathway: convert the
@@ -591,9 +642,9 @@ export async function createTrueBphsShadbalaEngine({
       // The source transfer is identical to the previously audited five-natal
       // NAELOS pathway: tropical apparent longitude minus the explicit
       // Burgess-1860 / date-specific Lahiri precession transfer.
-      const ayanamsa=naelos.swe.ayanamsa(birth.jdUt);
-      const ayanamsaBefore=naelos.swe.ayanamsa(birth.jdUt-0.5);
-      const ayanamsaAfter=naelos.swe.ayanamsa(birth.jdUt+0.5);
+      const ayanamsa=naelos.swe.ayanamsa(birth.jdTt);
+      const ayanamsaBefore=naelos.swe.ayanamsa(birth.jdTt-0.5);
+      const ayanamsaAfter=naelos.swe.ayanamsa(birth.jdTt+0.5);
       if(![ayanamsa,ayanamsaBefore,ayanamsaAfter].every(finite))
         fail('Date-specific Lahiri ayanamsa is unavailable');
       const siderealOffset=sauraSiderealOffsetFromLahiri(
