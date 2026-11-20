@@ -167,7 +167,7 @@ test("Language changes preserve the generated report; only authentication remoun
   const authListener = policy.slice(authStart, languageStart);
   assert.match(authListener, /clearAfterAuthRemount\(\)/,
     "Actual logout/auth remount cleanup must remain in place.");
-  assert.match(html, /config\\.js\\?v=20261120-horoscope-language-result-preserve-v1/,
+  assert.ok(html.includes("config.js?v=20261120-horoscope-language-result-preserve-v1"),
     "The changed access-policy script must have a fresh asset URL.");
 });
 
