@@ -196,7 +196,7 @@ try {
                 }
                 const line = cell.querySelector(style === 'south' ? '.planet-line' : '.smv-v342-planets .planet-line');
                 const glyph = cell.querySelector(style === 'south' ? '.planet-glyph' : '.smv-v342-planets .planet-glyph');
-                const number = kind==='transit' ? cell.querySelector('[data-transit-lagna]') : (cell.querySelector('.lagna,.smv-v342-asc') || cell.querySelector('.dynamic-rasi-number,.bhava-house-no,.smv-v342-house-number,.smv-v342-sign-number'));
+                const number = style==='north' ? null : (kind==='transit' ? cell.querySelector('[data-transit-lagna]') : (cell.querySelector('.lagna,.smv-v342-asc') || cell.querySelector('.dynamic-rasi-number,.bhava-house-no,.smv-v342-house-number')));
                 const degree = cell.querySelector('.planet-degree,.rasi-degree,.transit-degree');
                 const marker = cell.querySelector('.status-combust,.rasi-status-marker.status-c,.status-c');
                 const retroMarker = cell.querySelector('.status-retro,.rasi-status-marker.status-r,.status-r');
@@ -427,6 +427,9 @@ try {
               for(const entry of item.northSignNumbers){
                 assert.ok(entry.house>=1&&entry.house<=12,item.rootId+' '+item.kind+' North: fixed house slot remains 1–12.');
                 assert.equal(entry.text,String(entry.sign).replace(/[0-9]/g,d=>'०१२३४५६७८९'[Number(d)]),item.rootId+' '+item.kind+' North: sign '+entry.sign+' is rendered in Devanagari digits.');
+                assert.equal(entry.labelDetails.length,1,item.rootId+' '+item.kind+' North: each house has one visible Rasi number node.');
+                assert.ok(entry.labelDetails[0].visible,item.rootId+' '+item.kind+' North: Devanagari sign number is visibly rendered.');
+                assert.equal(entry.labelDetails[0].overlapsPlanet,false,item.rootId+' '+item.kind+' North: Devanagari sign number does not cover a planet.');
               }
             }else if(item.kind==='bhava'){
               assert.equal(item.numericLabels,11,item.rootId+' East Bhava: house IDs are grouped into the eleven occupied Sphuta Rasi cells in this fixture.');
