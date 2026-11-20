@@ -76,7 +76,7 @@ assert.ok(chartStyleJs.includes("if(kind==='bhava'){"), 'Only Bhava alternate la
 assert.ok(!chartStyleJs.includes("function appendBhavaHouseLabels(chart,style,housesBySign){"), 'Bhava house numbers are not chart-level floating overlays.');
 assert.ok(!chartStyleJs.includes("smv-v342-bhava-house-label"), 'No floating label layer can cover a planet name.');
 assert.ok(chartStyleJs.includes("if(kind==='bhava')cell.classList.add('smv-v342-bhava-cell');"), 'North/East Bhava cells carry a presentation-only label class.');
-assert.ok(chartStyleJs.includes("bhavaNumberListText(houses,tamil)"),'East grouped house IDs are formatted as Roman only in Tamil mode and Arabic in English mode.');
+assert.ok(chartStyleJs.includes("label.textContent=houses.join(' / ');"),'East Bhava always keeps Arabic house IDs, even in Tamil reports; Roman numerals are South-Tamil-only.');
 assert.ok(chartStyleJs.includes("if(kind==='bhava'&&style==='east'&&String(bhavaHouseLabel||'').trim()){"), 'Only East Bhava adds grouped house labels inside its fixed Rasi cells.');
 assert.ok(chartStyleJs.includes("label.dataset.bhavaHouses=houses.join(',');"), 'East Bhava stores the distinct house IDs so a language toggle can reformat them safely.');
 assert.ok(chartStyleJs.includes("label.className='smv-v342-house-number';"), 'Roman house labels use the normal in-cell number row.');
