@@ -50,14 +50,15 @@ function countForSign(sign) {
   if (sign === 3) return 4;
   return 0;
 }
-function planetRow(index, withState) {
+function planetRow(index, withState, bhavaHouse = null) {
   let state = '';
   if (withState) {
     const combustion = index === 0 ? '<span class="status-combust rasi-status-marker status-c">(அ)</span>' : '';
     const retrograde = index === 1 ? '<span class="status-retro rasi-status-marker status-r">(வ)</span>' : '';
     state = combustion + retrograde + '<span class="rasi-degree transit-degree">18°</span>';
   }
-  return '<div class="planet-line"><span class="planet-glyph"><span class="planet-short"' + (index === 4 ? ' style="color:rgb(0, 0, 200)"' : '') + '>' +
+  const houseAttribute = bhavaHouse === null ? '' : ' data-bhava-house="' + bhavaHouse + '"';
+  return '<div class="planet-line"' + houseAttribute + '><span class="planet-glyph"><span class="planet-short"' + (index === 4 ? ' style="color:rgb(0, 0, 200)"' : '') + '>' +
     shortNames[index % shortNames.length] + '</span>' + state + '</span></div>';
 }
 function cell(sign, kind) {
@@ -71,7 +72,7 @@ function cell(sign, kind) {
   let label = '';
   if (bhava) {
     label = bhavaHousesBySign[sign].map(house=>
-      '<div class="bhava-cusp"><span class="bhava-house-no">' + roman[house-1] + '</span></div>'
+      '<div class="bhava-cusp"><span class="bhava-house-no">' + String(house) + '</span></div>'
     ).join('');
   } else {
     label = '<div class="dynamic-rasi-number">' + (sign === 0 ? '' : String(sign + 1)) + '</div>';
@@ -80,7 +81,13 @@ function cell(sign, kind) {
   const transitLagna = transit && sign === 0
     ? '<div class="planet-line transit-lagna-line"><span class="planet-glyph"><span class="planet-short" data-transit-lagna="true">ல</span></span></div>'
     : '';
-  const rows = Array.from({length:count}, (_,i)=>planetRow(i,kind === 'rasi' || transit)).join('');
+  const rows = bhava
+    ? bhavaHousesBySign[sign].reduce((items,house,index)=>{
+        const planetCount=bhavaPlanetCounts[house-1];
+        items.push(...Array.from({length:planetCount},(_,i)=>planetRow(i,false,house)));
+        return items;
+      },[]).join('')
+    : Array.from({length:count}, (_,i)=>planetRow(i,kind === 'rasi' || transit)).join('');
   return '<div class="' + classes.join(' ') + '" data-chart-planet-count="' + count +
     '" data-transit-planet-count="' + count + '">' + label + (transit ? '<div class="transit-cell-planets">' + transitLagna + rows + '</div>' : lagna + rows) + '</div>';
 }
@@ -108,7 +115,7 @@ function resultRoot(id) {
     chart('navamsaChart','navamsa') +
     chart('transitChart','transit') +
     chart('bhavaChart','bhava') +
-    bhavaTable() +
+    (id === 'tamilHoroscopeResult' ? bhavaTable() : '') +
     '</section>';
 }
 const html = [
@@ -351,7 +358,12 @@ try {
             const allLabels=labels.flatMap(entry=>entry.labels);
             assert.deepEqual([...allLabels].sort((a,b)=>roman.indexOf(a)-roman.indexOf(b)),roman,
               item.rootId+' '+style+' Bhava must display every house I–XII exactly once.');
-            if(style==='north'){
+            if(style==='south'){
+              for(const entry of labels){
+                const expected=bhavaHousesBySign[entry.sign].map(house=>roman[house-1]);
+                assert.deepEqual(entry.labels,expected,item.rootId+' South Bhava converts displayed 1–12 house values to Roman numerals without changing the Rasi mapping.');
+              }
+            }else if(style==='north'){
               assert.equal(labels.length,12,item.rootId+' North Bhava keeps twelve house-position cells.');
               for(const entry of labels){
                 assert.ok(entry.house>=1&&entry.house<=12,item.rootId+' North Bhava cell must retain its actual house slot.');
