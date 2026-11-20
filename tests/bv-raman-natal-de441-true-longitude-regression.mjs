@@ -67,7 +67,7 @@ for (const birth of fixture.births) {
   const [year, month, day] = birth.utcDateTime.slice(0, 10).split('-').map(Number);
   const [hour, minute, second] = birth.utcDateTime.slice(11).split(':').map(Number);
   const jd = swe.utcToJd(year, month, day, hour, minute, second);
-  assert.ok(Math.abs(jd.ut - birth.jdUt) < 1e-8, birth.id + ' WASM UTC-to-JD agrees with Horizons JD');
+  assert.ok(Math.abs(jd.ut - birth.jdUt) < 2e-5, birth.id + ' Swiss UT1 JD agrees with the Horizons UTC epoch within the documented UTC/UT1 sub-second bound');
   assertions++;
   const result = await full({
     date: birth.localDate,
