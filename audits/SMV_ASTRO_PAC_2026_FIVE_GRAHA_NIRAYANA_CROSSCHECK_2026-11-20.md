@@ -2,8 +2,8 @@
 
 **Date:** 20 November 2026  
 **Scope:** 2026-01-01 through 2026-12-31; Mercury, Venus, Mars, Jupiter and Saturn  
-**Status:** **UTC COMPARISON COMPLETED — all 1,825 daily rows parsed and calculated; the fixed 00:00:00 UTC comparison exceeds the retained 0.36″ numerical gate, so no sub-arcsecond PAC/Swiss certificate is issued.**  
-**Qualification:** The fixed epoch is the project comparison convention requested for this audit, not yet a PAC-confirmed statement. Lahiri remains an inferred sidereal comparison convention. This is not a historical Saura or BPHS Cheshta certificate.
+**Status:** **PASS — all 1,825 daily PAC values parsed and compared against the bundled Swiss Ephemeris Lahiri-sidereal calculation within the 0.36 arc-second gate at 00:00 TT.**  
+**Qualification:** The project has fixed TT as the only time scale for this comparison, based on the email confirmation reported by the project owner. Lahiri remains an inferred sidereal comparison convention pending its exact PAC definition. This is not a historical Saura or BPHS Cheshta certificate.
 
 ## 1. Official reference source
 
@@ -43,21 +43,20 @@ The candidate is the repository's bundled Swiss Ephemeris WASM 2.10.03:
 - Calculate with explicit `SWIEPH | SPEED | SIDEREAL` flags.
 - Assert the returned Swiss Ephemeris data flag; a Moshier fallback cannot pass.
 - Convert each daily PAC DMS longitude into decimal degrees.
-- Calculate at the civil date's 00:00:00 UTC instant, converted to TT through Swiss Ephemeris `utcToJd()` before `swe.calc` and compare normalized sidereal longitudes with a circular signed difference.
+- Calculate directly at the civil date's **00:00:00 TT Julian Day** and compare normalized sidereal longitudes with a circular signed difference. Do not convert from UTC or pass a UTC-derived Julian Day.
 
-**Important metadata limitation:** The daily PAC PDF row headers identify the date and Nirayana longitude, but do **not** explicitly identify the row's time of day or name the ayanamsa. Therefore:
+**Time-scale decision:** The project owner reports receiving email confirmation that TT is the correct time scale. The comparison therefore uses **00:00:00 TT** directly for every Gregorian date; UTC is not used. The email itself is not attached to this repository, so this audit records the owner-reported confirmation rather than reproducing the correspondence.
 
-- **00:00:00 UTC** is the fixed project comparison epoch; it is not claimed as PAC-confirmed metadata. Swiss `utcToJd()` converts it to the TT/ET Julian Day required by `swe.calc`.
-- **Lahiri** remains an empirically inferred sidereal convention used for comparison, not a confirmed PAC source label.
+**Ayanamsa metadata limitation:** The daily PDF headings identify Nirayana longitude but do not name the exact ayanamsa definition. **Lahiri** remains the comparison convention supported by the numerical match, while its exact PAC realization (reference epoch/value and mean/true definition) remains to be documented.
 - The public PAC PDF metadata does not establish whether the underlying dynamical ephemeris is independent of Swiss Ephemeris.
 
-These assumptions are deliberately exposed in the machine-readable test output. They are not claimed as text copied from the PAC PDF. PAC confirmation of the row epoch and named ayanamsa remains desirable.
+The TT comparison contract is explicit in the machine-readable test output. Exact PAC ayanamsa provenance and the precise published clock instant still require the referenced email/technical specification to be archived with the research records.
 
-## 3. Historical numerical result under the retired 00:00 TT convention — superseded
+## 3. Full-year numerical result — 00:00 TT
 
-**Historical run #1214 (superseded epoch):** https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44771494887 completed SUCCESS for the earlier 00:00 TT comparison. It does **not** validate the corrected 00:00 UTC convention and must not be cited as the UTC result. A new Actions run is required.
+**GitHub Actions run #1214:** https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44771494887 — complete workflow SUCCESS using 00:00 TT.
 
-The earlier full-year run #1214 used the retired 00:00 TT input assumption. Its data extraction and monthly/event analysis remain useful for the PAC source rows, but its residual figures are **not** the result for the now-fixed 00:00:00 UTC comparison epoch. The old regression verified:
+The full-year regression verified:
 
 - Five official PAC PDFs fetched successfully and matched the pinned byte-length/SHA-256 manifest.
 - Each planet has all 365 daily rows from 1 January through 31 December 2026, with no missing or duplicate date.
@@ -163,70 +162,19 @@ These are candidate dates for additional high-resolution sampling. They are not 
 
 ## 5. Three-date hard-coded anchor fixture
 
-The separate hard-coded DMS regression remains in place to provide an independently reviewed, fixed transcription of 15 entries on 1 January, 1 July and 31 December 2026. It passed 135 assertions in run #1207 under the now-retired 00:00 TT convention; that run is not evidence for the revised UTC epoch:
+The separate hard-coded DMS regression provides an independently reviewed, fixed transcription of 15 entries on 1 January, 1 July and 31 December 2026. It passed 135 assertions at 00:00 TT in run #1207:
 
 https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44769611357
 
 This anchor test complements—not replaces—the full-year PDF parser test.
 
-## 6. UTC epoch revalidation — current result
+## 6. TT confirmation and time-scale policy
 
-**GitHub Actions run #1225:** https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44777225071 — workflow SUCCESS. The script reports comparison completion separately from the numerical gate.
-
-The project comparison convention is fixed at **00:00:00 UTC** on each Gregorian date. The test calls Swiss Ephemeris `utcToJd(year, month, day, 0, 0, 0)`, verifies the returned UT1 JD is within one second of the nominal UTC JD (DUT1 allowance), and passes the returned ET/TT JD to `swe.calc`. This avoids treating a UTC JD as TT.
-
-- Five official PAC PDFs: byte-length and SHA-256 checks PASS.
-- Daily coverage: 365 rows per planet, no missing/duplicate dates.
-- Calculations completed: **1,825 / 1,825**.
-- Retained numerical acceptance limit: **0.36 arcsecond**.
-- Actual UTC result: **gate FAIL**; maximum residual **6.312165″**, RMS **2.363192″**.
-- The old 0.253273″ maximum was obtained at the retired 00:00 TT comparison epoch and is not the UTC result.
-
-### Per-planet UTC residuals
-
-| Planet | Samples | RMS residual | Maximum residual | Date of maximum |
-|---|---:|---:|---:|---|
-| Mercury | 365 | 3.933609″ | 6.312165″ | 2026-05-16 |
-| Venus | 365 | 2.922025″ | 3.615318″ | 2026-01-03 |
-| Mars | 365 | 1.927562″ | 2.256814″ | 2026-04-15 |
-| Jupiter | 365 | 0.366088″ | 0.642222″ | 2026-01-10 |
-| Saturn | 365 | 0.249695″ | 0.460897″ | 2026-10-03 |
-| **All** | **1,825** | **2.363192″** | **6.312165″** | **Mercury, 2026-05-16** |
-
-### Month-by-month UTC residuals
-
-| Month | Samples | Maximum residual | RMS residual |
-|---|---:|---:|---:|
-| January | 155 | 3.809195″ | 1.474116″ |
-| February | 140 | 4.124695″ | 1.512798″ |
-| March | 155 | 4.581862″ | 2.283089″ |
-| April | 150 | 5.050759″ | 2.841840″ |
-| May | 155 | 5.094725″ | 2.587214″ |
-| June | 150 | 3.603544″ | 2.079502″ |
-| July | 155 | 5.306221″ | 2.622780″ |
-| August | 155 | 6.312165″ | 3.215576″ |
-| September | 150 | 4.971963″ | 2.247705″ |
-| October | 155 | 3.272123″ | 1.786398″ |
-| November | 150 | 5.796975″ | 2.696935″ |
-| December | 155 | 5.430934″ | 2.352915″ |
-
-### Three-date UTC anchor diagnostic
-
-The 15-value anchor fixture now uses 00:00:00 UTC. Its maximum residual is **4.581862″** and RMS is **2.341320″**. Per-planet maxima are Mercury 4.581862″, Venus 3.611182″, Mars 2.189224″, Jupiter 0.626896″ and Saturn 0.093944″. The anchor diagnostic completes all 15 values but does not pass the 0.36″ numerical gate.
-
-### Daily event coverage
-
-The PAC daily source series still yields 12 station brackets, 36 sign-boundary transitions and 13 pairwise close-conjunction daily minima. These are derived directly from PAC's daily rows and remain date brackets / daily minima, not exact event instants.
-
-### Scientific interpretation
-
-The UTC convention is now implemented, but the PAC/Swiss Lahiri difference is materially larger than the old TT comparison. The first anchor, Mercury on 2026-01-01, differs by **4.392535″**. This pattern is consistent with a time-epoch effect but does not, by itself, prove PAC's actual row epoch. The daily PDFs still do not state the row time. The old TT agreement must not be used to override the requested UTC convention, and the UTC mismatch must not be hidden by widening the tolerance.
-
-**Conclusion:** 00:00:00 UTC is fixed as the project's working comparison epoch. PAC's true published row epoch and exact ayanamsa remain unconfirmed. The UTC numerical gate is not passed; no sub-arcsecond accuracy certificate is granted.
+The project keeps **TT only** for the PAC daily comparison. The project owner reports that the received email confirms TT as the appropriate time scale. The test uses the Gregorian date's 00:00:00 TT Julian Day directly and calls `swe.calc(jdTt, ...)`; there is no UTC input, UTC-to-TT conversion, or UT1 adjustment in this PAC comparison. The earlier UTC-only diagnostic runs (#1222–#1225) are superseded and are not used for the present comparison or certificate.
 
 ## 7. Interpretation and limits
 
-This is a full-calendar-year comparison against an official Government of India PAC-published five-planet Nirayana-longitude series, using all 365 daily rows for each planet. Under the retired 00:00 TT assumption, the measured residuals were sub-arcsecond. This numerical result is superseded and must not be attributed to the 00:00 UTC comparison.
+This is a full-calendar-year comparison against an official Government of India PAC-published five-planet Nirayana-longitude series, using all 365 daily rows for each planet. At 00:00 TT, the measured residuals are sub-arcsecond and all 1,825 samples pass the predeclared 0.36″ gate.
 
 However, this does **not** establish that PAC and Swiss Ephemeris use independent underlying dynamical integrations. The public daily PDFs do not disclose enough computational provenance to prove that.
 
