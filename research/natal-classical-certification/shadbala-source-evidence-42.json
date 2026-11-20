@@ -12,21 +12,26 @@
   "counts": {
     "totalRows": 42,
     "sourceExamplePass": 36,
-    "sourceExampleAdjudicated": 2,
+    "sourceExampleAdjudicated": 3,
     "notApplicableSourceEllipsis": 2,
-    "sourceDiscrepancy": 2,
+    "sourceDiscrepancy": 1,
     "printedComponentDiscrepanciesIdentified": 4,
-    "note": "Four component-level printed discrepancies were identified. Two are adjudicated for the 1918 worked example only (Saturn Chesta and Naisargika); two remain open (Mercury Dig and Jupiter Drik)."
+    "note": "Four component-level printed discrepancies were identified. Mercury Dig is formula-adjudicated as a print arithmetic error; Saturn Chesta and Saturn Naisargika are adjudicated for the 1918 worked example only; Jupiter Drik remains open."
   },
   "sourceDiscrepancies": [
     {
       "id": "BVR_MERCURY_DIG",
       "pages": "32–33",
       "detail": "Mercury Dig arc 63°05′ does not divide to printed 21.09.",
-      "classification": "OPEN_PRINTED_ARITHMETIC_CONFLICT",
-      "printedEvidence": "Example 14 p.32 gives Mercury Digbala arc 63°05′. Example 15 p.33 prints 21.09 and the p.90 final summary repeats 21.09.",
-      "recomputation": "63°05′ ÷ 3 = 21°01′40″ = 21.0277778 virupas (about 21.03 as a decimal quantity).",
-      "disposition": "Do not silently treat 21.09 as formula-derived. The book's final summary and current 1918 worked-example totals use 21.09; the explicit printed arc divided by three yields about 21.03. Keep the historical example conflict open."
+      "classification": "SOURCE_EXAMPLE_ARITHMETIC_TYPO_ADJUDICATED",
+      "printedEvidence": "Example 14 p.32 gives Mercury Digbala arc 63°05′. Example 15 p.33 and the p.90 final summary print 21.09.",
+      "recomputation": "63°05′ ÷ 3 = 21.0277777778 Virupas (21.03 at 2 decimals). With the exact Standard Horoscope Mercury longitude 181°31′34″ and powerless point 118°27′, the unrounded arc is 63°04′34″; the current B.V. Raman implementation independently returns 21.025 Virupas, which rounds to 21.03.",
+      "disposition": "The formula and exact-input engine agree at approximately 21.03, while the book prints 21.09 in both Example 15 and the summary. Treat 21.09 as a printed worked-example arithmetic error; preserve it as the historical printed value but use 21.025/21.03 only for a formula-derived reconstruction of this input. This adjudication is scoped to the 1918 worked example and does not certify arbitrary natal Dig Bala.",
+      "formulaDerivedVirupaFromPrintedArc": 21.02777777777778,
+      "exactInputEngineVirupa": 21.025,
+      "formulaDisplayTwoDecimals": 21.03,
+      "printedExampleVirupa": 21.09,
+      "printedMinusFormulaVirupa": null
     },
     {
       "id": "BVR_SATURN_SHEEGHROCCHEYA",
@@ -85,7 +90,7 @@
   ],
   "genericCertification": {
     "classicalCertified": false,
-    "reason": "Rows cover one 1918 worked example, not independent per-natal source proofs; component and summary errata remain open.",
+    "reason": "Rows cover one 1918 worked example, not independent per-natal source proofs; the Jupiter Drik source Pinda/value discrepancy remains unresolved.",
     "evidenceGateEligibleRows": 0
   },
   "rows": [
@@ -474,7 +479,7 @@
       "grahaTamil": "புதன்",
       "component": "dig",
       "valueVirupa": 21.09,
-      "status": "SOURCE_DISCREPANCY",
+      "status": "SOURCE_EXAMPLE_ADJUDICATED",
       "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
       "sourceChapter": "Ch.IV §§43–45, Examples 14–15, pp.30–33",
       "sourcePage": "pp.32–33",
@@ -487,7 +492,9 @@
       },
       "scope": "One printed Standard Horoscope worked example only",
       "arbitraryNatalSourceEvidence": false,
-      "notes": "Printed Example 14 p.32 arc = 63°05′; Example 15 p.33 prints 21.09. Exact arc/3 = 21°01′40″ = 21.0277778 virupas (~21.03 decimal). Final summary repeats 21.09; unresolved source arithmetic conflict."
+      "notes": "Printed Example 15 / summary value 21.09 is inconsistent with Example 14 arc 63°05′ ÷ 3 = 21.02778 and with the exact-input engine result 21.025. Preserve the printed 21.09 separately; formula-derived worked-example value is ~21.03. This is a 1918 example-specific print error adjudication.",
+      "formulaDerivedVirupa": 21.025,
+      "formulaDerivedDisplayVirupa": 21.03
     },
     {
       "graha": "Mercury",
