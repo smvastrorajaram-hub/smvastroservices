@@ -194,7 +194,7 @@ console.log(JSON.stringify({
   frameTransfer: 'sauraSiderealOffsetFromLahiri(lahiriAyanamsaAtDate, lahiriAyanamsaAt1860)',
   lahiriAyanamsaAt1860,
   reference: 'SMV local Swiss Ephemeris tropical and Lahiri sidereal calc at the exact same TT/ET instant',
-  siderealNote: 'Lahiri-offset residual is reported as a separate coordinate-reduction diagnostic; the 5-arcsecond source gate applies to tropical apparent longitudes, not the zero-point/nutation reduction.'
+  siderealNote: 'Lahiri-offset residual is reported as a separate coordinate-reduction diagnostic; the 5-arcsecond source gate applies to tropical apparent longitudes, not the zero-point/nutation reduction.',
   comparisonCount: comparisons,
   maxAbsTropicalResidualArcsec,
   rmsTropicalResidualArcsec: Math.sqrt(sumSquaresTropical / comparisons),
