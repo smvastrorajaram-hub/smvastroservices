@@ -59,9 +59,9 @@ for(const birthFixture of fixture.births) {
     birthFixture.date+' twelve Sripati Arambha cusps are present');
   eq(result.solarTime.solarTimeFrameId,'NAELOS_TRUE_EQUATOR_OF_DATE_GAST_V1',
     birthFixture.date+' apparent solar-time frame provenance');
-  yes(result.solarTime.sunriseJdUt<result.birth.utcJd+1.1,
+  yes(result.solarTime.sunriseJdUt<result.birth.utcJd,
     birthFixture.date+' prior sunrise is reported');
-  yes(result.solarTime.nextSunriseJdUt>result.birth.utcJd-1.1,
+  yes(result.solarTime.nextSunriseJdUt>result.birth.utcJd,
     birthFixture.date+' next sunrise is reported');
 
   for(const [english,expected] of Object.entries(birthFixture.planets)) {
