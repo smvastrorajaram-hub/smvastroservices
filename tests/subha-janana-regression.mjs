@@ -180,6 +180,7 @@ has(horoscope,'subhaJananaHtml','Birth statement is an explicit renderer paramet
 
 lacks(horoscope,'data-smv-screen-only="daily-panchang"','Horoscope no longer renders the Daily Panchang card');
 has(horoscope,'if(calendarPresentation)h+=','Daily Hora markup is gated to Calendar presentation');
+has(horoscope,"${ta?'கோச்சாரம்':'Transit'}","Transit chart centre displays கோச்சாரம் in Tamil");
 has(horoscope,'if(calendarPanchangSlot)calendarPanchangSlot.innerHTML=dailyTable;','Calendar Daily Panchang source remains populated');
 has(horoscope,'data-smv-screen-only="daily-hora"','Calendar Daily Hora markup remains available');
 has(horoscope,'window.__smvRenderBasicSnapshot=async','Language switches regenerate the statement in the selected language');
@@ -196,11 +197,29 @@ has(prose,'formatOfflineIndiaAdministrativeAreas(meta.state,meta.district','Dist
 has(prose,'if(district)','District is added only when selected-location metadata contains it');
 has(prose,"const village=localizeTamilText(meta.village||'',targetLanguage)",'Village values are localized without changing their source metadata');
 has(prose,'parentText=father&&mother?','Both parent names are rendered together when present');
+has(prose,'ஸ்ரீமத் சுபஜெனன வாக்கியம்','Tamil heading is preserved');
+has(prose,'aria-hidden="true">ॐ','Spiritual symbols flank the statement heading');
+has(prose,"'வியாழக்கிழமை'",'Thursday uses the grammatically correct Tamil weekday name');
+lacks(prose,'வியாழன்க்கிழமை','Do not render an extra nasal consonant in Thursday');
+for(const marker of ['smv-sj-result','smv-sj-time','sjValue(samvatsara)','sjValue(ritu)','sjValue(tithi)','sjValue(nak)','sjValue(karana)','sjSafeValue(parentText)','sjSafeValue(place)'])
+  has(prose,marker,'Statement distinguishes Panchang and personal result values: '+marker);
+has(prose,'sjTime(sunRise)','Sunrise uses the dedicated time colour');
+has(prose,'sjTime(sunSet)','Sunset uses the dedicated time colour');
+has(prose,'sjTime(ahas)','Ahas duration uses the dedicated time colour');
+has(prose,'sjTime(ratri)','Ratri duration uses the dedicated time colour');
 has(prose,':father?(','Father-only input is rendered without an empty mother placeholder');
 has(prose,':mother?(','Mother-only input is rendered without an empty father placeholder');
 has(prose,"birthTimeGhati+'க்கு (சரியாக '+birthClockTa+' மணிக்கு)",'Tamil birth time is grammatically formatted after sunrise');
 
 has(css,'.smv-subha-janana{','Narrative has its own report styling');
+const statementStyle=css.slice(css.indexOf('.smv-subha-janana{'),css.indexOf('.smv-year-reckoning'));
+has(statementStyle,'border:0','Subha Janana does not add a separate card or panel layer');
+has(statementStyle,'background:transparent','Subha Janana uses the existing report surface');
+has(statementStyle,'text-align:justify','Statement text expands horizontally to reduce vertical space');
+has(css,'color:#8b1e2d','Heading uses an auspicious traditional maroon');
+has(css,'color:#28634b','Panchang and personal result values use a distinct traditional green');
+has(css,'color:#28518a','Time values use a separate deep blue');
+has(css,'color:#b18a36','Spiritual symbols use an auspicious gold accent');
 has(css,'.birth-gender-option input:checked+span','Gender choices are rendered as selected button-style radio options');
 has(sw,"'./subha-janana.mjs'","New narrative module is precached for offline use");
 has(sw,"'./tamil-day-classifications.mjs'","Amirthadi yoga lookup is also precached for offline use");
