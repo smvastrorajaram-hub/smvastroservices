@@ -14,6 +14,8 @@ on:
       - 'tests/bv-raman-chapter-xiv-book-example-regression.mjs'
       - 'tests/bv-raman-hpa-ayurdaya-combined-regression.mjs'
       - 'tests/five-book-structural-audit.mjs'
+      - 'tests/sripati-bhava-20k-regression.mjs'
+      - 'swiss_vedic.js'
       - 'tests/v358-unified-result-layout-regression.mjs'
       - 'tests/saved-report-mobile-layout-regression.mjs'
       - 'public/horoscope/report-store.mjs'
@@ -34,6 +36,8 @@ on:
       - 'tests/v357-12-lagna-narrative-variability.mjs'
       - 'tests/v357-five-chart-fifteen-year-dasha-window.mjs'
       - 'tests/five-book-structural-audit.mjs'
+      - 'tests/sripati-bhava-20k-regression.mjs'
+      - 'swiss_vedic.js'
       - 'tests/marriage-basic-report-regression.mjs'
       - 'tests/bv-raman-ayurdaya-report-regression.mjs'
       - 'tests/print-dst-location-regression.mjs'
@@ -65,6 +69,8 @@ on:
       - 'tests/bv-raman-chapter-xiv-book-example-regression.mjs'
       - 'tests/bv-raman-hpa-ayurdaya-combined-regression.mjs'
       - 'tests/five-book-structural-audit.mjs'
+      - 'tests/sripati-bhava-20k-regression.mjs'
+      - 'swiss_vedic.js'
       - 'tests/v358-unified-result-layout-regression.mjs'
       - 'tests/saved-report-mobile-layout-regression.mjs'
       - 'public/horoscope/report-store.mjs'
@@ -85,6 +91,8 @@ on:
       - 'tests/v357-12-lagna-narrative-variability.mjs'
       - 'tests/v357-five-chart-fifteen-year-dasha-window.mjs'
       - 'tests/five-book-structural-audit.mjs'
+      - 'tests/sripati-bhava-20k-regression.mjs'
+      - 'swiss_vedic.js'
       - 'tests/marriage-basic-report-regression.mjs'
       - 'tests/bv-raman-ayurdaya-report-regression.mjs'
       - 'tests/print-dst-location-regression.mjs'
@@ -114,12 +122,15 @@ concurrency:
 jobs:
   source-regression:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
+      - name: Install pinned dependencies for native Swiss Ephemeris audit
+        run: npm ci
       - name: Check Horoscope source JavaScript syntax
         shell: bash
         run: |
@@ -172,6 +183,14 @@ jobs:
         run: node tests/v357-five-chart-fifteen-year-dasha-window.mjs
       - name: Five-book structural calculation audit (five natal charts)
         run: node tests/five-book-structural-audit.mjs
+      - name: 20,000 Indian and worldwide Sripati Bhava native/offline regression
+        run: node tests/sripati-bhava-20k-regression.mjs
+      - name: Preserve 20,000-case Sripati Bhava evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMV-SRIPATI-BHAVA-20K-AUDIT
+          path: artifacts/sripati-bhava-20k-audit.json
+          retention-days: 30
       - name: Two-person factual matching report + UTC + print/save regression
         run: node tests/marriage-basic-report-regression.mjs
       - name: B.V. Raman Ayurdaya customer report regression

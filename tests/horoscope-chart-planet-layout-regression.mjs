@@ -43,7 +43,7 @@ assert.match(transitRenderer, /data-chart-planet-count="\$\{transitPlanetCount\}
 assert.ok(transitRenderer.includes('planet-line transit-lagna-line'),'Transit Lagna is emitted inside the same planet-flow as the scaled planet rows.');
 assert.ok(transitRenderer.includes('data-transit-lagna="true"'),'Transit Lagna is rendered as a normal planet-short label instead of a fixed-size standalone node.');
 assert.ok(chartStyleJs.includes("const DEVANAGARI_SIGNS=['१','२','३','४','५','६','७','८','९','१०','११','१२'];"),'North Indian charts use a complete Devanagari 1–12 sign sequence.');
-assert.ok(chartStyleJs.includes("if(style==='north'&&['d1','d9','transit'].includes(kind))"),'North Indian Rasi, Navamsa and Transit display sign numbers; Bhava does not.');
+assert.ok(chartStyleJs.includes("if(style==='north'&&['d1','d9','transit','bhava'].includes(kind))"),'North Indian Rasi, Navamsa, Transit and Bhava display Rasi-based Devanagari sign numbers.');
 assert.ok(chartStyleJs.includes("if(!chart.closest('#tamilHoroscopeResult'))return;"),'Only the Tamil South Bhava result normalizes legacy house labels; English remains untouched.');
 assert.ok(chartStyleJs.includes("if(house===1&&kind!=='transit')"),'Alternate layouts must not add a second Lagna outside the source Transit planet-flow.');
 
@@ -57,6 +57,9 @@ assert.ok(chartStyleJs.includes("const bhavaLabel=kind==='bhava'?bhavaHousesBySi
 assert.ok(chartStyleJs.includes("const mapped=new Set(from.cusp.flat())"),'North Bhava validates complete source house coverage rather than requiring one cusp per Rasi.');
 assert.ok(chartStyleJs.includes("line.hasAttribute('data-bhava-house')"),'North Bhava fallback preserves each source planet’s already-calculated Bhava assignment.');
 assert.ok(horoscopeJs.includes('data-bhava-house="${n}" data-bhava-sign="${si+1}"'),'Bhava rendering preserves its already-calculated house and Sphuta Rasi as display metadata only.');
+assert.match(chartStyleJs,/kind==='bhava'\s*\?\s*signByBhavaHouse\.get\(house\)/,'North Bhava sign numbers come from the calculated Sphuta Rasi in each house cell, not from Lagna-relative numbering.');
+assert.ok(chartStyleJs.includes("roots().forEach(r=>apply(r,choice));"),'Existing saved result markup is presented when the chart module starts.');
+assert.ok(/render\(d\);[\s\S]{0,500}?window\.SMVChartPresentationV342\?\.apply\(resultBox\);/.test(horoscopeJs),'Every core/basic horoscope render immediately applies chart presentation; comments between the render and apply calls do not weaken this requirement.');
 assert.ok(chartStyleJs.includes("chart.classList.contains('transit-chart')"),'Transit detection also covers production charts without a fixture ID.');
 assert.ok(chartStyleJs.includes("arr.out[si]?.querySelector('[data-transit-lagna]')"),'North/East chart conversion locates Transit Lagna from its source graha-flow row.');
 assert.ok(chartStyleJs.includes("const planetCount=kind==='transit'?items.filter(item=>!item.querySelector('[data-transit-lagna]')).length:items.length;"),'Transit Lagna is excluded from the graha count used for density thresholds.');

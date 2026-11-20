@@ -837,6 +837,7 @@ function calculateSwissReady({date,time,lat,lon,height=0,houseSystem,timezone='A
 
 export async function calculateSwiss(input){ await ensureSwe(); return calculateSwissReady(input); }
 export function calculateSwissSync(input){ return calculateSwissReady(input); }
+export const __test=Object.freeze({houseFromCusps,bhavaDetails,midpointArc});
 
 // Lightweight Lahiri epoch context for the Calendar's solar-ingress Rasi Mana.
 // The Rasi Mana selection is the Sun's ingress sign; it does not need a local

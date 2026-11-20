@@ -778,4 +778,4 @@ function calculateSwiss({date,time,lat,lon,height=0,houseSystem,timezone='Asia/K
     calculatedAt:new Date().toISOString()
   };
 }
-module.exports={calculateSwiss};
+module.exports={calculateSwiss,__test:Object.freeze({houseFromCusps,bhavaDetails,midpointArc})};

@@ -34,7 +34,7 @@ const compartmentPolygons = {
 const shortNames = ['சூ','சந்','செ','பு','கு','சு','ச','ரா'];
 const fullNames = ['சூரியன்','சந்திரன்','செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி','ராகு'];
 
-const bhavaHouseSigns = [0,0,1,2,3,4,5,6,7,8,9,10];
+const bhavaHouseSigns = [0,0,2,3,4,5,6,6,8,9,10,11];
 const bhavaPlanetCounts = [2,0,3,4,5,0,0,0,0,0,0,0];
 const bhavaHousesBySign = Array.from({length:12},()=>[]);
 const bhavaPlanetCountsBySign = Array(12).fill(0);
@@ -298,7 +298,7 @@ try {
               const emptyCells = cells.filter(cell=>cellCount(cell) === 0);
               const emptyDash = emptyCells.some(cell=>!!cell.querySelector('.smv-v342-empty'));
               const numericLabels = style==='north'&&kind!=='bhava' ? chart.querySelectorAll(':scope > .smv-v342-sign-number-overlay').length : cells.reduce((count,cell)=>count+cell.querySelectorAll('.smv-v342-sign-number,.smv-v342-house-number').length,0);
-              const signNumberLabels = style==='north'&&kind!=='bhava' ? [...chart.querySelectorAll(':scope > .smv-v342-sign-number-overlay')].map(el=>{
+              const signNumberLabels = style==='north' ? [...chart.querySelectorAll(':scope > .smv-v342-sign-number-overlay')].map(el=>{
                 const house=Number(el.dataset.house||0),cell=chart.querySelector('.smv-v342-cell[data-house="'+house+'"]');
                 const rect=el.getBoundingClientRect(),chartRect=chart.getBoundingClientRect();
                 const overlapsPlanet=[...(cell?.querySelectorAll('.smv-v342-planets .planet-glyph')||[])].some(glyph=>{
@@ -442,6 +442,18 @@ try {
             const sizes=sortedSignLabels.map(label=>label.fontSize);
             assert.ok(Math.max(...sizes)-Math.min(...sizes)<0.6,item.rootId+' '+item.kind+': all twelve Hindi sign numbers use one consistent font size.');
           }
+          if(style==='north'&&item.kind==='bhava'){
+            assert.equal(item.signNumberLabels.length,12,item.rootId+' North Bhava: every Bhava compartment has its Sphuta Rasi Devanagari digit.');
+            const byHouse=[...item.signNumberLabels].sort((a,b)=>a.house-b.house);
+            assert.deepEqual(byHouse.map(label=>label.sign),bhavaHouseSigns.map(sign=>sign+1),item.rootId+' North Bhava: sign digits follow the actual Bhava Madhya Rasi assigned to each house.');
+            assert.deepEqual(byHouse.map(label=>label.text),bhavaHouseSigns.map(sign=>devanagari[sign]),item.rootId+' North Bhava: repeated Sphuta Rasis repeat the same Hindi sign digit; empty Rasis do not receive fabricated digits.');
+            const bad=byHouse.filter(label=>!label.visible||!label.insideChart||label.overlapsPlanet);
+            assert.equal(bad.length,0,item.rootId+' North Bhava: every Rasi digit is visible, inside its own compartment and clear of planet text: '+JSON.stringify(bad));
+            assert.equal(byHouse.filter(label=>label.sign===1).length,2,item.rootId+' North Bhava: Aries digit is shown in the I and II house compartments.');
+            assert.equal(byHouse.filter(label=>label.sign===2).length,0,item.rootId+' North Bhava: no Taurus digit is invented when no Bhava Madhya falls in Taurus.');
+            assert.equal(byHouse.filter(label=>label.sign===7).length,2,item.rootId+' North Bhava: Libra digit is shown in the VII and VIII house compartments.');
+            assert.equal(byHouse.filter(label=>label.sign===8).length,0,item.rootId+' North Bhava: no Scorpio digit is invented when no Bhava Madhya falls in Scorpio.');
+          }
             if(['rasi','navamsa','transit'].includes(item.kind))assert.equal(item.numericLabels,style==='north'?12:0,item.rootId+' '+item.kind+' '+style+': North has exactly twelve sign labels and East has none.');
           }
           if(item.kind==='bhava'){
@@ -481,6 +493,12 @@ try {
               }
               assert.deepEqual(labels.find(entry=>entry.sign===0)?.labels,['I','II'],
                 item.rootId+' '+style+' Bhava groups two distinct cusp houses in one sign only when the Bhava Table maps both there.');
+              assert.deepEqual(labels.find(entry=>entry.sign===6)?.labels,['VII','VIII'],
+                item.rootId+' '+style+' Bhava keeps both VII and VIII in Libra when both Madhyas map there.');
+              assert.deepEqual(labels.find(entry=>entry.sign===1)?.labels,[],
+                item.rootId+' '+style+' Bhava leaves Taurus empty when no Madhya maps there.');
+              assert.deepEqual(labels.find(entry=>entry.sign===7)?.labels,[],
+                item.rootId+' '+style+' Bhava leaves Scorpio empty when no Madhya maps there.');
             }
           }
 
