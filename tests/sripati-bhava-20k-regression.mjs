@@ -8,6 +8,7 @@
  * production Sripati boundary / Madhya / Antya / house-placement functions.
  *
  * Indian, worldwide and high-latitude samples are deterministic and repeatable.
+ * Inputs are generated synthetic cases, not real-world birth records.
  * Rasi packing (two Bhava Madhyas in one Rasi and another empty Rasi) is
  * recorded, not automatically called an error: all twelve Bhavas must remain
  * present exactly once, and every Madhya must map to its own Rasi.
