@@ -164,8 +164,8 @@ console.log(JSON.stringify({
   diagnostic: 'NAELOS_DE440_VS_SWISS_TROPICAL_AND_LAHIRI_SAME_ET',
   maxAbsTropicalResidualArcsec,
   rmsTropicalResidualArcsec: Math.sqrt(sumSquaresTropical / comparisons),
-  maxAbsSiderealReductionResidualArcsec,
-  rmsSiderealReductionResidualArcsec: Math.sqrt(sumSquaresSidereal / comparisons),
+  maxAbsSiderealResidualArcsec,
+  rmsSiderealResidualArcsec: Math.sqrt(sumSquaresSidereal / comparisons),
   perPlanetResiduals,
   cheshtaRows: rows.map(r => ({
     date: r.date,
@@ -198,8 +198,8 @@ console.log(JSON.stringify({
   comparisonCount: comparisons,
   maxAbsTropicalResidualArcsec,
   rmsTropicalResidualArcsec: Math.sqrt(sumSquaresTropical / comparisons),
-  maxAbsSiderealReductionResidualArcsec,
-  rmsSiderealReductionResidualArcsec: Math.sqrt(sumSquaresSidereal / comparisons),
+  maxAbsSiderealResidualArcsec,
+  rmsSiderealResidualArcsec: Math.sqrt(sumSquaresSidereal / comparisons),
   acceptanceMaxArcsec: MAX_ABS_RESIDUAL_ARCSEC,
   cheshtaInputPolicy: 'existing Saura-paksha mean longitude and Sheeghrocca retained; NAELOS DE440 true longitude used as independent true-position evidence',
   rows
