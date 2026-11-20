@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
+import { TRUE_BPHS_FRAME_TRANSFER_METADATA } from '../research/true-bphs/saura-frame-transfer.mjs';
+
 import {
   createTrueBphsShadbalaEngine,
   resolveBphsGrahaYuddha,
@@ -14,6 +16,8 @@ assert.equal(fixture.certificateId,'SMV-ASTRO-TRUE-BPHS-NAELOS-DE440-25-2026-11-
 assert.equal(fixture.comparison.count,25);
 assert.equal(TRUE_BPHS_SHADBALA_METADATA.engine,'TRUE_BPHS_SHADBALA_NAELOS_DE440');
 assert.equal(TRUE_BPHS_SHADBALA_METADATA.productionIntegrationAllowed,false);
+assert.equal(TRUE_BPHS_FRAME_TRANSFER_METADATA.historicalFourPassTrueLongitudeUsed,false);
+assert.equal(TRUE_BPHS_FRAME_TRANSFER_METADATA.absoluteKotiMinusUsed,false);
 
 const engine=await createTrueBphsShadbalaEngine();
 assert.equal(engine.tableIntegrityVerified,true);
@@ -147,6 +151,8 @@ yes(latitudeTie.unresolved.some(row=>row.reason==='northern-latitude-tie'),
 
 const source=fs.readFileSync(new URL('../research/true-bphs/naelos-bphs-shadbala-engine.mjs',import.meta.url),'utf8');
 yes(!source.includes('absolute-koti-minus'),'rejected absolute-koti-minus method is absent');
+yes(!source.includes('sauraFourPassTrueLongitude'),'historical four-pass True Longitude function is not imported or called');
+yes(!source.includes('saura-de441-apparent-true.mjs'),'legacy four-pass research module is outside the dependency graph');
 yes(!/calculateBVRamanShadbala|BV_RAMAN_CHAPTER_VI/.test(source),
   'engine does not call the B.V. Raman Shadbala / Chesta implementation');
 yes(!source.includes('MODERN_MOSHIER'),'Moshier is not the True Longitude provider');
