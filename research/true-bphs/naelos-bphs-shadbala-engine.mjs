@@ -751,7 +751,7 @@ export async function createTrueBphsShadbalaEngine({
             meanLongitude:value.meanLongitude,trueLongitude:value.trueLongitude,
             sheeghroccheya:value.sheeghrocha,
             midpoint:value.meanTrueMidpoint,cheshtaKendraDegrees:value.cheshtaKendraDegrees,
-            virupa:round3(value.virupa),source:'BPHS I Ch27 vv24–25; UK II pp.42–43 input selection'
+            virupa:value.virupa,source:'BPHS I Ch27 vv24–25; UK II pp.42–43 input selection'
           })];
         }))),
         ...result
