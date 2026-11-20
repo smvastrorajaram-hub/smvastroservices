@@ -238,6 +238,16 @@ try {
                 glyphColor:getComputedStyle(glyph).color,
                 visibleTextColor:getComputedStyle(glyph.querySelector('.planet-short')||glyph).color
               }));
+              const crowdedTriangleNumbers = cells
+                .filter(cell=>cell.classList.contains('smv-v342-triangle-cell')&&cell.classList.contains('smv-chart-cell-compact'))
+                .map(cell=>{
+                  const number=cell.querySelector('.smv-v342-sign-number,.smv-v342-house-number');
+                  return number?{
+                    text:number.textContent.trim(),
+                    backgroundColor:getComputedStyle(number).backgroundColor,
+                    zIndex:getComputedStyle(number).zIndex
+                  }:null;
+                }).filter(Boolean);
               const emptyCells = cells.filter(cell=>cellCount(cell) === 0);
               const emptyDash = emptyCells.some(cell=>!!cell.querySelector('.smv-v342-empty'));
               const eastHouseNumbers = style==='east' ? cells.map(cell=>({
@@ -253,7 +263,7 @@ try {
                 const labels=raw.flatMap(value=>value.split('/').map(label=>label.trim()).filter(Boolean));
                 return {sign,house:Number(cell.dataset.house||0),labels};
               }) : [];
-              reports.push({rootId,kind,cells:cells.length,picked,emptyDash,eastHouseNumbers,bhavaHouseLabels,cellBoundsOutside,compartmentOutside,triangleCells:cells.filter(cell=>cell.classList.contains('smv-v342-triangle-cell')).length,planetGlyphColors});
+              reports.push({rootId,kind,cells:cells.length,picked,emptyDash,eastHouseNumbers,bhavaHouseLabels,cellBoundsOutside,compartmentOutside,triangleCells:cells.filter(cell=>cell.classList.contains('smv-v342-triangle-cell')).length,planetGlyphColors,crowdedTriangleNumbers});
 
             }
           }
@@ -272,10 +282,7 @@ try {
             assert.equal(value.names.length,count,item.rootId+' '+item.kind+' '+style+': planet rows/names remain intact for '+count+' planets.');
             assert.ok(value.colors.every(color=>color && color!=='rgba(0, 0, 0, 0)'),item.rootId+' '+item.kind+' '+style+': planet colours remain visible.');
             assert.equal(value.outside.length,0,item.rootId+' '+item.kind+' '+style+': chart text stays inside its box: '+JSON.stringify(value.outside));
-            if(style!=='south'&&count>=3&&value.numberText){
-              assert.equal(value.numberBackgroundColor,'rgb(255, 253, 247)',item.rootId+' '+item.kind+' '+style+': crowded-cell house/sign number has an opaque chart-colour backing.');
-              assert.ok(Number(value.numberZIndex)>=4,item.rootId+' '+item.kind+' '+style+': crowded-cell house/sign number stays above planet labels.');
-            }
+
           }
           assert.equal(two.compact,false,item.rootId+' '+item.kind+' '+style+': a two-planet cell keeps normal sizing.');
           assert.equal(three.compact,true,item.rootId+' '+item.kind+' '+style+': a three-planet cell compacts locally.');
@@ -312,6 +319,13 @@ try {
               assert.ok(item.planetGlyphColors.every(glyph=>!glyph.marked),item.rootId+' '+item.kind+' '+style+': Transit is outside this colour change.');
             }
             assert.equal(item.triangleCells,8,item.rootId+' '+item.kind+' '+style+': exactly the eight corner compartments use triangle-aware layout.');
+          if(style!=='south'){
+            assert.ok(item.crowdedTriangleNumbers.length>0,item.rootId+' '+item.kind+' '+style+': crowded triangle fixtures include a house/sign number.');
+            for(const number of item.crowdedTriangleNumbers){
+              assert.equal(number.backgroundColor,'rgb(255, 253, 247)',item.rootId+' '+item.kind+' '+style+': crowded triangle number has an opaque chart-colour backing ('+number.text+').');
+              assert.ok(Number(number.zIndex)>=4,item.rootId+' '+item.kind+' '+style+': crowded triangle number stays above planets ('+number.text+').');
+            }
+          }
             assert.equal(item.compartmentOutside.length,0,item.rootId+' '+item.kind+' '+style+': planet names, markers, Degrees and numbers remain inside their actual compartment polygons: '+JSON.stringify(item.compartmentOutside));
           }
           if (item.kind==='navamsa' || item.kind==='bhava') {
