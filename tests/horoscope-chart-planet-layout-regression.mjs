@@ -45,6 +45,12 @@ assert.ok(transitRenderer.includes('data-transit-lagna="true"'),'Transit Lagna i
 assert.ok(chartStyleJs.includes("if(house===1&&kind!=='transit')"),'Alternate layouts must not add a second Lagna outside the source Transit planet-flow.');
 
 assert.ok(chartStyleJs.includes("const kind=chart.id==='bhavaChart'?'bhava':chart.id==='navamsaChart'?'d9':chart.id==='rasiChart'?'d1':'transit';"));
+assert.ok(chartStyleJs.includes("const houseNumber=value=>"),'Bhava house parsing accepts both 1–12 and I–XII source labels.');
+assert.ok(chartStyleJs.includes("normalizeSouthBhavaHouseLabels(chart)"),'South Bhava display normalizes Arabic house values to Roman numerals without changing source calculations.');
+assert.ok(chartStyleJs.includes("map(n=>houseNumber(n.textContent))"),'North/East fallback mapping recognizes every displayed Bhava house label.');
+assert.ok(chartStyleJs.includes("const mapped=new Set(from.cusp.flat())"),'North Bhava validates complete source house coverage rather than requiring one cusp per Rasi.');
+assert.ok(chartStyleJs.includes("line.hasAttribute('data-bhava-house')"),'North Bhava fallback preserves each source planet’s already-calculated Bhava assignment.');
+assert.ok(horoscopeJs.includes('data-bhava-house="${Number(p.bhava)}"'),'Bhava rendering carries the existing calculated house as display metadata only.');
 assert.ok(chartStyleJs.includes("chart.classList.contains('transit-chart')"),'Transit detection also covers production charts without a fixture ID.');
 assert.ok(chartStyleJs.includes("arr.out[si]?.querySelector('[data-transit-lagna]')"),'North/East chart conversion locates Transit Lagna from its source graha-flow row.');
 assert.ok(chartStyleJs.includes("const planetCount=kind==='transit'?items.filter(item=>!item.querySelector('[data-transit-lagna]')).length:items.length;"),'Transit Lagna is excluded from the graha count used for density thresholds.');
