@@ -80,9 +80,9 @@ for (let index = 0; index < report.records.length; index++) {
   const record = report.records[index];
   assert.equal(record.year, 1800 + index,
     'annual random epoch is unique and in sequence for year ' + record.year);
-  assert.ok(/^\\d{4}-\\d{2}-\\d{2}$/.test(record.date),
+  assert.ok(/^\d{4}-\\d{2}-\\d{2}$/.test(record.date),
     record.epochId + ' has a Gregorian date');
-  assert.ok(/^\\d{2}:\\d{2}$/.test(record.localTime),
+  assert.ok(/^\d{2}:\\d{2}$/.test(record.localTime),
     record.epochId + ' has a local wall-clock time');
   assert.ok(Number.isInteger(record.historicalUtcOffsetMinutes),
     record.epochId + ' retains its historical IANA UTC offset');
@@ -223,7 +223,7 @@ report.certification = {
   note: 'Modern DE440 apparent-longitude parity is separately verified at each sampled epoch. It is not a historical Saura printed-table oracle and does not by itself certify Mean/True/Sheeghroccheya or all six Shadbala components.'
 };
 
-writeFileSync(ARTIFACT_URL, JSON.stringify(report, null, 2) + '\\n');
+writeFileSync(ARTIFACT_URL, JSON.stringify(report, null, 2) + '\n');
 console.log(JSON.stringify({
   pass: true,
   status: report.trueLongitudeReferenceValidation.status,
