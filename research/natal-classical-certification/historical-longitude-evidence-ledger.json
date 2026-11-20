@@ -1,0 +1,453 @@
+{
+  "schemaVersion": 1,
+  "title": "Historical Mean / True / Sheeghroccheya evidence ledger",
+  "scope": {
+    "civilYears": [
+      1800,
+      2399
+    ],
+    "oneSeededRandomNatalChartPerYear": 600,
+    "visiblePlanets": [
+      "Mercury",
+      "Venus",
+      "Mars",
+      "Jupiter",
+      "Saturn"
+    ],
+    "expectedRows": 15
+  },
+  "status": "PARTIAL_NOT_CERTIFIED",
+  "productionEligible": false,
+  "classicalNatalCertificationEligible": false,
+  "annualCoverage": {
+    "randomNatalCharts": 600,
+    "grahaLongitudeCandidateRows": 3000,
+    "rowsPerPlanet": 600,
+    "independentHistoricalOracleVerifiedRows": 0,
+    "frame": "traditional-Saura-nirayana",
+    "note": "The 600-chart artifact now additionally carries 3,000 exact-epoch NAELOS/JPL DE440 versus Swiss tropical-apparent comparisons (PASS, max 0.008523965 arcsec). These are modern numerical parity rows, not independent historical printed-table oracle rows; independentHistoricalOracleVerifiedRows therefore remains 0."
+  },
+  "meanSourceAudit": {
+    "status": "LIMITED_SOURCE_RECONSTRUCTION_PASS",
+    "source": "Burgess 1860, pp.164–165, Bīja-corrected mean-motion and 1 Jan 1860 Ujjain mean-longitude tables.",
+    "regression": "tests/saura-bija-three-phase-validation.mjs Phase A",
+    "samples": 6,
+    "maxResidualArcsec": 0.9674,
+    "toleranceArcsec": 1.5,
+    "limit": "One printed epoch anchor only."
+  },
+  "trueLongitudeAudit": {
+    "status": "SOURCE_RULE_PARTIAL_MODERN_ACCURACY_FAIL",
+    "source": "Burgess 1860 Sūrya-Siddhānta II.39–45; B.V. Raman Ch.VI §§99–107, pp.74–79.",
+    "modernReference": "NASA/JPL Horizons DE441 Earth-geocentric apparent ecliptic-of-date, quantity 31, explicit Saura frame transfer.",
+    "annualComparisons": 3000,
+    "independentHistoricalOracleRows": 0,
+    "strictModernAccuracyThresholdDegrees": 0.05,
+    "strictModernAccuracyGatePass": false,
+    "perPlanet": {
+      "Mercury": {
+        "samples": 600,
+        "rmsDegrees": 4.734911,
+        "p95AbsoluteDegrees": 6.802282,
+        "maxAbsoluteDegrees": 7.588441
+      },
+      "Venus": {
+        "samples": 600,
+        "rmsDegrees": 5.89085,
+        "p95AbsoluteDegrees": 13.715045,
+        "maxAbsoluteDegrees": 21.503665
+      },
+      "Mars": {
+        "samples": 600,
+        "rmsDegrees": 5.753817,
+        "p95AbsoluteDegrees": 7.230395,
+        "maxAbsoluteDegrees": 9.925365
+      },
+      "Jupiter": {
+        "samples": 600,
+        "rmsDegrees": 2.477131,
+        "p95AbsoluteDegrees": 3.540302,
+        "maxAbsoluteDegrees": 3.993845
+      },
+      "Saturn": {
+        "samples": 600,
+        "rmsDegrees": 6.007322,
+        "p95AbsoluteDegrees": 8.866978,
+        "maxAbsoluteDegrees": 9.459852
+      }
+    },
+    "note": "3,000 January annual checkpoints are modern numerical comparisons, not the 600 random DOB epochs or historical classical printed-table oracles."
+  },
+  "sheeghroccheyaAudit": {
+    "status": "LIMITED_SOURCE_EXAMPLE_WITH_SATURN_CONFLICT",
+    "source": "B.V. Raman Ch.VI §§102–105, pp.76–78.",
+    "conflict": "Saturn §104 table p.77: 151.23°; Example 49 p.78: 181.23°, yielding 63.42° Chesta Kendra and 21.14 Chesta Bala.",
+    "limit": "One worked example only; no complete 1800–2399 independent tabulation acquired."
+  },
+  "rows": [
+    {
+      "planet": "Mercury",
+      "grahaTamil": "புதன்",
+      "quantity": "mean",
+      "standardHoroscope1918Degrees": 181.23,
+      "sourcePrintedTableDegrees": 181.23,
+      "status": "LIMITED_SOURCE_EXAMPLE_AND_1860_MEAN_ANCHOR",
+      "sourceLocator": "E. Burgess, Translation of the Sūrya-Siddhānta (1860), Bīja-corrected mean tables, pp.164–165; B.V. Raman, Graha and Bhava Balas, Ch.VI §§94–98, pp.72–74.",
+      "method": "Burgess Bīja-corrected revolutions and B.V. Raman tabular mean daily motions; 1918 value is one worked-example anchor.",
+      "frame": "traditional-Saura-nirayana",
+      "arbitraryEpochSourceVerified": false,
+      "notes": "1860 Ujjain-midnight source-table regression max residual 0.9674 arcsec, tolerance 1.5 arcsec. Not an independent oracle for every random natal epoch."
+    },
+    {
+      "planet": "Mercury",
+      "grahaTamil": "புதன்",
+      "quantity": "true",
+      "standardHoroscope1918Degrees": 181.52,
+      "sourcePrintedTableDegrees": 181.52,
+      "status": "LIMITED_WORKED_EXAMPLE_ONLY_MODERN_ACCURACY_GATE_FAIL",
+      "sourceLocator": "Burgess 1860, Sūrya-Siddhānta II.39–45; B.V. Raman, Graha and Bhava Balas, Ch.VI §§99–107, pp.74–79.",
+      "method": "Classical four-pass Manda/Śīghra model; 1918 B.V. Raman standard chart supplies one worked-example input.",
+      "frame": "traditional-Saura-nirayana",
+      "arbitraryEpochSourceVerified": false,
+      "notes": "No independent archival historical True Longitude table verified for all 600 random epochs. Separate 3,000-row DE441 0.05° modern apparent accuracy gate fails for all five planets; DE441 is not a historical oracle."
+    },
+    {
+      "planet": "Mercury",
+      "grahaTamil": "புதன்",
+      "quantity": "sheeghroccheya",
+      "standardHoroscope1918Degrees": 174.49,
+      "sourcePrintedTableDegrees": 174.49,
+      "status": "LIMITED_SOURCE_EXAMPLE",
+      "sourceLocator": "B.V. Raman, Graha and Bhava Balas, 13th ed., Ch.VI §§102–105, pp.76–78; Tables VIII/IX and Example 49.",
+      "method": "B.V. Raman tabular śīghroccheya input for the 1918 standard-horoscope Chesta example.",
+      "frame": "traditional-Saura-nirayana",
+      "arbitraryEpochSourceVerified": false,
+      "notes": "One printed worked-example value; no full independent 1800–2399 tabulation acquired."
+    },
+    {
+      "planet": "Venus",
+      "grahaTamil": "சுக்கிரன்",
+      "quantity": "mean",
+      "standardHoroscope1918Degrees": 181.23,
+      "sourcePrintedTableDegrees": 181.23,
+      "status": "LIMITED_SOURCE_EXAMPLE_AND_1860_MEAN_ANCHOR",
+      "sourceLocator": "E. Burgess, Translation of the Sūrya-Siddhānta (1860), Bīja-corrected mean tables, pp.164–165; B.V. Raman, Graha and Bhava Balas, Ch.VI §§94–98, pp.72–74.",
+      "method": "Burgess Bīja-corrected revolutions and B.V. Raman tabular mean daily motions; 1918 value is one worked-example anchor.",
+      "frame": "traditional-Saura-nirayana",
+      "arbitraryEpochSourceVerified": false,
+      "notes": "1860 Ujjain-midnight source-table regression max residual 0.9674 arcsec, tolerance 1.5 arcsec. Not an independent oracle for every random natal epoch."
+    },
+    {
+      "planet": "Venus",
+      "grahaTamil": "சுக்கிரன்",
+      "quantity": "true",
+      "standardHoroscope1918Degrees": 171.16,
+      "sourcePrintedTableDegrees": 171.16,
+      "status": "LIMITED_WORKED_EXAMPLE_ONLY_MODERN_ACCURACY_GATE_FAIL",
+      "sourceLocator": "Burgess 1860, Sūrya-Siddhānta II.39–45; B.V. Raman, Graha and Bhava Balas, Ch.VI §§99–107, pp.74–79.",
+      "method": "Classical four-pass Manda/Śīghra model; 1918 B.V. Raman standard chart supplies one worked-example input.",
+      "frame": "traditional-Saura-nirayana",
+      "arbitraryEpochSourceVerified": false,
+      "notes": "No independent archival historical True Longitude table verified for all 600 random epochs. Separate 3,000-row DE441 0.05° modern apparent accuracy gate fails for all five planets; DE441 is not a historical oracle."
+    },
+    {
+      "planet": "Venus",
+      "grahaTamil": "சுக்கிரன்",
+      "quantity": "sheeghroccheya",
+      "standardHoroscope1918Degrees": 158.35,
+      "sourcePrintedTableDegrees": 158.35,
+      "status": "LIMITED_SOURCE_EXAMPLE",
+      "sourceLocator": "B.V. Raman, Graha and Bhava Balas, 13th ed., Ch.VI §§102–105, pp.76–78; Tables VIII/IX and Example 49.",
+      "method": "B.V. Raman tabular śīghroccheya input for the 1918 standard-horoscope Chesta example.",
+      "frame": "traditional-Saura-nirayana",
+      "arbitraryEpochSourceVerified": false,
+      "notes": "One printed worked-example value; no full independent 1800–2399 tabulation acquired."
+    },
+    {
+      "planet": "Mars",
+      "grahaTamil": "செவ்வாய்",
+      "quantity": "mean",
+      "standardHoroscope1918Degrees": 266.34,
+      "sourcePrintedTableDegrees": 266.34,
+      "status": "LIMITED_SOURCE_EXAMPLE_AND_1860_MEAN_ANCHOR",
+      "sourceLocator": "E. Burgess, Translation of the Sūrya-Siddhānta (1860), Bīja-corrected mean tables, pp.164–165; B.V. Raman, Graha and Bhava Balas, Ch.VI §§94–98, pp.72–74.",
+      "method": "Burgess Bīja-corrected revolutions and B.V. Raman tabular mean daily motions; 1918 value is one worked-example anchor.",
+      "frame": "traditional-Saura-nirayana",
+      "arbitraryEpochSourceVerified": false,
+      "notes": "1860 Ujjain-midnight source-table regression max residual 0.9674 arcsec, tolerance 1.5 arcsec. Not an independent oracle for every random natal epoch."
+    },
+    {
+      "planet": "Mars",
+      "grahaTamil": "செவ்வாய்",
+      "quantity": "true",
+      "standardHoroscope1918Degrees": 229.5,
+      "sourcePrintedTableDegrees": 229.5,
+      "status": "LIMITED_WORKED_EXAMPLE_ONLY_MODERN_ACCURACY_GATE_FAIL",
+      "sourceLocator": "Burgess 1860, Sūrya-Siddhānta II.39–45; B.V. Raman, Graha and Bhava Balas, Ch.VI §§99–107, pp.74–79.",
+      "method": "Classical four-pass Manda/Śīghra model; 1918 B.V. Raman standard chart supplies one worked-example input.",
+      "frame": "traditional-Saura-nirayana",
+      "arbitraryEpochSourceVerified": false,
+      "notes": "No independent archival historical True Longitude table verified for all 600 random epochs. Separate 3,000-row DE441 0.05° modern apparent accuracy gate fails for all five planets; DE441 is not a historical oracle."
+    },
+    {
+      "planet": "Mars",
+      "grahaTamil": "செவ்வாய்",
+      "quantity": "sheeghroccheya",
+      "standardHoroscope1918Degrees": 181.23,
+      "sourcePrintedTableDegrees": 181.23,
+      "status": "LIMITED_SOURCE_EXAMPLE",
+      "sourceLocator": "B.V. Raman, Graha and Bhava Balas, 13th ed., Ch.VI §§102–105, pp.76–78; Tables VIII/IX and Example 49.",
+      "method": "B.V. Raman tabular śīghroccheya input for the 1918 standard-horoscope Chesta example.",
+      "frame": "traditional-Saura-nirayana",
+      "arbitraryEpochSourceVerified": false,
+      "notes": "One printed worked-example value; no full independent 1800–2399 tabulation acquired."
+    },
+    {
+      "planet": "Jupiter",
+      "grahaTamil": "குரு",
+      "quantity": "mean",
+      "standardHoroscope1918Degrees": 66.91,
+      "sourcePrintedTableDegrees": 66.91,
+      "status": "LIMITED_SOURCE_EXAMPLE_AND_1860_MEAN_ANCHOR",
+      "sourceLocator": "E. Burgess, Translation of the Sūrya-Siddhānta (1860), Bīja-corrected mean tables, pp.164–165; B.V. Raman, Graha and Bhava Balas, Ch.VI §§94–98, pp.72–74.",
+      "method": "Burgess Bīja-corrected revolutions and B.V. Raman tabular mean daily motions; 1918 value is one worked-example anchor.",
+      "frame": "traditional-Saura-nirayana",
+      "arbitraryEpochSourceVerified": false,
+      "notes": "1860 Ujjain-midnight source-table regression max residual 0.9674 arcsec, tolerance 1.5 arcsec. Not an independent oracle for every random natal epoch."
+    },
+    {
+      "planet": "Jupiter",
+      "grahaTamil": "குரு",
+      "quantity": "true",
+      "standardHoroscope1918Degrees": 84.01,
+      "sourcePrintedTableDegrees": 84.01,
+      "status": "LIMITED_WORKED_EXAMPLE_ONLY_MODERN_ACCURACY_GATE_FAIL",
+      "sourceLocator": "Burgess 1860, Sūrya-Siddhānta II.39–45; B.V. Raman, Graha and Bhava Balas, Ch.VI §§99–107, pp.74–79.",
+      "method": "Classical four-pass Manda/Śīghra model; 1918 B.V. Raman standard chart supplies one worked-example input.",
+      "frame": "traditional-Saura-nirayana",
+      "arbitraryEpochSourceVerified": false,
+      "notes": "No independent archival historical True Longitude table verified for all 600 random epochs. Separate 3,000-row DE441 0.05° modern apparent accuracy gate fails for all five planets; DE441 is not a historical oracle."
+    },
+    {
+      "planet": "Jupiter",
+      "grahaTamil": "குரு",
+      "quantity": "sheeghroccheya",
+      "standardHoroscope1918Degrees": 181.23,
+      "sourcePrintedTableDegrees": 181.23,
+      "status": "LIMITED_SOURCE_EXAMPLE",
+      "sourceLocator": "B.V. Raman, Graha and Bhava Balas, 13th ed., Ch.VI §§102–105, pp.76–78; Tables VIII/IX and Example 49.",
+      "method": "B.V. Raman tabular śīghroccheya input for the 1918 standard-horoscope Chesta example.",
+      "frame": "traditional-Saura-nirayana",
+      "arbitraryEpochSourceVerified": false,
+      "notes": "One printed worked-example value; no full independent 1800–2399 tabulation acquired."
+    },
+    {
+      "planet": "Saturn",
+      "grahaTamil": "சனி",
+      "quantity": "mean",
+      "standardHoroscope1918Degrees": 111.23,
+      "sourcePrintedTableDegrees": 111.23,
+      "status": "LIMITED_SOURCE_EXAMPLE_AND_1860_MEAN_ANCHOR",
+      "sourceLocator": "E. Burgess, Translation of the Sūrya-Siddhānta (1860), Bīja-corrected mean tables, pp.164–165; B.V. Raman, Graha and Bhava Balas, Ch.VI §§94–98, pp.72–74.",
+      "method": "Burgess Bīja-corrected revolutions and B.V. Raman tabular mean daily motions; 1918 value is one worked-example anchor.",
+      "frame": "traditional-Saura-nirayana",
+      "arbitraryEpochSourceVerified": false,
+      "notes": "1860 Ujjain-midnight source-table regression max residual 0.9674 arcsec, tolerance 1.5 arcsec. Not an independent oracle for every random natal epoch."
+    },
+    {
+      "planet": "Saturn",
+      "grahaTamil": "சனி",
+      "quantity": "true",
+      "standardHoroscope1918Degrees": 124.39,
+      "sourcePrintedTableDegrees": 124.39,
+      "status": "LIMITED_WORKED_EXAMPLE_ONLY_MODERN_ACCURACY_GATE_FAIL",
+      "sourceLocator": "Burgess 1860, Sūrya-Siddhānta II.39–45; B.V. Raman, Graha and Bhava Balas, Ch.VI §§99–107, pp.74–79.",
+      "method": "Classical four-pass Manda/Śīghra model; 1918 B.V. Raman standard chart supplies one worked-example input.",
+      "frame": "traditional-Saura-nirayana",
+      "arbitraryEpochSourceVerified": false,
+      "notes": "No independent archival historical True Longitude table verified for all 600 random epochs. Separate 3,000-row DE441 0.05° modern apparent accuracy gate fails for all five planets; DE441 is not a historical oracle."
+    },
+    {
+      "planet": "Saturn",
+      "grahaTamil": "சனி",
+      "quantity": "sheeghroccheya",
+      "standardHoroscope1918Degrees": 181.23,
+      "sourcePrintedTableDegrees": 151.23,
+      "status": "SOURCE_CONFLICT",
+      "sourceLocator": "B.V. Raman, Graha and Bhava Balas, 13th ed., Ch.VI §§102–105, pp.76–78; Tables VIII/IX and Example 49.",
+      "method": "B.V. Raman tabular śīghroccheya input for the 1918 standard-horoscope Chesta example.",
+      "frame": "traditional-Saura-nirayana",
+      "arbitraryEpochSourceVerified": false,
+      "notes": "§104 table p.77 prints 151.23°, but Example 49 p.78 uses 181.23° and obtains printed 63.42° Chesta Kendra / 21.14 Chesta Bala."
+    }
+  ],
+  "officialGovernmentPAC2026Benchmark": {
+    "status": "PASS_EXISTING_CERTIFICATE",
+    "source": "Government of India, India Meteorological Department, Positional Astronomy Centre — 2026 official daily Nirayana longitude PDFs",
+    "existingAudit": "https://github.com/smvastrorajaram-hub/smvastroservices/blob/main/audits/SMV_ASTRO_PAC_2026_FIVE_GRAHA_NIRAYANA_CROSSCHECK_2026-11-20.md",
+    "successfulActionRun": "https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44778196616",
+    "scope": {
+      "civilYear": 2026,
+      "planets": [
+        "Mercury",
+        "Venus",
+        "Mars",
+        "Jupiter",
+        "Saturn"
+      ],
+      "daysPerPlanet": 365,
+      "comparisons": 1825,
+      "timeScale": "TT",
+      "comparisonEpoch": "00:00:00 TT for each civil date",
+      "comparisonEngine": "Bundled Swiss Ephemeris Lahiri sidereal",
+      "maxAbsResidualArcsec": 0.253273,
+      "rmsResidualArcsec": 0.128957,
+      "acceptanceMaxArcsec": 0.36
+    },
+    "requiredAgain": false,
+    "interpretation": "This existing certificate is accepted as the official 2026 contemporary Nirayana benchmark. It is not re-run or re-acquired in this PR. It does not prove a historical Saura four-pass True Longitude, a same-model Mean/True/Sheeghroccheya chain, or every natal epoch from 1800–2399."
+  },
+  "acquisitionPolicy": {
+    "status": "NO_ADDITIONAL_ANNUAL_GOVERNMENT_EPHEMERIS_EDITIONS_REQUIRED",
+    "instruction": "Do not search for or acquire the 1971, 1974, 1992, 1994 or 2015 IENA/IAE editions for this task. Reuse the already-certified Government PAC 2026 benchmark."
+  },
+  "exactNatalEpochModernDe440Parity": {
+    "status": "PASS_3000_EXACT_RANDOM_NATAL_EPOCH_MODERN_PARITY",
+    "sourceEngine": "NAELOS Ephemeris 0.1.3 / NASA-JPL DE440",
+    "comparisonEngine": "Repository Swiss Ephemeris WASM",
+    "comparison": "Geocentric tropical apparent ecliptic-of-date longitude, with both engines supplied the same ET/TT Julian Day at each sampled historical birth instant",
+    "annualNatalCharts": 600,
+    "years": [
+      1800,
+      2399
+    ],
+    "randomSelection": "The exact seeded-random DOB/time/India-place records already present in the annual 600-chart artifact; no replacement samples",
+    "visiblePlanets": [
+      "Mercury",
+      "Venus",
+      "Mars",
+      "Jupiter",
+      "Saturn"
+    ],
+    "comparisons": 3000,
+    "rowsPerPlanet": 600,
+    "acceptanceMaxArcsec": 5,
+    "maxAbsResidualArcsec": 0.008523965379936271,
+    "rmsResidualArcsec": 0.0013143326297495913,
+    "perPlanet": {
+      "Mercury": {
+        "samples": 600,
+        "maxAbsResidualArcsec": 0.005971435621177079,
+        "rmsResidualArcsec": 0.0012382625448078444
+      },
+      "Venus": {
+        "samples": 600,
+        "maxAbsResidualArcsec": 0.008523965379936271,
+        "rmsResidualArcsec": 0.0014333178319731353
+      },
+      "Mars": {
+        "samples": 600,
+        "maxAbsResidualArcsec": 0.005676921409758506,
+        "rmsResidualArcsec": 0.0010722474706823357
+      },
+      "Jupiter": {
+        "samples": 600,
+        "maxAbsResidualArcsec": 0.004062397829329711,
+        "rmsResidualArcsec": 0.001296482754874229
+      },
+      "Saturn": {
+        "samples": 600,
+        "maxAbsResidualArcsec": 0.0040692335005587665,
+        "rmsResidualArcsec": 0.0014896560001306633
+      }
+    },
+    "relevantWorkflowRun": "https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44806001549",
+    "artifact": "https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44806001549/artifacts/14662204322",
+    "independentHistoricalOracleVerifiedRows": 0,
+    "historicalClassicalTrueLongitudeCertified": false,
+    "productionEligible": false,
+    "interpretation": "A modern JPL DE440 numerical parity cross-check at these 3,000 exact natal-epoch planet rows. It is not a printed historical Saura table oracle and does not certify the classical four-pass True Longitude or the all-natal Mean/True/Sheeghroccheya chain.",
+    "classicalComparisonSeparation": "The DE440 apparent True longitude is reported as a separate modern-model result. It is not substituted into the same-model Bīja Mean/Sheeghroccheya BPHS Chesta chain.",
+    "modernDe440TrueLongitudeUsedForClassicalCheshta": false
+  },
+  "coherentClassicalChainValidation": {
+    "status": "PASS_3000_SAME_EPOCH_SAME_FRAME_CLASSICAL_INPUT_CHAINS_RESEARCH_ONLY",
+    "model": "BURGESS_BENTLEY_BIJA_CORRECTED_SAURA_PAKSHA",
+    "years": [
+      1800,
+      2399
+    ],
+    "exactNatalEpochs": 600,
+    "planets": [
+      "Mercury",
+      "Venus",
+      "Mars",
+      "Jupiter",
+      "Saturn"
+    ],
+    "comparisons": 3000,
+    "rowsPerPlanet": 600,
+    "inputChain": [
+      "Bija-corrected Mean longitude",
+      "Kali-epoch Mandocca",
+      "Bija-corrected Sheeghroccheya",
+      "Sūrya Siddhānta II.39–45 four-pass True longitude",
+      "BPHS I Ch.27 vv.24–25 Chesta Kendra/Virupa"
+    ],
+    "commonJulianEpoch": true,
+    "commonFrame": "traditional-Saura-nirayana",
+    "sameDynamicModelForClassicalInputs": true,
+    "allResearchOnly": true,
+    "internalAssertions": "Every exact JD and frame field is equal across Mean, Mandocca, Sheeghroccheya and the four-pass True model; BPHS Chesta is recomputed only from these three same-model longitudes.",
+    "secondary24JyaCrossCheck": {
+      "status": "DIAGNOSTIC_COMPLETED_WITH_ONE_ROW_OVER_0_05_DEGREE",
+      "method": "Printed 24-Jya interpolation versus continuous trigonometric four-pass, supplied identical classical inputs",
+      "toleranceDegrees": 0.05,
+      "comparisons": 3000,
+      "rowsWithinTolerance": 2999,
+      "rowsOverTolerance": 1,
+      "maxAbsDifferenceDegrees": 0.053231899421462,
+      "rmsDifferenceDegrees": 0.009084055099703763,
+      "tabularNumericalGatePass": false,
+      "perPlanet": {
+        "Mercury": {
+          "samples": 600,
+          "maxAbsDifferenceDegrees": 0.021663712376721378,
+          "rmsDifferenceDegrees": 0.007409416288697341,
+          "rowsOverTolerance": 0
+        },
+        "Venus": {
+          "samples": 600,
+          "maxAbsDifferenceDegrees": 0.053231899421462,
+          "rmsDifferenceDegrees": 0.012780444927437918,
+          "rowsOverTolerance": 1
+        },
+        "Mars": {
+          "samples": 600,
+          "maxAbsDifferenceDegrees": 0.046506134026344625,
+          "rmsDifferenceDegrees": 0.012016697002317014,
+          "rowsOverTolerance": 0
+        },
+        "Jupiter": {
+          "samples": 600,
+          "maxAbsDifferenceDegrees": 0.013224922248923576,
+          "rmsDifferenceDegrees": 0.005438531815058602,
+          "rowsOverTolerance": 0
+        },
+        "Saturn": {
+          "samples": 600,
+          "maxAbsDifferenceDegrees": 0.013561606810526428,
+          "rmsDifferenceDegrees": 0.004514690226458906,
+          "rowsOverTolerance": 0
+        }
+      },
+      "interpretation": "The one 0.0532319-degree difference is retained as a table-interpolation diagnostic; it is not normalized away. The full same-epoch/same-frame input-chain and BPHS arithmetic audit completed across all 3,000 rows."
+    },
+    "independentHistoricalOracleVerifiedRows": 0,
+    "historicalClassicalTrueLongitudeCertified": false,
+    "classicalNatalCertified": false,
+    "productionEligible": false,
+    "relevantWorkflowRun": "https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44808715342",
+    "artifact": "The result is appended to the 600-chart artifact by the research test."
+  }
+}

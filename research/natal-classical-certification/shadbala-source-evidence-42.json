@@ -1,0 +1,992 @@
+{
+  "schemaVersion": 1,
+  "title": "42-row B.V. Raman Shadbala source evidence ledger",
+  "status": "PARTIAL_SOURCE_EXAMPLE_WITH_ERRATA",
+  "source": "B.V. Raman, Graha and Bhava Balas, 13th edition (1992), 1918 Standard Horoscope",
+  "scope": {
+    "grahas": 7,
+    "components": 6,
+    "expectedRows": 42,
+    "sampleBirth": "1918-10-16 14:06:16 LMT; 13° N; 5h 10m 20s E"
+  },
+  "counts": {
+    "totalRows": 42,
+    "sourceExamplePass": 36,
+    "sourceExampleAdjudicated": 3,
+    "notApplicableSourceEllipsis": 2,
+    "sourceDiscrepancy": 1,
+    "printedComponentDiscrepanciesIdentified": 4,
+    "note": "Four component-level printed discrepancies were identified. Mercury Dig is formula-adjudicated as a print arithmetic error; Saturn Chesta and Saturn Naisargika are adjudicated for the 1918 worked example only; Jupiter Drik remains open."
+  },
+  "sourceDiscrepancies": [
+    {
+      "id": "BVR_MERCURY_DIG",
+      "pages": "32–33",
+      "detail": "Mercury Dig arc 63°05′ does not divide to printed 21.09.",
+      "classification": "SOURCE_EXAMPLE_ARITHMETIC_TYPO_ADJUDICATED",
+      "printedEvidence": "Example 14 p.32 gives Mercury Digbala arc 63°05′. Example 15 p.33 and the p.90 final summary print 21.09.",
+      "recomputation": "63°05′ ÷ 3 = 21.0277777778 Virupas (21.03 at 2 decimals). With the exact Standard Horoscope Mercury longitude 181°31′34″ and powerless point 118°27′, the unrounded arc is 63°04′34″; the current B.V. Raman implementation independently returns 21.025 Virupas, which rounds to 21.03.",
+      "disposition": "The formula and exact-input engine agree at approximately 21.03, while the book prints 21.09 in both Example 15 and the summary. Treat 21.09 as a printed worked-example arithmetic error; preserve it as the historical printed value but use 21.025/21.03 only for a formula-derived reconstruction of this input. This adjudication is scoped to the 1918 worked example and does not certify arbitrary natal Dig Bala.",
+      "formulaDerivedVirupaFromPrintedArc": 21.02777777777778,
+      "exactInputEngineVirupa": 21.025,
+      "formulaDisplayTwoDecimals": 21.03,
+      "printedExampleVirupa": 21.09,
+      "printedMinusFormulaVirupa": 0.06222222222222129
+    },
+    {
+      "id": "BVR_SATURN_SHEEGHROCCHEYA",
+      "pages": "77–78",
+      "detail": "§104 table 151.23° versus Example 49 181.23°.",
+      "classification": "WORKED_EXAMPLE_INPUT_IDENTIFIED_TABLE_TYPO_RETAINED",
+      "printedEvidence": "§104 p.77 table lists Saturn 151.23°. Example 49 p.78 substitutes 181.23° and obtains Chesta Kendra 63.42° / Chesta Bala 21.14; p.90 summary also gives 21.14.",
+      "recomputation": "181.23° − (111.23° + 124.39°)/2 = 63.42°; reduced Chesta Kendra / 3 gives 21.14.",
+      "disposition": "For the 1918 Standard Horoscope worked example, 181.23° is the reproducible input that matches the printed Chesta result and final summary. The conflicting §104 table cell remains recorded as a source misprint; this is not a universal longitude rule."
+    },
+    {
+      "id": "BVR_SATURN_NAISARGIKA",
+      "pages": "81,90",
+      "detail": "Chapter VII constant 8.57 versus final summary appears 8.37.",
+      "classification": "SUMMARY_CELL_TYPO_COMPONENT_SOURCE_RECONCILED",
+      "printedEvidence": "Chapter VII table p.81 and Example 52 p.81 both print 8.57; Example 56 final summary p.90 prints 8.37.",
+      "recomputation": "The p.90 total 389.21 recomposes with 8.57: 177.30 + 58.02 + 116.97 + 21.14 + 8.57 + 7.21 = 389.21. Using 8.37 would give 389.01.",
+      "disposition": "Use the component table / Example 52 value 8.57 for the 1918 sample. Preserve 8.37 as a final-summary printing error."
+    },
+    {
+      "id": "BVR_JUPITER_DRIK",
+      "pages": "88,90",
+      "detail": "Example 55 Drik −16.04 versus final summary −16.03.",
+      "classification": "OPEN_DRISHTI_DETAIL_AND_ROUNDING_RECONCILIATION",
+      "printedEvidence": "Example 54 p.88 gives the Jupiter Net Aspect / Drishti Pinda as −64.14; Example 55 p.88 gives Drik −16.04; Example 56 p.90 gives Drik −16.03. The p.88 individual signed aspect entries sum to −64.14, but its printed Subhadrishtibala +30.79 and Asubhadrishtibala −94.23 subtotal to −63.44, not −64.14.",
+      "recomputation": "Printed p.88 individual contributions: Sun −18.43, Moon +17.25, Mars −57.75 (including the printed 15.00 special aspect and 42.75 ordinary component), Mercury −18.75, Venus +13.54, Saturn 0; their sum is −64.14. To obtain that net from the printed +30.79 Subha subtotal, the Asubha subtotal would have to be −94.93, not the printed −94.23. The exact-input 1918 B.V. Raman engine diagnostic returns Pinda −64.096 and Drik −16.024. The printed −64.14 ÷ 4 is −16.035; Example 55 and the p.90 summary still show −16.04 / −16.03.",
+      "disposition": "Keep Jupiter Drik open. The printed individual contributions support Net Pinda −64.14, while the printed subtotals do not reconcile and the exact-input engine returns −64.096. The quarter of the printed Pinda is −16.035, so the two printed Drik values differ by 0.01. Do not change the engine or select a printed value as universal until the p.88 subtotal typo, exact table rounding policy and engine per-aspector differences are reconciled.",
+      "sourcePrintedIndividualAspectContributions": [
+        {
+          "aspector": "Sun",
+          "signedVirupa": -18.43
+        },
+        {
+          "aspector": "Moon",
+          "signedVirupa": 17.25
+        },
+        {
+          "aspector": "Mars",
+          "signedVirupa": -57.75
+        },
+        {
+          "aspector": "Mercury",
+          "signedVirupa": -18.75
+        },
+        {
+          "aspector": "Venus",
+          "signedVirupa": 13.54
+        },
+        {
+          "aspector": "Saturn",
+          "signedVirupa": 0
+        }
+      ],
+      "sourcePrintedDetailPinda": -64.14,
+      "sourcePrintedSubhaSubtotal": 30.79,
+      "sourcePrintedAsubhaSubtotal": -94.23,
+      "sourcePrintedSubtotalsNet": -63.44,
+      "asubhaSubtotalRequiredToReconcileNet": -94.93,
+      "exactInputEnginePinda": -64.096,
+      "exactInputEngineDrik": -16.024,
+      "sourcePindaQuarter": -16.035
+    },
+    {
+      "id": "BVR_SUN_TOTAL_ARITHMETIC",
+      "pages": "89",
+      "detail": "Sun printed total 424.24 conflicts with component sum 424.94; Rupa 7.08 supports 424.94.",
+      "classification": "SUMMARY_TOTAL_ARITHMETIC_TYPO",
+      "printedEvidence": "Example 56 p.89 prints Sun total 424.24 and Rupa 7.08.",
+      "recomputation": "The displayed components sum to 424.94; 424.94 ÷ 60 = 7.0823, which rounds to the printed 7.08. 424.24 ÷ 60 would not produce 7.08.",
+      "disposition": "The Rupa and component sum support 424.94; 424.24 is retained as the summary total misprint."
+    },
+    {
+      "id": "BVR_MARS_KALA_SUMMARY",
+      "pages": "62,89",
+      "detail": "Example 35 detailed Kala 30.06 versus final summary 33.06; total 298.14/Rupa4.97 reconcile with 30.06.",
+      "classification": "SUMMARY_COMPONENT_TYPO_RECONCILED",
+      "printedEvidence": "Example 35 p.62 prints Mars Kala Bala 30.060; Example 56 p.89 prints 33.06.",
+      "recomputation": "11.68 Natonnatha + 16.54 Paksha + 1.84 Ayana = 30.06. The six-Bala total 298.14 and Rupa 4.97 also reconcile with 30.06.",
+      "disposition": "Use 30.06 as the component supported by Example 35 and total recomposition; retain 33.06 as a summary-table misprint."
+    },
+    {
+      "id": "BVR_MERCURY_RUPA",
+      "pages": "90",
+      "detail": "537.02/60=8.9503; final summary appears to print 8.85.",
+      "classification": "SUMMARY_RUPA_ARITHMETIC_TYPO",
+      "printedEvidence": "Example 56 p.90 prints Mercury total 537.02 and Rupa 8.85.",
+      "recomputation": "537.02 ÷ 60 = 8.950333..., which rounds to 8.95, not 8.85.",
+      "disposition": "The displayed Virupa total mathematically gives 8.95; keep 8.85 flagged as a printed Rupa error."
+    }
+  ],
+  "genericCertification": {
+    "classicalCertified": false,
+    "reason": "Rows cover one 1918 worked example, not independent per-natal source proofs; the Jupiter Drik source Pinda/value discrepancy remains unresolved.",
+    "evidenceGateEligibleRows": 0
+  },
+  "rows": [
+    {
+      "graha": "Sun",
+      "grahaTamil": "சூரியன்",
+      "component": "sthana",
+      "valueVirupa": 198,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.III §§18–40, Examples 9–13, pp.11–29",
+      "sourcePage": "pp.29–30",
+      "formulaOrRule": "Ochcha + Saptavargaja + Ojhayugma + Kendra + Drekkana",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Sun",
+      "grahaTamil": "சூரியன்",
+      "component": "dig",
+      "valueVirupa": 48.1,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.IV §§43–45, Examples 14–15, pp.30–33",
+      "sourcePage": "pp.32–33",
+      "formulaOrRule": "Digbala arc / 3",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Sun",
+      "grahaTamil": "சூரியன்",
+      "component": "kala",
+      "valueVirupa": 102.98,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.V §§46–78, Example 35, pp.34–63",
+      "sourcePage": "pp.62–63",
+      "formulaOrRule": "Natonnata + Paksha + Tribhaga + Abda + Masa + Vara + Hora + Ayana + Yuddha",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Sun",
+      "grahaTamil": "சூரியன்",
+      "component": "cheshta",
+      "valueVirupa": 0,
+      "status": "NOT_APPLICABLE_SOURCE_ELLIPSIS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.VI §§99–107, Examples 49–51, pp.72–79",
+      "sourcePage": "pp.77–79",
+      "formulaOrRule": "Reduced Chesta Kendra / 3; Sheeghroccheya − (Mean + True)/2",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": "Example 56 p.89 prints ellipsis for luminary sixfold Chesta; engine uses numeric zero for non-applicability. Chapter X Chesta-for-Phala is separate."
+    },
+    {
+      "graha": "Sun",
+      "grahaTamil": "சூரியன்",
+      "component": "naisargika",
+      "valueVirupa": 60,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.VII §108, Example 52, pp.80–81",
+      "sourcePage": "pp.80–81",
+      "formulaOrRule": "Printed fixed natural-strength constant",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Sun",
+      "grahaTamil": "சூரியன்",
+      "component": "drik",
+      "valueVirupa": 15.86,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.VIII §§109–120, Example 55, pp.82–88",
+      "sourcePage": "p.88",
+      "formulaOrRule": "Signed Drishti Pinda / 4",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Moon",
+      "grahaTamil": "சந்திரன்",
+      "component": "sthana",
+      "valueVirupa": 126.5,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.III §§18–40, Examples 9–13, pp.11–29",
+      "sourcePage": "pp.29–30",
+      "formulaOrRule": "Ochcha + Saptavargaja + Ojhayugma + Kendra + Drekkana",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Moon",
+      "grahaTamil": "சந்திரன்",
+      "component": "dig",
+      "valueVirupa": 31.56,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.IV §§43–45, Examples 14–15, pp.30–33",
+      "sourcePage": "pp.32–33",
+      "formulaOrRule": "Digbala arc / 3",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Moon",
+      "grahaTamil": "சந்திரன்",
+      "component": "kala",
+      "valueVirupa": 202.04,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.V §§46–78, Example 35, pp.34–63",
+      "sourcePage": "pp.62–63",
+      "formulaOrRule": "Natonnata + Paksha + Tribhaga + Abda + Masa + Vara + Hora + Ayana + Yuddha",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Moon",
+      "grahaTamil": "சந்திரன்",
+      "component": "cheshta",
+      "valueVirupa": 0,
+      "status": "NOT_APPLICABLE_SOURCE_ELLIPSIS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.VI §§99–107, Examples 49–51, pp.72–79",
+      "sourcePage": "pp.77–79",
+      "formulaOrRule": "Reduced Chesta Kendra / 3; Sheeghroccheya − (Mean + True)/2",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": "Example 56 p.89 prints ellipsis for luminary sixfold Chesta; engine uses numeric zero for non-applicability. Chapter X Chesta-for-Phala is separate."
+    },
+    {
+      "graha": "Moon",
+      "grahaTamil": "சந்திரன்",
+      "component": "naisargika",
+      "valueVirupa": 51.43,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.VII §108, Example 52, pp.80–81",
+      "sourcePage": "pp.80–81",
+      "formulaOrRule": "Printed fixed natural-strength constant",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Moon",
+      "grahaTamil": "சந்திரன்",
+      "component": "drik",
+      "valueVirupa": -21.73,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.VIII §§109–120, Example 55, pp.82–88",
+      "sourcePage": "p.88",
+      "formulaOrRule": "Signed Drishti Pinda / 4",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Mars",
+      "grahaTamil": "செவ்வாய்",
+      "component": "sthana",
+      "valueVirupa": 172.06,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.III §§18–40, Examples 9–13, pp.11–29",
+      "sourcePage": "pp.29–30",
+      "formulaOrRule": "Ochcha + Saptavargaja + Ojhayugma + Kendra + Drekkana",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Mars",
+      "grahaTamil": "செவ்வாய்",
+      "component": "dig",
+      "valueVirupa": 55.7,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.IV §§43–45, Examples 14–15, pp.30–33",
+      "sourcePage": "pp.32–33",
+      "formulaOrRule": "Digbala arc / 3",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Mars",
+      "grahaTamil": "செவ்வாய்",
+      "component": "kala",
+      "valueVirupa": 30.06,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.V §§46–78, Example 35, pp.34–63",
+      "sourcePage": "pp.62–63",
+      "formulaOrRule": "Natonnata + Paksha + Tribhaga + Abda + Masa + Vara + Hora + Ayana + Yuddha",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Mars",
+      "grahaTamil": "செவ்வாய்",
+      "component": "cheshta",
+      "valueVirupa": 22.23,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.VI §§99–107, Examples 49–51, pp.72–79",
+      "sourcePage": "pp.77–79",
+      "formulaOrRule": "Reduced Chesta Kendra / 3; Sheeghroccheya − (Mean + True)/2",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Mars",
+      "grahaTamil": "செவ்வாய்",
+      "component": "naisargika",
+      "valueVirupa": 17.14,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.VII §108, Example 52, pp.80–81",
+      "sourcePage": "pp.80–81",
+      "formulaOrRule": "Printed fixed natural-strength constant",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Mars",
+      "grahaTamil": "செவ்வாய்",
+      "component": "drik",
+      "valueVirupa": 0.95,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.VIII §§109–120, Example 55, pp.82–88",
+      "sourcePage": "p.88",
+      "formulaOrRule": "Signed Drishti Pinda / 4",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Mercury",
+      "grahaTamil": "புதன்",
+      "component": "sthana",
+      "valueVirupa": 279.5,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.III §§18–40, Examples 9–13, pp.11–29",
+      "sourcePage": "pp.29–30",
+      "formulaOrRule": "Ochcha + Saptavargaja + Ojhayugma + Kendra + Drekkana",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Mercury",
+      "grahaTamil": "புதன்",
+      "component": "dig",
+      "valueVirupa": 21.09,
+      "status": "SOURCE_EXAMPLE_ADJUDICATED",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.IV §§43–45, Examples 14–15, pp.30–33",
+      "sourcePage": "pp.32–33",
+      "formulaOrRule": "Digbala arc / 3",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": "Printed Example 15 / summary value 21.09 is inconsistent with Example 14 arc 63°05′ ÷ 3 = 21.02778 and with the exact-input engine result 21.025. Preserve the printed 21.09 separately; formula-derived worked-example value is ~21.03. This is a 1918 example-specific print error adjudication.",
+      "formulaDerivedVirupa": 21.025,
+      "formulaDerivedDisplayVirupa": 21.03
+    },
+    {
+      "graha": "Mercury",
+      "grahaTamil": "புதன்",
+      "component": "kala",
+      "valueVirupa": 192.79,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.V §§46–78, Example 35, pp.34–63",
+      "sourcePage": "pp.62–63",
+      "formulaOrRule": "Natonnata + Paksha + Tribhaga + Abda + Masa + Vara + Hora + Ayana + Yuddha",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Mercury",
+      "grahaTamil": "புதன்",
+      "component": "cheshta",
+      "valueVirupa": 2.3,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.VI §§99–107, Examples 49–51, pp.72–79",
+      "sourcePage": "pp.77–79",
+      "formulaOrRule": "Reduced Chesta Kendra / 3; Sheeghroccheya − (Mean + True)/2",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Mercury",
+      "grahaTamil": "புதன்",
+      "component": "naisargika",
+      "valueVirupa": 25.7,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.VII §108, Example 52, pp.80–81",
+      "sourcePage": "pp.80–81",
+      "formulaOrRule": "Printed fixed natural-strength constant",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Mercury",
+      "grahaTamil": "புதன்",
+      "component": "drik",
+      "valueVirupa": 15.64,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.VIII §§109–120, Example 55, pp.82–88",
+      "sourcePage": "p.88",
+      "formulaOrRule": "Signed Drishti Pinda / 4",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Jupiter",
+      "grahaTamil": "குரு",
+      "component": "sthana",
+      "valueVirupa": 157.58,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.III §§18–40, Examples 9–13, pp.11–29",
+      "sourcePage": "pp.29–30",
+      "formulaOrRule": "Ochcha + Saptavargaja + Ojhayugma + Kendra + Drekkana",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Jupiter",
+      "grahaTamil": "குரு",
+      "component": "dig",
+      "valueVirupa": 11.5,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.IV §§43–45, Examples 14–15, pp.30–33",
+      "sourcePage": "pp.32–33",
+      "formulaOrRule": "Digbala arc / 3",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Jupiter",
+      "grahaTamil": "குரு",
+      "component": "kala",
+      "valueVirupa": 211.18,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.V §§46–78, Example 35, pp.34–63",
+      "sourcePage": "pp.62–63",
+      "formulaOrRule": "Natonnata + Paksha + Tribhaga + Abda + Masa + Vara + Hora + Ayana + Yuddha",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Jupiter",
+      "grahaTamil": "குரு",
+      "component": "cheshta",
+      "valueVirupa": 35.26,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.VI §§99–107, Examples 49–51, pp.72–79",
+      "sourcePage": "pp.77–79",
+      "formulaOrRule": "Reduced Chesta Kendra / 3; Sheeghroccheya − (Mean + True)/2",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Jupiter",
+      "grahaTamil": "குரு",
+      "component": "naisargika",
+      "valueVirupa": 34.28,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.VII §108, Example 52, pp.80–81",
+      "sourcePage": "pp.80–81",
+      "formulaOrRule": "Printed fixed natural-strength constant",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Jupiter",
+      "grahaTamil": "குரு",
+      "component": "drik",
+      "valueVirupa": -16.04,
+      "status": "SOURCE_DISCREPANCY",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.VIII §§109–120, Example 55, pp.82–88",
+      "sourcePage": "p.88",
+      "formulaOrRule": "Signed Drishti Pinda / 4",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": "Open source conflict. Example 54 p.88 individual signed aspects sum −64.14, but printed Subha +30.79 plus Asubha −94.23 = −63.44; −94.93 would be needed to reconcile. Exact-input 1918 engine gives Pinda −64.096 / Drik −16.024. Example55 p.88 prints −16.04; Example56 p.90 prints −16.03."
+    },
+    {
+      "graha": "Venus",
+      "grahaTamil": "சுக்கிரன்",
+      "component": "sthana",
+      "valueVirupa": 178.2,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.III §§18–40, Examples 9–13, pp.11–29",
+      "sourcePage": "pp.29–30",
+      "formulaOrRule": "Ochcha + Saptavargaja + Ojhayugma + Kendra + Drekkana",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Venus",
+      "grahaTamil": "சுக்கிரன்",
+      "component": "dig",
+      "valueVirupa": 15.15,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.IV §§43–45, Examples 14–15, pp.30–33",
+      "sourcePage": "pp.32–33",
+      "formulaOrRule": "Digbala arc / 3",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Venus",
+      "grahaTamil": "சுக்கிரன்",
+      "component": "kala",
+      "valueVirupa": 115.53,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.V §§46–78, Example 35, pp.34–63",
+      "sourcePage": "pp.62–63",
+      "formulaOrRule": "Natonnata + Paksha + Tribhaga + Abda + Masa + Vara + Hora + Ayana + Yuddha",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Venus",
+      "grahaTamil": "சுக்கிரன்",
+      "component": "cheshta",
+      "valueVirupa": 5.95,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.VI §§99–107, Examples 49–51, pp.72–79",
+      "sourcePage": "pp.77–79",
+      "formulaOrRule": "Reduced Chesta Kendra / 3; Sheeghroccheya − (Mean + True)/2",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Venus",
+      "grahaTamil": "சுக்கிரன்",
+      "component": "naisargika",
+      "valueVirupa": 42.85,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.VII §108, Example 52, pp.80–81",
+      "sourcePage": "pp.80–81",
+      "formulaOrRule": "Printed fixed natural-strength constant",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Venus",
+      "grahaTamil": "சுக்கிரன்",
+      "component": "drik",
+      "valueVirupa": 18.47,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.VIII §§109–120, Example 55, pp.82–88",
+      "sourcePage": "p.88",
+      "formulaOrRule": "Signed Drishti Pinda / 4",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Saturn",
+      "grahaTamil": "சனி",
+      "component": "sthana",
+      "valueVirupa": 177.3,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.III §§18–40, Examples 9–13, pp.11–29",
+      "sourcePage": "pp.29–30",
+      "formulaOrRule": "Ochcha + Saptavargaja + Ojhayugma + Kendra + Drekkana",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Saturn",
+      "grahaTamil": "சனி",
+      "component": "dig",
+      "valueVirupa": 58.02,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.IV §§43–45, Examples 14–15, pp.30–33",
+      "sourcePage": "pp.32–33",
+      "formulaOrRule": "Digbala arc / 3",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Saturn",
+      "grahaTamil": "சனி",
+      "component": "kala",
+      "valueVirupa": 116.97,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.V §§46–78, Example 35, pp.34–63",
+      "sourcePage": "pp.62–63",
+      "formulaOrRule": "Natonnata + Paksha + Tribhaga + Abda + Masa + Vara + Hora + Ayana + Yuddha",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    },
+    {
+      "graha": "Saturn",
+      "grahaTamil": "சனி",
+      "component": "cheshta",
+      "valueVirupa": 21.14,
+      "status": "SOURCE_EXAMPLE_ADJUDICATED",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.VI §§99–107, Examples 49–51, pp.72–79",
+      "sourcePage": "pp.77–79",
+      "formulaOrRule": "Reduced Chesta Kendra / 3; Sheeghroccheya − (Mean + True)/2",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": "§104 p.77 table lists 151.23°, but Example 49 p.78 uses 181.23° and derives 63.42° Kendra / 21.14 Chesta. The p.90 summary also uses 21.14. For this one Standard Horoscope, 181.23° reproduces the example; table-cell conflict retained. Adjudication scope: only this 1918 Standard Horoscope worked example; do not generalize 181.23° as a universal epoch input."
+    },
+    {
+      "graha": "Saturn",
+      "grahaTamil": "சனி",
+      "component": "naisargika",
+      "valueVirupa": 8.57,
+      "status": "SOURCE_EXAMPLE_ADJUDICATED",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.VII §108, Example 52, pp.80–81",
+      "sourcePage": "pp.80–81",
+      "formulaOrRule": "Printed fixed natural-strength constant",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": "Chapter VII p.81 table and Example 52 both give 8.57; Example 56 p.90 prints 8.37. The p.90 total 389.21 recomposes with 8.57, not 8.37; treat 8.37 as summary misprint. Adjudication scope: 8.57 is the reconciled fixed constant for this source example; 8.37 is the summary typo."
+    },
+    {
+      "graha": "Saturn",
+      "grahaTamil": "சனி",
+      "component": "drik",
+      "valueVirupa": 7.21,
+      "status": "SOURCE_EXAMPLE_PASS",
+      "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
+      "sourceChapter": "Ch.VIII §§109–120, Example 55, pp.82–88",
+      "sourcePage": "p.88",
+      "formulaOrRule": "Signed Drishti Pinda / 4",
+      "sampleEpoch": {
+        "date": "1918-10-16",
+        "time": "14:06:16 LMT",
+        "latitude": "13° N",
+        "longitude": "5h 10m 20s E"
+      },
+      "scope": "One printed Standard Horoscope worked example only",
+      "arbitraryNatalSourceEvidence": false,
+      "notes": ""
+    }
+  ],
+  "primaryPrintedSource": {
+    "book": "B. V. Raman, Graha and Bhava Balas, 13th edition",
+    "editionYear": 1992,
+    "sourceType": "Primary printed worked-example source for Shadbala; this is not an IENA/IAE ephemeris edition",
+    "fullScan": "https://astrojyotish.info/pdf/graha-bhava-balas.pdf",
+    "pageImageReviewed": true,
+    "pagesReviewed": [
+      32,
+      33,
+      62,
+      77,
+      78,
+      81,
+      88,
+      89,
+      90
+    ]
+  }
+}

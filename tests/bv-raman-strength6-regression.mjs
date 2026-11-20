@@ -146,7 +146,9 @@ for(const name of planets){
  near(r.evidence.drikPinda,expectedDrishtiPinda[name],0.15,name+' Raman printed Drishti Pinda');
  if(Object.hasOwn(expectedCheshta,name)){
   near(r.components.cheshta,expectedCheshta[name],0.02,name+' Raman printed Chesta Bala worked example');
-  eq(r.evidence.cheshtaSource.method,'BV_RAMAN_CHAPTER_VI_VERIFIED_CLASSICAL_LONGITUDES',name+' uses independently transcribed Raman Chesta inputs');
+  eq(r.evidence.cheshtaSource.method,'BV_RAMAN_CHAPTER_VI_UNCERTIFIED_EXPLICIT_INPUTS',name+' printed example inputs are numerically usable but not an arbitrary-date historical certificate');
+  eq(r.evidence.cheshtaSource.trueLongitudeHistoricalCertified,false,name+' explicit printed Chesta row without a scoped certificate stays uncertified');
+  eq(r.evidence.cheshtaSource.numericallyCertified,false,name+' explicit printed Chesta row without a scoped numerical certificate stays uncertified');
  }
  near(r.components.naisargika,BV_RAMAN_SHADBALA_SOURCE.naturalBalaPrinted[name],0.001,name+' Raman printed Naisargika constant');
 }

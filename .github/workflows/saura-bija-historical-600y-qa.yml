@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - 'research/saura-bija/**'
+      - 'research/natal-classical-certification/**'
+      - 'tests/natal-classical-remaining-evidence-audit.mjs'
       - 'tests/saura-bija-600y-regression.mjs'
       - 'tests/saura-bija-three-phase-validation.mjs'
       - 'tests/saura-bija-de441-adapter-regression.mjs'
@@ -41,6 +43,8 @@ jobs:
           node --check tests/saura-bija-geometric-reference-diagnostic.mjs
           node --check tests/saura-bija-apsis-rate-diagnostic.mjs
           node --check tests/saura-bija-modern-moshier-de441-accuracy.mjs
+      - name: Audit remaining historical longitude and 42-row Bala source ledgers
+        run: node tests/natal-classical-remaining-evidence-audit.mjs
       - name: Exercise 1800-2399 Bija mean and true-longitude coverage
         run: node tests/saura-bija-600y-regression.mjs
       - name: Test direct DE441 adapter, source guard and three-output separation

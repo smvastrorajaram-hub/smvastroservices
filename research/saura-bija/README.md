@@ -274,3 +274,12 @@ Decision: keep the source-faithful `CLASSICAL_BIJA_TRUE` model separate and do n
 - Anil Narayanan and Nilesh Oak (2023), “Planetary nodes and apses in the Sūrya-Siddhānta,” *Indian Journal of History of Science* 58:87–95: https://doi.org/10.1007/s43539-023-00083-3
 - Sahana Cidambi, Clemency Montelle and Kim Plofker (2024), Appendix A: https://doi.org/10.1177/00218286241241812
 - JPL DE441 / Horizons: https://ssd.jpl.nasa.gov/planets/eph_export.html and https://ssd.jpl.nasa.gov/horizons/manual.html
+
+
+## 2026-11-21 — remaining natal-certification source audit
+
+Two machine-readable ledgers and one regression now track the unfinished source work:
+- `research/natal-classical-certification/historical-longitude-evidence-ledger.json`: 15 rows for five grahas × Mean/True/Sheeghroccheya. The Burgess 1860 Bīja Mean anchor is a limited PASS; the classical True series fails the separate 0.05° DE441 modern-accuracy gate; Saturn Sheeghroccheya has a source table/Example 49 conflict.
+- `research/natal-classical-certification/shadbala-source-evidence-42.json`: 42 B.V. Raman 1918 source-example rows (36 chapter-example matches, two luminary Chesta ellipses/N-A and four component-level discrepancies). Aggregate final-summary errata are also listed.
+
+These records describe source anchors and one printed worked horoscope, not independent proofs for arbitrary natal epochs. A separate searchable scan of N.C. Lahiri's 1974 private Nirayana annual ephemeris was also identified; its daily apparent longitudes are stated for 0h UT (05:30 IST), but OCR table alignment has not allowed safe numeric transcription. This scan is not the Government IENA. The 600 annual samples remain coverage tests; ordinary charts remain `classicalCertified:false`. See `research/natal-classical-certification/REMAINING_TWO_PHASE_EVIDENCE_AUDIT.md`.
