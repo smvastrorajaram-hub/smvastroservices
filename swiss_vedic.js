@@ -567,9 +567,12 @@ function housePlacementFromCusps(lon,cusps){
     return {house:null,bhavaSandhi:null};
   }
   const x=norm360(value);
+  const boundaries=cusps.map(c=>norm360(Number(c)));
+  // Check every boundary before testing house intervals. Otherwise a point
+  // just before the next cusp would already match the preceding interval and
+  // could bypass the floating-point Sandhi tolerance.
   for(let i=0;i<12;i++){
-    const a=norm360(Number(cusps[i])), b=norm360(Number(cusps[(i+1)%12]));
-    const span=norm360(b-a), pos=norm360(x-a);
+    const a=boundaries[i],pos=norm360(x-a);
     if(Math.min(pos,360-pos)<=BHAVA_SANDHI_TOLERANCE_DEGREES){
       return {
         house:null,
@@ -581,6 +584,10 @@ function housePlacementFromCusps(lon,cusps){
         }
       };
     }
+  }
+  for(let i=0;i<12;i++){
+    const a=boundaries[i],b=boundaries[(i+1)%12];
+    const span=norm360(b-a),pos=norm360(x-a);
     if(pos < (span===0?360:span)) return {house:i+1,bhavaSandhi:null};
   }
   return {house:12,bhavaSandhi:null};
