@@ -51,6 +51,15 @@ const mercuryArcDegrees=63+5/60;
 const mercuryPrintedArcFormulaVirupa=mercuryArcDegrees/3;
 const jupiterPrintedPinda=-64.14;
 const jupiterPrintedPindaQuarter=jupiterPrintedPinda/4;
+const sourcePrintedJupiterAspects=[
+  {aspector:'Sun',signedVirupa:-18.43},
+  {aspector:'Moon',signedVirupa:17.25},
+  {aspector:'Mars',signedVirupa:-57.75},
+  {aspector:'Mercury',signedVirupa:-18.75},
+  {aspector:'Venus',signedVirupa:13.54},
+  {aspector:'Saturn',signedVirupa:0}
+];
+const sourcePrintedDetailPinda=sourcePrintedJupiterAspects.reduce((sum,row)=>sum+row.signedVirupa,0);
 console.log(JSON.stringify({
   pass:true,
   scope:'1918 B.V. Raman printed Standard Horoscope only',
@@ -71,6 +80,14 @@ console.log(JSON.stringify({
     page88ExamplePrintedDrik:-16.04,
     page90SummaryPrintedDrik:-16.03,
     page88PindaQuarter:jupiterPrintedPindaQuarter,
+    engineMinusPrintedPinda:jupiter.evidence.drikPinda-jupiterPrintedPinda,
+    sourcePrintedIndividualAspects:sourcePrintedJupiterAspects,
+    sourcePrintedDetailPinda,
+    sourcePrintedSubhaSubtotal:30.79,
+    sourcePrintedAsubhaSubtotal:-94.23,
+    sourcePrintedSubtotalsNet:30.79-94.23,
+    asubhaSubtotalNeededToReconcileNet: jupiterPrintedPinda-30.79,
+    sourcePrintedNetAspect:jupiterPrintedPinda,
     calculatedSignedAspectTrace:jupiter.evidence.drikTrace
   },
   certificationScope:result.certificationScope,
