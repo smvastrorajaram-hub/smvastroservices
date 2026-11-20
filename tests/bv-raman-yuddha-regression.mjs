@@ -64,10 +64,10 @@ const both=planets=>{
  };
 };
 const resultPairs=result=>result.warEvidence.pairs.map(p=>[p.a,p.b,+p.separation.toFixed(9)]);
-const assertResolvedPairTotals=(result,pair)=>{
+const assertResolvedPairTotals=(result,pair,planets)=>{
  const [a,b]=pair;
- const rowA=result.planets[a],rowB=result.planets[b];
- const longitudeA=baseLongitudeFor(result,a),longitudeB=baseLongitudeFor(result,b);
+ const longitudeA=planets.find(p=>p.name===a).longitude;
+ const longitudeB=planets.find(p=>p.name===b).longitude;
  const winner=norm(longitudeA)<norm(longitudeB)?a:b;
  const loser=winner===a?b:a;
  const denominator=Math.abs(discArcsec[a]-discArcsec[b]);
@@ -96,16 +96,7 @@ const assertResolvedPairTotals=(result,pair)=>{
    name+' final Rupa reconciles with adjusted six-Bala total');
  }
 };
-function baseLongitudeFor(result,name){
- return result._testLongitudes[name];
-}
-const calculate=planets=>{
- const {browser,node}=both(planets);
- for(const runtime of [browser,node]){
-  runtime._testLongitudes=Object.fromEntries(planets.map(p=>[p.name,p.longitude]));
- }
- return {browser,node};
-};
+const calculate=planets=>both(planets);
 
 // 1. Raman's printed Standard Horoscope (Example 34): no qualifying pair.
 {
@@ -136,8 +127,8 @@ const calculate=planets=>{
   ['செவ்வாய்','புதன்',0.2],['குரு','சனி',0.65]
  ],'both qualifying pair separations are recorded');
  eq(browser.warEvidence.unresolved,[],'disjoint wars do not create unresolved pairs');
- assertResolvedPairTotals(browser,['செவ்வாய்','புதன்']);
- assertResolvedPairTotals(browser,['குரு','சனி']);
+ assertResolvedPairTotals(browser,['செவ்வாய்','புதன்'],planets);
+ assertResolvedPairTotals(browser,['குரு','சனி'],planets);
  eq(node.warEvidence,browser.warEvidence,'Node/browser Yuddha pair and resolution parity');
  for(const name of Object.keys(discArcsec)){
   near(node.planets[name].components.kala.yuddha,
@@ -161,7 +152,7 @@ const calculate=planets=>{
  eq(resultPairs(inside),[['செவ்வாய்','புதன்',0.999]],
   '0.999 degree satisfies the strict conjunction rule');
  yes(inside.warEvidence.resolved,'single pair just below one degree is resolved');
- assertResolvedPairTotals(inside,['செவ்வாய்','புதன்']);
+ assertResolvedPairTotals(inside,['செவ்வாய்','புதன்'],below);
 }
 
 // 4. Sun and Moon are not Yuddha participants, even when nearly conjunct.
