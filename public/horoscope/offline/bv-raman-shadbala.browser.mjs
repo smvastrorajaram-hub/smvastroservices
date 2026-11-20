@@ -174,25 +174,38 @@ function chestaFromRamanInputs(planet,sourceInputs){
  const kendra=norm360(sheeghrocca-midpoint),reduced=kendra>180?360-kendra:kendra,value=round3(reduced/3);
  if(!finite(value)||value<0||value>60)throw new RangeError('Invalid B.V. Raman Chesta Bala for '+planet);
  const evidence=sourceInputs?.trueLongitudeEvidence??null;
- const naelosEvidence=!!evidence&&
+ const eligiblePlanet=['செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி'].includes(planet);
+ const natalEpochs=[
+  '1971-05-04 05:05 IST','1974-01-11 16:04 IST',
+  '1992-07-31 22:05 IST','1994-06-15 13:03 IST',
+  '2015-09-06 09:30 IST'
+ ];
+ const naelosEvidence=eligiblePlanet&&!!evidence&&
   evidence.certificateId==='SMV-ASTRO-NAELOS-DE440-TRUE-LONGITUDE-25-2026-11-20'&&
   evidence.status==='PASS'&&
   evidence.source==='NAELOS Ephemeris 0.1.3'&&
   evidence.independentEphemeris==='NASA/JPL DE440'&&
   evidence.sampleCount===25&&
+  evidence.planet===planet&&
+  natalEpochs.includes(evidence.natalEpochKey)&&
   finite(evidence.maxAbsTropicalResidualArcsec)&&
-  evidence.maxAbsTropicalResidualArcsec<=5;
+  evidence.maxAbsTropicalResidualArcsec<=5&&
+  finite(evidence.rmsTropicalResidualArcsec)&&
+  evidence.rmsTropicalResidualArcsec<=5&&
+  evidence.validationScope==='Five specified Perambalur natal epochs × Mercury, Venus, Mars, Jupiter and Saturn';
  return Object.freeze({
   value,available:true,
-  method:naelosEvidence?'BV_RAMAN_CHAPTER_VI_NAELOS_DE440_TRUE_LONGITUDE':'BV_RAMAN_CHAPTER_VI_VERIFIED_CLASSICAL_LONGITUDES',
+  method:naelosEvidence?'BV_RAMAN_CHAPTER_VI_NAELOS_DE440_TRUE_LONGITUDE':'BV_RAMAN_CHAPTER_VI_UNCERTIFIED_EXPLICIT_INPUTS',
   meanLongitude:mean,trueLongitude:actual,sheeghroccaLongitude:sheeghrocca,midpoint,reducedChestaKendra:reduced,
-  trueLongitudeHistoricalCertified:true,numericallyCertified:true,
+  trueLongitudeHistoricalCertified:naelosEvidence,numericallyCertified:naelosEvidence,
   ...(naelosEvidence?{trueLongitudeEvidence:Object.freeze({
     certificateId:evidence.certificateId,
     status:evidence.status,
     source:evidence.source,
     independentEphemeris:evidence.independentEphemeris,
     sampleCount:evidence.sampleCount,
+    planet:evidence.planet,
+    natalEpochKey:evidence.natalEpochKey,
     maxAbsTropicalResidualArcsec:evidence.maxAbsTropicalResidualArcsec,
     rmsTropicalResidualArcsec:evidence.rmsTropicalResidualArcsec,
     validationScope:evidence.validationScope
