@@ -137,7 +137,7 @@ const currentCoverage = {
   allFivePlanets: true,
   meanTrueSheeghroccheyaSameFrame: true,
   independentHistoricalReferenceVerified: false,
-  monthlyRowsPerPlanet: 7200,
+  annualRowsPerPlanet: 600,
   eventWindowStatus: 'NOT_RUN',
   certificateId: ''
 };
@@ -174,7 +174,7 @@ console.log(JSON.stringify({
   phases: {
     historicalLongitudeAnnualCoverage: '600 yearly epochs only; independent oracle pending',
     sixBalaMatrix: '42 independent evidence rows required',
-    finalNatalGate: 'all evidence + Yuddha + parity + no fallback'
+    finalNatalGate: 'exact natal epoch + all evidence + Yuddha + parity + no fallback'
   },
   classicalCertifiedForRealCharts: false,
   syntheticFixturesAreNotCertificates: true
