@@ -599,10 +599,11 @@ function midpointArc(a,b){
   return norm360(a + norm360(b-a)/2);
 }
 function bhavaDetails(cusps){
-  // Sripati house-system cusps returned by Swiss Ephemeris are the
-  // Arambha (house-start) points.  The Bhava Madhya/Sphuta is the
-  // midpoint from the current Arambha to the next Arambha, and Antya
-  // is the next Arambha.  Keep the underlying Sripati cusps unchanged.
+  // Swiss Ephemeris 'S' returns Sripati cusp boundaries: each is formed by
+  // shifting the corresponding Porphyry cusp to the midpoint of the previous
+  // Porphyry sector. These S cusps are the Bhava Arambha points; the midpoint
+  // from this boundary to the next S boundary is the Bhava Madhya/Sphuta,
+  // and the next boundary is Antya. Do not treat the S cusp itself as Madhya.
   return cusps.map((c,i)=>{
     const next=cusps[(i+1)%12];
     const madhya=midpointArc(c,next);
