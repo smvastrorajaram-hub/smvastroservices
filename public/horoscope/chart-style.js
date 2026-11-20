@@ -14,7 +14,6 @@
  const isTa=()=>document.documentElement.lang==='ta'||document.body.classList.contains('tamil-mode');
  const hindiNumber=value=>String(value).replace(/[0-9]/g,d=>'०१२३४५६७८९'[Number(d)]);
  const roman=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
- const bhavaNumberText=(house,tamil)=>tamil?romanHouse(house):String(house);
  const houseNumber=value=>{
   const raw=String(value??'').trim().toUpperCase();
   if(/^\d{1,2}$/.test(raw)){const n=Number(raw);return n>=1&&n<=12?n:0;}
@@ -22,10 +21,9 @@
  };
  const romanHouse=house=>roman[Number(house)-1]||'—';
  function normalizeSouthBhavaHouseLabels(chart){
-  const tamil=isTa();
   for(const label of chart.querySelectorAll('.bhava-house-no')){
    const house=houseNumber(label.dataset.bhavaHouse)||houseNumber(label.textContent);
-   if(house){label.dataset.bhavaHouse=String(house);label.textContent=bhavaNumberText(house,tamil);}
+   if(house){label.dataset.bhavaHouse=String(house);label.textContent=romanHouse(house);}
   }
  }
  function restoreRomanBhavaLabels(root){
@@ -33,7 +31,7 @@
   normalizeSouthBhavaHouseLabels(chart);
   for(const label of chart.querySelectorAll('.smv-v342-house-number[data-bhava-houses]')){
    const houses=label.dataset.bhavaHouses.split(',').map(houseNumber).filter(Boolean);
-   label.textContent=houses.join(' / ');
+   label.textContent=houses.map(romanHouse).join(' / ');
   }
  }
  let choice='south';
@@ -96,21 +94,27 @@
   if(triangleCell)cell.classList.add('smv-v342-triangle-cell');
   if(kind==='bhava')cell.classList.add('smv-v342-bhava-cell');
   if(house>=1&&house<=12)cell.dataset.house=String(house);
-  // North Indian cells show the Rasi number in Devanagari, including Bhava:
-  // the fixed North house slot identifies the Bhava, while this number names
-  // the Sphuta Rasi occupying that slot. It is display-only and never moves a graha.
-  if(style==='north'){
+  // North Rasi, Navamsa and Transit use Devanagari Rasi numbers only.
+  // North Bhava uses its fixed house slot and therefore shows I–XII instead.
+  if(style==='north'&&kind==='bhava'){
+   const label=document.createElement('span');label.className='smv-v342-house-number';
+   label.dataset.bhavaHouses=String(house);
+   label.dataset.bhavaHouse=String(house);
+   label.textContent=romanHouse(house);
+   label.setAttribute('aria-label','Bhava '+romanHouse(house));
+   cell.append(label);
+  }else if(style==='north'){
    const number=document.createElement('span');number.className='smv-v342-sign-number';
    number.textContent=hindiNumber(sign+1);
    number.setAttribute('aria-label','Rasi '+String(sign+1));
    cell.append(number);
   }
-  // East Bhava groups distinct Bhava IDs under the actual Sphuta Rasi.
+  // East Bhava groups distinct Roman Bhava IDs under the actual Sphuta Rasi.
   if(kind==='bhava'&&style==='east'&&String(bhavaHouseLabel||'').trim()){
    const houses=String(bhavaHouseLabel).split(/[\\/,]/).map(houseNumber).filter(Boolean);
    const label=document.createElement('span');label.className='smv-v342-house-number';
    label.dataset.bhavaHouses=houses.join(',');
-   label.textContent=houses.join(' / ');
+   label.textContent=houses.map(romanHouse).join(' / ');
    label.setAttribute('aria-label','Bhava '+label.textContent);
    cell.append(label);
   }
