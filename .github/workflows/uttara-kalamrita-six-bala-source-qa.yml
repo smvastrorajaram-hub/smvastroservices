@@ -17,6 +17,7 @@ on:
       - 'tests/uttara-kalamrita-only-six-bala-book-oracle.mjs'
       - 'tests/uttara-kalamrita-five-natal-intermediate-integration.mjs'
       - 'tests/uttara-kalamrita-cheshta-ayurdaya-combined-regression.mjs'
+      - 'tests/saura-burgess-1860-five-planet-true-longitude-regression.mjs'
       - '.github/workflows/uttara-kalamrita-six-bala-source-qa.yml'
   pull_request:
     branches: [main]
@@ -35,6 +36,7 @@ on:
       - 'tests/uttara-kalamrita-only-six-bala-book-oracle.mjs'
       - 'tests/uttara-kalamrita-five-natal-intermediate-integration.mjs'
       - 'tests/uttara-kalamrita-cheshta-ayurdaya-combined-regression.mjs'
+      - 'tests/saura-burgess-1860-five-planet-true-longitude-regression.mjs'
       - '.github/workflows/uttara-kalamrita-six-bala-source-qa.yml'
   workflow_dispatch:
 permissions:
@@ -66,9 +68,12 @@ jobs:
           node --check public/horoscope/offline/saura-natal-five-cheshta.browser.mjs
           node --check public/horoscope/offline/uttara-kalamrita-ayurdaya.browser.mjs
           node --check tests/uttara-kalamrita-cheshta-ayurdaya-combined-regression.mjs
+          node --check tests/saura-burgess-1860-five-planet-true-longitude-regression.mjs
       - name: Verify independent Uttara Kalamrita printed six-Bala oracle
         run: node tests/uttara-kalamrita-only-six-bala-book-oracle.mjs
       - name: Verify seven-graha Uttara Kalamrita integration across five natal charts
         run: node tests/uttara-kalamrita-five-natal-intermediate-integration.mjs
+      - name: Verify Burgess 1860 five-planet four-pass True Longitude source example
+        run: node tests/saura-burgess-1860-five-planet-true-longitude-regression.mjs
       - name: Run consolidated Uttara Kalamrita Ayurdaya and Cheshta oracle suite
         run: node tests/uttara-kalamrita-cheshta-ayurdaya-combined-regression.mjs
