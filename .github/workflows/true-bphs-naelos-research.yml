@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: true-bphs-naelos-research
+  cancel-in-progress: true
+
 jobs:
   true-bphs-naelos:
     runs-on: ubuntu-latest
@@ -19,7 +23,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Install pinned NAELOS research reader without changing project manifests
         run: npm install --no-save --no-package-lock --ignore-scripts naelos-ephemeris@0.1.3
       - name: Syntax-check isolated engine and tests
