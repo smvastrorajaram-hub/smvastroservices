@@ -250,38 +250,46 @@ try {
                 glyphColor:getComputedStyle(glyph).color,
                 visibleTextColor:getComputedStyle(glyph.querySelector('.planet-short')||glyph).color
               }));
-              const crowdedTriangleNumbers = cells
-                .filter(cell=>cell.classList.contains('smv-v342-triangle-cell')&&cell.classList.contains('smv-chart-cell-compact'))
-                .map(cell=>{
-                  const number=cell.querySelector('.smv-v342-sign-number,.smv-v342-house-number');
-                  return number?{
-                    text:number.textContent.trim(),
-                    backgroundColor:getComputedStyle(number).backgroundColor,
-                    zIndex:getComputedStyle(number).zIndex
-                  }:null;
-                }).filter(Boolean);
+              const crowdedLabelNodes = kind==='bhava'&&style!=='south'
+                ? [...chart.querySelectorAll(':scope > .smv-v342-bhava-house-label')]
+                : cells.filter(cell=>cell.classList.contains('smv-v342-triangle-cell')&&cell.classList.contains('smv-chart-cell-compact'))
+                    .map(cell=>cell.querySelector('.smv-v342-sign-number,.smv-v342-house-number')).filter(Boolean);
+              const crowdedTriangleNumbers = crowdedLabelNodes.map(number=>({
+                text:number.textContent.trim(),
+                backgroundColor:getComputedStyle(number).backgroundColor,
+                zIndex:getComputedStyle(number).zIndex
+              }));
               const emptyCells = cells.filter(cell=>cellCount(cell) === 0);
               const emptyDash = emptyCells.some(cell=>!!cell.querySelector('.smv-v342-empty'));
               const numericLabels = cells.reduce((count,cell)=>count+cell.querySelectorAll('.smv-v342-sign-number,.smv-v342-house-number').length,0);
-              const bhavaHouseLabels = kind==='bhava' ? cells.map((cell,index)=>{
-                const sign=style==='south'?signOrder[index]:Number(cell.dataset.sign||0)-1;
-                const labelNodes=style==='south'
-                  ? [...cell.querySelectorAll('.bhava-house-no')]
-                  : [cell.querySelector('.smv-v342-house-number')].filter(Boolean);
-                const raw=labelNodes.map(el=>el.textContent.trim());
-                const labels=raw.flatMap(value=>value.split('/').map(label=>label.trim()).filter(Boolean));
-                const labelDetails=labelNodes.map(el=>{
-                  const rect=el.getBoundingClientRect(),computed=getComputedStyle(el);
-                  return {
+              const describeBhavaLabel=(el,sign,house=0)=>{
+                const rect=el.getBoundingClientRect(),computed=getComputedStyle(el);
+                const chartRect=chart.getBoundingClientRect();
+                return {
+                  sign,house,labels:el.textContent.trim().split('/').map(label=>label.trim()).filter(Boolean),
+                  labelDetails:[{
                     text:el.textContent.trim(),width:rect.width,height:rect.height,
                     visible:rect.width>0&&rect.height>0&&computed.display!=='none'&&computed.visibility!=='hidden'&&Number(computed.opacity)>0,
-                    color:computed.color,zIndex:computed.zIndex,
+                    color:computed.color,zIndex:computed.zIndex,backgroundColor:computed.backgroundColor,
+                    insideChart:rect.left>=chartRect.left-1&&rect.right<=chartRect.right+1&&rect.top>=chartRect.top-1&&rect.bottom<=chartRect.bottom+1,
                     left:Math.round(rect.left*10)/10,right:Math.round(rect.right*10)/10,
                     top:Math.round(rect.top*10)/10,bottom:Math.round(rect.bottom*10)/10
-                  };
-                });
-                return {sign,house:Number(cell.dataset.house||0),labels,labelDetails};
-              }) : [];
+                  }]
+                };
+              };
+              const bhavaHouseLabels = kind!=='bhava'?[]:style==='south'
+                ? cells.map((cell,index)=>{
+                    const nodes=[...cell.querySelectorAll('.bhava-house-no')];
+                    const raw=nodes.map(el=>el.textContent.trim());
+                    return {
+                      sign:signOrder[index],house:0,
+                      labels:raw.flatMap(value=>value.split('/').map(label=>label.trim()).filter(Boolean)),
+                      labelDetails:nodes.flatMap(el=>describeBhavaLabel(el,signOrder[index]).labelDetails)
+                    };
+                  })
+                : [...chart.querySelectorAll(':scope > .smv-v342-bhava-house-label')].map(el=>
+                    describeBhavaLabel(el,Number(el.dataset.sign||0)-1,Number(el.dataset.house||0))
+                  );
               reports.push({rootId,kind,cells:cells.length,chartClass:chart.className,numericLabels,picked,emptyDash,bhavaHouseLabels,cellBoundsOutside,compartmentOutside,triangleCells:cells.filter(cell=>cell.classList.contains('smv-v342-triangle-cell')).length,planetGlyphColors,crowdedTriangleNumbers});
 
             }
