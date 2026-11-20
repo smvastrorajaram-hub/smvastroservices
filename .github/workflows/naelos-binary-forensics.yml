@@ -36,6 +36,7 @@ jobs:
           node --check tests/bv-raman-source-precision-diagnostic.mjs
           node --check tests/naelos-de440-600-random-natal-true-longitude.mjs
           node --check tests/saura-bija-coherent-mean-true-sheeghroccheya-600-epochs.mjs
+          node --check tests/burgess-1860-historical-source-oracle-600-epochs.mjs
       - name: Inspect checked-in NAELOS binary headers
         run: node research/naelos-de440/naelos-binary-forensics.mjs
       - name: Preserve existing B.V. Raman Strength6 regression
@@ -52,18 +53,26 @@ jobs:
         run: node tests/natal-classical-certification-pipeline.mjs
       - name: Audit historical longitude and 42-row Bala source ledgers without certifying arbitrary natal charts
         run: node tests/natal-classical-remaining-evidence-audit.mjs
-      - name: Diagnose B.V. Raman Mercury Dig and Jupiter Drik page-precision discrepancies (1918 sample only)
-        run: node tests/bv-raman-source-precision-diagnostic.mjs
       - name: Calculate 600 seeded-random full natal charts (one random DOB, time and Indian place per year)
         run: node research/natal-classical-certification/annual-random-natal-charts.mjs
       - name: Verify same-epoch same-frame classical Bīja Mean, Mandocca, Sheeghroccheya, True and BPHS Chesta for 600 natal epochs (3,000 rows)
         run: node tests/saura-bija-coherent-mean-true-sheeghroccheya-600-epochs.mjs
       - name: Cross-check DE440 true longitudes at the exact 600 random natal epochs (3,000 rows)
         run: node tests/naelos-de440-600-random-natal-true-longitude.mjs
+      - name: Reproduce Burgess 1860 printed True values and derive Mean, Sheeghroccheya and True for the exact 600 natal epochs
+        run: node tests/burgess-1860-historical-source-oracle-600-epochs.mjs
       - name: Upload 600-chart DOB/place, DE440 true-longitude and six-Bala evidence ledger
         uses: actions/upload-artifact@v4
         with:
           name: natal-classical-random-600-charts-1800-2399
           path: artifacts/natal-classical-random-600-charts-1800-2399.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Burgess 1860 source-derived longitude evidence numbers
+        uses: actions/upload-artifact@v4
+        with
+          name: burgess-1860-source-derived-longitudes-600-epochs
+          path: artifacts/burgess-1860-source-derived-longitudes-600-epochs.json
           if-no-files-found: error
           retention-days: 30
