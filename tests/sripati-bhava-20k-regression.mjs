@@ -184,6 +184,64 @@ const summary={
   longitudeSamples:{},
   implementation:{native:'sweph 2.10.3-7 houses_ex2()',offline:'local Swiss Ephemeris WASM 2.10.03 houses()',houseSystem:'S / Sripati',boundaryOracle:'O / Porphyry',planetOracle:'native Moshier sidereal Lahiri'}
 };
+// Fixed real-input Golden Case supplied for the SMV ASTRO Bhava report.
+// Perambalur local civil time (IST, UTC+05:30) is converted to UTC explicitly.
+const PERAMBALUR_GOLDEN={
+  date:'2026-11-20',time:'17:49',offsetMinutes:330,latitude:11.23,longitude:78.88,
+  expectedMadhyaRasiIndices:[1,2,2,3,4,6,7,8,8,9,10,0]
+};
+const [goldenYear,goldenMonth,goldenDay]=PERAMBALUR_GOLDEN.date.split('-').map(Number);
+const goldenLocalMs=Date.UTC(goldenYear,goldenMonth-1,goldenDay,17,49,0);
+const goldenUtcDate=new Date(goldenLocalMs-PERAMBALUR_GOLDEN.offsetMinutes*60000);
+const goldenUtcParts=[
+  goldenUtcDate.getUTCFullYear(),goldenUtcDate.getUTCMonth()+1,goldenUtcDate.getUTCDate(),
+  goldenUtcDate.getUTCHours(),goldenUtcDate.getUTCMinutes(),goldenUtcDate.getUTCSeconds()
+];
+const goldenNativeUtc=swe.utc_to_jd(...goldenUtcParts,C.SE_GREG_CAL);
+if(!goldenNativeUtc||goldenNativeUtc.error||
+   (goldenNativeUtc.flag!==undefined&&Number(goldenNativeUtc.flag)<0)||
+   !Array.isArray(goldenNativeUtc.data))throw new Error('Perambalur Golden Case native UTC/JD failed');
+const [goldenJdEt,goldenJdUt]=goldenNativeUtc.data;
+const goldenWasmUtc=wasm.utcToJd(...goldenUtcParts);
+closeScalar(goldenJdUt,goldenWasmUtc.ut,'Perambalur Golden Case native/offline UT',1e-8);
+closeScalar(goldenJdEt,goldenWasmUtc.et,'Perambalur Golden Case native/offline ET',1e-8);
+const goldenNativeS=extractNativeCusps(swe.houses_ex2(goldenJdUt,C.SEFLG_SIDEREAL,
+  PERAMBALUR_GOLDEN.latitude,PERAMBALUR_GOLDEN.longitude,'S'),'Perambalur Golden Case native Sripati');
+const goldenNativeO=extractNativeCusps(swe.houses_ex2(goldenJdUt,C.SEFLG_SIDEREAL,
+  PERAMBALUR_GOLDEN.latitude,PERAMBALUR_GOLDEN.longitude,'O'),'Perambalur Golden Case native Porphyry');
+const goldenWasmS=wasm.houses(goldenWasmUtc.ut,PERAMBALUR_GOLDEN.latitude,PERAMBALUR_GOLDEN.longitude,'S').cusps.map(norm);
+const goldenWasmO=wasm.houses(goldenWasmUtc.ut,PERAMBALUR_GOLDEN.latitude,PERAMBALUR_GOLDEN.longitude,'O').cusps.map(norm);
+assertCuspRing(goldenNativeS,'Perambalur Golden Case native Sripati');
+assertCuspRing(goldenNativeO,'Perambalur Golden Case native Porphyry');
+assertCuspRing(goldenWasmS,'Perambalur Golden Case offline Sripati');
+assertCuspRing(goldenWasmO,'Perambalur Golden Case offline Porphyry');
+for(let h=0;h<12;h++){
+  close(goldenNativeS[h],goldenWasmS[h],'Perambalur Golden Case Sripati native/offline cusp '+(h+1),1e-5);
+  close(goldenNativeO[h],goldenWasmO[h],'Perambalur Golden Case Porphyry native/offline cusp '+(h+1),1e-5);
+  close(goldenNativeS[h],midpoint(goldenNativeO[(h+11)%12],goldenNativeO[h]),
+    'Perambalur Golden Case independent Sripati/Porphyry midpoint '+(h+1),1e-5);
+}
+const goldenBhavas=nativeSwiss.bhavaDetails(goldenNativeS,goldenNativeO);
+const goldenOfflineBhavas=offlineGeometry.bhavaDetails(goldenWasmS,goldenWasmO);
+validateGeometry(goldenNativeS,goldenNativeO,goldenBhavas,'Perambalur Golden Case native');
+validateGeometry(goldenWasmS,goldenWasmO,goldenOfflineBhavas,'Perambalur Golden Case offline');
+assert.deepEqual(goldenBhavas.map(b=>b.rasiIndex),PERAMBALUR_GOLDEN.expectedMadhyaRasiIndices,
+  'Perambalur Golden Case Bhava I–XII must retain the independently expected Sphuta Rasi mapping');
+for(let h=0;h<12;h++){
+  close(goldenBhavas[h].arambhaLongitude,goldenOfflineBhavas[h].arambhaLongitude,'Perambalur Golden Case Bhava '+(h+1)+' Arambha native/offline');
+  close(goldenBhavas[h].madhyaLongitude,goldenOfflineBhavas[h].madhyaLongitude,'Perambalur Golden Case Bhava '+(h+1)+' Madhya native/offline');
+  close(goldenBhavas[h].antyaLongitude,goldenOfflineBhavas[h].antyaLongitude,'Perambalur Golden Case Bhava '+(h+1)+' Antya native/offline');
+}
+const goldenPlanets=checkPlanetPositions(goldenJdEt,goldenNativeS,'Perambalur Golden Case');
+summary.goldenCase={
+  pass:true,input:{...PERAMBALUR_GOLDEN,timezone:'Asia/Kolkata'},
+  utc:{date:goldenUtcParts.slice(0,3).join('-'),time:goldenUtcParts.slice(3).map(x=>String(x).padStart(2,'0')).join(':')},
+  julianDayUT:Number(goldenJdUt.toFixed(8)),julianDayET:Number(goldenJdEt.toFixed(8)),
+  nativeSripatiCusps:goldenNativeS,offlineSripatiCusps:goldenWasmS,
+  nativePorphyryMadhyaCusps:goldenNativeO,offlinePorphyryMadhyaCusps:goldenWasmO,
+  bhavas:goldenBhavas.map(b=>({...b})),
+  planets:goldenPlanets
+};
 const started=Date.now();
 for(let i=0;i<TOTAL;i++){
   const birth=utcBirth(i);
