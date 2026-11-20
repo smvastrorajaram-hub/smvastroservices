@@ -72,7 +72,7 @@
     if(!time)fail(text('Enter a valid birth time, for example 22:05.','சரியான பிறந்த நேரத்தை உள்ளிடவும். உதாரணம்: 22:05.'));
     if(place.length<2)fail(text('Enter your Place of Birth.','பிறந்த இடத்தை உள்ளிடவும்.'));
     if(lat===''||lon===''||!Number.isFinite(Number(lat))||!Number.isFinite(Number(lon))||Math.abs(Number(lat))>90||Math.abs(Number(lon))>180)fail(text('Enter a valid Place of Birth, Latitude and Longitude.','சரியான பிறந்த இடம், அட்சரேகை, தீர்க்கரேகையை உள்ளிடவும்.'));
-    const gender=String($(prefix+'BirthGender')?.value||'').trim();
+    const gender=String(document.querySelector('input[name="'+prefix+'BirthGender"]:checked')?.value||'').trim();
     if(!['male','female'].includes(gender))fail(text('Select Gender.','பாலினத்தைத் தேர்வு செய்யவும்.'));
     const zoneInput=$(prefix==='tamil'?'tamilBirthTimezone':'englishBirthTimezone');
     if(placeEl?.dataset?.timezoneSource==='unverified'&&!String(zoneInput?.value||'').trim())fail(text('Verify or enter the correct IANA birth timezone before payment.','கட்டணத்திற்கு முன் சரியான IANA பிறப்பு நேர மண்டலத்தை உறுதிப்படுத்தவும்.'));
@@ -112,7 +112,7 @@
     const generationLanguage=lang;
     let phase='startup';
     const date=$('englishDob')?.value||'',time=$('englishTob')?.value||'',place=$('englishBirthPlace')?.value.trim()||'',lat=$('englishLat')?.value||'',lon=$('englishLon')?.value||'',currentWork='',maritalStatus='',currentResidence='';
-    const birthGender=String($('englishBirthGender')?.value||'').trim();
+    const birthGender=String(document.querySelector('input[name="englishBirthGender"]:checked')?.value||'').trim();
     if(!['male','female'].includes(birthGender)){alert(text('Select Gender.','பாலினத்தைத் தேர்வு செய்யவும்.'));return;}
     if(Number(date.slice(0,4))<1800||Number(date.slice(0,4))>2399){alert(text('Supported birth years: 1800–2399.','ஆதரிக்கப்படும் பிறந்த ஆண்டுகள்: 1800–2399.'));return;}
     // UTC offset is derived from the selected IANA zone and birth date/time below.
@@ -130,7 +130,7 @@ if(lat===''||lon===''){
     // The existing, tested Swiss-Ephemeris renderer is reused as the calculation engine.
     // Its output is then translated into English; no second astronomical engine is introduced.
     const copy=(a,b)=>{if($(a)&&$(b))$(b).value=$(a).value;};
-    copy('englishAstroName','tamilAstroName');copy('englishDob','tamilDob');copy('englishTob','tamilTob');copy('englishBirthPlace','tamilBirthPlace');copy('englishLat','tamilLat');copy('englishLon','tamilLon');copy('englishBirthGender','tamilBirthGender');copy('englishBirthVillage','tamilBirthVillage');copy('englishMotherName','tamilMotherName');copy('englishFatherName','tamilFatherName');
+    copy('englishAstroName','tamilAstroName');copy('englishDob','tamilDob');copy('englishTob','tamilTob');copy('englishBirthPlace','tamilBirthPlace');copy('englishLat','tamilLat');copy('englishLon','tamilLon');document.querySelectorAll('input[name="tamilBirthGender"]').forEach(input=>{input.checked=input.value===birthGender;});copy('englishBirthVillage','tamilBirthVillage');copy('englishMotherName','tamilMotherName');copy('englishFatherName','tamilFatherName');
     const tplace=$('tamilBirthPlace'),eplace=$('englishBirthPlace');tplace.dataset.locationSelected='1';tplace.dataset.latitude=$('englishLat').value;tplace.dataset.longitude=$('englishLon').value;tplace.dataset.name=eplace.dataset.name||'';tplace.dataset.admin2=eplace.dataset.admin2||'';tplace.dataset.admin1=eplace.dataset.admin1||'';tplace.dataset.country=eplace.dataset.country||'';tplace.dataset.timezone=$('englishBirthTimezone')?.value||'';if($('tamilBirthTimezone'))$('tamilBirthTimezone').value=tplace.dataset.timezone;
     try{localStorage.setItem('smvLanguage',lang);}catch(_e){}
     busy=true;
@@ -372,6 +372,6 @@ if(lat===''||lon===''){
       document.querySelectorAll('.smv-language-buttons button,#clearEnglishHoroscope').forEach(b=>b.disabled=false);
     }
   });
-  $('clearEnglishHoroscope')?.addEventListener('click',()=>{['englishAstroName','englishBirthGender','englishBirthVillage','englishMotherName','englishFatherName','englishDob','englishTob','englishBirthPlace','englishLat','englishLon'].forEach(id=>{if($(id))$(id).value='';});if($('englishBirthPlace')){const p=$('englishBirthPlace');p.dataset.locationSelected='0';p.dataset.latitude='';p.dataset.longitude='';p.dataset.name='';p.dataset.admin2='';p.dataset.admin1='';p.dataset.country='';p.dataset.timezone='';p.dataset.timezoneSource='';}if($('englishHoroscopeResult')){$('englishHoroscopeResult').classList.add('hidden');$('englishHoroscopeResult').innerHTML='';}});
+  $('clearEnglishHoroscope')?.addEventListener('click',()=>{['englishAstroName','englishBirthVillage','englishMotherName','englishFatherName','englishDob','englishTob','englishBirthPlace','englishLat','englishLon'].forEach(id=>{if($(id))$(id).value='';});document.querySelectorAll('input[name="englishBirthGender"]').forEach(input=>{input.checked=false;});if($('englishBirthPlace')){const p=$('englishBirthPlace');p.dataset.locationSelected='0';p.dataset.latitude='';p.dataset.longitude='';p.dataset.name='';p.dataset.admin2='';p.dataset.admin1='';p.dataset.country='';p.dataset.timezone='';p.dataset.timezoneSource='';}if($('englishHoroscopeResult')){$('englishHoroscopeResult').classList.add('hidden');$('englishHoroscopeResult').innerHTML='';}});
 document.querySelectorAll('a[href="#english-horoscope"]').forEach(link=>link.addEventListener('click',e=>{e.preventDefault();const section=$('english-horoscope');section?.classList.remove('hidden');section?.scrollIntoView({behavior:'auto',block:'start'});history.replaceState(null,'','#english-horoscope');}));
 })();
