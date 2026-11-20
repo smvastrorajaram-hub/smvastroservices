@@ -103,7 +103,11 @@ export function evaluateBalaEvidenceMatrix(rows) {
 
     if (row.status !== 'PASS') addBlocker(blockers, key + ': evidence status is not PASS');
     for (const field of ['sourceId', 'sourceLocator', 'algorithmId', 'independentReferenceId']) {
-      if (!nonEmpty(row[field])) addBlocker(blockers, key + ': missing ' + field);
+      if (!nonEmpty(row[field])) {
+        addBlocker(blockers, key + ': missing ' + field);
+      } else if (/TEST_FIXTURE_ONLY/i.test(row[field])) {
+        addBlocker(blockers, key + ': test-fixture value is not source evidence (' + field + ')');
+      }
     }
     if (!finite(row.sampleCount) || row.sampleCount < 1) {
       addBlocker(blockers, key + ': sampleCount must be a positive integer');
@@ -197,6 +201,8 @@ export function evaluateNatalClassicalCertification({
     }
     if (!nonEmpty(longitudeEvidence.certificateId)) {
       addBlocker(blockers, 'Historical longitude certificateId is missing');
+    } else if (/TEST_FIXTURE_ONLY/i.test(longitudeEvidence.certificateId)) {
+      addBlocker(blockers, 'Historical longitude test-fixture ID is not a certificate');
     }
   }
 
@@ -212,8 +218,9 @@ export function evaluateNatalClassicalCertification({
     if (natalEpochEvidence.exactBirthInstantUsed !== true ||
         !finite(natalEpochEvidence.julianDay) ||
         !nonEmpty(natalEpochEvidence.birthInstant) ||
-        !nonEmpty(natalEpochEvidence.epochId)) {
-      addBlocker(blockers, 'Exact natal birth instant / Julian day / epoch ID is not verified');
+        !nonEmpty(natalEpochEvidence.epochId) ||
+        /TEST_FIXTURE_ONLY/i.test(natalEpochEvidence.epochId)) {
+      addBlocker(blockers, 'Exact natal birth instant / Julian day / real epoch ID is not verified');
     }
     if (natalEpochEvidence.meanTrueSheeghroccheyaSameFrame !== true ||
         !nonEmpty(natalEpochEvidence.frame)) {
@@ -261,7 +268,8 @@ export function evaluateNatalClassicalCertification({
       addBlocker(blockers, 'Exact natal-epoch input must contain exactly five unique planets');
     }
     if (natalEpochEvidence.certifiedModelApplied !== true ||
-        !nonEmpty(natalEpochEvidence.modelCertificateId)) {
+        !nonEmpty(natalEpochEvidence.modelCertificateId) ||
+        /TEST_FIXTURE_ONLY/i.test(natalEpochEvidence.modelCertificateId)) {
       addBlocker(blockers, 'A validated historical longitude model was not applied at this birth epoch');
     }
     if (natalEpochEvidence.fallbackOrUnverifiedInterpolationUsed !== false) {
@@ -301,8 +309,9 @@ export function evaluateNatalClassicalCertification({
         continue;
       }
       pairKeys.add(key);
-      if (pair.status !== 'PASS' || !nonEmpty(pair.sourceEvidenceId)) {
-        addBlocker(blockers, 'Yuddha pair ' + key + ' lacks PASS/source evidence');
+      if (pair.status !== 'PASS' || !nonEmpty(pair.sourceEvidenceId) ||
+          /TEST_FIXTURE_ONLY/i.test(pair.sourceEvidenceId)) {
+        addBlocker(blockers, 'Yuddha pair ' + key + ' lacks real PASS/source evidence');
       }
       if (pair.war === true) {
         if (![pair.planetA, pair.planetB].includes(pair.winner) ||
