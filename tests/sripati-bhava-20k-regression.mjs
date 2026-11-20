@@ -31,6 +31,10 @@ const close=(a,b,message,tolerance=EPS)=>{
   assert.ok(Number.isFinite(a)&&Number.isFinite(b)&&angleDiff(a,b)<=tolerance,
     message+': '+a+' vs '+b+' (delta '+angleDiff(a,b)+')');
 };
+const closeScalar=(a,b,message,tolerance=1e-8)=>{
+  assert.ok(Number.isFinite(a)&&Number.isFinite(b)&&Math.abs(a-b)<=tolerance,
+    message+': '+a+' vs '+b+' (absolute delta '+Math.abs(a-b)+')');
+};
 let state=0x5a17c0de;
 function random(){
   state=(state+0x6D2B79F5)|0;
@@ -102,19 +106,22 @@ function assertCuspRing(cusps,label){
   return spans;
 }
 const midpoint=(a,b)=>norm(a+arc(a,b)/2);
-function validateGeometry(cusps,bhavas,label){
+function validateGeometry(cusps,madhyaCusps,bhavas,label){
   const spans=assertCuspRing(cusps,label);
+  assert.equal(madhyaCusps.length,12,label+' has twelve independently calculated Madhya cusps');
   assert.equal(bhavas.length,12,label+' returns twelve Bhava details');
   assert.deepEqual(bhavas.map(x=>Number(x.house)),Array.from({length:12},(_,i)=>i+1),label+' has houses I–XII exactly once');
   const counts=Array(12).fill(0),adjacent=[];
   for(let i=0;i<12;i++){
     const b=bhavas[i],next=cusps[(i+1)%12];
-    close(Number(b.arambhaLongitude),cusps[i],label+' Bhava '+(i+1)+' Arambha is its Sripati cusp');
-    close(Number(b.madhyaLongitude),midpoint(cusps[i],next),label+' Bhava '+(i+1)+' Madhya is the midpoint of its two Arambha boundaries');
-    close(Number(b.antyaLongitude),next,label+' Bhava '+(i+1)+' Antya is the next Sripati cusp');
+    close(Number(b.arambhaLongitude),cusps[i],label+' Bhava '+(i+1)+' Arambha is its Sripati boundary');
+    close(Number(b.madhyaLongitude),madhyaCusps[i],label+' Bhava '+(i+1)+' Madhya is the corresponding Porphyry cusp');
+    close(Number(b.antyaLongitude),next,label+' Bhava '+(i+1)+' Antya is the next Sripati boundary');
     const sign=Math.floor(norm(Number(b.madhyaLongitude))/30);
     assert.equal(Number(b.rasiIndex),sign,label+' Bhava '+(i+1)+' Rasi index matches its Madhya longitude');
     counts[sign]++;
+    const offset=arc(cusps[i],Number(b.madhyaLongitude));
+    assert.ok(offset>1e-8&&offset<spans[i]-1e-8,label+' Bhava '+(i+1)+' Porphyry Madhya is inside its Arambha–Antya interval');
     assert.equal((i+1),nativeSwiss.houseFromCusps(Number(b.madhyaLongitude),cusps),label+' Madhya lies within its own Bhava interval');
     assert.equal((i+1),offlineGeometry.houseFromCusps(Number(b.madhyaLongitude),cusps),label+' offline Madhya lies within its own Bhava interval');
     if(i>0&&Number(bhavas[i-1].rasiIndex)===sign)adjacent.push({firstHouse:i,secondHouse:i+1,sign:sign+1});
@@ -185,8 +192,8 @@ for(let i=0;i<TOTAL;i++){
   const [jdEt,jdUt]=nativeUtc.data;
   const wasmUtc=wasm.utcToJd(birth.utcYear,birth.utcMonth,birth.utcDay,birth.utcHour,birth.utcMinute,birth.utcSecond);
   assert.ok(Number.isFinite(jdEt)&&Number.isFinite(jdUt)&&Number.isFinite(wasmUtc.et)&&Number.isFinite(wasmUtc.ut),'Case '+birth.index+' has valid UT/ET Julian days');
-  close(jdUt,wasmUtc.ut,'Case '+birth.index+' native/WASM UT Julian day',1e-8);
-  close(jdEt,wasmUtc.et,'Case '+birth.index+' native/WASM ET Julian day',1e-8);
+  closeScalar(jdUt,wasmUtc.ut,'Case '+birth.index+' native/WASM UT Julian day',1e-8);
+  closeScalar(jdEt,wasmUtc.et,'Case '+birth.index+' native/WASM ET Julian day',1e-8);
 
   const nativeS=extractNativeCusps(swe.houses_ex2(jdUt,C.SEFLG_SIDEREAL,birth.latitude,birth.longitude,'S'),'case '+birth.index+' native Sripati');
   const nativeO=extractNativeCusps(swe.houses_ex2(jdUt,C.SEFLG_SIDEREAL,birth.latitude,birth.longitude,'O'),'case '+birth.index+' native Porphyry');
@@ -207,10 +214,10 @@ for(let i=0;i<TOTAL;i++){
   summary.checks.nativeWasmPorphyryCusps+=12;
   summary.checks.fullCircleChecks+=4;
 
-  const bhavas=nativeSwiss.bhavaDetails(nativeS);
-  const offlineBhavas=offlineGeometry.bhavaDetails(wasmS);
-  const packed=validateGeometry(nativeS,bhavas,'case '+birth.index+' native');
-  validateGeometry(wasmS,offlineBhavas,'case '+birth.index+' offline');
+  const bhavas=nativeSwiss.bhavaDetails(nativeS,nativeO);
+  const offlineBhavas=offlineGeometry.bhavaDetails(wasmS,wasmO);
+  const packed=validateGeometry(nativeS,nativeO,bhavas,'case '+birth.index+' native');
+  validateGeometry(wasmS,wasmO,offlineBhavas,'case '+birth.index+' offline');
   assert.equal(bhavas.length,offlineBhavas.length,'case '+birth.index+' native/offline Bhava row count');
   for(let h=0;h<12;h++){
     close(bhavas[h].arambhaLongitude,offlineBhavas[h].arambhaLongitude,'case '+birth.index+' Bhava '+(h+1)+' Arambha parity');
