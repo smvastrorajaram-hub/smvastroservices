@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-import { TRUE_BPHS_FRAME_TRANSFER_METADATA } from '../research/true-bphs/saura-frame-transfer.mjs';
+import { TRUE_BPHS_LAHIRI_FRAME_METADATA, effectiveLahiriSiderealOffsetDegrees } from '../research/true-bphs/effective-lahiri-frame.mjs';
+import { getSwe } from '../public/horoscope/offline/wasm-provider.mjs';
 
 import {
   createTrueBphsShadbalaEngine,
@@ -16,10 +17,13 @@ assert.equal(fixture.certificateId,'SMV-ASTRO-TRUE-BPHS-NAELOS-DE440-25-2026-11-
 assert.equal(fixture.comparison.count,25);
 assert.equal(TRUE_BPHS_SHADBALA_METADATA.engine,'TRUE_BPHS_SHADBALA_NAELOS_DE440');
 assert.equal(TRUE_BPHS_SHADBALA_METADATA.productionIntegrationAllowed,false);
-assert.equal(TRUE_BPHS_FRAME_TRANSFER_METADATA.historicalFourPassTrueLongitudeUsed,false);
-assert.equal(TRUE_BPHS_FRAME_TRANSFER_METADATA.absoluteKotiMinusUsed,false);
+assert.equal(TRUE_BPHS_LAHIRI_FRAME_METADATA.frameId,'NAELOS_TRUE_ECLIPTIC_OF_DATE_EFFECTIVE_LAHIRI_V1');
+assert.equal(TRUE_BPHS_LAHIRI_FRAME_METADATA.noSauraFrame,true);
+assert.equal(TRUE_BPHS_LAHIRI_FRAME_METADATA.absoluteKotiMinusUsed,false);
 
 const engine=await createTrueBphsShadbalaEngine();
+const swe=await getSwe();
+swe.setSiderealLahiri();
 assert.equal(engine.tableIntegrityVerified,true);
 assert.equal(engine.sourceEphemeris,'JPL DE440');
 assert.equal(engine.naelosPackageVersion,'0.1.3');
@@ -54,6 +58,18 @@ for(const birthFixture of fixture.births) {
     birthFixture.date+' twelve Sripati Madhya cusps are present');
   eq(result.bhava.arambha.length,12,
     birthFixture.date+' twelve Sripati Arambha cusps are present');
+  eq(result.frame.id,TRUE_BPHS_LAHIRI_FRAME_METADATA.frameId,
+    birthFixture.date+' BPHS engine uses effective Lahiri frame only');
+  eq(result.frame.effectiveLahiriOnly,true,
+    birthFixture.date+' no alternate sidereal calculation frame is used');
+  eq(result.frame.noSauraFrame,true,
+    birthFixture.date+' no Saura coordinate frame is used');
+  const expectedEffectiveOffset=effectiveLahiriSiderealOffsetDegrees(swe,result.birth.ttJd);
+  near(result.astronomy.effectiveLahiriOffsetDegrees,expectedEffectiveOffset,1e-10,
+    birthFixture.date+' common same-epoch effective Lahiri offset is reproducible');
+  const sourceToLahiriRotation=result.frame.v365ToEffectiveLahiriRotationDegrees;
+  yes(Number.isFinite(sourceToLahiriRotation),
+    birthFixture.date+' V365 Mean inputs are rotated into effective Lahiri');
   eq(result.solarTime.solarTimeFrameId,'NAELOS_TRUE_EQUATOR_OF_DATE_GAST_V1',
     birthFixture.date+' apparent solar-time frame provenance');
   yes(result.solarTime.sunriseJdUt<result.birth.utcJd,
@@ -64,17 +80,18 @@ for(const birthFixture of fixture.births) {
   for(const [english,expected] of Object.entries(birthFixture.planets)) {
     const name=tamil[english];
     const actual=result.cheshtaResults[name];
-    near(actual.trueLongitude,expected.trueLongitudeSaura,1e-7,
-      birthFixture.date+' '+english+' NAELOS true-longitude Saura transfer');
-    near(actual.meanLongitude,expected.meanLongitudeSaura,1e-8,
-      birthFixture.date+' '+english+' V365 Mean Longitude retained');
-    near(actual.sheeghroccheya,expected.sheeghroccaSaura,1e-8,
-      birthFixture.date+' '+english+' V365 Sheeghroccheya retained');
+    const norm360=value=>((value%360)+360)%360;
+    near(actual.trueLongitude,norm360(expected.legacyTrueLongitudeBeforeLahiriRotation+sourceToLahiriRotation),1e-7,
+      birthFixture.date+' '+english+' NAELOS True Longitude in effective Lahiri frame');
+    near(actual.meanLongitude,norm360(expected.v365MeanSourceNativeLongitude+sourceToLahiriRotation),1e-8,
+      birthFixture.date+' '+english+' V365 Mean transferred into effective Lahiri frame');
+    near(actual.sheeghroccheya,norm360(expected.v365SheeghroccheyaSourceNativeLongitude+sourceToLahiriRotation),1e-8,
+      birthFixture.date+' '+english+' V365 Sheeghroccheya transferred into effective Lahiri frame');
     near(actual.virupa,expected.cheshtaVirupa,1e-8,
       birthFixture.date+' '+english+' BPHS Ch27 24–25 Cheshta arithmetic');
     const sourceRow=result.planetaryPositions.find(row=>row.name===name);
     yes(sourceRow.referenceFrameId===result.frame.id,
-      birthFixture.date+' '+english+' chart longitude uses the common frame');
+      birthFixture.date+' '+english+' chart longitude uses the common Lahiri frame');
     near(sourceRow.longitude,actual.trueLongitude,1e-10,
       birthFixture.date+' '+english+' chart longitude equals BPHS True Longitude input');
     yes(fixture.comparison.maxAbsTropicalResidualArcsec<=fixture.comparison.acceptanceMaxArcsec,
@@ -152,6 +169,8 @@ yes(latitudeTie.unresolved.some(row=>row.reason==='northern-latitude-tie'),
 const source=fs.readFileSync(new URL('../research/true-bphs/naelos-bphs-shadbala-engine.mjs',import.meta.url),'utf8');
 yes(!source.includes('absolute-koti-minus'),'rejected absolute-koti-minus method is absent');
 yes(!source.includes('sauraFourPassTrueLongitude'),'historical four-pass True Longitude function is not imported or called');
+yes(!source.includes('saura-frame-transfer.mjs'),'obsolete alternate sidereal frame helper is not imported');
+yes(!source.includes('SAURA_NIRAYANA'),'the BPHS output frame contains no Saura coordinate frame');
 yes(!source.includes('saura-de441-apparent-true.mjs'),'legacy four-pass research module is outside the dependency graph');
 yes(!/calculateBVRamanShadbala|BV_RAMAN_CHAPTER_VI/.test(source),
   'engine does not call the B.V. Raman Shadbala / Chesta implementation');
@@ -164,7 +183,7 @@ console.log(JSON.stringify({
   fivePlanetTrueLongitudeRows:fixture.comparison.count,
   maxAbsTropicalResidualArcsec: fixture.comparison.maxAbsTropicalResidualArcsec,
   source:'NAELOS Ephemeris 0.1.3 / checked-in JPL DE440 binaries',
-  meanSheeghroccheya:'V365 Saura-paksha',
+  meanSheeghroccheya:'V365 mean-motion model transformed into effective Lahiri',
   cheshta:'BPHS I Ch27 vv24–25',
   yuddha:'BPHS I Ch27 v20 magnitude; Uttara Kalamrita II p.41 eligibility/winner fallback',
   classicalCertified:false,productionIntegrationAllowed:false
