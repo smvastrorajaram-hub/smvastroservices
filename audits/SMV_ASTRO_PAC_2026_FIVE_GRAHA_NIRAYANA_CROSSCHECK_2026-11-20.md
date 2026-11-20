@@ -67,16 +67,16 @@ Acceptance gate: **0.0001° = 0.36 arc-second** per point.
 
 | Planet | Samples | RMS residual | Maximum residual |
 |---|---:|---:|---:|
-| Mercury | 3 | 0.013032″ | 0.020319″ |
-| Venus | 3 | 0.016828″ | 0.028572″ |
-| Mars | 3 | 0.021345″ | 0.033404″ |
-| Jupiter | 3 | 0.092147″ | 0.125963″ |
-| Saturn | 3 | 0.210803″ | 0.235806″ |
-| **All** | **15** | **0.103767″** | **0.235806″** |
+| Mercury | 3 | 0.016511″ | 0.025500″ |
+| Venus | 3 | 0.009447″ | 0.015860″ |
+| Mars | 3 | 0.013207″ | 0.019681″ |
+| Jupiter | 3 | 0.227138″ | 0.250283″ |
+| Saturn | 3 | 0.211252″ | 0.231153″ |
+| **All** | **15** | **0.139108″** | **0.250283″** |
 
-All 15 observations are within the 0.36″ acceptance gate. The maximum observed residual is Saturn on 1 July 2026: **0.000065502° = 0.235806″**. Overall RMS is **0.000028824° = 0.103767″**.
+CI run #1207 completed SUCCESS with 135 assertions in this PAC regression. All 15 observations are within the 0.36″ acceptance gate. The maximum observed residual is Jupiter on 1 January 2026: **0.000069523° = 0.250283″**. Overall RMS is **0.0000386412° = 0.139108″**.
 
-Automated regression: `tests/pac-2026-five-graha-nirayana-regression.mjs`.
+Automated regression: `tests/pac-2026-five-graha-nirayana-regression.mjs`. CI: https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44769611357.
 
 ## 5. Interpretation and limits
 
