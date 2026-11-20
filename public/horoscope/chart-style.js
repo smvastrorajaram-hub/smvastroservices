@@ -90,21 +90,28 @@
   for(let si=0;si<12;si++)if(arr.out[si]?.querySelector('.lagna'))return si;
   return -1;
  }
+ function addNorthSignNumbers(chart,lagna){
+  // Labels are chart-level overlays, deliberately separate from each house's
+  // planet stack. Their positions are the clear outer corners of the fixed
+  // North Indian compartments, so no graha row is moved or clipped.
+  for(let house=1;house<=12;house++){
+   const sign=(lagna+house-1)%12;
+   const label=document.createElement('span');
+   label.className='smv-v342-sign-number-overlay';
+   label.dataset.house=String(house);
+   label.dataset.sign=String(sign+1);
+   label.textContent=DEVANAGARI_SIGNS[sign]||'';
+   label.setAttribute('aria-label','Rasi '+String(sign+1));
+   label.setAttribute('aria-hidden','true');
+   chart.append(label);
+  }
+ }
  function pointCell(x,y,sign,house,source,style,kind,ta,planetEntries=null,bhavaHouseLabel=''){
   const cell=document.createElement('div');cell.className='smv-v342-cell';cell.dataset.sign=String(sign+1);
   const triangleCell=style==='north'?[2,3,5,6,8,9,11,12].includes(house):style==='east'?[2,3,5,6,8,9,11,12].includes(sign+1):false;
   if(triangleCell)cell.classList.add('smv-v342-triangle-cell');
   if(kind==='bhava')cell.classList.add('smv-v342-bhava-cell');
   if(house>=1&&house<=12)cell.dataset.house=String(house);
-  // North Indian D1, D9 and Transit use fixed house slots with a moving Rasi.
-  // Show the actual sign number (not the house number); Bhava deliberately keeps Roman houses only.
-  if(style==='north'&&['d1','d9','transit'].includes(kind)){
-   const signNumber=document.createElement('span');
-   signNumber.className='smv-v342-sign-number';
-   signNumber.textContent=DEVANAGARI_SIGNS[sign]||'';
-   signNumber.setAttribute('aria-label','Rasi '+String(sign+1));
-   cell.append(signNumber);
-  }
   // House labels are a normal first row inside the Bhava cell, never a
   // chart-level overlay. This reserves space and prevents labels covering grahas.
   if(kind==='bhava'&&String(bhavaHouseLabel||'').trim()){
@@ -253,6 +260,7 @@
     chart.append(pointCell(x,y,sign,house,from,style,kind,ta,planetEntries,kind==='bhava'?romanHouse(house):''));
    }
   }
+  if(style==='north'&&['d1','d9','transit'].includes(kind))addNorthSignNumbers(chart,lagna);
   if(style==='east'){
    const title=document.createElement('div');title.className='smv-v342-east-center';
    title.textContent=kind==='d9'?(ta?'நவாம்சம்':'Navamsa'):kind==='bhava'?(ta?'பாவம்':'Bhava'):kind==='transit'?(ta?'கோச்சாரம்':'Transit'):(ta?'ராசி':'Rasi');
