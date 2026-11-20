@@ -162,7 +162,7 @@ console.log(JSON.stringify({
   engine:'TRUE_BPHS_SHADBALA_NAELOS_DE440',
   fiveNatalEpochs:fixture.births.length,
   fivePlanetTrueLongitudeRows:fixture.comparison.count,
-  maxAbsTropicalResidualArcsec,
+  maxAbsTropicalResidualArcsec: fixture.comparison.maxAbsTropicalResidualArcsec,
   source:'NAELOS Ephemeris 0.1.3 / checked-in JPL DE440 binaries',
   meanSheeghroccheya:'V365 Saura-paksha',
   cheshta:'BPHS I Ch27 vv24–25',
