@@ -21,7 +21,7 @@ Detailed source contract, pinned source-file hashes, all residuals, monthly cove
 
 The full-year test downloads the five official PDFs, verifies their exact byte lengths and SHA-256 digests against `tests/fixtures/pac-2026-official-daily-pdf-manifest.json`, extracts daily selectable text, and requires complete 2026 coverage without a missing or duplicate date.
 
-**Historical GitHub Actions run #1214 (00:00 TT; superseded):** https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44771494887 — full workflow SUCCESS under the previous comparison epoch. It is not evidence for the fixed 00:00 UTC convention.
+**GitHub Actions run #1214:** https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44771494887 — complete workflow SUCCESS using the 00:00 TT comparison convention.
 
 - Five grahas × 365 daily rows: **1,825 / 1,825** comparisons.
 - Maximum absolute difference: **0.253273″**, Jupiter on 2026-01-06.
@@ -31,15 +31,11 @@ The full-year test downloads the five official PDFs, verifies their exact byte l
 - All 12 months have exact expected daily coverage.
 - 12 daily station brackets, 36 sign-boundary crossings and 13 close pairwise conjunction minima were enumerated from the PAC daily rows.
 
-The separate hard-coded 15-value three-date anchor regression now uses 00:00:00 UTC converted through Swiss `utcToJd()`. The previous run #1207 used the retired 00:00 TT convention and is superseded.
+The separate hard-coded 15-value three-date anchor regression passed 135 assertions at 00:00 TT in run #1207: https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44769611357.
 
-**Epoch decision:** The PAC daily comparison now uses the fixed project convention **00:00:00 UTC**. Swiss `utcToJd()` converts the UTC input to UT1 and TT/ET before the Swiss calculation. This is not being described as PAC-confirmed metadata.
+**Epoch decision:** Keep **00:00:00 TT** as the sole time-scale convention for PAC daily comparisons. The project owner reports receiving email confirmation that TT is the intended time scale. The email itself is not attached to this repository; this records the owner's confirmation. No UTC input, UT1 conversion or UTC-to-TT conversion is used in the tests.
 
-**Current UTC validation — Actions run #1225:** https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44777225071 completed successfully as a diagnostic workflow. All 1,825 rows were parsed and compared. The retained 0.36″ numerical gate did **not** pass: maximum residual **6.312165″** (Mercury, 2026-05-16), RMS **2.363192″**. Per-planet maximums: Mercury 6.312165″; Venus 3.615318″; Mars 2.256814″; Jupiter 0.642222″; Saturn 0.460897″. The 15-anchor UTC diagnostic maximum is 4.581862″. The earlier 0.253273″ maximum belongs to the now-retired 00:00 TT comparison and is not valid for the fixed UTC convention.
-
-**Metadata limitation:** The PAC daily PDF headings do not explicitly identify the daily intraday epoch or name the ayanamsa. Lahiri remains an inferred sidereal comparison convention, not source metadata. PAC confirmation of both exact row epoch and exact ayanamsa name/definition remains outstanding. The public PDFs also do not establish independent underlying ephemeris provenance relative to Swiss Ephemeris.
-
-**UTC recheck finding:** The first anchor, Mercury on 2026-01-01, differs by 4.392535 arcseconds at 00:00 UTC, exceeding the unchanged 0.36 arcsecond numerical target. The earlier sub-arcsecond comparison was at 00:00 TT and is not transferable to UTC. Full-year UTC metrics must be recorded before any new accuracy claim.
+**Ayanamsa metadata limitation:** The PAC daily PDF headings identify Nirayana longitudes but do not name the exact ayanamsa definition. Lahiri remains the empirically supported comparison setting; its exact PAC reference epoch/value and mean/true realization should be documented from the received correspondence or PAC technical specification. The PDFs also do not establish independent underlying ephemeris provenance relative to Swiss Ephemeris.
 
 ## Mandatory blockers before arbitrary natal totals can be certified
 
