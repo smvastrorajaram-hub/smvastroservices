@@ -38,10 +38,14 @@ The component-level source tolerances remain those recorded in the existing B.V.
 
 The new regression is `tests/bv-raman-seven-graha-numerical-certification.mjs`. It checks all seven grahas in both calculation implementations.
 
+**GitHub Actions evidence:** [B.V. Raman Integrated Strength6 QA run #1176](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44752918190) — PASS; the new numerical-certification step reports 132 assertions.
+
 This is repository-level numerical evidence for the named printed worked example. It is not an institutional or publisher-issued certificate.
 
 ## 4. Explicit exclusions
 
-This PASS does **not** certify arbitrary natal charts or every supported historical date. A live natal calculation still needs independently verified same-reference-frame mean, true and Sheeghrocchea inputs for Mars, Mercury, Jupiter, Venus and Saturn. The current mixed Saura mean/Sheeghrocchea and Swiss/Lahiri true-longitude combination is not a valid substitute. Historical Bija/apsis inputs and independent natal true-longitude oracles remain outstanding. Until these are available, affected Cheshta values and dependent complete totals must remain unavailable instead of being represented as valid strength percentages.
+This PASS does **not** certify arbitrary natal charts or every supported historical date. A live natal calculation still needs independently verified same-reference-frame mean, true and Sheeghrocchea inputs for Mars, Mercury, Jupiter, Venus and Saturn. The current live path uses a numeric candidate that combines Saura mean/Sheeghrocchea with Swiss/Lahiri true longitude; that mixed-frame candidate is not independently validated and must not be read as a certified natal Cheshta or full Shadbala result. Historical Bija/apsis inputs and independent natal true-longitude oracles remain outstanding.
+
+**Production boundary:** This PR does not change the live engine or customer reports. The existing live output remains as it is today; this worked-example PASS must not be applied to arbitrary natal charts. Any future decision to withhold or revise those customer-facing totals requires a separate, explicitly reviewed production change after the required source data and compatibility tests are complete.
 
 The existing two source-verification certificates are not replaced or edited.
