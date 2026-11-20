@@ -298,22 +298,40 @@ try {
                   }]
                 };
               };
+              const northSignNumbers = style!=='north'?[]:cells.map(cell=>{
+                const node=cell.querySelector('.smv-v342-sign-number');
+                return {
+                  house:Number(cell.dataset.house||0),
+                  sign:Number(cell.dataset.sign||0),
+                  text:node?.textContent.trim()||'',
+                  labelDetails:node?describeBhavaLabel(node,Number(cell.dataset.sign||0)-1,Number(cell.dataset.house||0)).labelDetails:[]
+                };
+              });
               const bhavaHouseLabels = kind!=='bhava'?[]:style==='south'
                 ? cells.map((cell,index)=>{
                     const nodes=[...cell.querySelectorAll('.bhava-house-no')];
-                    const raw=nodes.map(el=>el.textContent.trim());
                     return {
                       sign:signOrder[index],house:0,
-                      labels:raw.flatMap(value=>value.split('/').map(label=>label.trim()).filter(Boolean)),
+                      houseIds:nodes.map(el=>Number(el.dataset.bhavaHouse||0)).filter(Boolean),
+                      labels:nodes.map(el=>el.textContent.trim()),
                       labelDetails:nodes.flatMap(el=>describeBhavaLabel(el,signOrder[index]).labelDetails)
                     };
                   })
-                : cells.map(cell=>describeBhavaLabel(
-                    cell.querySelector('.smv-v342-house-number'),
-                    Number(cell.dataset.sign||0)-1,
-                    Number(cell.dataset.house||0)
-                  ));
-              reports.push({rootId,kind,cells:cells.length,chartClass:chart.className,numericLabels,picked,emptyDash,bhavaHouseLabels,cellBoundsOutside,compartmentOutside,triangleCells:cells.filter(cell=>cell.classList.contains('smv-v342-triangle-cell')).length,planetGlyphColors,crowdedTriangleNumbers});
+                : style==='north'
+                  ? cells.map(cell=>{
+                      const entry=describeBhavaLabel(
+                        cell.querySelector('.smv-v342-sign-number'),
+                        Number(cell.dataset.sign||0)-1,
+                        Number(cell.dataset.house||0)
+                      );
+                      return {...entry,houseIds:[Number(cell.dataset.house||0)].filter(Boolean)};
+                    })
+                  : cells.map(cell=>{
+                      const node=cell.querySelector('.smv-v342-house-number');
+                      const entry=describeBhavaLabel(node,Number(cell.dataset.sign||0)-1,0);
+                      return {...entry,houseIds:(node?.dataset.bhavaHouses||'').split(',').map(Number).filter(Boolean)};
+                    });
+              reports.push({rootId,kind,cells:cells.length,chartClass:chart.className,numericLabels,northSignNumbers,picked,emptyDash,bhavaHouseLabels,cellBoundsOutside,compartmentOutside,triangleCells:cells.filter(cell=>cell.classList.contains('smv-v342-triangle-cell')).length,planetGlyphColors,crowdedTriangleNumbers});
 
             }
           }
