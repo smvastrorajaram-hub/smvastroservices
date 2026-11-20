@@ -1,4 +1,4 @@
-name: NAELOS DE440 Binary Forensics (Research Only)
+name: NAELOS DE440 True Longitude Validation (Research Only)
 
 on:
   push:
@@ -10,9 +10,9 @@ permissions:
   contents: read
 
 jobs:
-  inspect-binary-format:
+  validate-naelos-true-longitude:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Checkout research branch
         uses: actions/checkout@v4
@@ -20,5 +20,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Inspect checked-in NAELOS binaries without modifying them
+      - name: Install pinned NAELOS reader (no project manifest changes)
+        run: npm install --no-save --no-package-lock --ignore-scripts naelos-ephemeris@0.1.3
+      - name: Inspect checked-in NAELOS binary headers
         run: node research/naelos-de440/naelos-binary-forensics.mjs
+      - name: Verify NAELOS DE440 true longitude against Swiss Lahiri at five natal epochs
+        run: node tests/naelos-de440-five-natal-true-longitude.mjs
