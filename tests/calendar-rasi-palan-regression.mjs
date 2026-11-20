@@ -421,7 +421,7 @@ test('Calendar distinguishes Gazette government holidays from observances and do
   assert.equal(calendarThemeCssSource.includes('#smvDailyCalendar #calDaily .transit-card>.cal-centered-heading{color:#15564e'), false, 'The outer Transit Chart heading must not receive a new green override.');
   assert.ok(horoscopeRendererSource.includes("<th>${ta?'கிரகங்கள்':'Planets'}</th>"), 'The positions table labels the first column as Planets / கிரகங்கள்.');
   assert.ok(horoscopeRendererSource.includes("calendarPresentation?'':`<td>${esc2(r.status||'—')}</td>`"), 'Status is omitted from Calendar but retained for non-Calendar Horoscope output.');
-  assert.ok(horoscopeRendererSource.includes("calendarPresentation?'hora-card':'card hora-card'"), 'Only Calendar removes the Daily Hora outer card; Horoscope retains its original card.');
+  assert.ok(horoscopeRendererSource.includes("if(calendarPresentation)h+="), 'Daily Hora markup is rendered only for Calendar; Horoscope omits it.');
   assert.ok(horoscopeRendererSource.includes("calendarPresentation?'transit-card':'card transit-card'"), 'Calendar Transit Chart has no outer card, while Horoscope retains its card.');
   assert.ok(horoscopeRendererSource.includes('<section class="transit-table-card">'), 'Transit Planetary Positions keeps its heading wrapper without an outer card.');
   assert.ok(dailyCalendarCssSource.includes('#smvDailyCalendar #calDaily .transit-card{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;outline:0!important}'), 'The Transit Chart remains without an outer card.');
@@ -529,7 +529,7 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("const cacheKey=cacheURL('./'+relativePath);"), 'Offline route cache keys must be absolute URLs');
    assert.ok(calendarWorkerSource.includes("const cacheURL = path => new URL(path, self.registration.scope).href"), 'Precache must resolve relative assets against the service-worker scope');
    assert.ok(calendarWorkerSource.includes("requestedPath==='admin'||requestedPath==='admin/'?'admin.html'"), 'Legacy /admin route redirects through its cached HTML');
-   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261119-horoscope-four-chart-planet-layout-v1' : '20261119-horoscope-four-chart-planet-layout-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
+   assert.ok(calendarWorkerSource.includes("const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? '20261120-subha-janana-v1' : '20261120-subha-janana-v1'"), 'Calendar bumps its host-specific release marker for public content updates');
    assert.ok(calendarWorkerSource.includes("const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE"), 'Cache version updates existing PWA installs without changing its independent namespace');
    assert.ok(calendarWorkerSource.includes("'../tamil-day-classifications.mjs'"), 'Tamil day flags and Amirthathi lookup remain available in the Calendar offline core');
    assert.ok(!calendarWorkerSource.includes('calendar-admin.mjs'), 'The standalone Calendar Admin module is not downloaded or cached');
@@ -539,10 +539,10 @@ test('Calendar has no separate Admin entry; legacy Admin URL redirects to Horosc
    assert.ok(calendarWorkerSource.includes("'../offline/places/india/'"), 'Calendar caches every India place shard from the shared static asset path');
    assert.ok(calendarWorkerSource.includes('c.match(cacheKey)'));
    assert.ok(calendarIndexSource.includes('20261024-admin-cache-v7'));
-   assert.ok(calendarIndexSource.includes('20261119-horoscope-four-chart-planet-layout-v1'));
-   assert.ok(calendarIndexSource.includes('20261119-horoscope-four-chart-planet-layout-v1'));
+   assert.ok(calendarIndexSource.includes('20261120-subha-janana-v1'));
+   assert.ok(calendarIndexSource.includes('20261120-subha-janana-v1'));
    assert.ok(calendarIndexSource.includes('smv-calendar-rasi-palan-loader'));
-   assert.ok(calendarIndexSource.includes('20261119-horoscope-four-chart-planet-layout-v1'));
+   assert.ok(calendarIndexSource.includes('20261120-subha-janana-v1'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'function renderControls\')'));
    assert.ok(calendarIndexSource.includes('moduleText.includes(\'runPeriodForecast\')'));
    assert.ok(calendarIndexSource.includes('The deployed forecast assets could not be loaded from this Calendar host.'));
@@ -1030,15 +1030,15 @@ test('SMV CALENDAR daily Panchang and Hora follow the green result hierarchy', (
   assert.match(sharedHoroscopeCssSource, /event-time:not\(\.smv-calendar-neutral-date-time\)/);
   assert.match(sharedHoroscopeCssSource, /hora-time:not\(\.smv-calendar-neutral-time\)/);
   assert.match(sharedHoroscopeCssSource, /transit-table-degree:not\(\.smv-calendar-degree-normal\)/);
-  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261119-horoscope-four-chart-planet-layout-v1/);
-  assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261119-horoscope-four-chart-planet-layout-v1/);
+  assert.match(calendarIndexSource, /daily-calendar\.mjs\?v=20261120-subha-janana-v1/);
+  assert.match(calendarIndexSource, /calendar-theme\.css\?v=20261120-subha-janana-v1/);
   const releases = [astroServiceWorkerSource, horoscopeServiceWorkerSource, calendarWorkerSource]
     .map(source => source.match(/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '([^']+)' : '([^']+)';/));
   assert.ok(releases.every(Boolean), 'All three service workers must define the synchronized release marker.');
   assert.equal(new Set(releases.map(match => match[1])).size, 1);
   assert.equal(new Set(releases.map(match => match[2])).size, 1);
-  assert.equal(releases[0][1], '20261119-horoscope-four-chart-planet-layout-v1');
-  assert.equal(releases[0][2], '20261119-horoscope-four-chart-planet-layout-v1');
+  assert.equal(releases[0][1], '20261120-subha-janana-v1');
+  assert.equal(releases[0][2], '20261120-subha-janana-v1');
 });
 
 
