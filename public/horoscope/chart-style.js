@@ -84,9 +84,12 @@
   // Alternate Rasi, Navamsa and Transit charts intentionally show no numeric
   // sign/house labels. Only Bhava charts carry the calculated Bhava Roman label.
   if(kind==='bhava'){
-   const h=document.createElement('span');h.className='smv-v342-house-number';
-   h.textContent=style==='north'?romanHouse(house):String(bhavaHouseLabel||'');
-   cell.append(h);
+   const houseLabel=style==='north'?romanHouse(house):String(bhavaHouseLabel||'');
+   if(houseLabel){
+    const h=document.createElement('span');h.className='smv-v342-house-number';
+    h.textContent=houseLabel;
+    cell.append(h);
+   }
   }
   if(house===1&&kind!=='transit'){const mark=document.createElement('span');mark.className='smv-v342-asc';mark.textContent=ta?'ல':'As';cell.append(mark);}
   const contents=document.createElement('span');contents.className='smv-v342-planets';
