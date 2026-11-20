@@ -43,6 +43,12 @@
   return {out,houses,cusp};
  }
  function ascSign(chart,arr){
+  if(chart.id==='transitChart'){
+   // Transit Lagna is a rendered planet-flow glyph, not the natal .lagna node.
+   // Read its source sign so North/East presentation can place the Transit chart.
+   for(let si=0;si<12;si++)if(arr.out[si]?.querySelector('[data-transit-lagna]'))return si;
+   return -1;
+  }
   if(chart.id==='bhavaChart'){
    const i=arr.cusp.findIndex(c=>c.includes(1));if(i!==-1)return i;
    const d=chart.closest('#englishHoroscopeResult,#tamilHoroscopeResult');
@@ -78,7 +84,9 @@
   if(house===1&&kind!=='transit'){const mark=document.createElement('span');mark.className='smv-v342-asc';mark.textContent=ta?'ல':'As';cell.append(mark);}
   const contents=document.createElement('span');contents.className='smv-v342-planets';
   const items=planetEntries??[...source.out[sign].querySelectorAll('.planet-line')];
-  const planetCount=items.length;
+  // Transit Lagna is a display marker, not a graha; keep density thresholds
+  // and data-chart-planet-count based on actual planets only.
+  const planetCount=kind==='transit'?items.filter(item=>!item.querySelector('[data-transit-lagna]')).length:items.length;
   cell.dataset.chartPlanetCount=String(planetCount);
   if(planetCount>=3)cell.classList.add('smv-chart-cell-compact');
   if(items.length){for(const item of items){contents.append(item.cloneNode(true));}}
