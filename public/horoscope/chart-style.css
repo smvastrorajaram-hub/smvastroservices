@@ -264,8 +264,8 @@
  text-align:center!important;white-space:nowrap!important;pointer-events:none!important;
 }
 .south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="1"]{left:50%!important;top:4%!important;transform:translate(-50%,0)!important}
-.south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="2"]{left:25%!important;top:3%!important;transform:translate(-50%,0)!important}
-.south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="3"]{left:.5%!important;top:25%!important;transform:translate(0,-50%)!important}
+.south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="2"]{left:.5%!important;top:.5%!important;transform:none!important}
+.south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="3"]{left:.5%!important;top:40%!important;transform:none!important}
 .south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="4"]{left:3%!important;top:50%!important;transform:translate(0,-50%)!important}
 .south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="5"]{left:.5%!important;top:75%!important;transform:translate(0,-50%)!important}
 .south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="6"]{left:25%!important;top:97%!important;transform:translate(-50%,-100%)!important}
