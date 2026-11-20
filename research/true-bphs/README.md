@@ -1,50 +1,57 @@
 # TRUE BPHS SHADBALA — NAELOS DE440 research engine
 
-**Engine ID:** \`TRUE_BPHS_SHADBALA_NAELOS_DE440\`  
-**Release:** \`1.0.0-research\`  
+**Engine ID:** `TRUE_BPHS_SHADBALA_NAELOS_DE440`  
+**Release:** `1.1.0-research-lahiri`  
 **Status:** Research-only; not connected to production.
 
-This engine calculates the seven-graha, six-component Shadbala using BPHS source rules. It uses the checked-in NAELOS DE440 binary tables for the apparent geocentric True Longitude input. It is intentionally separate from the existing B.V. Raman \`strength6\` calculation.
+This isolated engine calculates seven grahas × six Shadbala components using BPHS source rules. NAELOS Ephemeris 0.1.3 with the checked-in JPL DE440 binary tables supplies all apparent geocentric planetary True Longitudes. The engine is separate from the current B.V. Raman `strength6` calculation.
+
+## One coordinate frame: effective Lahiri
+
+The BPHS engine has one sidereal coordinate frame only:
+
+`NAELOS_TRUE_ECLIPTIC_OF_DATE_EFFECTIVE_LAHIRI_V1`
+
+At each exact TT epoch, the common effective Lahiri offset is determined from the same-epoch Swiss apparent tropical Sun longitude minus the Swiss apparent Lahiri-sidereal Sun longitude. That one common rotation is applied to all seven NAELOS planetary longitudes, the true lunar node, the twelve Bhava Madhya cusps, the ascendant, midheaven and vertex. Swiss supplies the coordinate-frame offset and time conversion only; it does not replace NAELOS planetary positions.
+
+The V365 Mean / Sheeghroccheya source model and its previously checked input selection are retained. Its source-native angular values are rotated by the same date-specific amount into the effective Lahiri frame before they are passed to BPHS Cheshta. Thus all three Cheshta inputs (Mean, True and Sheeghroccheya) share the same frame ID and exact natal epoch. No Saura coordinate frame is used as the BPHS output or calculation frame.
 
 ## Calculation chain
 
-1. **Time:** the supplied local birth date/time is resolved with the explicit IANA time zone (or an exact UTC offset). The same instant is converted to UT1 and TT before the NAELOS calculation.
-2. **True Longitude:** NAELOS Ephemeris 0.1.3 evaluates the apparent geocentric true ecliptic-of-date positions from the checked-in JPL DE440 tables. The binary tables are checked against \`naelos-ephemeris/manifest.json\` by both byte length and SHA-256.
-3. **Sidereal frame:** NAELOS tropical apparent longitude is transferred into the declared Saura-nirayana frame using the audited Burgess-1860 zero point plus the date-specific Lahiri precession delta. The same offset is applied to all seven grahas and the house Madhya cusps.
-4. **Mean / Sheeghroccheya:** the existing V365 Saura-paksha selector is retained. Mars/Jupiter/Saturn use their own mean as Mean and Sun's mean as Sheeghroccheya; Mercury/Venus use Sun's mean as Mean and their own mean orbit as Sheeghroccheya.
-5. **BPHS Cheshta:** Chapter 27 verses 24–25 midpoint / kendra / three-Virupa arithmetic. Uttara Kalamrita II pp.42–43 is used only to select the inner/outer planet input pair.
-6. **Other five Bala:** BPHS source helpers calculate Sthana, Dig, Kala, Naisargika and Drig. Tropical equatorial declinations and apparent local solar time come from NAELOS.
-7. **Sripati Bhava:** NAELOS Porphyry cusps are used as Bhava Madhya. Sripati Arambha boundaries are computed as midpoints between adjacent Madhya values, matching the existing SMV Sripati construction.
-8. **Graha Yuddha:** eligibility and winner fallback use the same degree-and-minute / same-Bhava / northern-ecliptic-latitude rule from Uttara Kalamrita II p.41 where BPHS is silent. The magnitude applied to Kala is BPHS Chapter 27 verse 20's difference between the two pre-war Shadbala totals. Overlapping wars and exact latitude ties are unresolved; affected final totals and Rupas are withheld.
+1. **Time:** resolve local birth date/time using the supplied IANA timezone or exact UTC offset; convert once to UT1 and TT.
+2. **True Longitude:** NAELOS Ephemeris 0.1.3 evaluates apparent geocentric true-ecliptic-of-date positions from the checked-in JPL DE440 tables. Verify every required binary against `naelos-ephemeris/manifest.json` by byte length and SHA-256.
+3. **Sidereal coordinates:** reduce NAELOS tropical apparent positions into the common effective Lahiri frame using the same-epoch Swiss frame calibration described above.
+4. **Mean / Sheeghroccheya:** retain the V365 mean-motion source selector. Rotate Sun and planet mean values uniformly into the same effective Lahiri frame before any Cheshta computation.
+5. **BPHS Cheshta:** BPHS I Chapter 27 verses 24–25 midpoint / kendra / three-Virupa arithmetic. Uttara Kalamrita II pp.42–43 selects inner/outer input pairs only.
+6. **Other Bala:** BPHS source helpers calculate Sthana, Dig, Kala, Naisargika and Drig. NAELOS true-equator-of-date declinations and apparent local solar-time inputs are retained for Ayana and Kala calculations.
+7. **Sripati Bhava:** NAELOS Porphyry cusps are converted into the same effective Lahiri frame for Bhava Madhya; Arambha boundaries are midpoints between adjacent Madhya values.
+8. **Graha Yuddha:** eligibility and winner fallback use the same degree-and-minute / same-Bhava / northern-ecliptic-latitude rule from Uttara Kalamrita II p.41 where BPHS is silent. BPHS I Chapter 27 verse 20 supplies the magnitude from pre-war Shadbala differences. Ambiguous or overlapping wars withhold affected totals and Rupas.
 
-## Important scope
+## PAC 2026 validation
 
-This is a modern-data BPHS calculator, not an implementation of the classical Sūrya-Siddhānta four-pass True Longitude theory. NAELOS DE440 supplies the modern apparent True Longitude; V365 supplies the traditional Saura mean positions. Their transfer into the same declared sidereal frame is explicit and visible in the returned provenance.
+The research workflow downloads the seven official PAC 2026 Nirayana PDFs and verifies their SHA-256 / byte-length manifest. It extracts 365 daily entries for each of Sun, Moon, Mars, Mercury, Jupiter and Saturn (2,555 rows total) and compares them at 00:00 TT with NAELOS DE440 in the **same common effective Lahiri frame**. The acceptance gate remains 0.36 arcseconds. The PAC PDFs say Nirayana but do not name Lahiri explicitly; Lahiri is therefore identified as the inferred convention supported by the numerical cross-check, not as a quoted PAC specification.
 
-The five-natal NAELOS input baseline is retained as a pinned fixture from the earlier five Perambalur epochs (25 planet rows). The regression rechecks:
-- NAELOS tropical True Longitude against the independent Swiss tropical calculation at the same TT epoch, with a strict 5-arcsecond bound;
-- the five source Mean / True / Sheeghroccheya / BPHS Cheshta outputs against the pinned values;
-- seven grahas × six components, final Virupa/Rupa arithmetic and frame/epoch checks;
-- Yuddha edge cases, including exact same-minute selection, northern-latitude winner, overlapping candidate pairs and ties.
+This 2026 daily comparison is not an all-epoch historical certificate and does not establish independent provenance of the underlying PAC and NAELOS integrations.
 
-A second deterministic audit calculates one random natal chart per year from 1800 through 2399. This is numerical coverage and component-reconciliation evidence only. It is **not** independent historical verification at every birth instant.
+## Natal and regression scope
 
-Every result returns \`classicalCertified:false\`. The engine metadata and result both hard-code \`productionIntegrationAllowed:false\`.
+The five-natal regression verifies the NAELOS tropical comparison and checks that every pinned Mean / True / Sheeghroccheya triple is uniformly transferred into the effective Lahiri frame without changing BPHS Cheshta arithmetic. The engine checks a single shared frame ID and exact epoch across planetary positions, cusps and all five Cheshta triples.
+
+A deterministic audit calculates one seeded-random Indian natal chart per civil year from 1800 through 2399. This is numerical coverage and component-reconciliation evidence only. It is **not** independent historical verification at every birth instant.
+
+Every result returns `classicalCertified:false`. The engine metadata and result keep `productionIntegrationAllowed:false`.
 
 ## Run
 
-From the repository root:
-
-\`\`\`sh
+```sh
 npm install --no-save --no-package-lock --ignore-scripts naelos-ephemeris@0.1.3
 node tests/true-bphs-naelos-engine-regression.mjs
+node tests/pac-2026-seven-graha-naelos-regression.mjs
 node tests/true-bphs-naelos-600y-research.mjs
-\`\`\`
+```
 
-The 600-chart audit writes:
-
-\`artifacts/true-bphs-600-random-natal-charts-1800-2399.json\`
+The 600-chart audit writes `artifacts/true-bphs-600-random-natal-charts-1800-2399.json`.
 
 ## Production boundary
 
-No production integration is included. The engine is under \`research/true-bphs/\`; it is not imported by Horoscope, Marriage Matching, Calendar, public service workers, site bundles, PWA repositories, APKs, or deployed services. No service-worker file, cache release, app version, package manifest, customer data or production calculation is changed by this research branch.
+No production integration is included. The engine remains under `research/true-bphs/`; it is not imported by Horoscope, Marriage Matching, Calendar, public service workers, site bundles, PWA repositories, APKs, or deployed services. No cache version, app version, package manifest, customer data or production calculation is changed by this research branch.
