@@ -250,3 +250,18 @@
 .south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-bhava-cell .smv-v342-planets{
  flex:0 1 auto!important;min-height:0!important;max-height:100%!important;
 }
+
+/* North Indian D1/D9/Transit Rasi labels: fixed-size Devanagari digits.
+   Triangle compartments keep the existing corner placement; diamond cells use a
+   small in-flow row so the label never floats over a planet name. */
+.south-indian-chart.smv-v342-north .smv-v342-cell:not(.smv-v342-bhava-cell) .smv-v342-sign-number{
+ display:block!important;flex:0 0 auto!important;align-self:center!important;
+ min-width:1.25em;box-sizing:border-box!important;text-align:center!important;
+ margin:0 0 1px!important;padding:0 2px!important;border-radius:2px!important;
+ background:#fffdf7!important;color:#853323!important;
+ font-family:'Noto Sans Devanagari','Noto Sans',sans-serif!important;
+ font-size:11px!important;font-weight:900!important;line-height:1!important;
+}
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-triangle-cell .smv-v342-sign-number{
+ z-index:4!important;
+}
