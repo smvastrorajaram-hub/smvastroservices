@@ -19,6 +19,7 @@ import {
   sauraBijaCorrectedTrueLongitudeResearch
 } from '../../research/saura-bija/saura-bija-mean-motion.mjs';
 import { CLASSICAL_NATAL_SCOPE } from './evidence-gates.mjs';
+import { BV_RAMAN_SHADBALA_SOURCE } from '../../public/horoscope/offline/bv-raman-shadbala.browser.mjs';
 
 const SEED = 0x534d5641; // "SMVA"; deterministic seeded-random audit corpus
 const EXPECTED_CHARTS = CLASSICAL_NATAL_SCOPE.endYear -
@@ -202,8 +203,9 @@ for (let year = CLASSICAL_NATAL_SCOPE.startYear;
     birth.epochId+' Raman Yuddha evidence object is present');
   assert.ok(Array.isArray(warEvidence.pairs) && Array.isArray(warEvidence.unresolved),
     birth.epochId+' Raman Yuddha pair and unresolved arrays are present');
-  assert.ok(warEvidence.diameterArcsec && typeof warEvidence.diameterArcsec === 'object',
-    birth.epochId+' Raman planetary disc diameters are present');
+  const discDiameters = BV_RAMAN_SHADBALA_SOURCE.yuddhaDiscDiameterArcsec;
+  assert.ok(discDiameters && typeof discDiameters === 'object',
+    birth.epochId+' audited Raman planetary disc-diameter source constants are present');
   assert.ok(typeof warEvidence.source === 'string' && warEvidence.source.includes('B.V. Raman'),
     birth.epochId+' Raman Yuddha source provenance is present');
 
@@ -269,7 +271,7 @@ for (let year = CLASSICAL_NATAL_SCOPE.startYear;
           assert.ok(Math.abs(win.magnitude-lose.magnitude)<=0.001,
             birth.epochId+' '+a+'/'+b+' winner/loser adjustment magnitudes are equal');
           magnitude=win.magnitude;
-          const da=warEvidence.diameterArcsec[a],db=warEvidence.diameterArcsec[b];
+          const da=discDiameters[a],db=discDiameters[b];
           diameterDifferenceArcsec=Math.abs(da-db);
           assert.ok(finite(da)&&finite(db)&&diameterDifferenceArcsec>0,
             birth.epochId+' '+a+'/'+b+' source disc-diameter difference is positive');
