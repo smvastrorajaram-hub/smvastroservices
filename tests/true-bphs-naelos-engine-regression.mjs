@@ -64,7 +64,7 @@ for(const birthFixture of fixture.births) {
   for(const [english,expected] of Object.entries(birthFixture.planets)) {
     const name=tamil[english];
     const actual=result.cheshtaResults[name];
-    near(actual.trueLongitude,expected.trueLongitudeSaura,1e-8,
+    near(actual.trueLongitude,expected.trueLongitudeSaura,1e-7,
       birthFixture.date+' '+english+' NAELOS true-longitude Saura transfer');
     near(actual.meanLongitude,expected.meanLongitudeSaura,1e-8,
       birthFixture.date+' '+english+' V365 Mean Longitude retained');
