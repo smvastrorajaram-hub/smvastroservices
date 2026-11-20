@@ -85,7 +85,7 @@
     "limit": "One worked example only; no complete 1800–2399 independent tabulation acquired."
   },
   "independentEphemerisAcquisition": {
-    "status": "BIBLIOGRAPHIC_CANDIDATES_IDENTIFIED_TABLE_ROWS_NOT_ACQUIRED",
+    "status": "PARTIAL_1974_LAHIRI_SCAN_FOUND_GOVERNMENT_IAE_ROWS_PENDING",
     "candidateEditions": [
       {
         "year": 1971,
@@ -119,7 +119,26 @@
       }
     ],
     "officialMetadata": "IMD PAC identifies modern IAE reference epoch J2000.5 and ephemeris argument TT.",
-    "note": "Daily planetary table pages were not downloaded/transcribed; bibliographic existence is not numerical evidence."
+    "note": "Actual government 1971/1974 IENA and 1992/1994/2015 IAE daily rows remain unacquired. Additionally, a searchable full-text scan of N.C. Lahiri's separate 1974 private Nirayana ephemeris was found. It specifies daily geocentric apparent Nirayana positions at 0h UT (05:30 IST) and separate mean positions on printed p.33, but OCR row/column alignment is insufficient for numeric transcription.",
+    "alternate1974LahiriAnnualEphemeris": {
+      "title": "Indian Ephemeris of Planets’ Positions According to the Nirayana or Indian System for 1974",
+      "author": "Nirmal Chandra Lahiri",
+      "edition": "36th edition",
+      "publisher": "Astro-Research Bureau, Calcutta",
+      "publicationDate": "1973-09-23 (preface date); for calendar year 1974",
+      "sourceUrl": "https://pdfcoffee.com/201543680lahiris-indian-ephemeris-1974-adtextpdf-pdf-free.html",
+      "sourceIdentity": "Private annual Nirayana ephemeris; not the Government of India Indian Ephemeris and Nautical Almanac (IENA).",
+      "documentedContents": {
+        "dailyPlanetLongitudes": "Geocentric apparent Nirayana longitudes for Sun, Moon and planets",
+        "dailyEpoch": "0h Universal Time / 0h GMT, stated equivalent to 05:30 IST",
+        "separateMeanPositions": "Mean positions provided separately on printed page 33",
+        "otherEpoch": "Latitudes, declinations, heliocentric longitudes and right ascensions at 0h Ephemeris Time"
+      },
+      "sourceEvidenceLocator": "Title and publisher: extracted lines 154–205. Daily ephemeris time/frame description: lines 288–318. Daily table headings and May 1974 monthly table: lines 2216–2242. October 1974 table heading: lines 4066–4102.",
+      "extractionStatus": "FULL_PAGE_TEXT_SCAN_FOUND; NUMERICAL_TABLE_ROWS_NOT_MANUALLY_TRANSCRIBED",
+      "reasonNotNumericallyCertified": "The web text extraction has lost row/column alignment in the numeric monthly tables; exact day/planet cells cannot safely be attributed from this OCR alone.",
+      "use": "Potential independent sidereal apparent-longitude spot-check after obtaining a legible page scan; do not blend its Nirayana zero point or UT/ET epochs into the Burgess Saura chain."
+    }
   },
   "rows": [
     {
