@@ -165,6 +165,12 @@ has(form,"if(!['male','female'].includes(gender))","Payment/report context rejec
 has(form,"if(!['male','female'].includes(birthGender))","English generation rejects missing gender");
 has(form,"const {localizeTamilText}=await import('./offline/places/tamil-transliteration.mjs')",'English form uses the offline proper-name transliteration module.');
 has(form,"copy('englishBirthVillage','tamilBirthVillage','ta')",'English village is transliterated into the Tamil mirror field.');
+has(form,"copy('englishAstroName','tamilAstroName','ta')",'English horoscope name is transliterated into the Tamil report field.');
+has(horoscope,"['tamilAstroName','englishAstroName']",'Tamil horoscope name is transliterated into the English mirror field.');
+has(horoscope,'class="smv-horoscope-person-name" data-name-ta="${esc(name)}"','Result heading stores the Tamil-script name separately.');
+has(horoscope,'data-name-en="${esc($(\'englishAstroName\')?.value||name)}"','Result heading stores the English-script name separately.');
+has(language,"root?.querySelector('.smv-horoscope-person-name')",'Result language switch updates the displayed horoscope name.');
+has(language,"lang==='ta'?personName.dataset.nameTa:personName.dataset.nameEn",'Name heading selects the matching translated form for Tamil and English.');
 has(form,"copy('englishMotherName','tamilMotherName','ta')",'English mother name is transliterated into the Tamil mirror field.');
 has(form,"copy('englishFatherName','tamilFatherName','ta')",'English father name is transliterated into the Tamil mirror field.');
 has(horoscope,"['tamilBirthVillage','englishBirthVillage']",'Tamil village is transliterated into the English mirror field.');
