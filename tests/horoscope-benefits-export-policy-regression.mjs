@@ -92,16 +92,9 @@ test("The same no-export report policy covers both Horoscope and Marriage Matchi
 test("All three apps use one synchronized cache release; Horoscope runtime revision is bumped", () => {
   const versions = workers.map(source => /const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(source));
   assert.ok(versions.every(Boolean));
-  assert.deepEqual(versions.map(match => match[1]), [
-    "20261120-subha-janana-transit-lagna-v3",
-    "20261120-subha-janana-transit-lagna-v3",
-    "20261120-subha-janana-transit-lagna-v3"
-  ]);
-  assert.deepEqual(versions.map(match => match[2]), [
-    "20261120-subha-janana-transit-lagna-v3",
-    "20261120-subha-janana-transit-lagna-v3",
-    "20261120-subha-janana-transit-lagna-v3"
-  ]);
+  assert.equal(new Set(versions.map(match => match[1])).size, 1);
+  assert.equal(new Set(versions.map(match => match[2])).size, 1);
+  assert.ok(versions[0][1] && versions[0][2], 'Both generated host cache release IDs must be present.');
   const runtime = /const RUNTIME_REVISION\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(workers[1]);
   assert.ok(runtime);
   assert.equal(runtime[1], "v284-pages-dev-tamil-solar-20261116");
