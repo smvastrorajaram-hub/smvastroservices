@@ -23,11 +23,25 @@ Ledger: `historical-longitude-evidence-ledger.json` (15 rows).
 
 The 600 random charts and 3,000 candidate rows are coverage data, not independent archival verification at all 600 exact DOBs.
 
-### IENA / IAE archival editions
+### Existing official Government PAC 2026 certificate — already complete
 
-Bibliographic candidates were identified for 1971 and 1974 *Indian Ephemeris and Nautical Almanac*, 1992 and 2015 *Indian Astronomical Ephemeris*, and a 1994 library catalogue record. Official IMD PAC describes the modern IAE reference epoch as J2000.5 and ephemeris argument as TT. The actual daily planetary table pages from these editions were not downloaded and transcribed in this run; they are not numerical PASS evidence.
+The official Government of India / IMD Positional Astronomy Centre 2026 five-planet daily Nirayana cross-check is already certified and is reused as an existing benchmark; it is not repeated in this PR.
 
-**Phase 1 verdict:** mean source-anchor limited PASS; True longitude PARTIAL / modern accuracy FAIL; Sheeghroccheya PARTIAL with Saturn conflict. No historical-longitude certificate is issued.
+- Five official PAC planet PDFs; 365 daily rows per planet; 1,825 values total.
+- TT only: each civil date is evaluated at 00:00:00 TT.
+- Maximum residual 0.253273 arcsec; RMS 0.128957 arcsec; the declared 0.36 arcsec gate passed.
+- Existing report: [PAC 2026 full-year certificate](https://github.com/smvastrorajaram-hub/smvastroservices/blob/main/audits/SMV_ASTRO_PAC_2026_FIVE_GRAHA_NIRAYANA_CROSSCHECK_2026-11-20.md).
+- Existing successful run: [Actions #44778196616](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44778196616).
+
+No 1971, 1974, 1992, 1994 or 2015 IENA/IAE editions are required or to be searched for in this task. The PAC 2026 certificate is a contemporary benchmark; it does not by itself prove a historical Saura four-pass True Longitude or a same-model classical Mean/True/Sheeghroccheya chain.
+
+**Phase 1 verdict:** mean source-anchor limited PASS; historical four-pass True longitude remains PARTIAL; exact-epoch modern DE440 parity is tracked separately; Sheeghroccheya PARTIAL with Saturn conflict. The existing Government PAC 2026 certificate remains PASS and is not repeated. No historical-longitude certificate is issued.
+
+### Exact natal-epoch DE440 cross-check — implemented as a separate modern validation
+
+The research workflow now takes the exact deterministic random DOB/time/place records already generated for 1800–2399 and evaluates the NAELOS/JPL DE440 apparent geocentric longitude for Mercury, Venus, Mars, Jupiter and Saturn at each same epoch. The test verifies all six relevant 100-year binaries against the checked-in byte-length/SHA-256 manifest, converts each historical local civil time using the recorded IANA offset, and compares NAELOS with the repository Swiss Ephemeris at the same ET/TT instant.
+
+This is a distinct modern numerical parity test. The outputs are additionally transferred into the declared Burgess-1860 Saura frame to exercise the BPHS Chesta input geometry with the already audited Saura mean/Sheeghroccheya selector. The test does not change the historical Sūrya-Siddhānta True Longitude output and does not turn modern DE440 parity into a historical archive certificate. Exact residual statistics are recorded in the uploaded 600-chart artifact after Actions completes.
 
 ## Phase 2 — 42 Bala source rows
 
