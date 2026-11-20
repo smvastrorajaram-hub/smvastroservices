@@ -121,7 +121,7 @@ export function latinToTamil(value){
   const input=String(value??'').normalize('NFC').trim();
   if(!input||TAMIL_RE.test(input)&&!LATIN_RE.test(input))return input;
   const phrases=replaceKnownPhrases(input,COMMON_EN_TO_TA);
-  const words=phrases.split(/([^\\p{L}\\p{M}]+)/u);
+  const words=phrases.split(/([^\p{L}\p{M}]+)/u);
   return words.map(word=>/[A-Za-z]/u.test(word)?latinWordToTamil(word):word).join('');
 }
 export function localizeTamilText(value,language='ta'){
@@ -133,7 +133,7 @@ export function localizeTamilText(value,language='ta'){
   }
   if(LATIN_RE.test(input)&&!TAMIL_RE.test(input))return input;
   const phrases=replaceKnownPhrases(input,COMMON_TA_TO_EN);
-  const words=phrases.split(/([^\\p{L}\\p{M}]+)/u);
+  const words=phrases.split(/([^\p{L}\p{M}]+)/u);
   return words.map(word=>TAMIL_RE.test(word)?tamilToLatin(word):word).join('');
 }
 export function hasTamilScript(value){return TAMIL_RE.test(String(value??''));}
