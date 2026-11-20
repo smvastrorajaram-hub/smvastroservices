@@ -57,7 +57,7 @@ jobs:
         with:
           name: pac-2026-seven-graha-official-pdfs-and-naelos-validation
           path: |
-            \${{ runner.temp }}/pac2026-seven/*.pdf
+            ${{ runner.temp }}/pac2026-seven/*.pdf
             artifacts/pac-2026-seven-graha-naelos-validation.json
           if-no-files-found: error
           retention-days: 90
