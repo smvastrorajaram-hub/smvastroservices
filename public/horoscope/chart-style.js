@@ -12,7 +12,12 @@
  const STYLE_KEY='smv-horoscope-chart-layout-v342';
  const safe=x=>['south','north','east'].includes(x)?x:'south';
  const isTa=()=>document.documentElement.lang==='ta'||document.body.classList.contains('tamil-mode');
+ const isTamilReport=node=>{const root=node?.closest?.('#tamilHoroscopeResult,#englishHoroscopeResult');return root?root.id==='tamilHoroscopeResult':isTa();};
+ const HINDI_DIGITS=['०','१','२','३','४','५','६','७','८','९','१०','११','१२'];
+ const hindiNumber=value=>String(value).replace(/[0-9]/g,d=>'०१२३४५६७८९'[Number(d)]);
  const roman=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+ const bhavaNumberText=(house,tamil)=>tamil?romanHouse(house):String(house);
+ const bhavaNumberListText(houses,tamil){return houses.map(h=>bhavaNumberText(h,tamil)).join(' / ');}
  const houseNumber=value=>{
   const raw=String(value??'').trim().toUpperCase();
   if(/^\d{1,2}$/.test(raw)){const n=Number(raw);return n>=1&&n<=12?n:0;}
@@ -20,16 +25,19 @@
  };
  const romanHouse=house=>roman[Number(house)-1]||'—';
  function normalizeSouthBhavaHouseLabels(chart){
+  const tamil=isTamilReport(chart);
   for(const label of chart.querySelectorAll('.bhava-house-no')){
    const house=houseNumber(label.dataset.bhavaHouse)||houseNumber(label.textContent);
-   if(house){label.dataset.bhavaHouse=String(house);label.dataset.bhavaRoman=romanHouse(house);label.textContent=romanHouse(house);}
+   if(house){label.dataset.bhavaHouse=String(house);label.textContent=bhavaNumberText(house,tamil);}
   }
  }
  function restoreRomanBhavaLabels(root){
   const chart=root?.querySelector('#bhavaChart');if(!chart)return;
   normalizeSouthBhavaHouseLabels(chart);
-  for(const label of chart.querySelectorAll('.smv-v342-house-number[data-bhava-roman]')){
-   label.textContent=label.dataset.bhavaRoman;
+  const tamil=isTamilReport(root);
+  for(const label of chart.querySelectorAll('.smv-v342-house-number[data-bhava-houses]')){
+   const houses=label.dataset.bhavaHouses.split(',').map(houseNumber).filter(Boolean);
+   label.textContent=bhavaNumberListText(houses,tamil);
   }
  }
  let choice='south';
@@ -92,12 +100,22 @@
   if(triangleCell)cell.classList.add('smv-v342-triangle-cell');
   if(kind==='bhava')cell.classList.add('smv-v342-bhava-cell');
   if(house>=1&&house<=12)cell.dataset.house=String(house);
-  // House labels are a normal first row inside the Bhava cell, never a
-  // chart-level overlay. This reserves space and prevents labels covering grahas.
-  if(kind==='bhava'&&String(bhavaHouseLabel||'').trim()){
+  // North Indian cells show the Rasi number in Devanagari, including Bhava:
+  // the fixed North house slot identifies the Bhava, while this number names
+  // the Sphuta Rasi occupying that slot. It is display-only and never moves a graha.
+  if(style==='north'){
+   const number=document.createElement('span');number.className='smv-v342-sign-number';
+   number.textContent=HINDI_DIGITS[sign+1];
+   number.setAttribute('aria-label','Rasi '+String(sign+1));
+   cell.append(number);
+  }
+  // East Bhava groups distinct Bhava IDs under the actual Sphuta Rasi.
+  if(kind==='bhava'&&style==='east'&&String(bhavaHouseLabel||'').trim()){
+   const tamil=isTamilReport(cell);
+   const houses=String(bhavaHouseLabel).split(/[\\/,]/).map(houseNumber).filter(Boolean);
    const label=document.createElement('span');label.className='smv-v342-house-number';
-   label.textContent=String(bhavaHouseLabel).trim();
-   label.dataset.bhavaRoman=label.textContent;
+   label.dataset.bhavaHouses=houses.join(',');
+   label.textContent=bhavaNumberListText(houses,tamil);
    label.setAttribute('aria-label','Bhava '+label.textContent);
    cell.append(label);
   }
@@ -220,7 +238,7 @@
     const house=kind==='bhava'?0:(sign-lagna+12)%12+1;
     const [x,y]=EAST[sign];
     const planets=kind==='bhava'?bhavaPlanetsBySign[sign]:null;
-    const bhavaLabel=kind==='bhava'?bhavaHousesBySign[sign].map(romanHouse).join(' / '):'';
+    const bhavaLabel=kind==='bhava'?bhavaHousesBySign[sign].join(' / '):'';
     chart.append(pointCell(x,y,sign,house,from,style,kind,ta,planets,bhavaLabel));
    }
   }else{
@@ -237,7 +255,7 @@
       :(bhava?.planets||((from.cusp[sign]?.length===1)?sourceLines:[]));
     }
     const [x,y]=NORTH[house];
-    chart.append(pointCell(x,y,sign,house,from,style,kind,ta,planetEntries,kind==='bhava'?romanHouse(house):''));
+    chart.append(pointCell(x,y,sign,house,from,style,kind,ta,planetEntries,''));
    }
   }
   if(style==='east'){
