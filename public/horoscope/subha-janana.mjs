@@ -35,7 +35,7 @@ const dateAdd = (date,n) => { const d = new Date(date+'T12:00:00Z'); d.setUTCDat
 const dayOf = date => new Date(date+'T12:00:00Z').getUTCDay();
 const mins = time => { const m=String(time||'').match(/^(\d{1,2}):([0-5]\d)$/); return m?Number(m[1])*60+Number(m[2]):null; };
 const stamp = (date,time,zone) => Date.parse(date+'T'+time+':00Z')-offsetMinutesAt(zone,date,time)*60000;
-const time12 = time => { const m=String(time||'').match(/^(\\d{1,2}):([0-5]\\d)$/); if(!m)return '—'; return String(Number(m[1])).padStart(2,'0')+':'+m[2]; };
+const time12 = time => { const m=String(time||'').match(/^(\d{1,2}):([0-5]\d)$/); if(!m)return '—'; return String(Number(m[1])).padStart(2,'0')+':'+m[2]; };
 const ghati = (v,ta) => { if(!Number.isFinite(v)||v<0)return '—'; const total=Math.round(v),n=Math.floor(total/60),r=String(total%60).padStart(2,'0'); return ta?n+' நாழிகை '+r+' விநாழிகை':n+' Nazhigai '+r+' Vinazhigai'; };
 const ghatiMarkup = (v,ta) => {
   if(!Number.isFinite(v)||v<0)return '—';
