@@ -1,14 +1,15 @@
-# SMV ASTRO — Official PAC 2026 Five-Graha Nirayana Longitude Cross-Check
+# SMV ASTRO — Official PAC 2026 Full-Year Five-Graha Nirayana Longitude Cross-Check
 
 **Date:** 20 November 2026  
-**Scope:** 2026 only; Mercury, Venus, Mars, Jupiter and Saturn  
-**Status:** PASS for 15 selected official PAC daily-table entries against the bundled Swiss Ephemeris Lahiri-sidereal calculation. This is not a historical Saura or BPHS Cheshta certificate.
+**Scope:** 2026-01-01 through 2026-12-31; Mercury, Venus, Mars, Jupiter and Saturn  
+**Status:** **PASS — all 1,825 daily PAC values parsed and compared against the bundled Swiss Ephemeris Lahiri-sidereal calculation within the 0.36 arc-second gate.**  
+**Qualification:** This is a full-year official PAC table cross-check under an empirically inferred time/ayanamsa convention. It is not a historical Saura or BPHS Cheshta certificate.
 
 ## 1. Official reference source
 
-The reference is published by the Positional Astronomy Centre, Kolkata, under the India Meteorological Department, Government of India. The official IMD description states that the Indian Astronomical Ephemeris is an annual PAC publication and that Part I covers TIME, SUN, MOON and PLANETS. It also describes the IAE standard reference system epoch as J2000.5 and the argument of its ephemerides as Terrestrial Time (TT).
+The reference is published by the Positional Astronomy Centre, Kolkata, under the India Meteorological Department, Government of India. The official IMD description states that the Indian Astronomical Ephemeris is an annual PAC publication and that Part I covers TIME, SUN, MOON and PLANETS. It describes the IAE standard reference system epoch as J2000.5 and the argument of its ephemerides as Terrestrial Time (TT).
 
-The directly accessible PAC daily Nirayana longitude PDFs used here are:
+The full-year regression downloads these five PAC daily Nirayana-longitude PDFs directly during GitHub Actions:
 
 | Planet | Official PAC PDF |
 |---|---|
@@ -18,81 +19,183 @@ The directly accessible PAC daily Nirayana longitude PDFs used here are:
 | Jupiter | https://packolkata.imd.gov.in/download/nirlon/Jupiter.pdf |
 | Saturn | https://packolkata.imd.gov.in/download/nirlon/Saturn.pdf |
 
-These are the official PAC 2026 daily Nirayana-longitude tables, not the Astrodienst tropical PDFs suggested as an alternative. The PDFs include daily entries covering the 2026 calendar year.
+They are not the Astrodienst tropical PDFs. The regression extracts selectable PDF text using `pdftotext -layout`, then requires every Gregorian date in 2026 exactly once for every planet: 365 rows per PDF, 1,825 source values total.
 
-## 2. Exact source samples
+### Source integrity manifest
 
-The fixture retains the original degree/minute/second values from the PAC tables and their decimal-degree reconstruction.
+The exact downloaded documents are pinned in `tests/fixtures/pac-2026-official-daily-pdf-manifest.json`. CI asserts both byte length and SHA-256 before parsing:
 
-Three dates distributed across the year were selected: 1 January, 1 July and 31 December 2026. This gives 15 independently transcribed source entries: five planets × three dates.
+| Planet | Bytes | SHA-256 |
+|---|---:|---|
+| Mercury | 68,167 | `52985afbd43e944949ebd863c14810b1e632682bc24a1603c4a8afd66158fd2c` |
+| Venus | 67,773 | `ba012448354079180cfefdfa002adbb19191c1645fb78f508e9c7b19bec25c17` |
+| Mars | 66,458 | `5878c1275a8b9f5db43d3f5a996612f6446d92da8d8e6ea5f3960c53ad43d93e` |
+| Jupiter | 67,337 | `2a64a64539ae2223a1833fac028fe91cf1f3335fa21ad1b116b860caade8480f` |
+| Saturn | 67,315 | `15b547d9b8cd20a82b4c645ed6d696c3a858efff6b601828f3a16a406425b2c8` |
 
-| Date | Planet | PAC Nirayana longitude |
+A changed PAC PDF will fail the pinned hash check instead of silently changing the oracle.
+
+## 2. Comparison contract and qualifications
+
+The candidate is the repository's bundled Swiss Ephemeris WASM 2.10.03:
+
+- Configure `setSiderealLahiri()`.
+- Calculate with explicit `SWIEPH | SPEED | SIDEREAL` flags.
+- Assert the returned Swiss Ephemeris data flag; a Moshier fallback cannot pass.
+- Convert each daily PAC DMS longitude into decimal degrees.
+- Calculate at the civil date's 00:00 TT Julian Day and compare normalized sidereal longitudes with a circular signed difference.
+
+**Important metadata limitation:** The daily PAC PDF row headers identify the date and Nirayana longitude, but do **not** explicitly identify the row's time of day or name the ayanamsa. Therefore:
+
+- **00:00 TT** is an empirically inferred daily epoch used for comparison.
+- **Lahiri** is an empirically inferred sidereal convention used for comparison.
+- The public PAC PDF metadata does not establish whether the underlying dynamical ephemeris is independent of Swiss Ephemeris.
+
+These assumptions are deliberately exposed in the machine-readable test output. They are not claimed as text copied from the PAC PDF. PAC confirmation of the row epoch and named ayanamsa remains desirable.
+
+## 3. Full-year numerical result
+
+**GitHub Actions run #1214:** https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44771494887 — completed SUCCESS.
+
+The full-year regression verified:
+
+- Five official PAC PDFs fetched successfully and matched the pinned byte-length/SHA-256 manifest.
+- Each planet has all 365 daily rows from 1 January through 31 December 2026, with no missing or duplicate date.
+- **1,825 / 1,825** daily PAC values compared against Swiss Ephemeris.
+- Each point is within the predeclared **0.36 arc-second** gate.
+- The full B.V. Raman integrated QA workflow also completed SUCCESS, including the printed Standard Horoscope certificate, Ishta/Kashta, Ayurdaya-report and Marriage Matching regressions.
+
+**Overall maximum absolute residual:** **0.253273″** (0.000070353631°).  
+**Overall RMS residual:** **0.128957″**.  
+**Acceptance gate:** **0.36″**.
+
+The largest difference is Jupiter on **2026-01-06**:
+
+- PAC Nirayana: 86° 28′ 23.6972″ (decimal 86.4732492222°).
+- Swiss Lahiri sidereal: 86.4731788686°.
+- Absolute difference: **0.253273″**.
+
+### Per-planet residuals
+
+| Planet | Samples | RMS residual | Maximum residual | Date of maximum |
+|---|---:|---:|---:|---|
+| Mercury | 365 | 0.013224″ | 0.032790″ | 2026-11-06 |
+| Venus | 365 | 0.011795″ | 0.024843″ | 2026-04-02 |
+| Mars | 365 | 0.014714″ | 0.028122″ | 2026-01-21 |
+| Jupiter | 365 | 0.202727″ | 0.253273″ | 2026-01-06 |
+| Saturn | 365 | 0.203766″ | 0.234244″ | 2026-10-03 |
+| **All** | **1,825** | **0.128957″** | **0.253273″** | **2026-01-06 Jupiter** |
+
+### Month-by-month coverage and residuals
+
+Every calendar date is present. Sample count is five planetary values per calendar day.
+
+| Month | Covered days | Samples | Maximum residual | RMS residual |
+|---|---:|---:|---:|---:|
+| January | 31 | 155 | 0.253273″ | 0.147557″ |
+| February | 28 | 140 | 0.246726″ | 0.133873″ |
+| March | 31 | 155 | 0.226239″ | 0.125074″ |
+| April | 30 | 150 | 0.206660″ | 0.119465″ |
+| May | 31 | 155 | 0.195459″ | 0.116271″ |
+| June | 30 | 150 | 0.199126″ | 0.116799″ |
+| July | 31 | 155 | 0.211725″ | 0.120537″ |
+| August | 31 | 155 | 0.227597″ | 0.125278″ |
+| September | 30 | 150 | 0.232968″ | 0.129635″ |
+| October | 31 | 155 | 0.234244″ | 0.133316″ |
+| November | 30 | 150 | 0.228603″ | 0.136104″ |
+| December | 31 | 155 | 0.248857″ | 0.139571″ |
+| **Total** | **365** | **1,825** | **0.253273″** | **0.128957″** |
+
+## 4. Station, sign-boundary and conjunction stress coverage
+
+All event dates below are **daily brackets / daily minima**, not exact instant-of-event calculations. The PAC daily table has one value per civil day, so a station is bracketed by adjacent daily intervals and a close conjunction is reported at the minimum daily separation found.
+
+### Retrograde station brackets
+
+The daily PAC series identifies **12 direction-change brackets**:
+
+| Planet | Direction-change brackets in 2026 |
+|---|---|
+| Mercury | Direct → retrograde: 26–27 Feb; retrograde → direct: 21–22 Mar; direct → retrograde: 30 Jun–1 Jul; retrograde → direct: 24–25 Jul; direct → retrograde: 24–25 Oct; retrograde → direct: 14–15 Nov |
+| Venus | Direct → retrograde: 3–4 Oct; retrograde → direct: 14–15 Nov |
+| Mars | No direction-change bracket detected in the 2026 daily PAC rows |
+| Jupiter | Retrograde → direct: 11–12 Mar; direct → retrograde: 13–14 Dec |
+| Saturn | Direct → retrograde: 27–28 Jul; retrograde → direct: 11–12 Dec |
+
+These are source-table daily sign changes in longitude increment, not a high-resolution station-time certification.
+
+### Sign / Rasi boundary crossings
+
+The test detects **36 daily sign-boundary crossings**:
+
+| Planet | Crossings |
+|---|---:|
+| Mercury | 14 |
+| Venus | 12 |
+| Mars | 8 |
+| Jupiter | 2 |
+| Saturn | 0 |
+| **Total** | **36** |
+
+The parser uses unwrapped circular daily longitude differences to determine each adjacent day's sign-index transition, including wraparound at 360°/0°.
+
+### Close pairwise conjunction windows
+
+The test identifies **13 local daily minima with pairwise angular separation ≤2°**:
+
+| Date (2026) | Planet pair | Minimum daily separation |
 |---|---|---:|
-| 2026-01-01 | Mercury | 244° 25′ 42.9394″ |
-| 2026-01-01 | Venus | 254° 59′ 01.2244″ |
-| 2026-01-01 | Mars | 258° 27′ 56.6724″ |
-| 2026-01-01 | Jupiter | 87° 08′ 09.4454″ |
-| 2026-01-01 | Saturn | 331° 56′ 43.6184″ |
-| 2026-07-01 | Mercury | 91° 57′ 58.8431″ |
-| 2026-07-01 | Venus | 115° 57′ 45.3991″ |
-| 2026-07-01 | Mars | 37° 19′ 42.3311″ |
-| 2026-07-01 | Jupiter | 95° 55′ 55.1041″ |
-| 2026-07-01 | Saturn | 349° 57′ 26.0451″ |
-| 2026-12-31 | Mercury | 254° 03′ 45.2949″ |
-| 2026-12-31 | Venus | 208° 15′ 21.8149″ |
-| 2026-12-31 | Mars | 135° 30′ 49.8689″ |
-| 2026-12-31 | Jupiter | 122° 15′ 51.6599″ |
-| 2026-12-31 | Saturn | 344° 03′ 28.8959″ |
+| 8 Jan | Venus–Mars | 0.055618° |
+| 18 Jan | Mercury–Mars | 0.279151° |
+| 29 Jan | Mercury–Venus | 0.211831° |
+| 28 Feb | Mercury–Venus | 0.359825° |
+| 9 Mar | Venus–Saturn | 0.482027° |
+| 15 Mar | Mercury–Mars | 0.466431° |
+| 20 Apr | Mercury–Saturn | 0.682517° |
+| 20 Apr | Mars–Saturn | 0.033983° |
+| 21 Apr | Mercury–Mars | 0.074934° |
+| 10 Jun | Venus–Jupiter | 0.161601° |
+| 15 Aug | Mercury–Jupiter | 0.794146° |
+| 7 Oct | Mercury–Venus | 0.010602° |
+| 16 Nov | Mars–Jupiter | 0.097146° |
 
-Machine-readable source transcriptions are in `tests/fixtures/pac-2026-five-graha-nirayana.json`.
+These are candidate dates for additional high-resolution sampling. They are not claims of exact geocentric minimum separation or physical close approach.
 
-## 3. Comparison contract and qualifications
+## 5. Three-date hard-coded anchor fixture
 
-The candidate calculation is the repository's bundled Swiss Ephemeris WASM 2.10.03. It is explicitly configured with `setSiderealLahiri()`; calculations use `SWIEPH | SPEED | SIDEREAL`, and the returned flags must include the Swiss data bit. A Moshier fallback cannot pass.
+The separate hard-coded DMS regression remains in place to provide an independently reviewed, fixed transcription of 15 entries on 1 January, 1 July and 31 December 2026. It passed 135 assertions in run #1207:
 
-The PAC daily PDF row headers show the civil date and DMS longitude, but do **not** explicitly state the time of day or the named ayanamsa on those pages. The comparison therefore uses:
+https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44769611357
 
-- Daily epoch: **00:00 TT**, empirically inferred from the numerical match and consistent with the IAE's stated TT argument convention.
-- Sidereal zero: **Lahiri**, used as the comparison convention because the official table entries align with it to sub-arcsecond precision; the PDF headers themselves do not name Lahiri.
+This anchor test complements—not replaces—the full-year PDF parser test.
 
-These two items are explicit assumptions of this regression, not facts transcribed from the PDF. They must remain marked as inferred until PAC confirms the daily table's precise time argument and ayanamsa definition.
+## 6. Interpretation and limits
 
-The three dates are annual anchor samples, not a full 365-day validation. The complete PAC PDFs are available as the source series; additional samples around retrograde stations, conjunctions and month boundaries should be added before broad annual claims.
+This is a full-calendar-year comparison against an official Government of India PAC-published five-planet Nirayana-longitude series, using all 365 daily rows for each planet. The measured residuals are sub-arcsecond and the complete sample passes the selected comparison gate.
 
-## 4. Numerical result
+However, this does **not** establish that PAC and Swiss Ephemeris use independent underlying dynamical integrations. The public daily PDFs do not disclose enough computational provenance to prove that.
 
-The 15 PAC source values were converted from DMS to decimal degrees and compared against the direct sidereal Swiss Ephemeris WASM result at 00:00 TT.
+It also does **not**:
 
-Acceptance gate: **0.0001° = 0.36 arc-second** per point.
+- certify the historical Saura / Sūrya-Siddhānta four-pass True-longitude method;
+- establish a coherent Mean / True / Sheeghroccheya triplet from one traditional model, frame and epoch;
+- validate historical Bīja or Mandocca/apsis evolution;
+- certify the five natal BPHS Cheshta values;
+- establish arbitrary-date or 1800–2399 True-longitude certification.
 
-| Planet | Samples | RMS residual | Maximum residual |
-|---|---:|---:|---:|
-| Mercury | 3 | 0.016511″ | 0.025500″ |
-| Venus | 3 | 0.009447″ | 0.015860″ |
-| Mars | 3 | 0.013207″ | 0.019681″ |
-| Jupiter | 3 | 0.227138″ | 0.250283″ |
-| Saturn | 3 | 0.211252″ | 0.231153″ |
-| **All** | **15** | **0.139108″** | **0.250283″** |
+A modern PAC/Swiss Nirayana longitude must not be combined with traditional Saura Mean or Sheeghroccheya values and labelled a classical Cheshta input. Before any BPHS Cheshta certification, the same-model Mean/True/Sheeghroccheya chain and the date-dependent classical inputs must be established from source-backed evidence.
 
-CI run #1207 completed SUCCESS with 135 assertions in this PAC regression. All 15 observations are within the 0.36″ acceptance gate. The maximum observed residual is Jupiter on 1 January 2026: **0.000069523° = 0.250283″**. Overall RMS is **0.0000386412° = 0.139108″**.
+## 7. Next evidence still required
 
-Automated regression: `tests/pac-2026-five-graha-nirayana-regression.mjs`. CI: https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44769611357.
+1. Obtain written PAC confirmation of the daily row's exact time argument and named ayanamsa.
+2. If an exact-instant station/conjunction certification is required, use a finer-than-daily official source or a separately identified high-resolution oracle; daily brackets alone do not provide exact station times.
+3. Verify date-specific classical Mean, True and Sheeghroccheya values as one coherent model/frame/epoch, including Bīja and apsis inputs.
+4. Verify Graha Yuddha eligibility/winner/loser boundaries and all other Shadbala component provenance.
+5. Only then derive and certify the five BPHS Cheshta calculations.
 
-## 5. Interpretation and limits
-
-This is a strong cross-check against an official Government of India PAC-published 2026 sidereal-longitude series. It does not by itself prove that the PAC tables and the Swiss Ephemeris calculation are based on independent underlying dynamical integrations: the public table pages do not disclose sufficient computational provenance to establish that.
-
-It does not certify the historical Saura / Sūrya-Siddhānta four-pass True-longitude method. It also does not provide a coherent BPHS Cheshta input triplet. Mean Longitude, True Longitude and Sheeghroccheya must all belong to one documented model, frame and epoch. A PAC/Swiss sidereal longitude must not be joined to traditional Saura Mean or Sheeghroccheya values and called a certified classical Cheshta input.
-
-Further work still required:
-1. Ask PAC to confirm the daily row's exact epoch and named ayanamsa.
-2. Expand the 2026 sample over all months and planetary station/conjunction boundaries.
-3. Verify date-specific classical Mean, True and Sheeghroccheya as one coherent same-model triplet before calculating BPHS Cheshta.
-4. Preserve source-level verification for the other five Shadbala components and Graha Yuddha rules.
-
-## 6. Release boundary
+## 8. Release boundary
 
 - Research/regression only.
 - No production calculation, Horoscope renderer, Marriage Matching report, customer output, cache, service worker, APK, Firebase, Render, Cloudflare or customer data is changed.
-- This PR is not merged or deployed.
+- PR #561 remains a draft and is not merged or deployed.
 - `historicalSauraTrueLongitudeCertified=false`, `classicalFiveGrahaCheshtaCertified=false` and `productionIntegrationAllowed=false` remain mandatory.
