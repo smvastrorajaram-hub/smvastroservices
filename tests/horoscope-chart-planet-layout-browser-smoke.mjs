@@ -416,7 +416,7 @@ try {
             assert.equal(item.signNumberLabels.length,12,item.rootId+' '+item.kind+': every sign has one Devanagari label.');
             const sortedSignLabels=[...item.signNumberLabels].sort((a,b)=>a.sign-b.sign);
             assert.deepEqual(sortedSignLabels.map(label=>label.text),devanagari,item.rootId+' '+item.kind+': sign digits follow the actual Rasi numbers 1–12.');
-            const badSignLabels=sortedSignLabels.filter(label=>label.missing||!label.visible||(!label.insideCell&&!label.triangleCell)||!label.insideChart||label.overlapsPlanet);
+            const badSignLabels=sortedSignLabels.filter(label=>label.missing||!label.visible||!label.insideCell||!label.insideChart||label.overlapsPlanet);
             assert.equal(badSignLabels.length,0,item.rootId+' '+item.kind+': sign numbers remain visible in their chart compartments and clear of all planet names: '+JSON.stringify(badSignLabels));
             const sizes=sortedSignLabels.map(label=>label.fontSize);
             assert.ok(Math.max(...sizes)-Math.min(...sizes)<0.6,item.rootId+' '+item.kind+': all twelve Hindi sign numbers use one consistent font size.');
