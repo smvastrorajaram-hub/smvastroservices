@@ -378,7 +378,7 @@ console.log(JSON.stringify({
   uniqueIndianPlaces:aggregate.uniquePlaces,
   missingBalaComponentRows,
   totalReconciliationFailures,
-  withheldTotals,
+  withheldTotals:withheldTotalRows,
   classicalCertifiedCharts:aggregate.classicalCertifiedTrue,
   artifact:'artifacts/natal-classical-random-600-charts-1800-2399.json'
 }));
