@@ -270,7 +270,7 @@ for (const birth of [...maleBirths,...femaleBirths]) {
 eq(computed.length,100,'100 actual chart-engine results completed');
 eq(haranaCompletenessCounts.COMPLETE,100,'all 100 computed charts have complete Chapter XXVI Harana inputs');
 eq(haranaCompletenessCounts.INCOMPLETE||0,0,'no numeric lifespan candidate is withheld for missing Harana inputs');
-eq(cgTieChartDetails.length,8,'all eight tied Shadbala charts retain the method comparisons');
+eq(cgTieChartDetails.length,9,'all nine NAELOS-input tied Shadbala charts retain the method comparisons');
 for (const oldCase of [
   {fixtureId:'AUDIT-F-32',planet:'Moon'},
   {fixtureId:'AUDIT-F-39',planet:'Moon'},
@@ -287,7 +287,7 @@ eq(Object.values(haranaMissingReasonCounts).reduce((sum,n)=>sum+n,0),
 ok(haranaMissingEvidenceByChart.every(row=>row.missingFactors.every(item=>
   typeof item.source==='string'&&item.source.length>0&&typeof item.reason==='string'&&item.reason.length>0)),
   'every unresolved Harana factor has a non-empty source category and explanation');
-eq(Object.values(cgTieMethodCombinationCounts).reduce((sum,n)=>sum+n,0),8,
+eq(Object.values(cgTieMethodCombinationCounts).reduce((sum,n)=>sum+n,0),9,
   'each tied Shadbala chart has a complete method-combination audit');
 ok(chartSignatures.size >= 95,
   'natal longitude signatures vary across the 100 inputs; no static chart replay');
