@@ -198,6 +198,19 @@
  justify-content:center;align-items:baseline;box-sizing:border-box!important;
  white-space:nowrap!important;line-height:1!important;overflow:visible!important;
 }
+/* North sign numerals use their own flow row in triangle cells, above the graha stack. */
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-triangle-cell .smv-v342-sign-number{
+ position:static!important;transform:none!important;
+ top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;
+ display:block!important;align-self:center!important;flex:0 0 auto!important;
+ width:auto!important;max-width:100%!important;min-width:0!important;
+ margin:0 0 2px!important;padding:0 2px!important;
+ font-size:clamp(9px,1.7vw,12px)!important;line-height:1!important;
+ z-index:auto!important;pointer-events:none!important;
+}
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-triangle-cell .smv-v342-planets{
+ flex:0 1 auto!important;min-height:0!important;max-height:100%!important;
+}
 /* V345: recolour only black planet labels in North/East Rasi, Navamsa and Bhava. */
 .south-indian-chart.smv-v342-north .smv-v342-planets .planet-glyph.smv-v342-black-planet-text,
 .south-indian-chart.smv-v342-east .smv-v342-planets .planet-glyph.smv-v342-black-planet-text{
