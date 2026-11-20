@@ -18,8 +18,8 @@ const prose=read('public/horoscope/subha-janana.mjs');
 const css=read('public/horoscope/horoscope.css');
 const sw=read('public/horoscope/sw.js');
 
-for(const id of ['englishBirthGender','tamilBirthGender'])has(html,'id="'+id+'" required','Gender selection must be required: '+id);
-has(html,'<b>பாலினம்</b>','Tamil gender label is exactly பாலினம்');
+for(const name of ['englishBirthGender','tamilBirthGender'])has(html,'name="'+name+'" value="male" required','Gender radio selection must be required: '+name);
+has(html,'<legend class="small">பாலினம்</legend>','Tamil gender label is exactly பாலினம்');
 lacks(html,'பாலினம் (கட்டாயம்)','Do not add a required-word suffix to the Tamil label');
 for(const id of ['englishBirthVillage','englishMotherName','englishFatherName','tamilBirthVillage','tamilMotherName','tamilFatherName'])
   has(html,'id="'+id+'"','Optional input must exist: '+id);
@@ -75,6 +75,7 @@ has(prose,':mother?(','Mother-only input is rendered without an empty father pla
 has(prose,"birthTimeGhati+'க்கு (சரியாக '+birthClockTa+' மணிக்கு)",'Tamil birth time is grammatically formatted after sunrise');
 
 has(css,'.smv-subha-janana{','Narrative has its own report styling');
+has(css,'.birth-gender-option input:checked+span','Gender choices are rendered as selected button-style radio options');
 has(sw,"'./subha-janana.mjs'","New narrative module is precached for offline use");
 has(sw,"'./tamil-day-classifications.mjs'","Amirthadi yoga lookup is also precached for offline use");
 
