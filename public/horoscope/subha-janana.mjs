@@ -60,6 +60,12 @@ const rangeText = (obj,date,lat,lon,zone,ta) => {
 };
 const yogaName = (y,ta) => !y||y.key==='unknown'?(ta?'கிடைக்கவில்லை':'Unavailable'):(ta?y.ta:y.en);
 
+export function getBirthTimeAmirthadiYoga(segments,timestamp){
+  const value=Number(timestamp);
+  if(!Number.isFinite(value)||!Array.isArray(segments))return null;
+  return segments.find(segment=>value>=Number(segment.startTimestamp)&&value<Number(segment.endTimestamp))?.yoga||null;
+}
+
 export async function buildSubhaJanana(p,chart,meta={},lang='ta'){
   const ta=lang!=='en',date=String(meta.date||p?.requested?.date||''),time=String(meta.time||p?.requested?.time||'');
   const lat=Number(meta.lat??p?.requested?.latitude),lon=Number(meta.lon??p?.requested?.longitude),zone=String(meta.timezone||'Asia/Kolkata');
@@ -72,8 +78,8 @@ export async function buildSubhaJanana(p,chart,meta={},lang='ta'){
   const dayInput={date:solarDate,time:solar.rise,lat,lon,timezone:zone,utcOffsetMinutes:offsetMinutesAt(zone,solarDate,solar.rise),language:lang};
   const timeline=nakshatraIntervalsForLocalDay(dayInput),tya=thyajyamIntervalsForLocalDay(dayInput,timeline),weekday=dayOf(solarDate);
   const segments=timeline.available?timeline.intervals.map(x=>({...x,yoga:getTamilDayYoga(weekday,x.nakshatraNumber)})):[];
-  const birthTs=stamp(date,time,zone),birthSegment=segments.find(x=>birthTs>=x.startTimestamp&&birthTs<x.endTimestamp);
-  const birthYoga=birthSegment?.yoga||null;
+  const birthTs=stamp(date,time,zone);
+  const birthYoga=getBirthTimeAmirthadiYoga(segments,birthTs);
   const solarDateInfo=tamilSolarDate({date,time,lat,lon,utcOffsetMinutes:offsetMinutesAt(zone,date,time),timezone:zone,mode:'birth'})||p?.tamilSolar||{};
   const monthIndex=Number(solarDateInfo.index);
   // Keep the exact same April 14 Tamil-year boundary used by the existing
