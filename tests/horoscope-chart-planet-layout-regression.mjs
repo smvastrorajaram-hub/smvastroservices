@@ -95,6 +95,7 @@ assert.ok(chartStyleJs.includes("const explicit=from.bhavaSignByHouse?.[house];"
 assert.ok(chartStyleJs.includes("const bhavaSignByHouse=Array(13).fill(-1);"), 'The mapping retains one explicit destination sign for every Bhava house.');
 assert.ok(chartStyleJs.includes("const house=kind==='bhava'?0:(sign-lagna+12)%12+1;"), 'East Bhava positioning is independent of Lagna.');
 assert.ok(chartStyleJs.includes("if(style==='north'&&kind==='bhava'){"),'North Bhava uses fixed Roman house numbers instead of sign numerals.');
+assert.ok(chartStyleJs.includes("label.dataset.bhavaHouses=String(house);"),'North Bhava Roman I–XII labels stay tied to their unique fixed house IDs.');
 assert.ok(chartStyleJs.includes("number.textContent=hindiNumber(sign+1);"),'North Rasi, Navamsa and Transit use Devanagari digits; Bhava is excluded.');
 assert.ok(chartStyleJs.includes("number.className='smv-v342-sign-number';"),'North sign numbers are separate display-only labels and do not alter planet rows.');
 assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-triangle-cell .smv-v342-sign-number{'),'North triangle sign numerals have a dedicated non-overlapping flow row.');
