@@ -1,5 +1,5 @@
 const IS_PAGES_DEV_HOST = self.location.hostname === 'smvastroservices.pages.dev' || self.location.hostname.endsWith('.smvastroservices.pages.dev') || self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
-const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? 'smv-79f117ba8b5206ab' : 'smv-3ae1f27e74d70e99';
+const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? 'smv-81c337fe03cb397d' : 'smv-2816793f0f442855';
 const CACHE='smv-calendar-forecast-assets-'+SMV_CACHE_RELEASE;
 const OFFLINE_CACHE='smv-horoscope-offline';
 const LOCATION_CACHE='smv-shared-india-places';
