@@ -10,7 +10,7 @@
 The 600-chart annual random runner generates exactly one full natal chart per civil year, 1800 through 2399. Each chart receives a seeded-random valid Gregorian date, local birth time and one randomly selected Indian city from a fixed 50-place coordinate pool. The city's historical `Asia/Kolkata` IANA UTC offset is calculated for that exact birth instant before invoking the offline natal engine.
 
 - Required coverage: 600 complete random natal charts, one from each year.
-- Expected output: 4,200 graha rows, 25,200 six-Bala component values and 3,000 five-planet Saura candidate rows.
+- Expected output: 4,200 graha rows, 25,200 six-Bala component values, 6,000 eligible Yuddha-pair classifications (10 per chart), and 3,000 five-planet Saura candidate rows.
 - Each chart's exact random DOB/time/place, coordinates, historical UTC offset and Julian day are written to the Actions artifact.
 - Every Saura candidate must return finite Mean Longitude, True Longitude, Sheeghroccheya and Mandocca in the declared `traditional-Saura-nirayana` frame.
 - The seeded-random sample is reproducible and uses the same 50-place Indian city pool; it is not a claim that all dates/places between samples have been independently validated. Saura outputs remain research-only and `productionEligible:false`.
@@ -77,7 +77,7 @@ Any missing or failing item returns `classicalCertified:false` and `provisional:
 
 ## Code and test artifacts
 
-- `research/natal-classical-certification/annual-random-natal-charts.mjs` — 600 seeded-random complete natal charts, their six-Bala audits and 3,000 five-planet longitude candidate rows.
+- `research/natal-classical-certification/annual-random-natal-charts.mjs` — 600 seeded-random complete natal charts, their six-Bala and Kala-total audits, all 6,000 Yuddha-pair classifications, and 3,000 five-planet longitude candidate rows.
 - `research/natal-classical-certification/evidence-gates.mjs` — fail-closed 42-row Bala matrix, exact natal-epoch proof, and final natal-chart gate.
 - `tests/natal-classical-certification-pipeline.mjs` — negative tests and explicitly synthetic gate-mechanics fixture.
 
