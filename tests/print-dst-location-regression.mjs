@@ -17,8 +17,9 @@ assert.throws(()=>offsetMinutesAt('Invalid/Timezone','2026-10-16','12:00'),Range
 const file=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
 includes(file('public/horoscope/report-print.js'),"root.querySelectorAll('[data-smv-screen-only^=\"daily-\"],.panchang-card,.hora-card,.smv-birth-summary')");
 includes(file('public/horoscope/report-print.js'),"return 'SMVHS-'+safePdfFilenamePart");
-includes(file('public/horoscope/horoscope.js'),'data-smv-screen-only="daily-panchang"');
-includes(file('public/horoscope/horoscope.js'),'data-smv-screen-only="daily-hora"');
+assert.equal(file('public/horoscope/horoscope.js').includes('data-smv-screen-only="daily-panchang"'),false,'Horoscope omits its Daily Panchang card');
+assert.equal(file('public/horoscope/horoscope.js').includes('data-smv-screen-only="daily-hora"'),false,'Horoscope omits its Daily Hora card');
+includes(file('public/horoscope/horoscope.js'),'if(calendarPresentation)h+=');
 includes(file('public/horoscope/horoscope.js'),'card birth-time-panchang');
 includes(file('public/horoscope/horoscope.js'),'card transit-card');
 includes(file('public/horoscope/horoscope.js'),'card hora-card');
