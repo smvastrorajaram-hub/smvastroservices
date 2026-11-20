@@ -198,6 +198,32 @@ export function evaluateNatalClassicalCertification({
     }
   }
 
+  if (!natalEpochEvidence || typeof natalEpochEvidence !== 'object') {
+    addBlocker(blockers, 'Exact natal birth-epoch evidence is missing');
+  } else {
+    if (natalEpochEvidence.status !== 'PASS') {
+      addBlocker(blockers, 'Exact natal birth-epoch evidence is not PASS');
+    }
+    if (natalEpochEvidence.exactBirthInstantUsed !== true ||
+        !finite(natalEpochEvidence.julianDay)) {
+      addBlocker(blockers, 'Exact natal birth instant / Julian day is not verified');
+    }
+    if (natalEpochEvidence.allFivePlanets !== true) {
+      addBlocker(blockers, 'Exact natal-epoch inputs for all five eligible planets are missing');
+    }
+    if (natalEpochEvidence.meanTrueSheeghroccheyaSameFrame !== true ||
+        !nonEmpty(natalEpochEvidence.frame)) {
+      addBlocker(blockers, 'Exact natal-epoch Mean/True/Sheeghroccheya frame is not verified');
+    }
+    if (natalEpochEvidence.certifiedModelApplied !== true ||
+        !nonEmpty(natalEpochEvidence.modelCertificateId)) {
+      addBlocker(blockers, 'A validated historical longitude model was not applied at this birth epoch');
+    }
+    if (natalEpochEvidence.fallbackOrUnverifiedInterpolationUsed !== false) {
+      addBlocker(blockers, 'Unverified fallback/interpolation was used for the exact natal epoch');
+    }
+  }
+
   const bala = evaluateBalaEvidenceMatrix(balaEvidenceRows);
   if (!bala.certified) {
     for (const blocker of bala.blockers) addBlocker(blockers, blocker);
