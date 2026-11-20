@@ -103,7 +103,7 @@ const expectedCenturyFile = jdUt => jdUt < 2451544.5 ? 'ne-1900.bin' : 'ne-2000.
 const wrap = value => ((value % 360) + 360) % 360;
 const signedDifference = (candidate, reference) =>
   ((candidate - reference + 540) % 360) - 180;
-const maxAllowedDifferenceDegrees = 0.005; // 18 arcseconds: cross-frame/model qualification gate
+const maxAllowedDifferenceDegrees = 0.0001; // 0.36 arcseconds: strict, evidence-backed five-epoch cross-model gate
 const observations = [];
 
 assert.equal(fixture.births.length, 5);
