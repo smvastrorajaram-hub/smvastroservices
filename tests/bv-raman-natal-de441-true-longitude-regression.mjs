@@ -101,12 +101,13 @@ for (const birth of fixture.births) {
     const delta = signedDifference(candidateTropical, referenceTropical);
     const directTropical = swe.calc(jd.et, targetBodyIds[planet], 2 | 256);
     assert.ok(Number.isFinite(directTropical.longitude), birth.id + ' ' + planet + ' direct tropical longitude finite');
+    assert.equal(directTropical.retFlag & 2, 2, birth.id + ' ' + planet + ' direct calculation must use Swiss ephemeris data, not Moshier fallback');
     const directDelta = signedDifference(Number(directTropical.longitude), referenceTropical);
     assert.ok(Math.abs(directDelta) <= 0.05,
       birth.id + ' ' + planet + ' direct SWIEPH tropical vs DE441 <= 0.05 degrees; got ' + directDelta);
     assert.ok(Math.abs(delta) <= 0.05,
       birth.id + ' ' + planet + ' local ephemeris vs independent DE441 <= 0.05 degrees; got ' + delta);
-    assertions += 7;
+    assertions += 8;
     observations.push({
       birth: birth.id,
       planet,
@@ -131,7 +132,9 @@ const rmsResidual = Math.sqrt(
 const directRmsResidual = Math.sqrt(
   observations.reduce((sum, x) => sum + x.directSignedDifferenceDegrees ** 2, 0) / observations.length
 );
-assert.ok(maxAbsResidual <= 0.05, 'all 25 independent modern true-longitude comparisons pass');
+assert.ok(maxDirectAbsResidual <= 0.05, 'all 25 direct tropical SWIEPH values independently pass DE441 <= 0.05 degrees');
+assertions++;
+assert.ok(maxAbsResidual <= 0.05, 'all 25 sidereal-to-tropical round-trip diagnostics remain within 0.05 degrees');
 assertions++;
 
 const perPlanet = Object.fromEntries(Object.keys(expectedTargetIds).map(planet => {
@@ -139,8 +142,8 @@ const perPlanet = Object.fromEntries(Object.keys(expectedTargetIds).map(planet =
   const values = sample.map(x => x.signedDifferenceDegrees);
   return [planet, {
     samples: sample.length,
-    rmsResidualDegrees: Number(Math.sqrt(values.reduce((sum, x) => sum + x * x, 0) / values.length).toFixed(9)),
-    maxAbsResidualDegrees: Number(Math.max(...values.map(Math.abs)).toFixed(9)),
+    siderealRoundTripRmsResidualDegrees: Number(Math.sqrt(values.reduce((sum, x) => sum + x * x, 0) / values.length).toFixed(9)),
+    siderealRoundTripMaxAbsResidualDegrees: Number(Math.max(...values.map(Math.abs)).toFixed(9)),
     directTropicalRmsResidualDegrees: Number(Math.sqrt(sample.reduce((sum, x) => sum + x.directSignedDifferenceDegrees ** 2, 0) / sample.length).toFixed(9)),
     directTropicalMaxAbsResidualDegrees: Number(Math.max(...sample.map(x => Math.abs(x.directSignedDifferenceDegrees))).toFixed(9))
   }];
@@ -150,14 +153,16 @@ console.log(JSON.stringify({
   pass: true,
   assertions,
   grid: '5 exact historical natal epochs x 5 visible planets',
-  candidate: 'SMV bundled Swiss Ephemeris runtime (' + observations[0]?.runtimeMode + '), geocentric apparent tropical longitude reconstructed from Lahiri sidereal output',
+  candidate: 'SMV bundled Swiss Ephemeris SWIEPH direct tropical apparent longitude (SWIEPH|SPEED); sidereal-plus-displayed-ayanamsa round-trip shown separately as a diagnostic',
   reference: 'NASA/JPL Horizons DE441, Earth-geocentric apparent IAU76/80 ecliptic-of-date quantity 31',
   samples: observations.length,
   perPlanet,
-  maxAbsResidualDegrees: Number(maxAbsResidual.toFixed(9)),
-  rmsResidualDegrees: Number(rmsResidual.toFixed(9)),
+  maxAbsResidualDegrees: Number(maxDirectAbsResidual.toFixed(9)),
+  rmsResidualDegrees: Number(directRmsResidual.toFixed(9)),
   directTropicalMaxAbsResidualDegrees: Number(maxDirectAbsResidual.toFixed(9)),
   directTropicalRmsResidualDegrees: Number(directRmsResidual.toFixed(9)),
+  siderealRoundTripMaxAbsResidualDegrees: Number(maxAbsResidual.toFixed(9)),
+  siderealRoundTripRmsResidualDegrees: Number(rmsResidual.toFixed(9)),
   modernHistoricalEpochTrueLongitudeGate: true,
   historicalSauraTrueLongitudeCertified: false,
   classicalFiveGrahaCheshtaCertified: false,
