@@ -23,6 +23,13 @@ import { getSwe } from '../public/horoscope/offline/wasm-provider.mjs';
 
 const pdfDirectory = process.env.PAC_PDF_DIR;
 assert.ok(pdfDirectory, 'CI must set PAC_PDF_DIR to the downloaded official PAC PDFs');
+const sourceManifest = JSON.parse(readFileSync(
+  new URL('./fixtures/pac-2026-official-daily-pdf-manifest.json', import.meta.url),
+  'utf8'
+));
+assert.equal(sourceManifest.schema, 'SMV_ASTRO_PAC_2026_OFFICIAL_DAILY_NIRAYANA_PDF_SHA256_V1');
+assert.equal(sourceManifest.publisher,
+  'Positional Astronomy Centre, Kolkata — India Meteorological Department, Government of India');
 
 const planets = Object.freeze({
   Mercury: { body: 2, url: 'https://packolkata.imd.gov.in/download/nirlon/Mercury.pdf' },
@@ -84,10 +91,16 @@ for (const [planet, metadata] of Object.entries(planets)) {
   const filePath = path.join(pdfDirectory, planet + '.pdf');
   const bytes = readFileSync(filePath);
   assert.ok(bytes.length > 10_000, planet + ' official PAC PDF is non-empty');
+  const expectedSource = sourceManifest.files[planet];
+  assert.ok(expectedSource, planet + ' must be pinned in the official-PDF manifest');
+  assert.equal(metadata.url, expectedSource.url, planet + ' official PAC source URL is pinned');
+  assert.equal(bytes.length, expectedSource.bytes, planet + ' PDF byte length matches the pinned source manifest');
+  const sha256 = createHash('sha256').update(bytes).digest('hex');
+  assert.equal(sha256, expectedSource.sha256, planet + ' PDF SHA-256 matches the pinned official source');
   sourceHashes[planet] = {
     url: metadata.url,
     bytes: bytes.length,
-    sha256: createHash('sha256').update(bytes).digest('hex')
+    sha256
   };
   const rows = parseDailyRows(extractPdfText(filePath), planet);
   assert.equal(rows.length, 365, planet + ' must contain exactly 365 Gregorian 2026 daily rows');
@@ -221,6 +234,19 @@ assert.ok(signBoundaryEvents.length >= 20,
 assert.ok(conjunctionEvents.length >= 8,
   '2026 daily rows must expose close conjunction windows among the five grahas');
 
+const stationCountsByPlanet = Object.fromEntries(names.map(planet =>
+  [planet, stationEvents.filter(event => event.planet === planet).length]));
+const signBoundaryCountsByPlanet = Object.fromEntries(names.map(planet =>
+  [planet, signBoundaryEvents.filter(event => event.planet === planet).length]));
+const expectedStationCounts = { Mercury: 6, Venus: 2, Mars: 0, Jupiter: 2, Saturn: 2 };
+const expectedSignBoundaryCounts = { Mercury: 14, Venus: 12, Mars: 8, Jupiter: 2, Saturn: 0 };
+for (const planet of names) {
+  assert.equal(stationCountsByPlanet[planet], expectedStationCounts[planet],
+    planet + ' 2026 daily PAC series station-window count');
+  assert.equal(signBoundaryCountsByPlanet[planet], expectedSignBoundaryCounts[planet],
+    planet + ' 2026 daily PAC series sign-boundary crossing count');
+}
+
 const maxAbsResidualArcseconds = Math.max(
   ...observations.map(row => row.absoluteDifferenceArcseconds)
 );
@@ -237,6 +263,13 @@ const perPlanet = Object.fromEntries(names.map(planet => {
       rows.reduce((sum, row) => sum + row.signedDifferenceDegrees ** 2, 0) / rows.length
     ) * 3600
   }];
+}));
+const worstObservation = observations.reduce((worst, row) =>
+  row.absoluteDifferenceArcseconds > worst.absoluteDifferenceArcseconds ? row : worst);
+const worstByPlanet = Object.fromEntries(names.map(planet => {
+  const rows = observations.filter(row => row.planet === planet);
+  return [planet, rows.reduce((worst, row) =>
+    row.absoluteDifferenceArcseconds > worst.absoluteDifferenceArcseconds ? row : worst)];
 }));
 const perMonth = Object.fromEntries(Array.from({ length: 12 }, (_, index) => {
   const month = String(index + 1).padStart(2, '0');
@@ -268,8 +301,15 @@ console.log(JSON.stringify({
   perPlanet,
   perMonth,
   monthlyCoverageDays: Object.fromEntries(Array.from(datesByMonth.entries()).map(([month, days]) => [month, days.size])),
+  worstObservation,
+  worstByPlanet,
+  stationEventCount: stationEvents.length,
+  stationCountsByPlanet,
   stationEvents,
+  signBoundaryEventCount: signBoundaryEvents.length,
+  signBoundaryCountsByPlanet,
   signBoundaryEvents,
+  closeConjunctionEventCount: conjunctionEvents.length,
   closeConjunctionEvents: conjunctionEvents,
   officialPacFullYearDailyCrossCheck: true,
   historicalSauraTrueLongitudeCertified: false,
