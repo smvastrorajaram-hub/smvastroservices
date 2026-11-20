@@ -145,13 +145,13 @@ yes(policy.includes("T('Login to Pay','Login செய்து கட்டண�
 yes(policy.includes('function syncHoroscopePaidEntry()'),'Horoscope has a pre-calculation paid-benefit panel');
 yes(html.includes('id="smvHoroscopePaidEntryEnglish"')&&html.includes('id="smvHoroscopePaidEntryTamil"'),'Both Horoscope language forms host the pre-login benefit panel');
 yes(html.includes('config.js?v=20261107-private-chat-selected-astrologer-v5'),'Access config uses its cache-busted URL');
-yes(html.includes('horoscope-form.js?v=20261120-subha-janana-v1'),'Horoscope form uses its cache-busted URL');
-yes(html.includes('horoscope.js?v=20261120-subha-janana-v1'),'Horoscope renderer uses its cache-busted URL');
-yes(html.includes('horoscope.css?v=20261120-subha-janana-v1'),'Horoscope styles use their cache-busted URL');
+yes(html.includes('horoscope-form.js?v=20261120-subha-janana-transit-lagna-v2'),'Horoscope form uses its cache-busted URL');
+yes(html.includes('horoscope.js?v=20261120-subha-janana-transit-lagna-v2'),'Horoscope renderer uses its cache-busted URL');
+yes(html.includes('horoscope.css?v=20261120-subha-janana-transit-lagna-v2'),'Horoscope styles use their cache-busted URL');
 yes(html.includes('marriage-matching.js?v=20261117-english-report-language-consistency-v1'),'Marriage Matching uses its cache-busted URL');
 
 // All three products share the marker. Existing offline/user data is not cleared.
-const marker='20261120-subha-janana-v1';
+const marker='20261120-subha-janana-transit-lagna-v2';
 yes(workers.every(source=>source.includes(marker)),'All three Service Workers share the synchronized cache release');
 no(policy.includes('localStorage.clear('),'The policy does not clear origin-wide localStorage');
 no(policy.includes('caches.delete('),'The policy does not clear Cache Storage');
