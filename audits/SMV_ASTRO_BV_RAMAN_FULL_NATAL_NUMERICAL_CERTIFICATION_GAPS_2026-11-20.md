@@ -21,7 +21,7 @@ Detailed source contract, pinned source-file hashes, all residuals, monthly cove
 
 The full-year test downloads the five official PDFs, verifies their exact byte lengths and SHA-256 digests against `tests/fixtures/pac-2026-official-daily-pdf-manifest.json`, extracts daily selectable text, and requires complete 2026 coverage without a missing or duplicate date.
 
-**GitHub Actions run #1214:** https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44771494887 — full workflow SUCCESS.
+**Historical GitHub Actions run #1214 (00:00 TT; superseded):** https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44771494887 — full workflow SUCCESS under the previous comparison epoch. It is not evidence for the fixed 00:00 UTC convention.
 
 - Five grahas × 365 daily rows: **1,825 / 1,825** comparisons.
 - Maximum absolute difference: **0.253273″**, Jupiter on 2026-01-06.
@@ -31,9 +31,13 @@ The full-year test downloads the five official PDFs, verifies their exact byte l
 - All 12 months have exact expected daily coverage.
 - 12 daily station brackets, 36 sign-boundary crossings and 13 close pairwise conjunction minima were enumerated from the PAC daily rows.
 
-The separate hard-coded 15-value three-date anchor regression also remains and passed run #1207 (135 assertions): https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44769611357.
+The separate hard-coded 15-value three-date anchor regression now uses 00:00:00 UTC converted through Swiss `utcToJd()`. The previous run #1207 used the retired 00:00 TT convention and is superseded.
 
-**Metadata limitation:** The PAC daily PDF headings do not explicitly identify the daily intraday epoch or name the ayanamsa. The comparison uses 00:00 TT and Lahiri as empirically inferred conventions, not source metadata. PAC confirmation remains outstanding. The public PDFs also do not establish independent underlying ephemeris provenance relative to Swiss Ephemeris.
+**Epoch decision:** The PAC daily comparison now uses the fixed project convention **00:00:00 UTC**. Swiss `utcToJd()` converts the UTC input to UT1 and TT/ET before the Swiss calculation. This is not being described as PAC-confirmed metadata.
+
+**Metadata limitation:** The PAC daily PDF headings do not explicitly identify the daily intraday epoch or name the ayanamsa. Lahiri remains an inferred sidereal comparison convention, not source metadata. PAC confirmation of both exact row epoch and exact ayanamsa name/definition remains outstanding. The public PDFs also do not establish independent underlying ephemeris provenance relative to Swiss Ephemeris.
+
+**UTC recheck finding:** The first anchor, Mercury on 2026-01-01, differs by 4.392535 arcseconds at 00:00 UTC, exceeding the unchanged 0.36 arcsecond numerical target. The earlier sub-arcsecond comparison was at 00:00 TT and is not transferable to UTC. Full-year UTC metrics must be recorded before any new accuracy claim.
 
 ## Mandatory blockers before arbitrary natal totals can be certified
 
