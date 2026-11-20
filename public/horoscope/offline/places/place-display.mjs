@@ -92,3 +92,14 @@ export function formatOfflineIndiaPlace(row,language=CURRENT()){
   return {place:unique([tamilName,tamilDistrict,tamilState,'இந்தியா']),
     name:tamilName,admin2:tamilDistrict,admin1:tamilState,country:'இந்தியா'};
 }
+
+// Reuse the verified India administrative-name dictionary in report narratives.
+// Unknown/non-India names remain unchanged rather than receiving guessed translations.
+export function formatOfflineIndiaAdministrativeAreas(admin1,admin2,language=CURRENT()){
+  const stateEn=asState(admin1),districtEn=asDistrict(admin2);
+  if(!/^ta(?:-|$)/i.test(String(language)))return {admin1:stateEn,admin2:districtEn};
+  const stateTa=states[key(stateEn)]||stateEn;
+  const districtTa=key(stateEn)==='tamil nadu'?(tnDistricts[key(districtEn)]||districtEn):districtEn;
+  return {admin1:stateTa,admin2:districtTa};
+}
+
