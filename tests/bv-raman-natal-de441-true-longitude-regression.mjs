@@ -1,5 +1,5 @@
 /**
- * Five natal dates x five grahas: local Swiss/Moshier apparent longitude
+ * Five natal dates x five grahas: local ephemeris apparent longitude
  * against exact-epoch NASA/JPL Horizons DE441 geocentric apparent positions.
  *
  * This is a MODERN ephemeris cross-validation at historical epochs.
@@ -23,6 +23,13 @@ const tamilNames = Object.freeze({
   Jupiter: 'குரு',
   Saturn: 'சனி'
 });
+const expectedTargetIds = Object.freeze({
+  Mercury: '199',
+  Venus: '299',
+  Mars: '4',
+  Jupiter: '5',
+  Saturn: '6'
+});
 const wrap = value => ((value % 360) + 360) % 360;
 const signedDifference = (candidate, reference) =>
   ((candidate - reference + 540) % 360) - 180;
@@ -33,12 +40,25 @@ assert.equal(fixture.source.ephemeris, 'DE441');
 assert.equal(fixture.source.center, '500@399');
 assert.equal(fixture.source.quantity, '31');
 assert.equal(fixture.source.timeScale, 'UT');
+assert.deepEqual(fixture.source.targetIds, expectedTargetIds);
 assert.equal(fixture.births.length, 5);
 
-let assertions = 7;
+let assertions = 8;
 const observations = [];
 for (const birth of fixture.births) {
   assert.equal(Object.keys(birth.longitudes).length, 5, birth.id + ' five JPL values');
+  assertions++;
+  assert.equal(birth.utcOffsetMinutes, 330, birth.id + ' India UTC offset');
+  assertions++;
+
+  const utcMillis = Date.parse(birth.localDate + 'T' + birth.localTime + ':00Z')
+    - birth.utcOffsetMinutes * 60_000;
+  const reconstructedUtc = new Date(utcMillis).toISOString().replace('.000Z', '');
+  assert.equal(reconstructedUtc, birth.utcDateTime, birth.id + ' exact local-to-UT conversion');
+  assertions++;
+  const reconstructedJd = utcMillis / 86_400_000 + 2_440_587.5;
+  assert.ok(Math.abs(reconstructedJd - birth.jdUt) < 1e-8,
+    birth.id + ' discrete Horizons JD matches the natal instant');
   assertions++;
 
   const result = await full({
@@ -62,14 +82,18 @@ for (const birth of fixture.births) {
   assertions++;
 
   for (const [planet, referenceTropical] of Object.entries(birth.longitudes)) {
+    assert.equal(fixture.source.targetIds[planet], expectedTargetIds[planet],
+      birth.id + ' ' + planet + ' DE441 target ID');
+    assert.ok(Number.isFinite(referenceTropical) && referenceTropical >= 0 && referenceTropical < 360,
+      birth.id + ' ' + planet + ' normalized JPL longitude');
     const local = chart.planets.find(p => p.name === tamilNames[planet]);
     assert.ok(local, birth.id + ' ' + planet + ' present');
     assert.ok(Number.isFinite(local.longitude), birth.id + ' ' + planet + ' sidereal longitude finite');
     const candidateTropical = wrap(Number(local.longitude) + Number(chart.ayanamsa));
     const delta = signedDifference(candidateTropical, referenceTropical);
     assert.ok(Math.abs(delta) <= 0.05,
-      birth.id + ' ' + planet + ' local Swiss ephemeris vs independent DE441 <= 0.05 degrees; got ' + delta);
-    assertions += 3;
+      birth.id + ' ' + planet + ' local ephemeris vs independent DE441 <= 0.05 degrees; got ' + delta);
+    assertions += 5;
     observations.push({
       birth: birth.id,
       planet,
@@ -90,6 +114,16 @@ const rmsResidual = Math.sqrt(
 assert.ok(maxAbsResidual <= 0.05, 'all 25 independent modern true-longitude comparisons pass');
 assertions++;
 
+const perPlanet = Object.fromEntries(Object.keys(expectedTargetIds).map(planet => {
+  const sample = observations.filter(x => x.planet === planet);
+  const values = sample.map(x => x.signedDifferenceDegrees);
+  return [planet, {
+    samples: sample.length,
+    rmsResidualDegrees: Number(Math.sqrt(values.reduce((sum, x) => sum + x * x, 0) / values.length).toFixed(9)),
+    maxAbsResidualDegrees: Number(Math.max(...values.map(Math.abs)).toFixed(9))
+  }];
+}));
+
 console.log(JSON.stringify({
   pass: true,
   assertions,
@@ -97,6 +131,7 @@ console.log(JSON.stringify({
   candidate: 'SMV bundled Swiss Ephemeris runtime (' + observations[0]?.runtimeMode + '), geocentric apparent tropical longitude reconstructed from Lahiri sidereal output',
   reference: 'NASA/JPL Horizons DE441, Earth-geocentric apparent IAU76/80 ecliptic-of-date quantity 31',
   samples: observations.length,
+  perPlanet,
   maxAbsResidualDegrees: Number(maxAbsResidual.toFixed(9)),
   rmsResidualDegrees: Number(rmsResidual.toFixed(9)),
   modernHistoricalEpochTrueLongitudeGate: true,
