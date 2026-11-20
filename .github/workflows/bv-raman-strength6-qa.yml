@@ -51,6 +51,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Prepare pinned, dependency-free Naelos Ephemeris 0.1.3 runtime
+        run: |
+          mkdir -p "$RUNNER_TEMP/naelos-runtime"
+          npm pack --silent naelos-ephemeris@0.1.3 --pack-destination "$RUNNER_TEMP/naelos-runtime"
+          tar -xzf "$RUNNER_TEMP/naelos-runtime/naelos-ephemeris-0.1.3.tgz" -C "$RUNNER_TEMP/naelos-runtime"
+          test -f "$RUNNER_TEMP/naelos-runtime/package/dist/index.js"
+          echo "NAELOS_PACKAGE_ENTRY=$RUNNER_TEMP/naelos-runtime/package/dist/index.js" >> "$GITHUB_ENV"
       - name: Syntax-check browser and Node source
         run: |
           node --check public/horoscope/offline/bv-raman-shadbala.browser.mjs
@@ -69,6 +76,8 @@ jobs:
         run: node tests/bv-raman-seven-graha-numerical-certification.mjs
       - name: Validate exact natal UTC/JD and five-graha positions against NASA/JPL DE441 (per-planet residual output)
         run: node tests/bv-raman-natal-de441-true-longitude-regression.mjs
+      - name: Cross-check five natal epochs and five grahas with Naelos JPL DE440 tables
+        run: node tests/bv-raman-natal-naelos-de440-crosscheck.mjs
       - name: Verify B.V. Raman Ishta/Kashta remains separate from sixfold Shadbala
         run: node tests/bv-raman-ishta-kashta-regression.mjs
       - name: Verify Horoscope Ayurdaya report integration and B.V. Raman strength6 output
