@@ -14,6 +14,7 @@ export function bindBirthOffsetUI(root){
   const get=id=>root.getElementById(id);
   const field=get('birthUtcOffset');
   if(!field)return null;
+  const tamilMirror=get('tamilBirthUtcOffset');
   const status=get('smvBirthOffsetStatus');
   const local=(en,ta)=>/^ta(?:-|$)/i.test(root.documentElement?.lang||'')?ta:en;
   let activePrefix='english';
@@ -49,6 +50,7 @@ export function bindBirthOffsetUI(root){
     const time=String(get(prefix+'Tob')?.value||'').trim();
     const zone=String(get(prefix+'BirthTimezone')?.value||'').trim();
     field.value='';
+    if(tamilMirror)tamilMirror.value='';
     field.dataset.offsetVerified='0';
     if(!date||!time||!zone){
       statusKind='missing';statusError='';renderStatus();
@@ -58,6 +60,7 @@ export function bindBirthOffsetUI(root){
       const hours=calculatedOffsetHours(zone,date,time);
       if(hours===null)return null;
       field.value=String(hours);
+      if(tamilMirror)tamilMirror.value=String(hours);
       field.dataset.offsetVerified='1';
       statusKind='ready';statusError='';renderStatus();
       return hours;
