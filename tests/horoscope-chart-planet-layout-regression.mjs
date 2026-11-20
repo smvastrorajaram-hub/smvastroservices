@@ -84,9 +84,10 @@ assert.ok(chartStyleJs.includes("label.dataset.bhavaHouses=houses.join(',');"), 
 assert.ok(chartStyleJs.includes('roots().forEach(restoreRomanBhavaLabels);'), 'Bhava labels are restored after a result-language toggle.');
 assert.ok(chartStyleJs.includes('function restoreRomanBhavaLabels(root){'), 'Live and saved Bhava labels have a dedicated language-safe restore path.');
 assert.ok(chartStyleJs.includes("const bhavaLabel=kind==='bhava'?bhavaHousesBySign[sign].join(' / '):'';"), 'East Bhava renders every house mapped to a Sphuta Rasi inside that sign cell.');
-assert.ok(chartStyleCss.includes('.smv-v342-cell.smv-v342-bhava-cell.smv-v342-triangle-cell .smv-v342-house-number{'));
-assert.ok(chartStyleCss.includes('position:static!important;transform:none!important;'), 'Bhava Roman labels stay in normal cell flow and cannot float over planet rows.');
-assert.ok(chartStyleCss.includes('color:#6f4d2c!important;'), 'Bhava Roman labels use readable high-contrast text.');
+assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-bhava-cell.smv-v342-triangle-cell .smv-v342-house-number{'));
+assert.ok(!chartStyleCss.includes('.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-bhava-cell .smv-v342-house-number'), 'North Bhava shows its mapped Rasi number instead of a second Bhava label.');
+assert.ok(chartStyleCss.includes('position:static!important;transform:none!important;'), 'East Bhava grouped IDs stay in normal cell flow and cannot float over planet rows.');
+assert.ok(chartStyleCss.includes('color:#6f4d2c!important;'), 'East Bhava grouped IDs use readable high-contrast text.');
 assert.ok(chartStyleJs.includes("const lagna=kind==='bhava'?-1:ascSign(chart,from);"), 'Bhava alternate layouts do not depend on a Lagna lookup to render.');
 assert.ok(chartStyleJs.includes("const sign=kind==='bhava'?(bhavaSignByHouse[house]>=0?bhavaSignByHouse[house]:(bhava?.sign??-1)):(lagna+house-1)%12;"), 'North Bhava maps all twelve fixed house slots through the already-calculated Sphuta Rasi metadata.');
 assert.ok(chartStyleJs.includes("chart.append(pointCell(x,y,sign,house,from,style,kind,ta,planetEntries,''));"),'North Bhava labels the mapped Rasi only; it does not overlay a second Bhava number on the planet stack.');
@@ -147,13 +148,13 @@ assert.ok(!bhavaRenderer.includes('bhavaPlanetCount>=2'));
 assert.ok(!transitRenderer.includes('transitPlanetCount>=2'));
 
 const inCellBhavaLabels = chartStyleCss.slice(
-  chartStyleCss.indexOf('/* Bhava-only Roman labels are the first in-cell row'),
+  chartStyleCss.indexOf('/* East Bhava keeps grouped Arabic house IDs'),
 );
-assert.ok(inCellBhavaLabels.includes('.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-bhava-cell.smv-v342-triangle-cell .smv-v342-house-number'));
 assert.ok(inCellBhavaLabels.includes('.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-bhava-cell.smv-v342-triangle-cell .smv-v342-house-number'));
+assert.ok(!inCellBhavaLabels.includes('.south-indian-chart.smv-v342-north'));
 assert.ok(inCellBhavaLabels.includes('position:static!important;transform:none!important;'),
   'Bhava labels stay in the normal cell flow and cannot overlap planet names.');
 assert.ok(inCellBhavaLabels.includes('color:#6f4d2c!important;background:#fffdf7!important;'),
-  'Roman labels keep high contrast and a readable background inside the Bhava cell.');
+  'East Bhava grouped IDs keep high contrast and a readable background inside the chart cell.');
 assert.ok(inCellBhavaLabels.includes('font-weight:900!important;line-height:1.05!important;'));
 console.log('Horoscope four-chart, three-plus planet sizing and empty-cell regression: PASS');
