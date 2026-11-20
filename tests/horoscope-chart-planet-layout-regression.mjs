@@ -51,6 +51,11 @@ assert.ok(chartStyleJs.includes("const kind=chart.id==='bhavaChart'?'bhava':char
 assert.ok(chartStyleJs.includes("const houseNumber=value=>"),'Bhava house parsing accepts both 1–12 and I–XII source labels.');
 assert.ok(chartStyleJs.includes("if(/^\\d{1,2}$/.test(raw))"),'Numeric Bhava labels 1–12 are recognized before Roman conversion.');
 assert.ok(chartStyleJs.includes("normalizeSouthBhavaHouseLabels(chart)"),'South Bhava display normalizes Arabic house values to Roman numerals without changing source calculations.');
+assert.ok(chartStyleJs.includes('function observeTamilBhavaLabels(root){'),'Tamil Bhava labels have a DOM-boundary guard for reports restored after page startup.');
+assert.ok(chartStyleJs.includes("observer.observe(root,{subtree:true,childList:true,characterData:true});"),'Late saved-report DOM insertion and text replacement are watched without changing calculation data.');
+assert.ok(chartStyleJs.includes('observeTamilBhavaLabels(r);'),'The Tamil/English result roots install the label guard when the chart presentation module starts.');
+assert.ok(chartStyleJs.includes('if(label.textContent.trim()!==roman)label.textContent=roman;'),'The Roman normalizer avoids writing unchanged labels and cannot self-trigger indefinitely.');
+
 assert.ok(chartStyleJs.includes("houseNumber(label.dataset.bhavaHouse)||houseNumber(label.textContent)"),'North/East mapping recognizes the original calculated house ID and legacy Roman labels.');
 assert.ok(chartStyleJs.includes("const explicitSign=Number(label.dataset.bhavaSign);"),'North/East mapping reads the original calculated Sphuta Rasi for each house.');
 assert.ok(chartStyleJs.includes("const bhavaLabel=kind==='bhava'?bhavaHousesBySign[sign].map(romanHouse).join(' / '):'';"),'Every East Bhava house label is grouped by its Sphuta Rasi.');
