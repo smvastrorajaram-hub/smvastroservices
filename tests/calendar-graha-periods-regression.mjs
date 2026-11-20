@@ -111,7 +111,7 @@ test('the three application service workers use synchronized Pages.dev and produ
   const productionReleases = [];
   for (const relative of cacheWorkers) {
     const source = await readFile(new URL(relative, import.meta.url), 'utf8');
-    const match = source.match(/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \\? '([^']+)' : '([^']+)'/);
+    const match = source.match(/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '([^']+)' : '([^']+)'/);
     assert.ok(match, relative + ' must declare both scoped cache releases');
     pagesReleases.push(match[1]);
     productionReleases.push(match[2]);
@@ -120,4 +120,4 @@ test('the three application service workers use synchronized Pages.dev and produ
   assert.equal(new Set(productionReleases).size, 1, 'Production release must match across all three apps.');
   assert.ok(pagesReleases[0] && productionReleases[0], 'Both generated release IDs must be present.');
   assert.notEqual(pagesReleases[0], productionReleases[0], 'Pages.dev and production use separate content hashes when preview-only helpers are present.');
-});;
+});
