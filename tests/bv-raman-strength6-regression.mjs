@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import path from 'node:path';
+import {createServer} from 'node:http';
+import {fileURLToPath} from 'node:url';
 import { createRequire } from 'node:module';
 const require=createRequire(import.meta.url);
 const nodeRaman=require('../bv-raman-shadbala.cjs');
@@ -13,6 +16,46 @@ let checks=0;
 const ok=(v,m)=>{assert.ok(v,m);checks++;};
 const eq=(a,b,m)=>{assert.equal(a,b,m);checks++;};
 const near=(a,b,e,m)=>{assert.ok(Number.isFinite(a)&&Math.abs(a-b)<=e,m+' actual='+a+' expected='+b);checks++;};
+async function installLocalNaelosFetchBridge(){
+ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+ const dataRoot=path.join(root,'public/horoscope/offline/naelos-data');
+ const server=createServer((req,res)=>{
+  try{
+   const url=new URL(req.url||'/', 'http://127.0.0.1');
+   if(!url.pathname.startsWith('/naelos-data/')){res.writeHead(404).end('not found');return;}
+   const relative=decodeURIComponent(url.pathname.slice('/naelos-data/'.length));
+   const filename=path.resolve(dataRoot,relative);
+   if(filename!==dataRoot&&!filename.startsWith(dataRoot+path.sep)){res.writeHead(403).end('forbidden');return;}
+   if(!fs.existsSync(filename)||!fs.statSync(filename).isFile()){res.writeHead(404).end('not found');return;}
+   res.setHeader('Content-Type',filename.endsWith('.json')?'application/json':'application/octet-stream');
+   fs.createReadStream(filename).pipe(res);
+  }catch(error){res.writeHead(500).end(String(error?.message||error));}
+ });
+ await new Promise((resolve,reject)=>{
+  server.once('error',reject);
+  server.listen(0,'127.0.0.1',resolve);
+ });
+ const address=server.address();
+ const baseUrl='http://127.0.0.1:'+address.port;
+ const originalFetch=globalThis.fetch.bind(globalThis);
+ globalThis.fetch=(resource,options)=>{
+  const url=new URL(typeof resource==='string'?resource:
+   (resource instanceof URL?resource.href:resource.url));
+  if(url.protocol==='file:'){
+   const pathname=decodeURIComponent(fileURLToPath(url));
+   const marker=path.join('public','horoscope','offline','naelos-data')+path.sep;
+   const index=pathname.lastIndexOf(marker);
+   if(index<0)return Promise.reject(new Error('Unexpected local NAELOS data URL: '+url.href));
+   const relative=pathname.slice(index+marker.length).split(path.sep).map(encodeURIComponent).join('/');
+   return originalFetch(baseUrl+'/naelos-data/'+relative,options);
+  }
+  return originalFetch(resource,options);
+ };
+ return async()=>{
+  globalThis.fetch=originalFetch;
+  await new Promise(resolve=>server.close(resolve));
+ };
+}
 
 eq(BV_RAMAN_SHADBALA_SOURCE.method,'BV_RAMAN_INTEGRATED_SIX_BALA','source-specific engine identity');
 eq(BV_RAMAN_SHADBALA_SOURCE.ishtaKashtaFormulaSeparate,true,'Ishta/Kashta formula remains distinct from sixfold Shadbala');
@@ -161,6 +204,7 @@ const births=[
  ['2015-09-06','09:30']
 ];
 const TRUE_BPHS_FRAME='NAELOS_TRUE_ECLIPTIC_OF_DATE_EFFECTIVE_LAHIRI_V1';
+const cleanupNaelosFetchBridge=await installLocalNaelosFetchBridge();
 for(const [date,time] of births){
  const r=await full({date,time,lat:11.232,lon:78.88,utcOffsetMinutes:330,referenceDate:'2026-10-17',name:'TRUE BPHS strength6 audit'});
  ok(r.ok,'chart generated '+date);
@@ -222,4 +266,5 @@ const nodeEngine=fs.readFileSync(new URL('../swiss_vedic.js',import.meta.url),'u
 ok(!browserEngine.includes('strength3:' )&&!browserEngine.includes('function phase3Strength('),'browser production engine has no BPHS strength3 calculation path');
 ok(!nodeEngine.includes('strength3:' )&&!nodeEngine.includes('function phase3Strength('),'Node production engine has no BPHS strength3 calculation path');
 
+await cleanupNaelosFetchBridge();
 console.log(JSON.stringify({pass:true,checks,method:'TRUE BPHS Shadbala on NAELOS DE440; separate legacy B.V. Raman formula oracle retained',standardHoroscopeSthanaAndDigOracle:true,natalCharts:births.length,sevenGrahaStrength6:true,ayurdayaUsesStrength6:true,oldStrength3Removed:true,classicalCertified:false}));
