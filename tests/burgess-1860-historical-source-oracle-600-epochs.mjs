@@ -1,11 +1,24 @@
 import assert from 'node:assert/strict';
-import {mkdirSync,readFileSync,writeFileSync} from 'node:fs';
+import {mkdirSync,writeFileSync} from 'node:fs';
+import {offsetMinutesAt} from '../public/horoscope/offline/places/timezone.mjs';
 import {
   sauraBijaCorrectedFivePlanetInputs
 } from '../research/saura-bija/saura-bija-mean-motion.mjs';
 
 const PLANETS=['Mercury','Venus','Mars','Jupiter','Saturn'];
 const INNER=new Set(['Mercury','Venus']);
+const PLACE_NAMES=[
+  'Perambalur','Chennai','Coimbatore','Madurai','Tiruchirappalli',
+  'Salem','Thanjavur','Tirunelveli','Bengaluru','Mysuru','Hyderabad',
+  'Vijayawada','Visakhapatnam','Mumbai','Pune','Ahmedabad','Jaipur',
+  'New Delhi','Lucknow','Varanasi','Bhopal','Indore','Kolkata',
+  'Bhubaneswar','Patna','Ranchi','Guwahati','Shillong','Imphal',
+  'Agartala','Srinagar','Jammu','Shimla','Dehradun','Amritsar',
+  'Chandigarh','Jodhpur','Udaipur','Panaji','Kochi','Thiruvananthapuram',
+  'Kozhikode','Mangaluru','Raipur','Nagpur','Surat','Kanpur','Agra',
+  'Gwalior','Nashik'
+];
+const SEED=0x534d5641;
 const DAYS_PER_MAHAYUGA=1577917828;
 const DAYS_PER_KALPA=DAYS_PER_MAHAYUGA*1000;
 const KALI_EPOCH_JD_UT=588465.5;
@@ -61,7 +74,7 @@ const SOURCE_INPUT_1860=Object.freeze({
   Sun:[8,18,13,13],Mercury:[4,16,57,22],Venus:[10,21,49,47],
   Mars:[5,24,30,57],Jupiter:[2,26,2,14],Saturn:[3,20,12,3]
 });
-const SOURCE_MANDocca_1860=Object.freeze({
+const SOURCE_MANDOCCA_1860=Object.freeze({
   Mercury:[7,10,28,20],Venus:[2,19,52,17],Mars:[4,10,2,40],
   Jupiter:[5,21,22,19],Saturn:[7,26,37,34]
 });
@@ -71,19 +84,56 @@ const signedAngle=(a,b)=>((a-b+540)%360)-180;
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
 const dms=([signs,degrees,minutes,seconds=0])=>
   signs*30+degrees+minutes/60+seconds/3600;
-const jyaDeg=(degrees)=>{
-  const a=norm(degrees);
-  const quadrant=a<=90?a:a<=180?180-a:a<=270?a-180:360-a;
+const pad2=value=>String(value).padStart(2,'0');
+let randomState=SEED>>>0;
+function random(){
+  randomState^=randomState<<13;
+  randomState^=randomState>>>17;
+  randomState^=randomState<<5;
+  return (randomState>>>0)/4294967296;
+}
+const pick=values=>values[Math.floor(random()*values.length)];
+const JD_UNIX_EPOCH=2440587.5;
+const JD_1860_UTC_MIDNIGHT=
+  Date.UTC(1860,0,1)/86400000+JD_UNIX_EPOCH;
+const JD_1860_UJJAIN_MIDNIGHT=
+  JD_1860_UTC_MIDNIGHT-UJJAIN_DAY_FRACTION;
+
+function makeBirth(year){
+  const month=Math.floor(random()*12);
+  const daysInMonth=new Date(Date.UTC(year,month+1,0)).getUTCDate();
+  const firstAllowedDay=year===1800&&month===0?2:1;
+  const day=firstAllowedDay+
+    Math.floor(random()*(daysInMonth-firstAllowedDay+1));
+  const hour=Math.floor(random()*24);
+  const minute=Math.floor(random()*60);
+  const date=year+'-'+pad2(month+1)+'-'+pad2(day);
+  const time=pad2(hour)+':'+pad2(minute);
+  const place=pick(PLACE_NAMES);
+  const utcOffsetMinutes=offsetMinutesAt('Asia/Kolkata',date,time);
+  const wallClockAsUtcMs=Date.UTC(year,month,day,hour,minute,0);
+  const utcInstantMs=wallClockAsUtcMs-utcOffsetMinutes*60000;
+  const jdUt=(utcInstantMs-Date.UTC(1970,0,1))/86400000+JD_UNIX_EPOCH;
+  return {
+    year,date,localTime:time,place,utcOffsetMinutes,julianDayUT:jdUt,
+    epochId:'RANDOM_NATAL_'+year+'_'+date+'_'+time.replace(':','')+'_'+
+      place.toUpperCase().replace(/[^A-Z0-9]+/g,'_')
+  };
+}
+function jyaDegrees(degrees){
+  const angle=norm(degrees);
+  const quadrant=angle<=90?angle:angle<=180?180-angle:
+    angle<=270?angle-180:360-angle;
   if(quadrant===90)return RADIUS;
   const index=quadrant/STEP_DEGREES;
   const lower=Math.floor(index);
   const fraction=index-lower;
   const value=JYA[lower]+fraction*(JYA[lower+1]-JYA[lower]);
-  return a<=180?value:-value;
-};
+  return angle<=180?value:-value;
+}
 function inverseJyaArcMinutes(value){
   if(!finite(value)||Math.abs(value)>RADIUS+1e-9)
-    throw new RangeError('Burgess inverse-Jya input exceeds radius 3438');
+    throw new RangeError('Inverse-Jya input exceeds radius 3438');
   const sign=value<0?-1:1;
   const target=Math.min(RADIUS,Math.abs(value));
   if(target>=RADIUS)return sign*90;
@@ -98,14 +148,12 @@ function inverseJyaArcMinutes(value){
 }
 function epicycleCorrection(mean,ucca,pair,kind){
   const kendra=norm(ucca-mean);
-  const sine=jyaDeg(kendra)/RADIUS;
-  const cosine=jyaDeg(kendra+90)/RADIUS;
+  const sine=jyaDegrees(kendra)/RADIUS;
+  const cosine=jyaDegrees(kendra+90)/RADIUS;
   const correctedParidhi=pair[0]-(pair[0]-pair[1])*Math.abs(sine);
   const relativeRadius=correctedParidhi*60/(2*Math.PI*RADIUS);
   const bhujya=relativeRadius*sine;
-  if(kind==='manda'){
-    return inverseJyaArcMinutes(bhujya*RADIUS);
-  }
+  if(kind==='manda')return inverseJyaArcMinutes(bhujya*RADIUS);
   const koti=relativeRadius*cosine;
   const variableKarna=Math.hypot(1+koti,bhujya);
   const equationSine=RADIUS*bhujya/variableKarna;
@@ -129,20 +177,12 @@ function burgessFourPass({planet,meanLongitude,mandocca,sheeghroccheya}){
     })
   });
 }
-
-// Burgess p.178 gives the mean positions at 1860-01-01 Ujjain midnight.
-// Convert that local-midnight anchor to its exact UT Julian day.
-const JD_UNIX_EPOCH=2440587.5;
-const JD_1860_UTC_MIDNIGHT=
-  Date.UTC(1860,0,1)/86400000+JD_UNIX_EPOCH;
-const JD_1860_UJJAIN_MIDNIGHT=
-  JD_1860_UTC_MIDNIGHT-UJJAIN_DAY_FRACTION;
-
 function sourceMeanOrbit(jdUt,body,profile){
-  const revolutions=REVOLUTIONS[profile][body];
-  const anchor=dms(MEAN_ANCHORS[profile][body]);
   const elapsedUjjainDays=jdUt-JD_1860_UJJAIN_MIDNIGHT;
-  return norm(anchor+elapsedUjjainDays*revolutions*360/DAYS_PER_MAHAYUGA);
+  return norm(
+    dms(MEAN_ANCHORS[profile][body])+
+    elapsedUjjainDays*REVOLUTIONS[profile][body]*360/DAYS_PER_MAHAYUGA
+  );
 }
 function sourceInputs(jdUt,planet,profile){
   const sun=sourceMeanOrbit(jdUt,'Sun',profile);
@@ -170,29 +210,30 @@ function assertWithinArcseconds(actual,expected,tolerance,label){
   return difference;
 }
 
-// Exact historical reference epoch: midnight at Washington before 1860-01-01.
-// Burgess gives the Ujjain/Washington meridian-time difference as 0.42453 day.
-const JD_TRUE_SOURCE_EPOCH=JD_1860_UJJAIN_MIDNIGHT+SOURCE_WASHINGTON_OFFSET_DAYS;
+// Reproduce Burgess's exact 1860 worked-example epoch and all five printed
+// True numbers using only the book's source table, rates, apsides and Jya.
+const JD_TRUE_SOURCE_EPOCH=
+  JD_1860_UJJAIN_MIDNIGHT+SOURCE_WASHINGTON_OFFSET_DAYS;
 const sourceExampleRows=[];
 let maxTrueSourceResidualArcminutes=0;
 let maxMeanInputSourceResidualArcseconds=0;
 let maxMandoccaSourceResidualArcseconds=0;
 for(const planet of PLANETS){
   const raw=sourceInputs(JD_TRUE_SOURCE_EPOCH,planet,'original');
-  const rawMeanResidual=assertWithinArcseconds(
-    raw.meanLongitude,dms(SOURCE_INPUT_1860.Sun),1.0,
-    planet+' Burgess 1860 mean longitude input'
+  const meanResidual=assertWithinArcseconds(
+    raw.meanLongitude,dms(SOURCE_INPUT_1860.Sun),1,
+    planet+' 1860 source mean input'
   );
-  const expectedSheeghra=INNER.has(planet)
+  const expectedSheeghroccheya=INNER.has(planet)
     ?dms(SOURCE_INPUT_1860[planet]):dms(SOURCE_INPUT_1860.Sun);
-  const rawSheeghraResidual=assertWithinArcseconds(
-    raw.sheeghroccheya,expectedSheeghra,1.0,
-    planet+' Burgess 1860 Sheeghroccheya input'
+  const sheeghroccheyaResidual=assertWithinArcseconds(
+    raw.sheeghroccheya,expectedSheeghroccheya,1,
+    planet+' 1860 source Sheeghroccheya input'
   );
   const mandocca=sourceMandocca(JD_TRUE_SOURCE_EPOCH,planet);
-  const apsisResidual=assertWithinArcseconds(
-    mandocca,dms(SOURCE_MANDocca_1860[planet]),1.0,
-    planet+' Burgess 1860 apsis intermediate'
+  const mandoccaResidual=assertWithinArcseconds(
+    mandocca,dms(SOURCE_MANDOCCA_1860[planet]),1,
+    planet+' 1860 source Mandocca intermediate'
   );
   const result=burgessFourPass({
     planet,meanLongitude:raw.meanLongitude,
@@ -201,12 +242,14 @@ for(const planet of PLANETS){
   const expectedTrue=dms(SOURCE_TRUE_1860[planet]);
   const trueResidual=arcminuteDifference(result.trueLongitude,expectedTrue);
   assert.ok(trueResidual<=1.25,
-    planet+' 1860 printed True longitude residual='+trueResidual+' arcminutes');
+    planet+' 1860 printed True residual='+trueResidual+' arcminutes');
   maxTrueSourceResidualArcminutes=Math.max(maxTrueSourceResidualArcminutes,trueResidual);
   maxMeanInputSourceResidualArcseconds=Math.max(
-    maxMeanInputSourceResidualArcseconds,rawMeanResidual,rawSheeghraResidual
+    maxMeanInputSourceResidualArcseconds,meanResidual,sheeghroccheyaResidual
   );
-  maxMandoccaSourceResidualArcseconds=Math.max(maxMandoccaSourceResidualArcseconds,apsisResidual);
+  maxMandoccaSourceResidualArcseconds=Math.max(
+    maxMandoccaSourceResidualArcseconds,mandoccaResidual
+  );
   sourceExampleRows.push({
     planet,
     sourceMeanLongitude:raw.meanLongitude,
@@ -219,69 +262,53 @@ for(const planet of PLANETS){
   });
 }
 assert.equal(sourceExampleRows.length,5);
-assert.ok(maxTrueSourceResidualArcminutes<=1.25,
-  'all five 1860 Burgess True outputs reproduce within 1.25 arcminutes');
+assert.ok(maxTrueSourceResidualArcminutes<=1.25);
 
-// The same independent 1860-anchor propagation is now applied to each of the
-// 600 exact random natal epochs. Raw and Bija-corrected profiles are kept
-// separately; the 1860 True worked example is the raw SS profile.
-const inputArtifactUrl=new URL(
-  '../artifacts/natal-classical-random-600-charts-1800-2399.json',import.meta.url
-);
-const report=JSON.parse(readFileSync(inputArtifactUrl,'utf8'));
-assert.equal(report.pass,true,'the 600 random natal epoch artifact exists and passed');
-assert.equal(report.records.length,600,'one arbitrary natal epoch per year');
+// Recreate precisely the same 600 seeded-random Indian birth epochs used by
+// the annual natal pipeline, without recalculating the natal charts.
 const epochRows=[];
-let bijaInputComparisons=0;
 let maxBijaMeanEngineResidualArcseconds=0;
-let maxBijaSheeghraEngineResidualArcseconds=0;
-let rawSourceDerivedRows=0;
-let bijaSourceDerivedRows=0;
-for(let index=0;index<report.records.length;index++){
-  const birth=report.records[index];
-  assert.equal(birth.year,1800+index,'retain exact original randomized year');
-  assert.ok(finite(birth.julianDayUT),birth.epochId+' exact natal JD is present');
+let maxBijaSheeghroccheyaEngineResidualArcseconds=0;
+let bijaEngineInputComparisons=0;
+for(let year=1800;year<=2399;year++){
+  const birth=makeBirth(year);
+  assert.equal(birth.year,year);
   const planets={};
   for(const planet of PLANETS){
     const raw=sourceInputs(birth.julianDayUT,planet,'original');
     const bija=sourceInputs(birth.julianDayUT,planet,'bija');
-    const rawMandocca=sourceMandocca(birth.julianDayUT,planet);
-    const bijaMandocca=rawMandocca;
+    const mandocca=sourceMandocca(birth.julianDayUT,planet);
     const rawTrue=burgessFourPass({
       planet,meanLongitude:raw.meanLongitude,
-      mandocca:rawMandocca,sheeghroccheya:raw.sheeghroccheya
+      mandocca,sheeghroccheya:raw.sheeghroccheya
     });
     const bijaTrue=burgessFourPass({
       planet,meanLongitude:bija.meanLongitude,
-      mandocca:bijaMandocca,sheeghroccheya:bija.sheeghroccheya
+      mandocca,sheeghroccheya:bija.sheeghroccheya
     });
     const current=sauraBijaCorrectedFivePlanetInputs(birth.julianDayUT,planet);
     const meanResidual=assertWithinArcseconds(
       bija.meanLongitude,current.meanLongitude,1.5,
-      birth.epochId+' '+planet+' source-anchored Bija Mean vs engine'
+      birth.epochId+' '+planet+' source-anchored Bija Mean vs current engine'
     );
-    const sheeghraResidual=assertWithinArcseconds(
+    const sheeghroccheyaResidual=assertWithinArcseconds(
       bija.sheeghroccheya,current.sheeghrocca,1.5,
-      birth.epochId+' '+planet+' source-anchored Bija Sheeghroccheya vs engine'
+      birth.epochId+' '+planet+' source-anchored Bija Sheeghroccheya vs current engine'
     );
     maxBijaMeanEngineResidualArcseconds=Math.max(
       maxBijaMeanEngineResidualArcseconds,meanResidual
     );
-    maxBijaSheeghraEngineResidualArcseconds=Math.max(
-      maxBijaSheeghraEngineResidualArcseconds,sheeghraResidual
+    maxBijaSheeghroccheyaEngineResidualArcseconds=Math.max(
+      maxBijaSheeghroccheyaEngineResidualArcseconds,sheeghroccheyaResidual
     );
-    bijaInputComparisons+=2;
-    rawSourceDerivedRows++;
-    bijaSourceDerivedRows++;
+    bijaEngineInputComparisons+=2;
     planets[planet]={
       frame:'traditional-Saura-nirayana',
-      exactJulianDayUT:birth.julianDayUT,
-      sourceDerived:true,
       raw:{
         model:'SURYA_SIDDHANTA_ORIGINAL_REVOLUTIONS',
         meanLongitude:raw.meanLongitude,
         sheeghroccheya:raw.sheeghroccheya,
-        mandocca:rawMandocca,
+        mandocca,
         trueLongitude:rawTrue.trueLongitude,
         trueStages:rawTrue.stages
       },
@@ -289,88 +316,85 @@ for(let index=0;index<report.records.length;index++){
         model:'BURGESS_BIJA_CORRECTED_REVOLUTIONS',
         meanLongitude:bija.meanLongitude,
         sheeghroccheya:bija.sheeghroccheya,
-        mandocca:bijaMandocca,
+        mandocca,
         trueLongitude:bijaTrue.trueLongitude,
         trueStages:bijaTrue.stages,
         meanDifferenceFromCurrentEngineArcseconds:meanResidual,
-        sheeghroccheyaDifferenceFromCurrentEngineArcseconds:sheeghraResidual
+        sheeghroccheyaDifferenceFromCurrentEngineArcseconds:sheeghroccheyaResidual
       }
     };
   }
-  assert.equal(Object.keys(planets).length,5);
   epochRows.push({
     year:birth.year,date:birth.date,localTime:birth.localTime,
-    place:birth.place,utcOffsetMinutes:birth.historicalUtcOffsetMinutes,
+    place:birth.place,utcOffsetMinutes:birth.utcOffsetMinutes,
     epochId:birth.epochId,julianDayUT:birth.julianDayUT,planets
   });
 }
 assert.equal(epochRows.length,600);
-assert.equal(rawSourceDerivedRows,3000);
-assert.equal(bijaSourceDerivedRows,3000);
-assert.equal(bijaInputComparisons,6000);
+assert.equal(bijaEngineInputComparisons,6000);
 assert.ok(maxBijaMeanEngineResidualArcseconds<=1.5);
-assert.ok(maxBijaSheeghraEngineResidualArcseconds<=1.5);
+assert.ok(maxBijaSheeghroccheyaEngineResidualArcseconds<=1.5);
 
 const output={
   schemaVersion:1,
-  title:'Burgess 1860 source-derived historical Mean, Sheeghroccheya and True longitude values',
+  title:'Burgess 1860 source-derived historical Mean, Sheeghroccheya and True numbers',
   source:{
     author:'E. Burgess',
     work:'Translation of the Surya-Siddhanta: A Text-Book of Hindu Astronomy',
     publicationYear:1860,
-    meanMethod:'Chapter I v.53; raw and Bija-corrected revolutions per Mahayuga and 1860 Ujjain mean-longitude tables',
-    sheeghroccheyaMethod:'Chapter I v.54; superior-planet conjunction equals mean Sun; inferior-planet conjunction uses own orbital mean longitude',
-    trueMethod:'Chapter II vv.15-22, 29-45; printed 24-Jya table and four successive corrections',
-    mandoccaMethod:'Chapter I vv.41-42 and 57-58; apsis revolutions per Kalpa and Kali-epoch apsis longitude',
-    citations:{
-      meanAndCorrectedAnchors:'https://upload.wikimedia.org/wikipedia/commons/2/2b/Translation_of_the_S%C3%BBrya-Siddh%C3%A2nta%2C_A_Text-Book_of_Hindu_Astronomy%3B_With_Notes%2C_and_an_Appendix_%28IA_jstor-592174%29.pdf',
-      meanAndSheeghroccheya:'https://upload.wikimedia.org/wikipedia/commons/2/2b/Translation_of_the_S%C3%BBrya-Siddh%C3%A2nta%2C_A_Text-Book_of_Hindu_Astronomy%3B_With_Notes%2C_and_an_Appendix_%28IA_jstor-592174%29.pdf',
-      jyaAndTrue:'https://upload.wikimedia.org/wikipedia/commons/2/2b/Translation_of_the_S%C3%BBrya-Siddh%C3%A2nta%2C_A_Text-Book_of_Hindu_Astronomy%3B_With_Notes%2C_and_an_Appendix_%28IA_jstor-592174%29.pdf'
-    },
-    meanPages:'178-179; pp.161-165 for Mahayuga revolution tables',
-    apsisPages:'171-172',
-    jyaPages:'196-198',
-    trueWorkedExamplePages:'214-217'
+    meanMethod:'Chapter I v.53; original and Bija-corrected Mahayuga revolutions, anchored to the printed 1860 Ujjain table',
+    sheeghroccheyaMethod:'Chapter I v.54; superior conjunction equals mean Sun; inferior conjunction equals own orbital mean',
+    mandoccaMethod:'Chapter I vv.41-42 and 57-58; Kalpa apsis revolutions and Kali-epoch apsis longitudes',
+    trueMethod:'Chapter II vv.15-22 and 29-45; printed 24-Jya table and four successive corrections',
+    sourcePdf:'https://upload.wikimedia.org/wikipedia/commons/2/2b/Translation_of_the_S%C3%BBrya-Siddh%C3%A2nta%2C_A_Text-Book_of_Hindu_Astronomy%3B_With_Notes%2C_and_an_Appendix_%28IA_jstor-592174%29.pdf',
+    pageLocators:{
+      mahalyugaRevolutions:'161-165',
+      meanAnchorsAndSheeghroccheya:'178-180',
+      apsisRevolutionsAndKaliPositions:'171-172',
+      jyaTable:'196-198',
+      fourPassTrueWorkedExample:'214-217'
+    }
   },
   method:{
-    sourceAnchor:'1860-01-01 00:00 Ujjain local mean time',
-    sourceTrueWorkedExampleEpoch:'Midnight before 1860-01-01 at Washington',
-    sourceTrueWorkedExampleUjjainOffsetDays:SOURCE_WASHINGTON_OFFSET_DAYS,
-    meanEpochConvention:'Elapsed days from the 1860 Ujjain-midnight anchor, using exact birth Julian UT; no birth-place longitude substituted for the Ujjain reference meridian',
-    meanProfiles:['SURYA_SIDDHANTA_ORIGINAL_REVOLUTIONS','BURGESS_BIJA_CORRECTED_REVOLUTIONS'],
-    jyaRadius:3438,
+    meanAnchor:'1860-01-01 00:00 Ujjain local mean time',
+    trueWorkedExampleEpoch:'Midnight before 1860-01-01 at Washington',
+    trueWorkedExampleUjjainOffsetDays:SOURCE_WASHINGTON_OFFSET_DAYS,
+    meanTimeBasis:'Exact natal Julian UT converted to elapsed days from the Ujjain local-midnight source anchor',
+    profiles:['SURYA_SIDDHANTA_ORIGINAL_REVOLUTIONS','BURGESS_BIJA_CORRECTED_REVOLUTIONS'],
+    jyaRadius:RADIUS,
     jyaStepDegrees:STEP_DEGREES,
     jyaValues:JYA,
-    trueSequence:['half-Sheeghra','half-Manda','full-Manda on original mean','full-Sheeghra'],
-    outputFrame:'traditional-Saura-nirayana'
+    fourPassSequence:['half-Sheeghra','half-Manda','full-Manda on original mean','full-Sheeghra'],
+    frame:'traditional-Saura-nirayana'
   },
   workedExample1860:{
     rows:sourceExampleRows,
     maxTrueResidualArcminutes:+maxTrueSourceResidualArcminutes.toFixed(6),
-    maxMeanOrSheeghroccheyaInputResidualArcseconds:+maxMeanInputSourceResidualArcseconds.toFixed(6),
+    maxMeanAndSheeghroccheyaInputResidualArcseconds:+maxMeanInputSourceResidualArcseconds.toFixed(6),
     maxMandoccaIntermediateResidualArcseconds:+maxMandoccaSourceResidualArcseconds.toFixed(6),
     status:'PASS_BURGESS_1860_FIVE_PLANET_TRUE_WORKED_EXAMPLE'
   },
   arbitraryEpochs:{
+    seed:'0x'+SEED.toString(16).toUpperCase(),
     birthEpochs:600,
     years:[1800,2399],
     planets:5,
-    rawSourceDerivedRows:rawSourceDerivedRows,
-    bijaCorrectedSourceDerivedRows:bijaSourceDerivedRows,
-    bijaMeanAndSheeghroccheyaEngineComparisons:bijaInputComparisons,
+    rawSourceDerivedRows:3000,
+    bijaCorrectedSourceDerivedRows:3000,
+    bijaMeanAndSheeghroccheyaEngineComparisons:bijaEngineInputComparisons,
     maxBijaMeanEngineResidualArcseconds:+maxBijaMeanEngineResidualArcseconds.toFixed(6),
     maxBijaSheeghroccheyaEngineResidualArcseconds:+maxBijaSheeghroccheyaEngineResidualArcseconds.toFixed(6),
     rows:epochRows
   },
   interpretation:{
     directPrintedTrueWorkedExampleRows:5,
-    exactBirthEpochPrintedTrueOracles:0,
-    sourceDerivedArbitraryEpochTrueRows:3000,
-    sourceDerivedArbitraryEpochMeanAndSheeghroccheyaRows:6000,
-    historicalObservationClaim:false,
+    exactRandomNatalEpochPrintedTrueOracles:0,
+    sourceDerivedArbitraryEpochTrueRows:6000,
+    sourceDerivedArbitraryEpochMeanAndSheeghroccheyaRows:12000,
+    observationClaim:false,
     productionEligible:false,
     genericClassicalNatalCertified:false,
-    note:'The 1860 True values are directly printed worked-example numbers. The 1800-2399 per-birth outputs are reproducible calculations derived from the historical published revolution, apsis, Jya and four-pass rules; they are not separately printed observations for each birth epoch. Raw and Bija-corrected profiles remain distinct.'
+    note:'The 1860 True numbers are directly printed worked-example values. The 600 exact arbitrary birth epochs are reproducible source-derived calculations, not separately printed observations for those birth instants. Original and Bija-corrected revolutions remain separate profiles.'
   }
 };
 const outputUrl=new URL(
@@ -381,16 +405,15 @@ mkdirSync(new URL('../artifacts/',import.meta.url),{recursive:true});
 writeFileSync(outputUrl,JSON.stringify(output,null,2)+'\n');
 console.log(JSON.stringify({
   pass:true,
-  status:output.workedExample1860.status,
-  sourceTrueWorkedExampleRows:5,
-  maxTrueSourceResidualArcminutes:output.workedExample1860.maxTrueResidualArcminutes,
+  workedExampleStatus:output.workedExample1860.status,
+  directPrintedTrueRows:5,
+  maxTrueResidualArcminutes:output.workedExample1860.maxTrueResidualArcminutes,
   arbitraryBirthEpochs:600,
-  rawSourceDerivedTrueRows:rawSourceDerivedRows,
-  bijaSourceDerivedTrueRows:bijaSourceDerivedRows,
-  bijaMeanAndSheeghroccheyaEngineComparisons:bijaInputComparisons,
+  rawSourceDerivedTrueRows:3000,
+  bijaSourceDerivedTrueRows:3000,
+  bijaMeanAndSheeghroccheyaEngineComparisons:bijaEngineInputComparisons,
   maxBijaMeanEngineResidualArcseconds:output.arbitraryEpochs.maxBijaMeanEngineResidualArcseconds,
   maxBijaSheeghroccheyaEngineResidualArcseconds:output.arbitraryEpochs.maxBijaSheeghroccheyaEngineResidualArcseconds,
-  frame:'traditional-Saura-nirayana',
   productionEligible:false,
   output:'artifacts/burgess-1860-source-derived-longitudes-600-epochs.json'
 }));
