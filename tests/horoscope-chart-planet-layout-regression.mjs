@@ -99,6 +99,7 @@ assert.ok(chartStyleJs.includes("label.dataset.bhavaHouses=String(house);"),'Nor
 assert.ok(chartStyleJs.includes("number.textContent=hindiNumber(sign+1);"),'North Rasi, Navamsa and Transit use Devanagari digits; Bhava is excluded.');
 assert.ok(chartStyleJs.includes("number.className='smv-v342-sign-number';"),'North sign numbers are separate display-only labels and do not alter planet rows.');
 assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-triangle-cell .smv-v342-sign-number{'),'North triangle sign numerals have a dedicated non-overlapping flow row.');
+assert.ok(chartStyleCss.includes('margin:0!important;padding:0 2px!important;'),'North Devanagari numerals do not take extra vertical space away from the graha rows.');
 assert.ok(chartStyleCss.includes('position:static!important;transform:none!important;'),'North triangle sign numerals stay in normal flow above planet rows.');
 assert.ok(chartStyleJs.includes("const bhavaRows=kind==='bhava'?readBhavaTable(chart,isTa()):null;"), 'North and East both read the same authoritative Bhava Table mapping.');
 assert.ok(chartStyleJs.includes('const bhavaHousesBySign=Array.from({length:12},()=>[]);'));
