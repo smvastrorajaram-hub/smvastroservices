@@ -82,7 +82,7 @@ export async function buildSubhaJanana(p,chart,meta={},lang='ta'){
     };
     return {start:localize(w.startTimestamp),end:localize(w.endTimestamp),startTimestamp:w.startTimestamp,endTimestamp:w.endTimestamp};
   });
-  const inTyajyam=thyajyam.some(w=>birthTs>=w.startTimestamp&&birthTs<=w.endTimestamp);
+  const inTyajyam=thyajyam.some(w=>birthTs>=w.startTimestamp&&birthTs<w.endTimestamp);
   const tyajyamText=thyajyam.map(w=>pointText(w.start,solarDate,lat,lon,zone,ta)+' '+(ta?'முதல்':'to')+' '+pointText(w.end,solarDate,lat,lon,zone,ta)).filter(Boolean).join('; ');
   const placeParts=[];
   const administrativeAreas=formatOfflineIndiaAdministrativeAreas(meta.state,meta.district,ta?'ta':'en');
