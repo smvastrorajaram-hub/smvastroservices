@@ -101,7 +101,7 @@ export async function buildSubhaJanana(p,chart,meta={},lang='ta'){
   const administrativeAreas=formatOfflineIndiaAdministrativeAreas(meta.state,meta.district,targetLanguage);
   const placeName=localizeTamilText(meta.placeName||'',targetLanguage).trim();
   const district=String(administrativeAreas.admin2||'').trim();
-  const districtBare=district.replace(/\\s+District$/i,'').replace(/\\s*மாவட்டம்$/u,'');
+  const districtBare=district.replace(/\s+District$/i,'').replace(/\s*மாவட்டம்$/u,'');
   if(placeName&&placeName.toLocaleLowerCase()!==districtBare.toLocaleLowerCase())placeParts.push(placeName);
   if(district)placeParts.push(ta?district+' மாவட்டம்':district+' District');
   const village=localizeTamilText(meta.village||'',targetLanguage).trim();
@@ -117,7 +117,7 @@ export async function buildSubhaJanana(p,chart,meta={},lang='ta'){
   const paksha=/shukla|சுக்ல|வளர்பிறை/i.test(String(p?.tithi?.half||''))?(ta?'சுக்ல பட்சத்து (வளர்பிறை)':'Shukla Paksha (waxing Moon)'):(ta?'கிருஷ்ண பட்சத்து (தேய்பிறை)':'Krishna Paksha (waning Moon)');
   const birthYogaName=yogaName(birthYoga,ta);
   const birthYogaPhrase=birthYoga&&birthYoga.key!=='unknown'
-    ? (ta?birthYogaName.replace(/\\s*யோகம்$/u,'')+' யோகமும் கூடிய சுப தினத்தில்':birthYogaName.replace(/\\s*Yogam$/i,'')+' Yogam on this auspicious day')
+    ? (ta?birthYogaName.replace(/\s*யோகம்$/u,'')+' யோகமும் கூடிய சுப தினத்தில்':birthYogaName.replace(/\s*Yogam$/i,'')+' Yogam on this auspicious day')
     : (ta?'அமிர்தாதி யோகம் கணிக்க இயலாத சுப தினத்தில்':'an auspicious day with unavailable Amirthadi Yoga');
   const ranges=[rangeText(p?.tithi,date,lat,lon,zone,ta),rangeText(p?.nakshatra,date,lat,lon,zone,ta),rangeText(p?.yoga,date,lat,lon,zone,ta),rangeText(p?.karana,date,lat,lon,zone,ta)];
   const dayLabel=ta?VARA_TA_DAY[weekday]+' ('+VARA_SA[weekday]+')':VARA_EN[weekday]+' ('+VARA_SA_EN[weekday]+')';
