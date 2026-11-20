@@ -90,7 +90,7 @@ assert.ok(chartStyleCss.includes('position:static!important;transform:none!impor
 assert.ok(chartStyleCss.includes('color:#6f4d2c!important;'), 'East Bhava grouped IDs use readable high-contrast text.');
 assert.ok(chartStyleJs.includes("const lagna=kind==='bhava'?-1:ascSign(chart,from);"), 'Bhava alternate layouts do not depend on a Lagna lookup to render.');
 assert.ok(chartStyleJs.includes("const sign=kind==='bhava'?(bhavaSignByHouse[house]>=0?bhavaSignByHouse[house]:(bhava?.sign??-1)):(lagna+house-1)%12;"), 'North Bhava maps all twelve fixed house slots through the already-calculated Sphuta Rasi metadata.');
-assert.ok(chartStyleJs.includes("chart.append(pointCell(x,y,sign,from,style,kind,ta,planetEntries,''));"),'North Bhava passes fixed house slots to the Roman I–XII label renderer without changing planet assignments.');
+assert.ok(chartStyleJs.includes("chart.append(pointCell(x,y,sign,house,from,style,kind,ta,planetEntries,''));"),'North Bhava passes fixed house slots to the Roman I–XII label renderer without changing planet assignments.');
 assert.ok(chartStyleJs.includes("const explicit=from.bhavaSignByHouse?.[house];"), 'North/East layout prioritizes the source Bhava-house-to-Rasi mapping.');
 assert.ok(chartStyleJs.includes("const bhavaSignByHouse=Array(13).fill(-1);"), 'The mapping retains one explicit destination sign for every Bhava house.');
 assert.ok(chartStyleJs.includes("const house=kind==='bhava'?0:(sign-lagna+12)%12+1;"), 'East Bhava positioning is independent of Lagna.');
