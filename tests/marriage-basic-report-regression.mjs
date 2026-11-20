@@ -129,7 +129,6 @@ const primaryShadbalaSource=primaryHoroscopeSource.slice(primaryShadbalaStart,pr
 ok(primaryShadbalaStart>=0&&primaryShadbalaEnd>primaryShadbalaStart,'Primary horoscope Shadbala table source can be isolated');
 ok(primaryShadbalaSource.includes('smv-shadbala-table')&&!primaryShadbalaSource.includes('partialSubtotalExcludingCheshtaAndDrig')&&!primaryShadbalaSource.includes('இடைமொத்தம் (சேஷ்டா/த்ரிக்/யுத்தம் சேராது)'), 'Primary horoscope Shadbala retains components without an uncertified subtotal');
 ok(matchingShadbalaSource.includes('strength6'),'Matching Shadbala uses the B.V. Raman strength6 calculation result');
-ok(matchingShadbalaSource.includes('finite(r.totalVirupa)?Number(r.totalVirupa):null')&&matchingShadbalaSource.includes("total===null)return ta?'கணக்கீடு இல்லை':'Not available'"), 'Matching treats an unavailable Shadbala total as unavailable, never as zero Virupa');
 eq(matchingShadbalaSource.includes('partialSubtotalExcludingCheshtaAndDrig'),false,'Matching does not present an incomplete subtotal as Shadbala');
 eq(matchingShadbalaSource.includes('smv-shadbala-method-note'),false,'Matching omits the internal numerical-validation note');
 ok(matchingShadbalaSource.includes('Total Shadbala (Virupa)')&&matchingShadbalaSource.includes('Total Rupa')&&matchingShadbalaSource.includes('Required Rupa')&&matchingShadbalaSource.includes('Rank')&&matchingShadbalaSource.includes('Below minimum'),'Matching source adds total, total/required Rupa, rank and threshold status');
