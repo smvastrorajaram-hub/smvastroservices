@@ -1,0 +1,40 @@
+name: TRUE BPHS Shadbala with NAELOS DE440 (Research Only)
+
+on:
+  push:
+    branches:
+      - research/true-bphs-naelos-de440-20261121
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  true-bphs-naelos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout research branch
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install pinned NAELOS research reader without changing project manifests
+        run: npm install --no-save --no-package-lock --ignore-scripts naelos-ephemeris@0.1.3
+      - name: Syntax-check isolated engine and tests
+        run: |
+          node --check research/true-bphs/naelos-bphs-shadbala-engine.mjs
+          node --check tests/true-bphs-naelos-engine-regression.mjs
+          node --check tests/true-bphs-naelos-600y-research.mjs
+      - name: Verify NAELOS table hashes, five natal source parity and BPHS component integration
+        run: node tests/true-bphs-naelos-engine-regression.mjs
+      - name: Calculate one seeded-random full BPHS natal chart for every year 1800–2399
+        run: node tests/true-bphs-naelos-600y-research.mjs
+      - name: Upload 600-year True BPHS natal evidence ledger
+        uses: actions/upload-artifact@v4
+        with:
+          name: true-bphs-naelos-600-random-natal-charts-1800-2399
+          path: artifacts/true-bphs-600-random-natal-charts-1800-2399.json
+          if-no-files-found: error
+          retention-days: 30
