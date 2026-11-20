@@ -45,6 +45,75 @@ const intervalYoga=getBirthTimeAmirthadiYoga([
 ],150);
 equal(intervalYoga.key,'siddha','The birth timestamp selects its active Amirthadi interval, not the first day interval');
 
+const seasonSamples=[
+  ['2026-04-25',0,'வசந்த'],
+  ['2026-06-25',2,'கிரீஷ்ம'],
+  ['2026-08-25',4,'வர்ஷ'],
+  ['2026-10-25',6,'சரத்'],
+  ['2026-12-25',8,'ஹேமந்த'],
+  ['2027-02-25',10,'சிசிர']
+];
+for(const [date,monthIndex,ritu] of seasonSamples){
+  const solar=tamilSolarDate({date,time:'12:00',lat:11.23,lon:78.88,utcOffsetMinutes:330,mode:'birth'});
+  assert.ok(solar,'Tamil solar date calculated for Ritu fixture '+date);checks++;
+  equal(solar.index,monthIndex,'Solar month index is correct on '+date);
+  equal(getTamilRitu(solar,'ta'),ritu,'Date-derived Ritu changes with Tamil solar month on '+date);
+}
+
+const fixtureDate='2026-06-25',fixtureTime='10:30',fixtureLat=11.23,fixtureLon=78.88,fixtureZone='Asia/Kolkata';
+const fixtureSunrise=solarNoaa(fixtureDate,fixtureLat,fixtureLon,330,true);
+assert.ok(fixtureSunrise,'Sunrise fixture is available for birth-time yoga');checks++;
+const fixtureTimeline=nakshatraIntervalsForLocalDay({
+  date:fixtureDate,time:fixtureSunrise,lat:fixtureLat,lon:fixtureLon,
+  utcOffsetMinutes:330,timezone:fixtureZone,language:'ta'
+});
+assert.ok(fixtureTimeline.available&&fixtureTimeline.intervals.length>0,'Nakshatra timeline is available for the selected birth day');checks++;
+const fixtureTimestamp=Date.parse(fixtureDate+'T'+fixtureTime+':00Z')-330*60000;
+const fixtureWeekday=new Date(fixtureDate+'T12:00:00Z').getUTCDay();
+const fixtureBirthSegment=fixtureTimeline.intervals.find(x=>fixtureTimestamp>=x.startTimestamp&&fixtureTimestamp<x.endTimestamp);
+assert.ok(fixtureBirthSegment,'Birth time belongs to one exact Nakshatra interval');checks++;
+const fixtureBirthYoga=getTamilDayYoga(fixtureWeekday,fixtureBirthSegment.nakshatraNumber);
+assert.notEqual(fixtureBirthYoga.key,'unknown','Birth-time Amirthadi Yoga is available');checks++;
+const panchangFixture={
+  requested:{date:fixtureDate,time:fixtureTime,latitude:fixtureLat,longitude:fixtureLon},
+  tithi:{name:'திருதியை',half:'Shukla'},
+  nakshatra:{name:'ரோகிணி',pada:2},
+  yoga:{name:'சித்த யோகம்'},
+  karana:{name:'பவம்'},
+  moonSign:'ரிஷபம்'
+};
+const chartFixture={lagna:{rasi:'கன்னி'},planets:[]};
+const tamilEntry={
+  date:fixtureDate,time:fixtureTime,lat:fixtureLat,lon:fixtureLon,timezone:fixtureZone,
+  gender:'male',name:'ராஜாராம்',village:'பெரம்பலூர்',fatherName:'ராஜேந்திரன்',
+  motherName:'அன்னபூரணி',placeName:'மதுரை',district:'மதுரை',state:'தமிழ்நாடு',country:'இந்தியா'
+};
+const tamilStatement=await buildSubhaJanana(panchangFixture,chartFixture,tamilEntry,'ta');
+const englishStatement=await buildSubhaJanana(panchangFixture,chartFixture,tamilEntry,'en');
+const expectedTamilYoga=fixtureBirthYoga.ta.replace(/\s*யோகம்$/u,'')+' யோகமும் கூடிய சுப தினத்தில்';
+const expectedEnglishYoga=fixtureBirthYoga.en.replace(/\s*Yogam$/i,'')+' Yogam on this auspicious day';
+has(tamilStatement,expectedTamilYoga,'Tamil statement displays only the Amirthadi Yoga active at birth time');
+has(englishStatement,expectedEnglishYoga,'English statement displays only the Amirthadi Yoga active at birth time');
+lacks(tamilStatement,'பிறந்த நேர அமிர்தாதி யோகம்:','Tamil statement does not append a second birth-time Yoga label');
+has(tamilStatement,'கிரீஷ்ம ருதுவும்','June Tamil solar month derives Grishma Ritu');
+has(englishStatement,'Grishma season','English statement derives the same solar Ritu');
+for(const value of ['ராஜாராம்','பெரம்பலூர் கிராமம்','ராஜேந்திரன்','அன்னபூரணி','மதுரை மாவட்டம்','தமிழ்நாடு மாநிலம்'])
+  has(tamilStatement,value,'Tamil input remains Tamil in Tamil statement: '+value);
+for(const value of ['Rajaram','Perambalur Village','Rajendran','Annapoorani','Madurai District','Tamil Nadu State'])
+  has(englishStatement,value,'Tamil input is transliterated in English statement: '+value);
+
+const englishEntry={
+  ...tamilEntry,gender:'female',name:'Rajaram',village:'Perambalur',fatherName:'Rajendran',
+  motherName:'Annapoorani',placeName:'Madurai',district:'Madurai',state:'Tamil Nadu',country:'India'
+};
+const tamilFromEnglish=await buildSubhaJanana(panchangFixture,chartFixture,englishEntry,'ta');
+has(tamilFromEnglish,'ராஜாராம்','English person name becomes Tamil in the Tamil statement');
+has(tamilFromEnglish,'பெரம்பலூர் கிராமம்','English village becomes Tamil in the Tamil statement');
+has(tamilFromEnglish,'திரு. ராஜேந்திரன்','English father name becomes Tamil in the Tamil statement');
+has(tamilFromEnglish,'திருமதி. அன்னபூரணி','English mother name becomes Tamil in the Tamil statement');
+has(tamilFromEnglish,'மதுரை மாவட்டம்','English place selection becomes Tamil in the Tamil statement');
+has(tamilFromEnglish,'புத்திரி பாக்கியமாக பெண் குழந்தை','Female gender is retained and rendered in Tamil');
+
 const html=read('public/horoscope/index.html');
 const form=read('public/horoscope/horoscope-form.js');
 const horoscope=read('public/horoscope/horoscope.js');
@@ -96,7 +165,7 @@ has(horoscope,'data-smv-screen-only="daily-hora"','Calendar Daily Hora markup re
 has(horoscope,'window.__smvRenderBasicSnapshot=async','Language switches regenerate the statement in the selected language');
 
 has(prose,'formatOfflineIndiaAdministrativeAreas','State and district use the existing location-display dictionary');
-for(const symbol of ['solarNoaa','tamilSolarDate','nakshatraIntervalsForLocalDay','thyajyamIntervalsForLocalDay','calculateAhasRatriPramana','getTamilDayYoga','offsetMinutesAt'])
+for(const symbol of ['solarNoaa','tamilSolarDate','nakshatraIntervalsForLocalDay','thyajyamIntervalsForLocalDay','calculateAhasRatriPramana','getTamilDayYoga','getTamilRitu','getBirthTimeAmirthadiYoga','localizeTamilText','offsetMinutesAt'])
   has(prose,symbol,'Subha Janana uses existing offline calculations: '+symbol);
 for(const phrase of ['புத்திர பாக்கியமாக ஆண் குழந்தை','புத்திரி பாக்கியமாக பெண் குழந்தை','தியாஜ்யம்:','யோகமும் கூடிய சுப தினத்தில்','நாழிகை','விநாழிகை','தீர்க்காயுளும்'])
   has(prose,phrase,'Traditional statement includes '+phrase);
@@ -104,7 +173,7 @@ has(prose,'getBirthTimeAmirthadiYoga(segments,birthTs)','Birth-time Amirthadi Yo
 lacks(prose,'dayYogaName','Daily first-interval Amirthadi Yoga must not be combined with birth-time Yoga');
 lacks(prose,'பிறந்த நேர அமிர்தாதி யோகம்:','Do not show a redundant day-yoga plus birth-yoga parenthesis');
 has(prose,'formatOfflineIndiaAdministrativeAreas(meta.state,meta.district','District and state are sourced from selected-location administrative metadata');
-has(prose,'if(administrativeAreas.admin2)','District is added only when selected-location metadata contains it');
+has(prose,'if(district)','District is added only when selected-location metadata contains it');
 has(prose,"const village=localizeTamilText(meta.village||'',targetLanguage)",'Village values are localized without changing their source metadata');
 has(prose,'parentText=father&&mother?','Both parent names are rendered together when present');
 has(prose,':father?(','Father-only input is rendered without an empty mother placeholder');
@@ -116,6 +185,8 @@ has(css,'.birth-gender-option input:checked+span','Gender choices are rendered a
 has(sw,"'./subha-janana.mjs'","New narrative module is precached for offline use");
 has(sw,"'./tamil-day-classifications.mjs'","Amirthadi yoga lookup is also precached for offline use");
 has(sw,"'./offline/places/tamil-transliteration.mjs'","Two-way Tamil transliteration is precached for offline use");
+for(const worker of ['public/sw.js','public/horoscope/calendar/sw.js'])
+  has(read(worker),'tamil-transliteration.mjs','Shared place-display dependency is precached in '+worker);
 for(const label of ["'Gender':'பாலினம்'","'Male':'ஆண்'","'Female':'பெண்'","'Village':'கிராமம்'","\"Mother's Name\":'தாயார் பெயர்'","\"Father's Name\":'தந்தையார் பெயர்'"])
   has(language,label,'English field label is translated to Tamil: '+label);
 
