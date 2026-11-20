@@ -21,8 +21,8 @@
  const romanHouse=house=>roman[Number(house)-1]||'—';
  function normalizeSouthBhavaHouseLabels(chart){
   for(const label of chart.querySelectorAll('.bhava-house-no')){
-   const house=houseNumber(label.textContent);
-   if(house)label.textContent=romanHouse(house);
+   const house=houseNumber(label.dataset.bhavaHouse)||houseNumber(label.textContent);
+   if(house){label.dataset.bhavaHouse=String(house);label.textContent=romanHouse(house);}
   }
  }
  let choice='south';
@@ -80,16 +80,11 @@
   // V343: No inline CSS coordinates — report-print.html CSP blocks style attributes.
   // Fixed [data-house] (North) / [data-sign] (East) positions live in external CSS.
   // This preserves placement in saved HTML and offline Android PDF prints.
-  const number=document.createElement('span');number.className='smv-v342-sign-number';number.textContent=String(sign+1);
-  // Bhava labels must come from the Bhava Table's house -> Sphuta Rasi map.
-  // North is house-positioned; East is sign-positioned and may group cusps.
-  if(kind!=='bhava'&&style!=='east')cell.append(number);
+  // Alternate Rasi, Navamsa and Transit charts intentionally show no numeric
+  // sign/house labels. Only Bhava charts carry the calculated Bhava Roman label.
   if(kind==='bhava'){
    const h=document.createElement('span');h.className='smv-v342-house-number';
    h.textContent=style==='north'?romanHouse(house):String(bhavaHouseLabel||'');
-   cell.append(h);
-  }else if(style==='east'){
-   const h=document.createElement('span');h.className='smv-v342-house-number';h.textContent=house>=1&&house<=12?String(house):'';
    cell.append(h);
   }
   if(house===1&&kind!=='transit'){const mark=document.createElement('span');mark.className='smv-v342-asc';mark.textContent=ta?'ல':'As';cell.append(mark);}
@@ -150,9 +145,12 @@
   if(chart.dataset.smvChartStyle===style&&chart.querySelector(':scope > template.smv-v342-south-original')&&chart.querySelector(':scope > .smv-v342-geometry'))return;
   const src=sourceNode(chart);if(!src)return;
   const from=southCells(src);if(!from)return;
-  const lagna=ascSign(chart,from);if(lagna<0)return; // Never infer an unknown Lagna.
   const kind=chart.id==='bhavaChart'?'bhava':chart.id==='navamsaChart'?'d9':chart.id==='rasiChart'?'d1':'transit';
   const bhavaRows=kind==='bhava'?readBhavaTable(chart,isTa()):null;
+  // Bhava house placement comes from Bhava Table / cusp mappings, never from
+  // Lagna. Requiring a Lagna here made North/East silently remain South.
+  const lagna=kind==='bhava'?-1:ascSign(chart,from);
+  if(kind!=='bhava'&&lagna<0)return; // Never infer an unknown Rasi/Navamsa/Transit Lagna.
   if(kind==='bhava'&&style==='north'&&!bhavaRows){
    // The source Bhava chart already contains each house label beside its
    // calculated Sphuta Rasi. Multiple houses may share one Rasi; retain all
@@ -166,16 +164,19 @@
   }
   const bhavaHousesBySign=Array.from({length:12},()=>[]);
   const bhavaPlanetsBySign=Array.from({length:12},()=>[]);
+  const bhavaSignByHouse=Array(13).fill(-1);
   if(kind==='bhava'){
    if(bhavaRows){
     for(let h=1;h<=12;h++){
      const row=bhavaRows[h];
      bhavaHousesBySign[row.sign].push(h);
+     bhavaSignByHouse[h]=row.sign;
      bhavaPlanetsBySign[row.sign].push(...row.planets);
     }
    }else{
     for(let sign=0;sign<12;sign++){
      bhavaHousesBySign[sign]=[...(from.cusp[sign]||[])];
+     for(const house of bhavaHousesBySign[sign])bhavaSignByHouse[house]=sign;
      bhavaPlanetsBySign[sign]=[...(from.out[sign]?.querySelectorAll('.planet-line')||[])];
     }
    }
@@ -188,7 +189,7 @@
   chart.setAttribute('aria-label',`${kind.toUpperCase()} — ${style==='north'?'North Indian':'East Indian'} chart`);
   if(style==='east'){
    for(let sign=0;sign<12;sign++){
-    const house=(sign-lagna+12)%12+1;
+    const house=kind==='bhava'?0:(sign-lagna+12)%12+1;
     const [x,y]=EAST[sign];
     const bhavaLabel=kind==='bhava'?bhavaHousesBySign[sign].map(romanHouse).join('/'):'';
     const planets=kind==='bhava'&&bhavaRows?bhavaPlanetsBySign[sign]:null;
@@ -197,7 +198,7 @@
   }else{
    for(let house=1;house<=12;house++){
     const bhava=kind==='bhava'?bhavaRows?.[house]:null;
-    const sign=bhava?bhava.sign:(kind==='bhava'?from.cusp.findIndex(c=>c.includes(house)):(lagna+house-1)%12);
+    const sign=bhava?bhava.sign:(kind==='bhava'?bhavaSignByHouse[house]:(lagna+house-1)%12);
     if(sign<0)continue;
     let planetEntries=null;
     if(kind==='bhava'){
