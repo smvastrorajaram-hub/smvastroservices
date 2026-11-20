@@ -4,7 +4,7 @@
    Location lookup keeps its existing GeoNames + India-offline behavior.
 */
 const IS_PAGES_DEV_HOST = self.location.hostname === 'smvastroservices.pages.dev' || self.location.hostname.endsWith('.smvastroservices.pages.dev') || self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
-const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? 'smv-81c337fe03cb397d' : 'smv-2816793f0f442855';
+const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? 'smv-d1f1ed20744bdf4a' : 'smv-78f41b72a8853332';
 const OFFLINE_CACHE='smv-horoscope-offline';
 const LOCATION_CACHE='smv-shared-india-places';
 const SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE;
