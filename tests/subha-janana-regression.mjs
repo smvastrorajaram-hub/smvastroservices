@@ -212,7 +212,9 @@ has(prose,':mother?(','Mother-only input is rendered without an empty father pla
 has(prose,"sjTime(birthTimeGhati)+'க்கு (சரியாக '+sjTime(birthClockTa)+' மணிக்கு)",'Tamil birth time is grammatically formatted and uses the dedicated time colour');
 
 has(css,'.smv-subha-janana{','Narrative has its own report styling');
-const statementStyle=css.slice(css.indexOf('.smv-subha-janana{'),css.indexOf('.smv-year-reckoning'));
+const statementStyleStart=css.indexOf('.smv-subha-janana{');
+assert.ok(statementStyleStart>=0,'Compact Subha Janana style block exists');checks++;
+const statementStyle=css.slice(statementStyleStart,statementStyleStart+1400);
 has(statementStyle,'border:0','Subha Janana does not add a separate card or panel layer');
 has(statementStyle,'background:transparent','Subha Janana uses the existing report surface');
 has(statementStyle,'text-align:justify','Statement text expands horizontally to reduce vertical space');
