@@ -1,0 +1,324 @@
+{
+  "engine": "Naelos Ephemeris",
+  "format": 2,
+  "source": {
+    "name": "JPL DE440",
+    "file": "de440.bsp",
+    "sha256": "a4ce9bf9b3282becc9f4b2ac3cebe03a2ae7599981aabd7265fd8482fff7c4b5",
+    "licence": "public domain (US Government work, NASA/JPL)"
+  },
+  "asteroids": {
+    "source": "JPL Horizons small-body SPK files, one per body, heliocentric ICRF",
+    "licence": "public domain (US Government work, NASA/JPL)",
+    "files": {
+      "chiron": {
+        "spk_id": 20002060,
+        "sha256": "987c668f73a529c21bea410c21812a265208152b472dd8a8caff5fb6f07c2939"
+      },
+      "ceres": {
+        "spk_id": 20000001,
+        "sha256": "1d580372e35f667860cead4bc30fae6279b6587117734b36288df8121db7a00d"
+      },
+      "pallas": {
+        "spk_id": 20000002,
+        "sha256": "0093460bcd030f83bf52994e59c351c2b8ce66533a959d134682d1e76837ec38"
+      },
+      "juno": {
+        "spk_id": 20000003,
+        "sha256": "d4e715ae1c3e1aa85a7725cd19086d0954fea360634f28bc79a8cdef12df836b"
+      },
+      "vesta": {
+        "spk_id": 20000004,
+        "sha256": "16bdda33a06cc838bc08c1e8e3dafcb4d68377d071d9103b316f16e3096b2a47"
+      }
+    }
+  },
+  "built": "2026-10-18T11:56:07Z",
+  "generator": "packages/naelos-ephemeris/tools/build_tables.py",
+  "target_arcsec": 0.01,
+  "frame": "ICRF, km, TDB; barycentric, except the Moon (geocentric) and the asteroids (heliocentric)",
+  "files": [
+    {
+      "name": "ne-1550.bin",
+      "century": 1550,
+      "start_jd_tdb": 2287194.5,
+      "end_jd_tdb": 2305447.5,
+      "bytes": 289587,
+      "sha256": "0a4dbd7b9d053bfffa75a9ca869d3a222efdc807c74a95acfe3fabde403bdf2a"
+    },
+    {
+      "name": "ne-1600.bin",
+      "century": 1600,
+      "start_jd_tdb": 2305447.5,
+      "end_jd_tdb": 2341972.5,
+      "bytes": 639381,
+      "sha256": "0e2b447060ca494d7c5d600c7d6606195b09c20f08b354e2a6523263f7c707b9"
+    },
+    {
+      "name": "ne-1700.bin",
+      "century": 1700,
+      "start_jd_tdb": 2341972.5,
+      "end_jd_tdb": 2378496.5,
+      "bytes": 640346,
+      "sha256": "359fe3199049539e3196e269305c8ccc2485058a51054c35b83616632aae07ab"
+    },
+    {
+      "name": "ne-1800.bin",
+      "century": 1800,
+      "start_jd_tdb": 2378496.5,
+      "end_jd_tdb": 2415020.5,
+      "bytes": 639978,
+      "sha256": "2287f7a4e03629127953bbbece94ff19c572040bac1a0612b75ee643841b9519"
+    },
+    {
+      "name": "ne-1900.bin",
+      "century": 1900,
+      "start_jd_tdb": 2415020.5,
+      "end_jd_tdb": 2451544.5,
+      "bytes": 639683,
+      "sha256": "9c1e589c9e801e3cdb4743ba193564ae0beb80186c9fdabf03dc2a6fa095d094"
+    },
+    {
+      "name": "ne-2000.bin",
+      "century": 2000,
+      "start_jd_tdb": 2451544.5,
+      "end_jd_tdb": 2488069.5,
+      "bytes": 640679,
+      "sha256": "155f0f715ffad632d853e875f180ad3ac5e2a3731125b1e98c433412a7a15603"
+    },
+    {
+      "name": "ne-2100.bin",
+      "century": 2100,
+      "start_jd_tdb": 2488069.5,
+      "end_jd_tdb": 2524593.5,
+      "bytes": 639661,
+      "sha256": "03cce3e914b9c6625c32b5f406f744e0c2b07bb143ebe7dab5890a537f7baaff"
+    },
+    {
+      "name": "ne-2200.bin",
+      "century": 2200,
+      "start_jd_tdb": 2524593.5,
+      "end_jd_tdb": 2561117.5,
+      "bytes": 640185,
+      "sha256": "e2564dabb41d5a0a4113512095bf044b4e02e04d52e22208dffce2366dfcacdf"
+    },
+    {
+      "name": "ne-2300.bin",
+      "century": 2300,
+      "start_jd_tdb": 2561117.5,
+      "end_jd_tdb": 2597641.5,
+      "bytes": 639282,
+      "sha256": "ad0a3d697a95f526d1d8b97539cc4d315af6c59afa140ef7e37343a5107435d1"
+    },
+    {
+      "name": "ne-2400.bin",
+      "century": 2400,
+      "start_jd_tdb": 2597641.5,
+      "end_jd_tdb": 2634166.5,
+      "bytes": 638843,
+      "sha256": "3429899376e577eb99887a9c4936a73b6d4abb31e1fd8e9ee97f0078853b8c1e"
+    },
+    {
+      "name": "ne-2500.bin",
+      "century": 2500,
+      "start_jd_tdb": 2634166.5,
+      "end_jd_tdb": 2670690.5,
+      "bytes": 579264,
+      "sha256": "4873b20aa1f28519517fb75998efa18ce7f74c815820d49c9b03db34fe6fb3ea"
+    },
+    {
+      "name": "ne-2600.bin",
+      "century": 2600,
+      "start_jd_tdb": 2670690.5,
+      "end_jd_tdb": 2688602.5,
+      "bytes": 283737,
+      "sha256": "d3e6926ea677c63fdbaed6fe75ca8194230a41a34d338510e1d1711e6898b9ef"
+    }
+  ],
+  "series": {
+    "chiron": {
+      "id": 15,
+      "frame": 2,
+      "segment_days": 1024,
+      "degree": 45,
+      "knee": 0,
+      "step_km": 9.495860562649028,
+      "bytes": 53303,
+      "worst_arcsec": 0.00888,
+      "worst_velocity_rel": 2.6e-05
+    },
+    "ceres": {
+      "id": 17,
+      "frame": 2,
+      "segment_days": 512,
+      "degree": 39,
+      "knee": 0,
+      "step_km": 1.7063700287471617,
+      "bytes": 109645,
+      "worst_arcsec": 0.00763,
+      "worst_velocity_rel": 4.35e-06
+    },
+    "pallas": {
+      "id": 18,
+      "frame": 2,
+      "segment_days": 512,
+      "degree": 42,
+      "knee": 0,
+      "step_km": 1.2741440490271565,
+      "bytes": 119895,
+      "worst_arcsec": 0.00795,
+      "worst_velocity_rel": 3.59e-06
+    },
+    "juno": {
+      "id": 19,
+      "frame": 2,
+      "segment_days": 256,
+      "degree": 24,
+      "knee": 0,
+      "step_km": 1.3646698078581332,
+      "bytes": 146294,
+      "worst_arcsec": 0.00832,
+      "worst_velocity_rel": 2.66e-06
+    },
+    "vesta": {
+      "id": 20,
+      "frame": 2,
+      "segment_days": 512,
+      "degree": 41,
+      "knee": 0,
+      "step_km": 1.2140185149359013,
+      "bytes": 119039,
+      "worst_arcsec": 0.00848,
+      "worst_velocity_rel": 3.02e-06
+    },
+    "sun": {
+      "id": 0,
+      "frame": 0,
+      "segment_days": 256,
+      "degree": 22,
+      "knee": 0,
+      "step_km": 1.1412728966078238,
+      "bytes": 127511,
+      "worst_arcsec": 0.0071,
+      "worst_velocity_rel": 0.00298
+    },
+    "moon": {
+      "id": 1,
+      "frame": 1,
+      "segment_days": 16,
+      "degree": 21,
+      "knee": 2,
+      "step_km": 0.005519564127556959,
+      "bytes": 3815617,
+      "worst_arcsec": 0.00717,
+      "worst_velocity_rel": 1.41e-07
+    },
+    "mercury": {
+      "id": 2,
+      "frame": 0,
+      "segment_days": 64,
+      "degree": 49,
+      "knee": 0,
+      "step_km": 0.41749604560410225,
+      "bytes": 1576021,
+      "worst_arcsec": 0.00854,
+      "worst_velocity_rel": 8.48e-06
+    },
+    "venus": {
+      "id": 3,
+      "frame": 0,
+      "segment_days": 256,
+      "degree": 32,
+      "knee": 0,
+      "step_km": 0.3151286507113197,
+      "bytes": 311955,
+      "worst_arcsec": 0.00895,
+      "worst_velocity_rel": 7.48e-07
+    },
+    "mars": {
+      "id": 4,
+      "frame": 0,
+      "segment_days": 512,
+      "degree": 41,
+      "knee": 0,
+      "step_km": 0.3975104871914014,
+      "bytes": 180726,
+      "worst_arcsec": 0.00862,
+      "worst_velocity_rel": 1.05e-06
+    },
+    "jupiter": {
+      "id": 5,
+      "frame": 0,
+      "segment_days": 1024,
+      "degree": 16,
+      "knee": 0,
+      "step_km": 6.58584732033995,
+      "bytes": 36143,
+      "worst_arcsec": 0.00856,
+      "worst_velocity_rel": 1.5e-06
+    },
+    "saturn": {
+      "id": 6,
+      "frame": 0,
+      "segment_days": 1024,
+      "degree": 12,
+      "knee": 0,
+      "step_km": 15.44862469799086,
+      "bytes": 26375,
+      "worst_arcsec": 0.00798,
+      "worst_velocity_rel": 2.54e-06
+    },
+    "uranus": {
+      "id": 7,
+      "frame": 0,
+      "segment_days": 2048,
+      "degree": 11,
+      "knee": 0,
+      "step_km": 43.46473188758919,
+      "bytes": 12150,
+      "worst_arcsec": 0.00985,
+      "worst_velocity_rel": 4.2e-06
+    },
+    "neptune": {
+      "id": 8,
+      "frame": 0,
+      "segment_days": 2048,
+      "degree": 9,
+      "knee": 0,
+      "step_km": 63.410912036023575,
+      "bytes": 9913,
+      "worst_arcsec": 0.00883,
+      "worst_velocity_rel": 3.76e-06
+    },
+    "pluto": {
+      "id": 9,
+      "frame": 0,
+      "segment_days": 2048,
+      "degree": 7,
+      "knee": 0,
+      "step_km": 70.4032246714465,
+      "bytes": 8628,
+      "worst_arcsec": 0.00854,
+      "worst_velocity_rel": 4.17e-06
+    },
+    "emb": {
+      "id": 200,
+      "frame": 0,
+      "segment_days": 256,
+      "degree": 26,
+      "knee": 0,
+      "step_km": 0.3483878317001369,
+      "bytes": 250598,
+      "worst_arcsec": 0.00992,
+      "worst_velocity_rel": 1.05e-06
+    }
+  },
+  "span": {
+    "start_jd_tdb": 2287194.5,
+    "end_jd_tdb": 2688602.5,
+    "asteroids": {
+      "start_jd_tdb": 2305457.5,
+      "end_jd_tdb": 2633137.5
+    }
+  }
+}
