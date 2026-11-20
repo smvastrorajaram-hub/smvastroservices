@@ -113,16 +113,21 @@ The machine-readable shadbala-source-evidence-42.json retains all seven printed 
 
 **Phase 2 verdict:** all 42 rows are enumerated: 36 direct source-example matches, three components adjudicated for the 1918 example only (Mercury Dig formula error plus two Saturn source-table corrections), two luminary Chesta N/A and one open component discrepancy (Jupiter Drik). These rows apply to one 1918 horoscope, not arbitrary natal dates, and are not inserted into the per-natal certification gate.
 
-## Final integrated CI after PAC / Shadbala evidence corrections
+## Final integrated CI after same-frame / Shadbala precision audit
 
-The latest PR head commit `82681f14b01da0f6d5f28158e8bbaea8cf74e8fa` passed the complete research workflow:
+The latest PR head commit `fa288dad279d07df82c4b166fd735bd7ba65a80d` passed the complete research workflow:
 
-- [Actions run #44806565994 — SUCCESS](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44806565994).
-- All 19 job steps completed successfully, including the existing B.V. Raman regressions, the Government PAC 2026 evidence-ledger assertions, seven printed Shadbala discrepancy assertions, 600 annual random charts, and 3,000 exact-natal-epoch DE440 comparisons.
-- Latest consolidated research artifact: [artifact #14664255587](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44806565994/artifacts/14664255587) (600 DOB/time/place records, 25,200 six-Bala values, 3,000 DE440 exact-epoch comparisons).
+- [Actions run #44809594792 — SUCCESS](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44809594792).
+- All **21/21** job steps completed successfully, including PAC 2026 evidence-ledger checks, the 42-row Shadbala audit and Mercury/Jupiter precision diagnostic, existing B.V. Raman Strength6/Yuddha/Ishta regressions, 600 annual random natal charts, 3,000 same-epoch/same-frame classical input chains, and 3,000 modern DE440 parity comparisons.
+- Latest full research artifact: [artifact #14664543490](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44809594792/artifacts/14664543490) (600 DOB/time/place records, 25,200 six-Bala values, 3,000 classical same-frame chains and 3,000 separate DE440 modern comparisons).
 
-This CI PASS confirms the research code and evidence ledger regressions. It does not elevate the incomplete classical historical longitude or per-natal six-Bala source evidence into a universal certificate.
+Measured results retained in the artifact:
+- Classical same-epoch/same-frame chains: 3,000/3,000 PASS; the source-model result remains research-only and independent historical oracle rows remain 0.
+- Printed 24-Jya versus continuous implementation: RMS 0.0090840551°; one Venus row (1875-01-12, Kochi) is 0.0532318994°, slightly above the 0.05° diagnostic threshold. The gate is explicitly false; no tolerance widening or fitted correction is used.
+- Modern NAELOS DE440 versus Swiss exact-epoch apparent longitude: 3,000/3,000 PASS; max residual 0.0085239654 arcsec; RMS 0.0013143326 arcsec; 5 arcsec gate.
+- 600 natal charts remain `classicalCertified:false`.
 
+This CI PASS confirms the research implementation, numerical arithmetic and evidence-ledger regressions. It does not supply missing independent historical printed-table oracles or certify arbitrary natal charts.
 ## Automated gate
 
 `tests/natal-classical-remaining-evidence-audit.mjs` checks all 15 longitude rows, 42 Bala rows, unique graha/component keys, sources, explicit discrepancy statuses, annual coverage and that generic `classicalCertified` remains false.
