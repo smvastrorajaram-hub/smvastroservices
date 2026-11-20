@@ -102,10 +102,11 @@ const assertResolvedPairTotals=(result,pair,planets)=>{
   loser+' receives equal negative Raman Yuddha Bala');
  for(const name of [winner,loser]){
   const c=result.planets[name].components;
-  const kalaExpected=round3(c.natonnatha+c.paksha+c.tribhaga+c.abda+
-   c.masa+c.vara+c.hora+c.ayana+c.yuddha);
-  near(c.kala.total,kalaExpected,0.001,name+' final Kala includes Yuddha exactly once');
-  const sixfold=c.sthana.total+c.dig+c.kala.total+c.cheshta+c.naisargika+c.drik;
+  const k=c.kala;
+  const kalaExpected=round3(k.natonnatha+k.paksha+k.tribhaga+k.abda+
+   k.masa+k.vara+k.hora+k.ayana+k.yuddha);
+  near(k.total,kalaExpected,0.001,name+' final Kala includes Yuddha exactly once');
+  const sixfold=c.sthana.total+c.dig+k.total+c.cheshta+c.naisargika+c.drik;
   near(result.planets[name].totalVirupa,round3(sixfold),0.001,
    name+' final six-Bala total includes adjusted Kala exactly once');
   near(result.planets[name].totalRupa,round3(sixfold/60),0.001,
