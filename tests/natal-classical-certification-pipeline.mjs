@@ -16,8 +16,8 @@ const ok = (condition, message) => {
   checks++;
 };
 
-eq(CLASSICAL_NATAL_SCOPE.annualSamplesPerPlanet, 600,
-  'annual coverage uses exactly one sample for each of 600 years');
+eq(CLASSICAL_NATAL_SCOPE.annualNatalCharts, 600,
+  'annual coverage uses exactly one random natal chart for each of 600 years');
 eq(CLASSICAL_NATAL_SCOPE.expectedBalaEvidenceRows, 42,
   'all seven grahas × six Bala components are required');
 eq(CLASSICAL_NATAL_SCOPE.expectedYuddhaEligiblePairs, 10,
@@ -74,7 +74,9 @@ const syntheticLongitude = {
   allFivePlanets: true,
   meanTrueSheeghroccheyaSameFrame: true,
   independentHistoricalReferenceVerified: true,
-  annualRowsPerPlanet: 600,
+  annualRandomNatalCharts: 600,
+  annualYearCoverage: true,
+  annualSamplingMethod: 'seeded-random-dob-time-indian-place',
   eventWindowStatus: 'PASS',
   certificateId: 'TEST_FIXTURE_ONLY_LONGITUDE_CERTIFICATE'
 };
@@ -236,7 +238,7 @@ console.log(JSON.stringify({
   pass: true,
   checks,
   phases: {
-    historicalLongitudeAnnualCoverage: '600 yearly epochs only; independent oracle pending',
+    historicalLongitudeAnnualCoverage: '600 random full natal charts, one per year; independent oracle pending',
     sixBalaMatrix: '42 independent evidence rows required',
     finalNatalGate: 'exact five-planet natal epoch + ten Yuddha pair records + all six Bala + parity + no fallback'
   },
