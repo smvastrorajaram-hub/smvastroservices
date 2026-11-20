@@ -115,16 +115,16 @@ The machine-readable shadbala-source-evidence-42.json retains all seven printed 
 
 ## Final integrated CI after same-frame / Shadbala precision audit
 
-The latest PR head commit `fa288dad279d07df82c4b166fd735bd7ba65a80d` passed the complete research workflow:
+The latest PR head commit `fd9bcfbcdb99c773f4347628ce58a5377d8cabd3` passed the complete research workflow:
 
-- [Actions run #44809594792 — SUCCESS](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44809594792).
-- All **21/21** job steps completed successfully, including PAC 2026 evidence-ledger checks, the 42-row Shadbala audit and Mercury/Jupiter precision diagnostic, existing B.V. Raman Strength6/Yuddha/Ishta regressions, 600 annual random natal charts, 3,000 same-epoch/same-frame classical input chains, and 3,000 modern DE440 parity comparisons.
-- Latest full research artifact: [artifact #14664543490](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44809594792/artifacts/14664543490) (600 DOB/time/place records, 25,200 six-Bala values, 3,000 classical same-frame chains and 3,000 separate DE440 modern comparisons).
+- [Actions run #44809797975 — SUCCESS](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44809797975).
+- All **21/21** job steps completed successfully, including PAC 2026 evidence-ledger checks, 42-row Shadbala source audit and Mercury/Jupiter precision diagnostic, existing B.V. Raman Strength6/Yuddha/Ishta regressions, 600 annual random natal charts, 3,000 same-epoch/same-frame classical input chains, and 3,000 modern DE440 parity comparisons.
+- Latest full research artifact: [artifact #14664678377](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44809797975/artifacts/14664678377) (600 DOB/time/place records, 25,200 six-Bala values, 3,000 classical same-frame chains and 3,000 separate DE440 modern comparisons).
 
 Measured results retained in the artifact:
 - Classical same-epoch/same-frame chains: 3,000/3,000 PASS; the source-model result remains research-only and independent historical oracle rows remain 0.
-- Printed 24-Jya versus continuous implementation: RMS 0.0090840551°; one Venus row (1875-01-12, Kochi) is 0.0532318994°, slightly above the 0.05° diagnostic threshold. The gate is explicitly false; no tolerance widening or fitted correction is used.
-- Modern NAELOS DE440 versus Swiss exact-epoch apparent longitude: 3,000/3,000 PASS; max residual 0.0085239654 arcsec; RMS 0.0013143326 arcsec; 5 arcsec gate.
+- Printed 24-Jya versus continuous implementation: RMS **0.0090840551°**; one Venus row (1875-01-12, Kochi) is **0.0532318994°**, slightly above the 0.05° diagnostic threshold. The gate is explicitly false; no tolerance widening or fitted correction is used.
+- Modern NAELOS DE440 versus Swiss exact-epoch apparent longitude: 3,000/3,000 PASS; max residual **0.0085239654 arcsec**; RMS **0.0013143326 arcsec**; 5 arcsec gate.
 - 600 natal charts remain `classicalCertified:false`.
 
 This CI PASS confirms the research implementation, numerical arithmetic and evidence-ledger regressions. It does not supply missing independent historical printed-table oracles or certify arbitrary natal charts.
