@@ -3005,3 +3005,13 @@ details>*{display:block!important}
 @media(max-width:420px){
   .smv-horoscope-controls-row{column-gap:6px!important;row-gap:0!important}
 }
+
+/* Srimath Subha Janana fields and statement */
+.smv-gender-options{display:flex;flex-wrap:wrap;gap:10px;margin:7px 0 4px}
+.smv-gender-option{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:7px 14px;border:1px solid rgba(184,134,45,.55);border-radius:9px;background:#fffdf9;color:var(--text);cursor:pointer}
+.smv-gender-option input{width:auto;min-width:16px;min-height:16px;margin:0;accent-color:var(--smv-red)}
+.smv-gender-option:has(input:checked){border-color:var(--smv-red);background:#fff5e9}
+.smv-subha-janana-card{margin:10px 0 16px;padding:14px;border:1px solid rgb(221,207,170);border-radius:14px;background:rgb(255,253,249);line-height:1.9;overflow-wrap:anywhere}
+.smv-subha-janana-card h3{text-align:center;margin:0 0 10px;color:rgb(141,23,23)}
+.smv-subha-janana-card p{margin:0;white-space:normal;text-align:justify}
+@media(max-width:520px){.smv-gender-options{gap:7px}.smv-gender-option{flex:1 1 110px;justify-content:center}}
