@@ -75,7 +75,7 @@
    const h=document.createElement('span');h.className='smv-v342-house-number';h.textContent=house>=1&&house<=12?String(house):'';
    cell.append(h);
   }
-  if(house===1){const mark=document.createElement('span');mark.className='smv-v342-asc';mark.textContent=ta?'ல':'As';cell.append(mark);}
+  if(house===1&&kind!=='transit'){const mark=document.createElement('span');mark.className='smv-v342-asc';mark.textContent=ta?'ல':'As';cell.append(mark);}
   const contents=document.createElement('span');contents.className='smv-v342-planets';
   const items=planetEntries??[...source.out[sign].querySelectorAll('.planet-line')];
   const planetCount=items.length;
