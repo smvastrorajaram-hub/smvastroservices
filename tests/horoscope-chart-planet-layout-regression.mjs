@@ -46,13 +46,13 @@ assert.ok(chartStyleJs.includes("if(house===1&&kind!=='transit')"),'Alternate la
 
 assert.ok(chartStyleJs.includes("const kind=chart.id==='bhavaChart'?'bhava':chart.id==='navamsaChart'?'d9':chart.id==='rasiChart'?'d1':'transit';"));
 assert.ok(chartStyleJs.includes("const houseNumber=value=>"),'Bhava house parsing accepts both 1–12 and I–XII source labels.');
-assert.ok(chartStyleJs.includes("if(/^\\d{1,2}$/.test(raw))"),'Numeric Bhava labels 1–12 are recognized before Roman conversion.');
+assert.ok(chartStyleJs.includes("if(/^\\d{1,2}$/.test(raw))"),'Bhava source house IDs accept both Arabic 1–12 and legacy Roman source labels.');
 assert.ok(chartStyleJs.includes("normalizeSouthBhavaHouseLabels(chart)"),'South Bhava labels are normalized in the active report language without changing source calculations.');
 assert.ok(chartStyleJs.includes("const bhavaNumberText=(house,tamil)=>tamil?romanHouse(house):String(house);"),'Only Tamil South Bhava uses Roman I–XII; English South Bhava uses Arabic 1–12.');
 assert.ok(chartStyleJs.includes("const tamil=isTa();"),'Language switching selects Tamil/English Bhava number style from the active report language.');
-assert.ok(chartStyleJs.includes("houseNumber(label.dataset.bhavaHouse)||houseNumber(label.textContent)"),'North/East mapping recognizes the original calculated house ID and legacy Roman labels.');
+assert.ok(chartStyleJs.includes("houseNumber(label.dataset.bhavaHouse)||houseNumber(label.textContent)"),'North/East mapping reads the original calculated Bhava house ID and source Rasi metadata.');
 assert.ok(chartStyleJs.includes("const explicitSign=Number(label.dataset.bhavaSign);"),'North/East mapping reads the original calculated Sphuta Rasi for each house.');
-assert.ok(chartStyleJs.includes("const bhavaLabel=kind==='bhava'?bhavaHousesBySign[sign].join(' / '):'';"),'East Bhava keeps raw distinct house IDs grouped under their Sphuta Rasi for localized rendering.');
+assert.ok(chartStyleJs.includes("const bhavaLabel=kind==='bhava'?bhavaHousesBySign[sign].join(' / '):'';"),'East Bhava keeps raw distinct house IDs grouped under their Sphuta Rasi.');
 assert.ok(chartStyleJs.includes("const mapped=new Set(from.cusp.flat())"),'North Bhava validates complete source house coverage rather than requiring one cusp per Rasi.');
 assert.ok(chartStyleJs.includes("line.hasAttribute('data-bhava-house')"),'North Bhava fallback preserves each source planet’s already-calculated Bhava assignment.');
 assert.ok(horoscopeJs.includes('data-bhava-house="${n}" data-bhava-sign="${si+1}"'),'Bhava rendering preserves its already-calculated house and Sphuta Rasi as display metadata only.');
@@ -79,7 +79,7 @@ assert.ok(chartStyleJs.includes("if(kind==='bhava')cell.classList.add('smv-v342-
 assert.ok(chartStyleJs.includes("label.textContent=houses.join(' / ');"),'East Bhava always keeps Arabic house IDs, even in Tamil reports; Roman numerals are South-Tamil-only.');
 assert.ok(chartStyleJs.includes("if(kind==='bhava'&&style==='east'&&String(bhavaHouseLabel||'').trim()){"), 'Only East Bhava adds grouped house labels inside its fixed Rasi cells.');
 assert.ok(chartStyleJs.includes("label.dataset.bhavaHouses=houses.join(',');"), 'East Bhava stores the distinct house IDs so a language toggle can reformat them safely.');
-assert.ok(chartStyleJs.includes("label.className='smv-v342-house-number';"), 'Roman house labels use the normal in-cell number row.');
+assert.ok(chartStyleJs.includes("label.className='smv-v342-house-number';"), 'East grouped Bhava house IDs use the normal in-cell number row.');
 assert.ok(chartStyleJs.includes("label.dataset.bhavaHouses=houses.join(',');"), 'East Bhava stores numeric house IDs, not preformatted display strings.');
 assert.ok(chartStyleJs.includes('roots().forEach(restoreRomanBhavaLabels);'), 'Bhava labels are restored after a result-language toggle.');
 assert.ok(chartStyleJs.includes('function restoreRomanBhavaLabels(root){'), 'Live and saved Bhava labels have a dedicated language-safe restore path.');
