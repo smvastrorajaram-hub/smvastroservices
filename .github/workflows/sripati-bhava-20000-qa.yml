@@ -1,0 +1,51 @@
+name: Sripati Bhava 20,000 Horoscope Regression
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'swiss_vedic.js'
+      - 'public/horoscope/offline/swiss_vedic.browser.mjs'
+      - 'public/horoscope/offline/wasm-provider.mjs'
+      - 'public/horoscope/offline/vendor/smv-swisseph-local.mjs'
+      - 'tests/sripati-bhava-20000-regression.mjs'
+      - '.github/workflows/sripati-bhava-20000-qa.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'swiss_vedic.js'
+      - 'public/horoscope/offline/swiss_vedic.browser.mjs'
+      - 'public/horoscope/offline/wasm-provider.mjs'
+      - 'public/horoscope/offline/vendor/smv-swisseph-local.mjs'
+      - 'tests/sripati-bhava-20000-regression.mjs'
+      - '.github/workflows/sripati-bhava-20000-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: sripati-bhava-20000-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  sripati-20000:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned repository dependencies
+        run: npm ci
+      - name: Syntax-check both Sripati calculation engines
+        run: |
+          node --check swiss_vedic.js
+          node --check public/horoscope/offline/swiss_vedic.browser.mjs
+          node --check tests/sripati-bhava-20000-regression.mjs
+      - name: Run 20,000 India and global horoscope Sripati regression
+        run: node tests/sripati-bhava-20000-regression.mjs
+      - name: Preserve 20,000-chart numerical evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMV-SRIPATI-BHAVA-20000-REGRESSION
+          path: sripati-bhava-20000-report.json
+          retention-days: 30
