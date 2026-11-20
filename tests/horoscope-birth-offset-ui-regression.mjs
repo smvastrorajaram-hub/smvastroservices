@@ -32,6 +32,7 @@ function fill(prefix,date,time,zone){
 }
 fill('english','2026-01-15','12:00','Europe/London');
 eq(out.value,'0','London January uses GMT +0, not India +5.5');
+eq(nodes.tamilBirthUtcOffset.value,'0','Tamil form shows the same calculated UTC offset');
 eq(out.dataset.offsetVerified,'1','London offset verified');
 root.documentElement.lang='ta';
 languageListeners.get('smv-language')();
