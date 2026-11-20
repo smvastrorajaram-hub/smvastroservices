@@ -59,12 +59,12 @@ These are source-example residuals against Burgess's printed, rounded worked val
 
 The test compares all four printed corrections, not only the final result. The maximum absolute stage residuals measured during the audit are:
 
-| Stage | Maximum absolute residual |
-|---|---:|
-| First Śīghra | 0.123634° |
-| Half-Manda correction calculated at stage 2 | 0.010951° |
-| Full-Manda correction at stage 3 | 0.016969° |
-| Final Śīghra correction | 0.023459° |
+| Stage | Continuous path max residual | 24-Jya path max residual |
+|---|---:|---:|
+| First Śīghra | 0.123634° | 0.120530° |
+| Half-Manda correction calculated at stage 2 | 0.010951° | 0.011290° |
+| Full-Manda correction at stage 3 | 0.016969° | 0.018701° |
+| Final Śīghra correction | 0.023459° | 0.018574° |
 
 The visible exception is **Mars's first Śīghra equation**: the continuous path differs from Burgess's printed +31°01′ by about −0.123634°. The 24-Jya path also retains a difference of about −0.120531°. This is deliberately not hidden by fitting a Mars-specific value. The test records it and uses a separately declared 0.15° bound for the first-stage printed value; the other three stages must remain within 0.03°.
 
