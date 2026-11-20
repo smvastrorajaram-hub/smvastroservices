@@ -45,7 +45,9 @@ assert.ok(transitRenderer.includes('data-transit-lagna="true"'),'Transit Lagna i
 assert.ok(chartStyleJs.includes("if(house===1&&kind!=='transit')"),'Alternate layouts must not add a second Lagna outside the source Transit planet-flow.');
 
 assert.ok(chartStyleJs.includes("const kind=chart.id==='bhavaChart'?'bhava':chart.id==='navamsaChart'?'d9':chart.id==='rasiChart'?'d1':'transit';"));
-assert.ok(chartStyleJs.includes('const planetCount=items.length;'));
+assert.ok(chartStyleJs.includes("if(chart.id==='transitChart')"));
+assert.ok(chartStyleJs.includes("arr.out[si]?.querySelector('[data-transit-lagna]')"),'North/East chart conversion locates Transit Lagna from its source graha-flow row.');
+assert.ok(chartStyleJs.includes("const planetCount=kind==='transit'?items.filter(item=>!item.querySelector('[data-transit-lagna]')).length:items.length;"),'Transit Lagna is excluded from the graha count used for density thresholds.');
 assert.ok(chartStyleJs.includes("const triangleCell=style==='north'?[2,3,5,6,8,9,11,12].includes(house):style==='east'?[2,3,5,6,8,9,11,12].includes(sign+1):false;"));
 assert.ok(chartStyleJs.includes("if(triangleCell)cell.classList.add('smv-v342-triangle-cell');"));
 assert.ok(chartStyleJs.includes("if(!['north','east'].includes(style)||!['d1','d9','bhava'].includes(kind))return;"));
