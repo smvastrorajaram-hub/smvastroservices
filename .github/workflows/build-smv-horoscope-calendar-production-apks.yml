@@ -38,6 +38,14 @@ on:
       - "test/android-release-version-resolution.test.mjs"
       - "test/android-cache-release-build-triggers.test.mjs"
       - "public/horoscope/sw.js"
+      - "public/horoscope/horoscope.js"
+      - "public/horoscope/offline/server-wrapper.browser.mjs"
+      - "public/horoscope/offline/swiss_vedic.browser.mjs"
+      - "public/horoscope/offline/true-bphs-naelos-engine.browser.mjs"
+      - "public/horoscope/offline/true-bphs-naelos-engine.browser.bundle.mjs"
+      - "public/horoscope/offline/true-bphs-components.browser.mjs"
+      - "public/horoscope/offline/effective-lahiri-frame.browser.mjs"
+      - "public/horoscope/offline/naelos-data/**"
       - "public/horoscope/calendar/sw.js"
       - "public/horoscope/location-search-online-offline.js"
       - "public/question-place-search.mjs"
@@ -63,6 +71,14 @@ on:
       - "test/android-release-version-resolution.test.mjs"
       - "test/android-cache-release-build-triggers.test.mjs"
       - "public/horoscope/sw.js"
+      - "public/horoscope/horoscope.js"
+      - "public/horoscope/offline/server-wrapper.browser.mjs"
+      - "public/horoscope/offline/swiss_vedic.browser.mjs"
+      - "public/horoscope/offline/true-bphs-naelos-engine.browser.mjs"
+      - "public/horoscope/offline/true-bphs-naelos-engine.browser.bundle.mjs"
+      - "public/horoscope/offline/true-bphs-components.browser.mjs"
+      - "public/horoscope/offline/effective-lahiri-frame.browser.mjs"
+      - "public/horoscope/offline/naelos-data/**"
       - "public/horoscope/calendar/sw.js"
       - "public/horoscope/location-search-online-offline.js"
       - "public/question-place-search.mjs"
@@ -120,7 +136,7 @@ jobs:
                   horoscope=true ;;
                 smvcalendarproduction/*|smvcalendar/*)
                   calendar=true ;;
-                icon/horoscope_512.png|icon/calendar_512.png|settings.gradle|prepare-smv-horoscope-calendar-production-icons.sh|tools/prepare_android_launcher_icons.py|public/horoscope/sw.js|public/horoscope/calendar/sw.js|public/horoscope/location-search-online-offline.js|public/question-place-search.mjs|public/horoscope/offline/places/place-search.mjs|public/horoscope/offline/places/india-manifest.json|scripts/next-android-release-version.mjs|scripts/normalize-android-release-version-name.mjs)
+                icon/horoscope_512.png|icon/calendar_512.png|settings.gradle|prepare-smv-horoscope-calendar-production-icons.sh|tools/prepare_android_launcher_icons.py|public/horoscope/sw.js|public/horoscope/calendar/sw.js|public/horoscope/horoscope.js|public/horoscope/offline/server-wrapper.browser.mjs|public/horoscope/offline/swiss_vedic.browser.mjs|public/horoscope/offline/true-bphs-naelos-engine.browser.mjs|public/horoscope/offline/true-bphs-naelos-engine.browser.bundle.mjs|public/horoscope/offline/true-bphs-components.browser.mjs|public/horoscope/offline/effective-lahiri-frame.browser.mjs|public/horoscope/offline/naelos-data/*|public/horoscope/location-search-online-offline.js|public/question-place-search.mjs|public/horoscope/offline/places/place-search.mjs|public/horoscope/offline/places/india-manifest.json|scripts/next-android-release-version.mjs|scripts/normalize-android-release-version-name.mjs)
                   horoscope=true; calendar=true ;;
               esac
             done <<< "$changed_files"

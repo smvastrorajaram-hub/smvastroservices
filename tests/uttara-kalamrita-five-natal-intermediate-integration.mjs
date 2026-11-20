@@ -1,3 +1,4 @@
+import './helpers/naelos-node-fetch-bridge.mjs';
 /**
  * UK Khanda I Section II ONLY: seven grahas x five real Perambalur births.
  * Compare the independently assembled research output with the live chart's

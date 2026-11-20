@@ -963,7 +963,7 @@
   };
 })();
 
-  function mountBVRamanIshtaKashta(chart, language, rootId){
+  function mountTrueBphsIshtaKashta(chart, language, rootId){
     const root=document.getElementById(rootId);
     if(!root||!chart||!Array.isArray(chart.planets))return;
     const ishtaHost=root.querySelector('.smv-advanced-part.chart-analysis > .smv-advanced-part-content');
@@ -990,8 +990,10 @@
     const fmt=v=>Number.isFinite(v)?Number(v).toFixed(2):'—';
     const heads=ta?['கிரகம்','உச்ச பலம்','சேஷ்டா-பலன் உள்ளீடு','இஷ்ட பலம்','கஷ்ட பலம்']:['Planet','Uchcha Bala','Chesta-for-Phala input','Ishta Phala','Kashta Phala'];
     const body=rows.map(row=>'<tr><td><b>'+escText(ta?row.name:tamilToEnglish[row.name])+'</b></td><td>'+fmt(row.uchcha)+'</td><td>'+fmt(row.cheshta)+'</td><td><b>'+fmt(row.ishta)+'</b></td><td><b>'+fmt(row.kashta)+'</b></td></tr>').join('');
-    const note=ta?'குறிப்பு: சூரியன், சந்திரனின் Shadbala சேஷ்டா பலம் 0. இஷ்ட/கஷ்ட பலனுக்கு மட்டும் நூலில் தனி Chesta-for-Phala விதி உள்ளது. செவ்வாய் முதல் சனி வரை இங்கு Shadbala சேஷ்டா மதிப்பே பயன்படுத்தப்படுகிறது.':'Note: Shadbala Cheshta is 0 for Sun/Moon; B.V. Raman prescribes separate Chesta-for-Phala rules for Ishta/Kashta. Mars–Saturn reuse the same Cheshta value as Shadbala.';
-    const html='<div class="adv-section part1-ishta-kashta" data-smv-ishta-kashta="1" data-engine-source="BV_RAMAN_INTEGRATED_SIX_BALA" data-research-candidate="true"><h4>🌗 '+(ta?'இஷ்ட பலம் / கஷ்ட பலம்':'Ishta Bala / Kashta Bala')+'</h4><div class="adv-table-wrap smv-ishta-kashta-scroll"><table class="adv-wide smv-ishta-kashta-table"><thead><tr>'+heads.map(x=>'<th>'+escText(x)+'</th>').join('')+'</tr></thead><tbody>'+body+'</tbody></table></div><p class="small smv-ishta-kashta-note">'+escText(note)+'</p></div>';
+    const note=ta
+      ?'BPHS அத்தியாயம் 28, சுலோகங்கள் 2–6: இஷ்ட பலம் = (உச்ச பலம் + சேஷ்டா-பலன் உள்ளீடு) ÷ 2; கஷ்ட பலம் = 60 − இஷ்ட பலம். சூரியனுக்கு தனி 90° விதியும், சந்திரனுக்கு சந்திரன் − நிரயண சூரியன் விதியும் உண்டு. செவ்வாய் முதல் சனி வரை BPHS அத்தியாயம் 27-இன் அதே Effective Lahiri சேஷ்டா கெந்திரம் பயன்படுத்தப்படுகிறது.'
+      :'BPHS Chapter 28, verses 2–6: Ishta = (Uchcha Bala + Cheshta-for-Phala) / 2; Kashta = 60 − Ishta. The Sun uses its separate 90° rule; the Moon uses Moon minus the effective-Lahiri sidereal Sun. Mars–Saturn use the same effective-Lahiri Cheshta Kendra as BPHS Chapter 27.';
+    const html='<div class="adv-section part1-ishta-kashta" data-smv-ishta-kashta="1" data-engine-source="TRUE_BPHS_CH28_RASMI_ISHTA_KASHTA" data-reference-frame="NAELOS_TRUE_ECLIPTIC_OF_DATE_EFFECTIVE_LAHIRI_V1"><h4>🌗 '+(ta?'இஷ்ட பலம் / கஷ்ட பலம் (BPHS 28)':'Ishta Bala / Kashta Bala (BPHS Ch.28)')+'</h4><div class="adv-table-wrap smv-ishta-kashta-scroll"><table class="adv-wide smv-ishta-kashta-table"><thead><tr>'+heads.map(x=>'<th>'+escText(x)+'</th>').join('')+'</tr></thead><tbody>'+body+'</tbody></table></div><p class="small smv-ishta-kashta-note">'+escText(note)+'</p></div>';
     const shadbala=ishtaHost.querySelector('.part1-planetary-strength');
     if(shadbala)shadbala.insertAdjacentHTML('afterend',html);else ishtaHost.insertAdjacentHTML('beforeend',html);
   }
@@ -2052,8 +2054,8 @@ try{
 
         root.__smvRouteAdvancedSections?.();
         root.querySelectorAll('.smv-advanced-part').forEach(part=>{const content=part.querySelector('.smv-advanced-part-content');if(content)[...part.children].filter(n=>n!==content&&!n.classList.contains('smv-advanced-part-title')).forEach(n=>content.appendChild(n));});
-        try{await mountBVRamanIshtaKashta(fullChart,lang,rootId);}
-        catch(ishtaError){console.warn('B.V. Raman Ishta/Kashta result unavailable:',ishtaError);}
+        try{await mountTrueBphsIshtaKashta(fullChart,lang,rootId);}
+        catch(ishtaError){console.warn('BPHS Ishta/Kashta result unavailable:',ishtaError);}
         // INSIDE Advanced Analysis > I. Chart Analysis, as its final child.
         // Never attach it to Predictions X or the retired integrated-predictions
         // container. The markup is part of the normal Saved / Print snapshot.

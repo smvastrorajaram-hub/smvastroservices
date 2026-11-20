@@ -5,6 +5,7 @@
  * imported bindings remain isolated. The original scripts are retired only
  * after this aggregate is wired into CI.
  */
+import './helpers/naelos-node-fetch-bridge.mjs';
 import fs from 'node:fs';
 import * as __bundle0mod0 from 'node:assert/strict';
 import * as __bundle0mod1 from '../public/horoscope/offline/swiss_vedic.browser.mjs';

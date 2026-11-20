@@ -97,8 +97,8 @@ test("All three apps use one synchronized cache release; Horoscope runtime revis
   assert.ok(versions[0][1] && versions[0][2], 'Both generated host cache release IDs must be present.');
   const runtime = /const RUNTIME_REVISION\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(workers[1]);
   assert.ok(runtime);
-  assert.equal(runtime[1], "v284-pages-dev-tamil-solar-20261116");
-  assert.equal(runtime[2], "v278-in-navigation-20261115");
+  assert.equal(runtime[1], "v286-naelos-bphs-effective-lahiri-20261121");
+  assert.equal(runtime[2], "v280-naelos-bphs-effective-lahiri-20261121");
 });
 
 test("No origin-wide browser data or Cache API clearing is introduced", () => {

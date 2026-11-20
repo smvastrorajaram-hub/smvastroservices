@@ -4,11 +4,11 @@
    Location lookup keeps its existing GeoNames + India-offline behavior.
 */
 const IS_PAGES_DEV_HOST = self.location.hostname === 'smvastroservices.pages.dev' || self.location.hostname.endsWith('.smvastroservices.pages.dev') || self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
-const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? 'smv-465d5b3f3f0ca065' : 'smv-b89593a72d0255a8';
+const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? 'smv-5a00ffd9ec9a0398' : 'smv-75b61b6c49ae9d17';
 const OFFLINE_CACHE='smv-horoscope-offline';
 const LOCATION_CACHE='smv-shared-india-places';
 const SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE;
-const RUNTIME_REVISION = IS_PAGES_DEV_HOST ? 'v284-pages-dev-tamil-solar-20261116' : 'v278-in-navigation-20261115';
+const RUNTIME_REVISION = IS_PAGES_DEV_HOST ? 'v286-naelos-bphs-effective-lahiri-20261121' : 'v280-naelos-bphs-effective-lahiri-20261121';
 const PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['../pages-dev-host-independence.js','../pages-dev-apk-pwa-icons.js']:[];
 
 const CORE=[
@@ -35,6 +35,12 @@ const CORE=[
   './horoscope-life-engine.js','./horoscope-judgement-engine.js',
   './integrated.js','./d1-time-reading.js','./prediction-synthesis.js',
   './offline/offline-engine.mjs','./offline/server-wrapper.browser.mjs',
+  './offline/true-bphs-naelos-engine.browser.bundle.mjs',
+  './offline/naelos-data/manifest.json',
+  './offline/naelos-data/ne-1700.bin','./offline/naelos-data/ne-1800.bin',
+  './offline/naelos-data/ne-1900.bin','./offline/naelos-data/ne-2000.bin',
+  './offline/naelos-data/ne-2100.bin','./offline/naelos-data/ne-2200.bin',
+  './offline/naelos-data/ne-2300.bin','./offline/naelos-data/ne-2400.bin',
   './offline/swiss_vedic.browser.mjs','./offline/wasm-provider.mjs',
   './offline/transit_panchang.browser.mjs','./offline/astro_advanced.browser.mjs',
   './offline/dasa_engine.browser.mjs','./offline/pvr-longevity-sodhya-timing.browser.mjs',
@@ -67,6 +73,12 @@ const REQUIRED_CORE=new Set([
   './marriage-matching.js','./marriage-basic-report.mjs','./matching-timeline.mjs',
   './d1-15-year-reading.mjs',
   './offline/offline-engine.mjs','./offline/server-wrapper.browser.mjs',
+  './offline/true-bphs-naelos-engine.browser.bundle.mjs',
+  './offline/naelos-data/manifest.json',
+  './offline/naelos-data/ne-1700.bin','./offline/naelos-data/ne-1800.bin',
+  './offline/naelos-data/ne-1900.bin','./offline/naelos-data/ne-2000.bin',
+  './offline/naelos-data/ne-2100.bin','./offline/naelos-data/ne-2200.bin',
+  './offline/naelos-data/ne-2300.bin','./offline/naelos-data/ne-2400.bin',
   './offline/swiss_vedic.browser.mjs','./offline/wasm-provider.mjs',
   './offline/transit_panchang.browser.mjs','./offline/astro_advanced.browser.mjs',
   './offline/dasa_engine.browser.mjs','./offline/pvr-longevity-sodhya-timing.browser.mjs',

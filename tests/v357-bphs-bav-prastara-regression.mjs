@@ -1,3 +1,4 @@
+import './helpers/naelos-node-fetch-bridge.mjs';
 // V357 independent BPHS Volume II Chapter 66 BAV Prastara spot-audit.
 // Direct prose-to-reference contributor lists for Sun/Moon/Mars ONLY
 // (printed BPHS II pp. 854–858, PDF around pp. 366–370).

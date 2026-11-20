@@ -1,4 +1,5 @@
-import {calculateSwiss, calculateSwissSync} from './swiss_vedic.browser.mjs';
+import {calculateSwiss, calculateSwissSync,enrichPlanetaryStatesForTruePositions,enrichPhase2ForTruePositions} from './swiss_vedic.browser.mjs';
+import {createTrueBphsShadbalaEngine} from './true-bphs-naelos-engine.browser.bundle.mjs';
 const NAKSHATRAS = ["அஸ்வினி","பரணி","கார்த்திகை","ரோகிணி","மிருகசீரிடம்","திருவாதிரை","புனர்பூசம்","பூசம்","ஆயில்யம்","மகம்","பூரம்","உத்திரம்","ஹஸ்தம்","சித்திரை","சுவாதி","விசாகம்","அனுஷம்","கேட்டை","மூலம்","பூராடம்","உத்திராடம்","திருவோணம்","அவிட்டம்","சதயம்","பூரட்டாதி","உத்திரட்டாதி","ரேவதி"];
 const NAK_LORDS = ["கேது","சுக்கிரன்","சூரியன்","சந்திரன்","செவ்வாய்","ராகு","குரு","சனி","புதன்"];
 const DASHA_YEARS = {"கேது":7,"சுக்கிரன்":20,"சூரியன்":6,"சந்திரன்":10,"செவ்வாய்":7,"ராகு":18,"குரு":16,"சனி":19,"புதன்":17};
@@ -180,6 +181,189 @@ function buildAntardasha(mdLord, fullStart, fullEnd, birthDate){
       };
     });
 }
+
+const TRUE_BPHS_RASIS=Object.freeze(['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்']);
+const TRUE_BPHS_FRAME='NAELOS_TRUE_ECLIPTIC_OF_DATE_EFFECTIVE_LAHIRI_V1';
+let trueBphsEnginePromise=null;
+async function getTrueBphsEngine(){
+  if(!trueBphsEnginePromise){
+    trueBphsEnginePromise=createTrueBphsShadbalaEngine().catch(error=>{
+      trueBphsEnginePromise=null;
+      throw error;
+    });
+  }
+  return trueBphsEnginePromise;
+}
+function trueBphsRasi(longitude){return Math.floor(norm360(longitude)/30);}
+function trueBphsNavamsa(longitude){
+  const value=norm360(longitude),rasi=Math.floor(value/30);
+  const part=Math.min(8,Math.floor((value%30)/(30/9)));
+  const mode=rasi%3;
+  const start=mode===0?rasi:mode===1?(rasi+8)%12:(rasi+4)%12;
+  return {rasi:TRUE_BPHS_RASIS[(start+part)%12],pada:part+1};
+}
+function trueBphsHousePlacement(longitude,arambha){
+  const value=norm360(longitude),epsilon=1e-7;
+  for(let i=0;i<12;i++){
+    const boundary=norm360(arambha[i]);
+    const distance=Math.abs(((value-boundary+540)%360)-180);
+    if(distance<=epsilon)return {house:null,bhavaSandhi:{
+      cuspIndex:i+1,longitude:Number(boundary.toFixed(8)),
+      precedingHouse:i===0?12:i,followingHouse:i+1
+    }};
+  }
+  for(let i=0;i<12;i++){
+    const start=norm360(arambha[i]),end=norm360(arambha[(i+1)%12]);
+    const span=norm360(end-start),position=norm360(value-start);
+    if(position<(span===0?360:span))return {house:i+1,bhavaSandhi:null};
+  }
+  return {house:null,bhavaSandhi:null};
+}
+function trueBphsStrength6(row,frameId){
+  return {
+    available:row.available===true,
+    method:'TRUE_BPHS_SHADBALA_NAELOS_DE440',
+    source:'Brihat Parashara Hora Shastra I, Chapter 27; Chapter 26 Sputa Drishti',
+    components:row.components,
+    evidence:row.evidence,
+    totalVirupa:row.totalVirupa,
+    totalRupa:row.totalRupa,
+    requiredVirupa:row.requiredVirupa,
+    requiredRupa:row.requiredVirupa/60,
+    ratio:row.ratio,
+    isStrong:row.isStrong,
+    provisional:true,
+    classicalCertified:false,
+    referenceFrameId:frameId,
+    ishtaKashta:row.ishtaKashta,
+    warEvidence:row.warEvidence,
+    note:'PAC 2026 is a seven-graha numerical cross-check; it does not independently certify every historical natal epoch.'
+  };
+}
+function applyTrueBphsResultToChart(chart,result){
+  if(result?.available!==true||result?.classicalCertified!==false||
+     result?.referenceFrameId!==TRUE_BPHS_FRAME||
+     !Array.isArray(result.planetaryPositions)||!result.planets||!result.bhava)
+    throw new Error('TRUE BPHS NAELOS returned an incomplete or mismatched Effective Lahiri chart result.');
+  const byName=new Map(result.planetaryPositions.map(row=>[row.name,row]));
+  for(const name of ['சூரியன்','சந்திரன்','செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி','ராகு','கேது']){
+    if(!byName.has(name))throw new Error('TRUE BPHS NAELOS planetary longitude is missing: '+name);
+  }
+  const arambha=result.bhava.arambha;
+  const updatedRaw=chart.planets.map(original=>{
+    const position=byName.get(original.name);
+    if(!position)return original;
+    const longitude=norm360(position.longitude);
+    const rasiIndex=trueBphsRasi(longitude);
+    const nak=nakshatraInfo(longitude);
+    const placement=trueBphsHousePlacement(longitude,arambha);
+    return {
+      ...original,
+      longitude:Number(longitude.toFixed(8)),
+      degree:degText(longitude),
+      rasi:TRUE_BPHS_RASIS[rasiIndex],
+      nakshatra:nak.name,pada:nak.pada,lord:nak.lord,
+      navamsa:trueBphsNavamsa(longitude),
+      bhava:position.bhava??placement.house,
+      bhavaSandhi:placement.bhavaSandhi,
+      speed:Number(position.speed.toFixed(8)),
+      retrograde:position.speed<0,
+      eclipticLatitude:Number(position.eclipticLatitude.toFixed(8)),
+      referenceFrameId:TRUE_BPHS_FRAME,
+      longitudeFrameId:TRUE_BPHS_FRAME,
+      speedFrameId:TRUE_BPHS_FRAME,
+      positionSource:'NAELOS Ephemeris 0.1.3 / NASA-JPL DE440 apparent geocentric True Longitude'
+    };
+  });
+  const stateful=enrichPlanetaryStatesForTruePositions(updatedRaw);
+  const withPhase2=enrichPhase2ForTruePositions(stateful,result.birth.utcJd);
+  chart.planets=withPhase2.map(planet=>{
+    const bala=result.planets[planet.name];
+    if(!bala)return {...planet,strength6:{
+      available:false,classicalCertified:false,
+      reason:'Rahu/Ketu are excluded from the seven-graha BPHS Shadbala model',
+      referenceFrameId:TRUE_BPHS_FRAME
+    }};
+    return {...planet,strength6:trueBphsStrength6(bala,TRUE_BPHS_FRAME)};
+  });
+  const ascendant=norm360(result.bhava.ascendant);
+  const ascNak=nakshatraInfo(ascendant);
+  const ascNavamsa=trueBphsNavamsa(ascendant);
+  const ascRasi=trueBphsRasi(ascendant);
+  const midheaven=norm360(result.bhava.midheaven);
+  chart.lagna={
+    ...(chart.lagna||{}),
+    longitude:Number(ascendant.toFixed(8)),degree:degText(ascendant),
+    rasi:TRUE_BPHS_RASIS[ascRasi],
+    nakshatra:ascNak.name,pada:ascNak.pada,
+    navamsa:ascNavamsa,mc:Number(midheaven.toFixed(8)),
+    referenceFrameId:TRUE_BPHS_FRAME
+  };
+  chart.bhavas=result.bhava.madhya.map((madhyaValue,index)=>{
+    const arambhaLongitude=norm360(arambha[index]);
+    const madhya=norm360(madhyaValue);
+    const antya=norm360(arambha[(index+1)%12]);
+    const nak=nakshatraInfo(madhya),rasiIndex=trueBphsRasi(madhya);
+    return {
+      house:index+1,
+      arambhaLongitude:Number(arambhaLongitude.toFixed(8)),
+      arambha:degText(arambhaLongitude),
+      longitude:Number(arambhaLongitude.toFixed(8)),
+      degree:degText(arambhaLongitude),
+      madhyaLongitude:Number(madhya.toFixed(8)),
+      madhya:degText(madhya),
+      rasi:TRUE_BPHS_RASIS[rasiIndex],rasiIndex,
+      nakshatra:nak.name,
+      antyaLongitude:Number(antya.toFixed(8)),
+      antya:degText(antya),
+      referenceFrameId:TRUE_BPHS_FRAME,
+      cuspKind:'NAELOS_DE440_EFFECTIVE_LAHIRI_SRIPATI'
+    };
+  });
+  chart.navamsa={
+    lagna:ascNavamsa,
+    planets:[
+      {name:'லக்னம்',longitude:Number(ascendant.toFixed(8)),degree:degText(ascendant),
+       rasi:TRUE_BPHS_RASIS[ascRasi],navamsa:ascNavamsa,bhava:1},
+      ...chart.planets.map(planet=>({
+        name:planet.name,longitude:planet.longitude,degree:planet.degree,
+        rasi:planet.rasi,nakshatra:planet.nakshatra,pada:planet.pada,
+        navamsa:planet.navamsa,bhava:planet.bhava
+      }))
+    ]
+  };
+  const moon=chart.planets.find(planet=>planet.name==='சந்திரன்');
+  if(!moon||!Number.isFinite(moon.longitude))throw new Error('TRUE BPHS NAELOS Moon longitude is unavailable for Vimshottari Dasha.');
+  chart.moonRasi=moon.rasi;chart.moonNakshatra=moon.nakshatra;chart.moonPada=moon.pada;
+  chart.ayanamsa=Number(result.astronomy.lahiriAyanamsaDegrees);
+  chart.ayanamsaName='Effective Lahiri';
+  chart.engine='NAELOS Ephemeris 0.1.3 / NASA-JPL DE440';
+  chart.engineVersion='TRUE_BPHS_SHADBALA_NAELOS_DE440 1.2.0-effective-lahiri';
+  chart.ephemerisMode='NAELOS_DE440';
+  chart.zodiac='Sidereal';chart.houseSystem='Sripati';
+  chart.referenceFrameId=TRUE_BPHS_FRAME;
+  chart.classicalCertified=false;
+  chart.shadbalaMethod='TRUE_BPHS_SHADBALA_NAELOS_DE440';
+  chart.ishtaKashtaMethod='TRUE_BPHS_CH28_RASMI_ISHTA_KASHTA';
+  chart.naelosValidation={
+    source:'NASA/JPL DE440 via NAELOS Ephemeris 0.1.3',
+    referenceFrameId:TRUE_BPHS_FRAME,
+    tableIntegrityVerified:result.tableIntegrityVerified===true,
+    loadedTableFiles:result.astronomy.loadedTableFiles,
+    epochJdUt:result.epochJdUt,epochJdTt:result.birth.ttJd,
+    effectiveLahiriOffsetDegrees:result.astronomy.effectiveLahiriOffsetDegrees,
+    pac2026Comparison:{
+      status:'PASS_PAC_NAELOS_SEVEN_GRAHA_EFFECTIVE_LAHIRI_2555',
+      maxAbsoluteResidualArcseconds:0.27813725,
+      rmsResidualArcseconds:0.13981181457377317,gateArcseconds:0.36,
+      ayanamsaConvention:'Effective Lahiri inferred from PAC numeric comparison; not explicitly named in PAC PDFs'
+    },
+    classicalCertified:false
+  };
+  delete chart.swissValidation;
+  return chart;
+}
+
 function dashaAtBirth(moonSiderealLon,date,referenceDate,offsetMinutes=330){
   const n=nakshatraInfo(moonSiderealLon),span=360/27,progressed=(norm360(moonSiderealLon)%span)/span;
   const lord=n.lord,total=DASHA_YEARS[lord],balance=total*(1-progressed);
@@ -224,12 +408,35 @@ async function findTajakaAnnualChart(input,targetYear){
 }
 
 export async function calculateVedicChart(input){
+  // Keep the established chart shell for non-BPHS auxiliary fields. All
+  // customer-facing D1 longitudes, Lagna, Sripati cusps, Shadbala and Ishta/
+  // Kashta are replaced from one same-epoch NAELOS Effective Lahiri result.
   const chart=await calculateSwiss(input);
-  chart.birthName=String(input?.name||'').trim(); chart.birthDate=String(input?.date||'').trim(); chart.birthTime=String(input?.time||'').trim(); chart.birthLat=Number(input?.lat||0); chart.birthLon=Number(input?.lon||0);
-  if(Array.isArray(chart.planets)) chart.planets=chart.planets.map(p=>({...p,degree:Number.isFinite(Number(p.longitude))?degText(Number(p.longitude)):p.degree}));
-  if(chart.lagna&&Number.isFinite(Number(chart.lagna.longitude))) chart.lagna={...chart.lagna,degree:degText(Number(chart.lagna.longitude))};
+  const engine=await getTrueBphsEngine();
+  const naelos=await engine.calculate({
+    date:String(input?.date||''),time:String(input?.time||''),
+    latitude:Number(input?.lat),longitude:Number(input?.lon),
+    timeZone:String(input?.timeZone||input?.timezone||'Asia/Kolkata'),
+    utcOffsetMinutes:Number(input?.utcOffsetMinutes??330)
+  });
+  applyTrueBphsResultToChart(chart,naelos);
+  chart.birthName=String(input?.name||'').trim();
+  chart.birthDate=String(input?.date||'').trim();
+  chart.birthTime=String(input?.time||'').trim();
+  chart.birthLat=Number(input?.lat||0);chart.birthLon=Number(input?.lon||0);
+  chart.birth={
+    ...(chart.birth||{}),
+    date:naelos.birth.date,time:naelos.birth.time,
+    timezone:naelos.birth.timeZone||input?.timeZone||input?.timezone||'Asia/Kolkata',
+    utcOffsetMinutes:naelos.birth.utcOffsetMinutes,
+    utc_jd:naelos.birth.utcJd,et_jd:naelos.birth.ttJd,
+    latitude:naelos.birth.latitude,longitude:naelos.birth.longitude
+  };
   const moon=chart.planets.find(p=>p.name==='சந்திரன்');
-  chart.dashas=dashaAtBirth(moon.longitude,new Date(chart.birth.utc_jd?(chart.birth.utc_jd-2440587.5)*86400000:Date.parse(chart.birth.date+'T'+chart.birth.time+':00+05:30')),input?.referenceDate||input?.reportDate,input?.utcOffsetMinutes);
+  chart.dashas=dashaAtBirth(
+    moon.longitude,new Date((naelos.birth.utcJd-2440587.5)*86400000),
+    input?.referenceDate||input?.reportDate,input?.utcOffsetMinutes
+  );
   return chart;
 }
 export {findTajakaAnnualChart};

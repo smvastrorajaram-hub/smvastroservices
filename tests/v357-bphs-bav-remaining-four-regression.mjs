@@ -1,3 +1,4 @@
+import './helpers/naelos-node-fetch-bridge.mjs';
 // V357: Independent book-to-source BAV Prastara: Mercury/Jupiter/Venus/Saturn.
 // BPHS II (R. Santhanam), Chapter 66, printed pp. 858-862,
 // PDF pp. 368-372. Lists transcribed independently from the English prose

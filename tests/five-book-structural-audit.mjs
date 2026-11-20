@@ -1,3 +1,4 @@
+import './helpers/naelos-node-fetch-bridge.mjs';
 // SMV ASTRO five-reference-book structural calculation audit.
  // This verifies the EXISTENCE and internal integrity of implemented numerical
  // structures. It is NOT a claim that 2,116 book pages or prediction rules

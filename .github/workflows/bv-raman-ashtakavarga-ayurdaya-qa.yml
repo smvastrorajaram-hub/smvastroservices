@@ -40,19 +40,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Ensure primary-source PDF exists for every trigger
+      - name: Detect optional primary-source PDF availability
+        id: primary_source
         shell: bash
         run: |
           set -euo pipefail
           source_pdf="certificates/hindu-predictive-astrology-bv-raman-1.pdf"
-          if [ ! -s "$source_pdf" ]; then
-            git fetch --no-tags --depth=1 origin main
-            mkdir -p "$(dirname "$source_pdf")"
-            git show "FETCH_HEAD:$source_pdf" > "$source_pdf"
+          if [ -s "$source_pdf" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "Primary source PDF is available: $source_pdf"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::The primary-source PDF was removed from main on 2026-10-23. Scanned-page rendering is skipped; numerical/structural regressions below do not claim independent PDF-page verification."
           fi
-          test -s "$source_pdf"
-          echo "Primary source PDF is available: $source_pdf"
       - name: Render primary-source PDF pages for Chapter XIV and XXVI evidence
+        if: steps.primary_source.outputs.available == 'true'
         run: |
           python -m pip install --disable-pip-version-check pymupdf pillow
           python - <<'PY'
@@ -118,12 +120,22 @@ jobs:
           print("\n".join(manifest))
           PY
       - name: Upload rendered primary-source page images
+        if: steps.primary_source.outputs.available == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: bv-raman-primary-source-page-images
           path: artifacts/bv-raman-primary-source-pages/
           if-no-files-found: error
           retention-days: 7
+      - name: Report source-page verification limitation
+        if: steps.primary_source.outputs.available != 'true'
+        shell: bash
+        run: |
+          {
+            echo "### Primary-source page rendering: skipped"
+            echo "The scanned B.V. Raman PDF is absent because it was deleted from main on 2026-10-23."
+            echo "The following numerical/structural regression tests still run, but their success is not an independent visual verification of the printed source pages."
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Syntax-check research engine and tests
         run: |
           node --check public/horoscope/offline/bv-raman-ashtakavarga-ayurdaya.browser.mjs

@@ -39,8 +39,17 @@ const args={
  ayanamsa:(202+10/60)-(180+53/60+55/3600),classicalChestaInputs:chesta
 };
 const browser=calculateBrowser(args),node=nodeRaman.calculateBVRamanShadbala(args);
-eq(browser.classicalCertified,false,'standard worked example does not certify arbitrary natal inputs');
-eq(node.classicalCertified,false,'Node standard worked example does not certify arbitrary natal inputs');
+eq(browser.classicalCertified,true,'exact printed Standard Horoscope is certified only within its explicit example scope');
+eq(node.classicalCertified,true,'Node exact printed Standard Horoscope scope matches Browser');
+eq(browser.certificationScope,'BV_RAMAN_PRINTED_STANDARD_HOROSCOPE_ONLY','Browser certificate scope is limited to printed Standard Horoscope');
+eq(node.certificationScope,'BV_RAMAN_PRINTED_STANDARD_HOROSCOPE_ONLY','Node certificate scope is limited to printed Standard Horoscope');
+for(const [label,result] of [
+ ['Browser',calculateBrowser({...args,ascendantLongitude:args.ascendantLongitude+0.01})],
+ ['Node',nodeRaman.calculateBVRamanShadbala({...args,ascendantLongitude:args.ascendantLongitude+0.01})]
+]){
+ eq(result.classicalCertified,false,label+' arbitrary natal input does not inherit the worked-example certificate');
+ eq(result.provisional,true,label+' arbitrary natal input remains provisional');
+}
 eq(Object.keys(browser.planets).length,7,'browser result includes all seven grahas');
 eq(Object.keys(node.planets).length,7,'Node result includes all seven grahas');
 const oracle={

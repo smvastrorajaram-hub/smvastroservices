@@ -1,3 +1,4 @@
+import './helpers/naelos-node-fetch-bridge.mjs';
 // V357 — BPHS II Chs. 67-69, Santhanam, PDF pp. 381-390.
 // Textbook numeric examples verified independently; output NOT wired live.
 import assert from 'node:assert/strict';

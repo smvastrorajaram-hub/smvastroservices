@@ -1,3 +1,4 @@
+import './helpers/naelos-node-fetch-bridge.mjs';
 // Node regression for the authorized factual two-person marriage report.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

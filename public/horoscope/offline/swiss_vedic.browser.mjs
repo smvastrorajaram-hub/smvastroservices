@@ -951,3 +951,6 @@ export async function calculateSunMoon(input){
   await ensureSwe();
   return calculateSunMoonSync(input);
 }
+
+// Shared post-position enrichment for source-verified alternate longitude providers.
+export {enrichPlanetaryStates as enrichPlanetaryStatesForTruePositions,enrichPhase2 as enrichPhase2ForTruePositions};
