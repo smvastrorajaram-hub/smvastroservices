@@ -577,7 +577,7 @@
     }).join('');
     result.innerHTML=`<div class="card" style="background:linear-gradient(180deg,#fffaf0,#fff)">
       <div class="home-rule"><span>☾</span><span>தமிழ் ஜாதக கணக்கீடு</span><span>☀</span></div>
-      <h2 style="text-align:center">${esc(name)}</h2>
+      <h2 class="smv-horoscope-person-name" style="text-align:center" data-name-ta="${esc(name)}" data-name-en="${esc($('englishAstroName')?.value||name)}">${esc(name)}</h2>
       <p class="small" style="text-align:center">பிறந்த தேதி: ${esc(fmtDate(d.birth.date))} · நேரம்: ${esc(d.birth.time)} · பிறந்த இடம்: ${esc($('tamilBirthPlace')?.value||d.birth?.place||'—')}</p>
       <div class="grid" style="margin-top:15px">
         <div class="stat"><span class="small">🔱 லக்னம்</span><p><b>${esc(d.lagna.rasi)}</b> · ${esc(d.lagna.degree)}</p><p class="small">${esc(d.lagna.nakshatra)} · பாதம் ${d.lagna.pada}<br>நெடுவரை: ${Number(d.lagna.longitude).toFixed(4)}°</p></div>
@@ -2980,7 +2980,7 @@ if(lat===''||lon===''){
       if($('birthUtcOffset'))$('birthUtcOffset').value=String(historicalOffset/60);
       if($('tamilBirthUtcOffsetDisplay'))$('tamilBirthUtcOffsetDisplay').value=String(historicalOffset/60);
       const {localizeTamilText}=await import('./offline/places/tamil-transliteration.mjs');
-      for(const [sourceId,targetId] of [['tamilBirthVillage','englishBirthVillage'],['tamilMotherName','englishMotherName'],['tamilFatherName','englishFatherName']]){
+      for(const [sourceId,targetId] of [['tamilAstroName','englishAstroName'],['tamilBirthVillage','englishBirthVillage'],['tamilMotherName','englishMotherName'],['tamilFatherName','englishFatherName']]){
         const source=document.getElementById(sourceId),target=document.getElementById(targetId);
         if(source&&target)target.value=localizeTamilText(source.value,'en');
       }
