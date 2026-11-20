@@ -285,7 +285,8 @@ try {
                   return rect.width>0&&rect.height>0&&other.width>0&&other.height>0&&rect.left<other.right-0.5&&rect.right>other.left+0.5&&rect.top<other.bottom-0.5&&rect.bottom>other.top+0.5;
                 });
                 const computed=getComputedStyle(el);
-                return {sign:Number(cell.dataset.sign||0),text:el.textContent.trim(),fontSize:parseFloat(computed.fontSize),visible:rect.width>0&&rect.height>0&&computed.display!=='none'&&computed.visibility!=='hidden',insideCell:rect.left>=cellRect.left-1&&rect.right<=cellRect.right+1&&rect.top>=cellRect.top-1&&rect.bottom<=cellRect.bottom+1,insideChart:rect.left>=chartRect.left-1&&rect.right<=chartRect.right+1&&rect.top>=chartRect.top-1&&rect.bottom<=chartRect.bottom+1,overlapsPlanet};
+                const bounds=r=>({left:Math.round(r.left*10)/10,top:Math.round(r.top*10)/10,right:Math.round(r.right*10)/10,bottom:Math.round(r.bottom*10)/10,width:Math.round(r.width*10)/10,height:Math.round(r.height*10)/10});
+                return {sign:Number(cell.dataset.sign||0),house:Number(cell.dataset.house||0),text:el.textContent.trim(),fontSize:parseFloat(computed.fontSize),visible:rect.width>0&&rect.height>0&&computed.display!=='none'&&computed.visibility!=='hidden',insideCell:rect.left>=cellRect.left-1&&rect.right<=cellRect.right+1&&rect.top>=cellRect.top-1&&rect.bottom<=cellRect.bottom+1,insideChart:rect.left>=chartRect.left-1&&rect.right<=chartRect.right+1&&rect.top>=chartRect.top-1&&rect.bottom<=chartRect.bottom+1,overlapsPlanet,labelBounds:bounds(rect),cellBounds:bounds(cellRect),planetBounds:[...cell.querySelectorAll('.smv-v342-planets .planet-glyph')].map(g=>bounds(g.getBoundingClientRect()))};
               }) : [];
               const describeBhavaLabel=(el,sign,house=0)=>{
                 if(!el)return {sign,house,labels:[],labelDetails:[]};
