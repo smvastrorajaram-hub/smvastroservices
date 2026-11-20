@@ -9,7 +9,7 @@
 export const CLASSICAL_NATAL_SCOPE = Object.freeze({
   startYear: 1800,
   endYear: 2399,
-  annualSamplesPerPlanet: 600,
+  annualNatalCharts: 600,
   visiblePlanets: Object.freeze(['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn']),
   grahas: Object.freeze([
     'Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'
@@ -186,9 +186,11 @@ export function evaluateNatalClassicalCertification({
     if (longitudeEvidence.independentHistoricalReferenceVerified !== true) {
       addBlocker(blockers, 'Independent historical longitude reference is not verified');
     }
-    if (longitudeEvidence.annualRowsPerPlanet !==
-        CLASSICAL_NATAL_SCOPE.annualSamplesPerPlanet) {
-      addBlocker(blockers, 'Annual 1800–2399 coverage is incomplete');
+    if (longitudeEvidence.annualRandomNatalCharts !==
+        CLASSICAL_NATAL_SCOPE.annualNatalCharts ||
+        longitudeEvidence.annualYearCoverage !== true ||
+        longitudeEvidence.annualSamplingMethod !== 'seeded-random-dob-time-indian-place') {
+      addBlocker(blockers, '600 seeded-random natal charts (one per year) are not fully covered');
     }
     if (longitudeEvidence.eventWindowStatus !== 'PASS') {
       addBlocker(blockers, 'Station/retrograde/sign-boundary/conjunction event windows are not PASS');
