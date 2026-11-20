@@ -344,8 +344,8 @@ export function calculateBVRamanShadbala({planets,bhavas,ascendantLongitude,midh
   baseRows[planet]={available:true,classicalCertified:false,provisional:true,method:'B.V. Raman, Graha and Bhava Balas',unit:'virupa',source:'B.V. Raman, Graha and Bhava Balas, 13th ed., Chapters III–VIII',ishtaKashta,
    components:{sthana,dig,kala,cheshta:cheshta.value,naisargika,drik:drik.drik},
    evidence:{drikPinda:drik.pinda,drikTrace:drik.trace,cheshtaSource:cheshta,solarTimeMethod:temporal?.solarTimeMethod??'unverified/fallback solar-time context',birthApparentSolarHour:round3(apparentSolarHour)},
-    frameSafety:Object.freeze({status:cheshta.available===false?'BLOCKED_MIXED_REFERENCE_FRAMES':chestaFrameStatus(cheshta),sameReferenceFrameVerified:cheshta.sameReferenceFrameVerified===true,referenceFrames:cheshta.referenceFrames||null,cheshtaInputEligible:cheshta.available===true}),
-   limitations:['Full natal Shadbala remains uncertified until the worked example and historical astronomical inputs reconcile independently',...(cheshta.trueLongitudeHistoricalCertified===false?['Five-planet traditional mean-longitude/Sheeghrocca chain remains research-only; sixfold Cheshta uses the calculated chart true longitude rather than a synthetic reconstructed true longitude. No modern speed-bucket estimate is substituted.']:[])],
+    frameSafety:Object.freeze({status:cheshta.available===false?'BLOCKED_MIXED_REFERENCE_FRAMES':chestaFrameStatus(cheshta),sameReferenceFrameVerified:cheshta.sameReferenceFrameVerified===true,referenceFrames:cheshta.referenceFrames||null,cheshtaInputAvailable:cheshta.available===true}),
+   limitations:['Full natal Shadbala remains uncertified until the worked example and historical astronomical inputs reconcile independently',...(cheshta.available===false?[cheshta.reason]:cheshta.sameReferenceFrameVerified===true?['Printed worked-example inputs do not certify arbitrary natal epochs']:[])],
    totalVirupa:null,totalRupa:null,requiredVirupa:REQUIRED[planet],ratio:null,isStrong:null,complete:false};
  }
  const wars=applyRamanYuddha(baseRows,chart);
