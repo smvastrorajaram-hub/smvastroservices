@@ -6,8 +6,7 @@ import {
   SE_MERCURY, SE_VENUS, SE_MARS, SE_JUPITER, SE_SATURN
 } from 'naelos-ephemeris';
 import { getSwe, C } from '../public/horoscope/offline/wasm-provider.mjs';
-import { sauraFivePlanetCheshtaInputs } from '../public/horoscope/offline/saura-classical-mean-motion.browser.mjs';
-import { bphsCheshtaFromOrbitalElements } from '../public/horoscope/offline/bphs-swiss-solar-cheshta.browser.mjs';
+import { sauraBijaCorrectedFivePlanetInputs } from '../research/saura-bija/saura-bija-mean-motion.mjs';
 import { sauraSiderealOffsetFromLahiri } from '../research/saura-bija/saura-de441-apparent-true.mjs';
 
 const ARTIFACT_URL = new URL(
@@ -141,15 +140,19 @@ for (let index = 0; index < report.records.length; index++) {
       ayanamsa, lahiriAyanamsaAt1860
     );
     const trueLongitudeSaura = norm(naelos.longitude - sauraOffset);
-    const classicalInputs = sauraFivePlanetCheshtaInputs(jdUT, english);
-    const cheshta = bphsCheshtaFromOrbitalElements(
-      classicalInputs.meanLongitude,
-      trueLongitudeSaura,
-      classicalInputs.sheeghrocha
-    );
-    assert.ok(finite(cheshta?.virupa) &&
-      cheshta.virupa >= 0 && cheshta.virupa <= 60,
-      record.epochId + ' ' + english + ' research Chesta result is finite and bounded');
+    // The Bīja-corrected classical Mean and Sheeghroccheya are evaluated
+    // independently at this exact same UT epoch and in the same Saura frame.
+    // They remain separate from the modern DE440 apparent True longitude
+    // below: same coordinates do not make two different dynamical models
+    // interchangeable BPHS inputs.
+    const classicalInputs = sauraBijaCorrectedFivePlanetInputs(jdUT, english);
+    assert.ok(finite(classicalInputs.meanLongitude) &&
+      finite(classicalInputs.sheeghrocca),
+      record.epochId + ' ' + english + ' same-epoch Bīja Mean/Sheeghroccheya exist');
+    assert.equal(classicalInputs.frame, 'traditional-Saura-nirayana',
+      record.epochId + ' ' + english + ' Bīja Mean/Sheeghroccheya frame is explicit');
+    assert.equal(classicalInputs.productionEligible, false,
+      record.epochId + ' ' + english + ' Bīja inputs remain research-only');
 
     validatedRows.push({
       grahaTamil: tamil,
@@ -161,10 +164,15 @@ for (let index = 0; index < report.records.length; index++) {
       naelosTrueLongitudeTropicalApparent: naelos.longitude,
       swissTrueLongitudeTropicalApparent: swiss.longitude,
       sauraFrameTransfer: 'Burgess 1860 zero point + date-specific Lahiri precession delta',
-      trueLongitudeSaura: trueLongitudeSaura,
-      meanLongitudeSaura: classicalInputs.meanLongitude,
-      sheeghroccheyaSaura: classicalInputs.sheeghrocha,
-      cheshtaVirupaUsingNaelosTrue: cheshta.virupa,
+      modernDe440TrueLongitudeSaura: trueLongitudeSaura,
+      modernTrueLongitudeFrame: classicalInputs.frame,
+      classicalBijaMeanLongitudeSaura: classicalInputs.meanLongitude,
+      classicalBijaSheeghroccheyaSaura: classicalInputs.sheeghrocca,
+      classicalBijaInputsFrame: classicalInputs.frame,
+      exactSameBirthEpoch: true,
+      coordinateFrameMatches: true,
+      dynamicModelMatches: false,
+      bphsCheshtaComputedFromMixedModels: false,
       historicalClassicalTrueLongitudeCertified: false,
       productionEligible: false
     });
