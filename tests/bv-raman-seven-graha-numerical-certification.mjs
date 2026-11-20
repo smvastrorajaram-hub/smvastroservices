@@ -39,8 +39,12 @@ const args={
  ayanamsa:(202+10/60)-(180+53/60+55/3600),classicalChestaInputs:chesta
 };
 const browser=calculateBrowser(args),node=nodeRaman.calculateBVRamanShadbala(args);
-eq(browser.classicalCertified,false,'standard worked example does not certify arbitrary natal inputs');
-eq(node.classicalCertified,false,'Node standard worked example does not certify arbitrary natal inputs');
+eq(browser.classicalCertified,true,'exact printed Standard Horoscope passes all six Bala and final no-war Yuddha source gates');
+eq(node.classicalCertified,true,'Node exact printed Standard Horoscope passes the same source gates');
+eq(browser.certificationScope,'BV_RAMAN_PRINTED_STANDARD_HOROSCOPE_ONLY','browser certificate is limited to the printed Standard Horoscope');
+eq(node.certificationScope,browser.certificationScope,'Node/browser certification scope parity');
+eq(browser.certificateId,'SMV-BVR-PRINTED-STANDARD-HOROSCOPE-SIX-BALA-YUDDHA-2026-11-20','printed Standard Horoscope certificate identity');
+eq(node.certificateId,browser.certificateId,'Node/browser certificate identity parity');
 eq(Object.keys(browser.planets).length,7,'browser result includes all seven grahas');
 eq(Object.keys(node.planets).length,7,'Node result includes all seven grahas');
 const oracle={
@@ -56,6 +60,10 @@ const expectedWholePercent={'சூரியன்':142,'சந்திரன�
 const results=[];
 for(const name of names){
  const r=browser.planets[name],n=node.planets[name],c=r.components,e=oracle[name];
+ eq(r.classicalCertified,true,name+' receives the limited printed Standard Horoscope certificate');
+ eq(n.classicalCertified,true,name+' Node result receives the same limited source certificate');
+ eq(r.certificationScope,'BV_RAMAN_PRINTED_STANDARD_HOROSCOPE_ONLY',name+' certificate scope is restricted');
+ eq(r.certificateId,'SMV-BVR-PRINTED-STANDARD-HOROSCOPE-SIX-BALA-YUDDHA-2026-11-20',name+' certificate identity is attached');
  ok(r.available===true&&[c.sthana?.total,c.dig,c.kala?.total,c.cheshta,c.naisargika,c.drik].every(Number.isFinite),name+' worked example has all six Bala inputs');
  near(c.sthana.total,e.sthana,0.06,name+' printed Sthana value');
  near(c.dig,e.dig,name==='புதன்'?0.08:0.06,name+' printed Dig value');
@@ -88,4 +96,5 @@ eq(results.find(x=>x.planet==='செவ்வாய்').meetsMinimum,false,
 const rankByName=new Map(rankOrder.map((name,index)=>[name,index+1]));
 console.log(JSON.stringify({pass:true,assertions,scope:'B.V. Raman printed Standard Horoscope worked-example numerical arithmetic only',
  source:provenance,results:results.map(r=>({...r,rank:rankByName.get(r.planet)})),
+ certificateId:browser.certificateId,certificationScope:browser.certificationScope,
  fullArbitraryNatalCertification:false,historicalNatalTrueLongitudeCertified:false}));
