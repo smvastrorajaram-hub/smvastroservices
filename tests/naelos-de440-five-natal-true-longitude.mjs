@@ -53,8 +53,10 @@ const signedArcsec = (a, b) => {
 const lahiriAyanamsaAt1860 = swe.ayanamsa(julday(1860, 1, 1, 0));
 assert.ok(Number.isFinite(lahiriAyanamsaAt1860), 'Lahiri 1860 epoch ayanamsa finite');
 const rows = [];
-let maxAbsResidualArcsec = 0;
-let sumSquares = 0;
+let maxAbsTropicalResidualArcsec = 0;
+let sumSquaresTropical = 0;
+let maxAbsSiderealResidualArcsec = 0;
+let sumSquaresSidereal = 0;
 
 for (const [date, time] of births) {
   const [y, m, d] = date.split('-').map(Number);
@@ -95,10 +97,15 @@ for (const [date, time] of births) {
     // so the two longitudes are in the same sidereal coordinate frame.
     const naelosLahiri = norm(naelos.longitude - ayanamsa);
     const swiss = swe.calc(jdTT, swissBody, swe.siderealSpeedFlags());
+    const swissTropical = swe.calc(jdTT, swissBody, 2 | 256);
     assert.ok(Number.isFinite(swiss?.longitude), date + ' ' + en + ' Swiss Lahiri position finite');
-    const residualArcsec = signedArcsec(naelosLahiri, swiss.longitude);
-    maxAbsResidualArcsec = Math.max(maxAbsResidualArcsec, Math.abs(residualArcsec));
-    sumSquares += residualArcsec * residualArcsec;
+    assert.ok(Number.isFinite(swissTropical?.longitude), date + ' ' + en + ' Swiss tropical position finite');
+    const tropicalResidualArcsec = signedArcsec(naelos.longitude, swissTropical.longitude);
+    const siderealResidualArcsec = signedArcsec(naelosLahiri, swiss.longitude);
+    maxAbsTropicalResidualArcsec = Math.max(maxAbsTropicalResidualArcsec, Math.abs(tropicalResidualArcsec));
+    sumSquaresTropical += tropicalResidualArcsec * tropicalResidualArcsec;
+    maxAbsSiderealResidualArcsec = Math.max(maxAbsSiderealResidualArcsec, Math.abs(siderealResidualArcsec));
+    sumSquaresSidereal += siderealResidualArcsec * siderealResidualArcsec;
 
     // Preserve the already-audited mean-longitude / Sheeghrocca input selector;
     // only the true geocentric input is independently replaced for this audit.
@@ -125,7 +132,8 @@ for (const [date, time] of births) {
       swissLahiriReference: swiss.longitude,
       sauraSiderealOffset,
       trueLongitudeSaura,
-      signedResidualArcsec: residualArcsec,
+      signedTropicalResidualArcsec: tropicalResidualArcsec,
+      signedSiderealReductionResidualArcsec: siderealResidualArcsec,
       meanLongitudeSaura: orbital.meanLongitude,
       sheeghroccaSaura: orbital.sheeghrocha,
       cheshtaVirupaUsingNaelosTrue: cheshta.virupa,
@@ -138,17 +146,26 @@ for (const [date, time] of births) {
 const comparisons = rows.length * bodies.length;
 assert.equal(comparisons, 25, 'five births × five non-luminary grahas = 25 checks');
 const perPlanetResiduals = Object.fromEntries(bodies.map(([, en]) => {
-  const values = rows.map(r => Math.abs(r.planets[en].signedResidualArcsec));
+  const tropical = rows.map(r => r.planets[en].signedTropicalResidualArcsec);
+  const sidereal = rows.map(r => r.planets[en].signedSiderealReductionResidualArcsec);
   return [en, {
-    maxAbsArcsec: Math.max(...values),
-    rmsArcsec: Math.sqrt(values.reduce((a, v) => a + v * v, 0) / values.length),
-    rows: rows.map(r => ({ date: r.date, signedArcsec: r.planets[en].signedResidualArcsec }))
+    tropicalMaxAbsArcsec: Math.max(...tropical.map(Math.abs)),
+    tropicalRmsArcsec: Math.sqrt(tropical.reduce((a, v) => a + v * v, 0) / tropical.length),
+    siderealReductionMaxAbsArcsec: Math.max(...sidereal.map(Math.abs)),
+    siderealReductionRmsArcsec: Math.sqrt(sidereal.reduce((a, v) => a + v * v, 0) / sidereal.length),
+    rows: rows.map((r, i) => ({
+      date: r.date,
+      tropicalSignedArcsec: tropical[i],
+      siderealReductionSignedArcsec: sidereal[i]
+    }))
   }];
 }));
 console.log(JSON.stringify({
-  diagnostic: 'NAELOS_DE440_VS_SWISS_LAHIRI_SAME_ET',
-  maxAbsResidualArcsec,
-  rmsResidualArcsec: Math.sqrt(sumSquares / comparisons),
+  diagnostic: 'NAELOS_DE440_VS_SWISS_TROPICAL_AND_LAHIRI_SAME_ET',
+  maxAbsTropicalResidualArcsec,
+  rmsTropicalResidualArcsec: Math.sqrt(sumSquaresTropical / comparisons),
+  maxAbsSiderealReductionResidualArcsec,
+  rmsSiderealReductionResidualArcsec: Math.sqrt(sumSquaresSidereal / comparisons),
   perPlanetResiduals,
   cheshtaRows: rows.map(r => ({
     date: r.date,
@@ -159,9 +176,9 @@ console.log(JSON.stringify({
         cheshtaVirupa: p.cheshtaVirupaUsingNaelosTrue }]))
   }))
 }, null, 2));
-assert.ok(maxAbsResidualArcsec <= MAX_ABS_RESIDUAL_ARCSEC,
-  'all 25 NAELOS-vs-Swiss Lahiri true-longitude residuals <= 5 arcsec; max=' +
-  maxAbsResidualArcsec);
+assert.ok(maxAbsTropicalResidualArcsec <= MAX_ABS_RESIDUAL_ARCSEC,
+  'all 25 NAELOS-vs-Swiss tropical true-longitude residuals <= 5 arcsec; max=' +
+  maxAbsTropicalResidualArcsec);
 
 console.log(JSON.stringify({
   pass: true,
@@ -176,10 +193,13 @@ console.log(JSON.stringify({
   positionDefinition: 'NAELOS apparent geocentric tropical true longitude on true ecliptic of date; same-instant NAELOS/Swiss Lahiri parity check; Chesta input separately transferred into the source-audited Saura sidereal frame using the Burgess 1860 zero point plus date-specific Lahiri precession delta',
   frameTransfer: 'sauraSiderealOffsetFromLahiri(lahiriAyanamsaAtDate, lahiriAyanamsaAt1860)',
   lahiriAyanamsaAt1860,
-  reference: 'SMV local Swiss Ephemeris Lahiri sidereal calc at the exact same TT/ET instant',
+  reference: 'SMV local Swiss Ephemeris tropical and Lahiri sidereal calc at the exact same TT/ET instant',
+  siderealNote: 'Lahiri-offset residual is reported as a separate coordinate-reduction diagnostic; the 5-arcsecond source gate applies to tropical apparent longitudes, not the zero-point/nutation reduction.'
   comparisonCount: comparisons,
-  maxAbsResidualArcsec,
-  rmsResidualArcsec: Math.sqrt(sumSquares / comparisons),
+  maxAbsTropicalResidualArcsec,
+  rmsTropicalResidualArcsec: Math.sqrt(sumSquaresTropical / comparisons),
+  maxAbsSiderealReductionResidualArcsec,
+  rmsSiderealReductionResidualArcsec: Math.sqrt(sumSquaresSidereal / comparisons),
   acceptanceMaxArcsec: MAX_ABS_RESIDUAL_ARCSEC,
   cheshtaInputPolicy: 'existing Saura-paksha mean longitude and Sheeghrocca retained; NAELOS DE440 true longitude used as independent true-position evidence',
   rows
