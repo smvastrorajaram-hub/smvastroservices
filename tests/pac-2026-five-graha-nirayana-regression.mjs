@@ -55,7 +55,9 @@ for (const sample of fixture.samples) {
   assert.ok(Number.isFinite(jd?.ut) && Number.isFinite(jd?.et),
     sample.date + ' UTC midnight converts to UT and TT Julian days');
   const nominalJdUtc = Date.UTC(year, month - 1, day) / 86_400_000 + 2_440_587.5;
-  assert.ok(Math.abs(jd.ut - nominalJdUtc) < 1 / 86_400,
+  assert.equal(sample.julianDayUTC, nominalJdUtc,
+    sample.date + ' fixture records nominal 00:00:00 UTC');
+  assert.ok(Math.abs(jd.ut - sample.julianDayUTC) < 1 / 86_400,
     sample.date + ' UTC midnight maps to UT1 within one second (DUT1 allowance)');
   assert.ok(jd.et > jd.ut, sample.date + ' TT/ET is later than UT1');
   assert.equal(Object.keys(sample.nirayanaDms).length, 5,
