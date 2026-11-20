@@ -55,12 +55,12 @@ The research validation workflow ran the following successful tests:
 
 - `tests/bv-raman-strength6-regression.mjs` — **705 checks PASS**; existing Standard Horoscope component oracle, five natal integrations and default fail-closed status preserved.
 - `tests/bv-raman-seven-graha-numerical-certification.mjs` — **164 assertions PASS**; seven-graha Standard Horoscope six-Bala totals, Rupa, ratios, ranking and scoped certificate.
-- `tests/bv-raman-yuddha-regression.mjs` — **90 checks PASS**; Yuddha boundaries, formula, final Kala/total reconciliation and Node/Browser parity.
+- `tests/bv-raman-yuddha-regression.mjs` — **95 checks PASS**; Yuddha boundaries, formula, final Kala/total reconciliation and Node/Browser parity.
 - `tests/bv-raman-ishta-kashta-regression.mjs` — **39 assertions PASS**; Chapter X Ishta/Kashta remains separate from the sixfold Bala.
 - `tests/naelos-de440-five-natal-true-longitude.mjs` — separate five-natal, five-graha True Longitude/Chesta input evidence; it is not used to broaden this Standard Horoscope certificate.
 
-**Integrated Actions run:** [#44790203571 — SUCCESS](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44790203571)  
-**Validated source commit:** `4307fb2e1f84da6bb7ac25634afcf58d4b087ebd`
+**Integrated Actions run:** [#44790590414 — SUCCESS](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44790590414)  
+**Validated source commit:** `15b0d67228e07c101dd08a3c8a6f5b226738fce4`
 
 ## 5. Certification boundary
 
