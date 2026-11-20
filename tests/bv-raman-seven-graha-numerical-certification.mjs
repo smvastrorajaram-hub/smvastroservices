@@ -66,7 +66,7 @@ for(const name of names){
  const sixTermSum=[c.sthana.total,c.dig,c.kala.total,c.cheshta,c.naisargika,c.drik].reduce((a,b)=>a+b,0);
  near(r.totalVirupa,sixTermSum,1e-9,name+' full Virupa equals independently assembled six-term sum');
  near(r.totalVirupa,e.total,0.25,name+' full Virupa reconciles with printed component arithmetic');
- near(r.totalRupa,r.totalVirupa/60,1e-9,name+' Rupa conversion equals Virupa divided by 60');
+ near(r.totalRupa,Number((r.totalVirupa/60).toFixed(3)),1e-9,name+' Rupa conversion equals Virupa divided by 60 rounded to three decimals');
  near(r.requiredVirupa,e.required,0,name+' source-required Virupa');
  const ratio=r.totalVirupa/e.required;
  near(r.ratio,ratio,0.0005,name+' ratio equals total Virupa divided by required Virupa');
