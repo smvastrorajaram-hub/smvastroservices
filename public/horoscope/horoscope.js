@@ -2928,7 +2928,7 @@ function renderTransitPanchang(t,p,lang,rootId,horaOverride=null){
     const lat=$('tamilLat')?.value||'', lon=$('tamilLon')?.value||'';
     if(!date||!time){alert('பிறந்த தேதி மற்றும் பிறந்த நேரத்தை உள்ளிடவும்.');return;}
    const placeValue=String($('tamilBirthPlace')?.value||'').trim(),currentWork=String($('tamilCurrentWork')?.value||'').trim(),maritalStatus=String($('tamilMaritalStatus')?.value||'').trim(),currentResidence=String($('tamilCurrentResidence')?.value||'').trim();
-   const birthGender=String($('tamilBirthGender')?.value||'').trim();
+   const birthGender=String(document.querySelector('input[name="tamilBirthGender"]:checked')?.value||'').trim();
    if(!['male','female'].includes(birthGender)){alert('பாலினத்தைத் தேர்வு செய்யவும்.');return;}
 
 if(!placeValue){
@@ -3038,7 +3038,7 @@ if(lat===''||lon===''){
     if($('englishHoroscopeResult'))$('englishHoroscopeResult').innerHTML='';
     generate(true,fullReportLaunch);
   });
-  $('clearTamilHoroscope')?.addEventListener('click',()=>{['tamilAstroName','tamilBirthGender','tamilBirthVillage','tamilMotherName','tamilFatherName','tamilBirthUtcOffsetDisplay','tamilDob','tamilTob','tamilBirthPlace','tamilBirthTimezone','tamilNakshatra','tamilLat','tamilLon','tamilCurrentResidence'].forEach(id=>{if($(id))$(id).value='';});if($('tamilBirthPlace')){const p=$('tamilBirthPlace');p.dataset.locationSelected='0';p.dataset.latitude='';p.dataset.longitude='';p.dataset.name='';p.dataset.admin2='';p.dataset.admin1='';p.dataset.country='';p.dataset.timezone='';p.dataset.timezoneSource='';}if($('tamilRasi'))$('tamilRasi').value='மேஷம்';if($('tamilCurrentWork'))$('tamilCurrentWork').value='';if($('tamilMaritalStatus'))$('tamilMaritalStatus').value='';if($('tamilHoroscopeResult')){$('tamilHoroscopeResult').classList.add('hidden');$('tamilHoroscopeResult').innerHTML='';}if($('englishHoroscopeResult')){$('englishHoroscopeResult').classList.add('hidden');$('englishHoroscopeResult').innerHTML='';}});
+  $('clearTamilHoroscope')?.addEventListener('click',()=>{['tamilAstroName','tamilBirthVillage','tamilMotherName','tamilFatherName','tamilBirthUtcOffsetDisplay','tamilDob','tamilTob','tamilBirthPlace','tamilBirthTimezone','tamilNakshatra','tamilLat','tamilLon','tamilCurrentResidence'].forEach(id=>{if($(id))$(id).value='';});document.querySelectorAll('input[name="tamilBirthGender"]').forEach(input=>{input.checked=false;});if($('tamilBirthPlace')){const p=$('tamilBirthPlace');p.dataset.locationSelected='0';p.dataset.latitude='';p.dataset.longitude='';p.dataset.name='';p.dataset.admin2='';p.dataset.admin1='';p.dataset.country='';p.dataset.timezone='';p.dataset.timezoneSource='';}if($('tamilRasi'))$('tamilRasi').value='மேஷம்';if($('tamilCurrentWork'))$('tamilCurrentWork').value='';if($('tamilMaritalStatus'))$('tamilMaritalStatus').value='';if($('tamilHoroscopeResult')){$('tamilHoroscopeResult').classList.add('hidden');$('tamilHoroscopeResult').innerHTML='';}if($('englishHoroscopeResult')){$('englishHoroscopeResult').classList.add('hidden');$('englishHoroscopeResult').innerHTML='';}});
   // V149: expose horoscope helpers so the separate English section can safely
   // reuse the renderer without relying on JavaScript lexical scope from another IIFE.
   window.__smvHoroscopeEnglishDictionary = EN;
