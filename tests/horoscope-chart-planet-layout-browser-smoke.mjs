@@ -265,11 +265,22 @@ try {
               const numericLabels = cells.reduce((count,cell)=>count+cell.querySelectorAll('.smv-v342-sign-number,.smv-v342-house-number').length,0);
               const bhavaHouseLabels = kind==='bhava' ? cells.map((cell,index)=>{
                 const sign=style==='south'?signOrder[index]:Number(cell.dataset.sign||0)-1;
-                const raw=style==='south'
-                  ? [...cell.querySelectorAll('.bhava-house-no')].map(el=>el.textContent.trim())
-                  : [cell.querySelector('.smv-v342-house-number')?.textContent.trim()||''];
+                const labelNodes=style==='south'
+                  ? [...cell.querySelectorAll('.bhava-house-no')]
+                  : [cell.querySelector('.smv-v342-house-number')].filter(Boolean);
+                const raw=labelNodes.map(el=>el.textContent.trim());
                 const labels=raw.flatMap(value=>value.split('/').map(label=>label.trim()).filter(Boolean));
-                return {sign,house:Number(cell.dataset.house||0),labels};
+                const labelDetails=labelNodes.map(el=>{
+                  const rect=el.getBoundingClientRect(),computed=getComputedStyle(el);
+                  return {
+                    text:el.textContent.trim(),width:rect.width,height:rect.height,
+                    visible:rect.width>0&&rect.height>0&&computed.display!=='none'&&computed.visibility!=='hidden'&&Number(computed.opacity)>0,
+                    color:computed.color,zIndex:computed.zIndex,
+                    left:Math.round(rect.left*10)/10,right:Math.round(rect.right*10)/10,
+                    top:Math.round(rect.top*10)/10,bottom:Math.round(rect.bottom*10)/10
+                  };
+                });
+                return {sign,house:Number(cell.dataset.house||0),labels,labelDetails};
               }) : [];
               reports.push({rootId,kind,cells:cells.length,chartClass:chart.className,numericLabels,picked,emptyDash,bhavaHouseLabels,cellBoundsOutside,compartmentOutside,triangleCells:cells.filter(cell=>cell.classList.contains('smv-v342-triangle-cell')).length,planetGlyphColors,crowdedTriangleNumbers});
 
@@ -360,6 +371,16 @@ try {
             const allLabels=labels.flatMap(entry=>entry.labels);
             assert.deepEqual([...allLabels].sort((a,b)=>roman.indexOf(a)-roman.indexOf(b)),roman,
               item.rootId+' '+style+' Bhava must display every house I–XII exactly once.');
+            for(const entry of labels){
+              assert.ok(entry.labelDetails.length>0||entry.labels.length===0,item.rootId+' '+style+' Bhava label nodes exist for every mapped cell.');
+              for(const detail of entry.labelDetails){
+                assert.ok(detail.visible,item.rootId+' '+style+' Bhava Roman label '+detail.text+' has a visible, non-zero display box.');
+                if(style!=='south'){
+                  assert.equal(detail.color,'rgb(111, 77, 44)',item.rootId+' '+style+' Bhava Roman label '+detail.text+' uses the high-contrast house-label colour.');
+                  assert.ok(Number(detail.zIndex)>=4,item.rootId+' '+style+' Bhava Roman label '+detail.text+' stays above planet rows.');
+                }
+              }
+            }
             if(style==='south'){
               for(const entry of labels){
                 const expected=bhavaHousesBySign[entry.sign].map(house=>roman[house-1]);
