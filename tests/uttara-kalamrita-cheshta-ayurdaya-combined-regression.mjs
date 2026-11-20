@@ -102,31 +102,45 @@ for(const [planet,tamilName] of Object.entries(tamil)){
  near(independentlyPublishedOrbital.virupa,publishedInputsExpectedVirupa[planet],
    .0000015,planet+' IMD published source input Cheshta Virupa');
  const orbitalEvidence=s.evidence?.cheshtaSource;
- yes(orbitalEvidence?.method==='BV_RAMAN_FORMULA_EPHEMERIS_TRUE_LONGITUDE_RESEARCH_MEAN_SHEEGHROCCA'&&orbitalEvidence.numericallyCertified===false,
-   planet+' live uses B.V. Raman classical-formula candidate, not speed buckets');
+ yes(s.method==='TRUE_BPHS_SHADBALA_NAELOS_DE440'&&
+   s.referenceFrameId==='NAELOS_TRUE_ECLIPTIC_OF_DATE_EFFECTIVE_LAHIRI_V1',
+   planet+' live Shadbala uses TRUE BPHS NAELOS in the Effective Lahiri frame');
+ yes(orbitalEvidence?.method==='TRUE_BPHS_CH27_V365_MEAN_NAELOS_TRUE_LONGITUDE'&&
+   orbitalEvidence.trueLongitudeHistoricalCertified===false&&
+   orbitalEvidence.referenceFrameId===s.referenceFrameId&&
+   orbitalEvidence.epochJdUt===s.evidence?.epochJdUt&&
+   [orbitalEvidence.meanSunFrameId,orbitalEvidence.meanPlanetFrameId,
+    orbitalEvidence.truePlanetFrameId,orbitalEvidence.sheeghroccaFrameId]
+    .every(frame=>frame===s.referenceFrameId),
+   planet+' five-graha Cheshta uses V365 mean inputs and NAELOS true longitude, aligned to same epoch/frame but not historically certified');
  const liveVirupa=s.components.cheshta;
  const discrepancy=Math.abs(liveVirupa-independentlyPublishedOrbital.virupa);
- yes(Number.isFinite(liveVirupa)&&orbitalEvidence?.trueLongitudeHistoricalCertified===false,
-    planet+' Raman Cheshta remains numerical candidate pending historical input certification');
+ yes(Number.isFinite(liveVirupa)&&Number.isFinite(discrepancy),
+    planet+' BPHS Ch27 Cheshta and independent IMD input diagnostic are both numeric');
  yes(s.classicalCertified===false&&s.provisional===true,
    planet+' shall NOT be classically certified');
  verifiedNoFusion.push({
-  planet,liveDiscreteVirupa:liveVirupa,
+  planet,liveBphsCheshtaVirupa:liveVirupa,
   officialImdReferenceVirupa:+independentlyPublishedOrbital.virupa.toFixed(6),
   absoluteDifferenceVirupa:+discrepancy.toFixed(6),
-  trueSource:'2026-03-22 official IMD printed Nirayana true',
-  meanSource:'2026-03-22 official IMD Bija-corrected traditional mean',
-  liveAstronomicalFrame:'Swiss Lahiri; not to be fused with IMD planetary mean',
+  trueSource:'2026-03-22 official IMD printed Nirayana true (diagnostic only)',
+  meanSource:'2026-03-22 official IMD Bija-corrected traditional mean (diagnostic only)',
+  liveAstronomicalFrame:'NAELOS DE440 apparent geocentric True Longitude in Effective Lahiri sidereal frame',
   liveFiveGrahaClassicalCheshtaCertified:false
  });
 }
-for(const planet of ['சூரியன்','சந்திரன்']){
+for(const [planet,method,kalaComponent] of [
+ ['சூரியன்','BPHS_CH27_SUN_AYANA_BALA','ayana'],
+ ['சந்திரன்','BPHS_CH27_MOON_PAKSHA_BALA','paksha']
+]){
  const s=live.chart.planets.find(p=>p.name===planet)?.strength6;
  yes(s&&s.classicalCertified===false,
      planet+' no false full Shadbala certificate');
- yes(s.evidence?.cheshtaSource?.method==='BV_RAMAN_SIXFOLD_CHESTA_LUMINARIES_ZERO',
-     planet+' Sun/Moon sixfold Cheshta follows the B.V. Raman source-specific rule');
- near(s.components.cheshta,0,1e-12,planet+' sixfold Cheshta is distinct from Ishta/Kashta special Chesta-for-Phala');
+ yes(s.evidence?.cheshtaSource?.method===method&&
+     s.evidence.cheshtaSource.referenceFrameId===s.referenceFrameId,
+     planet+' luminary Cheshta follows the distinct BPHS component rule');
+ near(s.components.cheshta,s.components.kala[kalaComponent],1e-12,
+     planet+' sixfold Cheshta equals its BPHS '+kalaComponent+' Bala input');
 }
 yes(verifiedNoFusion.length===5,'all five traditional mean-vs-speed comparisons');
 console.log(JSON.stringify({
@@ -1160,8 +1174,8 @@ console.log(JSON.stringify({
  modernVsClassicalDiagnostic:samples,
  independentHistoricalClassicalOracleCount:0,
  historicalTrueLongitudeCertified:false,natalCheshtaCertified:false,
- sevenPlanetShadbalaCertified:false,productionStrengthChanged:true,productionEngine:'B.V. Raman strength6',
- note:'Swiss modern Lahiri is NOT same frame as unmodified Saura, so 25 differences are NOT errors or certification references'
+ sevenPlanetShadbalaCertified:false,productionStrengthChanged:true,productionEngine:'TRUE BPHS NAELOS DE440 Effective Lahiri',
+ note:'IMD 2026 printed examples are independent diagnostic inputs only; they are not substituted into arbitrary natal-epoch NAELOS Effective Lahiri calculations'
 }));
 }
 
