@@ -78,6 +78,17 @@ const syntheticLongitude = {
   eventWindowStatus: 'PASS',
   certificateId: 'TEST_FIXTURE_ONLY_LONGITUDE_CERTIFICATE'
 };
+const syntheticNatalEpoch = {
+  status: 'PASS',
+  exactBirthInstantUsed: true,
+  julianDay: 2449520.5,
+  allFivePlanets: true,
+  meanTrueSheeghroccheyaSameFrame: true,
+  frame: 'traditional-Saura-nirayana',
+  certifiedModelApplied: true,
+  modelCertificateId: 'TEST_FIXTURE_ONLY_VALIDATED_MODEL',
+  fallbackOrUnverifiedInterpolationUsed: false
+};
 const syntheticYuddha = {
   status: 'PASS',
   eligiblePlanets: [...CLASSICAL_NATAL_SCOPE.visiblePlanets],
@@ -96,6 +107,7 @@ const syntheticParity = {
 const syntheticPass = evaluateNatalClassicalCertification({
   birthYear: 1994,
   longitudeEvidence: syntheticLongitude,
+  natalEpochEvidence: syntheticNatalEpoch,
   balaEvidenceRows: completeRows,
   yuddhaEvidence: syntheticYuddha,
   nodeBrowserParity: syntheticParity,
@@ -104,6 +116,20 @@ const syntheticPass = evaluateNatalClassicalCertification({
 eq(syntheticPass.classicalCertified, true,
   'synthetic fixture proves final gate requires and accepts every completed proof');
 eq(syntheticPass.provisional, false, 'synthetic complete fixture is not provisional');
+
+const annualOnlyResult = evaluateNatalClassicalCertification({
+  birthYear: 1994,
+  longitudeEvidence: syntheticLongitude,
+  natalEpochEvidence: null,
+  balaEvidenceRows: completeRows,
+  yuddhaEvidence: syntheticYuddha,
+  nodeBrowserParity: syntheticParity,
+  fallbackUsed: false
+});
+eq(annualOnlyResult.classicalCertified, false,
+  'annual sample coverage alone cannot certify a specific natal birth instant');
+ok(annualOnlyResult.blockers.includes('Exact natal birth-epoch evidence is missing'),
+  'missing exact natal-epoch evidence is reported explicitly');
 
 // Real current Saura research coverage must not pass the final historic gate.
 const currentCoverage = {
@@ -118,6 +144,7 @@ const currentCoverage = {
 const actualCurrentResult = evaluateNatalClassicalCertification({
   birthYear: 1994,
   longitudeEvidence: currentCoverage,
+  natalEpochEvidence: null,
   balaEvidenceRows: [],
   yuddhaEvidence: {...syntheticYuddha, independentReferenceVerified: false},
   nodeBrowserParity: syntheticParity,
@@ -133,6 +160,7 @@ ok(actualCurrentResult.blockers.length >= 8,
 const outOfRange = evaluateNatalClassicalCertification({
   birthYear: 2400,
   longitudeEvidence: syntheticLongitude,
+  natalEpochEvidence: syntheticNatalEpoch,
   balaEvidenceRows: completeRows,
   yuddhaEvidence: syntheticYuddha,
   nodeBrowserParity: syntheticParity,
