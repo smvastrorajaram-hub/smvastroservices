@@ -976,11 +976,13 @@ try {
   await page.$eval('#calDate', (el, date) => {
     el.value = date;
     el.dispatchEvent(new Event('change', { bubbles: true }));
-  }, '2026-11-20');
+  }, '2026-11-21');
   await page.waitForFunction(() => {
     const status = document.querySelector('#calStatus')?.textContent || '';
     const window = document.querySelector('#calChandrashtamaPeriods .cal-chandra-window.is-selected-date');
-    return status.includes('2026-11-20') &&
+    // Use a date after the workflow's current day so the app correctly follows
+    // its future-selected-date path rather than the separate "active today" path.
+    return status.includes('2026-11-21') &&
       window?.querySelector('.cal-chandra-rasi-period strong')?.textContent === 'Pisces';
   }, { timeout: 120000 });
   const simhaStarOptions = await page.$$eval('#calStar option', options => options.map(option => option.value));
