@@ -173,16 +173,42 @@ function chestaFromRamanInputs(planet,sourceInputs){
  const signed=separation>180?separation-360:separation,midpoint=norm360(mean+signed/2);
  const kendra=norm360(sheeghrocca-midpoint),reduced=kendra>180?360-kendra:kendra,value=round3(reduced/3);
  if(!finite(value)||value<0||value>60)throw new RangeError('Invalid B.V. Raman Chesta Bala for '+planet);
- return {value,available:true,method:'BV_RAMAN_CHAPTER_VI_VERIFIED_CLASSICAL_LONGITUDES',
+ const evidence=sourceInputs?.trueLongitudeEvidence??null;
+ const naelosEvidence=!!evidence&&
+  evidence.certificateId==='SMV-ASTRO-NAELOS-DE440-TRUE-LONGITUDE-25-2026-11-20'&&
+  evidence.status==='PASS'&&
+  evidence.source==='NAELOS Ephemeris 0.1.3'&&
+  evidence.independentEphemeris==='NASA/JPL DE440'&&
+  evidence.sampleCount===25&&
+  finite(evidence.maxAbsTropicalResidualArcsec)&&
+  evidence.maxAbsTropicalResidualArcsec<=5;
+ return Object.freeze({
+  value,available:true,
+  method:naelosEvidence?'BV_RAMAN_CHAPTER_VI_NAELOS_DE440_TRUE_LONGITUDE':'BV_RAMAN_CHAPTER_VI_VERIFIED_CLASSICAL_LONGITUDES',
   meanLongitude:mean,trueLongitude:actual,sheeghroccaLongitude:sheeghrocca,midpoint,reducedChestaKendra:reduced,
-  trueLongitudeHistoricalCertified:true,numericallyCertified:true};
+  trueLongitudeHistoricalCertified:true,numericallyCertified:true,
+  ...(naelosEvidence?{trueLongitudeEvidence:Object.freeze({
+    certificateId:evidence.certificateId,
+    status:evidence.status,
+    source:evidence.source,
+    independentEphemeris:evidence.independentEphemeris,
+    sampleCount:evidence.sampleCount,
+    maxAbsTropicalResidualArcsec:evidence.maxAbsTropicalResidualArcsec,
+    rmsTropicalResidualArcsec:evidence.rmsTropicalResidualArcsec,
+    validationScope:evidence.validationScope
+  })}:{})
+ });
+}
+export function calculateBVRamanChestaFromInputs(planet,sourceInputs){
+ if(!PLANETS.includes(planet))throw new RangeError('Seven classical planets only');
+ return chestaFromRamanInputs(planet,sourceInputs);
 }
 function chestaBala(planet,jdUt,planetRow,printedInputs){
  // In Raman Ch. VI the sixfold Cheshta is motional/retrograde strength.
  // The Sun/Moon special calculations in Ch. X are only for Ishta/Kashta Phala.
  if(planet==='சூரியன்'||planet==='சந்திரன்')return {value:0,available:true,method:'BV_RAMAN_SIXFOLD_CHESTA_LUMINARIES_ZERO',evidence:'Raman Ch. VI motional bala; Ch. X special Chesta-for-Phala remains separate'};
  const explicit=printedInputs||planetRow?.ramanChestaInputs;
- if(explicit)return chestaFromRamanInputs(planet,explicit);
+ if(explicit)return calculateBVRamanChestaFromInputs(planet,explicit);
  const english=EN[planet],inputs=sauraFivePlanetCheshtaInputs(jdUt,english);
  // Use the actual true longitude produced by the horoscope ephemeris. The former
  // production path reconstructed a second, approximate "true" longitude with a
