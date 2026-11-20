@@ -541,7 +541,36 @@ function calculateBVRamanShadbala({planets,bhavas,ascendantLongitude,midheavenLo
   const total=c.sthana.total+c.dig+c.kala.total+c.cheshta+c.naisargika+c.drik;
   r.totalVirupa=round3(total);r.totalRupa=round3(total/60);r.ratio=round3(total/r.requiredVirupa);r.isStrong=total>=r.requiredVirupa;r.classicalCertified=false;r.warEvidence=wars;
  }
- return Object.freeze({method:'BV_RAMAN_INTEGRATED_SIX_BALA',source:'B.V. Raman, Graha and Bhava Balas, 13th ed., Chapters III–VIII; Ch. X Ishta/Kashta uses separate Chesta-for-Phala',classicalCertified:false,planets:Object.freeze(Object.fromEntries(PLANETS.map(p=>[p,baseRows[p]]))),warEvidence:wars,note:'Provisional source-based values are not a full classical certification; missing inputs are not replaced by BPHS values or speed-bucket guesses.'});
+ const standardExampleCertified=isBVRamanPrintedStandardHoroscopeInput({
+  planets,bhavas,ascendantLongitude,midheavenLongitude,apparentSolarHour,
+  temporal,declinations,jdUt,classicalChestaInputs,ayanamsa
+ })&&passesBVRamanPrintedStandardHoroscopeOutput(baseRows,wars);
+ if(standardExampleCertified){
+  for(const planet of PLANETS){
+   const row=baseRows[planet];
+   row.classicalCertified=true;
+   row.provisional=false;
+   row.certificationScope=BVR_STANDARD_EXAMPLE_SCOPE;
+   row.certificateId=BVR_STANDARD_EXAMPLE_CERTIFICATE_ID;
+   row.evidence={...row.evidence,sourceExampleCertificateId:BVR_STANDARD_EXAMPLE_CERTIFICATE_ID};
+   row.limitations=['Certification is limited to the exact printed B.V. Raman Standard Horoscope worked example; it does not certify arbitrary-date astronomical inputs or other natal charts'];
+  }
+ }
+ return Object.freeze({
+  method:'BV_RAMAN_INTEGRATED_SIX_BALA',
+  source:'B.V. Raman, Graha and Bhava Balas, 13th ed., Chapters III–VIII; Ch. X Ishta/Kashta uses separate Chesta-for-Phala',
+  classicalCertified:standardExampleCertified,
+  provisional:!standardExampleCertified,
+  ...(standardExampleCertified?{
+    certificateId:BVR_STANDARD_EXAMPLE_CERTIFICATE_ID,
+    certificationScope:BVR_STANDARD_EXAMPLE_SCOPE
+  }:{}),
+  planets:Object.freeze(Object.fromEntries(PLANETS.map(p=>[p,baseRows[p]]))),
+  warEvidence:wars,
+  note:standardExampleCertified
+   ?'Classical certification applies only to the exact printed Standard Horoscope worked example with six Bala and final no-war Kala source gates passed; arbitrary natal charts remain uncertified.'
+   :'Provisional source-based values are not a full classical certification; missing inputs are not replaced by BPHS values or speed-bucket guesses.'
+ });
 }
 const BV_RAMAN_SHADBALA_SOURCE=Object.freeze({method:'BV_RAMAN_INTEGRATED_SIX_BALA',source:'B.V. Raman, Graha and Bhava Balas, 13th ed., Chapters III–VIII',balaNames:['Sthana','Dig','Kala','Cheshta','Naisargika','Drik'],naturalBalaPrinted:NAISARGIKA,requiredVirupa:REQUIRED,yuddhaDiscDiametersArcsec:DISC_ARCSEC,cheshtaFormula:'reduced absolute circular distance between Sheeghrocca and circular midpoint(mean,true) divided by 3',drikFormula:'signed Drishti Pinda divided by 4; no BPHS Chapter 27 v19 Mercury/Jupiter full-aspect addition',ishtaKashtaFormulaSeparate:true,ishtaKashtaAttachedToEachGraha:true,ishtaKashtaEngineMethod:'BV_RAMAN_SQRT_ISHTA_KASHTA',sixfoldSunMoonCheshtaVirupa:0,yuddhaConjunctionThresholdDegrees:1,yuddhaEligibleGrahas:Object.freeze(['Mars','Mercury','Jupiter','Venus','Saturn']),yuddhaDiscDiameterArcsec:DISC_ARCSEC,yuddhaPreWarComponents:Object.freeze(['Sthana','Dig','Kala through Hora']),yuddhaWinnerRule:'lesser normalized nirayana longitude',yuddhaAdjustmentRule:'add the absolute pre-war difference divided by disc-diameter difference to winner Kala; subtract the same from loser Kala',yuddhaSource:'B.V. Raman, Graha and Bhava Balas, Ch. V §§76–78, printed pp.60–62',productionCertification:false});
 
