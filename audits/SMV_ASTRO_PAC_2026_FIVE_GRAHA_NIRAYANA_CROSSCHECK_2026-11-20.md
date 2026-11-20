@@ -54,7 +54,7 @@ The TT comparison contract is explicit in the machine-readable test output. Exac
 
 ## 3. Full-year numerical result — 00:00 TT
 
-**GitHub Actions run #1214:** https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44771494887 — complete workflow SUCCESS using 00:00 TT.
+**Latest TT-only GitHub Actions run #1229:** https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44778196616 — complete integrated workflow SUCCESS; the 00:00 TT anchor and full-year comparisons both passed.
 
 The full-year regression verified:
 
@@ -162,15 +162,15 @@ These are candidate dates for additional high-resolution sampling. They are not 
 
 ## 5. Three-date hard-coded anchor fixture
 
-The separate hard-coded DMS regression provides an independently reviewed, fixed transcription of 15 entries on 1 January, 1 July and 31 December 2026. It passed 135 assertions at 00:00 TT in run #1207:
+The separate hard-coded DMS regression provides an independently reviewed, fixed transcription of 15 entries on 1 January, 1 July and 31 December 2026. It passed 135 assertions at 00:00 TT in the latest integrated run #1229:
 
-https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44769611357
+https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44778196616
 
 This anchor test complements—not replaces—the full-year PDF parser test.
 
 ## 6. TT confirmation and time-scale policy
 
-The project keeps **TT only** for the PAC daily comparison. The project owner reports that the received email confirms TT as the appropriate time scale. The test uses the Gregorian date's 00:00:00 TT Julian Day directly and calls `swe.calc(jdTt, ...)`; there is no UTC input, UTC-to-TT conversion, or UT1 adjustment in this PAC comparison. The earlier UTC-only diagnostic runs (#1222–#1225) are superseded and are not used for the present comparison or certificate.
+The project keeps **TT only** for the PAC daily comparison. The project owner reports that the received email confirms TT as the appropriate time scale. The test uses the Gregorian date's 00:00:00 TT Julian Day directly and calls `swe.calc(jdTt, ...)`; there is no UTC input, UTC-to-TT conversion, or UT1 adjustment in this PAC comparison. The temporary UTC-only diagnostic commits/runs (#1218–#1225) are superseded and are not used for the present comparison or certificate.
 
 ## 7. Interpretation and limits
 
