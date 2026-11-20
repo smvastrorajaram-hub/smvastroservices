@@ -368,6 +368,88 @@ function applyRamanYuddha(rows,planets){
  return {resolved:unresolved.length===0,pairs,unresolved,source:'B.V. Raman, Graha and Bhava Balas, Ch. V §§76–78, printed pp.60–62',diameterArcsec:DISC_ARCSEC};
 }
 
+const BVR_STANDARD_EXAMPLE_CERTIFICATE_ID='SMV-BVR-PRINTED-STANDARD-HOROSCOPE-SIX-BALA-YUDDHA-2026-11-20';
+const BVR_STANDARD_EXAMPLE_SCOPE='BV_RAMAN_PRINTED_STANDARD_HOROSCOPE_ONLY';
+const BVR_STANDARD_EXAMPLE_FRAME='BV_RAMAN_PRINTED_STANDARD_HOROSCOPE_CHAPTER_VI';
+const BVR_STANDARD_EXAMPLE_PROVENANCE='B.V. Raman, Graha and Bhava Balas, 13th ed., Chapter VI, Examples 49–51, printed Standard Horoscope';
+const BVR_STANDARD_EXAMPLE_PLANETS=Object.freeze({
+ 'சூரியன்':180+53/60+55/3600,
+ 'சந்திரன்':311+17/60+19/3600,
+ 'செவ்வாய்':229+30/60+34/3600,
+ 'புதன்':181+31/60+34/3600,
+ 'குரு':84+0/60+49/3600,
+ 'சுக்கிரன்':171+9/60+56/3600,
+ 'சனி':124+22/60+41/3600
+});
+const BVR_STANDARD_EXAMPLE_CHESHTA=Object.freeze({
+ 'செவ்வாய்':Object.freeze({meanLongitude:266.34,trueLongitude:229.50,sheeghroccaLongitude:181.23}),
+ 'புதன்':Object.freeze({meanLongitude:181.23,trueLongitude:181.52,sheeghroccaLongitude:174.49}),
+ 'குரு':Object.freeze({meanLongitude:66.91,trueLongitude:84.01,sheeghroccaLongitude:181.23}),
+ 'சுக்கிரன்':Object.freeze({meanLongitude:181.23,trueLongitude:171.16,sheeghroccaLongitude:158.35}),
+ 'சனி':Object.freeze({meanLongitude:111.23,trueLongitude:124.39,sheeghroccaLongitude:181.23})
+});
+const BVR_STANDARD_EXAMPLE_ORACLE=Object.freeze({
+ 'சூரியன்':Object.freeze({sthana:198,dig:48.10,kala:102.98,cheshta:0,naisargika:60,drik:15.86,total:424.94}),
+ 'சந்திரன்':Object.freeze({sthana:126.50,dig:31.56,kala:202.04,cheshta:0,naisargika:51.43,drik:-21.73,total:389.80}),
+ 'செவ்வாய்':Object.freeze({sthana:172.06,dig:55.70,kala:30.06,cheshta:22.23,naisargika:17.14,drik:0.95,total:298.14}),
+ 'புதன்':Object.freeze({sthana:279.50,dig:21.09,kala:192.79,cheshta:2.30,naisargika:25.70,drik:15.64,total:537.02}),
+ 'குரு':Object.freeze({sthana:157.58,dig:11.50,kala:211.18,cheshta:35.26,naisargika:34.28,drik:-16.04,total:433.76}),
+ 'சுக்கிரன்':Object.freeze({sthana:178.20,dig:15.15,kala:115.53,cheshta:5.95,naisargika:42.85,drik:18.47,total:376.15}),
+ 'சனி':Object.freeze({sthana:177.30,dig:58.02,kala:116.97,cheshta:21.14,naisargika:8.57,drik:7.21,total:389.21})
+});
+function isBVRamanPrintedStandardHoroscopeInput({planets,bhavas,ascendantLongitude,midheavenLongitude,apparentSolarHour,temporal,declinations,jdUt,classicalChestaInputs,ayanamsa}={}){
+ const near=(actual,expected,tolerance=1e-10)=>finite(actual)&&Math.abs(actual-expected)<=tolerance;
+ if(!Array.isArray(bhavas)||bhavas.length!==0||
+    !near(ascendantLongitude,298+27/60)||!near(midheavenLongitude,216+30/60)||
+    !near(apparentSolarHour,14.336)||
+    !near(jdUt,Date.UTC(1918,9,16,14,6,16)/86400000+2440587.5)||
+    !near(ayanamsa,(202+10/60)-(180+53/60+55/3600)))return false;
+ if(!temporal||temporal.abdaLord!=='சனி'||temporal.masaLord!=='புதன்'||
+    temporal.dinaLord!=='புதன்'||temporal.horaLord!=='சந்திரன்'||
+    temporal.tribhagaLord!=='சனி'||
+    temporal.solarTimeMethod!=='independent standard-chart fixture')return false;
+ const expectedDeclinations={
+  'சூரியன்':-8.75,'சந்திரன்':-10.75,'செவ்வாய்':-22.528,
+  'புதன்':-9,'குரு':23.5,'சுக்கிரன்':-4.96,'சனி':13
+ };
+ for(const planet of PLANETS){
+  const row=Array.isArray(planets)?planets.find(p=>p?.name===planet):null;
+  if(!row||!near(row.longitude,BVR_STANDARD_EXAMPLE_PLANETS[planet])||
+     !near(declinations?.[planet],expectedDeclinations[planet]))return false;
+ }
+ for(const planet of Object.keys(BVR_STANDARD_EXAMPLE_CHESHTA)){
+  const input=classicalChestaInputs?.[planet],expected=BVR_STANDARD_EXAMPLE_CHESHTA[planet];
+  if(!input||input.sourceProvenance!==BVR_STANDARD_EXAMPLE_PROVENANCE||
+     input.referenceFrames?.mean!==BVR_STANDARD_EXAMPLE_FRAME||
+     input.referenceFrames?.true!==BVR_STANDARD_EXAMPLE_FRAME||
+     input.referenceFrames?.sheeghrocca!==BVR_STANDARD_EXAMPLE_FRAME||
+     !near(input.meanLongitude,expected.meanLongitude)||
+     !near(input.trueLongitude,expected.trueLongitude)||
+     !near(input.sheeghroccaLongitude,expected.sheeghroccaLongitude))return false;
+ }
+ return true;
+}
+function passesBVRamanPrintedStandardHoroscopeOutput(rows,wars){
+ if(!wars?.resolved||!Array.isArray(wars.pairs)||wars.pairs.length!==0)return false;
+ for(const planet of PLANETS){
+  const row=rows?.[planet],c=row?.components,e=BVR_STANDARD_EXAMPLE_ORACLE[planet];
+  if(!row?.available||!c||!finite(row.totalVirupa)||!finite(row.totalRupa)||
+     !finite(c.sthana?.total)||!finite(c.dig)||!finite(c.kala?.total)||
+     !finite(c.cheshta)||!finite(c.naisargika)||!finite(c.drik))return false;
+  const tolerances={sthana:0.06,dig:planet==='புதன்'?0.08:0.06,kala:0.08,
+    cheshta:0.02,naisargika:0.001,drik:0.08};
+  for(const key of Object.keys(tolerances)){
+   const actual=key==='sthana'?c.sthana.total:key==='kala'?c.kala.total:c[key];
+   if(Math.abs(actual-e[key])>tolerances[key])return false;
+  }
+  if(Math.abs(row.totalVirupa-e.total)>0.25||
+     Math.abs(row.totalRupa-row.totalVirupa/60)>0.001||
+     Math.abs(c.kala.yuddha||0)>1e-10||
+     row.warEvidence?.resolved!==true)return false;
+ }
+ return true;
+}
+
 /** Full seven-graha B.V. Raman Shadbala. Inputs are never guessed or replaced. */
 function ramanIshtaKashtaForPlanet({planet,sunRow,moonRow,ayanamsa,uchchaBala,sixfoldCheshtaBala,sixfoldCheshtaSource}){
  if(!finite(uchchaBala)||(planet==='சூரியன்'&&!finite(ayanamsa)))throw new TypeError('B.V. Raman Ishta/Kashta needs engine Uchcha Bala and (for Sun) Lahiri ayanamsa');
