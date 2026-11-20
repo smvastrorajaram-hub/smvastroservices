@@ -9,8 +9,8 @@ const fakeFetch=async url=>{
  const u=new URL(url);requests.push(u);
  if(u.searchParams.get('username')!=='fixture_user')throw Error('Wrong GeoNames credentials');
  if(u.pathname==='/searchJSON')return {ok:true,json:async()=>({geonames:[
-  {name:'London',adminName1:'England',countryName:'United Kingdom',lat:'51.5074',lng:'-0.1278',geonameId:2643743,countryCode:'GB'},
-  {name:'New York',adminName1:'New York',countryName:'United States',lat:'40.7128',lng:'-74.0060',geonameId:5128581,countryCode:'US'}]})};
+  {name:'London',adminName1:'England',adminName2:'Greater London',countryName:'United Kingdom',lat:'51.5074',lng:'-0.1278',geonameId:2643743,countryCode:'GB'},
+  {name:'New York',adminName1:'New York',adminName2:'New York County',countryName:'United States',lat:'40.7128',lng:'-74.0060',geonameId:5128581,countryCode:'US'}]})};
  if(u.pathname==='/timezoneJSON')return {ok:true,json:async()=>({timezoneId:'Europe/London',countryCode:'GB',rawOffset:0,dstOffset:1})};
  throw Error('Unexpected provider endpoint');
 };
@@ -25,6 +25,7 @@ async function call(route,query){const r=response();await methods[route]({query}
  const search=await call('/api/locations/search',{q:'Lon',limit:70,lang:'en'});
  ok(search.statusCode===200 && search.body.rows.length===2,'Search results');
  ok(search.body.rows[0].timezone===''&&search.body.rows[0].timezoneSource==='geonames-pending','No guessed timezone');
+ ok(search.body.rows[0].admin2==='Greater London','Selected GeoNames place includes its district/admin2 value');
  ok(requests[0].searchParams.get('maxRows')==='70','70 results cap');
  ok(requests[0].searchParams.get('name_startsWith')==='Lon','GeoNames autocomplete');
  const cached=await call('/api/locations/search',{q:'Lon',limit:70,lang:'en'});
