@@ -9,7 +9,8 @@
 - The existing B.V. Raman and C.G. Rajan certificates remain unchanged.
 - A new seven-graha Standard Horoscope test checks the six-component sum, Rupa, required-strength ratio, threshold decision and total-based ranking for the B.V. Raman printed worked example.
 - The printed worked example can produce a complete total because its five planetary Cheshta input triples are transcribed from that same source example.
-- A new natal calculation does not have independently verified same-frame inputs for the five non-luminary planets. The previous path combined Saura traditional mean/Sheeghrocchea with a Swiss/Lahiri chart true longitude. Those values do not constitute one verified B.V. Raman Chapter VI input triple.
+- The existing natal calculation path has no independent, date-specific same-frame input oracle for the five non-luminary planets. Its current path combines Saura traditional mean/Sheeghrocchea with a Swiss/Lahiri chart true longitude. Those values do not constitute one verified B.V. Raman Chapter VI input triple.
+- This PR is deliberately audit-only: it does not change the production calculation, customer display, report selection, cache versions or app behaviour.
 
 ## Mandatory blockers before arbitrary natal totals can be certified
 
@@ -20,13 +21,13 @@
 5. **Graha Yuddha boundaries:** Independently verify source-specific eligibility, winner/loser and pre-war adjustments at conjunction boundaries. Unresolved wars must withhold affected totals.
 6. **Broader epoch coverage:** After the independent oracle inputs exist, run a predeclared multi-epoch and boundary-heavy natal matrix. One Standard Horoscope fixture is not an arbitrary-date certificate.
 
-## Calculation safety rule
+## Required safety rule for a future, separately approved production correction
 
-For any graha whose required six-Bala component is unavailable, preserve the verified partial component evidence but set `complete=false` and withhold `totalVirupa`, `totalRupa`, `ratio` and `isStrong`. The UI must show unavailable, not convert a missing total into zero or a false “below minimum” result.
+For any graha whose required six-Bala component is unavailable, preserve verified partial component evidence but set `complete=false` and withhold `totalVirupa`, `totalRupa`, `ratio` and `isStrong`. Customer-facing reports should show unavailable, not convert a missing total into zero or a false “below minimum” result. This behaviour is not introduced by this audit-only PR; it requires a separately approved production change after compatibility review.
 
 ## Release boundaries
 
 - No production merge or deployment is part of this research PR.
-- The three application service-worker cache releases are bumped together for the calculation-source change.
+- No production source, app Service Worker, cache release or customer-facing report is changed.
 - No origin-wide storage/cache clearing and no user-data deletion is introduced.
 - Full arbitrary natal `classicalCertified` remains false until all blockers and independent Actions evidence are satisfied.
