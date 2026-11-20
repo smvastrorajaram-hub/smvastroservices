@@ -36,11 +36,11 @@ const LATIN_CONSONANTS=[
   ['h','ஹ'],['f','ஃப'],['x','க்ஸ'],['z','ஸ']
 ];
 const VOWELS=[
-  ['aa','ா'],['a',''],['ii','ீ'],['ee','ீ'],['i','ி'],
-  ['uu','ூ'],['oo','ூ'],['u','ு'],['ai','ை'],['au','ௌ'],
-  ['aa','ா'],['e','ெ'],['ē','ே'],['ei','ே'],['o','ொ'],['ō','ோ']
+  ['aa','ா'],['ii','ீ'],['ee','ே'],['uu','ூ'],['oo','ோ'],
+  ['ai','ை'],['au','ௌ'],['ē','ே'],['ei','ே'],['ō','ோ'],
+  ['a',''],['i','ி'],['u','ு'],['e','ெ'],['o','ொ']
 ];
-const INDEPENDENT={a:'அ',aa:'ஆ',i:'இ',ii:'ஈ',ee:'ஈ',u:'உ',uu:'ஊ',oo:'ஊ',e:'எ',eea:'ஏ',ē:'ஏ',ai:'ஐ',o:'ஒ',ō:'ஓ',au:'ஔ'};
+const INDEPENDENT={a:'அ',aa:'ஆ',i:'இ',ii:'ஈ',ee:'ஏ',u:'உ',uu:'ஊ',oo:'ஓ',e:'எ',ē:'ஏ',ai:'ஐ',o:'ஒ',ō:'ஓ',au:'ஔ'};
 const normalizeLatin=value=>String(value??'').normalize('NFC').toLowerCase()
   .replace(/[āá]/g,'aa').replace(/[īí]/g,'ii').replace(/[ūú]/g,'uu')
   .replace(/[ēé]/g,'ee').replace(/[ōó]/g,'oo').replace(/ṃ/g,'m').replace(/ñ/g,'ny')
