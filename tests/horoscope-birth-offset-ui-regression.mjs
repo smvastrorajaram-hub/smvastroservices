@@ -14,7 +14,7 @@ class FakeNode{
   emit(type){for(const fn of this.listeners[type]||[])fn();}
 }
 const ids=[
-  'birthUtcOffset','smvBirthOffsetStatus',
+  'birthUtcOffset','tamilBirthUtcOffset','smvBirthOffsetStatus',
   ...['english','tamil'].flatMap(p=>[p+'Dob',p+'Tob',p+'BirthTimezone',p+'BirthPlace']),
   'clearEnglishHoroscope','clearTamilHoroscope'
 ];
@@ -75,6 +75,7 @@ eq(out.value,'10.5','Lord Howe winter +10:30');
 nodes.englishBirthTimezone.value='';
 nodes.englishBirthTimezone.emit('change');
 eq(out.value,'','Clearing IANA zone clears previously displayed value');
+eq(nodes.tamilBirthUtcOffset.value,'','Clearing timezone also clears the Tamil offset mirror');
 eq(out.dataset.offsetVerified,'0','No stale verified state after clearing zone');
 nodes.englishBirthTimezone.value='Invalid/Zone';
 nodes.englishBirthTimezone.emit('input');
