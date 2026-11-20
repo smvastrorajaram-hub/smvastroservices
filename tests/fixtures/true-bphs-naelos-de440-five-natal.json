@@ -2,6 +2,12 @@
   "certificateId": "SMV-ASTRO-TRUE-BPHS-NAELOS-DE440-25-2026-11-21",
   "status": "PASS",
   "scope": "Five specified Perambalur natal epochs × Mercury, Venus, Mars, Jupiter and Saturn; NAELOS True Longitude / V365 Mean and Sheeghroccheya / BPHS Chapter 27 Cheshta regression",
+  "sourceEvidence": {
+    "certificateId": "SMV-ASTRO-NAELOS-DE440-TRUE-LONGITUDE-25-2026-11-20",
+    "validationRun": "44785555352",
+    "validationTest": "tests/naelos-de440-five-natal-true-longitude.mjs",
+    "scope": "Five named Perambalur natal instants × five planets; apparent tropical NAELOS DE440 compared with Swiss tropical at the same TT/ET instant"
+  },
   "source": {
     "engine": "NAELOS Ephemeris 0.1.3",
     "independentEphemeris": "NASA/JPL DE440",
