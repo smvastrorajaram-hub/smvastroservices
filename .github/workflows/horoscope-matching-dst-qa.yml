@@ -128,6 +128,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
+      - name: Install pinned dependencies for native Swiss Ephemeris audit
+        run: npm ci
       - name: Check Horoscope source JavaScript syntax
         shell: bash
         run: |
