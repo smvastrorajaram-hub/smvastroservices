@@ -75,6 +75,9 @@ assert.ok(!chartStyleJs.includes("smv-v342-bhava-house-label"), 'No floating lab
 assert.ok(chartStyleJs.includes("if(kind==='bhava')cell.classList.add('smv-v342-bhava-cell');"), 'North/East Bhava cells carry a presentation-only label class.');
 assert.ok(chartStyleJs.includes("if(kind==='bhava'&&String(bhavaHouseLabel||'').trim()){"), 'Each Bhava house label is inserted inside its own chart cell.');
 assert.ok(chartStyleJs.includes("label.className='smv-v342-house-number';"), 'Roman house labels use the normal in-cell number row.');
+assert.ok(chartStyleJs.includes("label.dataset.bhavaRoman=label.textContent;"), 'Original Roman labels are stored before the translation dictionary runs.');
+assert.ok(chartStyleJs.includes('roots().forEach(restoreRomanBhavaLabels);'), 'Original Roman labels are restored after a result-language toggle.');
+assert.ok(chartStyleJs.includes('function restoreRomanBhavaLabels(root){'), 'Live and saved Bhava labels have a dedicated language-safe restore path.');
 assert.ok(chartStyleJs.includes("const bhavaLabel=kind==='bhava'?bhavaHousesBySign[sign].map(romanHouse).join(' / '):'';"), 'East Bhava renders every house mapped to a Sphuta Rasi inside that sign cell.');
 assert.ok(chartStyleCss.includes('.smv-v342-cell.smv-v342-bhava-cell.smv-v342-triangle-cell .smv-v342-house-number{'));
 assert.ok(chartStyleCss.includes('position:static!important;transform:none!important;'), 'Bhava Roman labels stay in normal cell flow and cannot float over planet rows.');
