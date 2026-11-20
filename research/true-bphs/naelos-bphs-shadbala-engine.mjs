@@ -561,11 +561,26 @@ export async function createTrueBphsShadbalaEngine({
     productionIntegrationAllowed:false,
     researchOnly:true,
     async calculate(input={}) {
-      const birth=validateCivilInput(input);
+      const civilBirth=validateCivilInput(input);
+      // Match the earlier NAELOS numerical-validation pathway: convert the
+      // resolved civil UTC instant to UT1 + TT/ET once, then pass the identical
+      // TT epoch directly to NAELOS calc(). Swiss supplies only the clock
+      // conversion and Lahiri ayanamsa; every planetary position remains NAELOS.
+      const utcDate=new Date(civilBirth.utcMs);
+      const swissTime=naelos.swe.utcToJd(
+        utcDate.getUTCFullYear(),utcDate.getUTCMonth()+1,utcDate.getUTCDate(),
+        utcDate.getUTCHours(),utcDate.getUTCMinutes(),
+        utcDate.getUTCSeconds()+utcDate.getUTCMilliseconds()/1000
+      );
+      if(!finite(swissTime?.ut)||!finite(swissTime?.et))
+        fail('UTC-to-UT1/TT time conversion did not return finite Julian days');
+      const birth=Object.freeze({
+        ...civilBirth,jdUt:swissTime.ut,jdTt:swissTime.et,
+        ut1MinusUtcSeconds:(swissTime.ut-jdFromUtcMs(civilBirth.utcMs))*86400
+      });
       const naelosContext={...naelos,latitude:birth.latitude,longitude:birth.longitude};
-      const deltaTDays=eph.deltat(birth.jdUt);
-      const deltaTSeconds=deltaTDays*86400;
-      const jdTt=birth.jdUt+deltaTDays;
+      const deltaTSeconds=(birth.jdTt-birth.jdUt)*86400;
+      const jdTt=birth.jdTt;
 
       // The source transfer is identical to the previously audited five-natal
       // NAELOS pathway: tropical apparent longitude minus the explicit
@@ -679,13 +694,13 @@ export async function createTrueBphsShadbalaEngine({
           date:birth.date,time:birth.time,timeZone:birth.timeZone,
           utcOffsetMinutes:birth.utcOffsetMinutes,latitude:birth.latitude,
           longitude:birth.longitude,utcJd:birth.jdUt,ttJd:jdTt,
-          deltaTSeconds
+          ut1MinusUtcSeconds:birth.ut1MinusUtcSeconds,deltaTSeconds
         }),
         astronomy:Object.freeze({
           ephemeris:'NAELOS Ephemeris 0.1.3',
           source:'NASA/JPL DE440',
           positionDefinition:'apparent geocentric true ecliptic-of-date',
-          timeScale:'Birth civil time resolved to UT1 by the supplied IANA timezone / exact offset; Naelos ΔT converts UT to TT and Naelos converts TT to TDB internally',
+          timeScale:'Birth civil time resolved to UTC from the supplied IANA timezone / exact offset; Swiss swe_utc_to_jd supplies the exact UT1 + TT epoch used by the prior NAELOS parity audit; Naelos converts TT to TDB internally',
           trueLongitudeFrame:'Naelos tropical apparent true ecliptic-of-date longitude − explicit Burgess-1860/Lahiri-precession Saura sidereal offset',
           siderealOffsetDegrees:siderealOffset,
           siderealOffsetRateDegreesPerDay:siderealOffsetRate,
