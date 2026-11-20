@@ -44,11 +44,31 @@ const expectedModulo = {
   Saturn: arc(302, 8),
   Sun: arc(16, 23)
 };
+const rowSums = {};
 for (const [planet, parts] of Object.entries(rows)) {
   const sum = parts.reduce((a, b) => a + b, 0);
-  assert.equal(sum, expectedSums[planet], planet + ' printed three-row sum');
-  assert.equal(fromArc(sum), expectedModulo[planet], planet + ' normalized mean longitude');
+  rowSums[planet] = sum;
+  if (planet === 'Mercury') {
+    // Jacobi p.80 prints 281°50′ + 197°52′ + 57°25′ (=537°07′),
+    // but the same page's Sum row says 537°57′. Preserve this 50′
+    // printed decomposition inconsistency; do not silently repair it.
+    assert.equal(sum, arc(537, 7), 'Mercury three printed addends');
+    assert.equal(expectedSums[planet] - sum, 50, 'Mercury printed Sum-row discrepancy is exactly 50′');
+  } else {
+    assert.equal(sum, expectedSums[planet], planet + ' three-row sum');
+  }
+  assert.equal(fromArc(expectedSums[planet]), expectedModulo[planet],
+    planet + ' normalized longitude from the directly printed Sum row');
 }
+// Jacobi's printed "or" line also appears to carry transcription/printing
+// errors for Mercury (177°07′) and Sun (16°32′). The source Sum rows normalize
+// to 177°57′ and 16°23′ respectively; keep both strings as audited anomalies.
+const printedModuloLine = { Mercury: arc(177, 7), Venus: arc(196, 53),
+  Mars: arc(266, 42), Saturn: arc(302, 8), Sun: arc(16, 32) };
+assert.equal(expectedModulo.Mercury - printedModuloLine.Mercury, 50,
+  'Mercury printed modulo-line discrepancy is 50′');
+assert.equal(expectedModulo.Sun - printedModuloLine.Sun, -9,
+  'Sun printed modulo-line discrepancy is 9′');
 
 // Jacobi Venus worked example, pp.80–81. Table equations and each rounded
 // intermediate are transcribed as printed, then recomposed independently.
@@ -65,7 +85,7 @@ const venus = (() => {
   assert.equal(thrice, arc(17, 58));
   assert.equal(mean - thrice, arc(178, 55));
   const result = thrice + arc(2, 51);
-  return { once, twice, thrice, result, firstCommutation };
+  return { once, twice, thrice, result };
 })();
 assert.equal(venus.result, arc(20, 49), 'Jacobi printed true Venus = 20°49′');
 
@@ -94,6 +114,11 @@ const report = {
   sourceLocator: 'Mean example p.80; true Venus/Saturn examples pp.80–82; Tables I–V pp.84–120',
   epoch: '1168-04-12, mean sunrise at Lanka',
   meanLongitudesChecked: 6,
+  meanTableInternalAnomalies: [
+    'Mercury three-row addends total 537°07′ while printed Sum row states 537°57′',
+    'Mercury printed modulo row states 177°07′ while printed Sum row normalizes to 177°57′',
+    'Sun printed modulo row states 16°32′ while printed Sum row normalizes to 16°23′'
+  ],
   directTrueWorkedExamplesChecked: 2,
   trueResults: { VenusDegrees: 20 + 49 / 60, SaturnDegrees: 301 + 20 / 60 },
   sourceLineage: 'Sūrya-Siddhānta without Bīja; Jacobi states tables were calculated from Warren, Kalasankalita',
