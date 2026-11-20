@@ -28,7 +28,7 @@ function normalizedSource(path) {
   let source = readFileSync(path);
   if (workerPaths.includes(path)) {
     const text = source.toString('utf8');
-    const marker = /(const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*)'[^']+'(\s*:\s*)'[^']+'/;
+    const marker = /(const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*)(?:'[^']+'|[A-Za-z0-9-]+)(\s*:\s*)(?:'[^']+'|[A-Za-z0-9-]+)/;
     if (!marker.test(text)) throw new Error(path + ' does not declare the expected host-specific SMV_CACHE_RELEASE.');
     source = Buffer.from(text.replace(marker, '$1__PAGES_DEV_RELEASE__$2__PRODUCTION_RELEASE__'));
   }
@@ -55,7 +55,7 @@ for (const path of workerPaths) {
   const source = readFileSync(path, 'utf8');
     const marker = /(const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*)'[^']+'(\s*:\s*)'[^']+'/;
   if (!marker.test(source)) throw new Error(path + ' does not declare the expected host-specific SMV_CACHE_RELEASE.');
-  const updated = source.replace(marker, '$1' + pagesRelease + '$2' + productionRelease);
+  const updated = source.replace(marker, `$1'${pagesRelease}'$2'${productionRelease}'`);
   if (updated !== source) writeFileSync(path, updated, 'utf8');
 }
 
