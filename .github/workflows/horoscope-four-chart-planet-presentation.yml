@@ -1,4 +1,5 @@
 name: Horoscope Four-Chart Planet Presentation
+# Random Bhava audit covers worldwide and India-specific Sripati samples.
 on:
   push:
     branches: [main]
