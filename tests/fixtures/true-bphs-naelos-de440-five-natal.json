@@ -12,8 +12,8 @@
     "engine": "NAELOS Ephemeris 0.1.3",
     "independentEphemeris": "NASA/JPL DE440",
     "coordinateOutput": "apparent geocentric tropical longitude on true ecliptic of date",
-    "frameTransfer": "Saura sidereal offset = Burgess 1860 zero point + date-specific Lahiri precession delta",
-    "meanAndSheeghrocca": "existing Saura-paksha V365 calculation"
+    "frameTransfer": "Legacy input coordinates and V365 source mean values are rotated by a same-epoch uniform amount into effective Lahiri; the engine uses no Saura coordinate frame.",
+    "meanAndSheeghrocca": "V365 mean-motion source, transformed into the same effective Lahiri frame as NAELOS True Longitude"
   },
   "comparison": {
     "count": 25,
@@ -42,34 +42,34 @@
       "time": "05:05",
       "planets": {
         "Mercury": {
-          "trueLongitudeSaura": 3.5224543108485022,
-          "meanLongitudeSaura": 17.52423969723168,
-          "sheeghroccaSaura": 230.12234696754604,
-          "cheshtaVirupa": 46.800333345498
+          "cheshtaVirupa": 46.800333345498,
+          "legacyTrueLongitudeBeforeLahiriRotation": 3.5224543108485022,
+          "v365MeanSourceNativeLongitude": 17.52423969723168,
+          "v365SheeghroccheyaSourceNativeLongitude": 230.12234696754604
         },
         "Venus": {
-          "trueLongitudeSaura": 352.79413632080934,
-          "meanLongitudeSaura": 17.52423969723168,
-          "sheeghroccaSaura": 312.74252783965494,
-          "cheshtaVirupa": 17.47222005645517
+          "cheshtaVirupa": 17.47222005645517,
+          "legacyTrueLongitudeBeforeLahiriRotation": 352.79413632080934,
+          "v365MeanSourceNativeLongitude": 17.52423969723168,
+          "v365SheeghroccheyaSourceNativeLongitude": 312.74252783965494
         },
         "Mars": {
-          "trueLongitudeSaura": 280.416484968905,
-          "meanLongitudeSaura": 243.6425172480631,
-          "sheeghroccaSaura": 17.52423969723168,
-          "cheshtaVirupa": 38.498246196249205
+          "cheshtaVirupa": 38.498246196249205,
+          "legacyTrueLongitudeBeforeLahiriRotation": 280.416484968905,
+          "v365MeanSourceNativeLongitude": 243.6425172480631,
+          "v365SheeghroccheyaSourceNativeLongitude": 17.52423969723168
         },
         "Jupiter": {
-          "trueLongitudeSaura": 224.31013746628082,
-          "meanLongitudeSaura": 225.13080522743167,
-          "sheeghroccaSaura": 17.52423969723168,
-          "cheshtaVirupa": 50.934589450125145
+          "cheshtaVirupa": 50.934589450125145,
+          "legacyTrueLongitudeBeforeLahiriRotation": 224.31013746628082,
+          "v365MeanSourceNativeLongitude": 225.13080522743167,
+          "v365SheeghroccheyaSourceNativeLongitude": 17.52423969723168
         },
         "Saturn": {
-          "trueLongitudeSaura": 34.5527943840238,
-          "meanLongitudeSaura": 30.002558510166182,
-          "sheeghroccaSaura": 17.52423969723168,
-          "cheshtaVirupa": 4.917812249954447
+          "cheshtaVirupa": 4.917812249954447,
+          "legacyTrueLongitudeBeforeLahiriRotation": 34.5527943840238,
+          "v365MeanSourceNativeLongitude": 30.002558510166182,
+          "v365SheeghroccheyaSourceNativeLongitude": 17.52423969723168
         }
       }
     },
@@ -78,34 +78,34 @@
       "time": "16:04",
       "planets": {
         "Mercury": {
-          "trueLongitudeSaura": 272.44915123174826,
-          "meanLongitudeSaura": 266.8227068897977,
-          "sheeghroccaSaura": 294.74382010215777,
-          "cheshtaVirupa": 8.369297013794949
+          "cheshtaVirupa": 8.369297013794949,
+          "legacyTrueLongitudeBeforeLahiriRotation": 272.44915123174826,
+          "v365MeanSourceNativeLongitude": 266.8227068897977,
+          "v365SheeghroccheyaSourceNativeLongitude": 294.74382010215777
         },
         "Venus": {
-          "trueLongitudeSaura": 290.29312588368975,
-          "meanLongitudeSaura": 266.8227068897977,
-          "sheeghroccaSaura": 88.38565118487168,
-          "cheshtaVirupa": 56.609244932709316
+          "cheshtaVirupa": 56.609244932709316,
+          "legacyTrueLongitudeBeforeLahiriRotation": 290.29312588368975,
+          "v365MeanSourceNativeLongitude": 266.8227068897977,
+          "v365SheeghroccheyaSourceNativeLongitude": 88.38565118487168
         },
         "Mars": {
-          "trueLongitudeSaura": 16.932654126431316,
-          "meanLongitudeSaura": 38.993382294193,
-          "sheeghroccaSaura": 266.8227068897977,
-          "cheshtaVirupa": 40.38010377350482
+          "cheshtaVirupa": 40.38010377350482,
+          "legacyTrueLongitudeBeforeLahiriRotation": 16.932654126431316,
+          "v365MeanSourceNativeLongitude": 38.993382294193,
+          "v365SheeghroccheyaSourceNativeLongitude": 266.8227068897977
         },
         "Jupiter": {
-          "trueLongitudeSaura": 297.05980256150224,
-          "meanLongitudeSaura": 306.85253849615265,
-          "sheeghroccaSaura": 266.8227068897977,
-          "cheshtaVirupa": 11.711154546343247
+          "cheshtaVirupa": 11.711154546343247,
+          "legacyTrueLongitudeBeforeLahiriRotation": 297.05980256150224,
+          "v365MeanSourceNativeLongitude": 306.85253849615265,
+          "v365SheeghroccheyaSourceNativeLongitude": 266.8227068897977
         },
         "Saturn": {
-          "trueLongitudeSaura": 70.05123778729313,
-          "meanLongitudeSaura": 62.88870150541584,
-          "sheeghroccaSaura": 266.8227068897977,
-          "cheshtaVirupa": 53.21575425218558
+          "cheshtaVirupa": 53.21575425218558,
+          "legacyTrueLongitudeBeforeLahiriRotation": 70.05123778729313,
+          "v365MeanSourceNativeLongitude": 62.88870150541584,
+          "v365SheeghroccheyaSourceNativeLongitude": 266.8227068897977
         }
       }
     },
@@ -114,34 +114,34 @@
       "time": "22:05",
       "planets": {
         "Mercury": {
-          "trueLongitudeSaura": 112.48451132367501,
-          "meanLongitudeSaura": 105.51337654775125,
-          "sheeghroccaSaura": 305.31679767140304,
-          "cheshtaVirupa": 54.56071542143669
+          "cheshtaVirupa": 54.56071542143669,
+          "legacyTrueLongitudeBeforeLahiriRotation": 112.48451132367501,
+          "v365MeanSourceNativeLongitude": 105.51337654775125,
+          "v365SheeghroccheyaSourceNativeLongitude": 305.31679767140304
         },
         "Venus": {
-          "trueLongitudeSaura": 121.97176037040276,
-          "meanLongitudeSaura": 105.51337654775125,
-          "sheeghroccaSaura": 144.9312692470994,
-          "cheshtaVirupa": 10.396233596007468
+          "cheshtaVirupa": 10.396233596007468,
+          "legacyTrueLongitudeBeforeLahiriRotation": 121.97176037040276,
+          "v365MeanSourceNativeLongitude": 105.51337654775125,
+          "v365SheeghroccheyaSourceNativeLongitude": 144.9312692470994
         },
         "Mars": {
-          "trueLongitudeSaura": 43.38252618141098,
-          "meanLongitudeSaura": 349.88006011179095,
-          "sheeghroccaSaura": 105.51337654775125,
-          "cheshtaVirupa": 29.62736113371676
+          "cheshtaVirupa": 29.62736113371676,
+          "legacyTrueLongitudeBeforeLahiriRotation": 43.38252618141098,
+          "v365MeanSourceNativeLongitude": 349.88006011179095,
+          "v365SheeghroccheyaSourceNativeLongitude": 105.51337654775125
         },
         "Jupiter": {
-          "trueLongitudeSaura": 145.14144062451476,
-          "meanLongitudeSaura": 149.93418564960848,
-          "sheeghroccaSaura": 105.51337654775125,
-          "cheshtaVirupa": 14.008145529770124
+          "cheshtaVirupa": 14.008145529770124,
+          "legacyTrueLongitudeBeforeLahiriRotation": 145.14144062451476,
+          "v365MeanSourceNativeLongitude": 149.93418564960848,
+          "v365SheeghroccheyaSourceNativeLongitude": 105.51337654775125
         },
         "Saturn": {
-          "trueLongitudeSaura": 295.7009242028744,
-          "meanLongitudeSaura": 289.48183439208947,
-          "sheeghroccaSaura": 105.51337654775125,
-          "cheshtaVirupa": 57.640665750089774
+          "cheshtaVirupa": 57.640665750089774,
+          "legacyTrueLongitudeBeforeLahiriRotation": 295.7009242028744,
+          "v365MeanSourceNativeLongitude": 289.48183439208947,
+          "v365SheeghroccheyaSourceNativeLongitude": 105.51337654775125
         }
       }
     },
@@ -150,34 +150,34 @@
       "time": "13:03",
       "planets": {
         "Mercury": {
-          "trueLongitudeSaura": 78.20360895118955,
-          "meanLongitudeSaura": 59.29461584310047,
-          "sheeghroccaSaura": 222.92200973330182,
-          "cheshtaVirupa": 51.39096577871893
+          "cheshtaVirupa": 51.39096577871893,
+          "legacyTrueLongitudeBeforeLahiriRotation": 78.20360895118955,
+          "v365MeanSourceNativeLongitude": 59.29461584310047,
+          "v365SheeghroccheyaSourceNativeLongitude": 222.92200973330182
         },
         "Venus": {
-          "trueLongitudeSaura": 100.04492708115549,
-          "meanLongitudeSaura": 59.29461584310047,
-          "sheeghroccaSaura": 160.19636278368125,
-          "cheshtaVirupa": 26.842197107184422
+          "cheshtaVirupa": 26.842197107184422,
+          "legacyTrueLongitudeBeforeLahiriRotation": 100.04492708115549,
+          "v365MeanSourceNativeLongitude": 59.29461584310047,
+          "v365SheeghroccheyaSourceNativeLongitude": 160.19636278368125
         },
         "Mars": {
-          "trueLongitudeSaura": 26.61752217636132,
-          "meanLongitudeSaura": 348.1120766424647,
-          "sheeghroccaSaura": 59.29461584310047,
-          "cheshtaVirupa": 17.30993881122917
+          "cheshtaVirupa": 17.30993881122917,
+          "legacyTrueLongitudeBeforeLahiriRotation": 26.61752217636132,
+          "v365MeanSourceNativeLongitude": 348.1120766424647,
+          "v365SheeghroccheyaSourceNativeLongitude": 59.29461584310047
         },
         "Jupiter": {
-          "trueLongitudeSaura": 195.22725148890765,
-          "meanLongitudeSaura": 206.74080670887406,
-          "sheeghroccaSaura": 59.29461584310047,
-          "cheshtaVirupa": 47.229804418596814
+          "cheshtaVirupa": 47.229804418596814,
+          "legacyTrueLongitudeBeforeLahiriRotation": 195.22725148890765,
+          "v365MeanSourceNativeLongitude": 206.74080670887406,
+          "v365SheeghroccheyaSourceNativeLongitude": 59.29461584310047
         },
         "Saturn": {
-          "trueLongitudeSaura": 322.38945899547207,
-          "meanLongitudeSaura": 312.34173454973984,
-          "sheeghroccaSaura": 59.29461584310047,
-          "cheshtaVirupa": 33.97633969016484
+          "cheshtaVirupa": 33.97633969016484,
+          "legacyTrueLongitudeBeforeLahiriRotation": 322.38945899547207,
+          "v365MeanSourceNativeLongitude": 312.34173454973984,
+          "v365SheeghroccheyaSourceNativeLongitude": 59.29461584310047
         }
       }
     },
@@ -186,34 +186,34 @@
       "time": "09:30",
       "planets": {
         "Mercury": {
-          "trueLongitudeSaura": 169.94718173337412,
-          "meanLongitudeSaura": 140.52621439292125,
-          "sheeghroccaSaura": 270.0585044294712,
-          "cheshtaVirupa": 38.273935455441155
+          "cheshtaVirupa": 38.273935455441155,
+          "legacyTrueLongitudeBeforeLahiriRotation": 169.94718173337412,
+          "v365MeanSourceNativeLongitude": 140.52621439292125,
+          "v365SheeghroccheyaSourceNativeLongitude": 270.0585044294712
         },
         "Venus": {
-          "trueLongitudeSaura": 114.1294301120401,
-          "meanLongitudeSaura": 140.52621439292125,
-          "sheeghroccaSaura": 341.4003878065705,
-          "cheshtaVirupa": 48.642478148636734
+          "cheshtaVirupa": 48.642478148636734,
+          "legacyTrueLongitudeBeforeLahiriRotation": 114.1294301120401,
+          "v365MeanSourceNativeLongitude": 140.52621439292125,
+          "v365SheeghroccheyaSourceNativeLongitude": 341.4003878065705
         },
         "Mars": {
-          "trueLongitudeSaura": 117.80819863742107,
-          "meanLongitudeSaura": 90.75681158716179,
-          "sheeghroccaSaura": 140.52621439292125,
-          "cheshtaVirupa": 12.081236426876595
+          "cheshtaVirupa": 12.081236426876595,
+          "legacyTrueLongitudeBeforeLahiriRotation": 117.80819863742107,
+          "v365MeanSourceNativeLongitude": 90.75681158716179,
+          "v365SheeghroccheyaSourceNativeLongitude": 140.52621439292125
         },
         "Jupiter": {
-          "trueLongitudeSaura": 135.31755858996974,
-          "meanLongitudeSaura": 130.9744578255004,
-          "sheeghroccaSaura": 140.52621439292125,
-          "cheshtaVirupa": 2.460068728395394
+          "cheshtaVirupa": 2.460068728395394,
+          "legacyTrueLongitudeBeforeLahiriRotation": 135.31755858996974,
+          "v365MeanSourceNativeLongitude": 130.9744578255004,
+          "v365SheeghroccheyaSourceNativeLongitude": 140.52621439292125
         },
         "Saturn": {
-          "trueLongitudeSaura": 218.99325245680166,
-          "meanLongitudeSaura": 211.5917421738675,
-          "sheeghroccaSaura": 140.52621439292125,
-          "cheshtaVirupa": 24.92209430747111
+          "cheshtaVirupa": 24.92209430747111,
+          "legacyTrueLongitudeBeforeLahiriRotation": 218.99325245680166,
+          "v365MeanSourceNativeLongitude": 211.5917421738675,
+          "v365SheeghroccheyaSourceNativeLongitude": 140.52621439292125
         }
       }
     }
