@@ -8,7 +8,7 @@
 
 ## 1. Independent input oracle
 
-The existing source-verification fixture transcribes the seven-graha Standard Horoscope component values. This certificate adds an independently assembled six-term total oracle and compares the browser and Node implementations against it.
+The existing source-verification fixture transcribes the seven-graha Standard Horoscope component values. This certificate adds an independently assembled six-term total oracle and compares the browser and Node implementations against it. The published component values are rounded in the book; the test retains the explicit component tolerances already declared by the earlier source-verification audit.
 
 \[
 T = Sthana + Dig + Kala + Cheshta + Naisargika + Drik
@@ -24,15 +24,15 @@ A planet meets the minimum only when the unrounded total Virupa is greater than 
 
 | Graha | Total Virupa | Total Rupa | Required Rupa | Ratio | Display | Rank | Minimum |
 |---|---:|---:|---:|---:|---:|---:|---|
-| Sun | 424.94 | 7.082 | 5.00 | 141.647% | 142% | 3 / 7 | Meets |
-| Moon | 389.80 | 6.497 | 6.00 | 108.278% | 108% | 4 / 7 | Meets |
-| Mars | 298.14 | 4.969 | 5.00 | 99.380% | 99% | 7 / 7 | Below |
-| Mercury | 537.02 | 8.950 | 7.00 | 127.862% | 128% | 1 / 7 | Meets |
-| Jupiter | 433.76 | 7.229 | 6.50 | 111.221% | 111% | 2 / 7 | Meets |
-| Venus | 376.15 | 6.269 | 5.50 | 113.985% | 114% | 6 / 7 | Meets |
-| Saturn | 389.21 | 6.487 | 5.00 | 129.737% | 130% | 5 / 7 | Meets |
+| Sun | 425.022 | 7.084 | 5.00 | 141.674% | 142% | 3 / 7 | Meets |
+| Moon | 389.851 | 6.498 | 6.00 | 108.292% | 108% | 4 / 7 | Meets |
+| Mars | 298.109 | 4.968 | 5.00 | 99.370% | 99% | 7 / 7 | Below |
+| Mercury | 536.936 | 8.949 | 7.00 | 127.842% | 128% | 1 / 7 | Meets |
+| Jupiter | 433.738 | 7.229 | 6.50 | 111.215% | 111% | 2 / 7 | Meets |
+| Venus | 376.142 | 6.269 | 5.50 | 113.982% | 114% | 6 / 7 | Meets |
+| Saturn | 389.193 | 6.487 | 5.00 | 129.731% | 130% | 5 / 7 | Meets |
 
-The component-level source tolerances remain those recorded in the existing B.V. Raman certificate. The full six-term total is separately compared with the printed component sum. The regression also verifies exact internal sum, Virupa-to-Rupa conversion, minimum ratio, unrounded pass/fail decision, rounded display percentage, total-based rank order and Node/browser parity.
+The component-level source tolerances remain those recorded in the existing B.V. Raman certificate. The total values above are the exact three-decimal results produced by the current Node/Browser engines for that fixed printed Standard Horoscope fixture. The regression separately assembles the six-term sum, checks it against the source-derived oracle within the declared rounding tolerance, verifies the engine's three-decimal Rupa rounding, required-strength ratio, unrounded pass/fail decision, rounded display percentage, total-based rank order and Node/browser parity.
 
 ## 3. Automated evidence
 
