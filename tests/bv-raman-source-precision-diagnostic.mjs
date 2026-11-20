@@ -70,7 +70,8 @@ console.log(JSON.stringify({
     page88PrintedPinda:jupiterPrintedPinda,
     page88ExamplePrintedDrik:-16.04,
     page90SummaryPrintedDrik:-16.03,
-    page88PindaQuarter:jupiterPrintedPindaQuarter
+    page88PindaQuarter:jupiterPrintedPindaQuarter,
+    calculatedSignedAspectTrace:jupiter.evidence.drikTrace
   },
   certificationScope:result.certificationScope,
   arbitraryNatalCertification:false
