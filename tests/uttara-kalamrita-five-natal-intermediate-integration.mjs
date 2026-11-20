@@ -69,8 +69,13 @@ for(const [date,time] of dates){
 
   ok(u.naisargikaVirupa>=0&&u.naisargikaVirupa<=60,
     date+' '+p.name+' UK natural Virupa in range');
-  ok(u.source.includes('Uttara Kalamrita')&&Number.isFinite(prior?.totalVirupa),
-    date+' '+p.name+' UK separate from pre-existing live BPHS result');
+  ok(u.source.includes('Uttara Kalamrita'),date+' '+p.name+' UK remains a separate source channel');
+  if(p.name==='சூரியன்'||p.name==='சந்திரன்'){
+    ok(prior?.components?.cheshta===0,date+' '+p.name+' B.V. Raman source-defined luminary Cheshta');
+  }else{
+    ok(prior?.components?.cheshta===null&&prior?.totalVirupa===null,
+      date+' '+p.name+' mixed-frame B.V. Raman Cheshta and total remain withheld');
+  }
   ok(!Object.hasOwn(u,'ayurdaya')&&!Object.hasOwn(u,'lifespan'),
     date+' '+p.name+' no Ayurdaya calculation present');
   if(Math.abs(u.sthana.totalVirupa-prior.components.sthana.total)>0.001)
