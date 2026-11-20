@@ -1,3 +1,5 @@
+import { localizeTamilText } from './tamil-transliteration.mjs';
+
 /* SMV ASTRO V333 / 2F — offline India place display only.
  * GeoNames shards are immutable: IDs, aliases, lat/lon, timezone and ranking
  * must never be changed by locale rendering. No inferred translations of
@@ -95,11 +97,24 @@ export function formatOfflineIndiaPlace(row,language=CURRENT()){
 
 // Reuse the verified India administrative-name dictionary in report narratives.
 // Unknown/non-India names remain unchanged rather than receiving guessed translations.
+const LATIN_ADMIN=/[A-Za-z]/u;
 export function formatOfflineIndiaAdministrativeAreas(admin1,admin2,language=CURRENT()){
-  const stateEn=asState(admin1),districtEn=asDistrict(admin2);
-  if(!/^ta(?:-|$)/i.test(String(language)))return {admin1:stateEn,admin2:districtEn};
-  const stateTa=states[key(stateEn)]||stateEn;
-  const districtTa=key(stateEn)==='tamil nadu'?(tnDistricts[key(districtEn)]||districtEn):districtEn;
+  const rawState=String(admin1??'').trim();
+  const rawDistrict=String(admin2??'').trim().replace(/\\s*மாவட்டம்$/u,'');
+  const knownState=Object.entries(states).find(([,ta])=>key(ta)===key(rawState))?.[0];
+  const stateEn=knownState||asState(localizeTamilText(rawState,'en'));
+  const knownDistrict=key(stateEn)==='tamil nadu'
+    ? Object.entries(tnDistricts).find(([,ta])=>key(ta)===key(rawDistrict))?.[0]
+    : '';
+  const districtEn=knownDistrict||asDistrict(localizeTamilText(rawDistrict,'en'));
+  if(!/^ta(?:-|$)/i.test(String(language)))return {
+    admin1:rawState&&!LATIN_ADMIN.test(rawState)?stateEn:(stateEn||rawState),
+    admin2:rawDistrict&&!LATIN_ADMIN.test(rawDistrict)?districtEn:(districtEn||rawDistrict)
+  };
+  const stateTa=states[key(stateEn)]||localizeTamilText(stateEn,'ta')||rawState;
+  const districtTa=key(stateEn)==='tamil nadu'
+    ? (tnDistricts[key(districtEn)]||localizeTamilText(districtEn,'ta')||rawDistrict)
+    : (localizeTamilText(districtEn,'ta')||rawDistrict);
   return {admin1:stateTa,admin2:districtTa};
 }
 
