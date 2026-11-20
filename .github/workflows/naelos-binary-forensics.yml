@@ -30,7 +30,7 @@ jobs:
           node --check tests/bv-raman-yuddha-regression.mjs
           node --check tests/bv-raman-seven-graha-numerical-certification.mjs
           node --check research/natal-classical-certification/evidence-gates.mjs
-          node --check research/natal-classical-certification/monthly-longitude-coverage.mjs
+          node --check research/natal-classical-certification/annual-longitude-coverage.mjs
           node --check tests/natal-classical-certification-pipeline.mjs
       - name: Inspect checked-in NAELOS binary headers
         run: node research/naelos-de440/naelos-binary-forensics.mjs
@@ -46,5 +46,5 @@ jobs:
         run: node tests/naelos-de440-five-natal-true-longitude.mjs
       - name: Verify 42-row six-Bala evidence matrix and final natal gate
         run: node tests/natal-classical-certification-pipeline.mjs
-      - name: Audit monthly Saura Mean/True/Sheeghroccheya candidate coverage for 1800-2399
-        run: node research/natal-classical-certification/monthly-longitude-coverage.mjs
+      - name: Audit one annual Saura Mean/True/Sheeghroccheya candidate epoch per year for 1800-2399
+        run: node research/natal-classical-certification/annual-longitude-coverage.mjs
