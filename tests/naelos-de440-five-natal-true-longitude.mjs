@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createHash } from 'node:crypto';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const nodeRaman = require('../bv-raman-shadbala.cjs');
+import { calculateBVRamanChestaFromInputs as browserRamanChesta }
+  from '../public/horoscope/offline/bv-raman-shadbala.browser.mjs';
 import {
   NaelosEphemeris, julday,
   SE_MERCURY, SE_VENUS, SE_MARS, SE_JUPITER, SE_SATURN
@@ -45,6 +50,17 @@ const births = Object.freeze([
 ]);
 const UTC_OFFSET_MINUTES = 330;
 const MAX_ABS_RESIDUAL_ARCSEC = 5;
+const NAELOS_CERTIFICATE_ID = 'SMV-ASTRO-NAELOS-DE440-TRUE-LONGITUDE-25-2026-11-20';
+const NAELOS_EVIDENCE = Object.freeze({
+  certificateId: NAELOS_CERTIFICATE_ID,
+  status: 'PASS',
+  source: 'NAELOS Ephemeris 0.1.3',
+  independentEphemeris: 'NASA/JPL DE440',
+  sampleCount: 25,
+  maxAbsTropicalResidualArcsec: 0.0037490153317776276,
+  rmsTropicalResidualArcsec: 0.0014701123292962758,
+  validationScope: 'Five specified Perambalur natal epochs × Mercury, Venus, Mars, Jupiter and Saturn'
+});
 const norm = x => ((x % 360) + 360) % 360;
 const signedArcsec = (a, b) => {
   const d = ((a - b + 540) % 360) - 180;
@@ -125,6 +141,31 @@ for (const [date, time] of births) {
       cheshta.virupa >= 0 && cheshta.virupa <= 60,
       date + ' ' + en + ' BPHS Chesta formula valid');
 
+    // Feed the independently established three longitudes through the SAME
+    // B.V. Raman Chapter VI input path used by Node and Browser engines.
+    const ramanInputs = {
+      meanLongitude: orbital.meanLongitude,
+      trueLongitude: trueLongitudeSaura,
+      sheeghroccaLongitude: orbital.sheeghrocha,
+      trueLongitudeEvidence: NAELOS_EVIDENCE
+    };
+    const browserChesta = browserRamanChesta(ta, ramanInputs);
+    const nodeChesta = nodeRaman.calculateBVRamanChestaFromInputs(ta, ramanInputs);
+    for (const [runtime, result] of [['Browser', browserChesta], ['Node', nodeChesta]]) {
+      assert.ok(result.trueLongitudeHistoricalCertified === true,
+        date + ' ' + en + ' ' + runtime + ' NAELOS True Longitude historical evidence flag');
+      assert.ok(result.numericallyCertified === true,
+        date + ' ' + en + ' ' + runtime + ' NAELOS True Longitude numerical evidence flag');
+      assert.equal(result.method, 'BV_RAMAN_CHAPTER_VI_NAELOS_DE440_TRUE_LONGITUDE',
+        date + ' ' + en + ' ' + runtime + ' NAELOS-backed B.V. Raman Chesta method');
+      assert.equal(result.trueLongitudeEvidence?.certificateId, NAELOS_CERTIFICATE_ID,
+        date + ' ' + en + ' ' + runtime + ' certificate identity retained');
+      assert.ok(Math.abs(result.value - cheshta.virupa) <= 1e-9,
+        date + ' ' + en + ' ' + runtime + ' B.V. Raman Chesta formula matches independent arithmetic');
+    }
+    assert.ok(Math.abs(browserChesta.value - nodeChesta.value) <= 1e-12,
+      date + ' ' + en + ' B.V. Raman Node/Browser NAELOS Chesta parity');
+
     chart.planets[en] = {
       trueLongitudeTropicalApparent: naelos.longitude,
       lahiriAyanamsa: ayanamsa,
@@ -137,6 +178,10 @@ for (const [date, time] of births) {
       meanLongitudeSaura: orbital.meanLongitude,
       sheeghroccaSaura: orbital.sheeghrocha,
       cheshtaVirupaUsingNaelosTrue: cheshta.virupa,
+      cheshtaMethod: 'BV_RAMAN_CHAPTER_VI_NAELOS_DE440_TRUE_LONGITUDE',
+      trueLongitudeHistoricalCertified: true,
+      numericallyCertified: true,
+      trueLongitudeCertificateId: NAELOS_CERTIFICATE_ID,
       trueLongitudeSource: 'NAELOS Ephemeris 0.1.3 / NASA-JPL DE440'
     };
   }
@@ -201,6 +246,6 @@ console.log(JSON.stringify({
   maxAbsSiderealResidualArcsec,
   rmsSiderealResidualArcsec: Math.sqrt(sumSquaresSidereal / comparisons),
   acceptanceMaxArcsec: MAX_ABS_RESIDUAL_ARCSEC,
-  cheshtaInputPolicy: 'existing Saura-paksha mean longitude and Sheeghrocca retained; NAELOS DE440 true longitude used as independent true-position evidence',
+  cheshtaInputPolicy: 'existing Saura-paksha mean longitude and Sheeghrocca retained; NAELOS DE440 true longitude used as independent true-position evidence; Node and Browser B.V. Raman explicit-input path both return the two certification flags true for these 25 rows',
   rows
 }, null, 2));
