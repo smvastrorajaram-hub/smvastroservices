@@ -186,7 +186,7 @@ for (const [date, time] of births) {
       meanLongitude: orbital.meanLongitude,
       trueLongitude: trueLongitudeSaura,
       sheeghroccaLongitude: orbital.sheeghrocha,
-      trueLongitudeEvidence: Object.freeze({ ...NAELOS_EVIDENCE, planet: en, natalEpochKey: `${date} ${time} IST` })
+      trueLongitudeEvidence: Object.freeze({ ...NAELOS_EVIDENCE, planet: ta, natalEpochKey: `${date} ${time} IST` })
     };
     const browserChesta = browserRamanChesta(ta, ramanInputs);
     const nodeChesta = nodeRaman.calculateBVRamanChestaFromInputs(ta, ramanInputs);
