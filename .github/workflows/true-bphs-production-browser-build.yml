@@ -6,6 +6,11 @@ on:
       - production/true-bphs-naelos-effective-lahiri
     paths:
       - "public/horoscope/offline/true-bphs-naelos-engine.browser.mjs"
+      - "public/horoscope/offline/server-wrapper.browser.mjs"
+      - "public/horoscope/offline/swiss_vedic.browser.mjs"
+      - "public/horoscope/horoscope.js"
+      - "public/horoscope/sw.js"
+      - "tests/true-bphs-naelos-production-browser-runtime.mjs"
       - "public/horoscope/offline/true-bphs-components.browser.mjs"
       - "public/horoscope/offline/effective-lahiri-frame.browser.mjs"
       - "public/horoscope/offline/bphs-*.browser.mjs"
@@ -71,6 +76,10 @@ jobs:
             --bundle --format=esm --platform=browser --target=es2022 --external:node:* \
             --outfile=public/horoscope/offline/true-bphs-naelos-engine.browser.bundle.mjs
           node --check public/horoscope/offline/true-bphs-naelos-engine.browser.bundle.mjs
+          node --check public/horoscope/offline/server-wrapper.browser.mjs
+
+      - name: Verify production Browser chart adapter end-to-end with actual DE440 tables
+        run: node tests/true-bphs-naelos-production-browser-runtime.mjs
 
       - name: Commit generated browser bundle and offline DE440 assets
         shell: bash
