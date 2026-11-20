@@ -175,16 +175,9 @@ test('all three PWA cache releases are synchronized for Pages.dev and .in conten
     assert.ok(match, 'every app service worker must select a host-specific cache release');
     return { pages: match[1], legacy: match[2] };
   });
-  assert.deepEqual(releases.map(item => item.pages), [
-    '20261120-subha-janana-transit-lagna-v3',
-    '20261120-subha-janana-transit-lagna-v3',
-    '20261120-subha-janana-transit-lagna-v3'
-  ]);
-  assert.deepEqual(releases.map(item => item.legacy), [
-    '20261120-subha-janana-transit-lagna-v3',
-    '20261120-subha-janana-transit-lagna-v3',
-    '20261120-subha-janana-transit-lagna-v3'
-  ]);
+  assert.equal(new Set(releases.map(item => item.pages)).size, 1, 'All three Pages.dev cache releases must match.');
+  assert.equal(new Set(releases.map(item => item.legacy)).size, 1, 'All three production cache releases must match.');
+  assert.ok(releases.every(item => item.pages && item.legacy), 'Both cache release IDs must be present.');
 });
 test('each installer creates its own 256x256 Windows icon', () => {
   for (const app of APPS) {
