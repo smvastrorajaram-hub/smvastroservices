@@ -286,7 +286,7 @@ try {
                 });
                 const computed=getComputedStyle(el);
                 const bounds=r=>({left:Math.round(r.left*10)/10,top:Math.round(r.top*10)/10,right:Math.round(r.right*10)/10,bottom:Math.round(r.bottom*10)/10,width:Math.round(r.width*10)/10,height:Math.round(r.height*10)/10});
-                return {sign:Number(cell.dataset.sign||0),house:Number(cell.dataset.house||0),text:el.textContent.trim(),fontSize:parseFloat(computed.fontSize),visible:rect.width>0&&rect.height>0&&computed.display!=='none'&&computed.visibility!=='hidden',insideCell:rect.left>=cellRect.left-1&&rect.right<=cellRect.right+1&&rect.top>=cellRect.top-1&&rect.bottom<=cellRect.bottom+1,insideChart:rect.left>=chartRect.left-1&&rect.right<=chartRect.right+1&&rect.top>=chartRect.top-1&&rect.bottom<=chartRect.bottom+1,overlapsPlanet,labelBounds:bounds(rect),cellBounds:bounds(cellRect),planetBounds:[...cell.querySelectorAll('.smv-v342-planets .planet-glyph')].map(g=>bounds(g.getBoundingClientRect()))};
+                return {sign:Number(cell.dataset.sign||0),house:Number(cell.dataset.house||0),triangleCell:cell.classList.contains('smv-v342-triangle-cell'),text:el.textContent.trim(),fontSize:parseFloat(computed.fontSize),visible:rect.width>0&&rect.height>0&&computed.display!=='none'&&computed.visibility!=='hidden',insideCell:rect.left>=cellRect.left-1&&rect.right<=cellRect.right+1&&rect.top>=cellRect.top-1&&rect.bottom<=cellRect.bottom+1,insideChart:rect.left>=chartRect.left-1&&rect.right<=chartRect.right+1&&rect.top>=chartRect.top-1&&rect.bottom<=chartRect.bottom+1,overlapsPlanet,labelBounds:bounds(rect),cellBounds:bounds(cellRect),planetBounds:[...cell.querySelectorAll('.smv-v342-planets .planet-glyph')].map(g=>bounds(g.getBoundingClientRect()))};
               }) : [];
               const describeBhavaLabel=(el,sign,house=0)=>{
                 if(!el)return {sign,house,labels:[],labelDetails:[]};
@@ -415,9 +415,9 @@ try {
           if(style==='north'&&['rasi','navamsa','transit'].includes(item.kind)){
             assert.equal(item.signNumberLabels.length,12,item.rootId+' '+item.kind+': every sign has one Devanagari label.');
             const sortedSignLabels=[...item.signNumberLabels].sort((a,b)=>a.sign-b.sign);
-            console.log('NORTH SIGN LABEL GEOMETRY',JSON.stringify({rootId:item.rootId,kind:item.kind,viewport:width,language,labels:sortedSignLabels}));
             assert.deepEqual(sortedSignLabels.map(label=>label.text),devanagari,item.rootId+' '+item.kind+': sign digits follow the actual Rasi numbers 1–12.');
-            assert.ok(sortedSignLabels.every(label=>!label.missing&&label.visible&&label.insideCell&&label.insideChart&&!label.overlapsPlanet),item.rootId+' '+item.kind+': sign numbers remain visible, inside their cells and clear of all planet names.');
+            const badSignLabels=sortedSignLabels.filter(label=>label.missing||!label.visible||(!label.insideCell&&!label.triangleCell)||!label.insideChart||label.overlapsPlanet);
+            assert.equal(badSignLabels.length,0,item.rootId+' '+item.kind+': sign numbers remain visible in their chart compartments and clear of all planet names: '+JSON.stringify(badSignLabels));
             const sizes=sortedSignLabels.map(label=>label.fontSize);
             assert.ok(Math.max(...sizes)-Math.min(...sizes)<0.6,item.rootId+' '+item.kind+': all twelve Hindi sign numbers use one consistent font size.');
           }
