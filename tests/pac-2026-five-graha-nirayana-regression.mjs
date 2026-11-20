@@ -4,8 +4,9 @@
  *
  * The PDFs state the civil dates and Nirayana longitudes, but their page
  * headings do not explicitly identify the daily epoch or named ayanamsa.
- * 00:00 TT and Lahiri are therefore a separately documented empirical
- * comparison convention, not claims copied from the PDF metadata.
+ * This regression fixes the requested project comparison epoch at
+ * 00:00:00 UTC and converts that instant to TT with Swiss utcToJd().
+ * Lahiri remains an inferred comparison convention, not PDF metadata.
  *
  * This validates selected official PAC table entries against the bundled
  * Swiss Ephemeris implementation. It does not prove that PAC used an
@@ -32,11 +33,6 @@ const wrap = value => ((value % 360) + 360) % 360;
 const signedDifference = (candidate, reference) =>
   ((candidate - reference + 540) % 360) - 180;
 
-function julianDayAt00Tt(date) {
-  const [year, month, day] = date.split('-').map(Number);
-  return Date.UTC(year, month - 1, day) / 86_400_000 + 2_440_587.5;
-}
-
 assert.equal(fixture.schema, 'SMV_ASTRO_PAC_2026_NIRAYANA_LONGITUDE_15_POINT_V1');
 assert.equal(fixture.source.publisher,
   'Positional Astronomy Centre, Kolkata — India Meteorological Department, Government of India');
@@ -54,8 +50,11 @@ assert.equal(flags & 2, 2, 'comparison must use Swiss Ephemeris data, not a Mosh
 let assertions = 7;
 const observations = [];
 for (const sample of fixture.samples) {
-  const jdTt = julianDayAt00Tt(sample.date);
-  assert.equal(jdTt, sample.julianDayTT, sample.date + ' exact midnight-TT Julian Day');
+  const [year, month, day] = sample.date.split('-').map(Number);
+  const jd = swe.utcToJd(year, month, day, 0, 0, 0);
+  assert.ok(Number.isFinite(jd?.ut) && Number.isFinite(jd?.et),
+    sample.date + ' UTC midnight converts to UT and TT Julian days');
+  assert.equal(jd.ut, sample.julianDayUT, sample.date + ' exact 00:00:00 UTC Julian Day');
   assert.equal(Object.keys(sample.nirayanaDms).length, 5,
     sample.date + ' five PAC graha values');
   assertions += 2;
@@ -72,7 +71,7 @@ for (const sample of fixture.samples) {
     assert.ok(Math.abs(reconstructed - source.decimalDegrees) < 1e-9,
       sample.date + ' ' + planet + ' DMS exactly reconstructs fixture decimal degrees');
 
-    const actual = swe.calc(jdTt, bodyIds[planet], flags);
+    const actual = swe.calc(jd.et, bodyIds[planet], flags);
     assert.ok(Number.isFinite(actual.longitude),
       sample.date + ' ' + planet + ' Swiss sidereal longitude is finite');
     assert.equal(actual.retFlag & 2, 2,
@@ -124,7 +123,7 @@ console.log(JSON.stringify({
   samples: observations.length,
   candidate: 'SMV bundled Swiss Ephemeris WASM 2.10.03, Lahiri sidereal, SWIEPH|SPEED|SIDEREAL',
   reference: 'Official PAC 2026 daily Nirayana longitude PDFs',
-  comparisonConvention: '00:00 TT and Lahiri are empirically inferred; the source PDF headers do not explicitly state them',
+  comparisonConvention: '00:00:00 UTC is the fixed project convention (PAC has not confirmed it in the PDF headers); UTC is converted to TT by utcToJd() for swe.calc(); Lahiri remains inferred',
   maximumAllowedDifferenceArcseconds: fixture.comparison.maximumAllowedDifferenceArcseconds,
   maximumAbsoluteResidualDegrees: Number(maxAbsResidualDegrees.toFixed(10)),
   maximumAbsoluteResidualArcseconds: Number((maxAbsResidualDegrees * 3600).toFixed(6)),
