@@ -2372,7 +2372,7 @@ function renderBirthTimePanchang(p,lang,fallbackDate='',fallbackTime='',statemen
     const sunRiseText=statementData?.sunrise||p?.sunrise||'—',sunSetText=statementData?.sunset||p?.sunset||'—';
     const formatClock=value=>{
       const m=String(value||'').match(/^(\d{1,2}):(\d{2})$/);if(!m)return '—';
-      const h=Number(m[1]),mi=Number(m[2]);return String((h%12)||12).padStart(2,'0')+':'+String(mi).padStart(2,'0')+(h<12?' AM':' PM');
+      const h=Number(m[1]),mi=Number(m[2]),clock=String((h%12)||12).padStart(2,'0')+':'+String(mi).padStart(2,'0');return ta?String(h).padStart(2,'0')+':'+String(mi).padStart(2,'0'):clock+(h<12?' AM':' PM');
     };
     const clockMinute=value=>{const m=String(value||'').match(/^(\d{1,2}):(\d{2})$/);return m?Number(m[1])*60+Number(m[2]):null;};
     const birthMinute=clockMinute(tm),riseMinute=clockMinute(sunRiseText)??360,setMinute=clockMinute(sunSetText)??1080;
