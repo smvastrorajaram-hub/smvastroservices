@@ -1,0 +1,51 @@
+name: BPHS Classical Historical Evidence QA
+
+on:
+  push:
+    branches: [research/bphs-jacobi-independent-oracle-20261121]
+    paths:
+      - 'tests/jacobi-1912-planetary-tables-worked-example.mjs'
+      - 'tests/bphs-seven-graha-six-bala-source-matrix.mjs'
+      - 'tests/bphs-shadbala-combined-regression.mjs'
+      - 'research/bphs-classical-certification/**'
+      - '.github/workflows/bphs-classical-historical-evidence.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tests/jacobi-1912-planetary-tables-worked-example.mjs'
+      - 'tests/bphs-seven-graha-six-bala-source-matrix.mjs'
+      - 'tests/bphs-shadbala-combined-regression.mjs'
+      - 'research/bphs-classical-certification/**'
+      - '.github/workflows/bphs-classical-historical-evidence.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bphs-classical-historical-evidence-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax-check source evidence regressions
+        run: |
+          node --check tests/jacobi-1912-planetary-tables-worked-example.mjs
+          node --check tests/bphs-seven-graha-six-bala-source-matrix.mjs
+          node --check tests/bphs-shadbala-combined-regression.mjs
+          node --check public/horoscope/offline/bphs-shadbala-rectification.browser.mjs
+          node --check public/horoscope/offline/bphs-swiss-solar-cheshta.browser.mjs
+          node --check public/horoscope/offline/bphs-sputa-drishti.browser.mjs
+      - name: Reproduce Jacobi 1912 printed mean and true worked examples
+        run: node tests/jacobi-1912-planetary-tables-worked-example.mjs
+      - name: Verify complete seven-graha by six-component BPHS source-rule inventory
+        run: node tests/bphs-seven-graha-six-bala-source-matrix.mjs
+      - name: Run existing BPHS source-rule and seven-graha regression suite
+        run: node tests/bphs-shadbala-combined-regression.mjs
