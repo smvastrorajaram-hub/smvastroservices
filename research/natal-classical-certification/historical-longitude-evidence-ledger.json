@@ -25,7 +25,7 @@
     "rowsPerPlanet": 600,
     "independentHistoricalOracleVerifiedRows": 0,
     "frame": "traditional-Saura-nirayana",
-    "note": "The annual runner records 3,000 finite candidate rows but explicitly leaves independentHistoricalOracleVerified false for every random epoch."
+    "note": "The 600-chart artifact now additionally carries 3,000 exact-epoch NAELOS/JPL DE440 versus Swiss tropical-apparent comparisons (PASS, max 0.008523965 arcsec). These are modern numerical parity rows, not independent historical printed-table oracle rows; independentHistoricalOracleVerifiedRows therefore remains 0."
   },
   "meanSourceAudit": {
     "status": "LIMITED_SOURCE_RECONSTRUCTION_PASS",
@@ -310,5 +310,62 @@
   "acquisitionPolicy": {
     "status": "NO_ADDITIONAL_ANNUAL_GOVERNMENT_EPHEMERIS_EDITIONS_REQUIRED",
     "instruction": "Do not search for or acquire the 1971, 1974, 1992, 1994 or 2015 IENA/IAE editions for this task. Reuse the already-certified Government PAC 2026 benchmark."
+  },
+  "exactNatalEpochModernDe440Parity": {
+    "status": "PASS_3000_EXACT_RANDOM_NATAL_EPOCH_MODERN_PARITY",
+    "sourceEngine": "NAELOS Ephemeris 0.1.3 / NASA-JPL DE440",
+    "comparisonEngine": "Repository Swiss Ephemeris WASM",
+    "comparison": "Geocentric tropical apparent ecliptic-of-date longitude, with both engines supplied the same ET/TT Julian Day at each sampled historical birth instant",
+    "annualNatalCharts": 600,
+    "years": [
+      1800,
+      2399
+    ],
+    "randomSelection": "The exact seeded-random DOB/time/India-place records already present in the annual 600-chart artifact; no replacement samples",
+    "visiblePlanets": [
+      "Mercury",
+      "Venus",
+      "Mars",
+      "Jupiter",
+      "Saturn"
+    ],
+    "comparisons": 3000,
+    "rowsPerPlanet": 600,
+    "acceptanceMaxArcsec": 5,
+    "maxAbsResidualArcsec": 0.008523965379936271,
+    "rmsResidualArcsec": 0.0013143326297495913,
+    "perPlanet": {
+      "Mercury": {
+        "samples": 600,
+        "maxAbsResidualArcsec": 0.005971435621177079,
+        "rmsResidualArcsec": 0.0012382625448078444
+      },
+      "Venus": {
+        "samples": 600,
+        "maxAbsResidualArcsec": 0.008523965379936271,
+        "rmsResidualArcsec": 0.0014333178319731353
+      },
+      "Mars": {
+        "samples": 600,
+        "maxAbsResidualArcsec": 0.005676921409758506,
+        "rmsResidualArcsec": 0.0010722474706823357
+      },
+      "Jupiter": {
+        "samples": 600,
+        "maxAbsResidualArcsec": 0.004062397829329711,
+        "rmsResidualArcsec": 0.001296482754874229
+      },
+      "Saturn": {
+        "samples": 600,
+        "maxAbsResidualArcsec": 0.0040692335005587665,
+        "rmsResidualArcsec": 0.0014896560001306633
+      }
+    },
+    "relevantWorkflowRun": "https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44806001549",
+    "artifact": "https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44806001549/artifacts/14662204322",
+    "independentHistoricalOracleVerifiedRows": 0,
+    "historicalClassicalTrueLongitudeCertified": false,
+    "productionEligible": false,
+    "interpretation": "A modern JPL DE440 numerical parity cross-check at these 3,000 exact natal-epoch planet rows. It is not a printed historical Saura table oracle and does not certify the classical four-pass True Longitude or the all-natal Mean/True/Sheeghroccheya chain."
   }
 }
