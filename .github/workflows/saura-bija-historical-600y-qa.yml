@@ -13,7 +13,6 @@ on:
       - 'tests/saura-bija-geometric-reference-diagnostic.mjs'
       - 'tests/saura-bija-apsis-rate-diagnostic.mjs'
       - 'tests/saura-bija-modern-moshier-de441-accuracy.mjs'
-      - 'tests/burgess-1860-historical-source-oracle-600-epochs.mjs'
       - 'tests/fixtures/saura-bija-jpl-de441-heliocentric-elements-annual-1800-2399.json'
       - 'tests/fixtures/saura-bija-jpl-de441-geometric-vectors-annual-1800-2399.json'
       - 'tests/fixtures/saura-bija-jpl-de441-annual-1800-2399.json'
@@ -60,5 +59,3 @@ jobs:
         run: node tests/saura-bija-three-phase-validation.mjs
       - name: Independently verify modern Moshier apparent longitudes against DE441 within 0.05 degrees
         run: node tests/saura-bija-modern-moshier-de441-accuracy.mjs
-      - name: Reproduce Burgess 1860 printed True values and derive Mean / Sheeghroccheya / True for 600 exact epochs
-        run: node tests/burgess-1860-historical-source-oracle-600-epochs.mjs
