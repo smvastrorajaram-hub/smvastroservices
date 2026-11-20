@@ -600,6 +600,7 @@ export async function createTrueBphsShadbalaEngine({
         );
         planets[english]=Object.freeze({
           tropicalApparentTrueLongitude:position.longitude,
+          trueLongitudeLahiri: norm360(position.longitude-lahiriAyanamsaDegrees),
           trueLongitudeSaura: norm360(position.longitude-siderealOffsetDegrees),
           pacLahiriToSauraOffsetDegrees:lahiriAyanamsaDegrees-siderealOffsetDegrees,
           eclipticLatitude:position.latitude,
@@ -614,7 +615,7 @@ export async function createTrueBphsShadbalaEngine({
         referenceFrameId:FRAME_ID,
         pacLahiriToSauraOffsetDegrees:lahiriAyanamsaDegrees-siderealOffsetDegrees,
         planets:Object.freeze(planets),
-        sourceCertificate:'SMV_ASTRO_PAC_2026_OFFICIAL_FIVE_GRAHA_NIRAYANA_LONGITUDE'
+        sourceCertificate:'SMV_ASTRO_PAC_2026_OFFICIAL_SEVEN_GRAHA_NIRAYANA_LONGITUDE'
       });
     },
     async calculate(input={}) {
