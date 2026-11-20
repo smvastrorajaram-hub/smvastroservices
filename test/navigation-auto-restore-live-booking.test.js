@@ -57,6 +57,6 @@ test('Website, Horoscope and Calendar receive one synchronized cache release wit
   for (const source of serviceWorkers) {
     assert.doesNotMatch(source, /localStorage\.clear\(|sessionStorage\.clear\(|indexedDB\.deleteDatabase\(/);
   }
-  assert.match(serviceWorkers[1], /v284-pages-dev-tamil-solar-20261116/);
-  assert.match(serviceWorkers[1], /v278-in-navigation-20261115/);
+  assert.match(serviceWorkers[1], /v286-naelos-bphs-effective-lahiri-20261121/);
+  assert.match(serviceWorkers[1], /v280-naelos-bphs-effective-lahiri-20261121/);
 });

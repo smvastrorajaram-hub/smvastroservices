@@ -248,7 +248,7 @@ test('Each PWA uses synchronized Pages.dev and .in cache releases for public con
     assert.match(source, /PAGES_DEV_HELPER_FILES\s*=\s*IS_PAGES_DEV_HOST/);
   }
   const horoscope = workers[1];
-  assert.match(horoscope, /'v284-pages-dev-tamil-solar-20261116'\s*:\s*'v278-in-navigation-20261115'/);
+  assert.match(horoscope, /'v286-naelos-bphs-effective-lahiri-20261121'\s*:\s*'v280-naelos-bphs-effective-lahiri-20261121'/);
 });
 
 test('The Pages.dev helper is cached only in Pages.dev worker scopes', () => {
