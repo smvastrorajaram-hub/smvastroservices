@@ -206,7 +206,8 @@ for (let year = CLASSICAL_NATAL_SCOPE.startYear;
   const discDiameters = BV_RAMAN_SHADBALA_SOURCE.yuddhaDiscDiameterArcsec;
   assert.ok(discDiameters && typeof discDiameters === 'object',
     birth.epochId+' audited Raman planetary disc-diameter source constants are present');
-  assert.ok(typeof warEvidence.source === 'string' && warEvidence.source.includes('B.V. Raman'),
+  const yuddhaSource = BV_RAMAN_SHADBALA_SOURCE.yuddhaSource;
+  assert.ok(typeof yuddhaSource === 'string' && yuddhaSource.includes('B.V. Raman'),
     birth.epochId+' Raman Yuddha source provenance is present');
 
   const normalizedPair = (a,b) => [a,b].sort().join('|');
@@ -285,7 +286,7 @@ for (let year = CLASSICAL_NATAL_SCOPE.startYear;
       natalYuddhaPairs.push({
         planetA:a,planetB:b,separationDegrees:separation,outcome,
         winner,loser,magnitude,diameterDifferenceArcsec,
-        source:warEvidence.source
+        source:yuddhaSource
       });
     }
   }
