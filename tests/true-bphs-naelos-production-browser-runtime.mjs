@@ -79,6 +79,21 @@ try{
     assert.equal(planet.strength6.method,'TRUE_BPHS_SHADBALA_NAELOS_DE440',name+' Shadbala engine');
     assert.equal(planet.strength6.classicalCertified,false,name+' stays uncertified');
     assert.equal(planet.strength6.referenceFrameId,frame,name+' Shadbala frame');
+    const cheshtaEvidence=planet.strength6.evidence?.cheshtaSource;
+    assert.ok(Number.isFinite(planet.strength6.evidence?.epochJdUt),name+' Shadbala epoch evidence');
+    assert.equal(cheshtaEvidence?.referenceFrameId,frame,name+' Cheshta frame provenance');
+    assert.equal(cheshtaEvidence?.epochJdUt,planet.strength6.evidence.epochJdUt,name+' Cheshta epoch provenance');
+    if(name==='சூரியன்'){
+      assert.equal(cheshtaEvidence.method,'BPHS_CH27_SUN_AYANA_BALA','Sun Cheshta is BPHS Ayana Bala');
+    }else if(name==='சந்திரன்'){
+      assert.equal(cheshtaEvidence.method,'BPHS_CH27_MOON_PAKSHA_BALA','Moon Cheshta is BPHS Paksha Bala');
+    }else{
+      assert.equal(cheshtaEvidence.method,'TRUE_BPHS_CH27_V365_MEAN_NAELOS_TRUE_LONGITUDE',name+' BPHS Ch27 classical mean/true input method');
+      assert.equal(cheshtaEvidence.trueLongitudeHistoricalCertified,false,name+' natal classical certification remains false');
+      for(const key of ['meanSunFrameId','meanPlanetFrameId','truePlanetFrameId','sheeghroccaFrameId']){
+        assert.equal(cheshtaEvidence[key],frame,name+' '+key+' provenance');
+      }
+    }
     const c=planet.strength6.components;
     for(const field of ['sthana','dig','kala','cheshta','naisargika','drik']){
       const value=field==='sthana'||field==='kala'?c[field]?.total:c[field];
