@@ -137,6 +137,28 @@ for (const [date, time] of births) {
 
 const comparisons = rows.length * bodies.length;
 assert.equal(comparisons, 25, 'five births × five non-luminary grahas = 25 checks');
+const perPlanetResiduals = Object.fromEntries(bodies.map(([, en]) => {
+  const values = rows.map(r => Math.abs(r.planets[en].signedResidualArcsec));
+  return [en, {
+    maxAbsArcsec: Math.max(...values),
+    rmsArcsec: Math.sqrt(values.reduce((a, v) => a + v * v, 0) / values.length),
+    rows: rows.map(r => ({ date: r.date, signedArcsec: r.planets[en].signedResidualArcsec }))
+  }];
+}));
+console.log(JSON.stringify({
+  diagnostic: 'NAELOS_DE440_VS_SWISS_LAHIRI_SAME_ET',
+  maxAbsResidualArcsec,
+  rmsResidualArcsec: Math.sqrt(sumSquares / comparisons),
+  perPlanetResiduals,
+  cheshtaRows: rows.map(r => ({
+    date: r.date,
+    planets: Object.fromEntries(Object.entries(r.planets).map(([name, p]) =>
+      [name, { trueLongitudeSaura: p.trueLongitudeSaura,
+        meanLongitudeSaura: p.meanLongitudeSaura,
+        sheeghroccaSaura: p.sheeghroccaSaura,
+        cheshtaVirupa: p.cheshtaVirupaUsingNaelosTrue }]))
+  }))
+}, null, 2));
 assert.ok(maxAbsResidualArcsec <= MAX_ABS_RESIDUAL_ARCSEC,
   'all 25 NAELOS-vs-Swiss Lahiri true-longitude residuals <= 5 arcsec; max=' +
   maxAbsResidualArcsec);
