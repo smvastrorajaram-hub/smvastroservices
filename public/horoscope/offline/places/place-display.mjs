@@ -98,15 +98,16 @@ export function formatOfflineIndiaPlace(row,language=CURRENT()){
 // Reuse the verified India administrative-name dictionary in report narratives.
 // Unknown/non-India names remain unchanged rather than receiving guessed translations.
 const LATIN_ADMIN=/[A-Za-z]/u;
+const titleEnglish=value=>String(value??'').replace(/[A-Za-z]+/g,word=>word[0].toUpperCase()+word.slice(1).toLowerCase());
 export function formatOfflineIndiaAdministrativeAreas(admin1,admin2,language=CURRENT()){
   const rawState=String(admin1??'').trim();
   const rawDistrict=String(admin2??'').trim().replace(/\s*மாவட்டம்$/u,'');
   const knownState=Object.entries(states).find(([,ta])=>key(ta)===key(rawState))?.[0];
-  const stateEn=knownState||asState(localizeTamilText(rawState,'en'));
+  const stateEn=titleEnglish(knownState||asState(localizeTamilText(rawState,'en')));
   const knownDistrict=key(stateEn)==='tamil nadu'
     ? Object.entries(tnDistricts).find(([,ta])=>key(ta)===key(rawDistrict))?.[0]
     : '';
-  const districtEn=knownDistrict||asDistrict(localizeTamilText(rawDistrict,'en'));
+  const districtEn=titleEnglish(knownDistrict||asDistrict(localizeTamilText(rawDistrict,'en')));
   if(!/^ta(?:-|$)/i.test(String(language)))return {
     admin1:rawState&&!LATIN_ADMIN.test(rawState)?stateEn:(stateEn||rawState),
     admin2:rawDistrict&&!LATIN_ADMIN.test(rawDistrict)?districtEn:(districtEn||rawDistrict)
