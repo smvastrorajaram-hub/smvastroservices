@@ -81,7 +81,7 @@ for (const sample of fixture.samples) {
     assert.ok(Math.abs(delta) <= fixture.comparison.maximumAllowedDifferenceDegrees,
       sample.date + ' ' + planet + ' PAC vs Swiss <= ' +
         fixture.comparison.maximumAllowedDifferenceDegrees + ' degrees; got ' + delta);
-    assertions += 7;
+    assertions += 8;
     observations.push({
       date: sample.date,
       planet,
