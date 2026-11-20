@@ -11,6 +11,7 @@ on:
       - 'public/horoscope/marriage-basic-report.mjs'
       - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
       - 'tests/bv-raman-strength6-regression.mjs'
+      - 'tests/bv-raman-yuddha-regression.mjs'
       - 'tests/bv-raman-ishta-kashta-regression.mjs'
       - 'tests/cg-rajan-ayurdaya-pinda-horoscope-report-qa.mjs'
       - 'tests/marriage-basic-report-regression.mjs'
@@ -26,6 +27,7 @@ on:
       - 'public/horoscope/marriage-basic-report.mjs'
       - 'public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs'
       - 'tests/bv-raman-strength6-regression.mjs'
+      - 'tests/bv-raman-yuddha-regression.mjs'
       - 'tests/bv-raman-ishta-kashta-regression.mjs'
       - 'tests/cg-rajan-ayurdaya-pinda-horoscope-report-qa.mjs'
       - 'tests/marriage-basic-report-regression.mjs'
@@ -55,8 +57,11 @@ jobs:
           node --check public/horoscope/marriage-basic-report.mjs
           node --check public/horoscope/offline/cg-rajan-ayurdaya-pinda.browser.mjs
           node --check tests/bv-raman-strength6-regression.mjs
+          node --check tests/bv-raman-yuddha-regression.mjs
       - name: Verify B.V. Raman printed standard-horoscope component oracle and five natal charts
         run: node tests/bv-raman-strength6-regression.mjs
+      - name: Verify B.V. Raman source-based Yuddha winner, disc-diameter adjustment and unresolved boundaries
+        run: node tests/bv-raman-yuddha-regression.mjs
       - name: Verify B.V. Raman Ishta/Kashta remains separate from sixfold Shadbala
         run: node tests/bv-raman-ishta-kashta-regression.mjs
       - name: Verify Horoscope Ayurdaya report integration and B.V. Raman strength6 output
