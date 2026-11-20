@@ -41,7 +41,15 @@ No 1971, 1974, 1992, 1994 or 2015 IENA/IAE editions are required or to be search
 
 The research workflow now takes the exact deterministic random DOB/time/place records already generated for 1800–2399 and evaluates the NAELOS/JPL DE440 apparent geocentric longitude for Mercury, Venus, Mars, Jupiter and Saturn at each same epoch. The test verifies all six relevant 100-year binaries against the checked-in byte-length/SHA-256 manifest, converts each historical local civil time using the recorded IANA offset, and compares NAELOS with the repository Swiss Ephemeris at the same ET/TT instant.
 
-This is a distinct modern numerical parity test. The outputs are additionally transferred into the declared Burgess-1860 Saura frame to exercise the BPHS Chesta input geometry with the already audited Saura mean/Sheeghroccheya selector. The test does not change the historical Sūrya-Siddhānta True Longitude output and does not turn modern DE440 parity into a historical archive certificate. Exact residual statistics are recorded in the uploaded 600-chart artifact after Actions completes.
+This is a distinct modern numerical parity test. The outputs are additionally transferred into the declared Burgess-1860 Saura frame to exercise the BPHS Chesta input geometry with the already audited Saura mean/Sheeghroccheya selector. The test does not change the historical Sūrya-Siddhānta True Longitude output and does not turn modern DE440 parity into a historical archive certificate. The completed run [#44806001549](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44806001549) passed all **3,000 / 3,000** exact-epoch comparisons under the predeclared 5-arcsecond maximum gate:
+
+- Maximum absolute tropical apparent residual: **0.0085239654″**.
+- RMS residual: **0.0013143326″**.
+- Mercury: max 0.0059714356″; Venus: 0.0085239654″; Mars: 0.0056769214″; Jupiter: 0.0040623978″; Saturn: 0.0040692335″.
+- The six DE440 century binaries (1800, 1900, 2000, 2100, 2200, 2300) passed exact byte-length and SHA-256 manifest checks.
+- The updated full 600-chart / 3,000-longitude artifact is [artifact #14662204322](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44806001549/artifacts/14662204322).
+
+This PASS is a **modern DE440-vs-Swiss numerical parity** check at the exact sampled instants. It is not an independent historical printed-table oracle, does not certify the Sūrya-Siddhānta four-pass True Longitude model, and leaves every ordinary natal chart `classicalCertified:false`.
 
 ## Phase 2 — 42 Bala source rows
 
