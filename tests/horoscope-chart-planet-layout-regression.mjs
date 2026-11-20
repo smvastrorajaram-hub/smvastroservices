@@ -63,7 +63,7 @@ assert.ok(chartStyleJs.includes("const mapped=new Set(from.cusp.flat())"),'North
 assert.ok(chartStyleJs.includes("line.hasAttribute('data-bhava-house')"),'North Bhava fallback preserves each source planet’s already-calculated Bhava assignment.');
 assert.ok(horoscopeJs.includes('data-bhava-house="${n}" data-bhava-sign="${si+1}"'),'Bhava rendering preserves its already-calculated house and Sphuta Rasi as display metadata only.');
 assert.match(chartStyleJs,/kind==='bhava'\s*\?\s*signByBhavaHouse\.get\(house\)/,'North Bhava sign numbers come from the calculated Sphuta Rasi in each house cell, not from Lagna-relative numbering.');
-assert.ok(chartStyleJs.includes("roots().forEach(r=>apply(r,choice));"),'Existing saved result markup is presented when the chart module starts.');
+assert.ok(chartStyleJs.includes("roots().forEach(r=>{")&&chartStyleJs.includes("apply(r,choice);")&&chartStyleJs.includes("observeTamilBhavaLabels(r);"),'Existing saved result markup is presented and Tamil Bhava Roman protection is installed when the chart module starts.');
 assert.ok(/render\(d\);[\s\S]{0,500}?window\.SMVChartPresentationV342\?\.apply\(resultBox\);/.test(horoscopeJs),'Every core/basic horoscope render immediately applies chart presentation; comments between the render and apply calls do not weaken this requirement.');
 assert.ok(chartStyleJs.includes("chart.classList.contains('transit-chart')"),'Transit detection also covers production charts without a fixture ID.');
 assert.ok(chartStyleJs.includes("arr.out[si]?.querySelector('[data-transit-lagna]')"),'North/East chart conversion locates Transit Lagna from its source graha-flow row.');
