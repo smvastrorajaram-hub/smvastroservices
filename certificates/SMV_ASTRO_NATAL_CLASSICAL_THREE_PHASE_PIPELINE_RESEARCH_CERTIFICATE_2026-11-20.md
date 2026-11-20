@@ -86,3 +86,32 @@ Any missing or failing item returns `classicalCertified:false` and `provisional:
 **NOT CERTIFIED.** The pipeline is now specified and executable, but 600 random natal calculations are a coverage regression, not proof of historical truth or accuracy for every arbitrary birth instant. The Burgess 1860 anchor still needs exact frame/time conversion and reconciliation, independent historical True Longitude anchors need to be acquired and compared, event-window tests are pending, and the complete 42-row source evidence matrix does not yet exist for arbitrary natal charts.
 
 No production calculations, default chart inputs, website/PWA/Android cache versions, APKs, Firebase, Render, Cloudflare, horoscope/calendar UI, marriage matching, or production services are changed by this research-only work.
+
+
+## Executed annual random natal-chart audit — PASS (research-only)
+
+**GitHub Actions:** [Run #44795349557 — SUCCESS](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44795349557)  
+**Commit:** `9fc647186d26972c8fb3df4051bf1a1929ef5270`  
+**Artifact:** `natal-classical-random-600-charts-1800-2399` (Actions artifact ID `14658472205`; 504,859 bytes; SHA-256 `46e57c2e98ea0144f94a83551dbf3000fb4947a2d162afa592d9b0393683f4ea`)
+
+The executed deterministic random corpus contains exactly one full natal chart for every civil year 1800–2399. Each entry includes a random valid DOB/time, one of 50 Indian locations, coordinates, historical `Asia/Kolkata` UTC offset and exact Julian day.
+
+| Executed check | Result |
+|---|---:|
+| Full natal charts generated | **600 / 600 PASS** |
+| Graha rows inspected | **4,200** |
+| Six-Bala component values | **25,200** |
+| Five-planet Saura Mean/True/Sheeghroccheya research rows | **3,000** |
+| Distinct Indian places used | **50** |
+| All eligible five-planet Yuddha pair classifications | **6,000** |
+| Yuddha `NO_WAR` | **5,957** |
+| Resolved Yuddha wars | **43** |
+| Unresolved Yuddha pairs | **0** |
+| Missing Bala component values | **0** |
+| Kala / six-Bala total / Rupa reconciliation failures | **0** |
+| Totals withheld because of unresolved Yuddha | **0** |
+| Natal charts marked `classicalCertified:true` | **0** |
+
+The audit validates the 600 selected birth instants and checks the source-rule Yuddha traces, equal winner/loser Kala adjustments, disc-diameter differences and final totals. It does not prove historical True Longitude accuracy for every possible birth instant, because the underlying Saura candidates still have `independentHistoricalOracleVerified:false`. The 42-row six-Bala gate is a separate source-evidence policy; synthetic fixtures are rejected and cannot create certification.
+
+**Final certification decision remains NOT CERTIFIED for arbitrary natal charts.** All 600 charts are research calculations only. The independent historical Mean/True/Sheeghroccheya references, source reconciliation and broader event-window evidence still need to pass before any production chart can receive `classicalCertified:true`.
