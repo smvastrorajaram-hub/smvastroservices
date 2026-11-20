@@ -10,10 +10,9 @@ This is not an offline conversion of backend services. It is a static UI and det
 
 ## Current synchronized cache release
 
-The three app workers select a synchronized release marker by hostname. The Pages.dev host uses `SMV_CACHE_RELEASE=20261120-subha-janana-transit-lagna-v3`; the main `.in` host uses `SMV_CACHE_RELEASE=20261120-subha-janana-transit-lagna-v3`. The three application cache namespaces remain independent. Pages.dev UI changes bump the Pages.dev marker across all three workers. Shared production dashboard JavaScript, public `.in` content, or homepage changes also bump the `.in` marker across all three workers. Shared Horoscope chart stylesheet and page changes rotate both markers together.
+The three Service Workers keep separate cache namespaces for SMV ASTRO, SMV HOROSCOPE and SMV CALENDAR, while sharing synchronized release IDs by host. The release IDs are generated automatically from the tracked public assets by `scripts/sync-offline-cache-release.mjs`; they are content hashes, not manually incremented `v1/v2/v3` values. The PR workflow writes the generated Pages.dev and production IDs into all three workers together. Tests verify that both host-specific IDs are present and synchronized, without hard-coding a particular release value.
 
-The production Android apps are remote-site WebViews, not bundled offline HTML packages. All three native WebViews now explicitly use `WebSettings.LOAD_DEFAULT` and configure Android's Service Worker runtime with `LOAD_DEFAULT` and network loads enabled. The hosted Service Worker then refreshes static UI files on successful online requests and serves the last cached UI/calculation assets offline. A web-only UI change is therefore delivered to the installed Android apps through their respective origin's updated Service Worker; an APK rebuild is needed when native Android code itself changes.
-
+A public-source change therefore rotates the required static-shell cache automatically. The workers retain their independent app cache namespaces and the existing shared India place-data cache. No origin-wide local storage, IndexedDB, saved report, or user data is cleared by a release update.
 ## App boundaries
 
 - **SMV ASTRO:** cache the root page, static CSS/JavaScript, manifest and essential visual assets. Keep the existing India/place-search cache independent. The root worker does not intercept the nested Horoscope/Calendar scope.

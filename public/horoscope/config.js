@@ -527,8 +527,9 @@ window.addEventListener('smv:horoscope-local-auth',event=>{
 });
 
 window.addEventListener('smv-language',()=>{
-  if(!window.__smvHoroscopeLoggedIn?.())clearAfterAuthRemount();
-  else queueMicrotask(syncAllPaidButtons);
+  // Language changes are presentation-only. Do not run auth-remount cleanup here:
+  // it clears the generated report DOM for public (logged-out) users.
+  queueMicrotask(syncAllPaidButtons);
   syncHoroscopePaidEntry().catch(()=>{});
 });
 document.addEventListener('DOMContentLoaded',()=>syncHoroscopePaidEntry().catch(()=>{}),{once:true});
