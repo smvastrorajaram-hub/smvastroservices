@@ -60,8 +60,21 @@ for (const [date, time] of births) {
   // TT using the NAELOS ΔT model. All planetary positions are evaluated by
   // calc(jdTT), never by calc_ut(), and no UTC→TT shortcut is introduced.
   const localDecimalHour = hh + mm / 60;
-  const jdUT = julday(y, m, d, localDecimalHour - UTC_OFFSET_MINUTES / 60);
-  const jdTT = jdUT + eph.deltat(jdUT);
+  const civilDerivedJdUT = julday(y, m, d, localDecimalHour - UTC_OFFSET_MINUTES / 60);
+  const utcDate = new Date(Date.UTC(y, m - 1, d, hh, mm) - UTC_OFFSET_MINUTES * 60_000);
+  const swissJD = swe.utcToJd(
+    utcDate.getUTCFullYear(), utcDate.getUTCMonth() + 1, utcDate.getUTCDate(),
+    utcDate.getUTCHours(), utcDate.getUTCMinutes(), utcDate.getUTCSeconds()
+  );
+  assert.ok(Number.isFinite(swissJD?.ut) && Number.isFinite(swissJD?.et),
+    date + ' Swiss UTC-to-UT/ET conversion available');
+  assert.ok(Math.abs(swissJD.ut - civilDerivedJdUT) < 1e-8,
+    date + ' independent civil→UT Julian-day conversion reconciles');
+  // NAELOS calc() and Swiss swe_calc() both accept TT/ET Julian Day. Use
+  // Swiss's UTC conversion result so both engines evaluate the exact same
+  // dynamical instant; never pass UT to the direct calc() interface.
+  const jdUT = swissJD.ut;
+  const jdTT = swissJD.et;
 
   const ayanamsa = swe.ayanamsa(jdUT);
   assert.ok(Number.isFinite(ayanamsa), date + ' Lahiri ayanamsa finite');
@@ -76,7 +89,7 @@ for (const [date, time] of births) {
     // date. Subtract the same Lahiri ayanamsa used by SMV's Swiss chart engine
     // so the two longitudes are in the same sidereal coordinate frame.
     const naelosLahiri = norm(naelos.longitude - ayanamsa);
-    const swiss = swe.calc(jdUT, swissBody, swe.siderealSpeedFlags());
+    const swiss = swe.calc(jdTT, swissBody, swe.siderealSpeedFlags());
     assert.ok(Number.isFinite(swiss?.longitude), date + ' ' + en + ' Swiss Lahiri position finite');
     const residualArcsec = signedArcsec(naelosLahiri, swiss.longitude);
     maxAbsResidualArcsec = Math.max(maxAbsResidualArcsec, Math.abs(residualArcsec));
