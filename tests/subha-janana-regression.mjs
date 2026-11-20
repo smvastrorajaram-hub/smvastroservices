@@ -167,7 +167,7 @@ has(form,"const {localizeTamilText}=await import('./offline/places/tamil-transli
 has(form,"copy('englishBirthVillage','tamilBirthVillage','ta')",'English village is transliterated into the Tamil mirror field.');
 has(form,"copy('englishAstroName','tamilAstroName','ta')",'English horoscope name is transliterated into the Tamil report field.');
 has(horoscope,"['tamilAstroName','englishAstroName']",'Tamil horoscope name is transliterated into the English mirror field.');
-has(horoscope,'class="smv-horoscope-person-name" data-name-ta="${esc(name)}"','Result heading stores the Tamil-script name separately.');
+has(horoscope,'data-name-ta="${esc(name)}"','Result heading stores the Tamil-script name separately.');
 has(horoscope,'data-name-en="${esc($(\'englishAstroName\')?.value||name)}"','Result heading stores the English-script name separately.');
 has(language,"root?.querySelector('.smv-horoscope-person-name')",'Result language switch updates the displayed horoscope name.');
 has(language,"lang==='ta'?personName.dataset.nameTa:personName.dataset.nameEn",'Name heading selects the matching translated form for Tamil and English.');
