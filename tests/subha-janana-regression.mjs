@@ -115,8 +115,8 @@ const expectedEnglishYoga=fixtureBirthYoga.en.replace(/\s*Yogam$/i,'')+' Yogam o
 has(tamilStatement,expectedTamilYoga,'Tamil statement displays only the Amirthadi Yoga active at birth time');
 has(englishStatement,expectedEnglishYoga,'English statement displays only the Amirthadi Yoga active at birth time');
 lacks(tamilStatement,'பிறந்த நேர அமிர்தாதி யோகம்:','Tamil statement does not append a second birth-time Yoga label');
-has(tamilStatement,'கிரீஷ்ம ருதுவும்','June Tamil solar month derives Grishma Ritu');
-has(englishStatement,'Grishma season','English statement derives the same solar Ritu');
+has(tamilStatement,'class="smv-sj-result">கிரீஷ்ம</span> ருதுவும்','June Tamil solar month derives Grishma Ritu with result styling');
+has(englishStatement,'class="smv-sj-result">Grishma</span> season','English statement derives the same solar Ritu with result styling');
 for(const value of ['ராஜாராம்','பெரம்பலூர் கிராமம்','ராஜேந்திரன்','அன்னபூரணி','மதுரை மாவட்டம்','தமிழ்நாடு மாநிலம்'])
   has(tamilStatement,value,'Tamil input remains Tamil in Tamil statement: '+value);
 for(const value of ['Rajaram','Perambalur Village','Rajendran','Annapoorani','Madurai District','Tamil Nadu State'])
