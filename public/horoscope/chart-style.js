@@ -43,7 +43,7 @@
   return {out,houses,cusp};
  }
  function ascSign(chart,arr){
-  if(chart.id==='transitChart'){
+  if(chart.id==='transitChart'||chart.classList.contains('transit-chart')){
    // Transit Lagna is a rendered planet-flow glyph, not the natal .lagna node.
    // Read its source sign so North/East presentation can place the Transit chart.
    for(let si=0;si<12;si++)if(arr.out[si]?.querySelector('[data-transit-lagna]'))return si;
