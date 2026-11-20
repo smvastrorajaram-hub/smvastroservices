@@ -35,8 +35,13 @@ const dateAdd = (date,n) => { const d = new Date(date+'T12:00:00Z'); d.setUTCDat
 const dayOf = date => new Date(date+'T12:00:00Z').getUTCDay();
 const mins = time => { const m=String(time||'').match(/^(\d{1,2}):([0-5]\d)$/); return m?Number(m[1])*60+Number(m[2]):null; };
 const stamp = (date,time,zone) => Date.parse(date+'T'+time+':00Z')-offsetMinutesAt(zone,date,time)*60000;
-const time12 = time => { const m=String(time||'').match(/^(\d{1,2}):([0-5]\d)$/); if(!m)return '—'; const h=Number(m[1]); return String(h%12||12).padStart(2,'0')+':'+m[2]+' '+(h>=12?'PM':'AM'); };
+const time12 = time => { const m=String(time||'').match(/^(\\d{1,2}):([0-5]\\d)$/); if(!m)return '—'; return String(Number(m[1])).padStart(2,'0')+':'+m[2]; };
 const ghati = (v,ta) => { if(!Number.isFinite(v)||v<0)return '—'; const total=Math.round(v),n=Math.floor(total/60),r=String(total%60).padStart(2,'0'); return ta?n+' நாழிகை '+r+' விநாழிகை':n+' Nazhigai '+r+' Vinazhigai'; };
+const ghatiMarkup = (v,ta) => {
+  if(!Number.isFinite(v)||v<0)return '—';
+  const total=Math.round(v),n=Math.floor(total/60),r=String(total%60).padStart(2,'0');
+  return sjTime(n)+' '+(ta?'நாழிகை':'Nazhigai')+' '+sjTime(r)+' '+(ta?'விநாழிகை':'Vinazhigai');
+};
 const solarInfo = (date,lat,lon,zone) => {
   const offset=offsetMinutesAt(zone,date,'12:00');
   let rise=solarNoaa(date,lat,lon,offset,true),set=solarNoaa(date,lat,lon,offset,false);
@@ -54,8 +59,7 @@ const pointText = (point,baseDate,lat,lon,zone,ta) => {
   const anchor=solarInfo(anchorDate,lat,lon,zone); if(!anchor)return '';
   const elapsed=stamp(point.date,point.time,zone)-anchor.riseTs; if(elapsed<0)return '';
   const relation=anchorDate<baseDate?(ta?'முந்தைய நாள் ':'Previous day '):anchorDate>baseDate?(ta?'மறுநாள் ':'Following day '):(ta?'அன்றைய ':'That day ');
-  const t=mins(point.time),part=t<mins(info.rise)?(ta?'இரவு':'night'):t<720?(ta?'காலை':'morning'):t<960?(ta?'பகல்':'day'):t<1080?(ta?'மாலை':'evening'):(ta?'இரவு':'night');
-  return sjTime(relation+part+' '+ghati(elapsed/24000,ta))+' ('+sjTime(time12(point.time))+')';
+  return relation+ghatiMarkup(elapsed/24000,ta)+' ('+sjTime(time12(point.time))+')';
 };
 const rangeText = (obj,date,lat,lon,zone,ta) => {
   const a=pointText(parsePoint(obj?.start),date,lat,lon,zone,ta),b=pointText(parsePoint(obj?.end),date,lat,lon,zone,ta);
@@ -130,16 +134,16 @@ export async function buildSubhaJanana(p,chart,meta={},lang='ta'){
     : (ta?'அமிர்தாதி யோகம் கணிக்க இயலாத சுப தினத்தில்':'an auspicious day with unavailable Amirthadi Yoga');
   const ranges=[rangeText(p?.tithi,date,lat,lon,zone,ta),rangeText(p?.nakshatra,date,lat,lon,zone,ta),rangeText(p?.yoga,date,lat,lon,zone,ta),rangeText(p?.karana,date,lat,lon,zone,ta)];
   const dayLabel=ta?VARA_TA_DAY[weekday]+' ('+VARA_SA[weekday]+')':VARA_EN[weekday]+' ('+VARA_SA_EN[weekday]+')';
-  const sunRise=ta?solar.rise:time12(solar.rise),sunSet=ta?solar.set:time12(solar.set),ahas=ghati(pramana?.ahasNazhigai?.totalVighati,ta),ratri=ghati(pramana?.ratriNazhigai?.totalVighati,ta);
+  const sunRise=sjTime(time12(solar.rise)),sunSet=sjTime(time12(solar.set)),ahas=ghatiMarkup(pramana?.ahasNazhigai?.totalVighati,ta),ratri=ghatiMarkup(pramana?.ratriNazhigai?.totalVighati,ta);
   const tyaLine=tyajyamText?(ta?'தியாஜ்யம்: ':'Thyajyam: ')+sjSafeValue(tyajyamText)+' ':'';
   const auspicious=inTyajyam?(ta?'(பிறந்த நேரம் தியாஜ்ய காலத்துடன் பொருந்துகிறது)':'(birth time overlaps Thyajyam)'):(ta?'(தியாஜ்யம் நீங்கிய சுப வேளையில்)':'(outside the Thyajyam interval)');
   const tithi=String(p?.tithi?.name||p?.tithi?.group||'—'),nak=String(p?.nakshatra?.name||'—'),yoga=String(p?.yoga?.name||'—'),karana=String(p?.karana?.name||'—');
-  const birthTimeGhati=ghati(birthVighati,ta),birthClockTa=(mins(time)>=18*60||mins(time)<5*60?'இரவு':mins(time)<12*60?'காலை':mins(time)<17*60?'பகல்':'மாலை')+' '+time12(time).replace(/ (AM|PM)$/,''),birthClockEn=time12(time);
+  const birthTimeGhati=ghatiMarkup(birthVighati,ta),birthClockMarkup=sjTime(time12(time));
   const child=ta?(gender==='female'?'புத்திரி பாக்கியமாக பெண் குழந்தை சுபஜெனனம் நிகழ்ந்தது.':'புத்திர பாக்கியமாக ஆண் குழந்தை சுபஜெனனம் நிகழ்ந்தது.'):(gender==='female'?'A baby girl was born as a blessed daughter.':'A baby boy was born as a blessed son.');
   const naming=name?(ta?'பெற்றோரால் இக்குழந்தைக்கு '+sjValue(name)+' எனத் திருநாமம் சூட்டப்பெற்றது.':'The child was given the auspicious name '+sjValue(name)+' by the parents.'):'';
   const blessing=ta?'இந்நன்னாளில் பிறந்த இக்குழந்தை சகல சௌபாக்கியங்களும், தீர்க்காயுளும், நிறைந்த கல்வியும், செல்வமும் பெற்று சீரும் சிறப்புமாக வாழ எல்லாம் வல்ல இறைவன் அருள் புரிவாராக!':'May the Almighty bless this child with every prosperity, long life, abundant learning and wealth, and a life of dignity and fulfilment.';
   const text=ta
-    ? 'நிகழும் மங்களகரமான '+sjValue(samvatsara)+' நாம சம்வத்ஸரம், '+sjValue(ayana)+' புண்ணிய காலமும் '+sjValue(ritu)+' ருதுவும் '+sjValue(monthName)+' மாதம் '+sjValue(monthDay)+'-ஆம் நாள் '+sjValue(dayLabel)+' கூடிய சுபயோக சுப தினத்தில் சூரிய உதயம் காலை '+sjTime(sunRise)+' மணியும் அஸ்தமனம் மாலை '+sjTime(sunSet)+' மணியும் அகஸ் (பகல் அளவு) '+sjTime(ahas)+' (இரவு அளவு: '+sjTime(ratri)+') கொண்ட நன்னாளில் '+sjValue(paksha)+' '+sjValue(tithi)+' திதி — '+ranges[0]+'; '+sjValue(nak)+' நட்சத்திரம் ('+sjValue(p?.nakshatra?.pada||'—')+'-ஆம் பாதம்) — '+ranges[1]+'; '+sjValue(yoga)+' யோகம் — '+ranges[2]+'; '+sjValue(karana)+' கரணம் — '+ranges[3]+'. '+tyaLine+auspicious+' '+sjValue(birthYogaPhrase)+'. சூரிய உதயாதி '+sjTime(birthTimeGhati)+'க்கு (சரியாக '+sjTime(birthClockTa)+' மணிக்கு), '+sjValue(lagna)+' லக்னத்தில், '+sjValue(moon)+' ராசியில், '+sjSafeValue(place)+' திருத்தலத்தில்; '+(parentText?sjSafeValue(parentText)+' ':'')+sjValue(child)+' '+naming+' '+blessing
-    : 'In the auspicious '+sjValue(samvatsara)+' Samvatsara, during '+sjValue(ayana)+' and the '+sjValue(ritu)+' season, on day '+sjValue(monthDay)+' of '+sjValue(monthName)+', '+sjValue(dayLabel)+', sunrise '+sjTime(sunRise)+', sunset '+sjTime(sunSet)+', Ahas '+sjTime(ahas)+' and Ratri '+sjTime(ratri)+'. '+sjValue(paksha)+', '+sjValue(tithi)+' Tithi — '+ranges[0]+'; '+sjValue(nak)+' Nakshatra (Pada '+sjValue(p?.nakshatra?.pada||'—')+') — '+ranges[1]+'; '+sjValue(yoga)+' Yoga — '+ranges[2]+'; '+sjValue(karana)+' Karana — '+ranges[3]+'. '+tyaLine+auspicious+' '+sjValue(birthYogaPhrase)+'. At '+sjTime(birthTimeGhati)+' after sunrise (exactly '+sjTime(birthClockEn)+'), under '+sjValue(chart?.lagna?.rasi||chart?.lagna?.sign||'—')+' Lagna and '+sjValue(moon)+' Moon Rasi, at '+sjSafeValue(place)+'; '+(parentText?sjSafeValue(parentText)+' ':'')+sjValue(child)+' '+naming+' '+blessing;
+    ? 'நிகழும் மங்களகரமான '+sjValue(samvatsara)+' நாம சம்வத்ஸரம், '+sjValue(ayana)+' புண்ணிய காலமும் '+sjValue(ritu)+' ருதுவும் '+sjValue(monthName)+' மாதம் '+sjValue(monthDay)+'-ஆம் நாள் '+sjValue(dayLabel)+' கூடிய சுபயோக சுப தினத்தில் சூரிய உதயம் '+sunRise+' மணியும் அஸ்தமனம் '+sunSet+' மணியும் அகஸ் (பகல் அளவு) '+ahas+' (இரவு அளவு: '+ratri+') கொண்ட நன்னாளில் '+sjValue(paksha)+' '+sjValue(tithi)+' திதி — '+ranges[0]+'; '+sjValue(nak)+' நட்சத்திரம் ('+sjValue(p?.nakshatra?.pada||'—')+'-ஆம் பாதம்) — '+ranges[1]+'; '+sjValue(yoga)+' யோகம் — '+ranges[2]+'; '+sjValue(karana)+' கரணம் — '+ranges[3]+'. '+tyaLine+auspicious+' '+sjValue(birthYogaPhrase)+' சூரிய உதயாதி '+birthTimeGhati+'க்கு (சரியாக '+birthClockMarkup+' மணிக்கு), '+sjValue(lagna)+' லக்னத்தில், '+sjValue(moon)+' ராசியில், '+sjSafeValue(place)+' திருத்தலத்தில்; '+(parentText?sjSafeValue(parentText)+' ':'')+sjValue(child)+' '+naming+' '+blessing
+    : 'In the auspicious '+sjValue(samvatsara)+' Samvatsara, during '+sjValue(ayana)+' and the '+sjValue(ritu)+' season, on day '+sjValue(monthDay)+' of '+sjValue(monthName)+', '+sjValue(dayLabel)+', sunrise '+sunRise+', sunset '+sunSet+', Ahas '+ahas+' and Ratri '+ratri+'. '+sjValue(paksha)+', '+sjValue(tithi)+' Tithi — '+ranges[0]+'; '+sjValue(nak)+' Nakshatra (Pada '+sjValue(p?.nakshatra?.pada||'—')+') — '+ranges[1]+'; '+sjValue(yoga)+' Yoga — '+ranges[2]+'; '+sjValue(karana)+' Karana — '+ranges[3]+'. '+tyaLine+auspicious+' '+sjValue(birthYogaPhrase)+'. At '+birthTimeGhati+' after sunrise (exactly '+birthClockMarkup+'), under '+sjValue(chart?.lagna?.rasi||chart?.lagna?.sign||'—')+' Lagna and '+sjValue(moon)+' Moon Rasi, at '+sjSafeValue(place)+'; '+(parentText?sjSafeValue(parentText)+' ':'')+sjValue(child)+' '+naming+' '+blessing;
   return '<div class="smv-subha-janana"><h3><span class="smv-sj-symbol" aria-hidden="true">ॐ</span><span>'+(ta?'ஸ்ரீமத் சுபஜெனன வாக்கியம்':'Sri Math Subha Janana Statement')+'</span><span class="smv-sj-symbol" aria-hidden="true">ॐ</span></h3><p>'+text+'</p></div>';
 }
