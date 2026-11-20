@@ -976,11 +976,13 @@ try {
   await page.$eval('#calDate', (el, date) => {
     el.value = date;
     el.dispatchEvent(new Event('change', { bubbles: true }));
-  }, '2026-11-20');
+  }, '2026-11-21');
   await page.waitForFunction(() => {
     const status = document.querySelector('#calStatus')?.textContent || '';
     const window = document.querySelector('#calChandrashtamaPeriods .cal-chandra-window.is-selected-date');
-    return status.includes('2026-11-20') &&
+    // Use a date after the workflow's current day so the app correctly follows
+    // its future-selected-date path rather than the separate "active today" path.
+    return status.includes('2026-11-21') &&
       window?.querySelector('.cal-chandra-rasi-period strong')?.textContent === 'Pisces';
   }, { timeout: 120000 });
   const simhaStarOptions = await page.$$eval('#calStar option', options => options.map(option => option.value));
@@ -1699,7 +1701,10 @@ try {
     return page.evaluate(language => {
       const chart = document.querySelector('#calDaily .transit-chart');
       const cells = [...(chart?.querySelectorAll('.south-rasi-cell') || [])];
-      const planetElements = [...(chart?.querySelectorAll('.planet-short') || [])];
+      // The Transit Lagna marker is a chart reference, not one of the nine grahas.
+      const transitLagnaElements = [...(chart?.querySelectorAll('.planet-short[data-transit-lagna]') || [])];
+      const planetElements = [...(chart?.querySelectorAll('.planet-short') || [])]
+        .filter(element => !element.hasAttribute('data-transit-lagna'));
       const rows = [...(document.querySelectorAll('#calDaily .transit-position-table tbody tr') || [])].map(row => ({
         name: row.querySelector('td:first-child')?.textContent.trim() || '',
         cells: row.querySelectorAll('td').length
@@ -1814,6 +1819,14 @@ try {
             rect.top >= cellRect.top - 1 && rect.bottom <= cellRect.bottom + 1 &&
             rect.left >= cellRect.left - 1 && rect.right <= cellRect.right + 1);
         }).length,
+        transitLagnaCount: transitLagnaElements.length,
+        visibleTransitLagnaCount: transitLagnaElements.filter(el => {
+          const cell=el.closest('.south-rasi-cell');
+          const rect=el.getBoundingClientRect(),cellRect=cell?.getBoundingClientRect(),style=getComputedStyle(el);
+          return Boolean(cellRect&&rect.width>0&&rect.height>0&&style.display!=='none'&&style.visibility!=='hidden'&&
+            rect.top>=cellRect.top-1&&rect.bottom<=cellRect.bottom+1&&
+            rect.left>=cellRect.left-1&&rect.right<=cellRect.right+1);
+        }).length,
         chartHasJupiter: (() => {
           const index = planetText.findIndex(value => value.startsWith(language === 'ta' ? 'கு' : 'Ju'));
           if (index < 0) return false;
@@ -1919,6 +1932,8 @@ try {
       const transitState = await inspectTransitDate(date, language);
       assert.equal(transitState.chartPlanetCount, 9, language + ' ' + date + ': all nine grahas must be present in the Transit Chart: ' + JSON.stringify(transitState));
       assert.equal(transitState.visiblePlanetCount, 9, language + ' ' + date + ': all nine grahas must be visibly inside their Rasi cells, not only present in the DOM: ' + JSON.stringify(transitState));
+      assert.equal(transitState.transitLagnaCount, 1, language + ' ' + date + ': the separate Transit Lagna reference marker must be present once.');
+      assert.equal(transitState.visibleTransitLagnaCount, 1, language + ' ' + date + ': the Transit Lagna reference marker must remain visible in its Rasi cell.');
       assert.equal(transitState.chartHasJupiter, true, language + ' ' + date + ': Jupiter must be visible in the Transit Chart: ' + JSON.stringify(transitState));
       assert.equal(transitState.chartCenterText, language === 'ta' ? 'கோச்சாரம்' : 'Transit', language + ' ' + date + ': only the chart center label must use the concise transit wording.');
       assert.equal(transitState.chartCenterColor, 'rgb(21, 86, 78)', language + ' ' + date + ': the chart center label must use Calendar theme green.');

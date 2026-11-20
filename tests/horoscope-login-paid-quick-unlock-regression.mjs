@@ -145,6 +145,25 @@ test("All three apps use one synchronized cache release; Horoscope runtime revis
   assert.equal(runtime[2], "v278-in-navigation-20261115");
 });
 
+test("Language changes preserve the generated report; only authentication remounts clear it", () => {
+  const languageStart = policy.indexOf("window.addEventListener('smv-language'");
+  const languageEnd = policy.indexOf("document.addEventListener('DOMContentLoaded'", languageStart);
+  assert.ok(languageStart >= 0 && languageEnd > languageStart, "The Horoscope language listener must exist.");
+  const languageListener = policy.slice(languageStart, languageEnd);
+  assert.doesNotMatch(languageListener, /clearAfterAuthRemount|clearCurrentResults/,
+    "A presentation-only language switch must never clear generated Horoscope results.");
+  assert.match(languageListener, /syncAllPaidButtons/);
+  assert.match(languageListener, /syncHoroscopePaidEntry/);
+
+  const authStart = policy.indexOf("window.addEventListener('smv:horoscope-local-auth'");
+  assert.ok(authStart >= 0 && authStart < languageStart);
+  const authListener = policy.slice(authStart, languageStart);
+  assert.match(authListener, /clearAfterAuthRemount\(\)/,
+    "Actual logout/auth remount cleanup must remain in place.");
+  assert.ok(html.includes("config.js?v=20261120-horoscope-language-result-preserve-v1"),
+    "The changed access-policy script must have a fresh asset URL.");
+});
+
 test("No origin-wide local storage, Cache API or IndexedDB deletion is introduced", () => {
   assert.doesNotMatch(policy, /localStorage\.clear\(/);
   assert.doesNotMatch(policy, /caches\.delete\(/);
