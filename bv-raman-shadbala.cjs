@@ -251,7 +251,7 @@ function chestaFromRamanInputs(planet,sourceInputs){
   })}:{})
  });
 }
-export function calculateBVRamanChestaFromInputs(planet,sourceInputs){
+function calculateBVRamanChestaFromInputs(planet,sourceInputs){
  if(!PLANETS.includes(planet))throw new RangeError('Seven classical planets only');
  return chestaFromRamanInputs(planet,sourceInputs);
 }
