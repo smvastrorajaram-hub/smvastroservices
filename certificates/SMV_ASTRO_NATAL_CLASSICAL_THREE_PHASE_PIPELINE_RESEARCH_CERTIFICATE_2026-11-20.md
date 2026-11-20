@@ -7,12 +7,12 @@
 
 ## Phase 1 — Historical Mean / True / Sheeghroccheya chain
 
-The new monthly runner evaluates the existing Saura Bīja research model for Mercury, Venus, Mars, Jupiter and Saturn at one deterministic epoch per month (the 15th at 12:00 UTC), January 1800 through December 2399.
+The annual runner evaluates the existing Saura Bīja research model for Mercury, Venus, Mars, Jupiter and Saturn at exactly one deterministic epoch per civil year: 1 January at 12:00 UTC, from 1800 through 2399.
 
-- Required coverage: 600 years × 12 months = 7,200 rows per planet.
-- Required total: 36,000 five-planet candidate rows.
+- Required coverage: exactly 600 rows per planet (one per year).
+- Required total: 3,000 five-planet candidate rows.
 - Every candidate must return finite Mean Longitude, True Longitude, Sheeghroccheya and Mandocca in the declared `traditional-Saura-nirayana` frame.
-- This coverage test is not an independent historical accuracy test. Its outputs remain research-only and `productionEligible:false`.
+- This is annual-point coverage only, not an independent historical accuracy test. It does not validate dates between annual epochs or arbitrary birth instants. Its outputs remain research-only and `productionEligible:false`.
 
 ### Independent source anchor
 
@@ -27,7 +27,7 @@ The India Meteorological Department describes the *Indian Astronomical Ephemeris
 
 The current phase deliberately does **not** claim:
 1. that the Burgess 1860 anchor is reconciled;
-2. that an independent historical True Longitude oracle exists for all 36,000 candidate rows;
+2. that an independent historical True Longitude oracle exists for all 3,000 annual candidate rows;
 3. that high-resolution station, retrograde, sign-boundary, conjunction and Yuddha-threshold event windows have passed.
 
 ## Phase 2 — Six Bala evidence ledger
@@ -63,7 +63,7 @@ Sun and Moon's B.V. Raman sixfold motional Cheshta remains zero. The separate Ch
 A chart can receive `classicalCertified:true` only when all conditions are met together:
 
 1. Birth year is inside 1800–2399.
-2. All five planets have verified Mean/True/Sheeghroccheya/Mandocca inputs in one coherent frame, with independent historical references, 7,200 monthly rows per planet, and event-window tests PASS.
+2. All five planets have verified Mean/True/Sheeghroccheya/Mandocca inputs in one coherent frame, with independent historical references, 600 annual rows per planet, and event-window tests PASS.
 3. All 42 six-Bala evidence rows pass their own source, sample, residual, tolerance and sub-rule checks.
 4. All ten possible eligible five-planet Yuddha pairs are evaluated; the source winner/loser rule and disc diameters are verified; no pair is unresolved; final Kala and six-Bala totals are recomposed.
 5. Node/Browser parity passes for all seven grahas and all six components.
@@ -73,12 +73,12 @@ Any missing or failing item returns `classicalCertified:false` and `provisional:
 
 ## Code and test artifacts
 
-- `research/natal-classical-certification/monthly-longitude-coverage.mjs` — 36,000 monthly candidate-row coverage audit.
+- `research/natal-classical-certification/annual-longitude-coverage.mjs` — 3,000 annual candidate-row coverage audit (one sample per year).
 - `research/natal-classical-certification/evidence-gates.mjs` — fail-closed 42-row Bala matrix and final natal-chart gate.
 - `tests/natal-classical-certification-pipeline.mjs` — negative tests and explicitly synthetic gate-mechanics fixture.
 
 ## Current certification decision
 
-**NOT CERTIFIED.** The pipeline is now specified and executable, but a monthly calculation grid is not proof of historical truth. The Burgess 1860 anchor still needs exact frame/time conversion and reconciliation, independent historical True Longitude anchors need to be acquired and compared, event-window tests are pending, and the complete 42-row source evidence matrix does not yet exist for arbitrary natal charts.
+**NOT CERTIFIED.** The pipeline is now specified and executable, but an annual calculation grid is not proof of historical truth or arbitrary-date accuracy. The Burgess 1860 anchor still needs exact frame/time conversion and reconciliation, independent historical True Longitude anchors need to be acquired and compared, event-window tests are pending, and the complete 42-row source evidence matrix does not yet exist for arbitrary natal charts.
 
 No production calculations, default chart inputs, website/PWA/Android cache versions, APKs, Firebase, Render, Cloudflare, horoscope/calendar UI, marriage matching, or production services are changed by this research-only work.
