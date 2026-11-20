@@ -13,11 +13,10 @@
  const safe=x=>['south','north','east'].includes(x)?x:'south';
  const isTa=()=>document.documentElement.lang==='ta'||document.body.classList.contains('tamil-mode');
  const isTamilReport=node=>{const root=node?.closest?.('#tamilHoroscopeResult,#englishHoroscopeResult');return root?root.id==='tamilHoroscopeResult':isTa();};
- const HINDI_DIGITS=['०','१','२','३','४','५','६','७','८','९','१०','११','१२'];
  const hindiNumber=value=>String(value).replace(/[0-9]/g,d=>'०१२३४५६७८९'[Number(d)]);
  const roman=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
  const bhavaNumberText=(house,tamil)=>tamil?romanHouse(house):String(house);
- const bhavaNumberListText(houses,tamil){return houses.map(h=>bhavaNumberText(h,tamil)).join(' / ');}
+ const bhavaNumberListText=(houses,tamil)=>houses.map(h=>bhavaNumberText(h,tamil)).join(' / ');
  const houseNumber=value=>{
   const raw=String(value??'').trim().toUpperCase();
   if(/^\d{1,2}$/.test(raw)){const n=Number(raw);return n>=1&&n<=12?n:0;}
@@ -105,7 +104,7 @@
   // the Sphuta Rasi occupying that slot. It is display-only and never moves a graha.
   if(style==='north'){
    const number=document.createElement('span');number.className='smv-v342-sign-number';
-   number.textContent=HINDI_DIGITS[sign+1];
+   number.textContent=hindiNumber(sign+1);
    number.setAttribute('aria-label','Rasi '+String(sign+1));
    cell.append(number);
   }
