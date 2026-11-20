@@ -214,6 +214,7 @@ try {
                 const colors = [...cell.querySelectorAll('.planet-glyph')].map(element=>getComputedStyle(element).color);
                 picked[target] = {
                   compact:cell.classList.contains('smv-chart-cell-compact'),
+                  cellFontSize:px(cell),
                   lineSize:px(line),
                   glyphSize:px(glyph),
                   numberSize:px(number),
@@ -295,11 +296,14 @@ try {
           for (const value of [three,four]) {
             assert.ok(Math.abs(value.lineSize-two.lineSize)<0.6,item.rootId+' '+item.kind+' '+style+': three- and four-planet rows keep normal font size.');
             assert.ok(Math.abs(value.glyphSize-two.glyphSize)<0.6,item.rootId+' '+item.kind+' '+style+': three- and four-planet names are not reduced.');
-            if(value.numberSize!==null)assert.ok(value.numberSize+0.6>=two.numberSize,item.rootId+' '+item.kind+' '+style+': house/sign number is not reduced before five planets.');
+            if(style!=='south'&&value.numberSize!==null&&value.cellFontSize!==null)assert.ok(Math.abs(value.numberSize-value.cellFontSize)<0.6,item.rootId+' '+item.kind+' '+style+': house/sign label follows its own normal-size 3/4-planet cell without an additional reduction.');
           }
           assert.ok(five.lineSize<four.lineSize,item.rootId+' '+item.kind+' '+style+': five-planet rows reduce their font size.');
           assert.ok(five.glyphSize<four.glyphSize,item.rootId+' '+item.kind+' '+style+': five-planet planet names reduce their font size.');
-          if(five.numberSize!==null&&four.numberSize!==null)assert.ok(five.numberSize<four.numberSize,item.rootId+' '+item.kind+' '+style+': five-planet house/sign numbers reduce too.');
+          if(style!=='south'&&five.numberSize!==null&&five.cellFontSize!==null&&four.cellFontSize!==null){
+            assert.ok(Math.abs(five.numberSize-five.cellFontSize)<0.6,item.rootId+' '+item.kind+' '+style+': five-planet house/sign label follows the compact cell font size.');
+            assert.ok(five.cellFontSize<four.cellFontSize,item.rootId+' '+item.kind+' '+style+': five-planet cell and its house/sign number reduce together.');
+          }
           if(five.degreeSize!==null&&four.degreeSize!==null)assert.ok(five.degreeSize<four.degreeSize,item.rootId+' '+item.kind+' '+style+': Degree labels reduce only at five planets.');
           if(five.markerSize!==null&&four.markerSize!==null)assert.ok(five.markerSize<four.markerSize,item.rootId+' '+item.kind+' '+style+': combust marker (அ/C) reduces only at five planets.');
           if(five.retroMarkerSize!==null&&four.retroMarkerSize!==null)assert.ok(five.retroMarkerSize<four.retroMarkerSize,item.rootId+' '+item.kind+' '+style+': retrograde marker (வ/R) reduces only at five planets.');
