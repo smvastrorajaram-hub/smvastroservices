@@ -11,9 +11,9 @@
       "Jupiter": "https://packolkata.imd.gov.in/download/nirlon/Jupiter.pdf",
       "Saturn": "https://packolkata.imd.gov.in/download/nirlon/Saturn.pdf"
     },
-    "timeArgument": "00:00:00 UTC (fixed project comparison convention; not confirmed in the daily PDF headers)",
+    "timeArgument": "00:00 TT (empirically inferred for this comparison; individual daily PDF headers do not state the epoch)",
     "ayanamsa": "Lahiri (comparison convention; daily PDF headings identify Nirayana but do not explicitly name the ayanamsa)",
-    "timeAndAyanamsaStatus": "UTC epoch fixed by project instruction; PAC confirmation pending. Lahiri remains an inferred comparison convention, not PDF metadata.",
+    "timeAndAyanamsaStatus": "Inferred comparison contract; not metadata explicitly stated in the daily PDFs",
     "referencePrecision": "degrees, arcminutes, arcseconds; source arcsecond decimal retained",
     "sampleDates": [
       "2026-01-01",
@@ -37,7 +37,7 @@
   "samples": [
     {
       "date": "2026-01-01",
-      "julianDayUTC": 2461041.5,
+      "julianDayTT": 2461041.5,
       "nirayanaDms": {
         "Mercury": {
           "degree": 244,
@@ -73,7 +73,7 @@
     },
     {
       "date": "2026-07-01",
-      "julianDayUTC": 2461222.5,
+      "julianDayTT": 2461222.5,
       "nirayanaDms": {
         "Mercury": {
           "degree": 91,
@@ -109,7 +109,7 @@
     },
     {
       "date": "2026-12-31",
-      "julianDayUTC": 2461405.5,
+      "julianDayTT": 2461405.5,
       "nirayanaDms": {
         "Mercury": {
           "degree": 254,
