@@ -22,6 +22,14 @@
     return (lang==='en'?RASI_SHORT_EN:RASI_SHORT_TA)[i];
   }
   function getHoroscopeLang(){return document.documentElement.lang==='ta'?'ta':'en';}
+  function bhavaPositionLabel(planet){
+    const sandhi=planet?.bhavaSandhi;
+    if(sandhi){
+      const label=getHoroscopeLang()==='en'?'Sandhi':'பாவசந்தி';
+      return label+' ('+sandhi.precedingHouse+'/'+sandhi.followingHouse+')';
+    }
+    return planet?.bhava??'—';
+  }
   const EN={
     'மேஷம்':'Aries','ரிஷபம்':'Taurus','மிதுனம்':'Gemini','கடகம்':'Cancer','சிம்மம்':'Leo','கன்னி':'Virgo','துலாம்':'Libra','விருச்சிகம்':'Scorpio','தனுசு':'Sagittarius','மகரம்':'Capricorn','கும்பம்':'Aquarius','மீனம்':'Pisces',
     'கேது':'Ketu','சுக்கிரன்':'Venus','சூரியன்':'Sun','சந்திரன்':'Moon','செவ்வாய்':'Mars','ராகு':'Rahu','குரு':'Jupiter','சனி':'Saturn','புதன்':'Mercury','லக்னம்':'Ascendant',
@@ -600,7 +608,7 @@
       <h3 style="margin-top:22px" class="bhava-table-title">📋 Bhava Table</h3>
       <div class="data-table-wrap bhava-table-wrap"><table class="data-table bhava-table"><thead><tr><th>பாவம்</th><th>ஆரம்பம்</th><th>மத்தியம்</th><th>முடிவு</th><th>ராசி</th><th>கிரகங்கள்</th></tr></thead><tbody>${(d.bhavas||[]).map(b=>{const ps=(d.planets||[]).filter(p=>p.bhava===b.house).map(p=>p.name).join(', ');return `<tr><td><b>${b.house}</b></td><td>${esc(b.arambha||'—')}</td><td><b>${esc(b.madhya||b.degree||'—')}</b></td><td>${esc(b.antya||'—')}</td><td>${esc(b.rasi||'—')}</td><td>${esc(ps||'—')}</td></tr>`}).join('')}</tbody></table></div>
       <h3 style="margin-top:22px">🪷 நவாம்ச நிலைகள்</h3>
-      <div class="data-table-wrap"><table class="data-table navamsa-table"><thead><tr><th>கிரகம்</th><th>Rasi Chart</th><th>D9 நவாம்ச ராசி</th><th>நவாம்ச பாதம்</th><th>பாவம்</th></tr></thead><tbody>${(d.planets||[]).map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(p.rasi)}</td><td>${esc(p.navamsa?.rasi||'—')}</td><td>${p.navamsa?.pada||'—'}</td><td>${p.bhava||'—'}</td></tr>`).join('')}</tbody></table></div>
+      <div class="data-table-wrap"><table class="data-table navamsa-table"><thead><tr><th>கிரகம்</th><th>Rasi Chart</th><th>D9 நவாம்ச ராசி</th><th>நவாம்ச பாதம்</th><th>பாவம்</th></tr></thead><tbody>${(d.planets||[]).map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(p.rasi)}</td><td>${esc(p.navamsa?.rasi||'—')}</td><td>${p.navamsa?.pada||'—'}</td><td>${esc(bhavaPositionLabel(p))}</td></tr>`).join('')}</tbody></table></div>
       <h3 style="margin-top:22px">🪐 கிரக நிலைகள்</h3><p class="small">ஒவ்வொரு கிரகமும் தனி வரியில்: ராசி · பாகை · நட்சத்திரம் · பாதம்.</p>
       <div class="data-table-wrap"><table class="data-table"><thead><tr><th>கிரகம்</th><th>ராசி</th><th>பாகை</th><th>நட்சத்திரம்</th><th>பாதம்</th></tr></thead><tbody>${rows(d.planets,d.lagna,d.upagrahas?.maandi)}</tbody></table></div>
       <h3 class="base-planet-strength" style="margin-top:22px">💪 கிரக வலிமை & நிலை</h3>
