@@ -43,6 +43,14 @@ assert.match(transitRenderer, /data-chart-planet-count="\$\{transitPlanetCount\}
 
 assert.ok(chartStyleJs.includes("const kind=chart.id==='bhavaChart'?'bhava':chart.id==='navamsaChart'?'d9':chart.id==='rasiChart'?'d1':'transit';"));
 assert.ok(chartStyleJs.includes('const planetCount=items.length;'));
+assert.ok(chartStyleJs.includes("const triangleCell=style==='north'?[2,3,5,6,8,9,11,12].includes(house):style==='east'?[2,3,5,6,8,9,11,12].includes(sign+1):false;"));
+assert.ok(chartStyleJs.includes("if(triangleCell)cell.classList.add('smv-v342-triangle-cell');"));
+assert.ok(chartStyleJs.includes("if(!['north','east'].includes(style)||!['d1','d9','bhava'].includes(kind))return;"));
+assert.ok(chartStyleJs.includes("if(isBlack(getComputedStyle(glyph).color))glyph.classList.add('smv-v342-black-planet-text');"));
+assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-north .smv-v342-planets .planet-glyph.smv-v342-black-planet-text'));
+assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-east .smv-v342-planets .planet-glyph.smv-v342-black-planet-text'));
+assert.ok(chartStyleCss.includes('color:rgb(224,0,0)!important;'));
+assert.doesNotMatch(chartStyleCss,/smv-v342-black-planet-text[^{]*\{[^}]*-webkit-text-fill-color/s,'Explicit child planet colours must remain intact.');
 assert.ok(chartStyleJs.includes('cell.dataset.chartPlanetCount=String(planetCount);'));
 assert.ok(chartStyleJs.includes("if(planetCount>=3)cell.classList.add('smv-chart-cell-compact')"));
 assert.match(chartStyleJs, /else if\(kind!=='d9'&&kind!=='bhava'\)\{/);
@@ -55,17 +63,40 @@ assert.ok(chartStyleJs.includes("h.textContent=style==='north'?romanHouse(house)
 assert.ok(chartStyleJs.includes("const bhavaLabel=kind==='bhava'?bhavaHousesBySign[sign].map(romanHouse).join('/'):'';"), 'East does not substitute ordinary Lagna-based Rasi house numbers for Bhava numbers.');
 assert.ok(chartStyleJs.includes("h.textContent=house>=1&&house<=12?String(house):'';"), 'East Rasi, Navamsa and Transit retain their existing Lagna-derived house numbers unchanged.');
 
-for (let count=3;count<=12;count++) {
-  assert.ok(horoscopeCss.includes('.south-rasi-cell[data-chart-planet-count="' + count + '"]'));
-  assert.ok(chartStyleCss.includes('.smv-v342-cell[data-chart-planet-count="' + count + '"]'));
+const horoscopeCountRules = horoscopeCss.split('\n').filter(line=>/^#tamilHoroscopeResult \.south-rasi-cell\[data-chart-planet-count="\d+"\],#englishHoroscopeResult \.south-rasi-cell\[data-chart-planet-count="\d+"\]\{/.test(line.trim()));
+assert.equal(horoscopeCountRules.length,20,'South-chart count rules exist at desktop and mobile widths for each 3–12 planet stack.');
+for (const line of horoscopeCountRules) {
+  const count=Number(/data-chart-planet-count="(\d+)"/.exec(line)[1]);
+  assert.ok(line.includes('--smv-chart-compact-white-space:normal'),'Planet rows wrap inside the fixed box at '+count+' planets.');
+  assert.equal(line.includes('--smv-chart-compact-font-size:'),count>=5,'Only 5+ planet South-chart cells receive the reduced font-size variable.');
 }
-assert.ok(horoscopeCss.includes('--smv-chart-compact-font-size'));
-assert.ok(horoscopeCss.includes('--smv-chart-compact-white-space'));
+const chartStyleCountRules=chartStyleCss.split('\n').filter(line=>/^\.smv-v342-cell\[data-chart-planet-count="\d+"\]\{/.test(line.trim()));
+assert.equal(chartStyleCountRules.length,16,'North/East chart sizing has desktop and mobile reduced-size rules for 5–12 planets only.');
+assert.ok(chartStyleCountRules.every(line=>Number(/data-chart-planet-count="(\d+)"/.exec(line)[1])>=5&&line.includes('--smv-chart-compact-font-size:')),'North/East font reduction starts only at five planets.');
 assert.ok(horoscopeCss.includes('.south-rasi-cell.smv-chart-cell-compact .planet-line'));
 assert.ok(horoscopeCss.includes('.south-rasi-cell:not(.smv-chart-cell-compact) .planet-line'), 'The 701–900px baseline font-size rule must not override cells with 3+ planets.');
+assert.ok(horoscopeCss.includes('.south-rasi-cell{border:1px solid rgb(143, 112, 79);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;padding:7px 4px;min-width:0px;overflow:hidden;'),'The South-chart Rasi box remains clipped to its own boundary.');
 assert.ok(chartStyleCss.includes('.smv-v342-cell.smv-chart-cell-compact .smv-v342-planets'));
+assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-triangle-cell{width:20%!important;max-height:18%!important}'));
+assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-triangle-cell{width:18%!important;max-height:20%!important}'));
+assert.ok(chartStyleCss.includes('.smv-v342-cell.smv-v342-triangle-cell .smv-v342-planets .planet-line{'));
+assert.ok(chartStyleCss.includes('.smv-v342-cell.smv-v342-triangle-cell .smv-v342-planets .planet-glyph{'));
+assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-north .smv-v342-cell.smv-chart-cell-compact .smv-v342-planets .planet-line,'));
+assert.ok(chartStyleCss.includes('.south-indian-chart.smv-v342-east .smv-v342-cell.smv-chart-cell-compact .smv-v342-planets .planet-glyph *{'));
+assert.ok(chartStyleCss.includes('white-space:nowrap!important;max-width:none!important;'));
+assert.ok(chartStyleCss.includes('min-height:0!important;height:auto!important;padding:0!important;margin:0!important;gap:0!important;font-size:inherit!important;'));
 assert.ok(chartStyleCss.includes('overflow:hidden;display:flex;flex-direction:column;'));
+assert.ok(chartStyleCss.includes('width:22%;max-height:26%;min-width:0;overflow:hidden;'),'North/East cells remain width/height constrained and cannot escape the chart box.');
 assert.ok(chartStyleCss.includes('.smv-v342-cell{font-size:var(--smv-chart-compact-font-size,'));
+assert.ok(horoscopeCss.includes('.rasi-status-marker:where(:not(.smv-css-island,.smv-css-island *)){font-weight:900!important;font-size:var(--smv-chart-compact-font-size,'),'Tamil/English அ and வ markers inherit the five-plus cell size.');
+assert.ok(horoscopeCss.includes('#tamilHoroscopeResult .south-rasi-cell .planet-degree, #englishHoroscopeResult .south-rasi-cell .planet-degree{font-size:var(--smv-chart-compact-font-size,'),'Degree labels in Tamil and English inherit the five-plus cell size.');
+assert.ok(horoscopeCss.includes('#tamilHoroscopeResult .dynamic-rasi-number, #englishHoroscopeResult .dynamic-rasi-number{font-size:var(--smv-chart-compact-font-size,'),'Rasi house Number in Tamil and English inherits the five-plus cell size.');
+assert.ok(horoscopeJs.includes("calendarPresentation&&ta?'அ':'C'"),'Tamil transit combustion marker uses அ.');
+assert.ok(horoscopeJs.includes("calendarPresentation&&ta?'வ':'R'"),'Tamil transit retrograde marker uses வ.');
+assert.ok(horoscopeJs.includes('class="status-combust"'),'Horoscope Rasi renderer retains its combustion marker element for inherited five-plus sizing.');
+assert.ok(horoscopeJs.includes('class="status-retro"'),'Horoscope Rasi renderer retains its retrograde marker element for inherited five-plus sizing.');
+assert.ok(horoscopeCss.includes('#tamilHoroscopeResult .status-combust, #englishHoroscopeResult .status-combust{'),'Tamil/English combustion marker styling remains attached to the marker text.');
+assert.ok(horoscopeCss.includes('#tamilHoroscopeResult .status-retro, #englishHoroscopeResult .status-retro{'),'Tamil/English retrograde marker styling remains attached to the marker text.');
 
 assert.ok(horoscopeJs.includes('planetDisplayName(p,chartLang)'));
 assert.ok(horoscopeJs.includes('shortPlanetName(p.name,chartLang)'));
@@ -76,5 +107,16 @@ assert.ok(!rasiRenderer.includes('rasiPlanetCount>=2'));
 assert.ok(!navamsaRenderer.includes('navamsaPlanetCount>=2'));
 assert.ok(!bhavaRenderer.includes('bhavaPlanetCount>=2'));
 assert.ok(!transitRenderer.includes('transitPlanetCount>=2'));
+
+const crowdedNumberRule = chartStyleCss.slice(
+  chartStyleCss.indexOf('/* Keep the house/sign label readable when a compact North/East cell is crowded. */'),
+  chartStyleCss.indexOf('/* One planet per compact row prevents the glyph, marker and Degree from spilling. */')
+);
+assert.ok(crowdedNumberRule.includes('.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-triangle-cell.smv-chart-cell-compact .smv-v342-sign-number'));
+assert.ok(crowdedNumberRule.includes('.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-triangle-cell.smv-chart-cell-compact .smv-v342-house-number'));
+assert.ok(crowdedNumberRule.includes('.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-triangle-cell.smv-chart-cell-compact .smv-v342-sign-number'));
+assert.ok(crowdedNumberRule.includes('.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-triangle-cell.smv-chart-cell-compact .smv-v342-house-number'));
+assert.ok(crowdedNumberRule.includes('z-index:4!important;background-color:#fffdf7;padding:0 2px;border-radius:2px;'),
+  'Crowded North/East house/sign numbers keep an opaque chart-colour backing above planets.');
 
 console.log('Horoscope four-chart, three-plus planet sizing and empty-cell regression: PASS');

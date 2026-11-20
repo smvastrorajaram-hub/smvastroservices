@@ -4,7 +4,7 @@ import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 
 const origin = process.env.SMV_OFFLINE_PREVIEW_ORIGIN || 'http://127.0.0.1:4173';
-const release = '20261119-horoscope-four-chart-planet-layout-v2';
+const release = '20261120-north-east-chart-containment-v1';
 const apps = [
   {
     name: 'SMV ASTRO',

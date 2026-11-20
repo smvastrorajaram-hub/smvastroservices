@@ -12,11 +12,29 @@ await mkdir(outputDir, {recursive:true});
 const signOrder = [11,0,1,2,10,3,9,4,8,7,6,5];
 const zodiac = ['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
 const roman = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
-const shortNames = ['சூ','சந்','செ','பு'];
-const fullNames = ['சூரியன்','சந்திரன்','செவ்வாய்','புதன்'];
+const compartmentPolygons = {
+  north: {
+    1:[[50,0],[75,25],[50,50],[25,25]], 2:[[0,0],[50,0],[25,25]], 3:[[0,0],[0,50],[25,25]],
+    4:[[0,50],[25,25],[50,50],[25,75]], 5:[[0,50],[0,100],[25,75]], 6:[[0,100],[50,100],[25,75]],
+    7:[[50,50],[75,75],[50,100],[25,75]], 8:[[50,100],[100,100],[75,75]], 9:[[100,100],[100,50],[75,75]],
+    10:[[50,50],[75,25],[100,50],[75,75]], 11:[[100,0],[100,50],[75,25]], 12:[[50,0],[100,0],[75,25]]
+  },
+  east: {
+    1:[[33.333,0],[66.667,0],[66.667,33.333],[33.333,33.333]],
+    2:[[0,0],[33.333,0],[33.333,33.333]], 3:[[0,0],[0,33.333],[33.333,33.333]],
+    4:[[0,33.333],[33.333,33.333],[33.333,66.667],[0,66.667]],
+    5:[[0,66.667],[0,100],[33.333,66.667]], 6:[[0,100],[33.333,100],[33.333,66.667]],
+    7:[[33.333,66.667],[66.667,66.667],[66.667,100],[33.333,100]],
+    8:[[66.667,66.667],[100,100],[66.667,100]], 9:[[100,66.667],[100,100],[66.667,66.667]],
+    10:[[66.667,33.333],[100,33.333],[100,66.667],[66.667,66.667]],
+    11:[[100,0],[100,33.333],[66.667,33.333]], 12:[[66.667,0],[100,0],[66.667,33.333]]
+  }
+};
+const shortNames = ['சூ','சந்','செ','பு','கு','சு','ச','ரா'];
+const fullNames = ['சூரியன்','சந்திரன்','செவ்வாய்','புதன்','குரு','சுக்கிரன்','சனி','ராகு'];
 
 const bhavaHouseSigns = [0,0,1,2,3,4,5,6,7,8,9,10];
-const bhavaPlanetCounts = [2,0,3,4,0,0,0,0,0,0,0,0];
+const bhavaPlanetCounts = [2,0,3,4,5,0,0,0,0,0,0,0];
 const bhavaHousesBySign = Array.from({length:12},()=>[]);
 const bhavaPlanetCountsBySign = Array(12).fill(0);
 bhavaHouseSigns.forEach((sign,index)=>{
@@ -27,16 +45,17 @@ function countForSign(sign) {
   if (sign === 0) return 2;
   if (sign === 1) return 3;
   if (sign === 2) return 4;
+  if (sign === 3) return 5;
   return 0;
 }
 function planetRow(index, withState) {
   let state = '';
   if (withState) {
-    state = '<span class="rasi-status-marker status-c">(அ)</span>' +
-      '<span class="rasi-status-marker status-r">(வ)</span>' +
-      '<span class="rasi-degree transit-degree">18°</span>';
+    const combustion = index === 0 ? '<span class="status-combust rasi-status-marker status-c">(அ)</span>' : '';
+    const retrograde = index === 1 ? '<span class="status-retro rasi-status-marker status-r">(வ)</span>' : '';
+    state = combustion + retrograde + '<span class="rasi-degree transit-degree">18°</span>';
   }
-  return '<div class="planet-line"><span class="planet-glyph"><span class="planet-short">' +
+  return '<div class="planet-line"><span class="planet-glyph"><span class="planet-short"' + (index === 4 ? ' style="color:rgb(0, 0, 200)"' : '') + '>' +
     shortNames[index % shortNames.length] + '</span>' + state + '</span></div>';
 }
 function cell(sign, kind) {
@@ -119,7 +138,7 @@ try {
           window.SMVChartPresentationV342.setStyle(value);
         },style);
         await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-        const state = await page.evaluate(({style,language,signOrder})=>{
+        const state = await page.evaluate(({style,language,signOrder,compartmentPolygons})=>{
           const reports = [];
           const kinds = ['rasi','navamsa','transit','bhava'];
           for (const rootId of ['tamilHoroscopeResult','englishHoroscopeResult']) {
@@ -129,9 +148,36 @@ try {
               const chart = root.querySelector('#' + chartId);
               const selector = style === 'south' ? ':scope > .south-rasi-cell' : ':scope > .smv-v342-cell';
               const cells = [...chart.querySelectorAll(selector)];
+              const chartRect = chart.getBoundingClientRect();
+              const cellBoundsOutside = cells.filter(cell=>{const rect=cell.getBoundingClientRect();return rect.left<chartRect.left-1||rect.right>chartRect.right+1||rect.top<chartRect.top-1||rect.bottom>chartRect.bottom+1;}).map(cell=>{const rect=cell.getBoundingClientRect();return {className:cell.className,house:cell.dataset.house||'',sign:cell.dataset.sign||'',left:Math.round(rect.left*10)/10,right:Math.round(rect.right*10)/10,top:Math.round(rect.top*10)/10,bottom:Math.round(rect.bottom*10)/10,chartLeft:Math.round(chartRect.left*10)/10,chartRight:Math.round(chartRect.right*10)/10,chartTop:Math.round(chartRect.top*10)/10,chartBottom:Math.round(chartRect.bottom*10)/10,chartWidth:Math.round(chartRect.width*10)/10,chartHeight:Math.round(chartRect.height*10)/10};});
+
+              const compartmentOutside = style==='south' ? [] : cells.flatMap(cell=>{
+                const compartment=style==='north'?Number(cell.dataset.house||0):Number(cell.dataset.sign||0);
+                const polygon=compartmentPolygons[style]?.[compartment];
+                if(!polygon)return [{compartment,reason:'missing polygon'}];
+                const area=polygon.reduce((sum,[x1,y1],index)=>{
+                  const [x2,y2]=polygon[(index+1)%polygon.length];return sum+x1*y2-x2*y1;
+                },0);
+                const orientation=Math.sign(area)||1;
+                const inside=point=>polygon.every(([x1,y1],index)=>{
+                  const [x2,y2]=polygon[(index+1)%polygon.length];
+                  const cross=(x2-x1)*(point[1]-y1)-(y2-y1)*(point[0]-x1);
+                  return orientation>0?cross>=-0.8:cross<=0.8;
+                });
+                const watched=[...cell.querySelectorAll('.planet-line,.planet-glyph,.rasi-status-marker,.planet-degree,.rasi-degree,.transit-degree,.smv-v342-sign-number,.smv-v342-house-number,.smv-v342-asc')];
+                return watched.flatMap(element=>{
+                  const rect=element.getBoundingClientRect();
+                  if(!rect.width||!rect.height)return [];
+                  const corners=[[rect.left,rect.top],[rect.right,rect.top],[rect.left,rect.bottom],[rect.right,rect.bottom]]
+                    .map(([x,y])=>[(x-chartRect.left)/chartRect.width*100,(y-chartRect.top)/chartRect.height*100]);
+                  const outside=corners.filter(point=>!inside(point));
+                  return outside.length?[{compartment,cellClass:cell.className,tag:element.tagName,classes:element.className,text:element.textContent.trim(),outsideCorners:outside.map(p=>p.map(v=>Math.round(v*10)/10))}]:[];
+                });
+              });
+
               const cellCount = node => Number(node.getAttribute('data-chart-planet-count') || 0);
               const picked = {};
-              for (const target of [2,3,4]) {
+              for (const target of [2,3,4,5]) {
                 const cell = cells.find(node=>cellCount(node) === target);
                 if (!cell) {
                   picked[target] = {missing:true};
@@ -141,7 +187,8 @@ try {
                 const glyph = cell.querySelector(style === 'south' ? '.planet-glyph' : '.smv-v342-planets .planet-glyph');
                 const number = cell.querySelector('.dynamic-rasi-number,.bhava-house-no,.smv-v342-house-number,.smv-v342-sign-number,.smv-v342-asc,.lagna');
                 const degree = cell.querySelector('.planet-degree,.rasi-degree,.transit-degree');
-                const marker = cell.querySelector('.rasi-status-marker,.status-c,.status-r');
+                const marker = cell.querySelector('.status-combust,.rasi-status-marker.status-c,.status-c');
+                const retroMarker = cell.querySelector('.status-retro,.rasi-status-marker.status-r,.status-r');
                 const px = element => element ? parseFloat(getComputedStyle(element).fontSize) : null;
                 const cellRect = cell.getBoundingClientRect();
                 const watched = [...cell.querySelectorAll('.planet-line,.planet-glyph,.rasi-status-marker,.planet-degree,.rasi-degree,.transit-degree,.dynamic-rasi-number,.bhava-house-no,.smv-v342-sign-number,.smv-v342-house-number,.smv-v342-asc')];
@@ -168,6 +215,13 @@ try {
                   numberSize:px(number),
                   degreeSize:px(degree),
                   markerSize:px(marker),
+                  retroMarkerSize:px(retroMarker),
+                  markerText:marker?.textContent.trim()||'',
+                  retroMarkerText:retroMarker?.textContent.trim()||'',
+                  degreeText:degree?.textContent.trim()||'',
+                  numberText:number?.textContent.trim()||'',
+                  numberBackgroundColor:number?getComputedStyle(number).backgroundColor:null,
+                  numberZIndex:number?getComputedStyle(number).zIndex:null,
                   equalSizes:sizes.length < 2 || Math.max(...sizes)-Math.min(...sizes) < 0.6,
                   names:[...cell.querySelectorAll('.planet-glyph')].map(element=>element.textContent.trim()),
                   colors,
@@ -178,6 +232,22 @@ try {
                   clientHeight:cell.clientHeight
                 };
               }
+              const planetGlyphColors = [...chart.querySelectorAll(style==='south'?'.planet-glyph':'.smv-v342-planets .planet-glyph')].map(glyph=>({
+                text:glyph.textContent.trim(),
+                marked:glyph.classList.contains('smv-v342-black-planet-text'),
+                glyphColor:getComputedStyle(glyph).color,
+                visibleTextColor:getComputedStyle(glyph.querySelector('.planet-short')||glyph).color
+              }));
+              const crowdedTriangleNumbers = cells
+                .filter(cell=>cell.classList.contains('smv-v342-triangle-cell')&&cell.classList.contains('smv-chart-cell-compact'))
+                .map(cell=>{
+                  const number=cell.querySelector('.smv-v342-sign-number,.smv-v342-house-number');
+                  return number?{
+                    text:number.textContent.trim(),
+                    backgroundColor:getComputedStyle(number).backgroundColor,
+                    zIndex:getComputedStyle(number).zIndex
+                  }:null;
+                }).filter(Boolean);
               const emptyCells = cells.filter(cell=>cellCount(cell) === 0);
               const emptyDash = emptyCells.some(cell=>!!cell.querySelector('.smv-v342-empty'));
               const eastHouseNumbers = style==='east' ? cells.map(cell=>({
@@ -193,31 +263,71 @@ try {
                 const labels=raw.flatMap(value=>value.split('/').map(label=>label.trim()).filter(Boolean));
                 return {sign,house:Number(cell.dataset.house||0),labels};
               }) : [];
+              reports.push({rootId,kind,cells:cells.length,picked,emptyDash,eastHouseNumbers,bhavaHouseLabels,cellBoundsOutside,compartmentOutside,triangleCells:cells.filter(cell=>cell.classList.contains('smv-v342-triangle-cell')).length,planetGlyphColors,crowdedTriangleNumbers});
 
             }
           }
           return {viewport:innerWidth,language,reports};
-        },{style,language,signOrder});
+        },{style,language,signOrder,compartmentPolygons});
         for (const item of state.reports) {
           assert.equal(item.cells,12,item.rootId+' '+item.kind+' '+style+': all twelve chart boxes must remain present.');
           const two = item.picked[2];
           const three = item.picked[3];
           const four = item.picked[4];
-          for (const entry of [[2,two],[3,three],[4,four]]) {
+          const five = item.picked[5];
+          for (const entry of [[2,two],[3,three],[4,four],[5,five]]) {
             const count = entry[0];
             const value = entry[1];
             assert.ok(!value.missing,item.rootId+' '+item.kind+' '+style+': '+count+' planet test cell must exist.');
             assert.equal(value.names.length,count,item.rootId+' '+item.kind+' '+style+': planet rows/names remain intact for '+count+' planets.');
             assert.ok(value.colors.every(color=>color && color!=='rgba(0, 0, 0, 0)'),item.rootId+' '+item.kind+' '+style+': planet colours remain visible.');
             assert.equal(value.outside.length,0,item.rootId+' '+item.kind+' '+style+': chart text stays inside its box: '+JSON.stringify(value.outside));
+
           }
           assert.equal(two.compact,false,item.rootId+' '+item.kind+' '+style+': a two-planet cell keeps normal sizing.');
           assert.equal(three.compact,true,item.rootId+' '+item.kind+' '+style+': a three-planet cell compacts locally.');
           assert.equal(four.compact,true,item.rootId+' '+item.kind+' '+style+': a four-planet cell compacts locally.');
-          assert.ok(three.lineSize < two.lineSize,item.rootId+' '+item.kind+' '+style+': three-planet rows are smaller than two-planet rows.');
-          assert.ok(four.lineSize < three.lineSize,item.rootId+' '+item.kind+' '+style+': four-planet rows shrink further than three-planet rows.');
-          assert.equal(three.equalSizes,true,item.rootId+' '+item.kind+' '+style+': planet, number, degree and status labels share one cell size.');
-          assert.equal(four.equalSizes,true,item.rootId+' '+item.kind+' '+style+': all crowded-cell labels share one cell size.');
+          assert.equal(five.compact,true,item.rootId+' '+item.kind+' '+style+': five-planet cells keep the wrapping/containment class.');
+          for (const value of [three,four]) {
+            assert.ok(Math.abs(value.lineSize-two.lineSize)<0.6,item.rootId+' '+item.kind+' '+style+': three- and four-planet rows keep normal font size.');
+            assert.ok(Math.abs(value.glyphSize-two.glyphSize)<0.6,item.rootId+' '+item.kind+' '+style+': three- and four-planet names are not reduced.');
+            if(value.numberSize!==null)assert.ok(value.numberSize+0.6>=two.numberSize,item.rootId+' '+item.kind+' '+style+': house/sign number is not reduced before five planets.');
+          }
+          assert.ok(five.lineSize<four.lineSize,item.rootId+' '+item.kind+' '+style+': five-planet rows reduce their font size.');
+          assert.ok(five.glyphSize<four.glyphSize,item.rootId+' '+item.kind+' '+style+': five-planet planet names reduce their font size.');
+          if(five.numberSize!==null&&four.numberSize!==null)assert.ok(five.numberSize<four.numberSize,item.rootId+' '+item.kind+' '+style+': five-planet house/sign numbers reduce too.');
+          if(five.degreeSize!==null&&four.degreeSize!==null)assert.ok(five.degreeSize<four.degreeSize,item.rootId+' '+item.kind+' '+style+': Degree labels reduce only at five planets.');
+          if(five.markerSize!==null&&four.markerSize!==null)assert.ok(five.markerSize<four.markerSize,item.rootId+' '+item.kind+' '+style+': combust marker (அ/C) reduces only at five planets.');
+          if(five.retroMarkerSize!==null&&four.retroMarkerSize!==null)assert.ok(five.retroMarkerSize<four.retroMarkerSize,item.rootId+' '+item.kind+' '+style+': retrograde marker (வ/R) reduces only at five planets.');
+          if(language==='ta'&&['rasi','transit'].includes(item.kind)){
+            assert.equal(five.markerText,'(அ)',item.rootId+' Tamil combust marker remains அ.');
+            assert.equal(five.retroMarkerText,'(வ)',item.rootId+' Tamil retrograde marker remains வ.');
+            assert.equal(five.degreeText,'18°',item.rootId+' Tamil test Degree remains present.');
+            assert.ok(five.numberText,item.rootId+' Tamil chart Number remains present.');
+          }
+          assert.equal(item.cellBoundsOutside.length,0,item.rootId+' '+item.kind+' '+style+': every chart box remains inside the chart boundary: '+JSON.stringify(item.cellBoundsOutside));
+          if(style==='south')assert.ok(item.planetGlyphColors.every(glyph=>!glyph.marked),item.rootId+' '+item.kind+': South chart planet colours remain untouched.');
+          if(style!=='south'){
+            if(['rasi','navamsa','bhava'].includes(item.kind)){
+              assert.ok(item.planetGlyphColors.length>0,item.rootId+' '+item.kind+' '+style+': planet glyph color fixtures exist.');
+              assert.ok(item.planetGlyphColors.every(glyph=>glyph.marked&&glyph.glyphColor==='rgb(224, 0, 0)'),item.rootId+' '+item.kind+' '+style+': black planet names are turned red.');
+              if(['rasi','navamsa'].includes(item.kind)){
+                const preserved=item.planetGlyphColors.filter(glyph=>glyph.visibleTextColor==='rgb(0, 0, 200)');
+                assert.ok(preserved.length>0,item.rootId+' '+item.kind+' '+style+': an already-coloured planet label keeps its original blue colour.');
+              }
+            }else{
+              assert.ok(item.planetGlyphColors.every(glyph=>!glyph.marked),item.rootId+' '+item.kind+' '+style+': Transit is outside this colour change.');
+            }
+            assert.equal(item.triangleCells,8,item.rootId+' '+item.kind+' '+style+': exactly the eight corner compartments use triangle-aware layout.');
+          if(style!=='south'){
+            assert.ok(item.crowdedTriangleNumbers.length>0,item.rootId+' '+item.kind+' '+style+': crowded triangle fixtures include a house/sign number.');
+            for(const number of item.crowdedTriangleNumbers){
+              assert.equal(number.backgroundColor,'rgb(255, 253, 247)',item.rootId+' '+item.kind+' '+style+': crowded triangle number has an opaque chart-colour backing ('+number.text+').');
+              assert.ok(Number(number.zIndex)>=4,item.rootId+' '+item.kind+' '+style+': crowded triangle number stays above planets ('+number.text+').');
+            }
+          }
+            assert.equal(item.compartmentOutside.length,0,item.rootId+' '+item.kind+' '+style+': planet names, markers, Degrees and numbers remain inside their actual compartment polygons: '+JSON.stringify(item.compartmentOutside));
+          }
           if (item.kind==='navamsa' || item.kind==='bhava') {
             assert.equal(item.emptyDash,false,item.rootId+' '+item.kind+' '+style+': empty planet cells stay blank.');
           } else if (style!=='south') {

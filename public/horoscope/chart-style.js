@@ -57,6 +57,8 @@
  const romanHouse=house=>['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][Number(house)-1]||'—';
  function pointCell(x,y,sign,house,source,style,kind,ta,planetEntries=null,bhavaHouseLabel=''){
   const cell=document.createElement('div');cell.className='smv-v342-cell';cell.dataset.sign=String(sign+1);
+  const triangleCell=style==='north'?[2,3,5,6,8,9,11,12].includes(house):style==='east'?[2,3,5,6,8,9,11,12].includes(sign+1):false;
+  if(triangleCell)cell.classList.add('smv-v342-triangle-cell');
   if(house>=1&&house<=12)cell.dataset.house=String(house);
   // V343: No inline CSS coordinates — report-print.html CSP blocks style attributes.
   // Fixed [data-house] (North) / [data-sign] (East) positions live in external CSS.
@@ -178,6 +180,17 @@
    const title=document.createElement('div');title.className='smv-v342-east-center';
    title.textContent=kind==='d9'?(ta?'நவாம்சம்':'Navamsa'):kind==='bhava'?(ta?'பாவம்':'Bhava'):kind==='transit'?(ta?'கோச்சாரம்':'Transit'):(ta?'ராசி':'Rasi');
    chart.append(title);
+  }
+  markBlackPlanetText(chart,style,kind);
+ }
+ function markBlackPlanetText(chart,style,kind){
+  if(!['north','east'].includes(style)||!['d1','d9','bhava'].includes(kind))return;
+  const isBlack=color=>{
+   const values=(color.match(/[0-9.]+/g)||[]).map(Number);
+   return values.length>=3&&values.slice(0,3).every(value=>value<=72);
+  };
+  for(const glyph of chart.querySelectorAll('.smv-v342-planets .planet-glyph')){
+   if(isBlack(getComputedStyle(glyph).color))glyph.classList.add('smv-v342-black-planet-text');
   }
  }
  function apply(root,style=choice){

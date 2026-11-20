@@ -18,6 +18,9 @@ const inHostSourceChanged = changed.has('public/index.html')
   || changed.has('public/sitemap.xml')
   || changed.has('public/sitemap.html')
   || [
+    'public/horoscope/index.html',
+    'public/horoscope/horoscope.css',
+    'public/horoscope/chart-style.css',
     'public/horoscope/calendar/index.html',
     'public/horoscope/daily-calendar.css',
     'public/horoscope/daily-calendar.mjs',
