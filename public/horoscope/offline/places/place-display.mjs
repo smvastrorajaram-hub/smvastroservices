@@ -100,7 +100,7 @@ export function formatOfflineIndiaPlace(row,language=CURRENT()){
 const LATIN_ADMIN=/[A-Za-z]/u;
 export function formatOfflineIndiaAdministrativeAreas(admin1,admin2,language=CURRENT()){
   const rawState=String(admin1??'').trim();
-  const rawDistrict=String(admin2??'').trim().replace(/\\s*மாவட்டம்$/u,'');
+  const rawDistrict=String(admin2??'').trim().replace(/\s*மாவட்டம்$/u,'');
   const knownState=Object.entries(states).find(([,ta])=>key(ta)===key(rawState))?.[0];
   const stateEn=knownState||asState(localizeTamilText(rawState,'en'));
   const knownDistrict=key(stateEn)==='tamil nadu'
