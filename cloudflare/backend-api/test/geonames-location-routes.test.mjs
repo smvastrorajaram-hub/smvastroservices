@@ -80,7 +80,7 @@ test('location search returns only valid coordinates and bounded provider fields
   registerGeoNamesRoutes({
     app, env: { GEONAMES_USERNAME: 'server-user' },
     fetchImpl: async () => jsonResponse({ geonames: [
-      { name: 'Chennai', adminName1: 'Tamil Nadu', countryName: 'India', lat: '13.08', lng: '80.27', countryCode: 'IN', geonameId: 1264527 },
+      { name: 'Chennai', adminName2: 'Chennai', adminName1: 'Tamil Nadu', countryName: 'India', lat: '13.08', lng: '80.27', countryCode: 'IN', geonameId: 1264527 },
       { name: 'Invalid', lat: '120', lng: '80' },
       { name: '', lat: '13', lng: '80' }
     ] })
@@ -88,7 +88,7 @@ test('location search returns only valid coordinates and bounded provider fields
   const res = response();
   await app.handlers.get('GET /api/locations/search')(request({ q: 'Chennai' }), res);
   assert.deepEqual(res.body.rows, [{
-    place: 'Chennai, Tamil Nadu, India', name: 'Chennai', admin1: 'Tamil Nadu', country: 'India',
+    place: 'Chennai, Tamil Nadu, India', name: 'Chennai', admin2: 'Chennai', admin1: 'Tamil Nadu', country: 'India',
     latitude: 13.08, longitude: 80.27, countryCode: 'IN', geonameId: 1264527,
     timezone: '', timezoneSource: 'geonames-pending'
   }]);
