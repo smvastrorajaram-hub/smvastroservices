@@ -12,7 +12,6 @@
  const STYLE_KEY='smv-horoscope-chart-layout-v342';
  const safe=x=>['south','north','east'].includes(x)?x:'south';
  const isTa=()=>document.documentElement.lang==='ta'||document.body.classList.contains('tamil-mode');
- const isTamilReport=node=>{const root=node?.closest?.('#tamilHoroscopeResult,#englishHoroscopeResult');return root?root.id==='tamilHoroscopeResult':isTa();};
  const hindiNumber=value=>String(value).replace(/[0-9]/g,d=>'०१२३४५६७८९'[Number(d)]);
  const roman=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
  const bhavaNumberText=(house,tamil)=>tamil?romanHouse(house):String(house);
@@ -24,7 +23,7 @@
  };
  const romanHouse=house=>roman[Number(house)-1]||'—';
  function normalizeSouthBhavaHouseLabels(chart){
-  const tamil=isTamilReport(chart);
+  const tamil=isTa();
   for(const label of chart.querySelectorAll('.bhava-house-no')){
    const house=houseNumber(label.dataset.bhavaHouse)||houseNumber(label.textContent);
    if(house){label.dataset.bhavaHouse=String(house);label.textContent=bhavaNumberText(house,tamil);}
@@ -33,7 +32,7 @@
  function restoreRomanBhavaLabels(root){
   const chart=root?.querySelector('#bhavaChart');if(!chart)return;
   normalizeSouthBhavaHouseLabels(chart);
-  const tamil=isTamilReport(root);
+  const tamil=isTa();
   for(const label of chart.querySelectorAll('.smv-v342-house-number[data-bhava-houses]')){
    const houses=label.dataset.bhavaHouses.split(',').map(houseNumber).filter(Boolean);
    label.textContent=bhavaNumberListText(houses,tamil);
@@ -110,7 +109,7 @@
   }
   // East Bhava groups distinct Bhava IDs under the actual Sphuta Rasi.
   if(kind==='bhava'&&style==='east'&&String(bhavaHouseLabel||'').trim()){
-   const tamil=isTamilReport(cell);
+   const tamil=ta;
    const houses=String(bhavaHouseLabel).split(/[\\/,]/).map(houseNumber).filter(Boolean);
    const label=document.createElement('span');label.className='smv-v342-house-number';
    label.dataset.bhavaHouses=houses.join(',');
