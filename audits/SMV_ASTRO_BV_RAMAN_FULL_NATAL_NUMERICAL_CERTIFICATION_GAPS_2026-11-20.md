@@ -31,3 +31,20 @@ For any graha whose required six-Bala component is unavailable, preserve verifie
 - No production source, app Service Worker, cache release or customer-facing report is changed.
 - No origin-wide storage/cache clearing and no user-data deletion is introduced.
 - Full arbitrary natal `classicalCertified` remains false until all blockers and independent Actions evidence are satisfied.
+
+
+## New date-specific modern True-longitude evidence — 20 November 2026
+
+The gap register is refined by a new separate audit:
+`audits/SMV_ASTRO_BV_RAMAN_NATAL_DE441_TRUE_LONGITUDE_25_POINT_AUDIT_2026-11-20.md`.
+
+- NASA/JPL Horizons DE441 exact-epoch apparent geocentric tropical longitudes were retrieved for the five existing Perambalur natal epochs and all five eligible planets (25 values).
+- Target and Earth-centre response headers both identify DE441; centre is Earth geocentre `500@399`; quantity 31 is apparent IAU76/80 ecliptic-of-date longitude.
+- The local Swiss Ephemeris 2.10.03 Moshier comparison has a maximum absolute residual of 0.000067825° across these 25 values.
+- A new repository regression reruns the comparisons through the bundled Moshier/WASM runtime with the predeclared 0.05° maximum per point.
+
+**Interpretation:** This closes the *modern apparent True-longitude cross-check at the five sampled historical epochs*. It does not establish the historical Saura / Sūrya-Siddhānta true positions. NASA DE441 is a modern physical ephemeris evaluated backwards at historic epochs, not the historical printed almanac source for the old Saura model.
+
+**Cheshta remains withheld:** A modern DE441 True longitude must not be joined to traditional Saura Mean and Sheeghroccheya merely because all three can be represented in Lahiri sidereal degrees. BPHS Cheshta requires a coherent, documented triplet from one model/frame/epoch. The remaining work is to obtain and reconcile the date-specific historical IENA/IAE tables or another source-faithful coherent astronomical triplet, including the time-dependent Bīja/Mandocca inputs, before calculating the five natal Cheshta values as certified.
+
+No production source or customer output is changed. `historicalSauraTrueLongitudeCertified=false`, `classicalFiveGrahaCheshtaCertified=false` and `productionIntegrationAllowed=false` remain mandatory.
