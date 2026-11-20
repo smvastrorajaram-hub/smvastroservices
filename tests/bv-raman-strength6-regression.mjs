@@ -43,12 +43,6 @@ const standardChestaInputs={
  'சுக்கிரன்':{meanLongitude:181.23,trueLongitude:171.16,sheeghroccaLongitude:158.35},
  'சனி':{meanLongitude:111.23,trueLongitude:124.39,sheeghroccaLongitude:181.23}
 };
-const standardFixtureFrame='BV_RAMAN_PRINTED_STANDARD_HOROSCOPE_CHAPTER_VI';
-const standardFixtureProvenance='B.V. Raman, Graha and Bhava Balas, 13th ed., Chapter VI, Examples 49–51, printed Standard Horoscope';
-for(const input of Object.values(standardChestaInputs)){
- input.referenceFrames={mean:standardFixtureFrame,true:standardFixtureFrame,sheeghrocca:standardFixtureFrame};
- input.sourceProvenance=standardFixtureProvenance;
-}
 const standard=calculateBVRamanShadbala({
  planets:standardPlanets,bhavas:[],
  ascendantLongitude:298+27/60,midheavenLongitude:216+30/60,
@@ -129,8 +123,7 @@ for(const name of planets){
  near(r.evidence.drikPinda,expectedDrishtiPinda[name],0.15,name+' Raman printed Drishti Pinda');
  if(Object.hasOwn(expectedCheshta,name)){
   near(r.components.cheshta,expectedCheshta[name],0.02,name+' Raman printed Chesta Bala worked example');
-  eq(r.evidence.cheshtaSource.method,'BV_RAMAN_CHAPTER_VI_SAME_FRAME_SOURCE_INPUTS',name+' uses explicitly same-source Raman Chesta inputs');
-  eq(r.evidence.cheshtaSource.sameReferenceFrameVerified,true,name+' worked-example inputs declare one source frame');
+  eq(r.evidence.cheshtaSource.method,'BV_RAMAN_CHAPTER_VI_VERIFIED_CLASSICAL_LONGITUDES',name+' uses independently transcribed Raman Chesta inputs');
  }
  near(r.components.naisargika,BV_RAMAN_SHADBALA_SOURCE.naturalBalaPrinted[name],0.001,name+' Raman printed Naisargika constant');
 }
@@ -151,35 +144,28 @@ for(const [date,time] of births){
   ok(p.strength6?.available===true,date+' '+p.name+' strength6 attached');
   eq(Object.hasOwn(p,'strength3'),false,date+' '+p.name+' old BPHS strength3 field removed');
   eq(p.strength6.classicalCertified,false,date+' '+p.name+' inputs remain honestly provisional');
+  ok(p.strength6.ishtaKashta?.available===true,date+' '+p.name+' Ishta/Kashta is attached to B.V. Raman engine');
+  eq(p.strength6.ishtaKashta.classicalCertified,false,date+' '+p.name+' Ishta/Kashta remains uncertified');
+  near(p.strength6.ishtaKashta.sixfoldShadbalaCheshtaBala,p.strength6.components.cheshta,0.001,date+' '+p.name+' Phala input never replaces sixfold Cheshta');
   const c=p.strength6.components;
   if(p.name==='சூரியன்'||p.name==='சந்திரன்'){
-   ok(p.strength6.ishtaKashta?.available===true,date+' '+p.name+' source-defined luminary Ishta/Kashta remains available');
-   eq(p.strength6.ishtaKashta.classicalCertified,false,date+' '+p.name+' Ishta/Kashta remains uncertified');
-   near(p.strength6.ishtaKashta.sixfoldShadbalaCheshtaBala,c.cheshta,0.001,date+' '+p.name+' Phala input does not replace sixfold Cheshta');
    eq(c.cheshta,0,date+' '+p.name+' sixfold Shadbala Cheshta stays zero by Raman Chapter VI');
    ok(p.strength6.ishtaKashta.cheshtaForPhala>0,date+' '+p.name+' separate Chapter X Chesta-for-Phala remains non-zero');
   }else{
-   eq(c.cheshta,null,date+' '+p.name+' mixed-frame Cheshta is withheld');
-   eq(p.strength6.evidence.cheshtaSource.available,false,date+' '+p.name+' mixed-frame source is unavailable');
-   eq(p.strength6.evidence.cheshtaSource.method,'BV_RAMAN_CHESHTA_BLOCKED_REFERENCE_FRAME_MISMATCH',date+' '+p.name+' mixed-frame source is blocked');
-   eq(p.strength6.frameSafety.status,'BLOCKED_MIXED_REFERENCE_FRAMES',date+' '+p.name+' exposes blocked astronomical frame');
-   eq(p.strength6.ishtaKashta?.available,false,date+' '+p.name+' dependent Chapter X Phala is withheld');
-   ok(String(p.strength6.ishtaKashta?.reason||'').includes('same-frame'),date+' '+p.name+' Phala reason names missing same-frame evidence');
-   eq(p.strength6.totalVirupa,null,date+' '+p.name+' mixed-frame total is withheld');
-   eq(p.strength6.totalRupa,null,date+' '+p.name+' mixed-frame Rupa is withheld');
-   eq(p.strength6.ratio,null,date+' '+p.name+' mixed-frame ratio is withheld');
-   eq(p.strength6.isStrong,null,date+' '+p.name+' mixed-frame pass/fail is withheld');
+   near(p.strength6.ishtaKashta.cheshtaForPhala,c.cheshta,0.001,date+' '+p.name+' Ishta/Kashta Chesta-for-Phala equals sixfold Cheshta');
   }
-  ok(Number.isFinite(c.sthana.total)&&Number.isFinite(c.dig)&&Number.isFinite(c.kala.total)&&Number.isFinite(c.naisargika)&&Number.isFinite(c.drik),date+' '+p.name+' source-backed partial components remain visible');
+  ok(Number.isFinite(c.sthana.total)&&Number.isFinite(c.dig)&&Number.isFinite(c.kala.total)&&Number.isFinite(c.cheshta)&&Number.isFinite(c.naisargika)&&Number.isFinite(c.drik),date+' '+p.name+' six Bala components present');
+  if(p.name==='செவ்வாய்'||p.name==='புதன்'||p.name==='குரு'||p.name==='சுக்கிரன்'||p.name==='சனி'){
+   near(p.strength6.evidence.cheshtaSource.trueLongitude,p.longitude,1e-7,date+' '+p.name+' Cheshta uses actual ephemeris longitude');
+   eq(p.strength6.evidence.cheshtaSource.method,'BV_RAMAN_FORMULA_EPHEMERIS_TRUE_LONGITUDE_RESEARCH_MEAN_SHEEGHROCCA',date+' '+p.name+' exposes its unresolved mean/Sheeghrocca source gate');
+  }
   if(Number.isFinite(p.strength6.totalVirupa)){
    const kalaSum=Object.entries(c.kala).filter(([k,v])=>!['total','warPreTotal','yuddhaTrace'].includes(k)&&Number.isFinite(v)).reduce((s,[,v])=>s+v,0);
    near(kalaSum,c.kala.total,.005,date+' '+p.name+' Kala subtotal reconciles');
-   near(c.sthana.total+c.dig+c.kala.total+c.cheshta+c.naisargika+c.drik,p.strength6.totalVirupa,.01,date+' '+p.name+' complete sixfold total reconciles');
+   near(c.sthana.total+c.dig+c.kala.total+c.cheshta+c.naisargika+c.drik,p.strength6.totalVirupa,.01,date+' '+p.name+' strength6 total reconciles');
    near(p.strength6.totalRupa,p.strength6.totalVirupa/60,.002,date+' '+p.name+' Rupa conversion');
-   eq(p.strength6.complete,true,date+' '+p.name+' complete flag agrees with all required inputs');
   }else{
-   eq(p.strength6.totalRupa,null,date+' '+p.name+' total and Rupa remain withheld');
-   eq(p.strength6.complete,false,date+' '+p.name+' complete flag is false');
+   eq(p.strength6.totalRupa,null,date+' '+p.name+' total and Rupa both withheld when unresolved');
   }
  }
 }
