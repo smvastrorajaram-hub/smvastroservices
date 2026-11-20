@@ -70,14 +70,30 @@ The visible exception is **Mars's first Śīghra equation**: the continuous path
 
 This means the final five True longitudes reproduce the published example closely, while one intermediate Mars stage still deserves a closer historical table/interpolation review. The audit does not claim every intermediate value is exact.
 
-## 6. What this establishes
+## 6. Existing natal research-wrapper convention — separate discrepancy
+
+The current `public/horoscope/offline/saura-natal-five-cheshta.browser.mjs` research wrapper selects `absolute-koti-minus`. The same Burgess inputs were also evaluated with that setting, without changing the wrapper:
+
+| Planet | Continuous absolute-koti-minus | Error vs Burgess | Tabular absolute-koti-minus | Error vs Burgess |
+|---|---:|---:|---:|---:|
+| Mercury | 7s 24°42′10.4″ | −0.147122° | 7s 24°41′37.2″ | −0.156325° |
+| Venus | 9s 14°33′54.5″ | −0.018206° | 9s 14°34′50.4″ | −0.002678° |
+| Mars | 6s 18°00′13.6″ | −0.746223° | 6s 18°00′35.2″ | −0.740223° |
+| Jupiter | 3s 04°13′25.8″ | +0.040488° | 3s 04°13′08.6″ | +0.035729° |
+| Saturn | 4s 01°32′22.2″ | +0.506160° | 4s 01°31′47.4″ | +0.496501° |
+
+Therefore, the existing natal research-wrapper convention is **not** a Burgess II.39 source-conformance match for this example, especially for Mars and Saturn. The direct-Jya branch is the branch consistent with Burgess's explicit II.39 construction in this worked example. The absolute-koti-minus convention was retained as a separate research interpretation because it agrees with a different published worked-example source; the conflict must remain visible rather than being resolved by planet-specific fitting.
+
+**No convention was switched.** The natal research wrapper, the production B.V. Raman Shadbala path, the existing certificates, and all customer-facing calculations remain untouched. This audit does not decide which competing source convention should be used for a future natal Cheshta model.
+
+## 7. What this establishes
 
 - A primary historical printed worked example exists for all five planets, not only one.
 - The current four-pass implementation uses the same source inputs and the source's stated correction order.
 - The current continuous and tabular-Jya paths independently reproduce the five final printed True Longitude values within 0.03° for this example.
 - Their agreement is an arithmetic cross-check; it is not a second independent historical source.
 
-## 7. What remains unproven
+## 8. What remains unproven
 
 This is one 1860 worked epoch. It does **not** establish:
 - date-dependent historical Bīja and apsis evolution at the user's five natal epochs or for every date from 1800–2399;
@@ -87,14 +103,14 @@ This is one 1860 worked epoch. It does **not** establish:
 
 Modern DE441 and the traditional Saura source are different models and frames. They remain separate. The existing generic historical and production-eligibility flags must remain false for unverified natal calculations.
 
-## 8. Release boundary
+## 9. Release boundary
 
 - No production Horoscope or Shadbala calculation is changed.
 - No browser/PWA/Android cache version or Service Worker is changed.
 - No user data, storage or customer-facing output is changed.
 - No merge, deployment or production activation is part of this audit.
 
-## 9. Reproduction
+## 10. Reproduction
 
 Run:
 
