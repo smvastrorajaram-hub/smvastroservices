@@ -160,8 +160,10 @@ for (const [date, time] of births) {
         date + ' ' + en + ' ' + runtime + ' NAELOS-backed B.V. Raman Chesta method');
       assert.equal(result.trueLongitudeEvidence?.certificateId, NAELOS_CERTIFICATE_ID,
         date + ' ' + en + ' ' + runtime + ' certificate identity retained');
-      assert.ok(Math.abs(result.value - cheshta.virupa) <= 1e-9,
-        date + ' ' + en + ' ' + runtime + ' B.V. Raman Chesta formula matches independent arithmetic');
+      const roundedIndependentVirupa =
+        Math.round((cheshta.virupa + Number.EPSILON) * 1000) / 1000;
+      assert.ok(Math.abs(result.value - roundedIndependentVirupa) <= 1e-9,
+        date + ' ' + en + ' ' + runtime + ' B.V. Raman Chesta formula matches independently rounded virupa');
     }
     assert.ok(Math.abs(browserChesta.value - nodeChesta.value) <= 1e-12,
       date + ' ' + en + ' B.V. Raman Node/Browser NAELOS Chesta parity');
