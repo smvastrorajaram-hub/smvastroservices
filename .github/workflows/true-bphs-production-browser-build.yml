@@ -68,7 +68,7 @@ jobs:
       - name: Bundle the same NAELOS BPHS engine for Browser/PWA/Android WebView
         run: |
           npx esbuild public/horoscope/offline/true-bphs-naelos-engine.browser.mjs \
-            --bundle --format=esm --platform=browser --target=es2022 \
+            --bundle --format=esm --platform=browser --target=es2022 --external:node:* \
             --outfile=public/horoscope/offline/true-bphs-naelos-engine.browser.bundle.mjs
           node --check public/horoscope/offline/true-bphs-naelos-engine.browser.bundle.mjs
 
