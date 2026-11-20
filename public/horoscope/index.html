@@ -81,7 +81,7 @@ if(location.hostname==='smvastroservices.pages.dev'){
 <p class="small">Enter your birth date, time and exact birth place. Age-appropriate readings use your birth date and calculated horoscope; Rasi and Nakshatra are calculated automatically.</p>
 <div class="grid">
 <div><label class="small"><b>Name</b></label><input id="englishAstroName" maxlength="80" placeholder="Your name"></div>
-<div><label class="small"><b>Gender</b></label><select id="englishBirthGender" required><option value="">Select</option><option value="male">Male</option><option value="female">Female</option></select></div>
+<fieldset class="birth-gender-choice" id="englishBirthGender"><legend class="small">Gender</legend><div class="birth-gender-buttons"><label class="birth-gender-option"><input type="radio" name="englishBirthGender" value="male" required><span>Male</span></label><label class="birth-gender-option"><input type="radio" name="englishBirthGender" value="female" required><span>Female</span></label></div></fieldset>
 <div><label class="small"><b>Date of Birth</b></label><input id="englishDob" type="date" min="1800-01-01" max="2399-12-31"></div>
 <div><label class="small"><b>Time of Birth</b></label><input id="englishTob" type="time"></div>
 <div><label class="small"><b>Place of Birth</b></label><input id="englishBirthPlace" maxlength="120" placeholder="City, State or City, State, Country"></div>
@@ -110,7 +110,7 @@ if(location.hostname==='smvastroservices.pages.dev'){
 <p class="small">பிறந்த தேதி, நேரம் மற்றும் சரியான பிறந்த இடத்தைக் கொண்டு ஜாதகம் உருவாக்கலாம். வயதுக்கேற்ற பலன்கள் பிறந்த தேதியிலிருந்தும், ராசி மற்றும் நட்சத்திரம் பிறப்புக் கணக்கீட்டிலிருந்தும் தானாக உருவாகும். தற்போதைய தொழில், திருமண நிலை மற்றும் தற்போதைய வசிப்பிடம் விருப்பத் தகவல்கள்; இவை பிறப்பு ஜாதக கணக்கை மாற்றாமல் பலன் எந்த வடிவில் வெளிப்படலாம் என்பதை மேலும் பொருத்தமாக வாசிக்க உதவும்.</p>
 <div class="grid">
 <div><label class="small"><b>பெயர்</b></label><input id="tamilAstroName" maxlength="80" placeholder="உங்கள் பெயர்"></div>
-<div><label class="small"><b>பாலினம்</b></label><select id="tamilBirthGender" required><option value="">தேர்வு செய்யவும்</option><option value="male">ஆண்</option><option value="female">பெண்</option></select></div>
+<fieldset class="birth-gender-choice" id="tamilBirthGender"><legend class="small">பாலினம்</legend><div class="birth-gender-buttons"><label class="birth-gender-option"><input type="radio" name="tamilBirthGender" value="male" required><span>ஆண்</span></label><label class="birth-gender-option"><input type="radio" name="tamilBirthGender" value="female" required><span>பெண்</span></label></div></fieldset>
 <div><label class="small"><b>பிறந்த தேதி</b></label><input id="tamilDob" type="date"></div>
 <div><label class="small"><b>பிறந்த நேரம்</b></label><input id="tamilTob" type="time"></div>
 <div><label class="small"><b>பிறந்த இடம்</b></label><input id="tamilBirthPlace" maxlength="120" placeholder="நகரம், மாநிலம்"></div>
