@@ -12,7 +12,6 @@ on:
       - 'tests/bv-raman-strength6-regression.mjs'
       - 'public/horoscope/offline/wasm-provider.mjs'
       - 'public/horoscope/offline/vendor/smv-swisseph-local.mjs'
-      - 'public/horoscope/horoscope.js'
       - 'public/horoscope/chart-style.js'
       - 'tests/horoscope-chart-planet-layout-regression.mjs'
       - 'tests/perambalur-sripati-bhava-golden-browser-smoke.mjs'
