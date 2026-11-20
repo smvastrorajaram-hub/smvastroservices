@@ -12,7 +12,7 @@ permissions:
 jobs:
   validate-naelos-true-longitude:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - name: Checkout research branch
         uses: actions/checkout@v4
@@ -30,7 +30,7 @@ jobs:
           node --check tests/bv-raman-yuddha-regression.mjs
           node --check tests/bv-raman-seven-graha-numerical-certification.mjs
           node --check research/natal-classical-certification/evidence-gates.mjs
-          node --check research/natal-classical-certification/annual-longitude-coverage.mjs
+          node --check research/natal-classical-certification/annual-random-natal-charts.mjs
           node --check tests/natal-classical-certification-pipeline.mjs
       - name: Inspect checked-in NAELOS binary headers
         run: node research/naelos-de440/naelos-binary-forensics.mjs
@@ -46,5 +46,12 @@ jobs:
         run: node tests/naelos-de440-five-natal-true-longitude.mjs
       - name: Verify 42-row six-Bala evidence matrix and final natal gate
         run: node tests/natal-classical-certification-pipeline.mjs
-      - name: Audit one annual Saura Mean/True/Sheeghroccheya candidate epoch per year for 1800-2399
-        run: node research/natal-classical-certification/annual-longitude-coverage.mjs
+      - name: Calculate 600 seeded-random full natal charts (one random DOB, time and Indian place per year)
+        run: node research/natal-classical-certification/annual-random-natal-charts.mjs
+      - name: Upload 600-chart DOB/place and six-Bala evidence ledger
+        uses: actions/upload-artifact@v4
+        with:
+          name: natal-classical-random-600-charts-1800-2399
+          path: artifacts/natal-classical-random-600-charts-1800-2399.json
+          if-no-files-found: error
+          retention-days: 30
