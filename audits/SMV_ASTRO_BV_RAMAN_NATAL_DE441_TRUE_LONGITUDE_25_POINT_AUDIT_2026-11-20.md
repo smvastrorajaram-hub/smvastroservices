@@ -12,14 +12,27 @@ The 25 reference values were retrieved directly from the NASA/JPL Horizons API u
 - Earth centre: geocentre, target centre `500@399`; the Horizons response identifies DE441 for both target and Earth.
 - Quantity 31: observer-centred IAU76/80 ecliptic-of-date apparent longitude and latitude, including light-time, solar gravitational deflection and stellar aberration.
 - Time scale: UT input; the five returned timestamps correspond to the supplied India-local birth times converted using UTC+05:30.
-- Longitude values: tropical degrees. The runtime's Lahiri sidereal longitude is converted back to tropical by adding the runtime's own returned Lahiri ayanāṃśa before comparison.
+- Longitude values: tropical degrees. The primary comparison calls the bundled Swiss Ephemeris directly with SWIEPH | SPEED and no sidereal flag, so candidate and JPL reference are both tropical apparent ecliptic-of-date values. The separate chart sidereal-longitude-plus-displayed-ayanāṃśa reconstruction is a diagnostic only; it is not the primary acceptance series.
 - Fixture: `tests/fixtures/bv-raman-natal-de441-apparent-true-2026-11-20.json`.
 
 The fixture preserves every exact epoch and all 25 JPL values. Each planet's response header was checked to ensure the target is DE441; the Saturn target is Saturn-system barycentre 6, not Saturn centre 699 (which resolves to a different Saturn ephemeris).
 
 ## 2. Numerical result
 
-The independent local Python Swiss Ephemeris 2.10.03 Moshier binding was compared separately against the 25 exact JPL values. The repository regression executes the chart calculation through its bundled browser-compatible runtime and requires each point to be within 0.05°.
+The independent local Python Swiss Ephemeris 2.10.03 Moshier binding was compared separately against the 25 exact JPL values. The repository regression also checks the bundled Swiss WASM direct-tropical result with explicit SWIEPH | SPEED flags, asserts that the returned ephemeris flag includes the Swiss data bit, and requires each natal/planet point to be within 0.05°.
+
+**Primary repository SWIEPH direct-tropical result:**
+
+| Planet | Samples | RMS absolute residual (degrees) | Maximum absolute residual (degrees) |
+|---|---:|---:|---:|
+| Mercury | 5 | 0.000013140 | 0.000013505 |
+| Venus | 5 | 0.000013249 | 0.000014180 |
+| Mars | 5 | 0.000013429 | 0.000013669 |
+| Jupiter | 5 | 0.000013364 | 0.000013650 |
+| Saturn | 5 | 0.000013432 | 0.000013769 |
+| **All planets** | **25** | **0.000013323** | **0.000014180** |
+
+The independent local Python Moshier result remains a separate cross-check:
 
 | Planet | Samples | RMS absolute residual (degrees) | Maximum absolute residual (degrees) |
 |---|---:|---:|---:|
@@ -32,7 +45,11 @@ The independent local Python Swiss Ephemeris 2.10.03 Moshier binding was compare
 
 The largest observed Python Moshier-binding difference is Saturn at the 1992-07-31 22:05 IST birth epoch: 0.000067825° (about 0.244 arcsecond). This supplemental Moshier result is approximately 737 times smaller than the 0.05° acceptance ceiling.
 
-**Actual repository CI result:** B.V. Raman Integrated Strength6 QA run [#1189](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44757492656) completed SUCCESS. The bundled runtime reported `SWIEPH`; across all 25 points the maximum absolute residual was **0.005151651°**, and RMS residual was **0.003861270°**. This is approximately 9.71 times below the 0.05° ceiling. The same workflow also passed the existing Raman 695-check regression, the printed-example 132-assertion certificate test, Ishta/Kashta 39 assertions, Ayurdaya report 669 assertions, and Marriage Matching/report 132 assertions.
+**Actual repository CI result:** B.V. Raman Integrated Strength6 QA run [#1194](https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44758892194) completed SUCCESS with 251 assertions in the natal True-longitude test. The primary direct-tropical SWIEPH comparison across all 25 points has a maximum residual of **0.000014180°** and RMS **0.000013323°** (approximately 0.051 arcsecond maximum). All 25 values are within the predeclared 0.05° gate.
+
+The diagnostic sidereal result (chart.planets[].longitude + chart.ayanamsa) has a larger common offset: maximum **0.005151651°**, RMS **0.003861270°**. This shows that the chart's displayed Lahiri ayanāṃśa is not an exact inverse of the full Swiss sidereal-flag transformation. This round-trip diagnostic is therefore kept separate and is **not** used as the True-longitude acceptance result. No correction constant was fitted or applied.
+
+The same Actions workflow passed the B.V. Raman legacy 695-check regression, printed Standard Horoscope 132-assertion certificate test, Ishta/Kashta 39 assertions, Ayurdaya report 669 assertions and Marriage Matching/report 132 assertions.
 
 ## 3. What this proves
 
