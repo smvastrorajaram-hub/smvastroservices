@@ -13,6 +13,7 @@ on:
       - 'tests/bv-raman-strength6-regression.mjs'
       - 'tests/bv-raman-seven-graha-numerical-certification.mjs'
       - 'tests/pac-2026-five-graha-nirayana-regression.mjs'
+      - 'tests/pac-2026-full-year-five-graha-regression.mjs'
       - 'tests/fixtures/pac-2026-five-graha-nirayana.json'
       - 'tests/bv-raman-ishta-kashta-regression.mjs'
       - 'tests/cg-rajan-ayurdaya-pinda-horoscope-report-qa.mjs'
@@ -63,12 +64,27 @@ jobs:
           node --check tests/bv-raman-strength6-regression.mjs
           node --check tests/bv-raman-seven-graha-numerical-certification.mjs
           node --check tests/pac-2026-five-graha-nirayana-regression.mjs
+          node --check tests/pac-2026-full-year-five-graha-regression.mjs
       - name: Verify B.V. Raman printed standard-horoscope component oracle and five natal charts
         run: node tests/bv-raman-strength6-regression.mjs
       - name: Certify seven-graha B.V. Raman totals, Rupa, ratios and ranking for the printed Standard Horoscope
         run: node tests/bv-raman-seven-graha-numerical-certification.mjs
       - name: Cross-check 2026 official PAC Nirayana longitude tables for five grahas
         run: node tests/pac-2026-five-graha-nirayana-regression.mjs
+      - name: Prepare official PAC 2026 full-year daily PDF tables
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+          mkdir -p "$RUNNER_TEMP/pac2026"
+          for planet in Mercury Venus Mars Jupiter Saturn; do
+            curl --fail --location --retry 3 --retry-delay 2 \
+              "https://packolkata.imd.gov.in/download/nirlon/$planet.pdf" \
+              --output "$RUNNER_TEMP/pac2026/$planet.pdf"
+          done
+          echo "PAC_PDF_DIR=$RUNNER_TEMP/pac2026" >> "$GITHUB_ENV"
+          sha256sum "$RUNNER_TEMP"/pac2026/*.pdf
+      - name: Compare all 1,825 daily PAC 2026 Nirayana values against Swiss Ephemeris
+        run: node tests/pac-2026-full-year-five-graha-regression.mjs
       - name: Verify B.V. Raman Ishta/Kashta remains separate from sixfold Shadbala
         run: node tests/bv-raman-ishta-kashta-regression.mjs
       - name: Verify Horoscope Ayurdaya report integration and B.V. Raman strength6 output
