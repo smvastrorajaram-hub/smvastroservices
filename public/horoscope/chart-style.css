@@ -222,3 +222,20 @@
 .south-indian-chart.smv-v342-east .smv-v342-cell.smv-chart-cell-compact .smv-v342-planets .planet-glyph *{
  white-space:nowrap!important;max-width:none!important;
 }
+
+
+/* Bhava-only Roman labels: keep the full I–XII set readable inside its actual compartment. */
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-bhava-cell[data-house="3"]{left:12%!important}
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-bhava-cell[data-house="5"]{left:12%!important}
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-bhava-cell[data-house="9"]{left:88%!important}
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-bhava-cell[data-house="11"]{left:88%!important}
+.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-bhava-cell[data-sign="3"]{left:11%!important}
+.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-bhava-cell[data-sign="9"]{left:88%!important}
+.south-indian-chart.smv-v342-east .smv-v342-cell.smv-v342-bhava-cell[data-sign="11"]{left:88%!important}
+.smv-v342-bhava-cell .smv-v342-house-number{
+ display:block!important;z-index:4!important;font-size:.98em!important;
+ font-weight:900!important;color:#6f4d2c!important;line-height:1.1!important;
+}
+.smv-v342-bhava-cell.smv-v342-triangle-cell .smv-v342-house-number{
+ background-color:#fffdf7!important;padding:0 2px!important;border-radius:2px!important;
+}
