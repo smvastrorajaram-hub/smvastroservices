@@ -2,7 +2,7 @@
 
 **Date:** 20 November 2026  
 **Scope:** 2026-01-01 through 2026-12-31; Mercury, Venus, Mars, Jupiter and Saturn  
-**Status:** **UTC-EPOCH REVALIDATION IN PROGRESS — source parsing and coverage remain established; the numerical comparison is being rerun at the fixed 00:00:00 UTC epoch.**  
+**Status:** **UTC COMPARISON COMPLETED — all 1,825 daily rows parsed and calculated; the fixed 00:00:00 UTC comparison exceeds the retained 0.36″ numerical gate, so no sub-arcsecond PAC/Swiss certificate is issued.**  
 **Qualification:** The fixed epoch is the project comparison convention requested for this audit, not yet a PAC-confirmed statement. Lahiri remains an inferred sidereal comparison convention. This is not a historical Saura or BPHS Cheshta certificate.
 
 ## 1. Official reference source
@@ -169,11 +169,60 @@ https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44769611357
 
 This anchor test complements—not replaces—the full-year PDF parser test.
 
-## 6. UTC epoch revalidation — current status
+## 6. UTC epoch revalidation — current result
 
-The current tests now use 00:00:00 UTC as the project-fixed daily epoch. Each input is passed to Swiss Ephemeris `utcToJd()`, which returns UT1 and TT/ET Julian Days; the TT/ET result is supplied to `swe.calc`. UTC is not treated as TT, and the UT1 result is allowed to differ from nominal UTC Julian Day by less than one second to account for DUT1.
+**GitHub Actions run #1225:** https://github.com/smvastrorajaram-hub/smvastroservices/actions/runs/44777225071 — workflow SUCCESS. The script reports comparison completion separately from the numerical gate.
 
-The first observed anchor (Mercury, 2026-01-01) differs from the Swiss Lahiri result by **0.001220148692° = 4.392535″**, exceeding the unchanged 0.36″ target. This is a real comparison mismatch under the fixed UTC convention, not a reason to widen the tolerance. Full-year UTC metrics are being emitted by the new diagnostic regression. Until that result is recorded, no sub-arcsecond PAC/Swiss accuracy certificate is granted under 00:00 UTC.
+The project comparison convention is fixed at **00:00:00 UTC** on each Gregorian date. The test calls Swiss Ephemeris `utcToJd(year, month, day, 0, 0, 0)`, verifies the returned UT1 JD is within one second of the nominal UTC JD (DUT1 allowance), and passes the returned ET/TT JD to `swe.calc`. This avoids treating a UTC JD as TT.
+
+- Five official PAC PDFs: byte-length and SHA-256 checks PASS.
+- Daily coverage: 365 rows per planet, no missing/duplicate dates.
+- Calculations completed: **1,825 / 1,825**.
+- Retained numerical acceptance limit: **0.36 arcsecond**.
+- Actual UTC result: **gate FAIL**; maximum residual **6.312165″**, RMS **2.363192″**.
+- The old 0.253273″ maximum was obtained at the retired 00:00 TT comparison epoch and is not the UTC result.
+
+### Per-planet UTC residuals
+
+| Planet | Samples | RMS residual | Maximum residual | Date of maximum |
+|---|---:|---:|---:|---|
+| Mercury | 365 | 3.933609″ | 6.312165″ | 2026-05-16 |
+| Venus | 365 | 2.922025″ | 3.615318″ | 2026-01-03 |
+| Mars | 365 | 1.927562″ | 2.256814″ | 2026-04-15 |
+| Jupiter | 365 | 0.366088″ | 0.642222″ | 2026-01-10 |
+| Saturn | 365 | 0.249695″ | 0.460897″ | 2026-10-03 |
+| **All** | **1,825** | **2.363192″** | **6.312165″** | **Mercury, 2026-05-16** |
+
+### Month-by-month UTC residuals
+
+| Month | Samples | Maximum residual | RMS residual |
+|---|---:|---:|---:|
+| January | 155 | 3.809195″ | 1.474116″ |
+| February | 140 | 4.124695″ | 1.512798″ |
+| March | 155 | 4.581862″ | 2.283089″ |
+| April | 150 | 5.050759″ | 2.841840″ |
+| May | 155 | 5.094725″ | 2.587214″ |
+| June | 150 | 3.603544″ | 2.079502″ |
+| July | 155 | 5.306221″ | 2.622780″ |
+| August | 155 | 6.312165″ | 3.215576″ |
+| September | 150 | 4.971963″ | 2.247705″ |
+| October | 155 | 3.272123″ | 1.786398″ |
+| November | 150 | 5.796975″ | 2.696935″ |
+| December | 155 | 5.430934″ | 2.352915″ |
+
+### Three-date UTC anchor diagnostic
+
+The 15-value anchor fixture now uses 00:00:00 UTC. Its maximum residual is **4.581862″** and RMS is **2.341320″**. Per-planet maxima are Mercury 4.581862″, Venus 3.611182″, Mars 2.189224″, Jupiter 0.626896″ and Saturn 0.093944″. The anchor diagnostic completes all 15 values but does not pass the 0.36″ numerical gate.
+
+### Daily event coverage
+
+The PAC daily source series still yields 12 station brackets, 36 sign-boundary transitions and 13 pairwise close-conjunction daily minima. These are derived directly from PAC's daily rows and remain date brackets / daily minima, not exact event instants.
+
+### Scientific interpretation
+
+The UTC convention is now implemented, but the PAC/Swiss Lahiri difference is materially larger than the old TT comparison. The first anchor, Mercury on 2026-01-01, differs by **4.392535″**. This pattern is consistent with a time-epoch effect but does not, by itself, prove PAC's actual row epoch. The daily PDFs still do not state the row time. The old TT agreement must not be used to override the requested UTC convention, and the UTC mismatch must not be hidden by widening the tolerance.
+
+**Conclusion:** 00:00:00 UTC is fixed as the project's working comparison epoch. PAC's true published row epoch and exact ayanamsa remain unconfirmed. The UTC numerical gate is not passed; no sub-arcsecond accuracy certificate is granted.
 
 ## 7. Interpretation and limits
 
