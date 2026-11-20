@@ -133,6 +133,15 @@ for(let year=YEAR_START;year<=YEAR_END;year++){
   const row=result.planets[name],components=row?.components;
   assert.equal(row?.available,true,birth.date+' '+name+' result exists');
   assert.equal(row.classicalCertified,false,birth.date+' '+name+' not self-certified');
+  const phala=row.ishtaKashta;
+  assert.equal(phala?.available,true,birth.date+' '+name+' BPHS Chapter 28 Ishta/Kashta available');
+  assert.equal(phala.method,'TRUE_BPHS_CH28_RASMI_ISHTA_KASHTA',birth.date+' '+name+' BPHS Chapter 28 method');
+  assert.ok(Math.abs(phala.ishtaPhala+phala.kashtaPhala-60)<=0.002,birth.date+' '+name+' Ishta+Kashta=60');
+  assert.ok(Math.abs(phala.ishtaPhala-(phala.uchchaBala+phala.cheshtaForPhala)/2)<=0.002,birth.date+' '+name+' BPHS verse 6 arithmetic mean');
+  assert.equal(phala.referenceFrameId,result.frame.id,birth.date+' '+name+' Ishta effective-Lahiri frame');
+  assert.equal(phala.epochJdUt,result.epochJdUt,birth.date+' '+name+' Ishta natal epoch');
+  if(name==='சூரியன்') assert.equal(phala.cheshtaForPhala,30,birth.date+' Sun Ch28 Cheshta Kendra is 90 degrees');
+  if(name!=='சூரியன்'&&name!=='சந்திரன்') assert.ok(Math.abs(phala.cheshtaForPhala-row.components.cheshta)<=0.002,birth.date+' '+name+' five-planet BPHS Chesta-for-Phala matches sixfold Cheshta');
   stats.grahaRows++;
   const values={
    sthana:components?.sthana?.total,
