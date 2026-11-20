@@ -239,3 +239,39 @@
 .smv-v342-bhava-cell.smv-v342-triangle-cell .smv-v342-house-number{
  background-color:#fffdf7!important;padding:0 2px!important;border-radius:2px!important;
 }
+
+
+/* Bhava-only Roman house overlay: independent of planet-row clipping/overflow. */
+.smv-v342-bhava-house-label{
+ position:absolute!important;transform:translate(-50%,-50%)!important;
+ z-index:20!important;display:inline-block!important;box-sizing:border-box!important;
+ min-width:1.4em;text-align:center;padding:1px 3px!important;
+ border-radius:3px!important;background:#fffdf7!important;
+ color:#6f4d2c!important;font-size:clamp(10px,2.1vw,13px)!important;
+ font-weight:900!important;line-height:1.05!important;white-space:nowrap!important;
+ pointer-events:none!important;
+}
+.south-indian-chart.smv-v342-north .smv-v342-bhava-house-label[data-house="1"]{left:50%!important;top:13%!important}
+.south-indian-chart.smv-v342-north .smv-v342-bhava-house-label[data-house="2"]{left:28%!important;top:5%!important}
+.south-indian-chart.smv-v342-north .smv-v342-bhava-house-label[data-house="3"]{left:7%!important;top:27%!important}
+.south-indian-chart.smv-v342-north .smv-v342-bhava-house-label[data-house="4"]{left:12%!important;top:50%!important}
+.south-indian-chart.smv-v342-north .smv-v342-bhava-house-label[data-house="5"]{left:7%!important;top:73%!important}
+.south-indian-chart.smv-v342-north .smv-v342-bhava-house-label[data-house="6"]{left:28%!important;top:95%!important}
+.south-indian-chart.smv-v342-north .smv-v342-bhava-house-label[data-house="7"]{left:50%!important;top:87%!important}
+.south-indian-chart.smv-v342-north .smv-v342-bhava-house-label[data-house="8"]{left:72%!important;top:95%!important}
+.south-indian-chart.smv-v342-north .smv-v342-bhava-house-label[data-house="9"]{left:93%!important;top:73%!important}
+.south-indian-chart.smv-v342-north .smv-v342-bhava-house-label[data-house="10"]{left:88%!important;top:50%!important}
+.south-indian-chart.smv-v342-north .smv-v342-bhava-house-label[data-house="11"]{left:93%!important;top:27%!important}
+.south-indian-chart.smv-v342-north .smv-v342-bhava-house-label[data-house="12"]{left:72%!important;top:5%!important}
+.south-indian-chart.smv-v342-east .smv-v342-bhava-house-label[data-sign="1"]{left:50%!important;top:6%!important}
+.south-indian-chart.smv-v342-east .smv-v342-bhava-house-label[data-sign="2"]{left:25%!important;top:4%!important}
+.south-indian-chart.smv-v342-east .smv-v342-bhava-house-label[data-sign="3"]{left:7%!important;top:23%!important}
+.south-indian-chart.smv-v342-east .smv-v342-bhava-house-label[data-sign="4"]{left:7%!important;top:50%!important}
+.south-indian-chart.smv-v342-east .smv-v342-bhava-house-label[data-sign="5"]{left:7%!important;top:77%!important}
+.south-indian-chart.smv-v342-east .smv-v342-bhava-house-label[data-sign="6"]{left:25%!important;top:96%!important}
+.south-indian-chart.smv-v342-east .smv-v342-bhava-house-label[data-sign="7"]{left:50%!important;top:94%!important}
+.south-indian-chart.smv-v342-east .smv-v342-bhava-house-label[data-sign="8"]{left:75%!important;top:96%!important}
+.south-indian-chart.smv-v342-east .smv-v342-bhava-house-label[data-sign="9"]{left:93%!important;top:77%!important}
+.south-indian-chart.smv-v342-east .smv-v342-bhava-house-label[data-sign="10"]{left:93%!important;top:50%!important}
+.south-indian-chart.smv-v342-east .smv-v342-bhava-house-label[data-sign="11"]{left:93%!important;top:23%!important}
+.south-indian-chart.smv-v342-east .smv-v342-bhava-house-label[data-sign="12"]{left:75%!important;top:4%!important}
