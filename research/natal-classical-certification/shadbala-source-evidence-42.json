@@ -55,10 +55,44 @@
       "id": "BVR_JUPITER_DRIK",
       "pages": "88,90",
       "detail": "Example 55 Drik −16.04 versus final summary −16.03.",
-      "classification": "OPEN_TWO_DECIMAL_ROUNDING_CONFLICT",
-      "printedEvidence": "Example 55 p.88 gives Drishti Pinda −64.14 and Drik Bala −16.04; Example 56 final summary p.90 prints −16.03.",
-      "recomputation": "−64.14 ÷ 4 = −16.035 before two-decimal display rounding.",
-      "disposition": "The chapter formula and Example 55 support −16.04 under conventional half-away-from-zero rounding; the final summary uses −16.03. Retain the 0.01 source discrepancy until the author's intermediate precision/rounding convention is independently established."
+      "classification": "OPEN_DRISHTI_DETAIL_AND_ROUNDING_RECONCILIATION",
+      "printedEvidence": "Example 54 p.88 gives the Jupiter Net Aspect / Drishti Pinda as −64.14; Example 55 p.88 gives Drik −16.04; Example 56 p.90 gives Drik −16.03. The p.88 individual signed aspect entries sum to −64.14, but its printed Subhadrishtibala +30.79 and Asubhadrishtibala −94.23 subtotal to −63.44, not −64.14.",
+      "recomputation": "Printed p.88 individual contributions: Sun −18.43, Moon +17.25, Mars −57.75 (including the printed 15.00 special aspect and 42.75 ordinary component), Mercury −18.75, Venus +13.54, Saturn 0; their sum is −64.14. To obtain that net from the printed +30.79 Subha subtotal, the Asubha subtotal would have to be −94.93, not the printed −94.23. The exact-input 1918 B.V. Raman engine diagnostic returns Pinda −64.096 and Drik −16.024. The printed −64.14 ÷ 4 is −16.035; Example 55 and the p.90 summary still show −16.04 / −16.03.",
+      "disposition": "Keep Jupiter Drik open. The printed individual contributions support Net Pinda −64.14, while the printed subtotals do not reconcile and the exact-input engine returns −64.096. The quarter of the printed Pinda is −16.035, so the two printed Drik values differ by 0.01. Do not change the engine or select a printed value as universal until the p.88 subtotal typo, exact table rounding policy and engine per-aspector differences are reconciled.",
+      "sourcePrintedIndividualAspectContributions": [
+        {
+          "aspector": "Sun",
+          "signedVirupa": -18.43
+        },
+        {
+          "aspector": "Moon",
+          "signedVirupa": 17.25
+        },
+        {
+          "aspector": "Mars",
+          "signedVirupa": -57.75
+        },
+        {
+          "aspector": "Mercury",
+          "signedVirupa": -18.75
+        },
+        {
+          "aspector": "Venus",
+          "signedVirupa": 13.54
+        },
+        {
+          "aspector": "Saturn",
+          "signedVirupa": 0
+        }
+      ],
+      "sourcePrintedDetailPinda": -64.14,
+      "sourcePrintedSubhaSubtotal": 30.79,
+      "sourcePrintedAsubhaSubtotal": -94.23,
+      "sourcePrintedSubtotalsNet": -63.44,
+      "asubhaSubtotalRequiredToReconcileNet": -94.93,
+      "exactInputEnginePinda": -64.096,
+      "exactInputEngineDrik": -16.024,
+      "sourcePindaQuarter": -16.035
     },
     {
       "id": "BVR_SUN_TOTAL_ARITHMETIC",
@@ -694,7 +728,7 @@
       },
       "scope": "One printed Standard Horoscope worked example only",
       "arbitraryNatalSourceEvidence": false,
-      "notes": "Example 55 p.88: Drishti Pinda −64.14 / 4 = −16.035, printed −16.04. Example 56 p.90 prints −16.03; retain the 0.01 rounding discrepancy."
+      "notes": "Open source conflict. Example 54 p.88 individual signed aspects sum −64.14, but printed Subha +30.79 plus Asubha −94.23 = −63.44; −94.93 would be needed to reconcile. Exact-input 1918 engine gives Pinda −64.096 / Drik −16.024. Example55 p.88 prints −16.04; Example56 p.90 prints −16.03."
     },
     {
       "graha": "Venus",
