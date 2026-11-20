@@ -48,9 +48,9 @@ executeProductionRenderer(
 );
 assert.ok(bhavaNode.innerHTML,'The production render(d) Bhava Chart renderer must produce HTML.');
 for(let house=1;house<=12;house++){
-  assert.ok(bhavaNode.innerHTML.includes('data-bhava-house="${house}"'),
+  assert.ok(bhavaNode.innerHTML.includes('data-bhava-house="'+house+'"'),
     'Production Bhava HTML must retain data-bhava-house for house '+house+'.');
-  assert.ok(bhavaNode.innerHTML.includes('>${roman[house-1]}<'),
+  assert.ok(bhavaNode.innerHTML.includes('>'+roman[house-1]+'<'),
     'Production Bhava HTML must initially emit Roman numeral '+roman[house-1]+'.');
 }
 const bhavaRows=golden.bhavas.map(b=>{
