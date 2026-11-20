@@ -25,6 +25,8 @@ The India Meteorological Department describes the *Indian Astronomical Ephemeris
 
 - IMD publication page: https://mausam.imd.gov.in/imd_latest/contents/indian_astronomical_ephemeris.php
 
+The annual grid is not a substitute for a chart's exact birth instant. The final gate therefore also requires a per-chart exact natal-epoch record with all five planetary inputs, one verified frame, the applied validated-model certificate ID and no unverified fallback/interpolation.
+
 The current phase deliberately does **not** claim:
 1. that the Burgess 1860 anchor is reconciled;
 2. that an independent historical True Longitude oracle exists for all 3,000 annual candidate rows;
@@ -67,14 +69,15 @@ A chart can receive `classicalCertified:true` only when all conditions are met t
 3. All 42 six-Bala evidence rows pass their own source, sample, residual, tolerance and sub-rule checks.
 4. All ten possible eligible five-planet Yuddha pairs are evaluated; the source winner/loser rule and disc diameters are verified; no pair is unresolved; final Kala and six-Bala totals are recomposed.
 5. Node/Browser parity passes for all seven grahas and all six components.
-6. No fallback, guessed or uncertified substitute input is used.
+6. The specific chart's exact birth instant has its own evaluated five-planet Mean/True/Sheeghroccheya input record, same-frame provenance, Julian day, and a validated-model certificate; no unverified interpolation is accepted for that epoch.
+7. No fallback, guessed or uncertified substitute input is used.
 
 Any missing or failing item returns `classicalCertified:false` and `provisional:true`.
 
 ## Code and test artifacts
 
 - `research/natal-classical-certification/annual-longitude-coverage.mjs` — 3,000 annual candidate-row coverage audit (one sample per year).
-- `research/natal-classical-certification/evidence-gates.mjs` — fail-closed 42-row Bala matrix and final natal-chart gate.
+- `research/natal-classical-certification/evidence-gates.mjs` — fail-closed 42-row Bala matrix, exact natal-epoch proof, and final natal-chart gate.
 - `tests/natal-classical-certification-pipeline.mjs` — negative tests and explicitly synthetic gate-mechanics fixture.
 
 ## Current certification decision
