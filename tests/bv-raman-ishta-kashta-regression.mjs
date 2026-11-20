@@ -77,26 +77,27 @@ throws(() => bvRamanChestaForPhala({planet:'சந்திரன்',sunNirayan
 throws(() => bvRamanChestaForPhala({planet:'சனி',meanLongitude:1,trueLongitude:2}), /Sighrocca/, 'five-graha missing Sighrocca rejected');
 
 const horoscopeSource=fs.readFileSync(new URL('../public/horoscope/horoscope.js',import.meta.url),'utf8');
-const browserEngineSource=fs.readFileSync(new URL('../public/horoscope/offline/bv-raman-shadbala.browser.mjs',import.meta.url),'utf8');
-const nodeEngineSource=fs.readFileSync(new URL('../bv-raman-shadbala.cjs',import.meta.url),'utf8');
+const browserEngineSource=fs.readFileSync(new URL('../public/horoscope/offline/true-bphs-naelos-engine.browser.mjs',import.meta.url),'utf8');
+const wrapperSource=fs.readFileSync(new URL('../public/horoscope/offline/server-wrapper.browser.mjs',import.meta.url),'utf8');
 const horoscopeCss=fs.readFileSync(new URL('../public/horoscope/horoscope.css',import.meta.url),'utf8');
-assert.ok(horoscopeSource.includes('data-smv-ishta-kashta="1"'),'B.V. Raman result panel is mounted in Chart Analysis'); assertions++;
-assert.ok(horoscopeSource.includes('p.strength6?.ishtaKashta')&&horoscopeSource.includes('data-engine-source="BV_RAMAN_INTEGRATED_SIX_BALA"'),'Chart Analysis renders Ishta/Kashta from the unified B.V. Raman engine result'); assertions++;
-assert.ok(browserEngineSource.includes('bvRamanChestaForPhala')&&browserEngineSource.includes('bvRamanIshtaKashta')&&browserEngineSource.includes('sixfoldShadbalaCheshtaBala'),'browser Shadbala computes special Chesta-for-Phala separately and attaches formula output'); assertions++;
-assert.ok(nodeEngineSource.includes('ramanIshtaKashtaForPlanet')&&nodeEngineSource.includes('sixfoldShadbalaCheshtaBala'),'Node Shadbala mirrors integrated Ishta/Kashta output'); assertions++;
-assert.ok(horoscopeSource.includes("'சேஷ்டா-பலன் உள்ளீடு'")&&!horoscopeSource.includes('சேஷ்டா (இஷ்ட/கஷ்ட)'),'UI labels the Chapter X input separately from sixfold Cheshta Bala'); assertions++;
-assert.ok(horoscopeSource.includes('Shadbala Cheshta is 0 for Sun/Moon')&&horoscopeSource.includes('Mars–Saturn reuse the same Cheshta value as Shadbala'),'UI explains the source-defined luminary difference and five-graha parity rule'); assertions++;
-assert.ok(!horoscopeSource.includes('bvRamanChestaForPhala')&&!horoscopeSource.includes('bvRamanIshtaKashta'),'presentation layer no longer independently recalculates Ishta/Kashta'); assertions++;
-assert.ok(!horoscopeSource.includes('B.V. Raman சதுரவேர் முறை. ஐந்து கிரகங்களின் சிறப்பு சேஷ்டா-பல உள்ளீடுகள்'),'the unwanted Ishta/Kashta research note is absent from visible HTML'); assertions++;
+assert.ok(horoscopeSource.includes('data-smv-ishta-kashta="1"'),'BPHS result panel is mounted in Advanced Analysis > Chart Analysis'); assertions++;
+assert.ok(horoscopeSource.includes('p.strength6?.ishtaKashta')&&horoscopeSource.includes('data-engine-source="TRUE_BPHS_CH28_RASMI_ISHTA_KASHTA"'),'Chart Analysis renders Ishta/Kashta only from the integrated BPHS Chapter 28 engine result'); assertions++;
+assert.ok(horoscopeSource.includes('mountTrueBphsIshtaKashta')&&!horoscopeSource.includes('mountBVRamanIshtaKashta'),'the customer UI selects the TRUE BPHS renderer, not the older B.V. Raman renderer'); assertions++;
+assert.ok(browserEngineSource.includes('calculateBphsIshtaKashta')&&browserEngineSource.includes('TRUE_BPHS_CH28_RASMI_ISHTA_KASHTA'),'NAELOS engine owns the BPHS Chapter 28 calculation'); assertions++;
+assert.ok(wrapperSource.includes('TRUE_BPHS_SHADBALA_NAELOS_DE440')&&wrapperSource.includes('applyTrueBphsResultToChart'),'the Horoscope wrapper attaches NAELOS BPHS strength6 output to the chart'); assertions++;
+assert.ok(horoscopeSource.includes("'சேஷ்டா-பலன் உள்ளீடு'")&&!horoscopeSource.includes('சேஷ்டா (இஷ்ட/கஷ்ட)'),'UI keeps Cheshta-for-Phala distinct from the sixfold Shadbala Cheshta label'); assertions++;
+assert.ok(horoscopeSource.includes('BPHS அத்தியாயம் 28')&&horoscopeSource.includes('BPHS Chapter 28'),'the visible Tamil and English explanation names the correct BPHS chapter'); assertions++;
+assert.ok(horoscopeSource.includes('NAELOS_TRUE_ECLIPTIC_OF_DATE_EFFECTIVE_LAHIRI_V1'),'the UI result identifies the single Effective Lahiri reference frame'); assertions++;
+assert.ok(!horoscopeSource.includes('bvRamanChestaForPhala')&&!horoscopeSource.includes('bvRamanIshtaKashta'),'presentation layer does not independently calculate Ishta/Kashta with B.V. Raman formulas'); assertions++;
 assert.ok(horoscopeCss.includes('.smv-ayurdaya-scroll')&&horoscopeCss.includes('overflow-x:auto!important'),'Horoscope Ayurdaya scroll style is source-guarded'); assertions++;
-
 assert.ok(!horoscopeSource.includes('strength3'),'old BPHS strength3 is absent from customer Horoscope source'); assertions++;
 
 console.log(JSON.stringify({
   pass:true,
   assertions,
-  scope:'B.V. Raman square-root Ishta/Kashta formula + separate Sun/Moon/five-graha Chesta-for-Phala arithmetic',
+  scope:'B.V. Raman formula unit oracle remains separate; the customer Horoscope UI exclusively renders NAELOS TRUE BPHS Chapter 28 Ishta/Kashta',
   sixfoldShadbalaCertified:false,
   natalInputsCertified:false,
-  sourceExampleReconciliation:'separately blocked: printed/transcribed input/output inconsistencies must be reconciled before chart integration'
+  productionIntegration:true,
+  classicalCertified:false
 }));
