@@ -453,6 +453,67 @@ function assertCoreInputs(planetRows,bhavas,temporal,declinations,cheshtaInputs,
   return byName;
 }
 
+/**
+ * BPHS I Chapter 28 verses 2–6: Ishta/Kashta from Uchcha and Cheshta Rasmis.
+ * Uchcha Rasmi = 1 + Uchcha Bala/10. Cheshta Rasmi = 1 + Cheshta-for-Phala/10.
+ * Verse 6 then gives the mean of the two Virupa inputs; Kashta complements 60.
+ * Sun and Moon use the separate Chapter 28 Cheshta-Kendra rules, not their
+ * sixfold Shadbala Cheshta components.
+ */
+function calculateBphsIshtaKashta({
+  planet,uchchaBala,sunLongitude,moonLongitude,cheshtaInputs,epochJdUt
+}) {
+  if(!finite(uchchaBala)||uchchaBala<0||uchchaBala>60)
+    fail('BPHS Chapter 28 Uchcha Bala input is unavailable for '+planet);
+  let cheshtaKendraDegrees,cheshtaKendraSource;
+  if(planet==='சூரியன்') {
+    // Ch28 vv3–4: Sayana Sun + three Rasis; the relative Kendra is 90°.
+    cheshtaKendraDegrees=90;
+    cheshtaKendraSource='BPHS I Ch28 vv3–4: Sayana Sun + 3 Rasis';
+  } else if(planet==='சந்திரன்') {
+    // Ch28 v4: deduct the effective-Lahiri sidereal Sun from Moon.
+    const elongation=norm360(moonLongitude-sunLongitude);
+    cheshtaKendraDegrees=Math.min(elongation,360-elongation);
+    cheshtaKendraSource='BPHS I Ch28 v4: Moon − effective-Lahiri sidereal Sun';
+  } else {
+    const input=cheshtaInputs?.[planet];
+    if(!input||input.epochJdUt!==epochJdUt||
+       ![input.meanSunFrameId,input.meanPlanetFrameId,input.truePlanetFrameId,input.sheeghroccaFrameId].every(id=>id===FRAME_ID))
+      fail('BPHS Chapter 28 Cheshta Kendra source/frame/epoch is unavailable for '+planet);
+    const cheshta=bphsFivePlanetCheshtaFromClassicalMeans(
+      planet,input.meanSunLongitude,input.meanPlanetLongitude,input.truePlanetLongitude
+    );
+    cheshtaKendraDegrees=cheshta.cheshtaKendraDegrees;
+    cheshtaKendraSource='BPHS I Ch27 vv24–25; UK II pp42–43 input selection, same effective-Lahiri frame';
+  }
+  const cheshtaForPhala=cheshtaKendraDegrees/3;
+  if(!finite(cheshtaForPhala)||cheshtaForPhala<0||cheshtaForPhala>60)
+    fail('BPHS Chapter 28 Cheshta-for-Phala outside 0–60 Virupas for '+planet);
+  const uchchaRasmi=1+uchchaBala/10;
+  const cheshtaRasmi=1+cheshtaForPhala/10;
+  const subhaRasmi=(uchchaRasmi+cheshtaRasmi)/2;
+  const asubhaRasmi=8-subhaRasmi;
+  const ishtaPhala=(((uchchaRasmi-1)*10)+((cheshtaRasmi-1)*10))/2;
+  const kashtaPhala=60-ishtaPhala;
+  return Object.freeze({
+    available:true,method:'TRUE_BPHS_CH28_RASMI_ISHTA_KASHTA',
+    source:'Brihat Parashara Hora Shastra I, Chapter 28 verses 2–6',
+    unit:'virupa',
+    uchchaBala:round3(uchchaBala),
+    cheshtaForPhala:round3(cheshtaForPhala),
+    cheshtaKendraDegrees:round3(cheshtaKendraDegrees),
+    uchchaRasmi:Number(uchchaRasmi.toFixed(6)),
+    cheshtaRasmi:Number(cheshtaRasmi.toFixed(6)),
+    subhaRasmi:Number(subhaRasmi.toFixed(6)),
+    asubhaRasmi:Number(asubhaRasmi.toFixed(6)),
+    ishtaPhala:round3(ishtaPhala),
+    kashtaPhala:round3(kashtaPhala),
+    cheshtaKendraSource,
+    referenceFrameId:FRAME_ID,epochJdUt,
+    classicalCertified:false,provisional:true
+  });
+}
+
 function assembleBphsShadbala({planetRows,bhavas,temporal,declinations,cheshtaInputs,yuddha}={}) {
   const byName=assertCoreInputs(planetRows,bhavas,temporal,declinations,cheshtaInputs,temporal.epochJdUt);
   const rasiPositions=Object.fromEntries(BPHS_PLANETS.map(name=>
@@ -467,6 +528,12 @@ function assembleBphsShadbala({planetRows,bhavas,temporal,declinations,cheshtaIn
     const cheshta=calculateCheshtaBala(name,planetRows,declinations.values,cheshtaInputs);
     const naisargika=SHADBALA_NATURAL[name];
     const drik=drikBalaClassical(name,planetRows);
+    const ishtaKashta=calculateBphsIshtaKashta({
+      planet:name,uchchaBala:sthana.uccha,
+      sunLongitude:byName.get('சூரியன்').longitude,
+      moonLongitude:byName.get('சந்திரன்').longitude,
+      cheshtaInputs,epochJdUt:temporal.epochJdUt
+    });
     if(!finite(cheshta)||cheshta<0||cheshta>(name==='சூரியன்'||name==='சந்திரன்'?120:60))
       fail('BPHS Cheshta Bala outside its source range for '+name);
     if(!finite(drik)) fail('BPHS Drig Bala unavailable for '+name);
@@ -475,6 +542,7 @@ function assembleBphsShadbala({planetRows,bhavas,temporal,declinations,cheshtaIn
     rows[name]={
       available:true,planet:name,method:'TRUE_BPHS_SHADBALA_NAELOS_DE440',
       components:{sthana,dig,kala,cheshta:round3(cheshta),naisargika:round3(naisargika),drik:round3(drik)},
+      ishtaKashta,
       preWarTotalVirupa:round3(preWarTotal),classicalCertified:false,provisional:true
     };
   }
