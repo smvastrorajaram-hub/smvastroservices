@@ -15,7 +15,7 @@
  const roman=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
  const houseNumber=value=>{
   const raw=String(value??'').trim().toUpperCase();
-  if(/^\\d{1,2}$/.test(raw)){const n=Number(raw);return n>=1&&n<=12?n:0;}
+  if(/^\d{1,2}$/.test(raw)){const n=Number(raw);return n>=1&&n<=12?n:0;}
   const index=roman.indexOf(raw);return index>=0?index+1:0;
  };
  const romanHouse=house=>roman[Number(house)-1]||'—';
