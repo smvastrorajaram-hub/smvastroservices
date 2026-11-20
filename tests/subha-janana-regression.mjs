@@ -2,9 +2,16 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { formatOfflineIndiaAdministrativeAreas } from '../public/horoscope/offline/places/place-display.mjs';
+import { buildSubhaJanana } from '../public/horoscope/subha-janana.mjs';
+import { solarNoaa, tamilSolarDate, nakshatraIntervalsForLocalDay, thyajyamIntervalsForLocalDay, calculateAhasRatriPramana } from '../public/horoscope/offline/transit_panchang.browser.mjs';
+import { getTamilDayYoga } from '../public/horoscope/tamil-day-classifications.mjs';
+import { offsetMinutesAt } from '../public/horoscope/offline/places/timezone.mjs';
 
 const read=path=>fs.readFileSync(new URL('../'+path,import.meta.url),'utf8');
 let checks=0;
+for(const [name,fn] of Object.entries({buildSubhaJanana,solarNoaa,tamilSolarDate,nakshatraIntervalsForLocalDay,thyajyamIntervalsForLocalDay,calculateAhasRatriPramana,getTamilDayYoga,offsetMinutesAt})){
+  assert.equal(typeof fn,'function','Runtime module export is available: '+name);checks++;
+}
 const has=(source,part,message)=>{assert.ok(source.includes(part),message||part);checks++;};
 const lacks=(source,part,message)=>{assert.equal(source.includes(part),false,message||part);checks++;};
 
