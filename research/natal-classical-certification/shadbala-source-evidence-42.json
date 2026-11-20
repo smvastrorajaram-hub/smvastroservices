@@ -12,8 +12,11 @@
   "counts": {
     "totalRows": 42,
     "sourceExamplePass": 36,
+    "sourceExampleAdjudicated": 2,
     "notApplicableSourceEllipsis": 2,
-    "sourceDiscrepancy": 4
+    "sourceDiscrepancy": 2,
+    "printedComponentDiscrepanciesIdentified": 4,
+    "note": "Four component-level printed discrepancies were identified. Two are adjudicated for the 1918 worked example only (Saturn Chesta and Naisargika); two remain open (Mercury Dig and Jupiter Drik)."
   },
   "sourceDiscrepancies": [
     {
@@ -871,7 +874,7 @@
       "grahaTamil": "சனி",
       "component": "cheshta",
       "valueVirupa": 21.14,
-      "status": "SOURCE_DISCREPANCY",
+      "status": "SOURCE_EXAMPLE_ADJUDICATED",
       "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
       "sourceChapter": "Ch.VI §§99–107, Examples 49–51, pp.72–79",
       "sourcePage": "pp.77–79",
@@ -884,14 +887,14 @@
       },
       "scope": "One printed Standard Horoscope worked example only",
       "arbitraryNatalSourceEvidence": false,
-      "notes": "§104 p.77 table lists 151.23°, but Example 49 p.78 uses 181.23° and derives 63.42° Kendra / 21.14 Chesta. The p.90 summary also uses 21.14. For this one Standard Horoscope, 181.23° reproduces the example; table-cell conflict retained."
+      "notes": "§104 p.77 table lists 151.23°, but Example 49 p.78 uses 181.23° and derives 63.42° Kendra / 21.14 Chesta. The p.90 summary also uses 21.14. For this one Standard Horoscope, 181.23° reproduces the example; table-cell conflict retained. Adjudication scope: only this 1918 Standard Horoscope worked example; do not generalize 181.23° as a universal epoch input."
     },
     {
       "graha": "Saturn",
       "grahaTamil": "சனி",
       "component": "naisargika",
       "valueVirupa": 8.57,
-      "status": "SOURCE_DISCREPANCY",
+      "status": "SOURCE_EXAMPLE_ADJUDICATED",
       "sourceBook": "B. V. Raman, Graha and Bhava Balas, 13th edition (1992)",
       "sourceChapter": "Ch.VII §108, Example 52, pp.80–81",
       "sourcePage": "pp.80–81",
@@ -904,7 +907,7 @@
       },
       "scope": "One printed Standard Horoscope worked example only",
       "arbitraryNatalSourceEvidence": false,
-      "notes": "Chapter VII p.81 table and Example 52 both give 8.57; Example 56 p.90 prints 8.37. The p.90 total 389.21 recomposes with 8.57, not 8.37; treat 8.37 as summary misprint."
+      "notes": "Chapter VII p.81 table and Example 52 both give 8.57; Example 56 p.90 prints 8.37. The p.90 total 389.21 recomposes with 8.57, not 8.37; treat 8.37 as summary misprint. Adjudication scope: 8.57 is the reconciled fixed constant for this source example; 8.37 is the summary typo."
     },
     {
       "graha": "Saturn",
