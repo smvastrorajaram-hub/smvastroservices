@@ -67,13 +67,17 @@ assert.ok(chartStyleJs.includes('cell.dataset.chartPlanetCount=String(planetCoun
 assert.ok(chartStyleJs.includes("if(planetCount>=3)cell.classList.add('smv-chart-cell-compact')"));
 assert.match(chartStyleJs, /else if\(kind!=='d9'&&kind!=='bhava'\)\{/);
 assert.ok(chartStyleJs.includes("m.className='smv-v342-empty';m.textContent='—'"));
-assert.ok(chartStyleJs.includes("if(kind!=='bhava'&&style!=='east')cell.append(number);"), 'East Rasi, Navamsa and Transit suppress fixed zodiac-sign numbers; South and North retain their existing numbering.');
+assert.ok(chartStyleJs.includes("if(kind==='bhava'){"), 'Only Bhava alternate layouts render house labels.');
+assert.ok(chartStyleJs.includes("const lagna=kind==='bhava'?-1:ascSign(chart,from);"), 'Bhava alternate layouts do not depend on a Lagna lookup to render.');
+assert.ok(chartStyleJs.includes("const sign=bhava?bhava.sign:(kind==='bhava'?bhavaSignByHouse[house]:(lagna+house-1)%12);"), 'North Bhava maps each house through its own Sphuta Rasi, including multiple houses in one sign.');
+assert.ok(chartStyleJs.includes("const house=kind==='bhava'?0:(sign-lagna+12)%12+1;"), 'East Bhava positioning is independent of Lagna.');
+assert.ok(!chartStyleJs.includes("if(kind!=='bhava'&&style!=='east')cell.append(number);"), 'North/East Rasi, Navamsa and Transit do not render numeric sign labels.');
 assert.ok(chartStyleJs.includes("const bhavaRows=kind==='bhava'?readBhavaTable(chart,isTa()):null;"), 'North and East both read the same authoritative Bhava Table mapping.');
 assert.ok(chartStyleJs.includes('const bhavaHousesBySign=Array.from({length:12},()=>[]);'));
 assert.ok(chartStyleJs.includes('bhavaHousesBySign[row.sign].push(h);'), 'Each Bhava house is placed under its Bhava Madhya/Sphuta Rasi.');
 assert.ok(chartStyleJs.includes("h.textContent=style==='north'?romanHouse(house):String(bhavaHouseLabel||'');"), 'North displays its actual house number and East groups the mapped house labels by sign.');
 assert.ok(chartStyleJs.includes("const bhavaLabel=kind==='bhava'?bhavaHousesBySign[sign].map(romanHouse).join('/'):'';"), 'East does not substitute ordinary Lagna-based Rasi house numbers for Bhava numbers.');
-assert.ok(chartStyleJs.includes("h.textContent=house>=1&&house<=12?String(house):'';"), 'East Rasi, Navamsa and Transit retain their existing Lagna-derived house numbers unchanged.');
+assert.ok(!chartStyleJs.includes("h.textContent=house>=1&&house<=12?String(house):'';"), 'East Rasi, Navamsa and Transit do not render numeric house labels.');
 
 const horoscopeCountRules = horoscopeCss.split('\n').filter(line=>/^#tamilHoroscopeResult \.south-rasi-cell\[data-chart-planet-count="\d+"\],#englishHoroscopeResult \.south-rasi-cell\[data-chart-planet-count="\d+"\]\{/.test(line.trim()));
 assert.equal(horoscopeCountRules.length,20,'South-chart count rules exist at desktop and mobile widths for each 3–12 planet stack.');
