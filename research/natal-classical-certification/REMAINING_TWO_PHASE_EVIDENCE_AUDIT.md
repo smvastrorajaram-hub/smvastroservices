@@ -57,9 +57,10 @@ Ledger: `shadbala-source-evidence-42.json`.
 
 | Status | Count |
 |---|---:|
-| Source-example rows matched | 36 |
+| Direct source-example matches | 36 |
+| Saturn rows adjudicated for the 1918 example only | 2 |
 | Luminary Chesta source ellipses / N/A | 2 |
-| Component-level source discrepancies | 4 |
+| Open component-level source discrepancies (Mercury Dig, Jupiter Drik) | 2 |
 | **Total rows** | **42** |
 
 Source sections of B.V. Raman, *Graha and Bhava Balas*, 13th ed.:
@@ -84,9 +85,9 @@ The 13th-edition page images were rechecked directly ([full scanned book](https:
 | Mars Kala | Example 35 p.62: 30.060; summary p.89: 33.06 | 11.68 + 16.54 + 1.84 = 30.06; total 298.14 / Rupa 4.97 also reconcile with 30.06. **Use 30.06 for the example**; 33.06 is a summary typo. |
 | Mercury Rupa | Summary p.90: total 537.02; Rupa 8.85 | 537.02/60 = 8.95033..., which rounds to 8.95. **8.85 is a Rupa typo**. |
 
-The machine-readable shadbala-source-evidence-42.json retains all seven issues, page locators, classification and disposition. The four component-level rows remain marked as source discrepancies in the 42-row ledger; only the two source-example cases above with a clearly reconciled intended value are annotated as such. This is one 1918 printed worked example, not independent evidence for arbitrary natal birth dates.
+The machine-readable shadbala-source-evidence-42.json retains all seven printed issues, page locators, classification and disposition. Of the four component-level conflicts first identified, Saturn Chesta and Saturn Naisargika are now adjudicated for the 1918 worked example only; Mercury Dig and Jupiter Drik remain open. The other three are final-summary arithmetic typos. These are findings about one 1918 printed worked horoscope, not independent evidence for arbitrary natal birth dates.
 
-**Phase 2 verdict:** all 42 source-example rows enumerated; 36 chapter-example matches, two luminary Chesta N/A and four component-level source conflicts. These rows apply to one 1918 horoscope, not arbitrary natal dates, and are not inserted into the per-natal certification gate.
+**Phase 2 verdict:** all 42 rows are enumerated: 36 direct source-example matches, two Saturn rows adjudicated for the 1918 example only, two luminary Chesta N/A and two open component arithmetic/rounding conflicts. These rows apply to one 1918 horoscope, not arbitrary natal dates, and are not inserted into the per-natal certification gate.
 
 ## Final integrated CI after PAC / Shadbala evidence corrections
 
