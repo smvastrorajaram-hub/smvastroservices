@@ -106,15 +106,18 @@ test('Calendar Graha periods render as one centered vertical list without tables
   assert.ok(!css.includes('cal-graha-period-note'));
 });
  
-test('the three application service workers use one synchronized cache release', async () => {
-  const releases = [];
+test('the three application service workers use synchronized Pages.dev and production cache releases', async () => {
+  const pagesReleases = [];
+  const productionReleases = [];
   for (const relative of cacheWorkers) {
     const source = await readFile(new URL(relative, import.meta.url), 'utf8');
-    const match = source.match(/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \? '([^']+)' : '([^']+)'/);
-    assert.ok(match, relative + ' must declare a scoped release');
-    assert.equal(match[1], match[2]);
-    releases.push(match[1]);
+    const match = source.match(/const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST \\? '([^']+)' : '([^']+)'/);
+    assert.ok(match, relative + ' must declare both scoped cache releases');
+    pagesReleases.push(match[1]);
+    productionReleases.push(match[2]);
   }
-  assert.equal(new Set(releases).size, 1);
-  assert.ok(releases[0], 'The synchronized cache release ID must not be empty.');
-});
+  assert.equal(new Set(pagesReleases).size, 1, 'Pages.dev release must match across all three apps.');
+  assert.equal(new Set(productionReleases).size, 1, 'Production release must match across all three apps.');
+  assert.ok(pagesReleases[0] && productionReleases[0], 'Both generated release IDs must be present.');
+  assert.notEqual(pagesReleases[0], productionReleases[0], 'Pages.dev and production use separate content hashes when preview-only helpers are present.');
+});;
