@@ -40,7 +40,7 @@ assert.equal(fixture.samples.length, 3);
 assert.deepEqual(Object.keys(fixture.comparison.targetBodyIds), Object.keys(bodyIds));
 assert.equal(fixture.comparison.maximumAllowedDifferenceDegrees, 0.0001);
 assert.equal(fixture.source.timeAndAyanamsaStatus,
-  'Inferred comparison contract; not metadata explicitly stated in the daily PDFs');
+  'UTC epoch fixed by project instruction; PAC confirmation pending. Lahiri remains an inferred comparison convention, not PDF metadata.');
 
 const swe = await getSwe();
 swe.setSiderealLahiri();
