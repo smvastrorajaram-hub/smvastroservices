@@ -421,13 +421,19 @@ for(const [date,time] of births){
  for(const p of shadbalaRows){
   eq(p.strength6.classicalCertified,false,'Shadbala is not falsely certified '+date+' '+p.name);
   eq(p.strength6.provisional,true,'Shadbala stays provisional '+date+' '+p.name);
-  eq(p.strength6.ishtaKashta?.available,true,'integrated B.V. Raman Ishta/Kashta is present '+date+' '+p.name);
+  eq(p.strength6.ishtaKashta?.available,true,'BPHS Chapter 28 Ishta/Kashta is present '+date+' '+p.name);
   eq(p.strength6.ishtaKashta.classicalCertified,false,'Ishta/Kashta inputs remain uncertified '+date+' '+p.name);
   const c=p.strength6.components||{};
-  ok(Math.abs(p.strength6.ishtaKashta.sixfoldShadbalaCheshtaBala-c.cheshta)<0.001,'special Chesta-for-Phala does not replace sixfold Cheshta Bala '+date+' '+p.name);
+  eq(p.strength6.method,'TRUE_BPHS_SHADBALA_NAELOS_DE440','live chart uses TRUE BPHS six-Bala engine '+date+' '+p.name);
+  eq(p.strength6.ishtaKashta.method,'TRUE_BPHS_CH28_RASMI_ISHTA_KASHTA','Ishta/Kashta uses BPHS Chapter 28 '+date+' '+p.name);
+  ok(Number.isFinite(p.strength6.ishtaKashta.cheshtaForPhala)&&
+   Number.isFinite(p.strength6.ishtaKashta.cheshtaKendraDegrees)&&
+   Math.abs(p.strength6.ishtaKashta.cheshtaForPhala-p.strength6.ishtaKashta.cheshtaKendraDegrees/3)<0.001&&
+   Number.isFinite(c.cheshta),
+   'BPHS Chapter 28 Cheshta-for-Phala is independently derived; sixfold Cheshta Bala remains a separate component '+date+' '+p.name);
   ok(Number.isFinite(c.sthana?.total)&&Number.isFinite(c.dig)&&Number.isFinite(c.kala?.total)&&
    Number.isFinite(c.cheshta)&&Number.isFinite(c.naisargika)&&Number.isFinite(c.drik),
-   'B.V. Raman six individual components remain available '+date+' '+p.name);
+   'TRUE BPHS six individual components remain available '+date+' '+p.name);
   if(Number.isFinite(p.strength6.totalVirupa)){
    const sum=Number(c.sthana.total)+Number(c.dig)+Number(c.kala.total)+Number(c.cheshta)+Number(c.naisargika)+Number(c.drik);
    ok(Math.abs(sum-p.strength6.totalVirupa)<0.01,

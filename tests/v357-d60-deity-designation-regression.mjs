@@ -1,3 +1,4 @@
+import './helpers/naelos-node-fetch-bridge.mjs';
 // V357 BPHS I Chapter 6 Shashtiamsa: distinction of D60 sign-lord
 // calculation and forward/reversed DESIGNATION names.
 import assert from 'node:assert/strict';

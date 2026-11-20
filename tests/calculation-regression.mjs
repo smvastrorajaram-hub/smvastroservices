@@ -300,7 +300,14 @@ for(const [date,time] of birthCases){
  ok(focus.ageBandYears.start===expectedBand[0]&&focus.ageBandYears.end===expectedBand[1],date+' PVR Dasa timing age band agrees with short/middle/long category');
  ok(focus.shoola.periods.length===4&&focus.shoola.periods.every(x=>x.ageStartYears>=expectedBand[0]&&x.ageEndYears<=expectedBand[1]),date+' PVR Shoola Dasa selects the four 9-year periods in the matching longevity range');
  ok(focus.niryaanaShoola.periods.length>0&&focus.niryaanaShoola.periods.every(x=>x.ageStartYears<expectedBand[1]&&x.ageEndYears>expectedBand[0]),date+' PVR Niryaana Shoola selects periods overlapping the relevant age range');
- ok(c.ephemerisMode==='NAELOS_DE440'&&c.planets.length===9&&c.planets.every(p=>Number.isFinite(p.longitude)&&p.longitude>=0&&p.longitude<360&&((Number.isInteger(p.bhava)&&p.bhava>=1&&p.bhava<=12)||(p.bhava===null&&Number.isInteger(p.bhavaSandhi?.cuspIndex)))),date+' valid NAELOS grahas and cusp-aware Sripati house placements');
+ eq(c.ephemerisMode,'NAELOS_DE440',date+' NAELOS DE440 ephemeris is selected');
+ eq(c.planets.length,9,date+' all nine planetary rows');
+ for(const p of c.planets){
+  ok(Number.isFinite(p.longitude)&&p.longitude>=0&&p.longitude<360,date+' '+p.name+' valid NAELOS longitude');
+  ok((Number.isInteger(p.bhava)&&p.bhava>=1&&p.bhava<=12)||
+    (p.bhava===null&&Number.isInteger(p.bhavaSandhi?.cuspIndex)&&p.bhavaSandhi.cuspIndex>=1&&p.bhavaSandhi.cuspIndex<=12),
+    date+' '+p.name+' has valid Sripati house or cusp marker: '+JSON.stringify({bhava:p.bhava,bhavaSandhi:p.bhavaSandhi}));
+ }
  const ra=c.planets.find(p=>p.name==='ராகு').longitude,ke=c.planets.find(p=>p.name==='கேது').longitude;
  ok(Math.abs(((ke-ra+360)%360)-180)<1e-6,date+' Rahu/Ketu');
  ok(c.dashas.periods.length===9&&c.dashas.balanceYears>=0&&c.dashas.balanceYears<=20,date+' Vimshottari');
