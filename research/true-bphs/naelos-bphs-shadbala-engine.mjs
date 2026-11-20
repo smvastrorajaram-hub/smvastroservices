@@ -8,10 +8,9 @@
  *   - No Swiss/Moshier planetary longitude is substituted for NAELOS.
  *
  * Cheshta:
- *   - V365 Saura-paksha Mean and Sheeghroccheya inputs.
- *   - NAELOS True Longitude transferred into the same declared Saura-sidereal
- *     frame using the existing Burgess-1860 zero point + Lahiri precession
- *     delta transfer already audited in the five-natal NAELOS research.
+ *   - V365 Mean and Sheeghroccheya source model is retained.
+ *   - NAELOS apparent True Longitude and V365 mean inputs are all expressed
+ *     in one same-epoch effective Lahiri sidereal frame before BPHS arithmetic.
  *   - BPHS I Ch27 vv24–25 arithmetic; UK II pp42–43 only selects the inputs.
  *
  * BPHS calculation:
@@ -54,7 +53,12 @@ import {
 import {
   bphsGrahaYuddhaFromBaselines
 } from '../../public/horoscope/offline/bphs-shadbala-rectification.browser.mjs';
-import { sauraSiderealOffsetFromLahiri } from './saura-frame-transfer.mjs';
+import {
+  TRUE_BPHS_LAHIRI_FRAME_ID,
+  effectiveLahiriSiderealOffsetDegrees,
+  transferV365MeanToEffectiveLahiri,
+  v365SourceNativeOffsetDegrees
+} from './effective-lahiri-frame.mjs';
 
 const DAY_MS = 86400000;
 const JD_UNIX_EPOCH = 2440587.5;
@@ -67,7 +71,7 @@ const YEAR_MIN = 1800;
 const YEAR_MAX = 2399;
 const NAELOS_VERSION = '0.1.3';
 const NAELOS_SOURCE = 'JPL DE440';
-const FRAME_ID = 'SAURA_NIRAYANA_NAELOS_TRUE_ECLIPTIC_OF_DATE_BURGESS1860_LAHIRI_DELTA_V1';
+const FRAME_ID = TRUE_BPHS_LAHIRI_FRAME_ID;
 const EQUATORIAL_FRAME_ID = 'NAELOS_TRUE_EQUATOR_OF_DATE_GAST_V1';
 const SOLAR_HORIZON_DEGREES = -0.8333;
 
@@ -510,7 +514,7 @@ function assembleBphsShadbala({planetRows,bhavas,temporal,declinations,cheshtaIn
     productionIntegrationAllowed:false,
     limitations:Object.freeze([
       'NAELOS DE440 provides modern apparent geocentric True Longitude; this does not prove a historical astronomical True Longitude theory.',
-      'The V365 Mean / Sheeghroccheya source selectors are retained as a separate classical Saura input model; the combined hybrid frame transfer is explicitly named.',
+      'V365 Mean / Sheeghroccheya source selectors are retained; every returned longitude and BPHS calculation input is expressed in the common effective Lahiri frame.',
       'Sunrise uses the standard −0.8333° sea-level horizon; local elevation, pressure and weather are unavailable.',
       'Uttara Kalamrita II p.41 is used only for Yuddha eligibility / northern-latitude winner where BPHS is silent; BPHS Ch27 v20 supplies the magnitude.',
       'A source-scoped arithmetic result is not independent certification of every Shadbala component for arbitrary natal epochs.',
@@ -558,7 +562,7 @@ export async function createTrueBphsShadbalaEngine({
   };
   return Object.freeze({
     engine:'TRUE_BPHS_SHADBALA_NAELOS_DE440',
-    version:'1.0.0-research',
+    version:'1.1.0-research-lahiri',
     supportedCivilYears:Object.freeze([YEAR_MIN,YEAR_MAX]),
     sourceEphemeris:NAELOS_SOURCE,
     naelosPackageVersion:NAELOS_VERSION,
@@ -581,7 +585,7 @@ export async function createTrueBphsShadbalaEngine({
       status:'PASS_PAC_VS_SWISS_LAHIRI_1825_OF_1825',
       independentUnderlyingEphemerisProvenanceEstablished:false,
       arbitraryHistoricalEpochsCertified:false,
-      historicalSauraFourPassCertified:false,
+      historicalClassicalFourPassCertified:false,
       classicalCheshtaCertified:false
     }),
     async trueLongitudesAtTt(jdTt) {
@@ -589,9 +593,12 @@ export async function createTrueBphsShadbalaEngine({
         throw new RangeError('A TT Julian Day within calendar years 1800–2399 is required');
       const lahiriAyanamsaDegrees=naelos.swe.ayanamsa(jdTt);
       if(!finite(lahiriAyanamsaDegrees)) fail('Lahiri ayanamsa at the PAC TT epoch is unavailable');
-      const siderealOffsetDegrees=sauraSiderealOffsetFromLahiri(
+      const sourceNativeOffsetDegrees=v365SourceNativeOffsetDegrees(
         lahiriAyanamsaDegrees,naelos.lahiriAyanamsaAt1860
       );
+      const effectiveLahiriOffsetDegrees=effectiveLahiriSiderealOffsetDegrees(naelos.swe,jdTt);
+      const v365ToEffectiveLahiriRotationDegrees=
+        sourceNativeOffsetDegrees-effectiveLahiriOffsetDegrees;
       const planets={};
       for(const [tamil,english,body] of BODY_ROWS) {
         const position=requiredPosition(
@@ -600,9 +607,8 @@ export async function createTrueBphsShadbalaEngine({
         );
         planets[english]=Object.freeze({
           tropicalApparentTrueLongitude:position.longitude,
-          trueLongitudeLahiri: norm360(position.longitude-lahiriAyanamsaDegrees),
-          trueLongitudeSaura: norm360(position.longitude-siderealOffsetDegrees),
-          pacLahiriToSauraOffsetDegrees:lahiriAyanamsaDegrees-siderealOffsetDegrees,
+          trueLongitudeLahiri:norm360(position.longitude-effectiveLahiriOffsetDegrees),
+          v365ToEffectiveLahiriRotationDegrees,
           eclipticLatitude:position.latitude,
           longitudeSpeed:position.longitudeSpeed,
           referenceFrameId:FRAME_ID,
@@ -611,9 +617,12 @@ export async function createTrueBphsShadbalaEngine({
         });
       }
       return Object.freeze({
-        epochJdTt:jdTt,lahiriAyanamsaDegrees,siderealOffsetDegrees,
+        epochJdTt:jdTt,
+        lahiriAyanamsaDegrees,
+        effectiveLahiriOffsetDegrees,
+        sourceNativeOffsetDegrees,
+        v365ToEffectiveLahiriRotationDegrees,
         referenceFrameId:FRAME_ID,
-        pacLahiriToSauraOffsetDegrees:lahiriAyanamsaDegrees-siderealOffsetDegrees,
         planets:Object.freeze(planets),
         sourceCertificate:'SMV_ASTRO_PAC_2026_OFFICIAL_SEVEN_GRAHA_NIRAYANA_LONGITUDE'
       });
@@ -644,20 +653,22 @@ export async function createTrueBphsShadbalaEngine({
       // NAELOS pathway: tropical apparent longitude minus the explicit
       // Burgess-1860 / date-specific Lahiri precession transfer.
       const ayanamsa=naelos.swe.ayanamsa(birth.jdTt);
-      const ayanamsaBefore=naelos.swe.ayanamsa(birth.jdTt-0.5);
-      const ayanamsaAfter=naelos.swe.ayanamsa(birth.jdTt+0.5);
-      if(![ayanamsa,ayanamsaBefore,ayanamsaAfter].every(finite))
-        fail('Date-specific Lahiri ayanamsa is unavailable');
-      const siderealOffset=sauraSiderealOffsetFromLahiri(
+      if(!finite(ayanamsa)) fail('Date-specific Lahiri ayanamsa is unavailable');
+      const sourceNativeOffset=v365SourceNativeOffsetDegrees(
         ayanamsa,naelos.lahiriAyanamsaAt1860
       );
-      const offsetBefore=sauraSiderealOffsetFromLahiri(
-        ayanamsaBefore,naelos.lahiriAyanamsaAt1860
+      const effectiveLahiriOffset=effectiveLahiriSiderealOffsetDegrees(
+        naelos.swe,birth.jdTt
       );
-      const offsetAfter=sauraSiderealOffsetFromLahiri(
-        ayanamsaAfter,naelos.lahiriAyanamsaAt1860
+      const offsetBefore=effectiveLahiriSiderealOffsetDegrees(
+        naelos.swe,birth.jdTt-0.5
       );
-      const siderealOffsetRate=signedAngle(offsetAfter,offsetBefore);
+      const offsetAfter=effectiveLahiriSiderealOffsetDegrees(
+        naelos.swe,birth.jdTt+0.5
+      );
+      const effectiveLahiriOffsetRate=signedAngle(offsetAfter,offsetBefore);
+      const v365ToEffectiveLahiriRotation=
+        sourceNativeOffset-effectiveLahiriOffset;
 
       const tropicalByName={},equatorialByName={};
       for(const [tamil,english,body] of BODY_ROWS) {
@@ -671,8 +682,8 @@ export async function createTrueBphsShadbalaEngine({
       );
       const planetRows=BODY_ROWS.map(([tamil,english])=>{
         const p=tropicalByName[tamil];
-        const longitude=norm360(p.longitude-siderealOffset);
-        const speed=p.longitudeSpeed-siderealOffsetRate;
+        const longitude=norm360(p.longitude-effectiveLahiriOffset);
+        const speed=p.longitudeSpeed-effectiveLahiriOffsetRate;
         const row={
           name:tamil,englishName:english,longitude,speed,
           eclipticLatitude:p.latitude,
@@ -686,10 +697,10 @@ export async function createTrueBphsShadbalaEngine({
         };
         return row;
       });
-      const nodeLongitude=norm360(nodeTropical.longitude-siderealOffset);
+      const nodeLongitude=norm360(nodeTropical.longitude-effectiveLahiriOffset);
       planetRows.push({
         name:'ராகு',englishName:'True Node',longitude:nodeLongitude,
-        speed:nodeTropical.longitudeSpeed-siderealOffsetRate,
+        speed:nodeTropical.longitudeSpeed-effectiveLahiriOffsetRate,
         eclipticLatitude:nodeTropical.latitude,bhava:null,
         referenceFrameId:FRAME_ID,longitudeFrameId:FRAME_ID,
         speedFrameId:FRAME_ID,eclipticLatitudeFrameId:FRAME_ID,
@@ -697,7 +708,7 @@ export async function createTrueBphsShadbalaEngine({
       });
       planetRows.push({
         name:'கேது',englishName:'South Node',longitude:norm360(nodeLongitude+180),
-        speed:nodeTropical.longitudeSpeed-siderealOffsetRate,
+        speed:nodeTropical.longitudeSpeed-effectiveLahiriOffsetRate,
         eclipticLatitude:-nodeTropical.latitude,bhava:null,
         referenceFrameId:FRAME_ID,longitudeFrameId:FRAME_ID,
         speedFrameId:FRAME_ID,eclipticLatitudeFrameId:FRAME_ID,
@@ -709,7 +720,7 @@ export async function createTrueBphsShadbalaEngine({
       // are the midpoints between adjacent Madhya cusps, as in the audited
       // Swiss S/O relationship; no Swiss planetary longitude enters here.
       const porphyry=eph.houses(birth.jdUt,birth.latitude,birth.longitude,'O');
-      const sripati=createSripatiCusps(porphyry.cusps.map(value=>norm360(value-siderealOffset)));
+      const sripati=createSripatiCusps(porphyry.cusps.map(value=>norm360(value-effectiveLahiriOffset)));
       for(const row of planetRows) {
         if(!BPHS_PLANETS.includes(row.name)) {row.bhava=null;continue;}
         row.bhava=housePlacement(row.longitude,sripati.arambha);
@@ -729,16 +740,20 @@ export async function createTrueBphsShadbalaEngine({
       for(const [tamil,english] of FIVE_ROWS) {
         const inputs=sauraFivePlanetCheshtaInputs(birth.jdUt,english);
         cheshtaInputs[tamil]={
-          meanSunLongitude:inputs.meanSunLongitude,
-          meanPlanetLongitude:inputs.ownMeanOrbitLongitude,
+          meanSunLongitude:transferV365MeanToEffectiveLahiri(
+            inputs.meanSunLongitude,sourceNativeOffset,effectiveLahiriOffset
+          ),
+          meanPlanetLongitude:transferV365MeanToEffectiveLahiri(
+            inputs.ownMeanOrbitLongitude,sourceNativeOffset,effectiveLahiriOffset
+          ),
           truePlanetLongitude:planetRows.find(row=>row.name===tamil).longitude,
           meanSunFrameId:FRAME_ID,meanPlanetFrameId:FRAME_ID,
           truePlanetFrameId:FRAME_ID,sheeghroccaFrameId:FRAME_ID,
           epochJdUt:birth.jdUt,
           source:{
-            meanSheeghroccheya:'V365 Saura-paksha Mean motion / Uttara Kalamrita II pp.42–43 input selector',
+            meanSheeghroccheya:'V365 mean-motion source / Uttara Kalamrita II pp.42–43 input selector',
             trueLongitude:'NAELOS Ephemeris 0.1.3 / NASA-JPL DE440',
-            frameTransfer:'Burgess 1860 Saura zero point + date-specific Lahiri precession delta'
+            frameTransfer:'All three BPHS Cheshta longitudes rotated into the same effective Lahiri sidereal frame'
           }
         };
       }
@@ -749,7 +764,7 @@ export async function createTrueBphsShadbalaEngine({
       });
       return Object.freeze({
         engine:'TRUE_BPHS_SHADBALA_NAELOS_DE440',
-        version:'1.0.0-research',
+        version:'1.1.0-research-lahiri',
         status:'RESEARCH_ONLY',
         researchOnly:true,productionIntegrationAllowed:false,
         classicalCertified:false,
@@ -764,30 +779,33 @@ export async function createTrueBphsShadbalaEngine({
           source:'NASA/JPL DE440',
           positionDefinition:'apparent geocentric true ecliptic-of-date',
           timeScale:'Birth civil time resolved to UTC from the supplied IANA timezone / exact offset; Swiss swe_utc_to_jd supplies the exact UT1 + TT epoch used by the prior NAELOS parity audit; Naelos converts TT to TDB internally',
-          trueLongitudeFrame:'Naelos tropical apparent true ecliptic-of-date longitude − explicit Burgess-1860/Lahiri-precession Saura sidereal offset',
-          siderealOffsetDegrees:siderealOffset,
-          siderealOffsetRateDegreesPerDay:siderealOffsetRate,
+          trueLongitudeFrame:'NAELOS tropical apparent true ecliptic-of-date longitude − same-epoch effective Lahiri sidereal offset (Swiss tropical Sun − Swiss Lahiri Sun)',
+          effectiveLahiriOffsetDegrees:effectiveLahiriOffset,
+          effectiveLahiriOffsetRateDegreesPerDay:effectiveLahiriOffsetRate,
           lahiriAyanamsaDegrees:ayanamsa,
-          lahiriAyanamsaAt1860Degrees:naelos.lahiriAyanamsaAt1860,
+          v365ToEffectiveLahiriRotationDegrees:v365ToEffectiveLahiriRotation,
           loadedTableFiles:naelos.loadedTables
         }),
         bhava:Object.freeze({
           system:'Sripati',
-          source:'NAELOS Porphyry Bhava Madhya; Arambha = midpoint of adjacent Madhya cusps',
+          source:'NAELOS Porphyry Bhava Madhya transformed into the same effective Lahiri sidereal frame; Arambha = midpoint of adjacent Madhya cusps',
           madhya:Object.freeze(sripati.madhya),
           arambha:Object.freeze(sripati.arambha),
-          ascendant: norm360(porphyry.ascendant-siderealOffset),
-          midheaven: norm360(porphyry.mc-siderealOffset),
-          vertex: norm360(porphyry.vertex-siderealOffset),
+          ascendant: norm360(porphyry.ascendant-effectiveLahiriOffset),
+          midheaven: norm360(porphyry.mc-effectiveLahiriOffset),
+          vertex: norm360(porphyry.vertex-effectiveLahiriOffset),
           referenceFrameId:FRAME_ID
         }),
         solarTime:temporal,
         frame:Object.freeze({
           id:FRAME_ID,epochJdUt:birth.jdUt,
-          trueLongitudeSource:'NAELOS DE440',
-          meanLongitudeSource:'V365 Saura-paksha',
-          sheeghroccheyaSource:'V365 Saura-paksha',
-          equatorialDeclinationSource:'NAELOS DE440 true equator of date',
+          coordinateSystem:'effective Lahiri sidereal ecliptic-of-date',
+          trueLongitudeSource:'NAELOS DE440 apparent geocentric True Longitude',
+          meanLongitudeSource:'V365 mean-motion model, transformed into effective Lahiri coordinates',
+          sheeghroccheyaSource:'V365 mean-motion model, transformed into effective Lahiri coordinates',
+          v365ToEffectiveLahiriRotationDegrees:v365ToEffectiveLahiriRotation,
+          effectiveLahiriOnly:true,
+          noSauraFrame:true,
           noAbsoluteKotiMinus:true
         }),
         planetaryPositions:Object.freeze(planetRows.map(row=>Object.freeze({...row}))),
@@ -812,10 +830,10 @@ export async function createTrueBphsShadbalaEngine({
 
 export const TRUE_BPHS_SHADBALA_METADATA=Object.freeze({
   engine:'TRUE_BPHS_SHADBALA_NAELOS_DE440',
-  version:'1.0.0-research',
+  version:'1.1.0-research-lahiri',
   authority:'BPHS I Chapter 27; BPHS Ch26 Sputa Drishti',
   trueLongitudeSource:'NAELOS Ephemeris 0.1.3 / NASA-JPL DE440',
-  meanSheeghroccheyaSource:'V365 Saura-paksha',
+  meanSheeghroccheyaSource:'V365 mean-motion model transformed into effective Lahiri coordinates',
   productionIntegrationAllowed:false,
   classicalCertificationDefault:false,
   scope:Object.freeze({startYear:1800,endYear:2399,grahas:7,components:6})
