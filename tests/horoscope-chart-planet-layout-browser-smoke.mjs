@@ -256,20 +256,22 @@ try {
                 .map(cell=>cell.querySelector('.smv-v342-sign-number,.smv-v342-house-number')).filter(Boolean);
               const crowdedTriangleNumbers = crowdedLabelNodes.map(number=>{
                 const rect=number.getBoundingClientRect();
-                const overlapsPlanet=[...(number.closest('.smv-v342-cell')?.querySelectorAll('.smv-v342-planets .planet-glyph')||[])].some(glyph=>{
+                const overlappingGlyphs=[...(number.closest('.smv-v342-cell')?.querySelectorAll('.smv-v342-planets .planet-glyph')||[])].flatMap(glyph=>{
                   const other=glyph.getBoundingClientRect();
-                  return rect.width>0&&rect.height>0&&other.width>0&&other.height>0&&
+                  const overlaps=rect.width>0&&rect.height>0&&other.width>0&&other.height>0&&
                     rect.left<other.right-0.5&&rect.right>other.left+0.5&&
                     rect.top<other.bottom-0.5&&rect.bottom>other.top+0.5;
+                  return overlaps?[{text:glyph.textContent.trim(),left:other.left,right:other.right,top:other.top,bottom:other.bottom}]:[];
                 });
-                const computed=getComputedStyle(number);
+                const computed=getComputedStyle(number),cell=number.closest('.smv-v342-cell');
                 return {
-                  text:number.textContent.trim(),
+                  text:number.textContent.trim(),house:cell?.dataset.house||'',sign:cell?.dataset.sign||'',
+                  left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom,
                   backgroundColor:computed.backgroundColor,
                   zIndex:computed.zIndex,
                   position:computed.position,
                   color:computed.color,
-                  overlapsPlanet
+                  overlapsPlanet:overlappingGlyphs.length>0,overlappingGlyphs
                 };
               });
               const emptyCells = cells.filter(cell=>cellCount(cell) === 0);
@@ -338,8 +340,14 @@ try {
           }
           return {viewport:innerWidth,language,reports};
         },{style,language,signOrder,compartmentPolygons});
+        if(style==='north'){
+          const debug=state.reports.filter(item=>item.rootId==='tamilHoroscopeResult'&&item.kind==='rasi').flatMap(item=>item.crowdedTriangleNumbers.filter(number=>number.overlapsPlanet));
+          console.log('NORTH SIGN NUMBER OVERLAP DEBUG',JSON.stringify(debug));
+          const debugImage=join(outputDir,'debug-north-'+language+'-'+width+'.png');
+          await page.screenshot({path:debugImage,fullPage:true});
+        }
         for (const item of state.reports) {
-          if(item.kind==='bhava')console.log('BHAVA ROMAN DISPLAY',JSON.stringify({rootId:item.rootId,style,labels:item.bhavaHouseLabels}));
+          if(item.kind==='bhava')console.log('BHAVA HOUSE DISPLAY',JSON.stringify({rootId:item.rootId,style,labels:item.bhavaHouseLabels}));
           assert.equal(item.cells,12,item.rootId+' '+item.kind+' '+style+': all twelve chart boxes must remain present.');
           const two = item.picked[2];
           const three = item.picked[3];
