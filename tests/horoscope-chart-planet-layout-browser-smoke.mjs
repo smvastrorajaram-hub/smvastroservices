@@ -301,7 +301,7 @@ try {
                   }]
                 };
               };
-              const northSignNumbers = style!=='north'?[]:cells.map(cell=>{
+              const northSignNumbers = style!=='north'||kind==='bhava'?[]:cells.map(cell=>{
                 const node=cell.querySelector('.smv-v342-sign-number');
                 return {
                   house:Number(cell.dataset.house||0),
@@ -320,20 +320,15 @@ try {
                       labelDetails:nodes.flatMap(el=>describeBhavaLabel(el,signOrder[index]).labelDetails)
                     };
                   })
-                : style==='north'
-                  ? cells.map(cell=>{
-                      const entry=describeBhavaLabel(
-                        cell.querySelector('.smv-v342-sign-number'),
-                        Number(cell.dataset.sign||0)-1,
-                        Number(cell.dataset.house||0)
-                      );
-                      return {...entry,houseIds:[Number(cell.dataset.house||0)].filter(Boolean)};
-                    })
-                  : cells.map(cell=>{
-                      const node=cell.querySelector('.smv-v342-house-number');
-                      const entry=describeBhavaLabel(node,Number(cell.dataset.sign||0)-1,0);
-                      return {...entry,houseIds:(node?.dataset.bhavaHouses||'').split(',').map(Number).filter(Boolean)};
-                    });
+                : cells.map(cell=>{
+                    const node=cell.querySelector('.smv-v342-house-number');
+                    const entry=describeBhavaLabel(
+                      node,
+                      Number(cell.dataset.sign||0)-1,
+                      Number(cell.dataset.house||0)
+                    );
+                    return {...entry,houseIds:(node?.dataset.bhavaHouses||'').split(',').map(Number).filter(Boolean)};
+                  });
               reports.push({rootId,kind,cells:cells.length,chartClass:chart.className,numericLabels,northSignNumbers,picked,emptyDash,bhavaHouseLabels,cellBoundsOutside,compartmentOutside,triangleCells:cells.filter(cell=>cell.classList.contains('smv-v342-triangle-cell')).length,planetGlyphColors,crowdedTriangleNumbers});
 
             }
@@ -414,9 +409,12 @@ try {
               assert.equal(number.overlapsPlanet,false,item.rootId+' East Bhava: label never covers a planet name ('+number.text+').');
             }
           }else if(style==='north'&&item.kind==='bhava'){
-            assert.ok(item.crowdedTriangleNumbers.length>0,item.rootId+' North Bhava: mapped sign-number labels appear in crowded triangle fixtures.');
+            assert.ok(item.crowdedTriangleNumbers.length>0,item.rootId+' North Bhava: Roman house labels appear in crowded triangle fixtures.');
             for(const number of item.crowdedTriangleNumbers){
-              assert.equal(number.overlapsPlanet,false,item.rootId+' North Bhava: Devanagari Rasi number never covers a planet name ('+number.text+').');
+              assert.equal(number.backgroundColor,'rgb(255, 253, 247)',item.rootId+' North Bhava: Roman house label has an opaque backing ('+number.text+').');
+              assert.equal(number.position,'static',item.rootId+' North Bhava: Roman house label stays in normal flow ('+number.text+').');
+              assert.equal(number.color,'rgb(111, 77, 44)',item.rootId+' North Bhava: Roman house label has high contrast ('+number.text+').');
+              assert.equal(number.overlapsPlanet,false,item.rootId+' North Bhava: Roman house label never covers a planet ('+number.text+').');
             }
           }else if(style==='east'){
             assert.equal(item.crowdedTriangleNumbers.length,0,item.rootId+' East '+item.kind+': no Bhava house-number labels are added to non-Bhava charts.');
@@ -430,7 +428,10 @@ try {
           }
           if(style!=='south'){
             assert.ok(item.chartClass.includes('smv-v342-'+style),item.rootId+' '+item.kind+' '+style+': requested alternate layout is actually rendered, not left in South geometry.');
-            if(style==='north'){
+            if(style==='north'&&item.kind==='bhava'){
+              assert.equal(item.numericLabels,12,item.rootId+' North Bhava: twelve Roman house labels occupy the twelve fixed Bhava positions.');
+              assert.equal(item.northSignNumbers.length,0,item.rootId+' North Bhava: no Devanagari Rasi numbers are added.');
+            }else if(style==='north'){
               assert.equal(item.numericLabels,12,item.rootId+' '+item.kind+' North: all twelve fixed houses carry exactly one Devanagari Rasi number.');
               assert.equal(item.northSignNumbers.length,12,item.rootId+' '+item.kind+' North: all twelve houses expose their mapped Rasi number.');
               for(const entry of item.northSignNumbers){
@@ -441,7 +442,7 @@ try {
                 assert.equal(entry.labelDetails[0].overlapsPlanet,false,item.rootId+' '+item.kind+' North: Devanagari sign number does not cover a planet.');
               }
             }else if(item.kind==='bhava'){
-              assert.equal(item.numericLabels,11,item.rootId+' East Bhava: house IDs are grouped into the eleven occupied Sphuta Rasi cells in this fixture.');
+              assert.equal(item.numericLabels,11,item.rootId+' East Bhava: Roman house IDs are grouped into the eleven occupied Sphuta Rasi cells in this fixture.');
             }else{
               assert.equal(item.numericLabels,0,item.rootId+' '+item.kind+' East: no extra fixed sign numbers or Bhava numbers are added.');
             }
@@ -465,12 +466,10 @@ try {
               }
             }
             if(style==='south'){
-              const tamil=language==='ta';
               for(const entry of labels){
                 const expectedIds=bhavaHousesBySign[entry.sign];
-                const expectedLabels=expectedIds.map(house=>tamil?roman[house-1]:String(house));
                 assert.deepEqual(entry.houseIds,expectedIds,item.rootId+' South Bhava house IDs stay with their calculated Sphuta Rasi.');
-                assert.deepEqual(entry.labels,expectedLabels,item.rootId+' South Bhava uses Roman numerals only for Tamil; English uses Arabic 1–12.');
+                assert.deepEqual(entry.labels,expectedIds.map(house=>roman[house-1]),item.rootId+' South Bhava always uses Roman I–XII in Tamil and English reports.');
               }
             }else if(style==='north'){
               assert.equal(labels.length,12,item.rootId+' North Bhava keeps all twelve fixed house slots.');
@@ -478,19 +477,18 @@ try {
                 assert.ok(entry.house>=1&&entry.house<=12,item.rootId+' North Bhava fixed slot must remain 1–12.');
                 assert.deepEqual(entry.houseIds,[entry.house],item.rootId+' North Bhava fixed slot identity remains unique.');
                 assert.equal(entry.sign,bhavaHouseSigns[entry.house-1],item.rootId+' North Bhava slot uses its Bhava Table Sphuta Rasi.');
-                const hindiSign=String(entry.sign+1).replace(/[0-9]/g,d=>'०१२३४५६७८९'[Number(d)]);
-                assert.deepEqual(entry.labels,[hindiSign],item.rootId+' North Bhava shows the mapped Sphuta Rasi number in Devanagari, not the Bhava house ID.');
+                assert.deepEqual(entry.labels,[roman[entry.house-1]],item.rootId+' North Bhava displays the fixed Bhava number I–XII, not a Hindi or Arabic Rasi number.');
               }
             }else{
               for(const entry of labels){
                 const expectedIds=bhavaHousesBySign[entry.sign];
                 assert.deepEqual(entry.houseIds,expectedIds,item.rootId+' East Bhava keeps all distinct house IDs grouped only under their mapped Sphuta Rasi.');
-                assert.deepEqual(entry.labels,expectedIds.map(String),item.rootId+' East Bhava uses Arabic house IDs in both Tamil and English reports.');
+                assert.deepEqual(entry.labels,expectedIds.map(house=>roman[house-1]),item.rootId+' East Bhava always uses Roman I–XII in Tamil and English reports.');
               }
               assert.deepEqual(labels.find(entry=>entry.sign===0)?.houseIds,[1,2],
                 item.rootId+' East Bhava groups two houses in one sign only when their Bhava Madhya maps to that Sphuta Rasi.');
-              assert.deepEqual(labels.find(entry=>entry.sign===0)?.labels,['1','2'],
-                item.rootId+' East Bhava clearly shows both grouped house IDs without Roman numerals.');
+              assert.deepEqual(labels.find(entry=>entry.sign===0)?.labels,['I','II'],
+                item.rootId+' East Bhava displays grouped house IDs as Roman I / II.');
             }
           }
 
