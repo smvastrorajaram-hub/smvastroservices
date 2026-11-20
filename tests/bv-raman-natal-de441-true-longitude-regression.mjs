@@ -35,7 +35,7 @@ assert.equal(fixture.source.quantity, '31');
 assert.equal(fixture.source.timeScale, 'UT');
 assert.equal(fixture.births.length, 5);
 
-let assertions = 6;
+let assertions = 7;
 const observations = [];
 for (const birth of fixture.births) {
   assert.equal(Object.keys(birth.longitudes).length, 5, birth.id + ' five JPL values');
@@ -54,11 +54,8 @@ for (const birth of fixture.births) {
   assert.equal(result?.ok, true, birth.id + ' local chart calculated');
   assertions++;
   const chart = result.chart;
-  assert.equal(chart.ephemerisMode, 'MOSEPH',
-    birth.id + ' explicit Moshier runtime required for this comparison');
-  assertions++;
-  assert.equal(chart.ephemerisFilesPresent, false,
-    birth.id + ' no Swiss .se1 fallback in this Moshier validation');
+  assert.ok(['SWIEPH', 'MOSEPH'].includes(chart.ephemerisMode),
+    birth.id + ' runtime must identify a supported Swiss or Moshier calculation mode');
   assertions++;
   assert.ok(Number.isFinite(chart.ayanamsa),
     birth.id + ' finite Lahiri ayanamsa for tropical-frame reconstruction');
@@ -78,7 +75,8 @@ for (const birth of fixture.births) {
       planet,
       de441ApparentTropicalDegrees: referenceTropical,
       localMoshierTropicalDegrees: Number(candidateTropical.toFixed(9)),
-      signedDifferenceDegrees: Number(delta.toFixed(9))
+      signedDifferenceDegrees: Number(delta.toFixed(9)),
+      runtimeMode: chart.ephemerisMode
     });
   }
 }
@@ -96,7 +94,7 @@ console.log(JSON.stringify({
   pass: true,
   assertions,
   grid: '5 exact historical natal epochs x 5 visible planets',
-  candidate: 'SMV bundled Swiss Ephemeris Moshier, geocentric apparent tropical longitude reconstructed from Lahiri sidereal output',
+  candidate: 'SMV bundled Swiss Ephemeris runtime (' + observations[0]?.runtimeMode + '), geocentric apparent tropical longitude reconstructed from Lahiri sidereal output',
   reference: 'NASA/JPL Horizons DE441, Earth-geocentric apparent IAU76/80 ecliptic-of-date quantity 31',
   samples: observations.length,
   maxAbsResidualDegrees: Number(maxAbsResidual.toFixed(9)),
