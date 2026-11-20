@@ -458,10 +458,10 @@ try {
                 assert.ok(detail.visible,item.rootId+' '+style+' Bhava number '+detail.text+' has a visible, non-zero display box.');
                 assert.equal(detail.overlapsPlanet,false,item.rootId+' '+style+' Bhava number '+detail.text+' never covers a planet short-name.');
                 assert.ok(detail.insideChart,item.rootId+' '+style+' Bhava number '+detail.text+' remains inside chart bounds.');
-                if(style==='east'){
-                  assert.equal(detail.color,'rgb(111, 77, 44)',item.rootId+' East Bhava ID keeps the high-contrast house-label colour.');
-                  assert.equal(detail.backgroundColor,'rgb(255, 253, 247)',item.rootId+' East Bhava ID has an opaque backing.');
-                  assert.equal(detail.position,'static',item.rootId+' East Bhava ID remains in normal cell flow.');
+                if(style==='north'||style==='east'){
+                  assert.equal(detail.color,'rgb(111, 77, 44)',item.rootId+' '+style+' Bhava Roman label keeps the high-contrast house-label colour.');
+                  assert.equal(detail.backgroundColor,'rgb(255, 253, 247)',item.rootId+' '+style+' Bhava Roman label has an opaque backing.');
+                  assert.equal(detail.position,'static',item.rootId+' '+style+' Bhava Roman label remains in normal cell flow.');
                 }
               }
             }
