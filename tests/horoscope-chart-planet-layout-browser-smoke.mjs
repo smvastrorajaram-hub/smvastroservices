@@ -72,7 +72,7 @@ function cell(sign, kind) {
   let label = '';
   if (bhava) {
     label = bhavaHousesBySign[sign].map(house=>
-      '<div class="bhava-cusp"><span class="bhava-house-no">' + String(house) + '</span></div>'
+      '<div class="bhava-cusp"><span class="bhava-house-no" data-bhava-house="' + house + '">' + String(house) + '</span></div>'
     ).join('');
   } else {
     label = '<div class="dynamic-rasi-number">' + (sign === 0 ? '' : String(sign + 1)) + '</div>';
@@ -262,11 +262,7 @@ try {
                 }).filter(Boolean);
               const emptyCells = cells.filter(cell=>cellCount(cell) === 0);
               const emptyDash = emptyCells.some(cell=>!!cell.querySelector('.smv-v342-empty'));
-              const eastHouseNumbers = style==='east' ? cells.map(cell=>({
-                house:Number(cell.dataset.house||0),
-                displayed:cell.querySelector('.smv-v342-house-number')?.textContent.trim()||'',
-                fixedSignNumber:!!cell.querySelector('.smv-v342-sign-number')
-              })) : [];
+              const numericLabels = cells.reduce((count,cell)=>count+cell.querySelectorAll('.smv-v342-sign-number,.smv-v342-house-number').length,0);
               const bhavaHouseLabels = kind==='bhava' ? cells.map((cell,index)=>{
                 const sign=style==='south'?signOrder[index]:Number(cell.dataset.sign||0)-1;
                 const raw=style==='south'
@@ -275,7 +271,7 @@ try {
                 const labels=raw.flatMap(value=>value.split('/').map(label=>label.trim()).filter(Boolean));
                 return {sign,house:Number(cell.dataset.house||0),labels};
               }) : [];
-              reports.push({rootId,kind,cells:cells.length,picked,emptyDash,eastHouseNumbers,bhavaHouseLabels,cellBoundsOutside,compartmentOutside,triangleCells:cells.filter(cell=>cell.classList.contains('smv-v342-triangle-cell')).length,planetGlyphColors,crowdedTriangleNumbers});
+              reports.push({rootId,kind,cells:cells.length,chartClass:chart.className,numericLabels,picked,emptyDash,bhavaHouseLabels,cellBoundsOutside,compartmentOutside,triangleCells:cells.filter(cell=>cell.classList.contains('smv-v342-triangle-cell')).length,planetGlyphColors,crowdedTriangleNumbers});
 
             }
           }
@@ -339,12 +335,14 @@ try {
               assert.ok(item.planetGlyphColors.every(glyph=>!glyph.marked),item.rootId+' '+item.kind+' '+style+': Transit is outside this colour change.');
             }
             assert.equal(item.triangleCells,8,item.rootId+' '+item.kind+' '+style+': exactly the eight corner compartments use triangle-aware layout.');
-          if(style!=='south'){
-            assert.ok(item.crowdedTriangleNumbers.length>0,item.rootId+' '+item.kind+' '+style+': crowded triangle fixtures include a house/sign number.');
+          if(style!=='south'&&item.kind==='bhava'){
+            assert.ok(item.crowdedTriangleNumbers.length>0,item.rootId+' Bhava '+style+': crowded triangle fixtures include a Roman house label.');
             for(const number of item.crowdedTriangleNumbers){
-              assert.equal(number.backgroundColor,'rgb(255, 253, 247)',item.rootId+' '+item.kind+' '+style+': crowded triangle number has an opaque chart-colour backing ('+number.text+').');
-              assert.ok(Number(number.zIndex)>=4,item.rootId+' '+item.kind+' '+style+': crowded triangle number stays above planets ('+number.text+').');
+              assert.equal(number.backgroundColor,'rgb(255, 253, 247)',item.rootId+' Bhava '+style+': crowded triangle label has an opaque chart-colour backing ('+number.text+').');
+              assert.ok(Number(number.zIndex)>=4,item.rootId+' Bhava '+style+': crowded triangle label stays above planets ('+number.text+').');
             }
+          }else if(style!=='south'){
+            assert.equal(item.crowdedTriangleNumbers.length,0,item.rootId+' '+item.kind+' '+style+': Rasi, Navamsa and Transit have no numeric labels.');
           }
             assert.equal(item.compartmentOutside.length,0,item.rootId+' '+item.kind+' '+style+': planet names, markers, Degrees and numbers remain inside their actual compartment polygons: '+JSON.stringify(item.compartmentOutside));
           }
@@ -352,6 +350,10 @@ try {
             assert.equal(item.emptyDash,false,item.rootId+' '+item.kind+' '+style+': empty planet cells stay blank.');
           } else if (style!=='south') {
             assert.equal(item.emptyDash,true,item.rootId+' '+item.kind+' '+style+': Rasi and Transit retain their alternate-layout empty dash.');
+          }
+          if(style!=='south'){
+            assert.ok(item.chartClass.includes('smv-v342-'+style),item.rootId+' '+item.kind+' '+style+': requested alternate layout is actually rendered, not left in South geometry.');
+            if(['rasi','navamsa','transit'].includes(item.kind))assert.equal(item.numericLabels,0,item.rootId+' '+item.kind+' '+style+': numeric sign and house labels are removed.');
           }
           if(item.kind==='bhava'){
             const labels=item.bhavaHouseLabels;
@@ -379,12 +381,7 @@ try {
                 item.rootId+' '+style+' Bhava groups two distinct cusp houses in one sign only when the Bhava Table maps both there.');
             }
           }
-          if(style==='east'&&['rasi','navamsa','transit'].includes(item.kind)){
-            assert.equal(item.eastHouseNumbers.length,12,item.rootId+' East '+item.kind+' keeps all twelve chart cells.');
-            assert.ok(item.eastHouseNumbers.every(number=>number.displayed===String(number.house)),item.rootId+' East '+item.kind+' must retain its Lagna-based house numbers.');
-            assert.ok(item.eastHouseNumbers.every(number=>number.house>=1&&number.house<=12),item.rootId+' East '+item.kind+' keeps valid house numbers 1–12.');
-            assert.ok(item.eastHouseNumbers.every(number=>!number.fixedSignNumber),item.rootId+' East '+item.kind+' must remove fixed zodiac-sign numbers from every cell.');
-          }
+
         }
         const image = join(outputDir,'horoscope-'+style+'-'+language+'-'+width+'.png');
         await page.screenshot({path:image,fullPage:true});
