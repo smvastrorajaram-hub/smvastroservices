@@ -77,6 +77,7 @@ const phase2En=(horoscopeAdvancedEn.phase2?.yogas?.items||[]).map(x=>[x.name,x.c
 const phase2Ta=(horoscopeAdvancedTa.phase2?.yogas?.items||[]).map(x=>[x.name,x.category,x.reason,x.meaning].join(' ')).join(' ');
 const phase2EnglishLeakItem=(horoscopeAdvancedEn.phase2?.yogas?.items||[]).find(x=>/[\u0B80-\u0BFF]/u.test([x.name,x.category,x.reason,x.meaning].join(' ')))||null;
 ok(!/[\u0B80-\u0BFF]/u.test(phase2En),'English Phase-2 Yoga names, categories and prose contain no Tamil-script fragments: '+JSON.stringify(phase2EnglishLeakItem));
+ok(read('public/horoscope/offline/astro_advanced.browser.mjs').includes('House ${q} lord ${p2YogaPlanetName(a)} is associated with house ${t} lord ${p2YogaPlanetName(b)}.'),'Raja Yoga English reasons convert Tamil internal graha IDs to English planet names');
 const phase2TamilLeakItem=(horoscopeAdvancedTa.phase2?.yogas?.items||[]).find(x=>/\b(?:Subha Yoga|Asubha Yoga|Gaja-Kesari Yoga|Guru-Mangala Yoga|Amala Yoga|Raaja Yoga|Dharma-Karmadhipati Yoga|Vipareeta Raaja Yoga|Harsha Yoga|Sarala Yoga|Vimala Yoga|Saraswathi Yoga|Amsaavatara Yoga|Indra Yoga|Ravi Yoga|Bhaaskara Yoga|Vasumati Yoga|Lakshmi Yoga|Protective|Popular|Special|Knowledge|Wealth|Naabhasa|Sankhya)\b/iu.test([x.name,x.category,x.reason,x.meaning].join(' ')))||null;
 ok(!phase2TamilLeakItem,
  'Tamil Phase-2 Yoga output uses Tamil yoga names and category labels: '+JSON.stringify(phase2TamilLeakItem));
