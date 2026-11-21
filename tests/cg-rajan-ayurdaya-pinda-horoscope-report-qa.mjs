@@ -359,7 +359,7 @@ const matchingCss=fs.readFileSync(new URL('../public/horoscope/marriage-basic-re
 ok(!matchingCss.includes('.mm-basic-report .smv-cg-rajan-ayurdaya')&&!matchingCss.includes('.mm-basic-report table.smv-ayurdaya-table'),
  'Matching-only Ayurdaya appendix styles are absent with the removed customer report sections');
 const appHtml=fs.readFileSync(new URL('../public/horoscope/index.html',import.meta.url),'utf8');
-ok(/horoscope\.css\?v=[^"']+/.test(appHtml)&&appHtml.includes('marriage-basic-report.css?v=20261121-bilingual-report-longevity-removal-v2'), 'Live pages request the current Horoscope stylesheet and revised Marriage Matching stylesheet');
+ok(/horoscope\.css\?v=[^"']+/.test(appHtml)&&appHtml.includes('marriage-basic-report.css?v=20261121-bilingual-report-longevity-removal-v3'), 'Live pages request the current Horoscope stylesheet and revised Marriage Matching stylesheet');
 const swSource=fs.readFileSync(new URL('../public/horoscope/sw.js',import.meta.url),'utf8');
 ok(swSource.includes("'./marriage-basic-report.css'")&&swSource.includes("const SHELL_CACHE='smv-horoscope-shell-'+SMV_CACHE_RELEASE"), 'PWA shell cache refresh precaches the current Marriage Matching stylesheet');
 ok(src.includes("p1Title('Arudha Padas','ஆரூட பாதங்கள்')")&&!src.includes('ஆரூட பாதங்கள் (A1–A12)'),'Arudha heading omits the A1-A12 range');
