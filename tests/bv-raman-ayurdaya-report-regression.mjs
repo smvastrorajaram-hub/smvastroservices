@@ -117,8 +117,8 @@ ok(/horoscope\.js\?v=[^"']+/.test(appHtml),
  'The PWA requests the revised Horoscope script instead of its previous cached URL');
 ok(horoscopeCss.includes('.smv-cg-rajan-ayurdaya .smv-ayurdaya-table')&&horoscopeCss.includes('background:rgb(255,243,213)'),
  'Horoscope uses the existing cream header colour for both nested result tables');
-ok(!matchingCss.includes('.mm-basic-report .smv-cg-rajan-ayurdaya')&&!matchingCss.includes('.mm-basic-report table.smv-ayurdaya-table'),
- 'Unused Matching-only Ayurdaya appendix styles are removed along with the report component');
+ok(!matchingCss.includes('.mm-basic-report .smv-cg-rajan-ayurdaya')&&!matchingCss.includes('.mm-basic-report table.smv-ayurdaya-table')&&!matchingCss.includes('.smv-ayurdaya-method-selection')&&!matchingCss.includes('.smv-ayurdaya-total-note'),
+ 'Unused Matching-only Ayurdaya appendix styles, including print overrides, are removed with the report component');
 ok(horoscope.includes('const html=cgHtml+bvHtml;')&&horoscope.includes('[data-smv-bv-raman-ayurdaya-section]'),
  'Horoscope appends B.V. Raman as a distinct block after C.G. Rajan');
 ok(!matching.includes('ayurdayaReport')&&!matching.includes('cgAyurdayaHtml')&&!matching.includes('bvAyurdayaHtml'),
