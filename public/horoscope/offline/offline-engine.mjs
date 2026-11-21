@@ -18,7 +18,7 @@ export async function full(body){
  // Load advanced and Dasa code only after the Basic-only exit. Public
  // Nakshatra Porutham should not pay to parse modules it never calculates.
  const [{advanced},{phase4Dasa}]=await Promise.all([
-  import('./astro_advanced.browser.mjs'),
+  import('./astro_advanced.browser.mjs?v=20261121-p2-yoga-localization-v2'),
   import('./dasa_engine.browser.mjs')
  ]);
  const adv=advanced(chart,lang);
