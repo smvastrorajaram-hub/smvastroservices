@@ -103,13 +103,13 @@ ok(reportSource.includes("'XIV-BAL-27':'சந்திரன் மிருத
 const horoscope=fs.readFileSync(new URL('../public/horoscope/horoscope.js',import.meta.url),'utf8');
 const matching=fs.readFileSync(new URL('../public/horoscope/marriage-basic-report.mjs',import.meta.url),'utf8');
 ok(horoscope.includes('bv-raman-ayurdaya-report.browser.mjs'),'Horoscope source imports the new B.V. Raman report renderer');
-ok(matching.includes('bv-raman-ayurdaya-report.browser.mjs'),'Marriage Matching source imports the new B.V. Raman report renderer');
+ok(!matching.includes('bv-raman-ayurdaya-report.browser.mjs'),'Marriage Matching customer report no longer imports the B.V. Raman appendix renderer');
 ok(horoscope.includes('v=20261019-ayurdaya-rules-duration-v2'),'Horoscope uses the updated B.V. Raman report module version');
-ok(matching.includes('v=20261019-ayurdaya-rules-duration-v2'),'Matching uses the updated B.V. Raman report module version');
-ok(fs.readFileSync(new URL('../public/horoscope/marriage-matching.js',import.meta.url),'utf8').includes('marriage-basic-report.mjs?v=20261117-english-report-language-consistency-v1'),'Matching cache-busts the parent report module too');
+ok(!matching.includes('v=20261019-ayurdaya-rules-duration-v2'),'Matching customer report has no B.V. Raman appendix import/version');
+ok(fs.readFileSync(new URL('../public/horoscope/marriage-matching.js',import.meta.url),'utf8').includes('marriage-basic-report.mjs?v=20261121-bilingual-report-longevity-removal-v2'),'Matching cache-busts the native bilingual parent report module');
 
 ok(horoscope.includes('cgRajanAyurdayaReportHtml'),'existing C.G. Rajan renderer remains wired into Horoscope');
-ok(matching.includes('cgRajanAyurdayaReportHtml'),'existing C.G. Rajan renderer remains wired into Matching');
+ok(!matching.includes('cgRajanAyurdayaReportHtml'),'Matching customer report omits the C.G. Rajan appendix renderer');
 const horoscopeCss=fs.readFileSync(new URL('../public/horoscope/horoscope.css',import.meta.url),'utf8');
 const matchingCss=fs.readFileSync(new URL('../public/horoscope/marriage-basic-report.css',import.meta.url),'utf8');
 const appHtml=fs.readFileSync(new URL('../public/horoscope/index.html',import.meta.url),'utf8');
@@ -117,11 +117,11 @@ ok(/horoscope\.js\?v=[^"']+/.test(appHtml),
  'The PWA requests the revised Horoscope script instead of its previous cached URL');
 ok(horoscopeCss.includes('.smv-cg-rajan-ayurdaya .smv-ayurdaya-table')&&horoscopeCss.includes('background:rgb(255,243,213)'),
  'Horoscope uses the existing cream header colour for both nested result tables');
-ok(matchingCss.includes('.mm-basic-report .smv-cg-rajan-ayurdaya table.smv-ayurdaya-table')&&matchingCss.includes('background:#fff7e8;font-weight:800;'),
- 'Matching uses the existing cream header colour for both nested result tables');
+ok(!matchingCss.includes('.mm-basic-report .smv-cg-rajan-ayurdaya')&&!matchingCss.includes('.mm-basic-report table.smv-ayurdaya-table'),
+ 'Unused Matching-only Ayurdaya appendix styles are removed along with the report component');
 ok(horoscope.includes('const html=cgHtml+bvHtml;')&&horoscope.includes('[data-smv-bv-raman-ayurdaya-section]'),
  'Horoscope appends B.V. Raman as a distinct block after C.G. Rajan');
-ok(matching.includes('const ayurdayaReport=(cgAyurdayaHtml+bvAyurdayaHtml)'),
- 'Matching appends B.V. Raman as a distinct block after C.G. Rajan');
+ok(!matching.includes('ayurdayaReport')&&!matching.includes('cgAyurdayaHtml')&&!matching.includes('bvAyurdayaHtml'),
+ 'Matching report has no Ayurdaya appendix output');
 
 console.log(JSON.stringify({pass:true,assertions,tamil:true,english:true,oldCGRajanPreserved:true,results:['Ashtakavarga Ayurdaya','Longevity category']},null,2));
