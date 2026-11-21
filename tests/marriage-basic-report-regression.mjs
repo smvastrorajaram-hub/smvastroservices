@@ -62,12 +62,13 @@ const englishVisibleText=en.replace(/<script\b[\s\S]*?<\/script>/gi,' ').replace
 const englishTamilLeak=englishVisibleText.match(/[\u0B80-\u0BFF]+/u);
 ok(!englishTamilLeak,'English Basic Matching report has no remaining Tamil-script text: '+(englishTamilLeak?.[0]||''));
 
+const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const annualEn=advancedAstro(charts[0],'en').tajaka;
 const annualTa=advancedAstro(charts[0],'ta').tajaka;
 const annualTextEn=(annualEn?.yogas||[]).map(x=>[x.name,x.reason,x.meaning].join(' ')).join(' ');
 const annualTextTa=(annualTa?.yogas||[]).map(x=>[x.name,x.reason,x.meaning].join(' ')).join(' ');
-ok(!/[\\u0B80-\\u0BFF]/u.test(annualTextEn),'English Tajaka yoga reasons and indications contain no Tamil-script fragments');
-ok(!/\\b(?:applying|separating|connects|faster planet|slower planet|within deeptaamsa|Mars|Saturn|Sun|Moon|Mercury|Jupiter|Venus|Rahu|Ketu)\\b/iu.test(annualTextTa),
+ok(!/[\u0B80-\u0BFF]/u.test(annualTextEn),'English Tajaka yoga reasons and indications contain no Tamil-script fragments');
+ok(!/\b(?:applying|separating|connects|faster planet|slower planet|within deeptaamsa|Mars|Saturn|Sun|Moon|Mercury|Jupiter|Venus|Rahu|Ketu)\b/iu.test(annualTextTa),
  'Tamil Tajaka yoga reasons and indications do not fall back to English planet names or aspect prose');
 const horoscopeSource=read('public/horoscope/horoscope.js');
 ok(horoscopeSource.includes('${esc(x.reason)}')&&!horoscopeSource.includes('englishizePlanets(tajakaText(x.reason))'),
@@ -77,7 +78,6 @@ ok(horoscopeSource.includes("title('Krisamsa','கிரிசாம்சம்
 
 ok(!en.includes('திருமணப் பொருத்தம் — அடிப்படைக் கணக்கீட்டு அறிக்கை'),'No Tamil title in English');
 eq(values.length,2,'TA and EN views reuse both earlier transit results without recomputation');
-const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const matching=read('public/horoscope/marriage-matching.js');
 const matchingReportSource=read('public/horoscope/marriage-basic-report.mjs');
 const matchingDashaSource=matchingReportSource.slice(matchingReportSource.indexOf('function dasha(c,ta,ref){'),matchingReportSource.indexOf('\nconst TRANSIT_CACHE='));
