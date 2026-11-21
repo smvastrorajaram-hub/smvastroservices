@@ -14,6 +14,39 @@ const ZEN=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','S
 const KEY=['Jupiter','Saturn','Rahu','Ketu'],KTA={Jupiter:'குரு',Saturn:'சனி',Rahu:'ராகு',Ketu:'கேது'};
 const ALIAS={'குரு':'Jupiter','சனி':'Saturn','ராகு':'Rahu','கேது':'Ketu','சூரியன்':'Sun','சந்திரன்':'Moon','செவ்வாய்':'Mars','புதன்':'Mercury','சுக்கிரன்':'Venus',Jupiter:'Jupiter',Saturn:'Saturn',Rahu:'Rahu',Ketu:'Ketu',Sun:'Sun',Moon:'Moon',Mars:'Mars',Mercury:'Mercury',Venus:'Venus'};
 const ONE_DAY=86400000;
+
+const SMV_EN_15Y_FIXES=[
+  ['வீடு மற்றும் வசதி','home and comfort'],
+  ['வாடிக்கையாளர், வலையமைப்பு','clients and network'],
+  ['வாடிக்கையாளர்','clients'],
+  ['வலையமைப்பு','network'],
+  ['வீடு','home'],
+  ['வசதி','comfort']
+];
+function smvCleanEn15Str(v){
+  let s=String(v??'');
+  for(const [ta,en] of SMV_EN_15Y_FIXES)s=s.split(ta).join(en);
+  return s
+    .replace(/[\u0B80-\u0BFF]+/g,' ')
+    .replace(/\(\s*,\s*\)/g,'')
+    .replace(/(?:\s*,\s*){2,}/g,', ')
+    .replace(/\s+([,.;:!?])/g,'$1')
+    .replace(/\s{2,}/g,' ')
+    .trim();
+}
+function smvCleanEn15Data(node,lang,depth=0){
+  if(lang!=='en'||depth>25||node==null)return node;
+  if(typeof node==='string')return smvCleanEn15Str(node);
+  if(Array.isArray(node))return node.map(x=>smvCleanEn15Data(x,lang,depth+1));
+  if(typeof node==='object'){
+    const skip=new Set(['planet','md','ad','pd','from','to','date','language','meta']);
+    const out={};
+    for(const [k,v] of Object.entries(node))out[k]=skip.has(k)?v:smvCleanEn15Data(v,lang,depth+1);
+    return out;
+  }
+  return node;
+}
+
 const safe=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const day=date=>{const d=new Date(`${date}T00:00:00Z`);if(!Number.isFinite(d.getTime())||d.toISOString().slice(0,10)!==date)throw Error('Invalid date '+date);return d.getTime()};
 const stamp=t=>new Date(t).toISOString().slice(0,10);
@@ -453,7 +486,7 @@ export function translate15Year(full,base,lang='ta'){
  const dasha=dashaNarrative(full,base.dasha.map(x=>({md:x.md,ad:x.ad,from:x.from,to:x.to,age:x.age})),lang);
  const transitYears=transitNarrative(full,base.transitTimeline,lang,base.dasha);
  const transitEvents=[]; // date-level changes already listed with each forecast year
- return {...base,dasha,transitYears,transitEvents,language:lang};
+ return smvCleanEn15Data({...base,dasha,transitYears,transitEvents,language:lang},lang);
 }
 export async function build15Year(full,payload,{lang='ta',onProgress,signal}={}){
  const {periods,birth,referenceDate,end,continuationCount,ageLimitReached}=clipPeriods(full,payload?.referenceDate),dasha=ageLimitReached?[]:dashaNarrative(full,periods,lang);
@@ -461,6 +494,6 @@ export async function build15Year(full,payload,{lang='ta',onProgress,signal}={})
  const transitTimeline=ageLimitReached?{birth,referenceDate,end,years:[],events:[],stepDays:7,precision:'No future period is available',samplesChecked:0}:await computeTransitTimeline(full,payload,{onProgress,signal});
  const transitYears=ageLimitReached?[]:transitNarrative(full,transitTimeline,lang,dasha);
  const transitEvents=[]; // no repeated prose for each ingress; preserve real ingress dates
- return {birth,referenceDate,end,dasha,transitYears,transitEvents,transitTimeline,language:lang,meta:{dashaPeriods:dasha.length,transitSignChanges:transitTimeline.events.length,forecastYears:transitTimeline.years.length,forecastHorizonYears:15,ageLimitReached:false,fromReportDate:referenceDate,throughDate:end,derivedContinuations:continuationCount,samplesChecked:transitTimeline.samplesChecked}};
+ return smvCleanEn15Data({birth,referenceDate,end,dasha,transitYears,transitEvents,transitTimeline,language:lang,meta:{dashaPeriods:dasha.length,transitSignChanges:transitTimeline.events.length,forecastYears:transitTimeline.years.length,forecastHorizonYears:15,ageLimitReached:false,fromReportDate:referenceDate,throughDate:end,derivedContinuations:continuationCount,samplesChecked:transitTimeline.samplesChecked}},lang);
 }
 export {clipPeriods,computeTransitTimeline,transitNarrative,sourceInput,yearAfter};
