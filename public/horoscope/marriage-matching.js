@@ -2015,7 +2015,7 @@ async function renderMatching(b,g,out,quiet=false){
  // Prepare the additive technical appendix first; then render the full report in its final reading order.
  // Keep the complete established full matching verdict and human-readable
  // prediction report. The new factual chart/table appendix is additive only.
- const basicMod=await import('./marriage-basic-report.mjs?v=20261117-english-report-language-consistency-v1');
+ const basicMod=await import('./marriage-basic-report.mjs?v=20261121-bilingual-report-longevity-removal-v2');
  const reviewDate=document.getElementById('mmGocharDate')?.value||new Date().toISOString().slice(0,10);
  const basicHtml=await basicMod.renderBasicMatching(b,g,{
   language:lang(),brideStyle:b.birthChartStyle||'south',groomStyle:g.birthChartStyle||'south',
