@@ -598,16 +598,16 @@
         <div class="smv-prayer-title">🕉️ NAVAGRAHA STOTRAM</div>
         <div class="smv-prayer-mantra">Om Namah Suryaya Chandraya<br/>Mangalaya Budhaya Cha |<br/>Guru Shukra Shanibhyashcha<br/>Rahave Ketave Namah ||</div>
       </div>
-      <h3 style="margin-top:22px">Rasi Chart (D-1)</h3>
-      <div id="rasiChart" class="south-indian-chart" aria-label="ராசி கட்டம்"></div>
-      <h3 style="margin-top:22px">Navamsa Chart (D-9)</h3>
-      <p class="small">ஒவ்வொரு கிரகத்தின் D9 நவாம்ச ராசி, லக்ன நவாம்சம் உட்பட.</p>
-      <div id="navamsaChart" class="south-indian-chart" aria-label="நவாம்ச கட்டம்"></div>
+      <h3 style="margin-top:22px">${ta?'ராசிக் கட்டம் (D-1)':'Rasi Chart (D-1)'}</h3>
+      <div id="rasiChart" class="south-indian-chart" aria-label="${ta?'ராசிக் கட்டம்':'Rasi Chart'}"></div>
+      <h3 style="margin-top:22px">${ta?'நவாம்சக் கட்டம் (D-9)':'Navamsa Chart (D-9)'}</h3>
+      <p class="small">${ta?'ஒவ்வொரு கிரகத்தின் D9 நவாம்ச ராசி, லக்ன நவாம்சம் உட்பட.':'D9 Navamsa sign for each planet, including the Navamsa Ascendant.'}</p>
+      <div id="navamsaChart" class="south-indian-chart" aria-label="${ta?'நவாம்சக் கட்டம்':'Navamsa Chart'}"></div>
       <div id="specialLagnasNextToNavamsa"></div>
-      <h3 style="margin-top:22px" class="bhava-chart-title">Bhava Chart</h3>
-      <div id="bhavaChart" class="south-indian-chart bhava-chart" aria-label="Bhava Chart"></div>
-      <h3 style="margin-top:22px" class="bhava-table-title">📋 Bhava Table</h3>
-      <div class="data-table-wrap bhava-table-wrap"><table class="data-table bhava-table"><thead><tr><th>பாவம்</th><th>ஆரம்பம்</th><th>மத்தியம்</th><th>முடிவு</th><th>ராசி</th><th>கிரகங்கள்</th></tr></thead><tbody>${(d.bhavas||[]).map(b=>{const ps=(d.planets||[]).filter(p=>p.bhava===b.house).map(p=>p.name).join(', ');return `<tr><td><b>${b.house}</b></td><td>${esc(b.arambha||'—')}</td><td><b>${esc(b.madhya||b.degree||'—')}</b></td><td>${esc(b.antya||'—')}</td><td>${esc(b.rasi||'—')}</td><td>${esc(ps||'—')}</td></tr>`}).join('')}</tbody></table></div>
+      <h3 style="margin-top:22px" class="bhava-chart-title">${ta?'பாவகக் கட்டம்':'Bhava Chart'}</h3>
+      <div id="bhavaChart" class="south-indian-chart bhava-chart" aria-label="${ta?'பாவகக் கட்டம்':'Bhava Chart'}"></div>
+      <h3 style="margin-top:22px" class="bhava-table-title">${ta?'📋 பாவ அட்டவணை':'📋 Bhava Table'}</h3>
+      <div class="data-table-wrap bhava-table-wrap"><table class="data-table bhava-table"><thead><tr><th>${ta?'பாவம்':'House'}</th><th>${ta?'ஆரம்பம்':'Start'}</th><th>${ta?'மத்தியம்':'Middle'}</th><th>${ta?'முடிவு':'End'}</th><th>${ta?'ராசி':'Sign'}</th><th>${ta?'கிரகங்கள்':'Planets'}</th></tr></thead><tbody>${(d.bhavas||[]).map(b=>{const ps=(d.planets||[]).filter(p=>p.bhava===b.house).map(p=>p.name).join(', ');const cuspLabel=(longitude,fallback)=>{const value=Number(longitude);if(!Number.isFinite(value))return fallback||'—';const signs=ta?['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்']:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];const index=Math.floor((((value%360)+360)%360)/30);return signs[index]+' '+(fallback||'—');};return `<tr><td><b>${b.house}</b></td><td>${esc(cuspLabel(b.arambhaLongitude,b.arambha))}</td><td><b>${esc(cuspLabel(b.madhyaLongitude,b.madhya||b.degree))}</b></td><td>${esc(cuspLabel(b.antyaLongitude,b.antya))}</td><td>${esc(b.rasi||'—')}</td><td>${esc(ps||'—')}</td></tr>`}).join('')}</tbody></table></div>
       <h3 style="margin-top:22px">🪷 நவாம்ச நிலைகள்</h3>
       <div class="data-table-wrap"><table class="data-table navamsa-table"><thead><tr><th>கிரகம்</th><th>Rasi Chart</th><th>D9 நவாம்ச ராசி</th><th>நவாம்ச பாதம்</th><th>பாவம்</th></tr></thead><tbody>${(d.planets||[]).map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(p.rasi)}</td><td>${esc(p.navamsa?.rasi||'—')}</td><td>${p.navamsa?.pada||'—'}</td><td>${esc(bhavaPositionLabel(p))}</td></tr>`).join('')}</tbody></table></div>
       <h3 style="margin-top:22px">🪐 கிரக நிலைகள்</h3><p class="small">ஒவ்வொரு கிரகமும் தனி வரியில்: ராசி · பாகை · நட்சத்திரம் · பாதம்.</p>
