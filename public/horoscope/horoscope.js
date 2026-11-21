@@ -1696,7 +1696,7 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
   // "renderAdvancedAstrology is not defined".
   window.renderAdvancedAstrology = renderAdvancedAstrology;
   async function loadPhase4Dasa(chartOrPayload,lang,rootId){
-    const root=document.getElementById(rootId);if(!root)return;const slot=root.querySelector('#smvPhase4DasaSlot');if(!slot)return;const escSafe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));try{await window.SMVEngineReady;let chart=chartOrPayload;if(!chart||!Array.isArray(chart.planets)||!chart.lagna){const f=await window.SMVOffline.full(chartOrPayload||{});chart=f.chart;const dasaData=f.phase4||{};completePvrTransitCalendar(dasaData,lang,slot);renderPhase4Dasa(dasaData,lang,slot);return;}const [mod,advMod]=await Promise.all([import('./offline/dasa_engine.browser.mjs'),import('./offline/astro_advanced.browser.mjs')]);const dasaData=mod.phase4Dasa(chart,advMod.advanced(chart,lang))||{};completePvrTransitCalendar(dasaData,lang,slot);renderPhase4Dasa(dasaData,lang,slot);}catch(e){slot.innerHTML=`<h3>⚠️ Special Dasa System</h3><p class="small error">${escSafe(e?.message||e)}</p>`;}
+    const root=document.getElementById(rootId);if(!root)return;const slot=root.querySelector('#smvPhase4DasaSlot');if(!slot)return;const escSafe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));try{await window.SMVEngineReady;let chart=chartOrPayload;if(!chart||!Array.isArray(chart.planets)||!chart.lagna){const f=await window.SMVOffline.full(chartOrPayload||{});chart=f.chart;const dasaData=f.phase4||{};completePvrTransitCalendar(dasaData,lang,slot);renderPhase4Dasa(dasaData,lang,slot);return;}const [mod,advMod]=await Promise.all([import('./offline/dasa_engine.browser.mjs'),import('./offline/astro_advanced.browser.mjs?v=20261121-p2-yoga-localization-v2')]);const dasaData=mod.phase4Dasa(chart,advMod.advanced(chart,lang))||{};completePvrTransitCalendar(dasaData,lang,slot);renderPhase4Dasa(dasaData,lang,slot);}catch(e){slot.innerHTML=`<h3>⚠️ Special Dasa System</h3><p class="small error">${escSafe(e?.message||e)}</p>`;}
   }
 
   async function completePvrTransitCalendar(data,lang,slot){
@@ -1955,7 +1955,7 @@ Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat ||</div>
     // Render the entire horoscope as one server-side batch. The browser does
     // not reveal any section until core chart + advanced astrology + birth
     // panchang + daily panchang + transit + special dasha are all complete.
-    const response=cachedFull?Promise.resolve({...cachedFull,advanced:(await import('./offline/astro_advanced.browser.mjs')).advanced(cachedFull.chart,lang)}):post('full',{...payload,dailyDate,dailyTime,tajakaYear:new Date().getFullYear(),__smvPrecomputedChart:(chart&&Array.isArray(chart.planets)&&chart.lagna)?chart:undefined,__smvPrecomputedBasic:cachedBasic||undefined});
+    const response=cachedFull?Promise.resolve({...cachedFull,advanced:(await import('./offline/astro_advanced.browser.mjs?v=20261121-p2-yoga-localization-v2')).advanced(cachedFull.chart,lang)}):post('full',{...payload,dailyDate,dailyTime,tajakaYear:new Date().getFullYear(),__smvPrecomputedChart:(chart&&Array.isArray(chart.planets)&&chart.lagna)?chart:undefined,__smvPrecomputedBasic:cachedBasic||undefined});
     return response.then(async (full)=>{
       if(full?.ok!==true || full?.meta?.complete!==true) throw new Error(full?.error||'Full horoscope calculation was not completed.');
       window.__smvLastFullReport=full;
