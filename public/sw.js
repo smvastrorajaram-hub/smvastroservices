@@ -3,7 +3,7 @@
    Authentication, account data, APIs, payments and consultation operations stay network-only.
    Location search keeps its existing independent online/offline cache. */
 const IS_PAGES_DEV_HOST = self.location.hostname === 'smvastroservices.pages.dev' || self.location.hostname.endsWith('.smvastroservices.pages.dev') || self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
-const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? 'smv-34d9336c6e47af58' : 'smv-dd3ee0ffeac8a0f0';
+const SMV_CACHE_RELEASE = IS_PAGES_DEV_HOST ? 'smv-9f6dce4c09cbfd7e' : 'smv-847bcecab97aea93';
 const SMV_LOCATION_CACHE='smv-shared-india-places';
 const APP_SHELL_CACHE='smv-astro-shell-'+SMV_CACHE_RELEASE;
 const PAGES_DEV_HELPER_FILES=IS_PAGES_DEV_HOST?['./pages-dev-host-independence.js','./pages-dev-apk-pwa-icons.js']:[];
