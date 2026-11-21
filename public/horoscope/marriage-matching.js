@@ -162,9 +162,7 @@ const MM_TAMIL_ASTRO_VALUES=(()=>{
  return Object.freeze(map);
 })();
 const MM_TAMIL_ASTRO_KEYS=Object.keys(MM_TAMIL_ASTRO_VALUES).sort((a,b)=>b.length-a.length);
-const MM_TAMIL_ASTRO_RE=MM_TAMIL_ASTRO_KEYS.length
- ?new RegExp('(?<![\\p{L}\\p{M}])(?:'+MM_TAMIL_ASTRO_KEYS.map(k=>k.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\\\$&')).join('|')+')(?![\\p{L}\\p{M}])','giu')
- :null;
+const MM_TAMIL_ASTRO_RE=null;
 function mmTamilReportText(value){
  let out=String(value??'—').trim();if(!out)return '—';
  if(!/[A-Za-z]/u.test(out))return out;
@@ -175,9 +173,9 @@ function mmTamilReportText(value){
   try{const holder=document.createElement('span');holder.textContent=out;window.__smvLocalizeTamilResult(holder,'ta');out=holder.textContent.trim()||out;}catch(_){}
  }
  for(let i=0;i<SIGNS_EN.length;i++)out=out.split(SIGNS_EN[i]).join(SIGNS_TA[i]);
- if(MM_TAMIL_ASTRO_RE)out=out.replace(MM_TAMIL_ASTRO_RE,word=>MM_TAMIL_ASTRO_VALUES[word]||word);
- out=out.replace(/(\\d+)(?:st|nd|rd|th)\\s+lord\\s+H(\\d+)/giu,(_m,n,h)=>`${n}-ஆம் பாவ அதிபதி ${h}-ஆம் பாவத்தில்`)
-  .replace(/\\bH(\\d+)\\b/gu,(_m,h)=>`${h}-ஆம் பாவம்`);
+ for(const key of MM_TAMIL_ASTRO_KEYS)out=out.replace(new RegExp(key,'gi'),MM_TAMIL_ASTRO_VALUES[key]);
+ out=out.replace(/(\d+)(?:st|nd|rd|th)\s+lord\s+H(\d+)/giu,(_m,n,h)=>`${n}-ஆம் பாவ அதிபதி ${h}-ஆம் பாவத்தில்`)
+  .replace(/\bH(\d+)\b/gu,(_m,h)=>`${h}-ஆம் பாவம்`);
  return out;
 }
 function mmEnglishReportText(value){
