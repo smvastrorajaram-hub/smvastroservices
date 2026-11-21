@@ -891,7 +891,16 @@ function p2YogaEngine(chart,lang,calculatedVargas=null){
  const H=n=>p2House(chart,n,asc), S=n=>p2Sign(chart,n), lord=h=>p2Lord(chart,h,asc), ls=h=>{const q=lord(h);return q?S(q):null};
  const benef=['சந்திரன்','புதன்','குரு','சுக்கிரன்']; const malef=['சூரியன்','செவ்வாய்','சனி','ராகு','கேது'];
  const p2JupiterStrong=()=>{const p=p2Pos(chart,'குரு'),s=p?.strength||{};return !!p&&!s.debilitated&&!s.combustion&&(s.ownSign||s.exalted||s.relationship==='நட்பு');};
- const out=[]; const add=(n,cat,c,r,e,t)=>{ if(c&&typeof c==='object'){t=e;e=r;r=c;c=Boolean(ta?c.ta:c.en);} if(c)out.push({name:typeof n==='string'?n:(ta?n.ta:n.en),category:cat,matched:true,reason:ta?(r?.ta??r?.en??''): (r?.en??r?.ta??''),meaning:ta?((t??e)?.ta??(t??e)?.en??''):((t??e)?.en??(t??e)?.ta??'')}); };
+ const P2_YOGA_TA=Object.freeze({
+  'Veenaa Yoga':'வீணா யோகம்','Daama Yoga':'தாம யோகம்','Paasa Yoga':'பாச யோகம்','Kedaara Yoga':'கேதார யோகம்','Soola Yoga':'சூல யோகம்','Yuga Yoga':'யுக யோகம்','Gola Yoga':'கோள யோகம்',
+  'Subha Yoga':'சுப யோகம்','Asubha Yoga':'அசுப யோகம்','Gaja-Kesari Yoga':'கஜகேசரி யோகம்','Guru-Mangala Yoga':'குரு மங்கள யோகம்','Amala Yoga':'அமல யோகம்',
+  'Raaja Yoga':'ராஜ யோகம்','Dharma-Karmadhipati Yoga':'தர்ம கர்மாதிபதி யோகம்','Vipareeta Raaja Yoga':'விபரீத ராஜ யோகம்',
+  'Harsha Yoga':'ஹர்ஷ யோகம்','Sarala Yoga':'சரள யோகம்','Vimala Yoga':'விமல யோகம்','Saraswathi Yoga':'சரஸ்வதி யோகம்',
+  'Amsaavatara Yoga':'அம்சாவதார யோகம்','Indra Yoga':'இந்திர யோகம்','Ravi Yoga':'ரவி யோகம்','Bhaaskara Yoga':'பாஸ்கர யோகம்',
+  'Vasumati Yoga':'வசுமதி யோகம்','Lakshmi Yoga':'லட்சுமி யோகம்'
+ });
+ const P2_CATEGORY_TA=Object.freeze({'Naabhasa / Sankhya':'நாபச / சங்க்யா','Protective':'காப்பு யோகங்கள்','Popular':'பிரசித்த யோகங்கள்','Raja Yoga':'ராஜ யோகங்கள்','Special':'சிறப்பு யோகங்கள்','Knowledge':'கல்வி யோகங்கள்','Wealth':'செல்வ யோகங்கள்'});
+ const out=[]; const add=(n,cat,c,r,e,t)=>{ if(c&&typeof c==='object'){t=e;e=r;r=c;c=Boolean(ta?c.ta:c.en);} if(c)out.push({name:typeof n==='string'?(ta?(P2_YOGA_TA[n]||n):n):(ta?n.ta:n.en),category:ta?(P2_CATEGORY_TA[cat]||cat):cat,matched:true,reason:ta?(r?.ta??r?.en??''): (r?.en??r?.ta??''),meaning:ta?((t??e)?.ta??(t??e)?.en??''):((t??e)?.en??(t??e)?.ta??'')}); };
  // PDF Naabhasa/Sankhya: seven classical planets only.
  const seven=P7.map(n=>S(n)).filter(x=>x!=null), distinct=new Set(seven).size;
  const sank={7:'Veenaa Yoga',6:'Daama Yoga',5:'Paasa Yoga',4:'Kedaara Yoga',3:'Soola Yoga',2:'Yuga Yoga',1:'Gola Yoga'};
