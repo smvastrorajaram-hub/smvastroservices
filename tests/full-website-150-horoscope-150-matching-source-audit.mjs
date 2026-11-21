@@ -531,9 +531,10 @@ for (const pair of pairs) {
   const englishVisibleText=html.replace(/<script\b[\s\S]*?<\/script>/gi,' ').replace(/<style\b[\s\S]*?<\/style>/gi,' ').replace(/<[^>]*>/g,' ');
   const firstTamilLeak=englishVisibleText.match(/[\u0B80-\u0BFF]/u);
   ok(!firstTamilLeak,'English Basic Matching report contains no Tamil-script text for pair '+pair.pairIndex+': '+(firstTamilLeak?.[0]||''));
-  const cgSections=(html.match(/data-smv-cg-rajan-ayurdaya="1"/g)||[]).length;
-  const bvSections=(html.match(/data-smv-bv-raman-ayurdaya-section="1"/g)||[]).length;
-  const shadbalaTieSections=(html.match(/data-ayurdaya-selection="shadbala-tie"/g)||[]).length;
+  ok(!/(?:data-smv-cg-rajan-ayurdaya|data-smv-bv-raman-ayurdaya-section|Matched horoscope rules for longevity categories|Average Ayurdaya|Pinda Ayurdaya|Ashtakavarga Ayurdaya)/iu.test(html),
+    'customer-facing Matching report excludes both Ayurdaya appendices and matched longevity-category rules for pair '+pair.pairIndex);
+  ok(html.includes('Bhinna and Sarvashtakavarga')&&html.includes('Shadbala'),
+    'ordinary Ashtakavarga and Shadbala remain visible for pair '+pair.pairIndex);
   const porutham=matchingAudit.porutham(female.chart,male.chart);
   eq(porutham.rows.length,10,'all ten production porutham factors are calculated for pair '+pair.pairIndex);
   eq(porutham.score,porutham.rows.filter(row=>row[1]).length,'porutham score matches passed factors for pair '+pair.pairIndex);
@@ -556,31 +557,17 @@ for (const pair of pairs) {
   const strengthMatrix=matchingAudit.marriageStrengthMatrix(female.chart,male.chart);
   ok(Number.isFinite(Number(strengthMatrix?.B?.balance))&&Number.isFinite(Number(strengthMatrix?.G?.balance)),
     'pair-specific Marriage Strength Matrix evaluates both natal charts for pair '+pair.pairIndex);
-  const tiedMethodCells=(html.match(/data-tied-method=/g)||[]).length;
-  eq(cgSections,2,'both partners receive a C.G. Rajan report section for pair '+pair.pairIndex);
-  eq(bvSections,2,'both partners receive a B.V. Raman Ashtakavarga Ayurdaya section for pair '+pair.pairIndex);
-  ok(html.includes('Sodhya Pinda') && html.includes('Rasi Pinda') && html.includes('Graha Pinda'),
-    'pair report renders Rasi/Graha/Sodhya Pinda labels for pair '+pair.pairIndex);
-  ok(!/final lifespan|predicted death age|மரண வயது/i.test(html),
-    'pair report does not present final lifespan/death-age claim for pair '+pair.pairIndex);
-  eq(shadbalaTieSections,
-    Number(male.selection.reasonCode==='shadbala-tie')+Number(female.selection.reasonCode==='shadbala-tie'),
-    'every tied partner and only tied partners receive side-by-side method output, pair '+pair.pairIndex);
-  ok(tiedMethodCells>=shadbalaTieSections*14,
-    'each tied partner receives at least two seven-graha method columns, pair '+pair.pairIndex);
   pairReportAudit.push({
     pair:pair.pairIndex,
     poruthamScore:porutham.score,verdict:fullVerdict.k,qualified:fullVerdict.qualified,
     dashaSandhiWindows:dashaSandhi.length,kujaBalanced:kuja.balanced,
     strengthBride:strengthMatrix.B.balance,strengthGroom:strengthMatrix.G.balance,
-    shadbalaTieSections,tiedMethodCells,
     cgMethodMale:male.selection.selectedMethod||('UNAVAILABLE:'+male.selection.reasonCode),
     cgMethodFemale:female.selection.selectedMethod||('UNAVAILABLE:'+female.selection.reasonCode),
     maleNumericBand:male.bvr.chapterXXVI?.numericBandCandidate||null,
     femaleNumericBand:female.bvr.chapterXXVI?.numericBandCandidate||null,
     maleRuleCandidates:male.bvr.chapterXIV?.categoryCandidates||[],
     femaleRuleCandidates:female.bvr.chapterXIV?.categoryCandidates||[],
-    cgSections,bvSections
   });
 }
 eq(pairReportAudit.length,150,'150 two-person Marriage Matching reports rendered');
@@ -723,8 +710,7 @@ const summary = {
     pairReportsRendered:pairReportAudit.length, fullVerdictAndTenPoruthamChecked:pairReportAudit.length,
     poruthamScoreDistribution:Object.fromEntries([...new Set(pairReportAudit.map(x=>x.poruthamScore))].sort((a,b)=>a-b).map(k=>[k,pairReportAudit.filter(x=>x.poruthamScore===k).length])),
     finalVerdictCounts:pairReportAudit.reduce((a,x)=>(a[x.verdict]=(a[x.verdict]||0)+1,a),{}),
-    shadbalaTieSectionsRendered:pairReportAudit.reduce((sum,row)=>sum+(row.shadbalaTieSections||0),0),
-    bothAppendicesVerifiedPerReport:true,
+    longevityAppendicesRemovedFromReport:true,
     pairOutputSamples:pairReportAudit.slice(0,5)
   },
   predictionAndNarrativeAudit:{

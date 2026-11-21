@@ -529,3 +529,20 @@ body{position:relative}
     margin-inline:auto!important;transform:none!important;translate:none!important;
   }
 }
+
+/* SMV V360 annual forecast one-column print: keep each opening topic intact. */
+@media print{
+ #printReport .smv-v303-integrated{
+  display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;
+  columns:1!important;column-count:1!important;column-width:auto!important;column-gap:0!important;
+ }
+ #printReport .smv-v303-integrated>.smv-v303-house{
+  display:block!important;float:none!important;clear:both!important;
+  width:100%!important;max-width:100%!important;min-width:0!important;
+  break-inside:avoid-page!important;page-break-inside:avoid!important;
+ }
+ #printReport .smv-v303-integrated .smv-v303-house>h3{
+  break-after:avoid-page!important;page-break-after:avoid!important;
+ }
+ #printReport .smv-v303-integrated .smv-v303-house p{orphans:2;widows:2;break-inside:avoid-page!important}
+}

@@ -94,7 +94,7 @@
   }
   if(lang!=='ta'){
    const map={'இளம்நீலம்':'Light Blue','காபிகலர்':'Coffee Brown','ஆகமன':'Aagamana','ஆகம':'Aagama','உபவேசன':'Upavesana','கமன':'Gamana','கௌதுக':'Kautuka','சபா':'Sabhaa','சயன':'Sayana','நித்ரா':'Nidraa','நேத்ரபாணி':'Netrapaani','ந்ருத்யலிப்ஸா':'Nrityalipsaa','பிரகாசன':'Prakaasana','போஜன':'Bhojana'};
-   const walk=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=walk.nextNode()){if(n.parentElement.closest('script,style'))continue;for(const [ta,en]of Object.entries(map))n.nodeValue=n.nodeValue.split(ta).join(en);}return;
+   const walk=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=walk.nextNode()){if(n.parentElement.closest('script,style,.mm-basic-report'))continue;for(const [ta,en]of Object.entries(map))n.nodeValue=n.nodeValue.split(ta).join(en);}return;
   }
   const map={};for(const [ta,en]of Object.entries(window.__smvHoroscopeEnglishDictionary||{}))if(!map[en])map[en]=ta;
   Object.assign(map,window.SMVSourceTamilDictionary||{},extra,window.SMVAdditionalTamil||{},{'Yuga':'யுக','English name sound':'ஆங்கிலப் பெயர் ஒலி','Tamil name sound':'தமிழ்ப் பெயர் ஒலி','Pratipada':'பிரதமை','Dvitiya':'துவிதியை','Tritiya':'திரிதியை','Chaturthi':'சதுர்த்தி','Panchami':'பஞ்சமி','Shashthi':'ஷஷ்டி','Saptami':'சப்தமி','Ashtami':'அஷ்டமி','Navami':'நவமி','Dashami':'தசமி','Ekadashi':'ஏகாதசி','Dwadashi':'துவாதசி','Trayodashi':'திரயோதசி','Chaturdashi':'சதுர்த்தசி','Purnima':'பௌர்ணமி','Amavasya':'அமாவாசை','Garaja':'கரசை','Vanija':'வணிசை','Vishti':'பத்திரை','Bava':'பவம்','Balava':'பாலவம்','Kaulava':'கௌலவம்','Taitila':'தைதுலம்','Shakuni':'சகுனி','Chatushpada':'சதுஷ்பாதம்','Naga':'நாகவம்','Kimstughna':'கிம்ஸ்துக்னம்'});
@@ -104,7 +104,7 @@
   const re=new RegExp('(?<![\\p{L}\\p{M}])(?:'+keys.map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')(?![\\p{L}\\p{M}])','gu');
   const walk=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;
   while(n=walk.nextNode()){
-   if(n.parentElement.closest('script,style'))continue;
+   if(n.parentElement.closest('script,style,.mm-basic-report'))continue;
    if([$('englishAstroName').value,$('englishBirthPlace').value].includes(n.nodeValue.trim()))continue;
    // Keep an already-selected geocoded birth place intact, including Latin diacritics.
    if(/(?:பிறந்த இடம்|Birth place|Place of Birth)\s*[:：]/iu.test(n.nodeValue))continue;

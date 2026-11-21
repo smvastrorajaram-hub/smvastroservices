@@ -148,7 +148,12 @@ yes(/config\.js\?v=[^"']+/.test(html),'Access config uses a cache-busted URL');
 yes(html.includes('horoscope-form.js?v='),'Horoscope form uses its cache-busted URL');
 yes(html.includes('horoscope.js?v='),'Horoscope renderer uses its cache-busted URL');
 yes(html.includes('horoscope.css?v='),'Horoscope styles use their cache-busted URL');
-yes(html.includes('marriage-matching.js?v=20261117-english-report-language-consistency-v1'),'Marriage Matching uses its cache-busted URL');
+yes(html.includes('marriage-matching.js?v=20261121-bilingual-report-longevity-removal-v2'),'Marriage Matching uses its current cache-busted URL');
+yes(matching.includes('function mmTamilReportText(value)'),'Full Matching has a shared Tamil formatter for dynamic chart facts');
+yes(matching.includes("window.__smvLocalizeTamilResult(holder,'ta')"),'Full Matching reuses the published Horoscope Tamil localization service rather than a report-only word list');
+yes(matching.includes("function mmReportValue(value){return lang()==='en'?mmEnglishReportText(value):mmTamilReportText(value);}"),'Full Matching dynamic report values select the correct English or Tamil formatter');
+yes(matching.includes('return mmReportValue(x);'),'Unknown Tamil hit patterns fall back through the shared Tamil formatter, not raw English');
+
 
 // All three products share the marker. Existing offline/user data is not cleared.
 const releases=workers.map(source=>/const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(source));

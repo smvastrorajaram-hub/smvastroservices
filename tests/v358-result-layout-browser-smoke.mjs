@@ -17,7 +17,10 @@ const html=[
 '<div id="englishHoroscopeResult"><article class="card"><h3>Horoscope Result</h3>',
 '<div class="adv-section"><h4>Advanced Result</h4><div class="smv-advanced-shell"><div class="smv-advanced-part">',
 '<div class="smv-advanced-part-content">பாவம் மற்றும் கிரக பலன்கள். நன்றாகப் படிக்கக்கூடிய முடிவு.</div>',
-'</div></div></div><table><tbody><tr><td>Table</td><td>Value</td></tr></tbody></table>',
+'</div></div></div><section class="smv-v303-integrated" id="annual-flow"><h2>Complete Life Predictions</h2>',
+'<p class="smv-v303-intro">The annual report begins with one continuous reading.</p>',
+...Array.from({length:12},(_,i)=>'<section class="smv-d1-life-topic smv-v303-house" data-d1-topic="'+(i+1)+'"><h3>'+(i+1)+'. Topic '+(i+1)+'</h3><p class="smv-d1-life-paragraph">This is a complete paragraph for topic '+(i+1)+' and it must stay within one column.</p></section>'),
+'</section><table><tbody><tr><td>Table</td><td>Value</td></tr></tbody></table>',
 '</article></div></div></section>',
 '<section class="feature-section" id="tamil-horoscope"><div class="card">',
 '<div id="tamilHoroscopeResult"><div class="card"><div class="adv-section">தமிழ் ஜாதக பலன்</div></div></div>',
@@ -49,6 +52,7 @@ try{
    const rect=s=>{const r=get(s)?.getBoundingClientRect();return r?{x:r.x,width:r.width,right:r.right}:null};
    const style=s=>getComputedStyle(get(s));
    const host=style('#smvMarriageMatching'),ben=style('#mmNakshatraGate>.mm-benefits'),hor=style('#englishHoroscopeResult .card'),advanced=style('#englishHoroscopeResult .adv-section'),topic=style('.mm-v281-topic-book');
+   const annual=style('#annual-flow'),annualHouse=style('#annual-flow .smv-v303-house'),annualRect=rect('#annual-flow'),annualHouseRect=rect('#annual-flow .smv-v303-house');
    const scroll=get('.mm-base-scroll');
    return {
     viewport:innerWidth,documentWidth:document.documentElement.scrollWidth,
@@ -58,6 +62,7 @@ try{
     horoscopeInnerBorder:parseFloat(hor.borderLeftWidth),
     advancedBorder:parseFloat(advanced.borderLeftWidth),
     topicBorder:parseFloat(topic.borderLeftWidth),
+    annual:{display:annual.display,columns:annual.columnCount,width:annualRect?.width||0,houseDisplay:annualHouse.display,houseWidth:annualHouseRect?.width||0,houseFloat:annualHouse.float},
     tableBorder:parseFloat(style('.mm-base-table th').borderTopWidth),
     scrollWidth:scroll.scrollWidth,scrollClient:scroll.clientWidth
    };
@@ -72,11 +77,26 @@ try{
   assert.equal(r.horoscopeInnerBorder,0,'Horoscope output nested shell removed');
   assert.equal(r.advancedBorder,0,'Advanced output nested shell removed');
   assert.equal(r.topicBorder,0,'Full marriage inner topic border removed');
+  assert.equal(r.annual.display,'block','15-year annual report remains a single block');
+  assert.equal(r.annual.columns,'1','15-year annual report cannot flow into side-by-side columns at '+width);
+  assert.equal(r.annual.houseDisplay,'block','Each annual topic remains a full-width section');
+  assert.equal(r.annual.houseFloat,'none','Annual topics cannot float beside each other');
+  assert.ok(r.annual.houseWidth>=r.annual.width*.95,'Each annual topic occupies the full report width at '+width);
   assert.ok(r.tableBorder>0,'Table rules still present');
   assert.ok(r.scrollWidth>r.scrollClient,'Wide tables remain horizontally scrollable');
+  await page.emulateMediaType('print');
+  const printFlow=await page.evaluate(()=>{
+   const report=document.querySelector('#annual-flow'),house=report?.querySelector('.smv-v303-house');
+   return {columns:getComputedStyle(report).columnCount,display:getComputedStyle(report).display,breakInside:getComputedStyle(house).breakInside,width:report?.getBoundingClientRect().width||0,houseWidth:house?.getBoundingClientRect().width||0};
+  });
+  assert.equal(printFlow.columns,'1','Annual report PDF remains one column at '+width);
+  assert.equal(printFlow.display,'block','Annual report PDF uses continuous block flow at '+width);
+  assert.ok(['avoid-page','avoid'].includes(printFlow.breakInside),'Each opening annual topic is kept together in print at '+width+': '+JSON.stringify(printFlow));
+  assert.ok(printFlow.houseWidth>=printFlow.width*.95,'Annual topic fills available print width at '+width);
+  await page.emulateMediaType('screen');
   if(width===360||width===1280) await page.screenshot({path:new URL('layout-'+width+'.png',dir).pathname,fullPage:true});
  }
- console.log(JSON.stringify({pass:true,viewports:rows,scope:'Chromium screen widths; saved and printed PDF are not modified'}));
+ console.log(JSON.stringify({pass:true,viewports:rows,annualPrintFlow:'single-column; topic sections avoid page splits'}));
 }finally{
  await browser.close();
  await unlink(fixture);

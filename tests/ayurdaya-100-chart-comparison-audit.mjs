@@ -307,31 +307,24 @@ for (const pair of pairs) {
     poruthamRows:[],
     transitFn:transit
   });
-  const cgSections=(html.match(/data-smv-cg-rajan-ayurdaya="1"/g)||[]).length;
-  const bvSections=(html.match(/data-smv-bv-raman-ayurdaya-section="1"/g)||[]).length;
-  const shadbalaTieSections=(html.match(/data-ayurdaya-selection="shadbala-tie"/g)||[]).length;
-  const tiedMethodCells=(html.match(/data-tied-method=/g)||[]).length;
-  eq(cgSections,2,'both partners receive a C.G. Rajan report section for pair '+pair.male.index);
-  eq(bvSections,2,'both partners receive a B.V. Raman Ashtakavarga Ayurdaya section for pair '+pair.male.index);
-  ok(html.includes('Sodhya Pinda') && html.includes('Rasi Pinda') && html.includes('Graha Pinda'),
-    'pair report renders Rasi/Graha/Sodhya Pinda labels for pair '+pair.male.index);
+  eq((html.match(/data-smv-cg-rajan-ayurdaya="1"/g)||[]).length,0,
+    'customer-facing Matching HTML excludes C.G. Rajan Ayurdaya appendices for pair '+pair.male.index);
+  eq((html.match(/data-smv-bv-raman-ayurdaya-section="1"/g)||[]).length,0,
+    'customer-facing Matching HTML excludes B.V. Raman Ashtakavarga Ayurdaya appendices for pair '+pair.male.index);
+  ok(!/Matched horoscope rules for longevity categories|data-ayurdaya-selection|data-tied-method|Pinda Ayurdaya|Ashtakavarga Ayurdaya/i.test(html),
+    'Matched longevity-category rules and tied-method details are omitted from Matching HTML for pair '+pair.male.index);
+  ok(html.includes('Bhinna and Sarvashtakavarga')&&html.includes('Shadbala'),
+    'ordinary Ashtakavarga and Shadbala remain available in Matching report for pair '+pair.male.index);
   ok(!/final lifespan|predicted death age|மரண வயது/i.test(html),
     'pair report does not present final lifespan/death-age claim for pair '+pair.male.index);
-  eq(shadbalaTieSections,
-    Number(male.selection.reasonCode==='shadbala-tie')+Number(female.selection.reasonCode==='shadbala-tie'),
-    'every tied partner and only tied partners receive side-by-side method output, pair '+pair.male.index);
-  ok(tiedMethodCells>=shadbalaTieSections*14,
-    'each tied partner receives at least two seven-graha method columns, pair '+pair.male.index);
   pairReportAudit.push({
     pair:pair.male.index,
-    shadbalaTieSections,tiedMethodCells,
     cgMethodMale:male.selection.selectedMethod||('UNAVAILABLE:'+male.selection.reasonCode),
     cgMethodFemale:female.selection.selectedMethod||('UNAVAILABLE:'+female.selection.reasonCode),
     maleNumericBand:male.bvr.chapterXXVI?.numericBandCandidate||null,
     femaleNumericBand:female.bvr.chapterXXVI?.numericBandCandidate||null,
     maleRuleCandidates:male.bvr.chapterXIV?.categoryCandidates||[],
     femaleRuleCandidates:female.bvr.chapterXIV?.categoryCandidates||[],
-    cgSections,bvSections
   });
 }
 eq(pairReportAudit.length,50,'50 two-person Marriage Matching reports rendered');
@@ -341,7 +334,7 @@ eq(parity.rasiPindaMatches,700,'Rasi Pinda exactly matches for all 700 rows');
 eq(parity.grahaPindaMatches,700,'Graha Pinda exactly matches for all 700 rows');
 eq(parity.sodyaPindaMatches,700,'Sodhya Pinda exactly matches for all 700 rows');
 eq(parity.allFieldsEqualRows,700,'all three Pinda outputs match row-by-row for all charts');
-eq(parity.mismatches.length,0,'no unexplained mismatch between modified panel and Ayurdaya appendix');
+eq(parity.mismatches.length,0,'no unexplained mismatch in the retained Sodhya Pinda calculation evidence');
 
 const perChartResults = computed.map(({birth,chart,bvr,cg,selection,result})=>({
   cohort:birth.sex, fixtureIndex:birth.index, fixtureId:birth.name,
@@ -472,7 +465,6 @@ const summary = {
   },
   marriageMatching:{
     pairReportsRendered:pairReportAudit.length,
-    shadbalaTieSectionsRendered:pairReportAudit.reduce((sum,row)=>sum+(row.shadbalaTieSections||0),0),
     bothAppendicesVerifiedPerReport:true,
     pairOutputSamples:pairReportAudit.slice(0,5)
   },

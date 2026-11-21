@@ -149,6 +149,34 @@ const MM_ENGLISH_ASTRO_VALUES=Object.freeze({
  'விவாஹ':'Vivaha','விவாஹம்':'Vivaha','பரதார':'Paradara','ப்ரீதி':'Preeti',
  'ஆதி':'Adi','மத்திய':'Madhya','அந்த்ய':'Antya','சஹம்':'Saham'
 });
+const MM_TAMIL_ASTRO_VALUES=(()=>{
+ const map=Object.create(null);
+ for(const [tamil,english] of Object.entries(MM_ENGLISH_ASTRO_VALUES))if(!map[english])map[english]=tamil;
+ for(let i=0;i<SIGNS_EN.length;i++)map[SIGNS_EN[i]]=SIGNS_TA[i];
+ Object.assign(map,{
+  Ascendant:'லக்னம்',Lagna:'லக்னம்',lord:'அதிபதி',Lord:'அதிபதி',house:'பாவம்',House:'பாவம்',
+  Nakshatra:'நட்சத்திரம்',Rasi:'ராசி',Dasha:'தசா',Bhukti:'புக்தி',Gochara:'கோச்சாரம்',
+  Saham:'சஹம்',Sahams:'சஹம்கள்',Vivaha:'விவாஹம்',Paradara:'பரதார',Preeti:'ப்ரீதி',
+  Adi:'ஆதி',Madhya:'மத்திய',Antya:'அந்த்ய'
+ });
+ return Object.freeze(map);
+})();
+const MM_TAMIL_ASTRO_KEYS=Object.keys(MM_TAMIL_ASTRO_VALUES).sort((a,b)=>b.length-a.length);
+function mmTamilReportText(value){
+ let out=String(value??'—').trim();if(!out)return '—';
+ if(!/[A-Za-z]/u.test(out))return out;
+ // Prefer the same published source dictionary used by Horoscope Tamil reports.
+ // The temporary span is outside .mm-basic-report, so the native bilingual
+ // Basic Calculation Report remains protected from generic DOM translation.
+ if(typeof document!=='undefined'&&typeof window.__smvLocalizeTamilResult==='function'){
+  try{const holder=document.createElement('span');holder.textContent=out;window.__smvLocalizeTamilResult(holder,'ta');out=holder.textContent.trim()||out;}catch(_){}
+ }
+ for(let i=0;i<SIGNS_EN.length;i++)out=out.split(SIGNS_EN[i]).join(SIGNS_TA[i]);
+ for(const key of MM_TAMIL_ASTRO_KEYS)out=out.replace(new RegExp('(?<![\\p{L}\\p{M}])'+key+'(?![\\p{L}\\p{M}])','giu'),MM_TAMIL_ASTRO_VALUES[key]);
+ out=out.replace(/(\d+)(?:st|nd|rd|th)\s+lord\s+H(\d+)/giu,(_m,n,h)=>`${n}-ஆம் பாவ அதிபதி ${h}-ஆம் பாவத்தில்`)
+  .replace(/\bH(\d+)\b/gu,(_m,h)=>`${h}-ஆம் பாவம்`);
+ return out;
+}
 function mmEnglishReportText(value){
  let out=String(value??'').trim();if(!out)return '—';
  for(let i=0;i<SIGNS_TA.length;i++)out=out.split(SIGNS_TA[i]).join(SIGNS_EN[i]);
@@ -164,7 +192,7 @@ function mmEnglishReportText(value){
  if(typeof window.__smvEnglishTextNode==='function')out=window.__smvEnglishTextNode(out);
  return out;
 }
-function mmReportValue(value){return lang()==='en'?mmEnglishReportText(value):String(value??'—');}
+function mmReportValue(value){return lang()==='en'?mmEnglishReportText(value):mmTamilReportText(value);}
 function mmSep(a,b){const d=Math.abs(norm(a)-norm(b));return Math.min(d,360-d);}
 function kalaSarpaAssessment(c){
  const rah=planet(c,P.Rahu),ket=planet(c,P.Ketu),lag=Number(c?.lagna?.longitude),seven=MM_CLASSICAL_SEVEN.map(n=>[n,planet(c,n)]);
@@ -543,7 +571,7 @@ function localizeMatchingResult(root){
  const words={'NO MATCH':'பொருந்தாது','MATCH':'பொருந்தும்','strong-balanced-review':'இருபுறமும் வலுவான நிலை; ஆய்வு தேவை','balanced-residual':'மீதமுள்ள தோஷங்கள் சமநிலையில் உள்ளன','residual-imbalance':'மீதமுள்ள தோஷங்களில் சமமின்மை','material-imbalance':'குறிப்பிடத்தக்க சமமின்மை','putra':'புத்திரம்','sukra':'சுக்கிரன்','kalathra':'களத்திரம்','mangalya':'மாங்கல்யம்','clear':'குறிப்பிடத்தக்க தோஷச் சுட்டி இல்லை','none':'இல்லை','active':'செயலில் உள்ளது','complex':'பல காரணிகள் இணைந்த நிலை','close':'நெருக்கமான','Buffalo':'எருமை','Cat':'பூனை','Cow':'பசு','Deer':'மான்','Horse':'குதிரை','Monkey':'குரங்கு','Rat':'எலி','Serpent':'பாம்பு','Sheep':'ஆடு','Mongoose':'கீரி'};
  const walker=document.createTreeWalker(root,4);let node;
  while(node=walker.nextNode()){
-  if(node.parentElement?.closest('[data-person-name]'))continue;
+  if(node.parentElement?.closest('[data-person-name],.mm-basic-report'))continue;
   let value=node.textContent.replace(/(\d+)(?:st|nd|rd|th) lord/g,'$1-ஆம் பாவ அதிபதி').replace(/\bH(\d+)\b/g,'$1-ஆம் பாவம்');
   for(const [word,label]of Object.entries(words))value=value.replace(new RegExp('\\b'+word+'\\b','g'),label);
   node.textContent=value;
@@ -1687,7 +1715,7 @@ function mm281CausePlanets(x,chart,fallback){
 function mm281TranslateHit(v){const x=String(v??'');if(lang()!=='ta')return mmEnglishReportText(x);
  let m=x.match(/^(\d+)(?:st|nd|rd|th) lord H(\d+)$/i);if(m)return `${m[1]}-ஆம் பாவ அதிபதி ${m[2]}-ஆம் பாவத்தில்`;
  m=x.match(/^(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu) H(\d+)$/i);if(m)return `${mmPlanetText(mmCanonPlanet(m[1]))} ${m[2]}-ஆம் பாவத்தில்`;
- return x;
+ return mmReportValue(x);
 }
 const MM281_DOSHA_PRACTICES={
  'சூரியன்':{ta:['அதிகார உணர்வு, தன்மானம் மற்றும் பெற்றோர் பங்கிற்கிடையே சமநிலையான உரையாடல் வேண்டும்.','ஞாயிற்றுக்கிழமை சூரிய வழிபாடு அல்லது ஆதித்ய ஹிருதயம் மரபுக்கேற்ப விருப்பம்.','சூரிய காயத்ரி/ஆதித்ய ஸ்தோத்திரம் விருப்பப்படி சொல்லலாம்.','ஆரோக்கியத்துக்கு ஒவ்வாத விரதம் வேண்டாம்.','ஆசிரியர்/தந்தை போன்ற வழிகாட்டிகளுக்கான மதிப்புடனான சேவை.','செம்பழுப்பு/செம்மஞ்சள் வழிபாட்டுக் குறியீடுகள்; மாணிக்கம் முழு ஜாதகம் இல்லாமல் பரிந்துரைக்கப்படாது.','அச்சம் அல்லது செலவுக்காகச் சடங்கு செய்ய வேண்டிய கட்டாயம் இல்லை.'],en:['Discuss authority, pride and parents’ role fairly.','Optional Sunday Sun prayer.','Optional Aditya Hridayam or Sun hymns.','Avoid unhealthy fasts.','Support educators and mentors.','Orange/red is symbolic; ruby needs independent chart review.','No coercive or costly rituals.']},
@@ -2015,7 +2043,7 @@ async function renderMatching(b,g,out,quiet=false){
  // Prepare the additive technical appendix first; then render the full report in its final reading order.
  // Keep the complete established full matching verdict and human-readable
  // prediction report. The new factual chart/table appendix is additive only.
- const basicMod=await import('./marriage-basic-report.mjs?v=20261117-english-report-language-consistency-v1');
+ const basicMod=await import('./marriage-basic-report.mjs?v=20261121-bilingual-report-longevity-removal-v2');
  const reviewDate=document.getElementById('mmGocharDate')?.value||new Date().toISOString().slice(0,10);
  const basicHtml=await basicMod.renderBasicMatching(b,g,{
   language:lang(),brideStyle:b.birthChartStyle||'south',groomStyle:g.birthChartStyle||'south',
