@@ -162,7 +162,6 @@ const MM_TAMIL_ASTRO_VALUES=(()=>{
  return Object.freeze(map);
 })();
 const MM_TAMIL_ASTRO_KEYS=Object.keys(MM_TAMIL_ASTRO_VALUES).sort((a,b)=>b.length-a.length);
-const MM_TAMIL_ASTRO_RE=null;
 function mmTamilReportText(value){
  let out=String(value??'—').trim();if(!out)return '—';
  if(!/[A-Za-z]/u.test(out))return out;
