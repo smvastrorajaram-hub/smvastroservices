@@ -148,7 +148,7 @@ yes(/config\.js\?v=[^"']+/.test(html),'Access config uses a cache-busted URL');
 yes(html.includes('horoscope-form.js?v='),'Horoscope form uses its cache-busted URL');
 yes(html.includes('horoscope.js?v='),'Horoscope renderer uses its cache-busted URL');
 yes(html.includes('horoscope.css?v='),'Horoscope styles use their cache-busted URL');
-yes(html.includes('marriage-matching.js?v=20261117-english-report-language-consistency-v1'),'Marriage Matching uses its cache-busted URL');
+yes(html.includes('marriage-matching.js?v=20261121-bilingual-report-longevity-removal-v1'),'Marriage Matching uses its current cache-busted URL');
 
 // All three products share the marker. Existing offline/user data is not cleared.
 const releases=workers.map(source=>/const SMV_CACHE_RELEASE\s*=\s*IS_PAGES_DEV_HOST\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(source));
