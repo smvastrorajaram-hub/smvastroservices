@@ -227,29 +227,9 @@
   });
 
   function fmtDate(v){if(!v)return '—';try{return new Date(v+'T00:00:00').toLocaleDateString(getHoroscopeLang()==='ta'?'ta-IN':'en-IN',{day:'2-digit',month:'long',year:'numeric'});}catch{return v;}}
-
-  const SMV_EN_HORO_FIXES=[
-    ['வீடு மற்றும் வசதி','home and comfort'],
-    ['வாடிக்கையாளர், வலையமைப்பு','clients and network'],
-    ['வாடிக்கையாளர்','clients'],
-    ['வலையமைப்பு','network']
-  ];
-  function smvCleanEnglishHoroscopeText(str){
-    let out=String(str??'');
-    for(const [ta,en] of SMV_EN_HORO_FIXES)out=out.split(ta).join(en);
-    return out
-      .replace(/[\u0B80-\u0BFF]+/g,' ')
-      .replace(/\(\s*,\s*\)/g,'')
-      .replace(/(?:\s*,\s*){2,}/g,', ')
-      .replace(/\s+([,.;:!?])/g,'$1')
-      .replace(/\s{2,}/g,' ')
-      .trim();
-  }
-
   function englishTextNode(text){
     let out=String(text||'');
     Object.keys(EN).sort((a,b)=>b.length-a.length).forEach(k=>{out=out.split(k).join(EN[k]);});
-    out=smvCleanEnglishHoroscopeText(out);
     out=out.replace(/(\d+)-ம் பாவம்/g,(_,n)=>{const ord=n==='1'?'1st':n==='2'?'2nd':n==='3'?'3rd':n+'th';return ord+' Bhava';});
     out=out.replace(/பா\.(\d+)/g,'Bhava $1');
     out=out.replace(/உறவு/g,'Rasi Status').replace(/ராசி நிலை/g,'Rasi Status').replace(/வக்கிரம்/g,'Retrograde').replace(/அஸ்தமனம்/g,'Combustion').replace(/சூரிய தூரம்/g,'Sun Distance').replace(/ஆம்/g,'Yes').replace(/இல்லை/g,'No');
@@ -2153,7 +2133,6 @@ try{
           // same original natal chart are reused; only narrative translation runs.
           const next=v302.build(fullChart,lang,context,report);
           lifeSlot.innerHTML=v302.html(next);
-          if(lang==='en')applyEnglishToHoroscope(lifeSlot);
           window.dispatchEvent(new CustomEvent('smv:horoscope-long-ready',{detail:{rootId,lang,meta:report.meta}}));
         }).catch(error=>{
           if(!stillCurrent())return;

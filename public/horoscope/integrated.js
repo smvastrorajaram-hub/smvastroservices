@@ -6,45 +6,6 @@
 (function(root,factory){'use strict';const previous=root.SMVD1IntegratedV303;const api=factory(root,previous);if(typeof module==='object'&&module.exports)module.exports=api;if(root?.SMVLifePredictionD1?.toD1&&previous?.build)root.SMVD1IntegratedV303=api;
 })(typeof window!=='undefined'?window:globalThis,function(g,old){'use strict';
 const get=()=>[g.SMVD311Judgement,g.SMVD311Timing,g.SMVD311Narrative,g.SMVD311Remedies];
-
-const SMV_EN_PHRASE_MAP=[
-  ['வீடு மற்றும் வசதி','home and comfort'],
-  ['வாடிக்கையாளர், வலையமைப்பு','clients and network'],
-  ['வாடிக்கையாளர்','clients'],
-  ['வலையமைப்பு','network'],
-  ['வீடு','home'],
-  ['வசதி','comfort'],
-  ['தொழில்','career'],
-  ['குடும்பம்','family'],
-  ['கல்வி','education'],
-  ['பயணம்','travel'],
-  ['செலவு','expenses'],
-  ['சேமிப்பு','savings']
-];
-function smvCleanEnText(v){
-  let s=String(v??'');
-  for(const [ta,en] of SMV_EN_PHRASE_MAP)s=s.split(ta).join(en);
-  return s
-    .replace(/[\u0B80-\u0BFF]+/g,' ')
-    .replace(/\(\s*,\s*\)/g,'')
-    .replace(/(?:\s*,\s*){2,}/g,', ')
-    .replace(/\s+([,.;:!?])/g,'$1')
-    .replace(/\s{2,}/g,' ')
-    .trim();
-}
-function smvCleanEnNode(node,depth=0){
-  if(depth>25||node==null)return node;
-  if(typeof node==='string')return smvCleanEnText(node);
-  if(Array.isArray(node))return node.map(x=>smvCleanEnNode(x,depth+1));
-  if(typeof node==='object'){
-    const skip=new Set(['id','planet','md','ad','pd','from','to','date','language','lang','meta','provenance']);
-    const out={};
-    for(const [k,v] of Object.entries(node))out[k]=skip.has(k)?v:smvCleanEnNode(v,depth+1);
-    return out;
-  }
-  return node;
-}
-
 const encode=t=>String(t??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const HEAD_TA=['தனித்தன்மை, குணநலன்கள் மற்றும் உடல் வளர்ச்சி','குடும்பம், பேச்சு மற்றும் செல்வப் பாதுகாப்பு','முயற்சி, திறமை மற்றும் உடன்பிறப்புகள்','தாய், வீடு, நிலம் மற்றும் மனநிம்மதி','அறிவு, கல்வி, படைப்பாற்றல் மற்றும் புத்திரம்','போட்டி, பணிப்பழக்கம் மற்றும் உடல்நல ஒழுங்கு','திருமணம், உடன்பாடு மற்றும் இணைந்து செயல்படுதல்','பாதுகாப்பு, எதிர்பாராத மாற்றம் மற்றும் ஆராய்ச்சி','தந்தை, குரு, உயர் கல்வி மற்றும் பாக்கியம்','தொழில், கடமை மற்றும் சமூகப் பொறுப்பு','வருமானம், நண்பர்கள் மற்றும் இலக்கு நிறைவேற்றம்','செலவு, உறக்கம், அந்நியத் தொடர்பு மற்றும் ஓய்வு'];
 const HEAD_EN=['Identity and personal character','Family finances and communication','Initiative, skills and siblings','Home and family support','Learning, creativity and children','Work routines and competition','Partnership and cooperation','Security and restructuring','Mentors and higher learning','Career and responsibilities','Income and networks','Expenses, distance and recovery'];
@@ -76,11 +37,10 @@ function build(chart,lang='ta',context={},timeline=null,options=null){const [J,T
  const E=g.SMVPredictionRules;
  const base=originalReport;
  const result=options?.rawPredictionReport===true?base:(E?.applyToReport?E.applyToReport(base,chart,d,starContext,dates):base);
- return ta?result:smvCleanEnNode(result);
+ return result;
 }
 function html(r){if(r?.v311?.status!=='ready')return old?.html?.(r)||'';
  const ta=r.lang==='ta';
- const fmtOut=v=>ta?String(v??''):smvCleanEnText(v);
  const editorButton=()=>''; // No per-report editor controls; results remain prediction-only.
  // Keep substantial new outcomes and dates; print a recurring explanatory
  // sentence once across the entire report, never dozens of times in every PD.
@@ -107,15 +67,15 @@ function html(r){if(r?.v311?.status!=='ready')return old?.html?.(r)||'';
  const chronologyKeys=new Set((r.chronology||[]).map(periodIdentity));
  const periodBlock=x=>{
   const rows=(x.periods||[]).filter(p=>!chronologyKeys.has(periodIdentity(p)));
-  return rows.length?`<h4>${ta?'இந்தப் பாவத்திற்கான தனிப்பட்ட தசை–புக்திக் காலங்கள்':'Relevant major/sub-period windows for this house'}</h4>${rows.map(p=>{const txt=freshProse(fmtOut(p.text));return txt?`<p class="smv-d1-life-paragraph" data-md="${encode(p.md)}" data-ad="${encode(p.ad)}">${encode(txt)}</p>`:'';}).join('')}`:'';
+  return rows.length?`<h4>${ta?'இந்தப் பாவத்திற்கான தனிப்பட்ட தசை–புக்திக் காலங்கள்':'Relevant major/sub-period windows for this house'}</h4>${rows.map(p=>{const txt=freshProse(p.text);return txt?`<p class="smv-d1-life-paragraph" data-md="${encode(p.md)}" data-ad="${encode(p.ad)}">${encode(txt)}</p>`:'';}).join('')}`:'';
  };
- const lines=r.topics.map(x=>{resetProse();return `<section class="smv-d1-life-topic smv-v303-house" data-d1-topic="${x.number}"><h3>${x.number}. ${encode(fmtOut(x.title))}</h3>${editorButton('house-'+x.number)}${x.paragraphs.map(uniqueParagraph).join('')}${periodBlock(x)}${x.remedies?.length?`<h4>${ta?'பொருத்தமான வழிமுறைகள் மற்றும் விருப்பப் பரிகாரம்':'Practical support and optional traditions'}</h4>${x.remedies.map(p=>{const t=freshProse(fmtOut(p));return t?`<p class="smv-v311-remedy">${encode(t)}</p>`:'';}).join('')}`:''}</section>`;}).join('');
+ const lines=r.topics.map(x=>{resetProse();return `<section class="smv-d1-life-topic smv-v303-house" data-d1-topic="${x.number}"><h3>${x.number}. ${encode(x.title)}</h3>${editorButton('house-'+x.number)}${x.paragraphs.map(uniqueParagraph).join('')}${periodBlock(x)}${x.remedies?.length?`<h4>${ta?'பொருத்தமான வழிமுறைகள் மற்றும் விருப்பப் பரிகாரம்':'Practical support and optional traditions'}</h4>${x.remedies.map(p=>{const t=freshProse(p);return t?`<p class="smv-v311-remedy">${encode(t)}</p>`:'';}).join('')}`:''}</section>`;}).join('');
  resetProse();
 const chron=r.chronology.length?`<section class="smv-v311-periods"><h2>${ta?'தசை–புக்தி அடிப்படையிலான முக்கிய காலங்கள்':'Major and sub-period life themes'}</h2>${r.chronology.map(y=>editorButton(g.SMVPredictionRules?.anchor?.('period',y)||'')+uniqueParagraph(y.text)).join('')}</section>`:'';
 resetProse();
-const pdBlock=r.pdChronology?.length?`<section class="smv-v311-pd" data-smv-pd-provenance="calculated-from-complete-ad"><h2>${ta?'பிரத்யந்தர தசை — கணிக்கப்பட்ட உட்காலப் பலன்கள்':'Computed pratyantara sub-periods'}</h2>${r.pdChronology.map(y=>{const e=editorButton(g.SMVPredictionRules?.anchor?.('pd',y)||'');const t=freshProse(fmtOut(y.text));return t?e+`<p class="smv-d1-life-paragraph" data-pd="${encode(y.pd)}">${encode(t)}</p>`:'';}).join('')}</section>`:'';
+const pdBlock=r.pdChronology?.length?`<section class="smv-v311-pd" data-smv-pd-provenance="calculated-from-complete-ad"><h2>${ta?'பிரத்யந்தர தசை — கணிக்கப்பட்ட உட்காலப் பலன்கள்':'Computed pratyantara sub-periods'}</h2>${r.pdChronology.map(y=>{const e=editorButton(g.SMVPredictionRules?.anchor?.('pd',y)||'');const t=freshProse(y.text);return t?e+`<p class="smv-d1-life-paragraph" data-pd="${encode(y.pd)}">${encode(t)}</p>`:'';}).join('')}</section>`:'';
 resetProse();
-const annual=r.annual.length?`<section class="smv-v311-years"><h2>${ta?'அடுத்த 15 ஆண்டுகளில் ஒருங்கிணைந்த ஆதாரம் கிடைத்த காலங்கள்':'Evidence-backed windows in the next 15 years'}</h2>${r.annual.map(y=>{const e=editorButton(g.SMVPredictionRules?.anchor?.('annual',y)||'');const t=freshProse(fmtOut(y.text));return t?e+`<p class="smv-d1-life-paragraph" data-year="${y.year}">${encode(t)}</p>`:'';}).join('')}</section>`:'';
+const annual=r.annual.length?`<section class="smv-v311-years"><h2>${ta?'அடுத்த 15 ஆண்டுகளில் ஒருங்கிணைந்த ஆதாரம் கிடைத்த காலங்கள்':'Evidence-backed windows in the next 15 years'}</h2>${r.annual.map(y=>{const e=editorButton(g.SMVPredictionRules?.anchor?.('annual',y)||'');const t=freshProse(y.text);return t?e+`<p class="smv-d1-life-paragraph" data-year="${y.year}">${encode(t)}</p>`:'';}).join('')}</section>`:'';
 const missing=(r.v311?.uncoveredWindows||[]);const noEvidence=missing.length?`<p class="smv-v311-no-event-filler">${ta?'போதுமான தசை–கோச்சார ஒத்த ஆதாரம் இல்லாத காலங்கள்: ':'Windows without independent dasha–transit corroboration: '}${missing.map(x=>encode(x.from)+' – '+encode(x.to)).join(', ')}. ${ta?'இந்த இடைவெளிகளுக்காகக் கற்பனையான ஆண்டு நிகழ்வுகள் எழுதப்படவில்லை.':'No distinct annual event has been invented for these intervals.'}</p>`:'';
 return `<section class="smv-d1-life-reading smv-v303-integrated smv-v307-events smv-v311-judgement" data-smv-d1-life="1" data-smv-integrated="12" data-smv-15-year-ready="${r.timeline?.complete?'1':'0'}" lang="${encode(r.lang)}"><h2>${ta?'முழு வாழ்க்கைப் பலன்கள்':'Complete Life Predictions'}</h2><p class="smv-v303-intro">${ta?'பொதுக் குணங்களுக்குப் பிறகு ஒவ்வொரு வாழ்க்கைத் துறையிலும் தனிப்பட்ட பழக்கங்கள், குடும்பச் சூழல், பொறுப்புகள் மற்றும் மாறும் காலநிலைகள் விரிவாக விளக்கப்படுகின்றன.':'The report first reconciles supportive and challenging natal factors, then combines available divisional, period and computed transit readings. Sample dates are not guaranteed event dates.'}</p>${r.overview?.length?`<section class="smv-v311-overview"><h2>${ta?'ஜாதகத்தின் மைய வாழ்க்கைப் போக்கு':'Integrated life reading'}</h2>${editorButton('overview')}${r.overview.map(uniqueParagraph).join('')}</section>`:''}${lines}${chron}${pdBlock}${annual}${noEvidence}</section>`;}
 return Object.freeze({build,html,version:'312-evidence-lived-personalization',previous:old});
