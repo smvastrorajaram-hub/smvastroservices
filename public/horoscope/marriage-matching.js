@@ -543,7 +543,7 @@ function localizeMatchingResult(root){
  const words={'NO MATCH':'பொருந்தாது','MATCH':'பொருந்தும்','strong-balanced-review':'இருபுறமும் வலுவான நிலை; ஆய்வு தேவை','balanced-residual':'மீதமுள்ள தோஷங்கள் சமநிலையில் உள்ளன','residual-imbalance':'மீதமுள்ள தோஷங்களில் சமமின்மை','material-imbalance':'குறிப்பிடத்தக்க சமமின்மை','putra':'புத்திரம்','sukra':'சுக்கிரன்','kalathra':'களத்திரம்','mangalya':'மாங்கல்யம்','clear':'குறிப்பிடத்தக்க தோஷச் சுட்டி இல்லை','none':'இல்லை','active':'செயலில் உள்ளது','complex':'பல காரணிகள் இணைந்த நிலை','close':'நெருக்கமான','Buffalo':'எருமை','Cat':'பூனை','Cow':'பசு','Deer':'மான்','Horse':'குதிரை','Monkey':'குரங்கு','Rat':'எலி','Serpent':'பாம்பு','Sheep':'ஆடு','Mongoose':'கீரி'};
  const walker=document.createTreeWalker(root,4);let node;
  while(node=walker.nextNode()){
-  if(node.parentElement?.closest('[data-person-name]'))continue;
+  if(node.parentElement?.closest('[data-person-name],.mm-basic-report'))continue;
   let value=node.textContent.replace(/(\d+)(?:st|nd|rd|th) lord/g,'$1-ஆம் பாவ அதிபதி').replace(/\bH(\d+)\b/g,'$1-ஆம் பாவம்');
   for(const [word,label]of Object.entries(words))value=value.replace(new RegExp('\\b'+word+'\\b','g'),label);
   node.textContent=value;
