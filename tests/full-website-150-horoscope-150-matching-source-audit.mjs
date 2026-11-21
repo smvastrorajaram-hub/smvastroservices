@@ -535,6 +535,28 @@ for (const pair of pairs) {
     'customer-facing Matching report excludes both Ayurdaya appendices and matched longevity-category rules for pair '+pair.pairIndex);
   ok(html.includes('Bhinna and Sarvashtakavarga')&&html.includes('Shadbala'),
     'ordinary Ashtakavarga and Shadbala remain visible for pair '+pair.pairIndex);
+  const porutham=matchingAudit.porutham(female.chart,male.chart);
+  eq(porutham.rows.length,10,'all ten production porutham factors are calculated for pair '+pair.pairIndex);
+  eq(porutham.score,porutham.rows.filter(row=>row[1]).length,'porutham score matches passed factors for pair '+pair.pairIndex);
+  ok(Number.isInteger(porutham.score)&&porutham.score>=0&&porutham.score<=10,
+    'porutham score remains within its defined 0–10 rule count for pair '+pair.pairIndex);
+  const kuja=matchingAudit.kujaSamyam(female.chart,male.chart);
+  ok(kuja&&kuja.B&&kuja.G&&typeof kuja.balanced==='boolean'&&typeof kuja.severe==='boolean',
+    'Kuja comparison returns both partners and explicit balance/severity for pair '+pair.pairIndex);
+  const dashaSandhi=matchingAudit.dashaSandhi(female.chart,male.chart);
+  ok(Array.isArray(dashaSandhi)&&dashaSandhi.every(row=>Number.isFinite(row.days)&&row.days>=0),
+    'Dasa Sandhi produces non-negative intervals for pair '+pair.pairIndex);
+  const dashaSync=matchingAudit.dashaDoshaSync(female.chart,male.chart);
+  ok(dashaSync&&Array.isArray(dashaSync.rows)&&dashaSync.bk&&dashaSync.gk,
+    'Dasa/Dosha synchronization retains both partners evidence for pair '+pair.pairIndex);
+  const brideFacts=matchingAudit.chartFacts(female.chart),groomFacts=matchingAudit.chartFacts(male.chart);
+  const fullVerdict=matchingAudit.fullVerdict(porutham,kuja,dashaSandhi,brideFacts,groomFacts,dashaSync,female.chart,male.chart);
+  ok(fullVerdict&&['no','match'].includes(fullVerdict.k)&&typeof fullVerdict.qualified==='boolean'&&
+     typeof fullVerdict.label==='string'&&fullVerdict.postReview,
+    'final Matching verdict is calculated from the full evidence path for pair '+pair.pairIndex);
+  const strengthMatrix=matchingAudit.marriageStrengthMatrix(female.chart,male.chart);
+  ok(Number.isFinite(Number(strengthMatrix?.B?.balance))&&Number.isFinite(Number(strengthMatrix?.G?.balance)),
+    'pair-specific Marriage Strength Matrix evaluates both natal charts for pair '+pair.pairIndex);
   pairReportAudit.push({
     pair:pair.pairIndex,
     poruthamScore:porutham.score,verdict:fullVerdict.k,qualified:fullVerdict.qualified,
