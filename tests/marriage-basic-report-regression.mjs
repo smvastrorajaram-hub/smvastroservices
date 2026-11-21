@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import {full} from '../public/horoscope/offline/offline-engine.mjs';
 import {transit} from '../public/horoscope/offline/transit_panchang.browser.mjs';
 import {renderBasicMatching} from '../public/horoscope/marriage-basic-report.mjs';
+import {advanced as advancedAstro} from '../public/horoscope/offline/astro_advanced.browser.mjs';
 let count=0;
 const ok=(c,msg)=>{assert.ok(c,msg);count++};
 const eq=(a,b,msg)=>{assert.equal(a,b,msg);count++};
@@ -60,6 +61,20 @@ ok(en.includes('Shadbala')&&en.includes('Sarvashtakavarga')&&en.includes('Naksha
 const englishVisibleText=en.replace(/<script\b[\s\S]*?<\/script>/gi,' ').replace(/<style\b[\s\S]*?<\/style>/gi,' ').replace(/<[^>]*>/g,' ');
 const englishTamilLeak=englishVisibleText.match(/[\u0B80-\u0BFF]+/u);
 ok(!englishTamilLeak,'English Basic Matching report has no remaining Tamil-script text: '+(englishTamilLeak?.[0]||''));
+
+const annualEn=advancedAstro(charts[0],'en').tajaka;
+const annualTa=advancedAstro(charts[0],'ta').tajaka;
+const annualTextEn=(annualEn?.yogas||[]).map(x=>[x.name,x.reason,x.meaning].join(' ')).join(' ');
+const annualTextTa=(annualTa?.yogas||[]).map(x=>[x.name,x.reason,x.meaning].join(' ')).join(' ');
+ok(!/[\\u0B80-\\u0BFF]/u.test(annualTextEn),'English Tajaka yoga reasons and indications contain no Tamil-script fragments');
+ok(!/\\b(?:applying|separating|connects|faster planet|slower planet|within deeptaamsa|Mars|Saturn|Sun|Moon|Mercury|Jupiter|Venus|Rahu|Ketu)\\b/iu.test(annualTextTa),
+ 'Tamil Tajaka yoga reasons and indications do not fall back to English planet names or aspect prose');
+const horoscopeSource=read('public/horoscope/horoscope.js');
+ok(horoscopeSource.includes('${esc(x.reason)}')&&!horoscopeSource.includes('englishizePlanets(tajakaText(x.reason))'),
+ 'Tajaka renderer preserves the report engine language instead of translating Tamil reasons back to English');
+ok(horoscopeSource.includes("title('Krisamsa','கிரிசாம்சம்')")&&horoscopeSource.includes("title('Patyamsa','பத்யாம்சம்')"),
+ 'Patyayini Dasa column headings are localized in both report languages');
+
 ok(!en.includes('திருமணப் பொருத்தம் — அடிப்படைக் கணக்கீட்டு அறிக்கை'),'No Tamil title in English');
 eq(values.length,2,'TA and EN views reuse both earlier transit results without recomputation');
 const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
