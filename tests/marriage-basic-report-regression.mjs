@@ -63,16 +63,26 @@ const englishTamilLeak=englishVisibleText.match(/[\u0B80-\u0BFF]+/u);
 ok(!englishTamilLeak,'English Basic Matching report has no remaining Tamil-script text: '+(englishTamilLeak?.[0]||''));
 
 const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const annualEn=advancedAstro(charts[0],'en').tajaka;
-const annualTa=advancedAstro(charts[0],'ta').tajaka;
+const horoscopeAdvancedEn=advancedAstro(charts[0],'en');
+const horoscopeAdvancedTa=advancedAstro(charts[0],'ta');
+const annualEn=horoscopeAdvancedEn.tajaka;
+const annualTa=horoscopeAdvancedTa.tajaka;
 const annualTextEn=(annualEn?.yogas||[]).map(x=>[x.name,x.reason,x.meaning].join(' ')).join(' ');
 const annualTextTa=(annualTa?.yogas||[]).map(x=>[x.name,x.reason,x.meaning].join(' ')).join(' ');
 ok(!/[\u0B80-\u0BFF]/u.test(annualTextEn),'English Tajaka yoga reasons and indications contain no Tamil-script fragments');
 ok(!/\b(?:applying|separating|connects|faster planet|slower planet|within deeptaamsa|Mars|Saturn|Sun|Moon|Mercury|Jupiter|Venus|Rahu|Ketu)\b/iu.test(annualTextTa),
  'Tamil Tajaka yoga reasons and indications do not fall back to English planet names or aspect prose');
+
+const phase2En=(horoscopeAdvancedEn.phase2?.yogas?.items||[]).map(x=>[x.name,x.category,x.reason,x.meaning].join(' ')).join(' ');
+const phase2Ta=(horoscopeAdvancedTa.phase2?.yogas?.items||[]).map(x=>[x.name,x.category,x.reason,x.meaning].join(' ')).join(' ');
+ok(!/[\u0B80-\u0BFF]/u.test(phase2En),'English Phase-2 Yoga names, categories and prose contain no Tamil-script fragments');
+ok(!/\b(?:Subha Yoga|Asubha Yoga|Gaja-Kesari Yoga|Guru-Mangala Yoga|Amala Yoga|Raaja Yoga|Dharma-Karmadhipati Yoga|Vipareeta Raaja Yoga|Harsha Yoga|Sarala Yoga|Vimala Yoga|Saraswathi Yoga|Amsaavatara Yoga|Indra Yoga|Ravi Yoga|Bhaaskara Yoga|Vasumati Yoga|Lakshmi Yoga|Protective|Popular|Special|Knowledge|Wealth|Naabhasa|Sankhya)\b/iu.test(phase2Ta),
+ 'Tamil Phase-2 Yoga output uses Tamil yoga names and category labels');
+
 const horoscopeSource=read('public/horoscope/horoscope.js');
 ok(horoscopeSource.includes('${esc(x.reason)}')&&!horoscopeSource.includes('englishizePlanets(tajakaText(x.reason))'),
  'Tajaka renderer preserves the report engine language instead of translating Tamil reasons back to English');
+ok(horoscopeSource.includes("title('Yogas','யோகங்கள்')"),'Phase-2 Yoga section heading is rendered in Tamil');
 ok(horoscopeSource.includes("title('Krisamsa','கிரிசாம்சம்')")&&horoscopeSource.includes("title('Patyamsa','பத்யாம்சம்')"),
  'Patyayini Dasa column headings are localized in both report languages');
 
