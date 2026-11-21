@@ -1,0 +1,25 @@
+name: TRUE BPHS historical certification gate
+on:
+  pull_request:
+    paths:
+      - 'public/horoscope/offline/true-bphs-naelos-engine.browser.mjs'
+      - 'research/natal-classical-certification/**'
+      - 'tests/true-bphs-historical-certification-gate.mjs'
+      - '.github/workflows/true-bphs-historical-certification-gate.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'public/horoscope/offline/true-bphs-naelos-engine.browser.mjs'
+      - 'research/natal-classical-certification/**'
+      - 'tests/true-bphs-historical-certification-gate.mjs'
+      - '.github/workflows/true-bphs-historical-certification-gate.yml'
+jobs:
+  evidence-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify historical evidence blockers remain explicit
+        run: node tests/true-bphs-historical-certification-gate.mjs
