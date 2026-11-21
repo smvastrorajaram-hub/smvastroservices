@@ -2,7 +2,7 @@
    Horoscope/Advanced/Marriage/Transit/Panchang/Place Search never probe a server.
    Login/Register/Logout remains a separate online authentication concern. */
 window.SMVEngineReady=(async()=>{
-  const engine=await import('./offline/offline-engine.mjs');
+  const engine=await import('./offline/offline-engine.mjs?v=20261121-p2-yoga-localization-v2');
   const places=await import('./offline/places/place-search.mjs');
   const swiss=await import('./offline/swiss_vedic.browser.mjs');
   const tp=await import('./offline/transit_panchang.browser.mjs');
