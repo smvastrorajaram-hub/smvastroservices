@@ -126,3 +126,44 @@
 #smvMarriageMatching .mm-v308-year h4{color:#713a29;margin:1.3em 0 .45em}
 @media print{.mm-v308-results,.mm-v308-15years,.mm-v308-year,.mm-v308-d9,.mm-v308-sandhi{display:block!important;break-inside:auto!important;page-break-inside:auto!important}.mm-v308-results p{orphans:3;widows:3}.mm-v308-results h2,.mm-v308-results h3,.mm-v308-results h4{break-after:avoid-page;page-break-after:avoid}.mm-v308-year details{display:block}.mm-v308-year details>*{display:block!important}}
 
+
+
+/* SMV annual life-report continuous flow — never split the first part into side-by-side columns. */
+.smv-v303-integrated{
+ display:block!important;
+ box-sizing:border-box!important;
+ width:100%!important;
+ max-width:100%!important;
+ min-width:0!important;
+ columns:1!important;
+ column-count:1!important;
+ column-width:auto!important;
+ column-gap:0!important;
+ column-fill:auto!important;
+}
+.smv-v303-integrated>.smv-v303-house,
+.smv-v303-integrated>.smv-v311-periods,
+.smv-v303-integrated>.smv-v311-pd,
+.smv-v303-integrated>.smv-v311-years,
+.smv-v303-integrated>.smv-v311-no-event-filler{
+ display:block!important;
+ float:none!important;
+ clear:both!important;
+ box-sizing:border-box!important;
+ width:100%!important;
+ max-width:100%!important;
+ min-width:0!important;
+ column-span:all!important;
+ break-inside:avoid-column!important;
+}
+.smv-v303-integrated .smv-v303-house>h3{break-after:avoid-column!important}
+@media print{
+ .smv-v303-integrated{columns:1!important;column-count:1!important;column-width:auto!important;column-gap:0!important;display:block!important}
+ .smv-v303-integrated>.smv-v303-house{break-inside:avoid-page!important;page-break-inside:avoid!important}
+ .smv-v303-integrated .smv-v303-house>h3{break-after:avoid-page!important;page-break-after:avoid!important}
+ .smv-v303-integrated .smv-v303-house .smv-d1-life-paragraph,
+ .smv-v303-integrated .smv-v303-house .smv-v311-remedy{break-inside:avoid-page!important;orphans:2;widows:2}
+ .smv-v303-integrated>.smv-v311-periods,
+ .smv-v303-integrated>.smv-v311-pd,
+ .smv-v303-integrated>.smv-v311-years{break-inside:auto!important;page-break-inside:auto!important}
+}
