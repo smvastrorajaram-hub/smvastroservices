@@ -275,3 +275,25 @@
 .south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="10"]{left:96.5%!important;top:50%!important;transform:translate(-100%,-50%)!important}
 .south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="11"]{left:99.5%!important;top:25%!important;transform:translate(-100%,-50%)!important}
 .south-indian-chart.smv-v342-north > .smv-v342-sign-number-overlay[data-house="12"]{left:75%!important;top:3%!important;transform:translate(-50%,0)!important}
+
+
+/* V348: keep dense North-Indian Bhava labels and grahas in separate, bounded rows. */
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-bhava-cell.smv-v342-triangle-cell{
+  max-height:24%!important;justify-content:center!important;padding:1px 0!important;gap:0!important;
+}
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-bhava-cell .smv-v342-house-number{
+  flex:0 0 auto!important;margin:0 0 1px!important;font-size:clamp(8px,1.35vw,10px)!important;line-height:1!important;
+}
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-bhava-cell .smv-v342-planets{
+  display:flex!important;flex:0 1 auto!important;flex-direction:column!important;flex-wrap:nowrap!important;
+  align-items:center!important;justify-content:center!important;gap:0!important;width:100%!important;
+  min-width:0!important;max-width:100%!important;max-height:calc(100% - 11px)!important;overflow:hidden!important;
+}
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-bhava-cell .smv-v342-planets .planet-line{
+  display:flex!important;flex:0 0 auto!important;justify-content:center!important;width:100%!important;
+  min-width:0!important;max-width:100%!important;line-height:1.05!important;overflow:hidden!important;
+  font-size:clamp(7px,1.25vw,9px)!important;white-space:nowrap!important;
+}
+.south-indian-chart.smv-v342-north .smv-v342-cell.smv-v342-bhava-cell .smv-v342-planets .planet-glyph{
+  display:inline-flex!important;max-width:100%!important;font-size:inherit!important;white-space:nowrap!important;
+}
