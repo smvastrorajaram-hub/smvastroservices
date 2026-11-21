@@ -159,4 +159,11 @@ assert.ok(inCellBhavaLabels.includes('position:static!important;transform:none!i
 assert.ok(inCellBhavaLabels.includes('color:#6f4d2c!important;background:#fffdf7!important;'),
   'Roman labels keep high contrast and a readable background inside the Bhava cell.');
 assert.ok(inCellBhavaLabels.includes('font-weight:900!important;line-height:1.05!important;'));
+
+assert.ok(horoscopeJs.includes("ta?'பாவகக் கட்டம்':'Bhava Chart'"),'Bhava chart heading follows the selected report language.');
+assert.ok(horoscopeJs.includes("ta?'📋 பாவ அட்டவணை':'📋 Bhava Table'"),'Bhava table heading follows the selected report language.');
+assert.ok(horoscopeJs.includes("cuspLabel(b.arambhaLongitude,b.arambha)")&&horoscopeJs.includes("cuspLabel(b.antyaLongitude,b.antya)"),'Bhava boundaries display the sign belonging to each full cusp longitude, preventing same-degree ambiguity across adjacent signs.');
+assert.ok(horoscopeJs.includes("ta?'ஆரம்பம்':'Start'")&&horoscopeJs.includes("ta?'கிரகங்கள்':'Planets'"),'Bhava table column headings follow the selected report language.');
+assert.ok(chartStyleCss.includes('V348: keep dense North-Indian Bhava labels and grahas in separate, bounded rows.'),'North Bhava dense-cell collision fix is present.');
+
 console.log('Horoscope four-chart, three-plus planet sizing and empty-cell regression: PASS');
